@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo2.png';
 
 const NavContainer = styled.nav`
   display: flex;
@@ -18,7 +18,7 @@ const Logo = styled.div`
   align-items: center;
   
   img {
-    height: 60px;
+    height: 80px;
     width: auto;
     object-fit: contain;
     object-position: center;

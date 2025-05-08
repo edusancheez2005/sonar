@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
-import logo from '../assets/logo.png';
 
 const DashboardContainer = styled.div`
   padding: 2rem;
@@ -190,28 +189,40 @@ const StatsCard = styled(DashboardCard)`
   }
 `;
 
+// Format numbers with commas for thousands separators
+const formatNumber = (num) => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+// Generate top coins data
+const generateTopCoins = () => {
+  return [
+    { coin: 'BTC', percentage: Math.floor(Math.random() * 30) + 50 },
+    { coin: 'ETH', percentage: Math.floor(Math.random() * 20) + 40 },
+    { coin: 'XRP', percentage: Math.floor(Math.random() * 20) + 35 },
+    { coin: 'ADA', percentage: Math.floor(Math.random() * 15) + 30 },
+    { coin: 'BNB', percentage: Math.floor(Math.random() * 15) + 25 },
+  ].sort((a, b) => b.percentage - a.percentage);
+};
+
 // Mock data generation functions
 const generateTransaction = () => {
-  const coins = ['BTC', 'ETH', 'DOGE', 'XRP', 'BNB', 'ADA', 'LTC', 'SOL'];
+  const coins = ['BTC', 'ETH', 'USDT', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT'];
   const actions = ['BUY', 'SELL', 'TRANSFER'];
-  const blockchains = ['Ethereum', 'Binance Smart Chain', 'Polygon', 'Avalanche', 'Solana'];
-  const prices = {
-    BTC: { min: 99000, max: 101000 },
-    ETH: { min: 3000, max: 3200 },
-    DOGE: { min: 0.12, max: 0.18 },
-    XRP: { min: 0.45, max: 0.55 },
-    BNB: { min: 550, max: 580 },
-    ADA: { min: 0.45, max: 0.52 },
-    LTC: { min: 70, max: 78 },
-    SOL: { min: 140, max: 155 },
+  const blockchains = ['Bitcoin Network', 'Ethereum', 'Binance Smart Chain', 'Polygon', 'Solana'];
+  
+  // Ensure most amounts are above 50k with much higher upper limits
+  const getAmount = () => {
+    return Math.random() < 0.9 
+      ? Math.floor(Math.random() * 9950000) + 50000 // 90% chance: 50k to 10M
+      : Math.floor(Math.random() * 40000) + 10000;  // 10% chance: 10k to 50k
   };
   
-  const getRandomElement = (array) => array[Math.floor(Math.random() * array.length)];
-  const getRandomPrice = (min, max) => (Math.random() * (max - min) + min).toFixed(2);
-  const getRandomAmount = (coin) => {
-    if (coin === 'BTC') return (Math.random() * 3).toFixed(2);
-    if (coin === 'ETH') return (Math.random() * 10).toFixed(2);
-    return (Math.random() * 1000).toFixed(2);
+  // Generate transaction type with 25% being transfers
+  const getAction = () => {
+    return Math.random() < 0.75 
+      ? (Math.random() > 0.5 ? 'BUY' : 'SELL') // 75% chance to be buy or sell
+      : 'TRANSFER'; // 25% chance to be transfer
   };
   
   const now = new Date();
@@ -219,11 +230,43 @@ const generateTransaction = () => {
   const minutes = now.getMinutes().toString().padStart(2, '0');
   const seconds = now.getSeconds().toString().padStart(2, '0');
   
-  const coin = getRandomElement(coins);
-  const action = getRandomElement(actions);
-  const blockchain = getRandomElement(blockchains);
-  const amount = getRandomAmount(coin);
-  const price = getRandomPrice(prices[coin].min, prices[coin].max);
+  const coin = coins[Math.floor(Math.random() * coins.length)];
+  const action = getAction();
+  const blockchain = blockchains[Math.floor(Math.random() * blockchains.length)];
+  
+  // Generate a base amount
+  const baseAmount = getAmount();
+  
+  // Convert to coin amounts based on typical prices
+  let amount;
+  if (coin === 'BTC') amount = (baseAmount / 100000).toFixed(2);
+  else if (coin === 'ETH') amount = (baseAmount / 3000).toFixed(2);
+  else if (coin === 'USDT' || coin === 'DOT') amount = (baseAmount / 100).toFixed(2);
+  else amount = (baseAmount / 500).toFixed(2);
+  
+  // Generate price between 10k and 100M with weighted distribution
+  const priceRangeCategories = [
+    { min: 10000, max: 100000, weight: 50 },      // 10k-100k (common)
+    { min: 100000, max: 1000000, weight: 30 },    // 100k-1M (less common)
+    { min: 1000000, max: 10000000, weight: 15 },  // 1M-10M (rare)
+    { min: 10000000, max: 100000000, weight: 5 }  // 10M-100M (very rare)
+  ];
+  
+  // Weighted random selection of price range
+  const totalWeight = priceRangeCategories.reduce((sum, category) => sum + category.weight, 0);
+  let random = Math.random() * totalWeight;
+  let selectedRange;
+  
+  for (const range of priceRangeCategories) {
+    random -= range.weight;
+    if (random <= 0) {
+      selectedRange = range;
+      break;
+    }
+  }
+  
+  const price = Math.floor(Math.random() * (selectedRange.max - selectedRange.min)) + selectedRange.min;
+  const totalValue = Math.floor(price * parseFloat(amount));
   
   return {
     id: Math.random().toString(36).substr(2, 9),
@@ -231,18 +274,10 @@ const generateTransaction = () => {
     coin,
     action,
     blockchain,
-    amount,
-    price: parseFloat(price) * amount,
-    usdPrice: parseFloat(price),
+    amount: formatNumber(parseFloat(amount)),
+    price: formatNumber(totalValue),
+    usdPrice: formatNumber(price),
   };
-};
-
-const generateTopCoins = () => {
-  return [
-    { coin: 'ETH', percentage: Math.floor(Math.random() * 30) + 40 },
-    { coin: 'XRP', percentage: Math.floor(Math.random() * 20) + 30 },
-    { coin: 'LTC', percentage: Math.floor(Math.random() * 20) + 25 },
-  ].sort((a, b) => b.percentage - a.percentage);
 };
 
 const Dashboard = () => {
@@ -285,7 +320,9 @@ const Dashboard = () => {
   
   // Filter transactions by minimum value
   const filteredTransactions = transactions.filter(transaction => {
-    return transaction.price >= minValue;
+    // Parse the price string back to a number for comparison
+    const priceNum = Number(transaction.price.replace(/,/g, ''));
+    return priceNum >= minValue;
   });
   
   // Animation variants
@@ -365,26 +402,34 @@ const Dashboard = () => {
             </thead>
             <tbody>
               <AnimatePresence>
-                {filteredTransactions.map(transaction => (
-                  <motion.tr
-                    key={transaction.id}
-                    variants={itemVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit={{ opacity: 0, height: 0 }}
-                  >
-                    <td className="time">{transaction.time}</td>
-                    <td className="amount">{transaction.amount} {transaction.coin}</td>
-                    <td>
-                      <span className={`action-${transaction.action.toLowerCase()}`}>
-                        {transaction.action}
-                      </span>
+                {filteredTransactions.length > 0 ? (
+                  filteredTransactions.map(transaction => (
+                    <motion.tr
+                      key={transaction.id}
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      <td className="time">{transaction.time}</td>
+                      <td className="amount">{transaction.amount} {transaction.coin}</td>
+                      <td>
+                        <span className={`action-${transaction.action.toLowerCase()}`}>
+                          {transaction.action}
+                        </span>
+                      </td>
+                      <td>{transaction.blockchain}</td>
+                      <td style={{ textAlign: 'right' }}>${transaction.usdPrice}</td>
+                      <td className="price">${transaction.price}</td>
+                    </motion.tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
+                      No transactions match the current minimum value. Try lowering the minimum value.
                     </td>
-                    <td>{transaction.blockchain}</td>
-                    <td>${transaction.usdPrice.toLocaleString()}</td>
-                    <td className="price">${transaction.price.toLocaleString()}</td>
-                  </motion.tr>
-                ))}
+                  </tr>
+                )}
               </AnimatePresence>
             </tbody>
           </TransactionTable>

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo2.png';
 
 // Styled components
 const LandingContainer = styled.div`
   min-height: 100vh;
   background-color: var(--background-dark);
   color: var(--text-primary);
+  position: relative;
 `;
 
 const HeroSection = styled.section`
@@ -20,24 +21,27 @@ const HeroSection = styled.section`
   position: relative;
   overflow: hidden;
   padding: 0 2rem;
-  padding-top: 100px;
+  padding-top: 180px;
   text-align: center;
+  margin-top: 0;
   background-image: radial-gradient(circle at 70% 60%, rgba(54, 166, 186, 0.1), transparent 60%);
 `;
 
 const NavBar = styled.nav`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  z-index: 100;
-  transition: all 0.3s ease;
-  background-color: ${props => props.scrolled ? 'var(--background-dark)' : 'transparent'};
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background: ${props => props.scrolled ? 'var(--background-card)' : 'rgba(10, 22, 33, 0.7)'};
+  backdrop-filter: blur(10px);
   box-shadow: ${props => props.scrolled ? '0 4px 10px rgba(0, 0, 0, 0.3)' : 'none'};
+  transition: all 0.3s ease;
+  border-bottom: ${props => props.scrolled ? '1px solid var(--secondary)' : 'none'};
 `;
 
 const Logo = styled.div`
@@ -45,8 +49,10 @@ const Logo = styled.div`
   align-items: center;
   
   img {
-    height: ${props => props.scrolled ? '60px' : '80px'};
+    height: 80px;
     width: auto;
+    object-fit: contain;
+    object-position: center;
     transition: height 0.3s ease;
   }
 `;
@@ -58,18 +64,40 @@ const NavLinks = styled.div`
   a {
     color: var(--text-primary);
     font-weight: 500;
+    font-size: 1.1rem;
     text-decoration: none;
     transition: color 0.3s ease;
+    position: relative;
+    
+    &:after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -5px;
+      width: 100%;
+      height: 3px;
+      background-color: var(--primary);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
     
     &:hover {
       color: var(--primary);
     }
+    
+    &:hover:after {
+      transform: scaleX(1);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
 const HeroContent = styled.div`
   max-width: 800px;
-  z-index: 1;
+  z-index: 5;
 `;
 
 const HeroTitle = styled(motion.h1)`
@@ -135,8 +163,9 @@ const Button = styled(motion.button)`
 `;
 
 const Section = styled.section`
-  padding: 6rem 2rem;
-  padding-top: 8rem;
+  padding: 8rem 2rem 6rem;
+  position: relative;
+  z-index: 1;
   
   h2 {
     font-size: 2.5rem;
@@ -148,6 +177,7 @@ const Section = styled.section`
 
 const AboutSection = styled(Section)`
   background-color: var(--background-card);
+  padding-top: 8rem;
 `;
 
 const AboutContent = styled.div`
@@ -171,6 +201,7 @@ const AboutContent = styled.div`
 
 const PricingSection = styled(Section)`
   background-color: var(--background-dark);
+  padding-top: 8rem;
 `;
 
 const PricingPlans = styled.div`
@@ -235,7 +266,165 @@ const PricingCard = styled(motion.div)`
   }
 `;
 
-// Form components
+// Animation elements
+const WhaleBackground = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.15;
+  
+  .whale-svg {
+    position: absolute;
+    bottom: -5%;
+    right: -5%;
+    width: 75%;
+    height: auto;
+    transform: scaleX(-1);
+    path, circle {
+      fill: var(--primary);
+    }
+  }
+  
+  .coin {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, var(--primary), #2980b9);
+    border-radius: 50%;
+    box-shadow: 0 0 30px rgba(54, 166, 186, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    font-size: 2rem;
+    top: 30%;
+    right: 30%;
+  }
+`;
+
+const FloatingElements = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+`;
+
+const Circle = styled(motion.div)`
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, transparent 70%);
+  opacity: 0.1;
+`;
+
+// Add a new styled component for the Screenshots section
+const ScreenshotsSection = styled.section`
+  padding: 4rem 2rem;
+  margin-top: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--background-card);
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+  
+  h2 {
+    color: var(--primary);
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+  }
+`;
+
+const ScreenshotsContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  
+  h3 {
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+  }
+`;
+
+const ScreenshotGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Screenshot = styled(motion.div)`
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  background-color: var(--background-dark);
+  
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-bottom: 1px solid var(--secondary);
+  }
+  
+  .caption {
+    padding: 1rem;
+    background-color: var(--background-dark);
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+`;
+
+// Add a styled button for the login
+const NavButton = styled.button`
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.3s ease;
+  position: relative;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    width: 100%;
+    height: 3px;
+    background-color: var(--primary);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+  }
+  
+  &:hover {
+    color: var(--primary);
+  }
+  
+  &:hover:after {
+    transform: scaleX(1);
+  }
+`;
+
+// Navigation function component for consistent styling
+const NavLink = styled(NavButton)`
+  /* Inherits all styles from NavButton */
+`;
+
+// Add back the modal components
 const Modal = styled(motion.div)`
   position: fixed;
   top: 0;
@@ -330,111 +519,9 @@ const ButtonContainer = styled.div`
   }
 `;
 
-// Animation elements
-const WhaleBackground = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  opacity: 0.15;
-  
-  .whale-svg {
-    position: absolute;
-    bottom: -5%;
-    right: -5%;
-    width: 75%;
-    height: auto;
-    transform: scaleX(-1);
-    path, circle {
-      fill: var(--primary);
-    }
-  }
-  
-  .coin {
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    background: linear-gradient(135deg, var(--primary), #2980b9);
-    border-radius: 50%;
-    box-shadow: 0 0 30px rgba(54, 166, 186, 0.4);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-weight: bold;
-    font-size: 2rem;
-    top: 30%;
-    right: 30%;
-  }
-`;
-
-const FloatingElements = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  pointer-events: none;
-`;
-
-const Circle = styled(motion.div)`
-  position: absolute;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, transparent 70%);
-  opacity: 0.1;
-`;
-
-// Add a new styled component for the Screenshots section
-const ScreenshotsSection = styled(Section)`
-  background-color: var(--background-card);
-`;
-
-const ScreenshotsContainer = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  
-  h3 {
-    font-size: 1.8rem;
-    text-align: center;
-    margin-bottom: 2rem;
-    color: var(--text-secondary);
-  }
-`;
-
-const ScreenshotGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const Screenshot = styled(motion.div)`
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  
-  img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-  
-  .caption {
-    padding: 1rem;
-    background-color: var(--background-dark);
-    color: var(--text-secondary);
-    font-size: 1rem;
-  }
-`;
-
 const Landing = () => {
   const navigate = useNavigate();
+  // Add back the state variables for modal functionality
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -462,15 +549,15 @@ const Landing = () => {
     };
   }, []);
   
+  // Add form change handler
   const handleFormChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
   
+  // Update login function to handle form submission
   const handleLogin = (e) => {
-    e.preventDefault();
-    // Set authentication state
+    if (e) e.preventDefault();
     localStorage.setItem('isAuthenticated', 'true');
-    // Use the global function we defined in App.js
     if (window.sonarLogin) {
       window.sonarLogin();
     }
@@ -478,6 +565,7 @@ const Landing = () => {
     navigate('/dashboard');
   };
   
+  // Add signup handler
   const handleSignup = (e) => {
     e.preventDefault();
     // Simulate successful registration
@@ -487,16 +575,6 @@ const Landing = () => {
     // Show a success message and redirect to login
     alert('Registration successful! Please log in with your credentials.');
     setShowLoginModal(true);
-  };
-  
-  const handleGetStarted = () => {
-    localStorage.setItem('isAuthenticated', 'true');
-    navigate('/dashboard');
-  };
-  
-  const handleGetDemo = () => {
-    localStorage.setItem('isAuthenticated', 'true');
-    navigate('/dashboard');
   };
   
   // Animation variants
@@ -545,32 +623,57 @@ const Landing = () => {
   
   return (
     <LandingContainer>
-      {/* Hero Section */}
+      <NavBar scrolled={scrolled}>
+        <Logo scrolled={scrolled}>
+          <img src={logo} alt="Sonar Logo" />
+        </Logo>
+        <NavLinks scrolled={scrolled}>
+          <NavLink onClick={() => {
+            const element = document.getElementById('about');
+            const navbarHeight = 100; // approximate height of navbar
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+            
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }}>
+            About
+          </NavLink>
+          <NavLink onClick={() => {
+            const element = document.getElementById('pricing');
+            const navbarHeight = 100; // approximate height of navbar
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+            
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }}>
+            Pricing
+          </NavLink>
+          <NavLink onClick={() => {
+            const element = document.getElementById('screenshots');
+            const navbarHeight = 100; // approximate height of navbar
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+            
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }}>
+            Results
+          </NavLink>
+          <NavButton onClick={() => setShowLoginModal(true)}>
+            Login
+          </NavButton>
+        </NavLinks>
+      </NavBar>
+      
       <HeroSection>
-        <NavBar scrolled={scrolled}>
-          <Logo scrolled={scrolled}>
-            <img src={logo} alt="Sonar Logo" />
-          </Logo>
-          <NavLinks>
-            <a href="#about" onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('about').scrollIntoView({ behavior: 'smooth' });
-            }}>About</a>
-            <a href="#pricing" onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' });
-            }}>Pricing</a>
-            <a href="#screenshots" onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('screenshots').scrollIntoView({ behavior: 'smooth' });
-            }}>Results</a>
-            <a href="#" onClick={(e) => { 
-              e.preventDefault(); 
-              setShowLoginModal(true); 
-            }}>Login</a>
-          </NavLinks>
-        </NavBar>
-        
         <WhaleBackground>
           <svg className="whale-svg" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
             <path d="M40,70 C35,60 30,65 25,70 C20,75 15,80 15,90 C15,95 20,100 25,100 C30,100 30,95 35,95 C40,95 45,100 50,100 C55,100 60,95 65,90 C70,85 80,80 85,75 C90,70 95,65 150,50 L120,60 C75,65 70,70 65,75 C60,80 55,85 50,85 C45,85 40,80 40,70 Z" />
@@ -635,7 +738,10 @@ const Landing = () => {
                 className="primary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleGetStarted}
+                onClick={() => {
+                  localStorage.setItem('isAuthenticated', 'true');
+                  navigate('/dashboard');
+                }}
               >
                 Get Started
               </Button>
@@ -643,7 +749,10 @@ const Landing = () => {
                 className="secondary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleGetDemo}
+                onClick={() => {
+                  localStorage.setItem('isAuthenticated', 'true');
+                  navigate('/dashboard');
+                }}
               >
                 Get Demo
               </Button>
@@ -652,7 +761,6 @@ const Landing = () => {
         </HeroContent>
       </HeroSection>
       
-      {/* About Section */}
       <AboutSection id="about">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
@@ -702,7 +810,6 @@ const Landing = () => {
         </AboutContent>
       </AboutSection>
       
-      {/* Screenshots Section */}
       <ScreenshotsSection id="screenshots">
         <h2>See the Dashboard in Action</h2>
         <ScreenshotsContainer>
@@ -740,7 +847,6 @@ const Landing = () => {
         </ScreenshotsContainer>
       </ScreenshotsSection>
       
-      {/* Pricing Section */}
       <PricingSection id="pricing">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
@@ -752,7 +858,6 @@ const Landing = () => {
         </motion.h2>
         
         <PricingPlans>
-          {/* Basic Plan */}
           <PricingCard
             variants={pricingCardVariants}
             initial="hidden"
@@ -774,13 +879,15 @@ const Landing = () => {
               style={{ width: '100%' }}
               whileHover={{ scale: 1.05 }} 
               whileTap={{ scale: 0.95 }}
-              onClick={() => setShowSignupModal(true)}
+              onClick={() => {
+                localStorage.setItem('isAuthenticated', 'true');
+                navigate('/dashboard');
+              }}
             >
               Get Started
             </Button>
           </PricingCard>
           
-          {/* Pro Plan */}
           <PricingCard
             className="featured"
             variants={pricingCardVariants}
@@ -805,13 +912,15 @@ const Landing = () => {
               style={{ width: '100%' }}
               whileHover={{ scale: 1.05 }} 
               whileTap={{ scale: 0.95 }}
-              onClick={() => setShowSignupModal(true)}
+              onClick={() => {
+                localStorage.setItem('isAuthenticated', 'true');
+                navigate('/dashboard');
+              }}
             >
               Get Started
             </Button>
           </PricingCard>
           
-          {/* Enterprise Plan */}
           <PricingCard
             variants={pricingCardVariants}
             initial="hidden"
@@ -835,7 +944,10 @@ const Landing = () => {
               style={{ width: '100%' }}
               whileHover={{ scale: 1.05 }} 
               whileTap={{ scale: 0.95 }}
-              onClick={() => setShowSignupModal(true)}
+              onClick={() => {
+                localStorage.setItem('isAuthenticated', 'true');
+                navigate('/dashboard');
+              }}
             >
               Get Started
             </Button>
@@ -843,7 +955,6 @@ const Landing = () => {
         </PricingPlans>
       </PricingSection>
       
-      {/* Login Modal */}
       {showLoginModal && (
         <Modal
           initial={{ opacity: 0 }}
@@ -889,24 +1000,21 @@ const Landing = () => {
               </ButtonContainer>
               <p style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                 Don't have an account?{' '}
-                <a
-                  href="#"
-                  style={{ color: 'var(--primary)' }}
-                  onClick={(e) => {
-                    e.preventDefault();
+                <NavButton
+                  style={{ color: 'var(--primary)', display: 'inline', padding: 0 }}
+                  onClick={() => {
                     setShowLoginModal(false);
                     setShowSignupModal(true);
                   }}
                 >
                   Sign up
-                </a>
+                </NavButton>
               </p>
             </Form>
           </FormContainer>
         </Modal>
       )}
       
-      {/* Signup Modal */}
       {showSignupModal && (
         <Modal
           initial={{ opacity: 0 }}
@@ -963,17 +1071,15 @@ const Landing = () => {
               </ButtonContainer>
               <p style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                 Already have an account?{' '}
-                <a
-                  href="#"
-                  style={{ color: 'var(--primary)' }}
-                  onClick={(e) => {
-                    e.preventDefault();
+                <NavButton
+                  style={{ color: 'var(--primary)', display: 'inline', padding: 0 }}
+                  onClick={() => {
                     setShowSignupModal(false);
                     setShowLoginModal(true);
                   }}
                 >
                   Login
-                </a>
+                </NavButton>
               </p>
             </Form>
           </FormContainer>
@@ -983,4 +1089,4 @@ const Landing = () => {
   );
 };
 
-export default Landing; 
+export default Landing;

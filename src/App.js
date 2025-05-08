@@ -102,8 +102,8 @@ function App() {
           </Routes>
         </MainContent>
         
-        {/* Only show footer on authenticated routes */}
-        {isAuthenticated && <Footer />}
+        {/* Show footer everywhere */}
+        <Footer />
       </AppContainer>
     </Router>
   );

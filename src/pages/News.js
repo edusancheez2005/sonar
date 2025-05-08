@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
-import WhaleBackground from '../components/Background';
-import Footer from '../components/Footer';
-import logo from '../assets/logo.png';
 
 const NewsContainer = styled.div`
   padding: 2rem;

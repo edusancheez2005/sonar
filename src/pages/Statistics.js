@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend, CategoryScale, LinearScale, BarElement, Title, PointElement, LineElement, RadialLinearScale, Filler } from 'chart.js';
-import { Pie, Bar, Line, Radar } from 'react-chartjs-2';
-import logo from '../assets/logo.png';
+import { Pie, Bar, Radar } from 'react-chartjs-2';
 import PageHeader from '../components/PageHeader';
 
 // Register ChartJS components
@@ -104,10 +103,6 @@ const ChartCard = styled.div`
   }
 `;
 
-const VolumeChartContainer = styled(ChartCard)`
-  margin-bottom: 2rem;
-`;
-
 const GridContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -144,10 +139,6 @@ const StatsCard = styled(ChartCard)`
 
 const BlockchainVolumeSection = styled(ChartCard)`
   margin-bottom: 3rem;
-`;
-
-const PriceHistorySection = styled(ChartCard)`
-  margin-bottom: 2rem;
 `;
 
 const MarketAnalysisSection = styled(ChartCard)`
@@ -238,6 +229,69 @@ const PriceThresholdFilter = styled.div`
     }
   }
 `;
+
+const formatNumber = (num) => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+// Update the transaction data
+const generateTransactions = () => {
+  const transactions = [];
+  const coins = ['BTC', 'ETH', 'USDT', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT'];
+  const types = ['Buy', 'Sell', 'Transfer'];
+  const blockchains = ['Bitcoin Network', 'Ethereum', 'Binance Smart Chain', 'Solana', 'Polygon'];
+  
+  for (let i = 0; i < 50; i++) {
+    // Ensure most amounts are above 50k with much higher upper limits
+    const amount = Math.random() < 0.9 
+      ? Math.floor(Math.random() * 9950000) + 50000 // 90% chance: 50k to 10M
+      : Math.floor(Math.random() * 40000) + 10000;  // 10% chance: 10k to 50k
+    
+    // Generate transaction type with 25% being transfers
+    const typeIndex = Math.random() < 0.75 
+      ? (Math.random() > 0.5 ? 0 : 1) // 75% chance to be buy or sell
+      : 2; // 25% chance to be transfer
+    
+    const type = types[typeIndex];
+    const coin = coins[Math.floor(Math.random() * coins.length)];
+    const blockchain = blockchains[Math.floor(Math.random() * blockchains.length)];
+    
+    // Generate price between 10k and 100M
+    const priceRangeCategories = [
+      { min: 10000, max: 100000, weight: 50 },      // 10k-100k (common)
+      { min: 100000, max: 1000000, weight: 30 },    // 100k-1M (less common)
+      { min: 1000000, max: 10000000, weight: 15 },  // 1M-10M (rare)
+      { min: 10000000, max: 100000000, weight: 5 }  // 10M-100M (very rare)
+    ];
+    
+    // Weighted random selection of price range
+    const totalWeight = priceRangeCategories.reduce((sum, category) => sum + category.weight, 0);
+    let random = Math.random() * totalWeight;
+    let selectedRange;
+    
+    for (const range of priceRangeCategories) {
+      random -= range.weight;
+      if (random <= 0) {
+        selectedRange = range;
+        break;
+      }
+    }
+    
+    const price = Math.floor(Math.random() * (selectedRange.max - selectedRange.min)) + selectedRange.min;
+    
+    transactions.push({
+      id: i + 1,
+      coin,
+      amount: formatNumber(amount),
+      price: formatNumber(price),
+      time: new Date(Date.now() - Math.random() * 86400000).toLocaleTimeString(),
+      type,
+      blockchain
+    });
+  }
+  
+  return transactions;
+};
 
 // Mock data
 const generateTopTenCoins = (type) => {
@@ -384,33 +438,11 @@ const Statistics = () => {
   const [volumeData, setVolumeData] = useState({ labels: [], data: [] });
   const [blockchainData, setBlockchainData] = useState({ labels: [], data: [] });
   const [selectedTimeframe, setSelectedTimeframe] = useState('7d');
-  const [selectedCoin, setSelectedCoin] = useState('BTC');
   const [priceHistory, setPriceHistory] = useState({ labels: [], data: [] });
   const [marketAnalysisData, setMarketAnalysisData] = useState(null);
   const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, content: '' });
   const [minPriceThreshold, setMinPriceThreshold] = useState(1000); // Default minimum price threshold
   const [transactions, setTransactions] = useState([]); // To store filtered transactions
-  
-  // Sample transaction data (mock)
-  const allTransactions = [
-    { id: 1, coin: 'BTC', price: 50000, amount: 1.2, action: 'Buy', time: '12:30' },
-    { id: 2, coin: 'ETH', price: 3000, amount: 5, action: 'Sell', time: '12:35' },
-    { id: 3, coin: 'BNB', price: 450, amount: 10, action: 'Buy', time: '12:40' },
-    { id: 4, coin: 'ADA', price: 0.5, amount: 10000, action: 'Transfer', time: '12:45' },
-    { id: 5, coin: 'SOL', price: 110, amount: 25, action: 'Sell', time: '12:50' },
-    { id: 6, coin: 'DOT', price: 25, amount: 200, action: 'Buy', time: '12:55' },
-    { id: 7, coin: 'DOGE', price: 0.15, amount: 20000, action: 'Transfer', time: '13:00' },
-    { id: 8, coin: 'XRP', price: 1.2, amount: 5000, action: 'Buy', time: '13:05' },
-    { id: 9, coin: 'AVAX', price: 85, amount: 30, action: 'Sell', time: '13:10' },
-    { id: 10, coin: 'LINK', price: 20, amount: 150, action: 'Buy', time: '13:15' },
-    { id: 11, coin: 'ETH', price: 3050, amount: 2, action: 'Buy', time: '13:20' },
-    { id: 12, coin: 'BTC', price: 52000, amount: 0.5, action: 'Sell', time: '13:25' },
-  ];
-  
-  // Filter transactions based on price threshold
-  useEffect(() => {
-    setTransactions(allTransactions.filter(tx => tx.price >= minPriceThreshold));
-  }, [minPriceThreshold]);
   
   // Load initial data
   useEffect(() => {
@@ -420,13 +452,13 @@ const Statistics = () => {
     setBlockchainData(generateBlockchainVolumeData());
     setPriceHistory(generatePriceHistoryData('BTC', '7d'));
     setMarketAnalysisData(generateMarketAnalysisData());
-    setTransactions(allTransactions.filter(tx => tx.price >= minPriceThreshold));
+    setTransactions(generateTransactions());
   }, []);
   
   // Update price history when timeframe or coin changes
   useEffect(() => {
-    setPriceHistory(generatePriceHistoryData(selectedCoin, selectedTimeframe));
-  }, [selectedTimeframe, selectedCoin]);
+    setPriceHistory(generatePriceHistoryData('BTC', selectedTimeframe));
+  }, [selectedTimeframe]);
   
   // Chart data configurations
   const distributionData = {
@@ -482,7 +514,7 @@ const Statistics = () => {
     labels: priceHistory.labels,
     datasets: [
       {
-        label: `${selectedCoin} Price (USD)`,
+        label: 'BTC Price (USD)',
         data: priceHistory.data,
         fill: true,
         backgroundColor: 'rgba(54, 166, 186, 0.1)',
@@ -709,14 +741,14 @@ const Statistics = () => {
           <input
             type="range"
             min="0"
-            max="10000000"
-            step="10000"
+            max="100000000"
+            step="100000"
             value={minPriceThreshold}
             onChange={handlePriceThresholdChange}
           />
           <div className="slider-info">
             <span>$0</span>
-            <span>$10M</span>
+            <span>$100M</span>
           </div>
         </div>
       </PriceThresholdFilter>
@@ -729,22 +761,26 @@ const Statistics = () => {
             <tr>
               <th style={{ textAlign: 'left', padding: '10px' }}>Time</th>
               <th style={{ textAlign: 'left', padding: '10px' }}>Coin</th>
-              <th style={{ textAlign: 'left', padding: '10px' }}>Action</th>
+              <th style={{ textAlign: 'left', padding: '10px' }}>Type</th>
               <th style={{ textAlign: 'right', padding: '10px' }}>Amount</th>
               <th style={{ textAlign: 'right', padding: '10px' }}>Price</th>
-              <th style={{ textAlign: 'right', padding: '10px' }}>Value</th>
+              <th style={{ textAlign: 'right', padding: '10px' }}>Network</th>
             </tr>
           </thead>
           <tbody>
             {transactions.length > 0 ? (
-              transactions.map(tx => (
+              transactions.filter(tx => {
+                // Parse the price string back to a number for comparison
+                const priceNum = Number(tx.price.replace(/,/g, ''));
+                return priceNum >= minPriceThreshold;
+              }).map(tx => (
                 <tr key={tx.id} style={{ borderBottom: '1px solid var(--secondary)' }}>
                   <td style={{ padding: '10px' }}>{tx.time}</td>
                   <td style={{ padding: '10px' }}>{tx.coin}</td>
-                  <td style={{ padding: '10px', color: tx.action === 'Buy' ? '#2ecc71' : tx.action === 'Sell' ? '#e74c3c' : 'var(--primary)' }}>{tx.action}</td>
-                  <td style={{ textAlign: 'right', padding: '10px' }}>{tx.amount.toLocaleString()}</td>
-                  <td style={{ textAlign: 'right', padding: '10px' }}>${tx.price.toLocaleString()}</td>
-                  <td style={{ textAlign: 'right', padding: '10px' }}>${(tx.amount * tx.price).toLocaleString()}</td>
+                  <td style={{ padding: '10px', color: tx.type === 'Buy' ? '#2ecc71' : tx.type === 'Sell' ? '#e74c3c' : 'var(--primary)' }}>{tx.type}</td>
+                  <td style={{ textAlign: 'right', padding: '10px' }}>{tx.amount}</td>
+                  <td style={{ textAlign: 'right', padding: '10px' }}>${tx.price}</td>
+                  <td style={{ textAlign: 'right', padding: '10px' }}>{tx.blockchain}</td>
                 </tr>
               ))
             ) : (
