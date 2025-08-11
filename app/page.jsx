@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react'
-import Landing from '@/src/pages/Landing'
+import Landing from '@/src/views/Landing'
 
 export default function HomePage() {
   const [email, setEmail] = useState('')
