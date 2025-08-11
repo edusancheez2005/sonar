@@ -1,7 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import logo from '../assets/logo.png';
 
 // Define Actions component first to avoid the reference before initialization
 const Actions = styled.div`
@@ -32,14 +31,9 @@ const Title = styled.h1`
   justify-content: center;
   margin: 0;
   
-  img {
-    height: 40px;
-    margin-right: 1rem;
-  }
+  img { height: 40px; margin-right: 1rem; }
   
-  span.accent {
-    color: var(--primary);
-  }
+  span.accent { color: var(--primary); }
 `;
 
 const SonarPulse = styled(motion.div)`
@@ -58,11 +52,7 @@ const SonarPulse = styled(motion.div)`
     transform: translate(-50%, -50%);
   }
   
-  &:before {
-    width: 8px;
-    height: 8px;
-    background-color: var(--primary);
-  }
+  &:before { width: 8px; height: 8px; background-color: var(--primary); }
 `;
 
 // Use when specific actions are needed in the header
@@ -82,26 +72,17 @@ const PageHeader = ({ title, accentWord, children, pulseEffect = true }) => {
   return (
     <HeaderWrapper>
       <Title>
-        <img src={logo} alt="Sonar Logo" />
+        <img src="/logo.png" alt="Sonar Logo" />
         {titleStart}
         <span className="accent">{titleAccent}</span>
         {pulseEffect && (
           <SonarPulse
-            animate={{
-              scale: [1, 1.5, 1],
-              opacity: [1, 0.5, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              repeatType: 'loop',
-            }}
+            animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+            transition={{ duration: 2, repeat: Infinity, repeatType: 'loop' }}
           />
         )}
       </Title>
-      <Actions>
-        {children}
-      </Actions>
+      <Actions>{children}</Actions>
     </HeaderWrapper>
   );
 };
