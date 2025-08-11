@@ -2,12 +2,28 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
+import Link from 'next/link'
 
 const DashboardContainer = styled.div`
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
 `;
+
+const StatusBadge = styled.div`
+  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem;
+  border-radius: 999px; font-weight: 500; font-size: 0.95rem;
+  color: ${({ active }) => active ? '#2ecc71' : '#e74c3c'};
+  background: ${({ active }) => active ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)'};
+  border: 1px solid ${({ active }) => active ? 'rgba(46, 204, 113, 0.35)' : 'rgba(231, 76, 60, 0.35)'};
+`;
+
+const Dot = styled.span`
+  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+  background: currentColor;
+`;
+
+// Removed the HeaderActions CTA
 
 const FilterContainer = styled.div`
   display: flex;
@@ -38,10 +54,7 @@ const FilterGroup = styled.div`
     border-radius: 4px;
     min-width: 150px;
     
-    &:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
+    &:focus { outline: none; border-color: var(--primary); }
   }
 `;
 
@@ -52,11 +65,7 @@ const FilterInfo = styled.div`
   color: var(--text-secondary);
   font-size: 0.9rem;
   
-  span {
-    color: var(--primary);
-    font-weight: 500;
-    margin: 0 0.25rem;
-  }
+  span { color: var(--primary); font-weight: 500; margin: 0 0.25rem; }
 `;
 
 const DashboardCard = styled.div`
@@ -67,398 +76,206 @@ const DashboardCard = styled.div`
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-  }
+  &:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); }
   
-  h2 {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-    
-    .card-icon {
-      width: 30px;
-      height: 30px;
-      margin-right: 0.75rem;
-      opacity: 0.8;
-    }
-  }
+  h2 { display: flex; align-items: center; margin-bottom: 1.5rem; font-size: 1.5rem; }
 `;
 
 const IncomingDataSection = styled(DashboardCard)``;
 
 const IncomingDataHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  
-  h2 {
-    font-size: 1.75rem;
-    margin-bottom: 0;
-  }
-  
-  span {
-    color: var(--text-secondary);
-  }
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;
+  h2 { font-size: 1.75rem; margin-bottom: 0; }
+  span { color: var(--text-secondary); }
 `;
 
 const TransactionTable = styled.table`
   width: 100%;
-  
-  tr {
-    transition: background-color 0.3s ease;
-    
-    &:hover {
-      background-color: rgba(30, 57, 81, 0.5);
-    }
-  }
-  
-  td {
-    padding: 1rem;
-  }
-  
-  .time {
-    color: var(--text-secondary);
-  }
-  
+  table-layout: fixed;
+  tr { transition: background-color 0.3s ease; }
+  tr:hover { background-color: rgba(30, 57, 81, 0.5); }
+  td, th { padding: 1rem; text-align: left; }
+  .time { color: var(--text-secondary); }
   .amount {
     font-weight: 500;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   }
-  
   .price {
     font-weight: 500;
-    text-align: right;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   }
-  
-  .action-buy {
-    color: var(--buy-color);
-    background-color: rgba(54, 166, 186, 0.15);
-    border-radius: 4px;
-    padding: 0.25rem 0.75rem;
-    font-weight: 500;
-  }
-  
-  .action-sell {
-    color: var(--sell-color);
-    background-color: rgba(231, 76, 60, 0.15);
-    border-radius: 4px;
-    padding: 0.25rem 0.75rem;
-    font-weight: 500;
-  }
-  
-  .action-transfer {
-    color: #9b59b6;
-    background-color: rgba(155, 89, 182, 0.15);
-    border-radius: 4px;
-    padding: 0.25rem 0.75rem;
-    font-weight: 500;
-  }
+  .token { font-weight: 500; }
+  .action-buy { color: var(--buy-color); background-color: rgba(54, 166, 186, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
+  .action-sell { color: var(--sell-color); background-color: rgba(231, 76, 60, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
+  .action-transfer { color: var(--transfer-color); background-color: rgba(52, 152, 219, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
 `;
 
 const GridContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;
+  @media (max-width: 768px) { grid-template-columns: 1fr; }
 `;
 
 const StatsCard = styled(DashboardCard)`
-  height: 100%;
-  
-  table {
-    width: 100%;
-    
-    th, td {
-      padding: 0.75rem 0;
-    }
-    
-    th:last-child, td:last-child {
-      text-align: right;
-    }
-    
-    .percentage {
-      font-weight: 500;
-      color: var(--primary);
-    }
-  }
+  table { width: 100%; }
+  th, td { padding: 0.75rem 0; text-align: left; }
+  th:last-child, td:last-child { text-align: left; }
+  .percentage { font-weight: 500; color: var(--primary); }
 `;
 
-// Format numbers with commas for thousands separators
-const formatNumber = (num) => {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-};
+const BarsContainer = styled.div`
+  display: grid; grid-template-columns: 1fr; gap: 10px;
+`;
+const BarRow = styled.div`
+  display: grid; grid-template-columns: 160px 1fr 60px; gap: 10px; align-items: center;
+`;
+const BarTrack = styled.div`
+  background: rgba(30, 57, 81, 0.7);
+  height: 12px; border-radius: 6px; overflow: hidden;
+`;
+const BarFill = styled.div`
+  height: 100%; background: linear-gradient(90deg, var(--primary), #2ecc71);
+`;
 
-// Generate top coins data
-const generateTopCoins = () => {
-  return [
-    { coin: 'BTC', percentage: Math.floor(Math.random() * 30) + 50 },
-    { coin: 'ETH', percentage: Math.floor(Math.random() * 20) + 40 },
-    { coin: 'XRP', percentage: Math.floor(Math.random() * 20) + 35 },
-    { coin: 'ADA', percentage: Math.floor(Math.random() * 15) + 30 },
-    { coin: 'BNB', percentage: Math.floor(Math.random() * 15) + 25 },
-  ].sort((a, b) => b.percentage - a.percentage);
-};
-
-// Mock data generation functions
-const generateTransaction = () => {
-  const coins = ['BTC', 'ETH', 'USDT', 'BNB', 'XRP', 'ADA', 'SOL', 'DOT'];
-  const actions = ['BUY', 'SELL', 'TRANSFER'];
-  const blockchains = ['Bitcoin Network', 'Ethereum', 'Binance Smart Chain', 'Polygon', 'Solana'];
-  
-  // Ensure most amounts are above 50k with much higher upper limits
-  const getAmount = () => {
-    return Math.random() < 0.9 
-      ? Math.floor(Math.random() * 9950000) + 50000 // 90% chance: 50k to 10M
-      : Math.floor(Math.random() * 40000) + 10000;  // 10% chance: 10k to 50k
-  };
-  
-  // Generate transaction type with 25% being transfers
-  const getAction = () => {
-    return Math.random() < 0.75 
-      ? (Math.random() > 0.5 ? 'BUY' : 'SELL') // 75% chance to be buy or sell
-      : 'TRANSFER'; // 25% chance to be transfer
-  };
-  
-  const now = new Date();
-  const hours = now.getHours().toString().padStart(2, '0');
-  const minutes = now.getMinutes().toString().padStart(2, '0');
-  const seconds = now.getSeconds().toString().padStart(2, '0');
-  
-  const coin = coins[Math.floor(Math.random() * coins.length)];
-  const action = getAction();
-  const blockchain = blockchains[Math.floor(Math.random() * blockchains.length)];
-  
-  // Generate a base amount
-  const baseAmount = getAmount();
-  
-  // Convert to coin amounts based on typical prices
-  let amount;
-  if (coin === 'BTC') amount = (baseAmount / 100000).toFixed(2);
-  else if (coin === 'ETH') amount = (baseAmount / 3000).toFixed(2);
-  else if (coin === 'USDT' || coin === 'DOT') amount = (baseAmount / 100).toFixed(2);
-  else amount = (baseAmount / 500).toFixed(2);
-  
-  // Generate price between 10k and 100M with weighted distribution
-  const priceRangeCategories = [
-    { min: 10000, max: 100000, weight: 50 },      // 10k-100k (common)
-    { min: 100000, max: 1000000, weight: 30 },    // 100k-1M (less common)
-    { min: 1000000, max: 10000000, weight: 15 },  // 1M-10M (rare)
-    { min: 10000000, max: 100000000, weight: 5 }  // 10M-100M (very rare)
-  ];
-  
-  // Weighted random selection of price range
-  const totalWeight = priceRangeCategories.reduce((sum, category) => sum + category.weight, 0);
-  let random = Math.random() * totalWeight;
-  let selectedRange;
-  
-  for (const range of priceRangeCategories) {
-    random -= range.weight;
-    if (random <= 0) {
-      selectedRange = range;
-      break;
-    }
-  }
-  
-  const price = Math.floor(Math.random() * (selectedRange.max - selectedRange.min)) + selectedRange.min;
-  const totalValue = Math.floor(price * parseFloat(amount));
-  
-  return {
-    id: Math.random().toString(36).substr(2, 9),
-    time: `${hours}:${minutes}:${seconds}`,
-    coin,
-    action,
-    blockchain,
-    amount: formatNumber(parseFloat(amount)),
-    price: formatNumber(totalValue),
-    usdPrice: formatNumber(price),
-  };
-};
+const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 const Dashboard = () => {
   const [transactions, setTransactions] = useState([]);
-  const [topBuys, setTopBuys] = useState(generateTopCoins());
-  const [topSells, setTopSells] = useState(generateTopCoins());
+  const [topBuys, setTopBuys] = useState([]);
+  const [topSells, setTopSells] = useState([]);
+  const [blockchainData, setBlockchainData] = useState({ labels: [], data: [] });
   const [minValue, setMinValue] = useState(0);
   const [lastUpdate, setLastUpdate] = useState('now');
-  
-  // Initial transactions
+  const [loading, setLoading] = useState(true);
+  const [algoActive, setAlgoActive] = useState(true);
+
   useEffect(() => {
-    const initialTransactions = Array(4)
-      .fill(null)
-      .map(() => generateTransaction());
-    
-    setTransactions(initialTransactions);
-  }, []);
-  
-  // Real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newTransaction = generateTransaction();
-      
-      setTransactions(prev => {
-        const updated = [newTransaction, ...prev.slice(0, 3)];
-        return updated;
-      });
-      
-      setLastUpdate('1 second ago');
-      
-      // Occasionally update top buys/sells
-      if (Math.random() > 0.7) {
-        setTopBuys(generateTopCoins());
-        setTopSells(generateTopCoins());
-      }
-    }, 3000);
-    
-    return () => clearInterval(interval);
-  }, []);
-  
-  // Filter transactions by minimum value
-  const filteredTransactions = transactions.filter(transaction => {
-    // Parse the price string back to a number for comparison
-    const priceNum = Number(transaction.price.replace(/,/g, ''));
-    return priceNum >= minValue;
-  });
-  
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.1
-      }
+    let timer
+    const fetchSummary = async () => {
+      try {
+        setLoading(true)
+        const res = await fetch('/api/dashboard/summary', { cache: 'no-store' })
+        const json = await res.json()
+        if (res.ok) {
+          const recent = json.recent || []
+          setTransactions(recent.map(r => ({
+            id: r.transaction_hash || `${r.time}-${r.coin}-${r.usd_value}`,
+            time: new Date(r.time).toLocaleTimeString(),
+            coin: r.coin || '—',
+            action: r.action || 'TRANSFER',
+            blockchain: r.blockchain || '—',
+            amount: formatNumber(Math.max(1, Math.floor((r.usd_value || 0) / 1000))),
+            price: formatNumber(Math.floor(r.usd_value || 0)),
+            usdPrice: formatNumber(Math.max(1, Math.floor((r.usd_value || 0) / 10))),
+          })))
+          setTopBuys(json.topBuys || [])
+          setTopSells(json.topSells || [])
+          setBlockchainData(json.blockchainVolume || { labels: [], data: [] })
+          setLastUpdate('just now')
+        }
+      } catch {}
+      finally { setLoading(false) }
     }
-  };
-  
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1
+    const pollAlgo = async () => {
+      try {
+        const res = await fetch('/api/health/algorithm', { cache: 'no-store' })
+        const j = await res.json()
+        if (res.ok) setAlgoActive(Boolean(j.active))
+      } catch {}
     }
-  };
-  
+    fetchSummary(); pollAlgo()
+    timer = setInterval(() => { fetchSummary(); pollAlgo() }, 15000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const filteredTransactions = transactions.filter(t => {
+    const priceNum = Number(String(t.price).replace(/,/g, ''))
+    return priceNum >= minValue
+  })
+
+  const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { when: 'beforeChildren', staggerChildren: 0.1 } } };
+  const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
+
   const handleMinValueChange = (e) => {
-    // Convert to number and back to string to remove leading zeros
-    const value = e.target.value === '' ? '' : Number(e.target.value);
-    setMinValue(value);
+    const value = e.target.value === '' ? '' : Number(e.target.value)
+    setMinValue(value)
   };
-  
+
   return (
     <DashboardContainer>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <PageHeader title="Real-Time" accentWord="Dashboard">
           <FilterContainer>
             <FilterGroup>
               <label htmlFor="min-value">Minimum Transaction Value ($)</label>
-              <input
-                id="min-value"
-                type="number"
-                min="0"
-                step="1000"
-                value={minValue}
-                onChange={handleMinValueChange}
-                placeholder="Enter minimum value"
-              />
+              <input id="min-value" type="number" min="0" step="1000" value={minValue} onChange={handleMinValueChange} placeholder="Enter minimum value" />
             </FilterGroup>
+            <StatusBadge active={algoActive}>
+              <Dot /> {algoActive ? 'Algorithm Active' : 'Algorithm Not Active'}
+            </StatusBadge>
           </FilterContainer>
         </PageHeader>
       </motion.div>
-      
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
         <IncomingDataSection>
           <IncomingDataHeader>
-            <h2>
-              Incoming Data
-            </h2>
+            <h2>Incoming Data</h2>
             <span>Updated {lastUpdate}</span>
           </IncomingDataHeader>
-          
-          <TransactionTable>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Amount</th>
-                <th>Action</th>
-                <th>Blockchain</th>
-                <th>Price per Coin</th>
-                <th className="price">Total Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {filteredTransactions.length > 0 ? (
-                  filteredTransactions.map(transaction => (
-                    <motion.tr
-                      key={transaction.id}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit={{ opacity: 0, height: 0 }}
-                    >
-                      <td className="time">{transaction.time}</td>
-                      <td className="amount">{transaction.amount} {transaction.coin}</td>
-                      <td>
-                        <span className={`action-${transaction.action.toLowerCase()}`}>
-                          {transaction.action}
-                        </span>
-                      </td>
-                      <td>{transaction.blockchain}</td>
-                      <td style={{ textAlign: 'right' }}>${transaction.usdPrice}</td>
-                      <td className="price">${transaction.price}</td>
-                    </motion.tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
-                      No transactions match the current minimum value. Try lowering the minimum value.
-                    </td>
-                  </tr>
-                )}
-              </AnimatePresence>
-            </tbody>
-          </TransactionTable>
-        </IncomingDataSection>
-      </motion.div>
-      
-      <GridContainer>
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <StatsCard>
-            <h2>
-              Top % of Buys
-            </h2>
-            <table>
+          {loading ? (
+            <p style={{ color: 'var(--text-secondary)' }}>Loading…</p>
+          ) : (
+            <TransactionTable>
               <thead>
                 <tr>
-                  <th>Coin</th>
-                  <th>% of Buys</th>
+                  <th>Time</th>
+                  <th>Token</th>
+                  <th>Amount</th>
+                  <th>Action</th>
+                  <th>Blockchain</th>
+                  <th>Price per Coin</th>
+                  <th>Total Value</th>
                 </tr>
               </thead>
               <tbody>
+                <AnimatePresence>
+                  {filteredTransactions.length > 0 ? (
+                    filteredTransactions.map(transaction => (
+                      <motion.tr key={transaction.id} variants={itemVariants} initial="hidden" animate="visible" exit={{ opacity: 0, height: 0 }}>
+                        <td className="time">{transaction.time}</td>
+                        <td className="token">{transaction.coin ? (<Link href={`/token/${encodeURIComponent(transaction.coin)}`}>{transaction.coin}</Link>) : '—'}</td>
+                        <td className="amount">{transaction.amount}</td>
+                        <td><span className={`action-${transaction.action.toLowerCase() || 'transfer'}`}>{transaction.action}</span></td>
+                        <td>{transaction.blockchain}</td>
+                        <td className="price">${transaction.usdPrice}</td>
+                        <td className="price">${transaction.price}</td>
+                      </motion.tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>No transactions match the current minimum value. Try lowering the minimum value.</td></tr>
+                  )}
+                </AnimatePresence>
+              </tbody>
+            </TransactionTable>
+          )}
+        </IncomingDataSection>
+      </motion.div>
+
+      <GridContainer>
+        <motion.div variants={containerVariants} initial="hidden" animate="visible">
+          <StatsCard>
+            <h2>Top % of Buys</h2>
+            <table>
+              <thead><tr><th>Coin</th><th>%</th></tr></thead>
+              <tbody>
                 {topBuys.map((item, index) => (
-                  <motion.tr
-                    key={`buy-${item.coin}-${index}`}
-                    variants={itemVariants}
-                  >
+                  <motion.tr key={`buy-${item.coin}-${index}`} variants={itemVariants}>
                     <td>{item.coin}</td>
                     <td className="percentage">{item.percentage.toFixed(1)}%</td>
                   </motion.tr>
@@ -467,29 +284,15 @@ const Dashboard = () => {
             </table>
           </StatsCard>
         </motion.div>
-        
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
+
+        <motion.div variants={containerVariants} initial="hidden" animate="visible">
           <StatsCard>
-            <h2>
-              Top % of Sells
-            </h2>
+            <h2>Top % of Sells</h2>
             <table>
-              <thead>
-                <tr>
-                  <th>Coin</th>
-                  <th>% of Sells</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Coin</th><th>%</th></tr></thead>
               <tbody>
                 {topSells.map((item, index) => (
-                  <motion.tr
-                    key={`sell-${item.coin}-${index}`}
-                    variants={itemVariants}
-                  >
+                  <motion.tr key={`sell-${item.coin}-${index}`} variants={itemVariants}>
                     <td>{item.coin}</td>
                     <td className="percentage">{item.percentage.toFixed(1)}%</td>
                   </motion.tr>
@@ -499,6 +302,34 @@ const Dashboard = () => {
           </StatsCard>
         </motion.div>
       </GridContainer>
+
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
+        <DashboardCard>
+          <h2>Transaction Volume by Blockchain</h2>
+          <div style={{ minHeight: '220px' }}>
+            {blockchainData.labels.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No data</p>
+            ) : (
+              <BarsContainer>
+                {blockchainData.labels.map((label, i) => {
+                  const value = Number(blockchainData.data[i] || 0)
+                  const max = Math.max(...blockchainData.data.map(Number), 1)
+                  const pct = Math.max(0, (value / max) * 100)
+                  return (
+                    <BarRow key={label}>
+                      <div style={{ color: 'var(--text-secondary)' }}>{label}</div>
+                      <BarTrack>
+                        <BarFill style={{ width: `${pct}%` }} />
+                      </BarTrack>
+                      <div style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{value}</div>
+                    </BarRow>
+                  )
+                })}
+              </BarsContainer>
+            )}
+          </div>
+        </DashboardCard>
+      </motion.div>
     </DashboardContainer>
   );
 };

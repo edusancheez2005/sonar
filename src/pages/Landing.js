@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/logo2.png';
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient';
 
 // Styled components
 const LandingContainer = styled.div`
@@ -31,73 +31,28 @@ const NavBar = styled.nav`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10000;
-  background: ${props => props.scrolled ? 'var(--background-card)' : 'rgba(10, 22, 33, 0.7)'};
-  backdrop-filter: blur(10px);
-  box-shadow: ${props => props.scrolled ? '0 4px 10px rgba(0, 0, 0, 0.3)' : 'none'};
-  transition: all 0.3s ease;
-  border-bottom: ${props => props.scrolled ? '1px solid var(--secondary)' : 'none'};
+  padding: 1.2rem 2rem;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
+  background: var(--background-dark);
+  border-bottom: 1px solid var(--secondary);
 `;
 
 const Logo = styled.div`
-  display: flex;
-  align-items: center;
-  
-  img {
-    height: 80px;
-    width: auto;
-    object-fit: contain;
-    object-position: center;
-    transition: height 0.3s ease;
-  }
+  display: flex; align-items: center;
+  img { height: 80px; width: auto; object-fit: contain; object-position: center; transition: height 0.3s ease; }
 `;
 
 const NavLinks = styled.div`
-  display: flex;
-  gap: 2rem;
-  
-  a {
-    color: var(--text-primary);
-    font-weight: 500;
-    font-size: 1.1rem;
-    text-decoration: none;
-    transition: color 0.3s ease;
-    position: relative;
-    
-    &:after {
-      content: '';
-      position: absolute;
-      left: 0;
-      bottom: -5px;
-      width: 100%;
-      height: 3px;
-      background-color: var(--primary);
-      transform: scaleX(0);
-      transition: transform 0.3s ease;
-    }
-    
-    &:hover {
-      color: var(--primary);
-    }
-    
-    &:hover:after {
-      transform: scaleX(1);
-    }
-  }
-  
-  @media (max-width: 768px) {
-    display: none;
-  }
+  display: flex; gap: 2rem;
+  a { color: var(--text-primary); font-weight: 500; font-size: 1.05rem; text-decoration: none; transition: color 0.3s ease; position: relative; }
+  a:after { content: ''; position: absolute; left: 0; bottom: -5px; width: 100%; height: 3px; background-color: var(--primary); transform: scaleX(0); transition: transform 0.3s ease; }
+  a:hover { color: var(--primary); }
+  a:hover:after { transform: scaleX(1); }
+  @media (max-width: 768px) { display: none; }
 `;
 
 const HeroContent = styled.div`
-  max-width: 800px;
-  z-index: 5;
+  max-width: 800px; z-index: 5;
 `;
 
 const HeroTitle = styled(motion.h1)`
@@ -424,6 +379,19 @@ const NavLink = styled(NavButton)`
   /* Inherits all styles from NavButton */
 `;
 
+// New: Login button styled like the site Logout button
+const LoginButton = styled.button`
+  background: none;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  &:hover { background-color: var(--primary); color: #fff; }
+`;
+
 // Add back the modal components
 const Modal = styled(motion.div)`
   position: fixed;
@@ -519,6 +487,95 @@ const ButtonContainer = styled.div`
   }
 `;
 
+// New Orca 2.0 section
+const AdvisorSection = styled.section`
+  margin: 4rem auto 0; padding: 3rem 1.5rem; max-width: 1100px; position: relative;
+`;
+
+const AdvisorCard = styled.div`
+  background: radial-gradient(800px 400px at 10% -10%, rgba(155,89,182,0.25), transparent 60%),
+              radial-gradient(700px 350px at 110% 20%, rgba(241,196,15,0.15), transparent 60%),
+              linear-gradient(180deg, #0d2134 0%, #0a1621 100%);
+  border: 1px solid rgba(155,89,182,0.25);
+  border-radius: 12px; padding: 2rem; text-align: center;
+`;
+
+const AdvisorBadge = styled(motion.div)`
+  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.85rem;
+  border-radius: 999px; font-weight: 600; letter-spacing: 0.4px;
+  color: #f1c40f; background: rgba(241,196,15,0.15); border: 1px solid rgba(241,196,15,0.35);
+`;
+
+const AdvisorTitle = styled(motion.h2)`
+  font-size: 2.2rem; margin: 0.75rem 0 0.25rem;
+  background: linear-gradient(90deg, #9b59b6 0%, #f1c40f 50%, #36a6ba 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+`;
+
+const AdvisorSub = styled(motion.p)`
+  color: var(--text-secondary); margin: 0.5rem 0 1rem; font-size: 1.05rem;
+`;
+
+const WaitlistForm = styled(motion.form)`
+  display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.75rem; flex-wrap: wrap;
+  input { background: linear-gradient(180deg, rgba(13,33,52,1), rgba(10,22,33,1));
+          color: var(--text-primary); border: 1px solid var(--secondary);
+          padding: 0.7rem 0.9rem; border-radius: 999px; min-width: 260px; outline: none; }
+  input:focus { border-color: #9b59b6; box-shadow: 0 0 0 3px rgba(155,89,182,0.2); }
+  button { background: linear-gradient(90deg, #9b59b6, #f1c40f);
+           color: #0a1621; border: none; padding: 0.7rem 1.1rem; border-radius: 999px; font-weight: 600; }
+  button:hover { filter: brightness(1.05); transform: translateY(-1px); }
+`;
+
+const PillButton = styled.button`
+  padding: 0.7rem 1.1rem; border-radius: 999px; border: 1px solid var(--primary);
+  background: none; color: var(--primary); font-weight: 600; letter-spacing: 0.2px; cursor: pointer;
+  transition: all 0.25s ease; display: inline-flex; align-items: center; justify-content: center;
+  &:hover { background: var(--primary); color: #0a1621; box-shadow: 0 6px 14px rgba(54,166,186,0.18); transform: translateY(-1px); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+`;
+
+const PrimaryPill = styled(PillButton)`
+  background: linear-gradient(90deg, var(--primary), #36a6ba);
+  color: #0a1621;
+  border-color: transparent;
+  &:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 8px 18px rgba(54,166,186,0.22); }
+`;
+
+// Toasts
+const ToastWrap = styled.div`
+  position: fixed; inset: 0; z-index: 10001;
+  display: flex; align-items: center; justify-content: center;
+`;
+
+const ToastCard = styled.div`
+  min-width: 320px; max-width: 460px;
+  padding: 1rem 1.1rem; border-radius: 14px;
+  display: grid; grid-template-columns: 24px 1fr auto; gap: 0.7rem; align-items: center;
+  border: 1px solid var(--secondary);
+  background: var(--background-dark);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+`;
+
+const ToastIcon = ({ type }) => (
+  type === 'success' ? (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#2ecc71"><path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"/></svg>
+  ) : (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#e74c3c"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+  )
+);
+
+const ToastText = styled.div`
+  color: var(--text-primary);
+  b { color: var(--text-primary); }
+  small { display: block; color: var(--text-secondary); margin-top: 2px; }
+`;
+
+const ToastClose = styled.button`
+  background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 16px;
+  &:hover { color: var(--text-primary); }
+`;
+
 const Landing = () => {
   const navigate = useNavigate();
   // Add back the state variables for modal functionality
@@ -530,7 +587,43 @@ const Landing = () => {
     password: '',
     confirmPassword: '',
   });
-  
+  const [waitEmail, setWaitEmail] = useState('');
+  const [waitMsg, setWaitMsg] = useState('');
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [signupError, setSignupError] = useState('');
+  const [signupInfo, setSignupInfo] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
+  const [lastSignupEmail, setLastSignupEmail] = useState('');
+  const [resendAvailable, setResendAvailable] = useState(false);
+
+  // Toast state
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastType, setToastType] = useState('success');
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const showToast = (msg, type = 'success') => {
+    setToastMsg(msg);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  useEffect(() => {
+    if (!toastVisible) return;
+    const t = setTimeout(() => setToastVisible(false), 4500);
+    return () => clearTimeout(t);
+  }, [toastVisible]);
+
+  // cooldown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
   // Add scroll event listener
   useEffect(() => {
     const handleScroll = () => {
@@ -555,26 +648,134 @@ const Landing = () => {
   };
   
   // Update login function to handle form submission
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     if (e) e.preventDefault();
-    localStorage.setItem('isAuthenticated', 'true');
-    if (window.sonarLogin) {
-      window.sonarLogin();
+    setLoginError('');
+    setLoginLoading(true);
+    try {
+      const sb = supabaseBrowser();
+      const { data, error } = await sb.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+      if (error) throw error;
+      const user = data?.user;
+      if (user && !user.email_confirmed_at) {
+        await sb.auth.signOut();
+        throw new Error('Please verify your email before logging in.');
+      }
+      showToast('Welcome back!', 'success');
+      setShowLoginModal(false);
+      navigate('/dashboard');
+    } catch (err) {
+      const msg = (err && typeof err.message === 'string') ? err.message : (typeof err === 'string' ? err : (()=>{ try { return JSON.stringify(err) } catch { return '' } })())
+      setLoginError(msg || 'Login failed');
+      showToast(msg || 'Login failed', 'error');
+    } finally {
+      setLoginLoading(false);
     }
-    setShowLoginModal(false);
-    navigate('/dashboard');
   };
   
   // Add signup handler
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    // Simulate successful registration
-    console.log('Signup with:', formData);
-    // Close signup modal
-    setShowSignupModal(false);
-    // Show a success message and redirect to login
-    alert('Registration successful! Please log in with your credentials.');
-    setShowLoginModal(true);
+    setSignupError('');
+    setSignupInfo('');
+    setResendMsg('');
+    setResendAvailable(false);
+    if (!formData.email || !formData.password) {
+      setSignupError('Email and password are required');
+      showToast('Email and password are required', 'error');
+      return;
+    }
+    if (formData.password.length < 8) {
+      setSignupError('Password must be at least 8 characters');
+      showToast('Password must be at least 8 characters', 'error');
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setSignupError('Passwords do not match');
+      showToast('Passwords do not match', 'error');
+      return;
+    }
+    try {
+      setSignupLoading(true);
+      const sb = supabaseBrowser();
+      const redirectTo = (typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || '')) + '/auth/callback';
+      const { error } = await sb.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: { emailRedirectTo: redirectTo },
+      });
+      if (error) throw error;
+      setLastSignupEmail(formData.email);
+      const sentMsg = `Verification email sent to ${formData.email}.`;
+      setSignupInfo('Check your inbox and follow the link to verify your email.');
+      showToast(sentMsg, 'success');
+      setShowSignupModal(false);
+      setShowLoginModal(true);
+    } catch (err) {
+      const raw = (err && typeof err.message === 'string') ? err.message : (typeof err === 'string' ? err : (()=>{ try { return JSON.stringify(err) } catch { return '' } })())
+      const lower = (raw || '').toLowerCase();
+      if (lower.includes('rate limit') || lower.includes('too many')) {
+        setLastSignupEmail(formData.email);
+        setResendCooldown(60);
+        setResendAvailable(true);
+        const m = 'We’ve sent too many emails recently. Please wait a moment or resend.';
+        setSignupError(m);
+        showToast(m, 'error');
+      } else if (lower.includes('already registered')) {
+        setLastSignupEmail(formData.email);
+        setResendAvailable(true);
+        const m = 'This email is already registered. Resend verification or try logging in.';
+        setSignupError(m);
+        showToast(m, 'error');
+      } else {
+        setSignupError(raw || 'Signup failed');
+        showToast(raw || 'Signup failed', 'error');
+      }
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    setResendMsg('');
+    setSignupError('');
+    if (!lastSignupEmail) {
+      const m = 'Enter your email to resend the verification.';
+      setSignupError(m);
+      showToast(m, 'error');
+      return;
+    }
+    if (resendCooldown > 0) return;
+    try {
+      setResendLoading(true);
+      const sb = supabaseBrowser();
+      const redirectTo = (typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || '')) + '/auth/callback';
+      const { error } = await sb.auth.resend({ type: 'signup', email: lastSignupEmail, options: { emailRedirectTo: redirectTo } });
+      if (error) throw error;
+      const m = `Verification email resent to ${lastSignupEmail}.`;
+      setResendMsg('Verification email resent. Please check your inbox.');
+      showToast(m, 'success');
+      setResendCooldown(60);
+    } catch (err) {
+      const msg = (err && typeof err.message === 'string') ? err.message : (typeof err === 'string' ? err : (()=>{ try { return JSON.stringify(err) } catch { return '' } })())
+      setSignupError(msg || 'Resend failed');
+      showToast(msg || 'Resend failed', 'error');
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  const joinWaitlist = async (e) => {
+    e.preventDefault(); setWaitMsg('');
+    try {
+      const res = await fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: waitEmail }) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed');
+      setWaitMsg('You are on the Orca 2.0 waitlist!'); setWaitEmail('');
+    } catch (err) { setWaitMsg(err.message || 'Something went wrong'); }
   };
   
   // Animation variants
@@ -623,11 +824,11 @@ const Landing = () => {
   
   return (
     <LandingContainer>
-      <NavBar scrolled={scrolled}>
-        <Logo scrolled={scrolled}>
-          <img src={logo} alt="Sonar Logo" />
+      <NavBar>
+        <Logo>
+          <img src={`${process.env.PUBLIC_URL}/assets/logo2.png`} alt="Sonar Logo" />
         </Logo>
-        <NavLinks scrolled={scrolled}>
+        <NavLinks>
           <NavLink onClick={() => {
             const element = document.getElementById('about');
             const navbarHeight = 100; // approximate height of navbar
@@ -642,19 +843,6 @@ const Landing = () => {
             About
           </NavLink>
           <NavLink onClick={() => {
-            const element = document.getElementById('pricing');
-            const navbarHeight = 100; // approximate height of navbar
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-            
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth'
-            });
-          }}>
-            Pricing
-          </NavLink>
-          <NavLink onClick={() => {
             const element = document.getElementById('screenshots');
             const navbarHeight = 100; // approximate height of navbar
             const elementPosition = element.getBoundingClientRect().top;
@@ -667,9 +855,22 @@ const Landing = () => {
           }}>
             Results
           </NavLink>
-          <NavButton onClick={() => setShowLoginModal(true)}>
+          <NavLink onClick={() => {
+            const element = document.getElementById('advisor');
+            const navbarHeight = 100; // approximate height of navbar
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+            
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }}>
+            Orca 2.0
+          </NavLink>
+          <LoginButton onClick={() => setShowLoginModal(true)}>
             Login
-          </NavButton>
+          </LoginButton>
         </NavLinks>
       </NavBar>
       
@@ -955,6 +1156,25 @@ const Landing = () => {
         </PricingPlans>
       </PricingSection>
       
+      <AdvisorSection id="advisor">
+        <AdvisorCard>
+          <AdvisorBadge initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}>
+            <span role="img" aria-label="orca">🐋</span> Orca 2.0 — AI Crypto Advisor
+          </AdvisorBadge>
+          <AdvisorTitle initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
+            Coming Soon: Follow the Pods with SONAR Precision
+          </AdvisorTitle>
+          <AdvisorSub initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45, delay: 0.15 }}>
+            Personalized ideas from whale flows, risk-managed entries, and instant alerts. Join the waitlist to get early access.
+          </AdvisorSub>
+          <WaitlistForm onSubmit={joinWaitlist} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
+            <input type="email" placeholder="Join the Orca 2.0 waitlist — your@email.com" value={waitEmail} onChange={e=>setWaitEmail(e.target.value)} required />
+            <button type="submit">Join Waitlist</button>
+          </WaitlistForm>
+          {waitMsg && <p style={{ marginTop: 10, color: 'var(--text-secondary)' }}>{waitMsg}</p>}
+        </AdvisorCard>
+      </AdvisorSection>
+
       {showLoginModal && (
         <Modal
           initial={{ opacity: 0 }}
@@ -990,12 +1210,13 @@ const Landing = () => {
                   required
                 />
               </FormGroup>
+              {loginError && <p style={{ color: 'tomato', margin: 0 }}>{loginError}</p>}
               <ButtonContainer>
-                <button type="button" className="cancel" onClick={() => setShowLoginModal(false)}>
+                <PillButton type="button" onClick={() => setShowLoginModal(false)}>
                   Cancel
-                </button>
-                <button type="submit" className="submit">
-                  Login
+                </PillButton>
+                <button type="submit" className="submit" disabled={loginLoading}>
+                  {loginLoading ? 'Logging in…' : 'Login'}
                 </button>
               </ButtonContainer>
               <p style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -1035,7 +1256,7 @@ const Landing = () => {
                   id="signup-email"
                   name="email"
                   value={formData.email}
-                  onChange={handleFormChange}
+                  onChange={(e)=>{ setFormData({ ...formData, email: e.target.value }); setLastSignupEmail(e.target.value); }}
                   required
                 />
               </FormGroup>
@@ -1046,44 +1267,54 @@ const Landing = () => {
                   id="signup-password"
                   name="password"
                   value={formData.password}
-                  onChange={handleFormChange}
+                  onChange={(e)=> setFormData({ ...formData, password: e.target.value })}
                   required
                 />
               </FormGroup>
               <FormGroup>
-                <label htmlFor="confirm-password">Confirm Password</label>
+                <label htmlFor="confirm-password">Retype Password</label>
                 <input
                   type="password"
                   id="confirm-password"
                   name="confirmPassword"
                   value={formData.confirmPassword}
-                  onChange={handleFormChange}
+                  onChange={(e)=> setFormData({ ...formData, confirmPassword: e.target.value })}
                   required
                 />
               </FormGroup>
-              <ButtonContainer>
-                <button type="button" className="cancel" onClick={() => setShowSignupModal(false)}>
+              {signupError && <p style={{ color: 'tomato', margin: 0 }}>{signupError}</p>}
+              {signupInfo && <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{signupInfo}</p>}
+              {resendMsg && <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{resendMsg}</p>}
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                <PillButton type="button" onClick={() => setShowSignupModal(false)}>
                   Cancel
-                </button>
-                <button type="submit" className="submit">
-                  Sign Up
-                </button>
-              </ButtonContainer>
-              <p style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                Already have an account?{' '}
-                <NavButton
-                  style={{ color: 'var(--primary)', display: 'inline', padding: 0 }}
-                  onClick={() => {
-                    setShowSignupModal(false);
-                    setShowLoginModal(true);
-                  }}
-                >
-                  Login
-                </NavButton>
-              </p>
+                </PillButton>
+                <PrimaryPill type="submit" disabled={signupLoading}>
+                  {signupLoading ? 'Creating…' : 'Sign Up'}
+                </PrimaryPill>
+                {resendAvailable && (
+                  <PillButton type="button" disabled={resendLoading || resendCooldown > 0} onClick={resendVerification}>
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : (resendLoading ? 'Resending…' : 'Resend email')}
+                  </PillButton>
+                )}
+              </div>
             </Form>
           </FormContainer>
         </Modal>
+      )}
+
+      {/* Toasts */}
+      {toastVisible && (
+        <ToastWrap>
+          <ToastCard $type={toastType} role="status" aria-live="polite">
+            <ToastIcon type={toastType} />
+            <ToastText>
+              {toastMsg}
+              {toastType === 'success' && <small>It can take a few seconds to arrive.</small>}
+            </ToastText>
+            <ToastClose onClick={() => setToastVisible(false)}>×</ToastClose>
+          </ToastCard>
+        </ToastWrap>
       )}
     </LandingContainer>
   );
