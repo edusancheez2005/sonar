@@ -822,6 +822,21 @@ const Landing = () => {
     }
   };
   
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('login') === '1' || params.has('verified')) {
+        setShowLoginModal(true)
+      }
+      const req = params.get('required')
+      if (req) {
+        setToastType('error')
+        setToastMsg('Please log in to access that page.')
+        setToastVisible(true)
+      }
+    } catch {}
+  }, [])
+  
   return (
     <LandingContainer>
       <NavBar>

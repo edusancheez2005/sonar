@@ -1,5 +1,6 @@
 import React from 'react'
 import News from '@/src/views/News'
+import AuthGuard from '@/app/components/AuthGuard'
 
 export const metadata = {
   title: 'Crypto News — Market Moves, Whale Impact, Token Trends',
@@ -8,5 +9,9 @@ export const metadata = {
 }
 
 export default function NewsPage() {
-  return <News />
+  return (
+    <AuthGuard>
+      <News />
+    </AuthGuard>
+  )
 }

@@ -11,7 +11,7 @@ export async function GET(request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     )
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (error) return NextResponse.redirect(new URL('/?verified=0', request.url))
+    if (error) return NextResponse.redirect(new URL('/?login=1&verified=0', request.url))
   }
-  return NextResponse.redirect(new URL('/dashboard?verified=1', request.url))
+  return NextResponse.redirect(new URL('/?login=1&verified=1', request.url))
 } 

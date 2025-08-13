@@ -1,5 +1,6 @@
 import React from 'react'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import AuthGuard from '@/app/components/AuthGuard'
 
 export async function generateMetadata({ params }) {
   const addr = decodeURIComponent(params.address)
@@ -50,47 +51,49 @@ export default async function WhaleProfile({ params }) {
     .slice(0, 10)
 
   return (
-    <main className="container" style={{ padding: '2rem' }}>
-      <BreadcrumbJsonLd addr={addr} />
-      <div className="card">
-        <h1>Whale {addr.slice(0, 6)}…{addr.slice(-4)}</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Net Flow (24h): ${Math.round(netUsd).toLocaleString()}</p>
-        <h2>Top Tokens (by net flow)</h2>
-        <table>
-          <thead><tr><th>Token</th><th style={{ textAlign: 'right' }}>Net USD</th></tr></thead>
-          <tbody>
-            {topTokens.map(t => (
-              <tr key={t.token}>
-                <td><a href={`/token/${encodeURIComponent(t.token)}`}>{t.token}</a></td>
-                <td style={{ textAlign: 'right' }}>${Math.round(Number(t.net)).toLocaleString()}</td>
+    <AuthGuard>
+      <main className="container" style={{ padding: '2rem' }}>
+        <BreadcrumbJsonLd addr={addr} />
+        <div className="card">
+          <h1>Whale {addr.slice(0, 6)}…{addr.slice(-4)}</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>Net Flow (24h): ${Math.round(netUsd).toLocaleString()}</p>
+          <h2>Top Tokens (by net flow)</h2>
+          <table>
+            <thead><tr><th>Token</th><th style={{ textAlign: 'right' }}>Net USD</th></tr></thead>
+            <tbody>
+              {topTokens.map(t => (
+                <tr key={t.token}>
+                  <td><a href={`/token/${encodeURIComponent(t.token)}`}>{t.token}</a></td>
+                  <td style={{ textAlign: 'right' }}>${Math.round(Number(t.net)).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <h2>Recent Trades</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Token</th>
+                <th>Side</th>
+                <th style={{ textAlign: 'right' }}>USD</th>
+                <th style={{ textAlign: 'right' }}>Score</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <h2>Recent Trades</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Token</th>
-              <th>Side</th>
-              <th style={{ textAlign: 'right' }}>USD</th>
-              <th style={{ textAlign: 'right' }}>Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(data || []).map(t => (
-              <tr key={t.transaction_hash}>
-                <td>{new Date(t.timestamp).toLocaleString()}</td>
-                <td><a href={`/token/${encodeURIComponent(t.token_symbol || '-')}`}>{t.token_symbol || '-'}</a></td>
-                <td>{t.classification}</td>
-                <td style={{ textAlign: 'right' }}>${Math.round(Number(t.usd_value || 0)).toLocaleString()}</td>
-                <td style={{ textAlign: 'right' }}>{t.whale_score ?? '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </main>
+            </thead>
+            <tbody>
+              {(data || []).map(t => (
+                <tr key={t.transaction_hash}>
+                  <td>{new Date(t.timestamp).toLocaleString()}</td>
+                  <td><a href={`/token/${encodeURIComponent(t.token_symbol || '-')}`}>{t.token_symbol || '-'}</a></td>
+                  <td>{t.classification}</td>
+                  <td style={{ textAlign: 'right' }}>${Math.round(Number(t.usd_value || 0)).toLocaleString()}</td>
+                  <td style={{ textAlign: 'right' }}>{t.whale_score ?? '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </AuthGuard>
   )
 } 

@@ -8,6 +8,7 @@ const siteUrl = 'https://www.sonartracker.io'
 const ogImage = '/screenshots/stats-dashboard.png'
 
 export const metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'Sonar Tracker — Real‑Time Whale Transactions & Crypto Analytics',
   description: 'Track crypto whales in real time: live transactions, token leaderboards, whale alerts, and on‑chain analytics across top blockchains.',
   alternates: { canonical: siteUrl },

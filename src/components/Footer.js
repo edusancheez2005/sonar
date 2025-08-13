@@ -123,7 +123,7 @@ const Footer = () => {
           <ul>
             <li><a href="#">About Us</a></li>
             <li><a href="#">Careers</a></li>
-            <li><a href="#">Blog</a></li>
+            <li><a href="/blog">Blog</a></li>
             <li><a href="#">Press Kit</a></li>
             <li><a href="#">Contact</a></li>
           </ul>
@@ -144,7 +144,7 @@ const Footer = () => {
         <nav>
           <a href="/privacy">Privacy Policy</a>
           <a href="/terms">Terms of Service</a>
-          <a href="#">Cookies</a>
+          <a href="/faq">FAQ</a>
         </nav>
       </BottomBar>
     </FooterContainer>
