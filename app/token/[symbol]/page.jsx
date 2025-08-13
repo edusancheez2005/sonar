@@ -5,7 +5,29 @@ export const revalidate = 15
 
 export async function generateMetadata({ params }) {
   const symbol = decodeURIComponent(params.symbol)
-  return { title: `Token — ${symbol}` }
+  const title = `Token ${symbol} — Whale Trades, Volume & Net Flow`
+  const description = `Live ${symbol} whale transactions, 24h volume, net flow, buy/sell counts, unique whales, and chain split.`
+  const url = `https://www.sonartracker.io/token/${encodeURIComponent(symbol)}`
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url },
+    twitter: { title, description },
+  }
+}
+
+function BreadcrumbJsonLd({ symbol }) {
+  const json = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://sonartracker.io/' },
+      { '@type': 'ListItem', position: 2, name: 'Tokens', item: 'https://sonartracker.io/tokens' },
+      { '@type': 'ListItem', position: 3, name: symbol, item: `https://sonartracker.io/token/${encodeURIComponent(symbol)}` },
+    ],
+  }
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }} />
 }
 
 function Badge({ side }) {
@@ -45,6 +67,7 @@ export default async function TokenDetail({ params, searchParams }) {
 
   return (
     <main className="container" style={{ padding: '2rem' }}>
+      <BreadcrumbJsonLd symbol={symbol} />
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <h1 style={{ margin: 0 }}>{symbol}</h1>

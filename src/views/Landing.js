@@ -940,8 +940,7 @@ const Landing = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
-                  localStorage.setItem('isAuthenticated', 'true');
-                  navigate('/dashboard');
+                  setShowLoginModal(true);
                 }}
               >
                 Get Started
@@ -951,8 +950,7 @@ const Landing = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
-                  localStorage.setItem('isAuthenticated', 'true');
-                  navigate('/dashboard');
+                  setShowLoginModal(true);
                 }}
               >
                 Get Demo
@@ -1081,8 +1079,7 @@ const Landing = () => {
               whileHover={{ scale: 1.05 }} 
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                localStorage.setItem('isAuthenticated', 'true');
-                navigate('/dashboard');
+                setShowLoginModal(true);
               }}
             >
               Get Started
@@ -1114,8 +1111,7 @@ const Landing = () => {
               whileHover={{ scale: 1.05 }} 
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                localStorage.setItem('isAuthenticated', 'true');
-                navigate('/dashboard');
+                setShowLoginModal(true);
               }}
             >
               Get Started
@@ -1146,8 +1142,7 @@ const Landing = () => {
               whileHover={{ scale: 1.05 }} 
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                localStorage.setItem('isAuthenticated', 'true');
-                navigate('/dashboard');
+                setShowLoginModal(true);
               }}
             >
               Get Started

@@ -3,7 +3,25 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export async function generateMetadata({ params }) {
   const addr = decodeURIComponent(params.address)
-  return { title: `Whale — ${addr.slice(0, 6)}…${addr.slice(-4)}` }
+  const short = `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  const title = `Whale ${short} — Net Flow, Top Tokens & Trades`
+  const description = `Profile of whale ${short}: 24h net flow, top tokens by net USD, and recent large transactions.`
+  const url = `https://www.sonartracker.io/whale/${encodeURIComponent(addr)}`
+  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url }, twitter: { title, description } }
+}
+
+function BreadcrumbJsonLd({ addr }) {
+  const short = `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  const json = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.sonartracker.io/' },
+      { '@type': 'ListItem', position: 2, name: 'Whales', item: 'https://www.sonartracker.io/whales/leaderboard' },
+      { '@type': 'ListItem', position: 3, name: `Whale ${short}`, item: `https://www.sonartracker.io/whale/${encodeURIComponent(addr)}` },
+    ],
+  }
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }} />
 }
 
 export default async function WhaleProfile({ params }) {
@@ -33,6 +51,7 @@ export default async function WhaleProfile({ params }) {
 
   return (
     <main className="container" style={{ padding: '2rem' }}>
+      <BreadcrumbJsonLd addr={addr} />
       <div className="card">
         <h1>Whale {addr.slice(0, 6)}…{addr.slice(-4)}</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Net Flow (24h): ${Math.round(netUsd).toLocaleString()}</p>
