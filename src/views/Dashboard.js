@@ -169,15 +169,19 @@ const Dashboard = () => {
         const json = await res.json()
         if (res.ok) {
           const recent = json.recent || []
-          setTransactions(recent.map(r => ({
-            id: r.transaction_hash || `${r.time}-${r.coin}-${r.usd_value}`,
-            time: new Date(r.time).toLocaleTimeString(),
-            coin: r.coin || '—',
-            action: r.action || 'TRANSFER',
-            blockchain: r.blockchain || '—',
-            usdValue: formatNumber(Math.floor(r.usd_value || 0)),
-            hash: r.transaction_hash || '—',
-          })))
+          setTransactions(recent.map(r => {
+            const rawUsd = Math.floor(r.usd_value || 0)
+            return {
+              id: r.transaction_hash || `${r.time}-${r.coin}-${r.usd_value}`,
+              time: new Date(r.time).toLocaleTimeString(),
+              coin: r.coin || '—',
+              action: r.action || 'TRANSFER',
+              blockchain: r.blockchain || '—',
+              rawUsd,
+              usdValue: formatNumber(rawUsd),
+              hash: r.transaction_hash || '—',
+            }
+          }))
           setTopBuys(json.topBuys || [])
           setTopSells(json.topSells || [])
           setBlockchainData(json.blockchainVolume || { labels: [], data: [] })
@@ -199,8 +203,9 @@ const Dashboard = () => {
   }, [])
 
   const filteredTransactions = transactions.filter(t => {
-    const priceNum = Number(String(t.price).replace(/,/g, ''))
-    return priceNum >= minValue
+    const min = typeof minValue === 'number' ? minValue : Number(minValue || 0)
+    const usd = Number(t.rawUsd || 0)
+    return usd >= min
   })
 
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { when: 'beforeChildren', staggerChildren: 0.1 } } };
@@ -273,7 +278,7 @@ const Dashboard = () => {
       <GridContainer>
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
           <StatsCard>
-            <h2>Top % of Buys</h2>
+            <h2>Top % of Buys (24h)</h2>
             <table>
               <thead><tr><th>Coin</th><th>%</th></tr></thead>
               <tbody>
@@ -290,7 +295,7 @@ const Dashboard = () => {
 
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
           <StatsCard>
-            <h2>Top % of Sells</h2>
+            <h2>Top % of Sells (24h)</h2>
             <table>
               <thead><tr><th>Coin</th><th>%</th></tr></thead>
               <tbody>

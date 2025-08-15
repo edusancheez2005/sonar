@@ -13,8 +13,8 @@ export async function GET(req) {
   const side = (searchParams.get('side') || '').trim().toLowerCase()
   const chain = (searchParams.get('chain') || '').trim()
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
-  const limitRaw = parseInt(searchParams.get('limit') || '200', 10)
-  const limit = Math.min(Math.max(1, limitRaw), 200)
+  const limitRaw = parseInt(searchParams.get('limit') || '100', 10)
+  const limit = Math.min(Math.max(1, limitRaw), 100)
   const from = (page - 1) * limit
   const to = from + limit - 1
 

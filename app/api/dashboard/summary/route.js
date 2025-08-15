@@ -11,8 +11,9 @@ export async function GET() {
     .select('transaction_hash, timestamp, token_symbol, classification, blockchain, usd_value, from_address')
     .not('token_symbol', 'is', null)
     .not('token_symbol', 'ilike', 'unknown%')
+    .not('classification', 'ilike', 'transfer')
     .order('timestamp', { ascending: false })
-    .limit(20)
+    .limit(10)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -28,14 +29,15 @@ export async function GET() {
     from_address: t.from_address || null,
   }))
 
-  const limitAgg = 500
+  // Get data from last 24 hours only for buy/sell percentages
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const { data: aggData } = await supabaseAdmin
     .from('whale_transactions')
     .select('token_symbol, classification, usd_value, blockchain')
     .not('token_symbol', 'is', null)
     .not('token_symbol', 'ilike', 'unknown%')
+    .gte('timestamp', since24h)
     .order('timestamp', { ascending: false })
-    .limit(limitAgg)
 
   const byCoin = new Map()
   const byCoinBuyCounts = new Map()
