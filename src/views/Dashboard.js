@@ -115,6 +115,11 @@ const TransactionTable = styled.table`
   .action-buy { color: var(--buy-color); background-color: rgba(54, 166, 186, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
   .action-sell { color: var(--sell-color); background-color: rgba(231, 76, 60, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
   .action-transfer { color: var(--transfer-color); background-color: rgba(52, 152, 219, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
+  .hash { 
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
 `;
 
 const GridContainer = styled.div`
@@ -170,9 +175,8 @@ const Dashboard = () => {
             coin: r.coin || '—',
             action: r.action || 'TRANSFER',
             blockchain: r.blockchain || '—',
-            amount: formatNumber(Math.max(1, Math.floor((r.usd_value || 0) / 1000))),
-            price: formatNumber(Math.floor(r.usd_value || 0)),
-            usdPrice: formatNumber(Math.max(1, Math.floor((r.usd_value || 0) / 10))),
+            usdValue: formatNumber(Math.floor(r.usd_value || 0)),
+            hash: r.transaction_hash || '—',
           })))
           setTopBuys(json.topBuys || [])
           setTopSells(json.topSells || [])
@@ -237,11 +241,10 @@ const Dashboard = () => {
                 <tr>
                   <th>Time</th>
                   <th>Token</th>
-                  <th>Amount</th>
                   <th>Action</th>
                   <th>Blockchain</th>
-                  <th>Price per Coin</th>
-                  <th>Total Value</th>
+                  <th>USD Value</th>
+                  <th>Transaction</th>
                 </tr>
               </thead>
               <tbody>
@@ -251,15 +254,14 @@ const Dashboard = () => {
                       <motion.tr key={transaction.id} variants={itemVariants} initial="hidden" animate="visible" exit={{ opacity: 0, height: 0 }}>
                         <td className="time">{transaction.time}</td>
                         <td className="token">{transaction.coin ? (<Link href={`/token/${encodeURIComponent(transaction.coin)}`}>{transaction.coin}</Link>) : '—'}</td>
-                        <td className="amount">{transaction.amount}</td>
                         <td><span className={`action-${transaction.action.toLowerCase() || 'transfer'}`}>{transaction.action}</span></td>
                         <td>{transaction.blockchain}</td>
-                        <td className="price">${transaction.usdPrice}</td>
-                        <td className="price">${transaction.price}</td>
+                        <td className="price">${transaction.usdValue}</td>
+                        <td className="hash">{transaction.hash ? `${transaction.hash.slice(0,6)}...${transaction.hash.slice(-4)}` : '—'}</td>
                       </motion.tr>
                     ))
                   ) : (
-                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>No transactions match the current minimum value. Try lowering the minimum value.</td></tr>
+                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>No transactions match the current minimum value. Try lowering the minimum value.</td></tr>
                   )}
                 </AnimatePresence>
               </tbody>
