@@ -1,9 +1,5 @@
 {
   "/page": "app/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
   "/statistics/page": "app/statistics/page.js",
-  "/api/dashboard/summary/route": "app/api/dashboard/summary/route.js",
-  "/api/health/algorithm/route": "app/api/health/algorithm/route.js",
-  "/api/trades/chains/route": "app/api/trades/chains/route.js",
-  "/api/trades/route": "app/api/trades/route.js"
+  "/dashboard/page": "app/dashboard/page.js"
 }

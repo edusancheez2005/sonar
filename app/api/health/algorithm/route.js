@@ -15,7 +15,7 @@ export async function GET() {
 
   const lastTs = data && data[0]?.timestamp ? new Date(data[0].timestamp).getTime() : 0
   const now = Date.now()
-  const active = lastTs > 0 && (now - lastTs) <= 2 * 60 * 1000
+  const active = lastTs > 0 && (now - lastTs) <= 5 * 60 * 1000
 
   return NextResponse.json({ active, lastTs: lastTs || null })
 } 

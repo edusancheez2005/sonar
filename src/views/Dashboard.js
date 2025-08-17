@@ -115,6 +115,7 @@ const TransactionTable = styled.table`
   .action-buy { color: var(--buy-color); background-color: rgba(54, 166, 186, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
   .action-sell { color: var(--sell-color); background-color: rgba(231, 76, 60, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
   .action-transfer { color: var(--transfer-color); background-color: rgba(52, 152, 219, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
+  .action-defi { color: #ff8c00; background-color: rgba(255, 140, 0, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
   .hash { 
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     color: var(--text-secondary);
