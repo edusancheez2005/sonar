@@ -134,7 +134,7 @@ const Footer = () => {
             <li><a href="#">Help Center</a></li>
             <li><a href="#">Documentation</a></li>
             <li><a href="#">Community</a></li>
-            <li><a href="#">Pricing</a></li>
+            <li><a href="#pricing">Free Access</a></li>
             <li><a href="#">Status</a></li>
           </ul>
         </Column>

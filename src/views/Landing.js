@@ -1068,102 +1068,85 @@ const Landing = () => {
           transition={{ duration: 0.7 }}
           viewport={{ once: true, amount: 0.2 }}
         >
-          Pricing Plans
+          Currently Free to Use
         </motion.h2>
         
-        <PricingPlans>
-          <PricingCard
-            variants={pricingCardVariants}
-            initial="hidden"
-            whileInView="visible"
-            whileHover="hover"
-            viewport={{ once: true, amount: 0.1 }}
-          >
-            <h3>Basic</h3>
-            <div className="price">$19<span>/month</span></div>
-            <ul>
-              <li>Real-time market data</li>
-              <li>Transaction filtering</li>
-              <li>Basic statistics</li>
-              <li>Daily news updates</li>
-              <li>Email support</li>
-            </ul>
-            <Button 
-              className="primary" 
-              style={{ width: '100%' }}
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setShowLoginModal(true);
-              }}
-            >
-              Get Started
-            </Button>
-          </PricingCard>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          viewport={{ once: true, amount: 0.2 }}
+          style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}
+        >
+          <h3 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>🎉 Demo Phase - No Credit Card Required</h3>
+          <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.6' }}>
+            We're currently in our demo phase, offering full access to all features completely free. 
+            Experience the power of real-time whale tracking, advanced analytics, and AI insights without any cost.
+          </p>
           
-          <PricingCard
-            className="featured"
-            variants={pricingCardVariants}
-            initial="hidden"
-            whileInView="visible"
-            whileHover="hover"
-            viewport={{ once: true, amount: 0.1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <h3>Pro</h3>
-            <div className="price">$49<span>/month</span></div>
-            <ul>
-              <li>All Basic features</li>
-              <li>Advanced statistical tools</li>
-              <li>Custom alerts</li>
-              <li>Historical data (3 months)</li>
-              <li>API access</li>
-              <li>Priority support</li>
+          <div style={{ 
+            background: 'linear-gradient(135deg, var(--secondary), var(--background-card))', 
+            padding: '2rem', 
+            borderRadius: '15px',
+            border: '2px solid var(--primary)',
+            marginBottom: '2rem'
+          }}>
+            <h4 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>What You Get (100% Free):</h4>
+            <ul style={{ 
+              listStyle: 'none', 
+              padding: 0, 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+              gap: '1rem',
+              textAlign: 'left'
+            }}>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: 'var(--primary)' }}>✓</span> Real-time whale transaction monitoring
+              </li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: 'var(--primary)' }}>✓</span> Advanced filtering and analytics
+              </li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: 'var(--primary)' }}>✓</span> Multi-chain support
+              </li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: 'var(--primary)' }}>✓</span> Historical data access
+              </li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: 'var(--primary)' }}>✓</span> AI-powered insights
+              </li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: 'var(--primary)' }}>✓</span> Priority support
+              </li>
             </ul>
-            <Button 
-              className="primary" 
-              style={{ width: '100%' }}
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setShowLoginModal(true);
-              }}
-            >
-              Get Started
-            </Button>
-          </PricingCard>
+          </div>
           
-          <PricingCard
-            variants={pricingCardVariants}
-            initial="hidden"
-            whileInView="visible"
-            whileHover="hover"
-            viewport={{ once: true, amount: 0.1 }}
-            transition={{ delay: 0.4 }}
+          <Button 
+            className="primary" 
+            style={{ 
+              width: 'auto', 
+              padding: '1rem 2rem', 
+              fontSize: '1.2rem',
+              background: 'linear-gradient(135deg, var(--primary), #2ecc71)'
+            }}
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setShowLoginModal(true);
+            }}
           >
-            <h3>Enterprise</h3>
-            <div className="price">$99<span>/month</span></div>
-            <ul>
-              <li>All Pro features</li>
-              <li>Unlimited historical data</li>
-              <li>Advanced API access</li>
-              <li>Custom integrations</li>
-              <li>Dedicated account manager</li>
-              <li>24/7 premium support</li>
-            </ul>
-            <Button 
-              className="primary" 
-              style={{ width: '100%' }}
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setShowLoginModal(true);
-              }}
-            >
-              Get Started
-            </Button>
-          </PricingCard>
-        </PricingPlans>
+            Start Using Sonar Free
+          </Button>
+          
+          <p style={{ 
+            marginTop: '1rem', 
+            color: 'var(--text-secondary)', 
+            fontSize: '0.9rem',
+            fontStyle: 'italic'
+          }}>
+            * Demo phase pricing. Future pricing will be announced with advance notice.
+          </p>
+        </motion.div>
       </PricingSection>
       
       <AdvisorSection id="advisor">

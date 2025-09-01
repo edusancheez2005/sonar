@@ -2,7 +2,7 @@ import React from 'react'
 
 export const metadata = {
   title: 'FAQ — Sonar Tracker',
-  description: 'Answers to common questions about whale tracking, data freshness, accounts, and pricing.',
+  description: 'Answers to common questions about whale tracking, data freshness, accounts, and free access.',
   alternates: { canonical: 'https://www.sonartracker.io/faq' },
 }
 
@@ -30,6 +30,10 @@ const QA = [
   {
     q: 'Is whale tracking the same as copy trading?',
     a: 'No. Whale tracking reveals flow regimes. You can use it to inform entries and risk management, but it is not financial advice.'
+  },
+  {
+    q: 'How much does Sonar cost?',
+    a: 'Sonar is currently completely free to use! We\'re in our demo phase and offering full access to all features without any cost. Future pricing will be announced with advance notice.'
   },
 ]
 
