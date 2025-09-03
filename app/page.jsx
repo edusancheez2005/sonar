@@ -6,31 +6,64 @@ function FaqJsonLd() {
   const json = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
+    name: 'Sonar Tracker - Frequently Asked Questions',
+    description: 'Common questions about Sonar Tracker crypto analytics platform',
     mainEntity: [
       {
         '@type': 'Question',
         name: 'What is Sonar Tracker?',
-        acceptedAnswer: { '@type': 'Answer', text: 'A real‑time crypto analytics platform focused on whale transactions, token leaderboards, and on‑chain insights.' },
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Sonar Tracker is a real-time cryptocurrency analytics platform that specializes in whale transaction monitoring, token leaderboards, and comprehensive on-chain insights. Our AI-powered system tracks institutional trading patterns across major blockchains to help traders and investors make informed decisions.'
+        },
       },
       {
         '@type': 'Question',
         name: 'How do whale alerts work?',
-        acceptedAnswer: { '@type': 'Answer', text: 'We monitor large on‑chain transfers and surface them in Statistics and Dashboard, with filters by token, chain, side, USD, and time.' },
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Our whale alert system continuously monitors blockchain networks for large transactions (typically $100K+). When detected, these transactions are instantly surfaced in our Statistics page and Dashboard with detailed filters by token, blockchain, transaction type, USD value, and time. Users can set custom alert thresholds for personalized notifications.'
+        },
       },
       {
         '@type': 'Question',
         name: 'Which blockchains are supported?',
-        acceptedAnswer: { '@type': 'Answer', text: 'Major EVM chains and top networks tracked in our database. Use the Chain filter in Statistics to see current coverage.' },
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'We support all major EVM-compatible blockchains including Ethereum, BSC, Polygon, Arbitrum, Optimism, Avalanche, and many others. Our database continuously tracks transactions across these networks. You can filter by specific chains in our Statistics section to see current coverage and network activity.'
+        },
       },
       {
         '@type': 'Question',
-        name: 'Do I need an account?',
-        acceptedAnswer: { '@type': 'Answer', text: 'You can browse public pages without an account. Create an account to personalize alerts and access more features over time.' },
+        name: 'Do I need an account to use Sonar Tracker?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'You can browse all public pages including Statistics, News, and general market data without an account. However, creating a free account unlocks additional features like personalized dashboards, custom alerts, saved filters, and access to our AI-powered insights and recommendations.'
+        },
       },
       {
         '@type': 'Question',
-        name: 'Is data real‑time?',
-        acceptedAnswer: { '@type': 'Answer', text: 'Yes. The ingestion pipeline updates continuously; the UI shows latest trades and aggregates with short revalidation windows.' },
+        name: 'Is the data real-time?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Yes, absolutely. Our ingestion pipeline updates continuously with sub-second latency for critical transactions. The UI refreshes automatically with the latest data, and our real-time alerts ensure you never miss important market movements. All data is processed through our 8-phase AI analysis engine for maximum accuracy.'
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'What makes Sonar Tracker different from other crypto analytics platforms?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Sonar Tracker stands out with our proprietary 8-phase AI analysis pipeline that goes beyond simple transaction monitoring. We provide institutional-grade insights including pattern recognition, whale behavior analysis, transaction clustering, risk assessment, market sentiment analysis, volume correlation, temporal analysis, and predictive modeling - all in real-time.'
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Is Sonar Tracker free to use?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Yes! Sonar Tracker is currently in demo phase and completely free to use. You can access all features including real-time whale tracking, advanced analytics, AI insights, and comprehensive market data at no cost. We may introduce premium features in the future but will always maintain a free tier.'
+        },
       },
     ],
   }

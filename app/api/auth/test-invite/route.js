@@ -13,7 +13,7 @@ export async function POST(request) {
     const { email, redirectTo, password } = await request.json()
     if (!email) return NextResponse.json({ ok: false, error: 'Missing email' }, { status: 400 })
 
-    const rt = redirectTo || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/auth/callback`
+    const rt = redirectTo || `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sonartracker.io'}/auth/callback`
 
     // 1) Try SMTP invite (to test actual email delivery)
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, { redirectTo: rt })

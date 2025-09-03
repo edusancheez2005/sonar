@@ -1,25 +1,90 @@
 {
-  "short_name": "Sonar",
-  "name": "Sonar Cryptocurrency Dashboard",
+  "short_name": "Sonar Tracker",
+  "name": "Sonar Tracker - Real-Time Crypto Whale Tracking",
+  "description": "Track crypto whales in real time: live transactions, token leaderboards, whale alerts, and on-chain analytics across top blockchains.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#3498db",
+  "background_color": "#0a1621",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["finance", "business", "productivity"],
+  "screenshots": [
+    {
+      "src": "screenshots/stats-dashboard.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "Sonar Tracker Dashboard - Real-time crypto analytics"
+    },
+    {
+      "src": "screenshots/top-coins.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "Token leaderboards and market analysis"
+    },
+    {
+      "src": "screenshots/news-feed.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "Latest crypto market news and updates"
+    }
+  ],
   "icons": [
+    {
+      "src": "logo2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#0a1621",
-  "background_color": "#0a1621"
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Access your crypto analytics dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "screenshots/stats-dashboard.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Statistics",
+      "short_name": "Stats",
+      "description": "View token statistics and leaderboards",
+      "url": "/statistics",
+      "icons": [
+        {
+          "src": "screenshots/top-coins.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "News",
+      "short_name": "News",
+      "description": "Latest cryptocurrency market news",
+      "url": "/news",
+      "icons": [
+        {
+          "src": "screenshots/news-feed.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
 } 

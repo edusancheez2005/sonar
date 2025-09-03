@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { checkRate } from '@/app/lib/rateLimit'
+import { sendWaitlistConfirmation } from '@/app/lib/email'
 
 export async function POST(req) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
@@ -37,5 +38,20 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, message: 'Subscribed', id: data?.id })
+  // Send confirmation email
+  try {
+    await sendWaitlistConfirmation(email)
+    console.log(`✅ Orca waitlist confirmation email sent to: ${email}`)
+  } catch (emailError) {
+    console.error(`❌ Failed to send confirmation email to ${email}:`, emailError)
+    // Don't fail the subscription if email fails
+  }
+
+  console.log(`📝 New Orca waitlist subscription: ${email}`)
+
+  return NextResponse.json({
+    ok: true,
+    message: 'Subscribed to Orca waitlist! Check your email for confirmation.',
+    id: data?.id
+  })
 } 

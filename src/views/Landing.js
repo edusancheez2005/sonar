@@ -141,16 +141,335 @@ const AboutContent = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3rem;
-  
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
-  
+
   p {
     line-height: 1.8;
     font-size: 1.1rem;
     color: var(--text-secondary);
     margin-bottom: 1.5rem;
+  }
+`;
+
+const PipelineSection = styled(Section)`
+  background: linear-gradient(135deg, var(--background-dark) 0%, rgba(52, 152, 219, 0.05) 100%);
+  padding-top: 8rem;
+
+  h2 {
+    color: var(--text-primary);
+    font-size: 2.5rem;
+    margin-bottom: 4rem;
+    font-weight: 600;
+  }
+`;
+
+const PipelineFlow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 4rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+
+  .pipeline-step {
+    flex: 1;
+    min-width: 280px;
+    max-width: 350px;
+
+    .step-content {
+      background: var(--background-card);
+      border: 1px solid var(--secondary);
+      border-radius: 12px;
+      padding: 2rem;
+      height: 100%;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: var(--primary);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        transform: translateY(-5px);
+      }
+
+      h3 {
+        color: var(--text-primary);
+        font-size: 1.4rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+
+      .step-icon {
+        font-size: 2.5rem;
+        margin: 1rem 0;
+        display: block;
+      }
+
+      p {
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+      }
+
+      .step-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        span {
+          background: rgba(52, 152, 219, 0.1);
+          padding: 0.5rem 1rem;
+          border-radius: 20px;
+          font-size: 0.9rem;
+          color: var(--text-primary);
+          display: inline-block;
+          margin: 0.25rem 0;
+        }
+      }
+
+      .phases-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+
+        .phase-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.5rem;
+          background: rgba(52, 152, 219, 0.05);
+          border-radius: 8px;
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: rgba(52, 152, 219, 0.1);
+          }
+
+          .phase-number {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+          }
+
+          span {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            line-height: 1.3;
+          }
+        }
+      }
+    }
+  }
+
+  .arrow {
+    font-size: 3rem;
+    color: var(--primary);
+    font-weight: bold;
+    margin: 0 1rem;
+
+    @media (max-width: 768px) {
+      transform: rotate(90deg);
+      margin: 1rem 0;
+    }
+  }
+
+  .pipeline-performance {
+    margin-top: 4rem;
+    text-align: center;
+
+    .performance-title {
+      font-size: 2rem;
+      color: var(--text-primary);
+      margin-bottom: 3rem;
+      font-weight: 600;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+
+      .metric-card {
+        background: var(--background-card);
+        border: 1px solid var(--secondary);
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: var(--primary);
+        }
+
+        &:hover {
+          border-color: var(--primary);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+          transform: translateY(-5px);
+        }
+
+        .metric-icon {
+          font-size: 2.5rem;
+          margin-bottom: 1rem;
+          display: block;
+        }
+
+        .metric-value {
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 0.25rem;
+          margin-bottom: 1rem;
+
+          .number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+          }
+
+          .unit {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-left: 0.25rem;
+          }
+        }
+
+        .metric-title {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: 0.75rem;
+        }
+
+        .metric-desc {
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+          line-height: 1.5;
+        }
+
+        &.accuracy {
+          &::before {
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+          }
+        }
+
+        &.speed {
+          &::before {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+          }
+        }
+
+        &.uptime {
+          &::before {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+          }
+        }
+      }
+    }
+  }
+
+  .pipeline-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 4rem;
+    padding: 0 2rem;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .stat-item {
+      text-align: center;
+      background: var(--background-card);
+      border: 1px solid var(--secondary);
+      border-radius: 12px;
+      padding: 2rem 1.5rem;
+      min-width: 200px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), rgba(52, 152, 219, 0.6));
+      }
+
+      &:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+        border-color: var(--primary);
+      }
+
+      .stat-number {
+        font-size: 2.8rem;
+        font-weight: 800;
+        color: var(--primary);
+        margin-bottom: 0.75rem;
+        line-height: 1;
+        position: relative;
+        z-index: 2;
+      }
+
+      .stat-label {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-description {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        font-weight: 400;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .pipeline-step {
+      min-width: 100%;
+      max-width: 100%;
+    }
+
+    .arrow {
+      transform: rotate(90deg);
+      margin: 2rem 0;
+    }
   }
 `;
 
@@ -489,42 +808,124 @@ const ButtonContainer = styled.div`
 
 // New Orca 2.0 section
 const AdvisorSection = styled.section`
-  margin: 4rem auto 0; padding: 3rem 1.5rem; max-width: 1100px; position: relative;
+  margin: 6rem auto 0; padding: 4rem 1.5rem; max-width: 1200px; position: relative;
+  text-align: center;
 `;
 
 const AdvisorCard = styled.div`
   background: radial-gradient(800px 400px at 10% -10%, rgba(155,89,182,0.25), transparent 60%),
               radial-gradient(700px 350px at 110% 20%, rgba(241,196,15,0.15), transparent 60%),
               linear-gradient(180deg, #0d2134 0%, #0a1621 100%);
-  border: 1px solid rgba(155,89,182,0.25);
-  border-radius: 12px; padding: 2rem; text-align: center;
+  border: 2px solid rgba(155,89,182,0.4);
+  border-radius: 20px; 
+  padding: 3rem 2rem; 
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(155,89,182,0.1) 50%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  
+  @keyframes shimmer {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+  }
 `;
 
 const AdvisorBadge = styled(motion.div)`
-  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.85rem;
-  border-radius: 999px; font-weight: 600; letter-spacing: 0.4px;
-  color: #f1c40f; background: rgba(241,196,15,0.15); border: 1px solid rgba(241,196,15,0.35);
+  display: inline-flex; 
+  align-items: center; 
+  gap: 0.8rem; 
+  padding: 0.8rem 1.2rem;
+  border-radius: 999px; 
+  font-weight: 700; 
+  letter-spacing: 0.5px;
+  font-size: 1.1rem;
+  color: #f1c40f; 
+  background: rgba(241,196,15,0.2); 
+  border: 2px solid rgba(241,196,15,0.5);
+  box-shadow: 0 4px 20px rgba(241,196,15,0.3);
+  margin-bottom: 1.5rem;
 `;
 
 const AdvisorTitle = styled(motion.h2)`
-  font-size: 2.2rem; margin: 0.75rem 0 0.25rem;
+  font-size: 3.5rem; 
+  margin: 1rem 0 0.5rem;
+  font-weight: 800;
   background: linear-gradient(90deg, #9b59b6 0%, #f1c40f 50%, #36a6ba 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-background-clip: text; 
+  background-clip: text; 
+  color: transparent;
+  text-shadow: 0 0 30px rgba(155,89,182,0.3);
+  letter-spacing: -0.02em;
+  
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+  }
 `;
 
 const AdvisorSub = styled(motion.p)`
-  color: var(--text-secondary); margin: 0.5rem 0 1rem; font-size: 1.05rem;
+  color: var(--text-secondary); 
+  margin: 1rem 0 2rem; 
+  font-size: 1.2rem;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 `;
 
 const WaitlistForm = styled(motion.form)`
-  display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.75rem; flex-wrap: wrap;
-  input { background: linear-gradient(180deg, rgba(13,33,52,1), rgba(10,22,33,1));
-          color: var(--text-primary); border: 1px solid var(--secondary);
-          padding: 0.7rem 0.9rem; border-radius: 999px; min-width: 260px; outline: none; }
-  input:focus { border-color: #9b59b6; box-shadow: 0 0 0 3px rgba(155,89,182,0.2); }
-  button { background: linear-gradient(90deg, #9b59b6, #f1c40f);
-           color: #0a1621; border: none; padding: 0.7rem 1.1rem; border-radius: 999px; font-weight: 600; }
-  button:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  display: flex; 
+  gap: 0.8rem; 
+  justify-content: center; 
+  margin-top: 1.5rem; 
+  flex-wrap: wrap;
+  
+  input { 
+    background: linear-gradient(180deg, rgba(13,33,52,1), rgba(10,22,33,1));
+    color: var(--text-primary); 
+    border: 2px solid var(--secondary);
+    padding: 1rem 1.2rem; 
+    border-radius: 999px; 
+    min-width: 300px; 
+    outline: none;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  input:focus { 
+    border-color: #9b59b6; 
+    box-shadow: 0 0 0 4px rgba(155,89,182,0.3);
+    transform: translateY(-2px);
+  }
+  
+  button { 
+    background: linear-gradient(90deg, #9b59b6, #f1c40f);
+    color: #0a1621; 
+    border: none; 
+    padding: 1rem 1.5rem; 
+    border-radius: 999px; 
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(155,89,182,0.4);
+  }
+  
+  button:hover { 
+    filter: brightness(1.1); 
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(155,89,182,0.6);
+  }
 `;
 
 const PillButton = styled.button`
@@ -849,7 +1250,7 @@ const Landing = () => {
             const navbarHeight = 100; // approximate height of navbar
             const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-            
+
             window.scrollTo({
               top: offsetPosition,
               behavior: 'smooth'
@@ -858,11 +1259,24 @@ const Landing = () => {
             About
           </NavLink>
           <NavLink onClick={() => {
+            const element = document.getElementById('pipeline');
+            const navbarHeight = 100; // approximate height of navbar
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }}>
+            Pipeline
+          </NavLink>
+          <NavLink onClick={() => {
             const element = document.getElementById('screenshots');
             const navbarHeight = 100; // approximate height of navbar
             const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-            
+
             window.scrollTo({
               top: offsetPosition,
               behavior: 'smooth'
@@ -870,19 +1284,32 @@ const Landing = () => {
           }}>
             Results
           </NavLink>
-          <NavLink onClick={() => {
-            const element = document.getElementById('advisor');
-            const navbarHeight = 100; // approximate height of navbar
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-            
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth'
-            });
-          }}>
-            Orca 2.0
-          </NavLink>
+                     <NavLink onClick={() => {
+             const element = document.getElementById('advisor');
+             const navbarHeight = 100; // approximate height of navbar
+             const elementPosition = element.getBoundingClientRect().top;
+             const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+             
+             window.scrollTo({
+               top: offsetPosition,
+               behavior: 'smooth'
+             });
+           }}>
+             Orca 2.0
+           </NavLink>
+           <NavLink onClick={() => {
+             const element = document.getElementById('pricing');
+             const navbarHeight = 100; // approximate height of navbar
+             const elementPosition = element.getBoundingClientRect().top;
+             const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+             
+             window.scrollTo({
+               top: offsetPosition,
+               behavior: 'smooth'
+             });
+           }}>
+             Price
+           </NavLink>
           <LoginButton onClick={() => setShowLoginModal(true)}>
             Login
           </LoginButton>
@@ -993,17 +1420,20 @@ const Landing = () => {
             viewport={{ once: true, amount: 0.2 }}
           >
             <p>
-              Sonar is a cutting-edge platform designed for cryptocurrency traders and enthusiasts.
-              We provide real-time monitoring of market activities, comprehensive statistical analysis,
-              and curated news to help you make informed decisions.
+              Sonar is a revolutionary cryptocurrency intelligence platform powered by advanced AI
+              and real-time blockchain data processing. We've built a massive AI-assisted pipeline
+              that continuously monitors and analyzes whale transactions across multiple blockchains
+              with unprecedented accuracy and speed.
             </p>
             <p>
-              Our team consists of blockchain experts, data analysts, and software engineers who are
-              passionate about cryptocurrency and dedicated to developing powerful tools that make
-              trading more accessible and data-driven.
+              Our proprietary system processes over 8 analysis phases, including pattern recognition,
+              whale behavior analysis, transaction clustering, risk assessment, market sentiment
+              analysis, volume correlation, temporal analysis, and predictive modeling. This
+              multi-layered approach ensures you get the most comprehensive and actionable insights
+              available in the crypto market.
             </p>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -1011,19 +1441,148 @@ const Landing = () => {
             viewport={{ once: true, amount: 0.2 }}
           >
             <p>
-              Founded in 2023, Sonar has quickly grown to become a trusted resource in the crypto
-              community. We believe in transparency, accuracy, and providing actionable insights
-              that cut through the noise of the volatile cryptocurrency market.
+              We pull real-time data directly from blockchain networks, processing millions of
+              transactions to identify significant whale movements, market trends, and trading
+              opportunities. Our AI algorithms continuously learn and adapt to market conditions,
+              providing you with insights that evolve with the market itself.
             </p>
             <p>
-              Whether you're a day trader looking for real-time transaction data or an investor
-              seeking to understand market trends, Sonar gives you the visibility you need to
-              navigate the complex world of digital assets with confidence.
+              Whether you're a professional trader seeking institutional-grade analytics or an
+              investor looking to understand market dynamics, Sonar delivers the intelligence
+              you need to navigate the complex world of digital assets with confidence and precision.
             </p>
           </motion.div>
         </AboutContent>
       </AboutSection>
-      
+
+      <PipelineSection id="pipeline">
+        <motion.h2
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true, amount: 0.2 }}
+        >
+          How Our AI Pipeline Works
+        </motion.h2>
+
+        <PipelineFlow>
+          {/* Data Ingestion */}
+          <motion.div
+            className="pipeline-step data-ingestion"
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            <div className="step-content">
+              <h3>Data Ingestion</h3>
+              <div className="step-icon">📊</div>
+              <p>Real-time data streams from multiple blockchain networks</p>
+              <div className="step-details">
+                <span>Millions of transactions processed daily</span>
+                <span>Live blockchain connections</span>
+                <span>Sub-second data refresh</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Arrow 1 */}
+          <motion.div
+            className="arrow"
+            initial={{ opacity: 0, scale: 0.5 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            →
+          </motion.div>
+
+          {/* Analysis Phases */}
+          <motion.div
+            className="pipeline-step analysis-phases"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            <div className="step-content">
+              <h3>AI Analysis Engine</h3>
+              <div className="step-icon">🧠</div>
+              <p>8 sophisticated analysis phases working in parallel</p>
+
+              <div className="phases-grid">
+                <div className="phase-item">
+                  <div className="phase-number">1</div>
+                  <span>Pattern Recognition</span>
+                </div>
+                <div className="phase-item">
+                  <div className="phase-number">2</div>
+                  <span>Whale Behavior Analysis</span>
+                </div>
+                <div className="phase-item">
+                  <div className="phase-number">3</div>
+                  <span>Transaction Clustering</span>
+                </div>
+                <div className="phase-item">
+                  <div className="phase-number">4</div>
+                  <span>Risk Assessment</span>
+                </div>
+                <div className="phase-item">
+                  <div className="phase-number">5</div>
+                  <span>Market Sentiment Analysis</span>
+                </div>
+                <div className="phase-item">
+                  <div className="phase-number">6</div>
+                  <span>Volume Correlation</span>
+                </div>
+                <div className="phase-item">
+                  <div className="phase-number">7</div>
+                  <span>Temporal Analysis</span>
+                </div>
+                <div className="phase-item">
+                  <div className="phase-number">8</div>
+                  <span>Predictive Modeling</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Arrow 2 */}
+          <motion.div
+            className="arrow"
+            initial={{ opacity: 0, scale: 0.5 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            →
+          </motion.div>
+
+          {/* End Result */}
+          <motion.div
+            className="pipeline-step end-result"
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            <div className="step-content">
+              <h3>Intelligence Output</h3>
+              <div className="step-icon">🎯</div>
+              <p>Actionable insights delivered to your dashboard</p>
+              <div className="step-details">
+                <span>Real-time whale tracking</span>
+                <span>Market sentiment analysis</span>
+                <span>Risk assessments</span>
+                <span>Trading opportunities</span>
+              </div>
+            </div>
+          </motion.div>
+        </PipelineFlow>
+
+
+      </PipelineSection>
+
       <ScreenshotsSection id="screenshots">
         <h2>See the Dashboard in Action</h2>
         <ScreenshotsContainer>
@@ -1150,18 +1709,45 @@ const Landing = () => {
       </PricingSection>
       
       <AdvisorSection id="advisor">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true, amount: 0.2 }}
+          style={{ marginBottom: '3rem' }}
+        >
+          <h2 style={{ 
+            fontSize: '2.5rem', 
+            color: 'var(--text-primary)', 
+            marginBottom: '1rem',
+            fontWeight: '600'
+          }}>
+            The Future of Crypto Intelligence
+          </h2>
+          <p style={{ 
+            fontSize: '1.3rem', 
+            color: 'var(--text-secondary)', 
+            maxWidth: '700px', 
+            margin: '0 auto',
+            lineHeight: '1.6'
+          }}>
+            Experience the next generation of AI-powered cryptocurrency analysis
+          </p>
+        </motion.div>
+        
         <AdvisorCard>
           <AdvisorBadge initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}>
-            <span role="img" aria-label="orca">🐋</span> Orca 2.0 — AI Crypto Advisor
+            <span role="img" aria-label="orca" style={{ fontSize: '1.3rem' }}>🐋</span> ORCA 2.0 — AI Crypto Advisor
           </AdvisorBadge>
           <AdvisorTitle initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
-            Coming Soon: Follow the Pods with SONAR Precision
+            Follow the Pods with SONAR Precision
           </AdvisorTitle>
           <AdvisorSub initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45, delay: 0.15 }}>
-            Personalized ideas from whale flows, risk-managed entries, and instant alerts. Join the waitlist to get early access.
+            Personalized trading ideas from whale flows, risk-managed entries, and instant alerts. 
+            Join the waitlist to get early access to the most advanced crypto intelligence platform.
           </AdvisorSub>
           <WaitlistForm onSubmit={joinWaitlist} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
-            <input type="email" placeholder="Join the Orca 2.0 waitlist — your@email.com" value={waitEmail} onChange={e=>setWaitEmail(e.target.value)} required />
+            <input type="email" placeholder="Join the ORCA 2.0 waitlist — your@email.com" value={waitEmail} onChange={e=>setWaitEmail(e.target.value)} required />
             <button type="submit">Join Waitlist</button>
           </WaitlistForm>
           {waitMsg && <p style={{ marginTop: 10, color: 'var(--text-secondary)' }}>{waitMsg}</p>}
