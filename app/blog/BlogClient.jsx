@@ -1,186 +1,177 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
-import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
-const PageContainer = styled.div`
-  min-height: 100vh;
-  background: var(--background-dark);
-`
 
-const NavBar = styled.nav`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.2rem 2rem;
-  background: var(--background-dark);
-  border-bottom: 1px solid var(--secondary);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-`
-
-const Logo = styled.div`
-  display: flex;
-  align-items: center;
-  img { 
-    height: 80px; 
-    width: auto; 
-    object-fit: contain; 
-    object-position: center; 
-    transition: height 0.3s ease; 
-  }
-`
-
-const NavLinks = styled.div`
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-  
-  a { 
-    color: var(--text-primary); 
-    font-weight: 500; 
-    font-size: 1.05rem; 
-    text-decoration: none; 
-    transition: color 0.3s ease; 
-    position: relative; 
-  }
-  
-  a:after { 
-    content: ''; 
-    position: absolute; 
-    left: 0; 
-    bottom: -5px; 
-    width: 100%; 
-    height: 3px; 
-    background-color: var(--primary); 
-    transform: scaleX(0); 
-    transition: transform 0.3s ease; 
-  }
-  
-  a:hover { 
-    color: var(--primary); 
-  }
-  
-  a:hover:after { 
-    transform: scaleX(1); 
-  }
-  
-  @media (max-width: 768px) { 
-    display: none; 
-  }
-`
-
-const AuthButton = styled.button`
-  padding: 0.6rem 1.5rem;
-  background: ${props => props.variant === 'login' ? 'transparent' : 'var(--primary)'};
-  color: ${props => props.variant === 'login' ? 'var(--primary)' : 'white'};
-  border: 2px solid var(--primary);
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  margin-left: 1rem;
-  
-  &:hover {
-    background: ${props => props.variant === 'login' ? 'var(--primary)' : 'var(--primary-hover)'};
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-  }
-`
 
 const BlogContainer = styled.main`
   max-width: 1200px;
   margin: 0 auto;
   padding: 4rem 2rem;
+  min-height: 100vh;
+  background: var(--background-dark);
 `
 
 const BlogHeader = styled.div`
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: 5rem;
+  padding: 2rem 0;
 `
 
 const BlogTitle = styled.h1`
-  font-size: 3.5rem;
+  font-size: 4rem;
+  font-weight: 700;
   color: var(--primary);
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   
   @media (max-width: 768px) {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 2.2rem;
   }
 `
 
 const BlogSubtitle = styled.p`
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  font-weight: 400;
   color: var(--text-secondary);
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 700px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+    max-width: 90%;
+  }
 `
 
 const SearchBar = styled.div`
-  margin: 2rem auto;
-  max-width: 500px;
+  margin: 0 auto;
+  max-width: 600px;
   position: relative;
 `
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: 1rem 1.5rem;
+  padding: 1.2rem 2rem;
   background: var(--background-secondary);
   border: 2px solid var(--secondary);
-  border-radius: 25px;
+  border-radius: 30px;
   color: var(--text-primary);
-  font-size: 1rem;
-  transition: all 0.3s ease;
+  font-size: 1.1rem;
+  font-weight: 400;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   
   &:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1), 
+                0 8px 25px rgba(52, 152, 219, 0.15);
+    transform: translateY(-1px);
   }
   
   &::placeholder {
     color: var(--text-secondary);
+    font-weight: 400;
+    opacity: 0.7;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
   }
 `
 
 const PostsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 2rem;
-  margin-top: 3rem;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 2.5rem;
+  margin-top: 4rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-top: 3rem;
+  }
 `
 
 const PostCard = styled(motion.article)`
   background: var(--background-secondary);
   border: 1px solid var(--secondary);
-  border-radius: 15px;
-  padding: 2rem;
-  transition: all 0.3s ease;
+  border-radius: 20px;
+  padding: 2.5rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), #45a3d9);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+  }
   
   &:hover {
     border-color: var(--primary);
-    box-shadow: 0 10px 30px rgba(52, 152, 219, 0.2);
-    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(52, 152, 219, 0.15),
+                0 4px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-8px);
+    
+    &::before {
+      transform: scaleX(1);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    padding: 2rem;
+    
+    &:hover {
+      transform: translateY(-4px);
+    }
   }
 `
 
 const PostTitle = styled.h2`
-  font-size: 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 1rem;
-  line-height: 1.3;
+  margin-bottom: 1.2rem;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
 `
 
 const PostSummary = styled.p`
   color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
+  line-height: 1.7;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  font-weight: 400;
+  opacity: 0.9;
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
 `
 
 const PostMeta = styled.div`
@@ -189,77 +180,169 @@ const PostMeta = styled.div`
   align-items: center;
   font-size: 0.9rem;
   color: var(--text-secondary);
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
 `
 
 const ReadTime = styled.span`
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary), #45a3d9);
   color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 15px;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
   font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 `
 
 const CategoryTag = styled.span`
-  background: rgba(52, 152, 219, 0.1);
+  background: rgba(52, 152, 219, 0.12);
   color: var(--primary);
-  padding: 0.25rem 0.75rem;
-  border-radius: 15px;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
   font-size: 0.8rem;
-  margin-right: 0.5rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  display: inline-block;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(52, 152, 219, 0.2);
+    transform: translateY(-1px);
+  }
 `
 
 const NewsletterSection = styled.section`
-  background: var(--background-secondary);
+  background: linear-gradient(135deg, var(--background-secondary) 0%, rgba(52, 152, 219, 0.05) 100%);
   border: 1px solid var(--secondary);
-  border-radius: 20px;
-  padding: 3rem 2rem;
+  border-radius: 24px;
+  padding: 4rem 3rem;
   text-align: center;
-  margin: 4rem 0;
+  margin: 5rem 0 3rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary), #45a3d9, var(--primary));
+  }
+  
+  h3 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    
+    @media (max-width: 768px) {
+      font-size: 1.8rem;
+    }
+  }
+  
+  p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    
+    @media (max-width: 768px) {
+      font-size: 1rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    padding: 3rem 2rem;
+    margin: 4rem 0 2rem;
+  }
 `
 
 const NewsletterForm = styled.form`
   display: flex;
   gap: 1rem;
-  max-width: 400px;
-  margin: 2rem auto 0;
+  max-width: 480px;
+  margin: 0 auto;
   
   @media (max-width: 600px) {
     flex-direction: column;
+    gap: 1rem;
   }
 `
 
 const EmailInput = styled.input`
   flex: 1;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.5rem;
   background: var(--background-dark);
-  border: 1px solid var(--secondary);
-  border-radius: 25px;
+  border: 2px solid var(--secondary);
+  border-radius: 30px;
   color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 400;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   &:focus {
     outline: none;
     border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1),
+                0 4px 12px rgba(52, 152, 219, 0.15);
+    transform: translateY(-1px);
+  }
+  
+  &::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
   }
 `
 
 const SubscribeButton = styled.button`
-  padding: 0.75rem 2rem;
-  background: var(--primary);
+  padding: 1rem 2.5rem;
+  background: linear-gradient(135deg, var(--primary), #45a3d9);
   color: white;
   border: none;
-  border-radius: 25px;
+  border-radius: 30px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s ease;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+  white-space: nowrap;
   
   &:hover {
-    background: var(--primary-hover);
     transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
   
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
+  }
+  
+  @media (max-width: 600px) {
+    padding: 1rem 2rem;
   }
 `
 
@@ -295,20 +378,6 @@ export default function BlogClient() {
   const [email, setEmail] = useState('')
   const [subscribeMessage, setSubscribeMessage] = useState('')
   const [isSubscribing, setIsSubscribing] = useState(false)
-  const [user, setUser] = useState(null)
-  const [showLoginModal, setShowLoginModal] = useState(false)
-  const router = useRouter()
-
-  useEffect(() => {
-    const sb = supabaseBrowser()
-    sb.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user || null)
-    })
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
 
   const filteredPosts = posts.filter(post =>
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -335,79 +404,52 @@ export default function BlogClient() {
     }
   }
 
-  const handleLogin = () => {
-    router.push('/dashboard')
-  }
-
-  const handleLogout = async () => {
-    try {
-      await supabaseBrowser().auth.signOut()
-      setUser(null)
-    } catch (error) {
-      console.error('Error logging out:', error)
-    }
-  }
-
   return (
-    <PageContainer>
-      <NavBar>
-        <Logo>
-          <Link href="/">
-            <img src="/logo2.png" alt="Sonar Tracker Logo" />
-          </Link>
-        </Logo>
-        <NavLinks>
-          <Link href="/">Home</Link>
-          <Link href="/blog">Blog</Link>
-          <Link href="/faq">FAQ</Link>
-          <Link href="/ai-advisor">AI Advisor</Link>
-          {user ? (
-            <>
-              <Link href="/dashboard">Dashboard</Link>
-              <AuthButton onClick={handleLogout} variant="login">
-                Logout
-              </AuthButton>
-            </>
-          ) : (
-            <AuthButton onClick={handleLogin}>
-              Login
-            </AuthButton>
-          )}
-        </NavLinks>
-      </NavBar>
-
-      <BlogContainer>
-        <BlogHeader>
-          <BlogTitle>Crypto Whale Insights</BlogTitle>
-          <BlogSubtitle>
-            Master whale tracking, copy trading strategies, and on-chain analytics with our comprehensive guides
-          </BlogSubtitle>
-          
-          <SearchBar>
-            <SearchInput
-              type="text"
-              placeholder="Search articles by topic, category, or keyword..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </SearchBar>
-        </BlogHeader>
+    <BlogContainer>
+      <BlogHeader>
+        <BlogTitle>Crypto Whale Insights</BlogTitle>
+        <BlogSubtitle>
+          Master whale tracking, copy trading strategies, and on-chain analytics with our comprehensive guides
+        </BlogSubtitle>
+        
+        <SearchBar>
+          <SearchInput
+            type="text"
+            placeholder="Search articles by topic, category, or keyword..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </SearchBar>
+      </BlogHeader>
 
       <PostsGrid>
         {filteredPosts.map((post, index) => (
           <PostCard
             key={post.slug}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            transition={{ 
+              delay: index * 0.1,
+              duration: 0.6,
+              ease: [0.4, 0, 0.2, 1]
+            }}
             whileHover={{ scale: 1.02 }}
           >
-            <Link href={`/blog/${post.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link 
+              href={`/blog/${post.slug}`} 
+              style={{ 
+                textDecoration: 'none', 
+                color: 'inherit',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%'
+              }}
+            >
               <CategoryTag>{post.category}</CategoryTag>
               <PostTitle>{post.title}</PostTitle>
               <PostSummary>{post.summary}</PostSummary>
               <PostMeta>
-                <span>{post.date}</span>
+                <span style={{ fontWeight: '500' }}>{post.date}</span>
                 <ReadTime>{post.readTime}</ReadTime>
               </PostMeta>
             </Link>
@@ -416,18 +458,39 @@ export default function BlogClient() {
       </PostsGrid>
 
       {filteredPosts.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-          <h3>No articles found</h3>
-          <p>Try searching for different keywords or browse all articles</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ 
+            textAlign: 'center', 
+            padding: '4rem 2rem', 
+            color: 'var(--text-secondary)',
+            background: 'var(--background-secondary)',
+            borderRadius: '20px',
+            border: '1px solid var(--secondary)',
+            margin: '2rem 0'
+          }}
+        >
+          <h3 style={{ 
+            fontSize: '1.5rem', 
+            marginBottom: '1rem', 
+            color: 'var(--text-primary)' 
+          }}>
+            No articles found
+          </h3>
+          <p style={{ 
+            fontSize: '1.1rem', 
+            lineHeight: '1.6' 
+          }}>
+            Try searching for different keywords or browse all articles
+          </p>
+        </motion.div>
       )}
 
       <NewsletterSection>
-        <h3 style={{ color: 'var(--primary)', fontSize: '2rem', marginBottom: '1rem' }}>
-          Get Whale Alerts & Trading Insights
-        </h3>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-          Join 10,000+ traders getting real-time whale movements and market analysis
+        <h3>Get Whale Alerts & Trading Insights</h3>
+        <p>
+          Join 10,000+ traders getting real-time whale movements and market analysis delivered to your inbox
         </p>
         
         <NewsletterForm onSubmit={handleSubscribe}>
@@ -444,15 +507,23 @@ export default function BlogClient() {
         </NewsletterForm>
         
         {subscribeMessage && (
-          <p style={{ 
-            marginTop: '1rem', 
-            color: subscribeMessage.includes('Thanks') ? 'var(--success)' : 'var(--error)' 
-          }}>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ 
+              marginTop: '1.5rem', 
+              padding: '1rem',
+              borderRadius: '12px',
+              background: subscribeMessage.includes('Thanks') ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              color: subscribeMessage.includes('Thanks') ? '#22c55e' : '#ef4444',
+              border: `1px solid ${subscribeMessage.includes('Thanks') ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+              fontWeight: '500'
+            }}
+          >
             {subscribeMessage}
-          </p>
+          </motion.p>
         )}
       </NewsletterSection>
-      </BlogContainer>
-    </PageContainer>
+    </BlogContainer>
   )
 }
