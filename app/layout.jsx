@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import ClientRoot from './components/ClientRoot'
 import StyledComponentsRegistry from './components/StyledComponentsRegistry'
+import Script from 'next/script'
 
 const siteUrl = 'https://www.sonartracker.io'
 const ogImage = '/screenshots/stats-dashboard.png'
@@ -10,26 +11,30 @@ const ogImage = '/screenshots/stats-dashboard.png'
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Sonar Tracker — Real‑Time Whale Transactions & Crypto Analytics',
-    template: '%s | Sonar Tracker'
+    default: 'Sonar Tracker — Real‑Time Crypto Whale Tracking & Blockchain Analytics',
+    template: '%s | Sonar Tracker Crypto'
   },
-  description: 'Track crypto whales in real time: live transactions, token leaderboards, whale alerts, and on‑chain analytics across top blockchains. Monitor institutional trading patterns with AI-powered insights.',
+  description: 'Professional crypto whale tracking platform: Monitor real-time whale transactions, token leaderboards, and blockchain analytics. AI-powered insights for institutional traders and crypto investors.',
   keywords: [
-    'crypto whale tracking',
-    'blockchain analytics',
-    'whale alerts',
-    'cryptocurrency monitoring',
-    'token leaderboards',
-    'on-chain analysis',
-    'real-time crypto data',
-    'institutional trading',
-    'blockchain intelligence',
-    'crypto market analysis',
-    'whale wallet tracker',
-    'crypto analytics platform',
-    'blockchain monitoring',
-    'crypto intelligence',
-    'whale transaction monitoring'
+    'crypto whale tracking platform',
+    'blockchain analytics tool',
+    'cryptocurrency whale alerts',
+    'real time crypto monitoring',
+    'institutional crypto trading',
+    'blockchain intelligence platform',
+    'crypto market analysis tool',
+    'whale transaction tracker',
+    'crypto analytics dashboard',
+    'blockchain monitoring software',
+    'institutional crypto insights',
+    'crypto trading analytics',
+    'blockchain transaction monitoring',
+    'crypto whale detection',
+    'professional crypto analytics',
+    'sonar tracker crypto',
+    'sonar crypto tracker',
+    'crypto sonar platform',
+    'blockchain sonar analytics'
   ],
   authors: [{ name: 'Sonar Tracker Team' }],
   creator: 'Sonar Tracker',
@@ -92,14 +97,83 @@ export const metadata = {
     site: '@sonartracker',
   },
   verification: {
-    google: 'your-google-site-verification-code',
+    google: 'google-site-verification=kUMRrdT4lX2VHZbCenjhRbxFfOQVd_gUzMtqpxaaa_A',
     yandex: 'your-yandex-verification-code',
     bing: 'your-bing-verification-code',
   },
   other: {
     'msapplication-TileColor': '#3498db',
     'theme-color': '#0a1621',
+    'color-scheme': 'dark light',
+    'format-detection': 'telephone=no',
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'Sonar Tracker Crypto',
+    'application-name': 'Sonar Tracker Crypto',
   },
+  // Advanced SEO directives
+  manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/logo2.png', type: 'image/png', sizes: '32x32' },
+    ],
+    apple: [
+      { url: '/logo2.png', sizes: '180x180' },
+    ],
+  },
+  // Additional meta tags for better SEO
+  additionalMetaTags: [
+    {
+      name: 'author',
+      content: 'Sonar Tracker Team',
+    },
+    {
+      name: 'publisher',
+      content: 'Sonar Tracker',
+    },
+    {
+      name: 'robots',
+      content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+    },
+    {
+      name: 'googlebot',
+      content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+    },
+    {
+      name: 'bingbot',
+      content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+    },
+    {
+      name: 'language',
+      content: 'en-US',
+    },
+    {
+      name: 'geo.region',
+      content: 'US',
+    },
+    {
+      name: 'geo.placename',
+      content: 'Global',
+    },
+    {
+      name: 'ICBM',
+      content: '40.7128, -74.0060', // NYC coordinates for crypto hub
+    },
+    {
+      name: 'revisit-after',
+      content: '1 day',
+    },
+    {
+      httpEquiv: 'content-language',
+      content: 'en-US',
+    },
+    {
+      httpEquiv: 'X-UA-Compatible',
+      content: 'IE=edge',
+    },
+  ],
 }
 
 function JsonLd() {
@@ -192,7 +266,67 @@ function JsonLd() {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* Google Tag Manager */}
+        <Script
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','GT-WB29592G');
+            `,
+          }}
+        />
+        {/* Google Analytics 4 */}
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-FCN0KTJYLB"
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+
+              gtag('config', 'G-FCN0KTJYLB', {
+                page_title: document.title,
+                page_location: window.location.href,
+                custom_map: {'dimension1': 'page_type'},
+                send_page_view: true
+              });
+
+              // Track page type for better segmentation
+              const pageType = window.location.pathname.includes('/dashboard') ? 'dashboard' :
+                             window.location.pathname.includes('/statistics') ? 'statistics' :
+                             window.location.pathname.includes('/news') ? 'news' :
+                             window.location.pathname.includes('/ai-advisor') ? 'ai_advisor' :
+                             window.location.pathname === '/' ? 'homepage' : 'other';
+
+              gtag('event', 'page_type', {
+                page_type: pageType,
+                custom_parameter_1: window.location.pathname
+              });
+            `,
+          }}
+        />
+      </head>
       <body>
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GT-WB29592G"
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
+
         <StyledComponentsRegistry>
           <ClientRoot>{children}</ClientRoot>
         </StyledComponentsRegistry>

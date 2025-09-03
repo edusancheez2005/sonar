@@ -1,0 +1,26 @@
+# Robots.txt for SonarTracker
+# Allow all bots to crawl most content
+User-Agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /private/
+Disallow: /_next/
+Disallow: /auth/callback
+
+# Googlebot specific rules
+User-Agent: Googlebot
+Allow: /
+
+# Bingbot with crawl delay
+User-Agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Host and sitemaps
+Host: https://www.sonartracker.io
+Sitemap: https://www.sonartracker.io/sitemap.xml
+Sitemap: https://www.sonartracker.io/sitemap-main.xml
+
+# Google Site Verification
+# google-site-verification=kUMRrdT4lX2VHZbCenjhRbxFfOQVd_gUzMtqpxaaa_A

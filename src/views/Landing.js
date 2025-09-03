@@ -1242,7 +1242,7 @@ const Landing = () => {
     <LandingContainer>
       <NavBar>
         <Logo>
-          <img src={`${process.env.PUBLIC_URL}/assets/logo2.png`} alt="Sonar Logo" />
+          <img src={`${process.env.PUBLIC_URL}/assets/logo2.png`} alt="Sonar Tracker - Real-Time Crypto Whale Tracking Platform Logo" />
         </Logo>
         <NavLinks>
           <NavLink onClick={() => {
@@ -1258,18 +1258,11 @@ const Landing = () => {
           }}>
             About
           </NavLink>
-          <NavLink onClick={() => {
-            const element = document.getElementById('pipeline');
-            const navbarHeight = 100; // approximate height of navbar
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth'
-            });
-          }}>
-            Pipeline
+          <NavLink onClick={() => navigate('/statistics')} title="View real-time crypto statistics and whale tracking data">
+            Statistics
+          </NavLink>
+          <NavLink onClick={() => navigate('/dashboard')} title="Access your personalized crypto analytics dashboard">
+            Dashboard
           </NavLink>
           <NavLink onClick={() => {
             const element = document.getElementById('screenshots');
@@ -1282,35 +1275,18 @@ const Landing = () => {
               behavior: 'smooth'
             });
           }}>
-            Results
+            Features
           </NavLink>
-                     <NavLink onClick={() => {
-             const element = document.getElementById('advisor');
-             const navbarHeight = 100; // approximate height of navbar
-             const elementPosition = element.getBoundingClientRect().top;
-             const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-             
-             window.scrollTo({
-               top: offsetPosition,
-               behavior: 'smooth'
-             });
-           }}>
-             Orca 2.0
-           </NavLink>
-           <NavLink onClick={() => {
-             const element = document.getElementById('pricing');
-             const navbarHeight = 100; // approximate height of navbar
-             const elementPosition = element.getBoundingClientRect().top;
-             const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-             
-             window.scrollTo({
-               top: offsetPosition,
-               behavior: 'smooth'
-             });
-           }}>
-             Price
-           </NavLink>
-          <LoginButton onClick={() => setShowLoginModal(true)}>
+          <NavLink onClick={() => navigate('/news')} title="Latest cryptocurrency market news and updates">
+            News
+          </NavLink>
+          <NavLink onClick={() => navigate('/ai-advisor')} title="AI-powered crypto trading insights and recommendations">
+            AI Advisor
+          </NavLink>
+          <NavLink onClick={() => navigate('/blog')} title="Crypto analytics guides and educational content">
+            Blog
+          </NavLink>
+          <LoginButton onClick={() => setShowLoginModal(true)} title="Sign in to access premium features">
             Login
           </LoginButton>
         </NavLinks>
@@ -1377,25 +1353,23 @@ const Landing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1 }}
             >
-              <Button 
+              <Button
                 className="primary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setShowLoginModal(true);
-                }}
+                onClick={() => navigate('/dashboard')}
+                title="Start using Sonar Tracker crypto analytics dashboard"
               >
                 Get Started
               </Button>
-              <Button 
+              <Button
                 className="secondary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setShowLoginModal(true);
-                }}
+                onClick={() => navigate('/statistics')}
+                title="Explore real-time crypto statistics and whale tracking"
               >
-                Get Demo
+                View Statistics
               </Button>
             </ButtonGroup>
           </motion.div>
@@ -1592,28 +1566,28 @@ const Landing = () => {
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img src={`${process.env.PUBLIC_URL}/screenshots/stats-dashboard.png`} alt="Statistics Dashboard" />
+              <img src={`${process.env.PUBLIC_URL}/screenshots/stats-dashboard.png`} alt="Sonar Tracker Statistics Dashboard - Real-time crypto whale tracking and market analytics interface" loading="lazy" />
               <div className="caption">Real-time crypto transaction monitoring</div>
             </Screenshot>
             <Screenshot
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img src={`${process.env.PUBLIC_URL}/screenshots/top-coins.png`} alt="Top Coins Analysis" />
+              <img src={`${process.env.PUBLIC_URL}/screenshots/top-coins.png`} alt="Sonar Tracker Top Coins Analysis - Cryptocurrency market trends and leaderboards" loading="lazy" />
               <div className="caption">Top buying and selling coin trends</div>
             </Screenshot>
             <Screenshot
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img src={`${process.env.PUBLIC_URL}/screenshots/price-filter.png`} alt="Price Filter" />
+              <img src={`${process.env.PUBLIC_URL}/screenshots/price-filter.png`} alt="Sonar Tracker Price Filter - Customizable crypto transaction filters and thresholds" loading="lazy" />
               <div className="caption">Customizable price threshold filters</div>
             </Screenshot>
             <Screenshot
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img src={`${process.env.PUBLIC_URL}/screenshots/news-feed.png`} alt="News Feed" />
+              <img src={`${process.env.PUBLIC_URL}/screenshots/news-feed.png`} alt="Sonar Tracker News Feed - Latest cryptocurrency market news and trading updates" loading="lazy" />
               <div className="caption">Latest crypto news categorized by market activity</div>
             </Screenshot>
           </ScreenshotGrid>
@@ -1753,6 +1727,98 @@ const Landing = () => {
           {waitMsg && <p style={{ marginTop: 10, color: 'var(--text-secondary)' }}>{waitMsg}</p>}
         </AdvisorCard>
       </AdvisorSection>
+
+      {/* Footer with Strategic Internal Links */}
+      <footer style={{
+        background: 'var(--background-dark)',
+        padding: '3rem 2rem 1rem',
+        borderTop: '1px solid var(--secondary)',
+        marginTop: '4rem'
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '2rem'
+        }}>
+          <div>
+            <img src={`${process.env.PUBLIC_URL}/assets/logo2.png`} alt="Sonar Tracker Logo" style={{ width: '120px', marginBottom: '1rem' }} />
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              Professional crypto whale tracking and blockchain analytics platform for institutional traders.
+            </p>
+          </div>
+
+          <div>
+            <h4 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Platform</h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/dashboard" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Access your personalized crypto analytics dashboard">Dashboard</a>
+              </li>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/statistics" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Real-time crypto whale tracking statistics">Statistics</a>
+              </li>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/news" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Latest cryptocurrency market news">News</a>
+              </li>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/ai-advisor" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="AI-powered crypto trading insights">AI Advisor</a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Resources</h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/blog" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Crypto analytics guides and educational content">Blog</a>
+              </li>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/faq" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Frequently asked questions about crypto analytics">FAQ</a>
+              </li>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/tokens" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Token analysis and leaderboards">Tokens</a>
+              </li>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/whales" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Whale tracking and leaderboards">Whales</a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Legal</h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/privacy" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Privacy policy and data protection">Privacy Policy</a>
+              </li>
+              <li style={{ marginBottom: '0.5rem' }}>
+                <a href="/terms" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                   title="Terms of service and usage guidelines">Terms of Service</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div style={{
+          borderTop: '1px solid var(--secondary)',
+          marginTop: '2rem',
+          paddingTop: '1rem',
+          textAlign: 'center',
+          color: 'var(--text-secondary)',
+          fontSize: '0.9rem'
+        }}>
+          <p>© 2024 Sonar Tracker. Professional crypto analytics for institutional traders.</p>
+        </div>
+      </footer>
 
       {showLoginModal && (
         <Modal
