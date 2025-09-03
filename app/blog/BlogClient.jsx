@@ -1,15 +1,102 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+
+const PageContainer = styled.div`
+  min-height: 100vh;
+  background: var(--background-dark);
+`
+
+const NavBar = styled.nav`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 2rem;
+  background: var(--background-dark);
+  border-bottom: 1px solid var(--secondary);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+`
+
+const Logo = styled.div`
+  display: flex;
+  align-items: center;
+  img { 
+    height: 80px; 
+    width: auto; 
+    object-fit: contain; 
+    object-position: center; 
+    transition: height 0.3s ease; 
+  }
+`
+
+const NavLinks = styled.div`
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  
+  a { 
+    color: var(--text-primary); 
+    font-weight: 500; 
+    font-size: 1.05rem; 
+    text-decoration: none; 
+    transition: color 0.3s ease; 
+    position: relative; 
+  }
+  
+  a:after { 
+    content: ''; 
+    position: absolute; 
+    left: 0; 
+    bottom: -5px; 
+    width: 100%; 
+    height: 3px; 
+    background-color: var(--primary); 
+    transform: scaleX(0); 
+    transition: transform 0.3s ease; 
+  }
+  
+  a:hover { 
+    color: var(--primary); 
+  }
+  
+  a:hover:after { 
+    transform: scaleX(1); 
+  }
+  
+  @media (max-width: 768px) { 
+    display: none; 
+  }
+`
+
+const AuthButton = styled.button`
+  padding: 0.6rem 1.5rem;
+  background: ${props => props.variant === 'login' ? 'transparent' : 'var(--primary)'};
+  color: ${props => props.variant === 'login' ? 'var(--primary)' : 'white'};
+  border: 2px solid var(--primary);
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-left: 1rem;
+  
+  &:hover {
+    background: ${props => props.variant === 'login' ? 'var(--primary)' : 'var(--primary-hover)'};
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+  }
+`
 
 const BlogContainer = styled.main`
   max-width: 1200px;
   margin: 0 auto;
   padding: 4rem 2rem;
-  background: var(--background-dark);
-  min-height: 100vh;
 `
 
 const BlogHeader = styled.div`
@@ -208,6 +295,20 @@ export default function BlogClient() {
   const [email, setEmail] = useState('')
   const [subscribeMessage, setSubscribeMessage] = useState('')
   const [isSubscribing, setIsSubscribing] = useState(false)
+  const [user, setUser] = useState(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    const sb = supabaseBrowser()
+    sb.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user || null)
+    })
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const filteredPosts = posts.filter(post =>
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -234,23 +335,63 @@ export default function BlogClient() {
     }
   }
 
+  const handleLogin = () => {
+    router.push('/dashboard')
+  }
+
+  const handleLogout = async () => {
+    try {
+      await supabaseBrowser().auth.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error('Error logging out:', error)
+    }
+  }
+
   return (
-    <BlogContainer>
-      <BlogHeader>
-        <BlogTitle>Crypto Whale Insights</BlogTitle>
-        <BlogSubtitle>
-          Master whale tracking, copy trading strategies, and on-chain analytics with our comprehensive guides
-        </BlogSubtitle>
-        
-        <SearchBar>
-          <SearchInput
-            type="text"
-            placeholder="Search articles by topic, category, or keyword..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </SearchBar>
-      </BlogHeader>
+    <PageContainer>
+      <NavBar>
+        <Logo>
+          <Link href="/">
+            <img src="/logo2.png" alt="Sonar Tracker Logo" />
+          </Link>
+        </Logo>
+        <NavLinks>
+          <Link href="/">Home</Link>
+          <Link href="/blog">Blog</Link>
+          <Link href="/faq">FAQ</Link>
+          <Link href="/ai-advisor">AI Advisor</Link>
+          {user ? (
+            <>
+              <Link href="/dashboard">Dashboard</Link>
+              <AuthButton onClick={handleLogout} variant="login">
+                Logout
+              </AuthButton>
+            </>
+          ) : (
+            <AuthButton onClick={handleLogin}>
+              Login
+            </AuthButton>
+          )}
+        </NavLinks>
+      </NavBar>
+
+      <BlogContainer>
+        <BlogHeader>
+          <BlogTitle>Crypto Whale Insights</BlogTitle>
+          <BlogSubtitle>
+            Master whale tracking, copy trading strategies, and on-chain analytics with our comprehensive guides
+          </BlogSubtitle>
+          
+          <SearchBar>
+            <SearchInput
+              type="text"
+              placeholder="Search articles by topic, category, or keyword..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </SearchBar>
+        </BlogHeader>
 
       <PostsGrid>
         {filteredPosts.map((post, index) => (
@@ -311,6 +452,7 @@ export default function BlogClient() {
           </p>
         )}
       </NewsletterSection>
-    </BlogContainer>
+      </BlogContainer>
+    </PageContainer>
   )
 }

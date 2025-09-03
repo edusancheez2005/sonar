@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import BlogClient from './BlogClient'
 
 export const metadata = {
@@ -7,6 +7,25 @@ export const metadata = {
   alternates: { canonical: 'https://www.sonartracker.io/blog' },
 }
 
+function BlogLoading() {
+  return (
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh',
+      background: 'var(--background-dark)',
+      color: 'var(--text-primary)'
+    }}>
+      <div>Loading blog...</div>
+    </div>
+  )
+}
+
 export default function BlogIndex() {
-  return <BlogClient />
+  return (
+    <Suspense fallback={<BlogLoading />}>
+      <BlogClient />
+    </Suspense>
+  )
 } 
