@@ -1258,12 +1258,7 @@ const Landing = () => {
           }}>
             About
           </NavLink>
-          <NavLink onClick={() => navigate('/statistics')} title="View real-time crypto statistics and whale tracking data">
-            Statistics
-          </NavLink>
-          <NavLink onClick={() => navigate('/dashboard')} title="Access your personalized crypto analytics dashboard">
-            Dashboard
-          </NavLink>
+
           <NavLink onClick={() => {
             const element = document.getElementById('screenshots');
             const navbarHeight = 100; // approximate height of navbar
@@ -1277,9 +1272,7 @@ const Landing = () => {
           }}>
             Features
           </NavLink>
-          <NavLink onClick={() => navigate('/news')} title="Latest cryptocurrency market news and updates">
-            News
-          </NavLink>
+
           <NavLink onClick={() => navigate('/ai-advisor')} title="AI-powered crypto trading insights and recommendations">
             AI Advisor
           </NavLink>
@@ -1366,10 +1359,10 @@ const Landing = () => {
                 className="secondary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/statistics')}
-                title="Explore real-time crypto statistics and whale tracking"
+                onClick={() => setShowLoginModal(true)}
+                title="Sign up to access real-time crypto statistics and whale tracking"
               >
-                View Statistics
+                Get Started
               </Button>
             </ButtonGroup>
           </motion.div>
@@ -1752,18 +1745,7 @@ const Landing = () => {
           <div>
             <h4 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Platform</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              <li style={{ marginBottom: '0.5rem' }}>
-                <a href="/dashboard" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
-                   title="Access your personalized crypto analytics dashboard">Dashboard</a>
-              </li>
-              <li style={{ marginBottom: '0.5rem' }}>
-                <a href="/statistics" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
-                   title="Real-time crypto whale tracking statistics">Statistics</a>
-              </li>
-              <li style={{ marginBottom: '0.5rem' }}>
-                <a href="/news" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
-                   title="Latest cryptocurrency market news">News</a>
-              </li>
+
               <li style={{ marginBottom: '0.5rem' }}>
                 <a href="/ai-advisor" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
                    title="AI-powered crypto trading insights">AI Advisor</a>
