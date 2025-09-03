@@ -348,9 +348,17 @@ const SubscribeButton = styled.button`
 
 const posts = [
   { 
+    slug: 'orca-ai-crypto-trading', 
+    title: 'Orca AI: Next-Generation Crypto Trading Intelligence', 
+    summary: 'Discover how Orca AI revolutionizes crypto trading with advanced pattern recognition and market analysis.',
+    readTime: '7 min read',
+    category: 'AI & Technology',
+    date: 'Dec 18, 2024'
+  },
+  { 
     slug: 'what-is-whale-tracking', 
     title: 'What is Whale Tracking? How It Works and Why It Matters', 
-    summary: 'Learn how whale tracking reveals large on‑chain moves and how traders use it for edge.',
+    summary: 'Understand how whale tracking reveals large on‑chain moves and how traders use it for edge.',
     readTime: '5 min read',
     category: 'Basics',
     date: 'Dec 15, 2024'
