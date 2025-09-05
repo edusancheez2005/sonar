@@ -347,6 +347,9 @@ const Dashboard = () => {
               rawUsd,
               usdValue: formatNumber(rawUsd),
               hash: r.transaction_hash || '—',
+              from_address: r.from_address || '—',
+              to_address: r.to_address || '—',
+              whale_score: r.whale_score || 0,
             }
           }))
                      setTopBuys(json.topBuys || [])
@@ -473,6 +476,8 @@ const Dashboard = () => {
                   <th>Action</th>
                   <th>Blockchain</th>
                   <th>USD Value</th>
+                  <th>Whale Score</th>
+                  <th>From Address</th>
                   <th>Transaction</th>
                 </tr>
               </thead>
@@ -486,11 +491,29 @@ const Dashboard = () => {
                         <td><span className={`action-${transaction.action.toLowerCase() || 'transfer'}`}>{transaction.action}</span></td>
                         <td>{transaction.blockchain}</td>
                         <td className="price">${transaction.usdValue}</td>
+                        <td className="whale-score" style={{ 
+                          color: transaction.whale_score > 75 ? '#e74c3c' : 
+                                transaction.whale_score > 50 ? '#f39c12' : 
+                                transaction.whale_score > 25 ? '#3498db' : '#95a5a6',
+                          fontWeight: '600'
+                        }}>
+                          {transaction.whale_score > 0 ? Math.round(transaction.whale_score) : '—'}
+                        </td>
+                        <td className="address" style={{ 
+                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                          fontSize: '0.85rem',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          {transaction.from_address !== '—' ? 
+                            `${transaction.from_address.slice(0, 6)}...${transaction.from_address.slice(-4)}` : 
+                            '—'
+                          }
+                        </td>
                         <td className="hash">{transaction.hash ? `${transaction.hash.slice(0,6)}...${transaction.hash.slice(-4)}` : '—'}</td>
                       </motion.tr>
                     ))
                   ) : (
-                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>No transactions match the current minimum value. Try lowering the minimum value.</td></tr>
+                    <tr><td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>No transactions match the current minimum value. Try lowering the minimum value.</td></tr>
                   )}
                 </AnimatePresence>
               </tbody>

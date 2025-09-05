@@ -7,19 +7,21 @@ export async function GET() {
       return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
     }
 
-    // Get data from last 24 hours only
+    // Get data from last 7 days to ensure we have data, then filter to 24h in processing
+    const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-    // Fetch recent transactions (last 10) - handle case where no data exists
+    // Fetch recent transactions (last 100 from 7 days, then filter to 24h) - handle case where no data exists
     const { data: recentData, error: recentError } = await supabaseAdmin
       .from('whale_transactions')
-      .select('transaction_hash, timestamp, token_symbol, classification, blockchain, usd_value, from_address')
+      .select('transaction_hash, timestamp, token_symbol, classification, blockchain, usd_value, from_address, whale_score, to_address')
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')
-      .not('classification', 'ilike', 'transfer')
-      .gte('timestamp', since24h)
+      .gte('timestamp', since7d)
       .order('timestamp', { ascending: false })
-      .limit(10)
+      .limit(100)
+
+    console.log(`Dashboard API: Fetched ${recentData?.length || 0} transactions from Supabase, error:`, recentError)
 
     if (recentError) {
       console.error('Error fetching recent transactions:', recentError)
@@ -36,7 +38,9 @@ export async function GET() {
       })
     }
 
-    const recent = (recentData || []).map((t) => ({
+    // Filter to last 24 hours and take top 20 transactions
+    const recent24h = (recentData || []).filter(t => new Date(t.timestamp) >= new Date(since24h))
+    const recent = recent24h.slice(0, 20).map((t) => ({
       transaction_hash: t.transaction_hash,
       time: t.timestamp,
       coin: t.token_symbol,
@@ -44,31 +48,16 @@ export async function GET() {
       blockchain: t.blockchain,
       usd_value: Number(t.usd_value || 0),
       from_address: t.from_address || null,
+      to_address: t.to_address || null,
+      whale_score: Number(t.whale_score || 0),
     }))
 
-    // Get aggregated data from last 24 hours for all insights
-    const { data: aggData, error: aggError } = await supabaseAdmin
-      .from('whale_transactions')
-      .select('token_symbol, classification, usd_value, blockchain, timestamp, from_address')
-      .not('token_symbol', 'is', null)
-      .not('token_symbol', 'ilike', 'unknown%')
-      .gte('timestamp', since24h)
-      .order('timestamp', { ascending: false })
+    console.log(`Dashboard API: Found ${recentData?.length || 0} total transactions, ${recent24h.length} in last 24h, showing ${recent.length}`)
 
-    if (aggError) {
-      console.error('Error fetching aggregated data:', aggError)
-      // Return basic data with empty insights
-      return NextResponse.json({
-        recent,
-        topBuys: [],
-        topSells: [],
-        blockchainVolume: { labels: [], data: [] },
-        marketSentiment: { ratio: 50, trend: 'neutral' },
-        riskMetrics: { highValueCount: 0, avgTransactionSize: 0 },
-        marketMomentum: { volumeChange: 0, activityChange: 0 },
-        whaleActivity: []
-      })
-    }
+    // Use the 24-hour filtered data for aggregation
+    const aggData = recent24h || []
+
+    // Process the data we have
 
     const byCoin = new Map()
     const byCoinBuyCounts = new Map()
