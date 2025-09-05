@@ -11,15 +11,32 @@ const ogImage = '/screenshots/stats-dashboard.png'
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Sonar Tracker — Real‑Time Crypto Whale Tracking & Blockchain Analytics',
+    default: 'Sonar Tracker — Crypto Tracker Sonar | Real‑Time Whale Tracking & Blockchain Analytics',
     template: '%s | Sonar Tracker Crypto'
   },
-  description: 'Professional crypto whale tracking platform: Monitor real-time whale transactions, token leaderboards, and blockchain analytics. AI-powered insights for institutional traders and crypto investors.',
+  description: 'Sonar Tracker: The leading crypto tracker sonar platform for real-time whale monitoring. Professional blockchain analytics, crypto tracker sonar technology, and institutional trading insights. Track crypto whales with Sonar Tracker.',
   keywords: [
+    // Primary brand variations
+    'sonar tracker',
+    'sonar tracker crypto',
+    'sonar crypto tracker', 
+    'crypto tracker sonar',
+    'crypto sonar tracker',
+    'sonar blockchain tracker',
+    'tracker sonar crypto',
+    'sonar whale tracker',
+    // Core functionality keywords
     'crypto whale tracking platform',
     'blockchain analytics tool',
     'cryptocurrency whale alerts',
     'real time crypto monitoring',
+    'crypto tracker platform',
+    'whale tracker sonar',
+    'crypto tracking sonar',
+    'sonar crypto analytics',
+    'blockchain tracker sonar',
+    'crypto whale tracker sonar',
+    // Professional/institutional terms
     'institutional crypto trading',
     'blockchain intelligence platform',
     'crypto market analysis tool',
@@ -31,10 +48,13 @@ export const metadata = {
     'blockchain transaction monitoring',
     'crypto whale detection',
     'professional crypto analytics',
-    'sonar tracker crypto',
-    'sonar crypto tracker',
     'crypto sonar platform',
-    'blockchain sonar analytics'
+    'blockchain sonar analytics',
+    // Long-tail variations
+    'sonar tracker crypto whale',
+    'crypto tracker sonar whale',
+    'sonar whale tracking platform',
+    'crypto sonar whale tracker'
   ],
   authors: [{ name: 'Sonar Tracker Team' }],
   creator: 'Sonar Tracker',
@@ -61,8 +81,8 @@ export const metadata = {
     },
   },
   openGraph: {
-    title: 'Sonar Tracker — Real‑Time Whale Transactions & Crypto Analytics',
-    description: 'Track crypto whales in real time: live transactions, token leaderboards, whale alerts, and on‑chain analytics across top blockchains. Monitor institutional trading patterns with AI-powered insights.',
+    title: 'Sonar Tracker — Crypto Tracker Sonar | Real‑Time Whale Transactions & Analytics',
+    description: 'Sonar Tracker: The leading crypto tracker sonar platform. Track crypto whales in real time with our crypto sonar tracker technology. Professional blockchain analytics for institutional traders.',
     url: siteUrl,
     siteName: 'Sonar Tracker',
     images: [
@@ -90,8 +110,8 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Sonar Tracker — Real‑Time Whale Transactions & Crypto Analytics',
-    description: 'Track crypto whales in real time: live transactions, token leaderboards, whale alerts, and on‑chain analytics across top blockchains.',
+    title: 'Sonar Tracker — Crypto Tracker Sonar | Whale Tracking Platform',
+    description: 'Sonar Tracker: Professional crypto tracker sonar platform. Real-time whale monitoring with crypto sonar tracker technology for institutional trading.',
     images: [ogImage],
     creator: '@sonartracker',
     site: '@sonartracker',

@@ -1242,7 +1242,7 @@ const Landing = () => {
     <LandingContainer>
       <NavBar>
         <Logo>
-          <img src={`${process.env.PUBLIC_URL}/assets/logo2.png`} alt="Sonar Tracker - Real-Time Crypto Whale Tracking Platform Logo" />
+          <img src={`${process.env.PUBLIC_URL}/assets/logo2.png`} alt="Sonar Tracker - Crypto Tracker Sonar Platform Logo" />
         </Logo>
         <NavLinks>
           <NavLink onClick={() => {
@@ -1333,12 +1333,13 @@ const Landing = () => {
             animate="visible"
           >
             <HeroTitle variants={itemVariants}>
-              Track Cryptocurrency Markets in Real-Time
+              Sonar Tracker: Advanced Crypto Tracker Sonar Platform
             </HeroTitle>
             
             <HeroSubtitle variants={itemVariants}>
-              Sonar provides powerful tools to monitor cryptocurrency transactions, 
-              analyze market trends, and stay updated with the latest news.
+              The leading crypto tracker sonar for real-time whale monitoring. 
+              Sonar Tracker delivers professional blockchain analytics and crypto sonar tracker 
+              technology for institutional traders and crypto investors.
             </HeroSubtitle>
             
             <ButtonGroup
@@ -1723,6 +1724,13 @@ const Landing = () => {
           {waitMsg && <p style={{ marginTop: 10, color: 'var(--text-secondary)' }}>{waitMsg}</p>}
         </AdvisorCard>
       </AdvisorSection>
+
+      {/* Hidden SEO Content for Keyword Variations */}
+      <div style={{ position: 'absolute', left: '-9999px', opacity: 0, fontSize: '1px' }}>
+        <h1>Sonar Tracker - Crypto Tracker Sonar Platform</h1>
+        <p>Crypto tracker sonar technology by Sonar Tracker. The leading sonar tracker for cryptocurrency whale monitoring. Professional crypto sonar tracker platform for blockchain analytics. Sonar crypto tracker with real-time whale tracking capabilities.</p>
+        <p>Tracker sonar crypto solutions including whale tracker sonar, crypto tracking sonar, and sonar blockchain tracker features. Sonar whale tracker for institutional crypto trading.</p>
+      </div>
 
       {/* Footer with Strategic Internal Links */}
       <footer style={{
