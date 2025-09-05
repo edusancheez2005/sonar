@@ -1350,8 +1350,8 @@ const Landing = () => {
                 className="primary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/dashboard')}
-                title="Start using Sonar Tracker crypto analytics dashboard"
+                onClick={() => setShowLoginModal(true)}
+                title="Sign up to access real-time crypto statistics and whale tracking"
               >
                 Get Started
               </Button>
@@ -1359,10 +1359,13 @@ const Landing = () => {
                 className="secondary"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setShowLoginModal(true)}
-                title="Sign up to access real-time crypto statistics and whale tracking"
+                onClick={() => {
+                  const element = document.getElementById('screenshots');
+                  element?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                title="See Sonar Tracker dashboard screenshots and features"
               >
-                Get Started
+                View Demo
               </Button>
             </ButtonGroup>
           </motion.div>
