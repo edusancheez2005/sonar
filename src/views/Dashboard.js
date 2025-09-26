@@ -4,6 +4,20 @@ import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
 import Link from 'next/link'
+import { Line, Bar, Doughnut } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend
+} from 'chart.js'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend)
 
 const DashboardContainer = styled.div`
   padding: 2rem;
@@ -310,12 +324,22 @@ const RiskIndicator = styled.div`
 `;
 
 const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const formatCompact = (n) => {
+  const num = Number(n || 0);
+  const abs = Math.abs(num);
+  if (abs >= 1e12) return `${(num/1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${(num/1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(num/1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${(num/1e3).toFixed(2)}K`;
+  return `${Math.round(num)}`;
+}
 
 const Dashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [topBuys, setTopBuys] = useState([]);
   const [topSells, setTopSells] = useState([]);
   const [blockchainData, setBlockchainData] = useState({ labels: [], data: [] });
+  const [tokenTradeCounts, setTokenTradeCounts] = useState([]);
   const [noData24h, setNoData24h] = useState(false);
   const [minValue, setMinValue] = useState(0);
   const [lastUpdate, setLastUpdate] = useState('now');
@@ -327,6 +351,11 @@ const Dashboard = () => {
    const [whaleActivity, setWhaleActivity] = useState([]);
    const [riskMetrics, setRiskMetrics] = useState({ highValueCount: 0, avgTransactionSize: 0 });
    const [marketMomentum, setMarketMomentum] = useState({ volumeChange: 0, activityChange: 0 });
+  const [timeSeries, setTimeSeries] = useState({ labels: [], volume: [], count: [] })
+  const [tokenLeaders, setTokenLeaders] = useState([])
+  const [tokenInflows, setTokenInflows] = useState([])
+  const [tokenOutflows, setTokenOutflows] = useState([])
+  const [overall, setOverall] = useState({ totalCount: 0, totalVolume: 0, buyCount: 0, sellCount: 0, buyVolume: 0, sellVolume: 0 })
 
   useEffect(() => {
     let timer
@@ -362,6 +391,50 @@ const Dashboard = () => {
            setRiskMetrics(json.riskMetrics || { highValueCount: 0, avgTransactionSize: 0 });
            setMarketMomentum(json.marketMomentum || { volumeChange: 0, activityChange: 0 });
            setWhaleActivity(json.whaleActivity || []);
+          setTimeSeries(json.timeSeries || { labels: [], volume: [], count: [] })
+          setTokenLeaders(json.tokenLeaders || [])
+          setTokenInflows(json.tokenInflows || [])
+          setTokenOutflows(json.tokenOutflows || [])
+          setOverall(json.overall || { totalCount: 0, totalVolume: 0, buyCount: 0, sellCount: 0, buyVolume: 0, sellVolume: 0 })
+          // Normalize tokenTradeCounts to an array of { token, count }
+          const ttc = json.tokenTradeCounts
+          let normalized = []
+          if (Array.isArray(ttc)) {
+            // Could be array of objects or tuples
+            normalized = ttc.map((item) => {
+              if (Array.isArray(item)) {
+                const [tok, cnt] = item
+                return { token: String(tok || '').trim().toUpperCase(), count: Number(cnt || 0) }
+              }
+              const token = String(item?.token || item?.symbol || '').trim().toUpperCase()
+              const count = Number(item?.count ?? item?.txCount ?? 0)
+              return { token, count }
+            })
+          } else if (ttc && typeof ttc === 'object') {
+            normalized = Object.entries(ttc).map(([token, count]) => ({ token: String(token || '').trim().toUpperCase(), count: Number(count || 0) }))
+          }
+          // Clean, sort, top 10
+          let cleaned = (normalized || [])
+            .filter((x) => x && x.token && !Number.isNaN(x.count) && x.count > 0)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10)
+          // Fallback: derive counts from inflow/outflow aggregates if needed
+          if (!cleaned.length) {
+            const fallbackMap = new Map()
+            const inflows = Array.isArray(json.tokenInflows) ? json.tokenInflows : []
+            const outflows = Array.isArray(json.tokenOutflows) ? json.tokenOutflows : []
+            ;[...inflows, ...outflows].forEach((t) => {
+              const token = String(t?.token || '').trim().toUpperCase()
+              const cnt = Number(t?.txCount || 0)
+              if (token && cnt > 0) fallbackMap.set(token, (fallbackMap.get(token) || 0) + cnt)
+            })
+            const fb = Array.from(fallbackMap.entries()).map(([token, count]) => ({ token, count }))
+              .filter((x) => x && x.token && !Number.isNaN(x.count) && x.count > 0)
+              .sort((a, b) => b.count - a.count)
+              .slice(0, 10)
+            cleaned = fb
+          }
+          setTokenTradeCounts(cleaned)
           setNoData24h(Boolean(json.noData24h));
           
           setLastUpdate('just now')
@@ -461,6 +534,7 @@ const Dashboard = () => {
 
       
 
+
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
         <IncomingDataSection>
           <IncomingDataHeader>
@@ -488,7 +562,7 @@ const Dashboard = () => {
               <tbody>
                 <AnimatePresence>
                   {filteredTransactions.length > 0 ? (
-                    filteredTransactions.map(transaction => (
+                    filteredTransactions.slice(0, 5).map(transaction => (
                       <motion.tr key={transaction.id} variants={itemVariants} initial="hidden" animate="visible" exit={{ opacity: 0, height: 0 }}>
                         <td className="time">{transaction.time}</td>
                         <td className="token">{transaction.coin ? (<Link href={`/token/${encodeURIComponent(transaction.coin)}`}>{transaction.coin}</Link>) : '—'}</td>
@@ -524,6 +598,89 @@ const Dashboard = () => {
             </TransactionTable>
           )}
         </IncomingDataSection>
+      </motion.div>
+
+      {/* Net Inflows/Outflows section */}
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }}>
+        <GridContainer>
+          <DashboardCard>
+            <h2>Top Net Inflows (24h)</h2>
+            {tokenInflows.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
+            ) : (
+              <Bar
+                data={{
+                  labels: tokenInflows.map(t => t.token),
+                  datasets: [{ label: 'Net USD', data: tokenInflows.map(t => t.netUsdRobust ?? t.netUsd), backgroundColor: 'rgba(46,204,113,0.6)', borderColor: '#2ecc71' }]
+                }}
+                options={{
+                  responsive: true,
+                  plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `$${formatNumber(Math.round(ctx.parsed.y || 0))}` } } },
+                  onClick: (_evt, elements) => { try { if (!elements?.length) return; const idx = elements[0].index; const token = tokenInflows[idx]?.token; if (token) window.location.href = `/statistics?token=${encodeURIComponent(token)}&sinceHours=24` } catch {} },
+                  scales: { y: { beginAtZero: true, ticks: { color: '#a0b2c6', callback: (v) => `$${Number(v).toLocaleString()}` } }, x: { ticks: { color: '#a0b2c6' } } }
+                }}
+              />
+            )}
+          </DashboardCard>
+
+          <DashboardCard>
+            <h2>Top Net Outflows (24h)</h2>
+            {tokenOutflows.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
+            ) : (
+              <Bar
+                data={{
+                  labels: tokenOutflows.map(t => t.token),
+                  datasets: [{ label: 'Net USD', data: tokenOutflows.map(t => Math.abs(t.netUsdRobust ?? t.netUsd)), backgroundColor: 'rgba(231,76,60,0.6)', borderColor: '#e74c3c' }]
+                }}
+                options={{
+                  responsive: true,
+                  plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `-$${formatNumber(Math.round(ctx.parsed.y || 0))}` } } },
+                  onClick: (_evt, elements) => { try { if (!elements?.length) return; const idx = elements[0].index; const token = tokenOutflows[idx]?.token; if (token) window.location.href = `/statistics?token=${encodeURIComponent(token)}&sinceHours=24` } catch {} },
+                  scales: { y: { beginAtZero: true, ticks: { color: '#a0b2c6', callback: (v) => `-$${Number(v).toLocaleString()}` } }, x: { ticks: { color: '#a0b2c6' } } }
+                }}
+              />
+            )}
+          </DashboardCard>
+        </GridContainer>
+      </motion.div>
+
+      {/* Buy vs Sell section below inflows/outflows */}
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }}>
+        <DashboardCard style={{ maxWidth: '600px', margin: '0 auto 2rem' }}>
+          <h2>Buy vs Sell Distribution (24h)</h2>
+          {(overall.buyCount + overall.sellCount) === 0 ? (
+            <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
+          ) : (
+            <Doughnut
+              data={{
+                labels: ['Buys (volume)', 'Sells (volume)'],
+                datasets: [{
+                  data: [overall.buyVolume, overall.sellVolume],
+                  backgroundColor: ['rgba(46,204,113,0.6)', 'rgba(231,76,60,0.6)'],
+                  borderColor: ['#2ecc71', '#e74c3c']
+                }]
+              }}
+              options={{ 
+                plugins: { 
+                  legend: { position: 'bottom' },
+                  tooltip: { callbacks: { label: (ctx) => {
+                    const total = (overall.buyVolume || 0) + (overall.sellVolume || 0);
+                    const val = ctx.parsed || 0; 
+                    const pct = total > 0 ? ((val/total)*100).toFixed(1) : '0.0';
+                    return `${ctx.label}: $${formatCompact(val)} (${pct}%)`;
+                  } } }
+                } 
+              }}
+            />
+          )}
+          <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+            <div style={{ color: 'var(--text-secondary)' }}>Buy Volume: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>${formatCompact(overall.buyVolume)}</span></div>
+            <div style={{ color: 'var(--text-secondary)' }}>Sell Volume: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>${formatCompact(overall.sellVolume)}</span></div>
+            <div style={{ color: 'var(--text-secondary)' }}>Buy Count: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatNumber(overall.buyCount)}</span></div>
+            <div style={{ color: 'var(--text-secondary)' }}>Sell Count: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatNumber(overall.sellCount)}</span></div>
+          </div>
+        </DashboardCard>
       </motion.div>
 
       <GridContainer>
@@ -629,10 +786,10 @@ const Dashboard = () => {
              </div>
                            <div className="insight-label">Volume Change</div>
              <div style={{ marginTop: '1rem' }}>
-               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                 <span>Transaction Count:</span>
-                 <span style={{ fontWeight: '600' }}>{marketMomentum.activityChange}</span>
-               </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span>Transaction Count:</span>
+                <span style={{ fontWeight: '600' }}>{formatNumber(overall.totalCount || 0)}</span>
+              </div>
                
              </div>
            </InsightCard>
@@ -641,33 +798,35 @@ const Dashboard = () => {
 
              
 
-             <motion.div variants={containerVariants} initial="hidden" animate="visible">
-         <DashboardCard>
-           <h2>Transaction Volume by Blockchain</h2>
-          <div style={{ minHeight: '220px' }}>
-            {noData24h || blockchainData.labels.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
-            ) : (
-              <BarsContainer>
-                {blockchainData.labels.map((label, i) => {
-                  const value = Number(blockchainData.data[i] || 0)
-                  const max = Math.max(...blockchainData.data.map(Number), 1)
-                  const pct = Math.max(0, (value / max) * 100)
-                  return (
-                    <BarRow key={label}>
-                      <div style={{ color: 'var(--text-secondary)' }}>{label}</div>
-                      <BarTrack>
-                        <BarFill style={{ width: `${pct}%` }} />
-                      </BarTrack>
-                      <div style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{value}</div>
-                    </BarRow>
-                  )
-                })}
-              </BarsContainer>
-            )}
-          </div>
-        </DashboardCard>
-      </motion.div>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }}>
+        <DashboardCard>
+          <h2>Most Traded Tokens (24h)</h2>
+         <div style={{ minHeight: '220px' }}>
+           {noData24h || tokenTradeCounts.length === 0 ? (
+             <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
+           ) : (
+             <BarsContainer>
+               {tokenTradeCounts.map((t) => {
+                 const max = Math.max(...tokenTradeCounts.map(x => Number(x.count || 0)), 1)
+                 const value = Number(t.count || 0)
+                 const pct = Math.max(0, (value / max) * 100)
+                 return (
+                   <BarRow key={t.token}>
+                     <div style={{ color: 'var(--text-secondary)' }}>
+                       <Link href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`}>{t.token}</Link>
+                     </div>
+                     <BarTrack>
+                       <BarFill style={{ width: `${pct}%` }} />
+                     </BarTrack>
+                     <div style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{formatNumber(value)}</div>
+                   </BarRow>
+                 )
+               })}
+             </BarsContainer>
+           )}
+         </div>
+       </DashboardCard>
+     </motion.div>
     </DashboardContainer>
   );
 };

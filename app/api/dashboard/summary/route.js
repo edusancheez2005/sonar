@@ -57,6 +57,38 @@ export async function GET() {
 
     console.log(`Dashboard API: Found ${recentData?.length || 0} total transactions, ${recent24h.length} in last 24h, showing ${recent.length}`)
 
+    // Accurate 24h counts for totals and global buy/sell ratio
+    let total24hCount = null
+    let totalBuyCount24h = null
+    let totalSellCount24h = null
+    try {
+      const [tot, buys, sells] = await Promise.all([
+        supabaseAdmin.from('whale_transactions')
+          .select('transaction_hash', { count: 'exact', head: true })
+          .not('token_symbol', 'is', null)
+          .not('token_symbol', 'ilike', 'unknown%')
+          .gte('timestamp', since24h)
+          .lte('timestamp', nowIso),
+        supabaseAdmin.from('whale_transactions')
+          .select('classification', { count: 'exact', head: true })
+          .not('token_symbol', 'is', null)
+          .not('token_symbol', 'ilike', 'unknown%')
+          .gte('timestamp', since24h)
+          .lte('timestamp', nowIso)
+          .ilike('classification', 'buy%'),
+        supabaseAdmin.from('whale_transactions')
+          .select('classification', { count: 'exact', head: true })
+          .not('token_symbol', 'is', null)
+          .not('token_symbol', 'ilike', 'unknown%')
+          .gte('timestamp', since24h)
+          .lte('timestamp', nowIso)
+          .ilike('classification', 'sell%')
+      ])
+      total24hCount = tot?.count ?? null
+      totalBuyCount24h = buys?.count ?? null
+      totalSellCount24h = sells?.count ?? null
+    } catch {}
+
     // Use the 24-hour filtered data for aggregation
     const aggData = recent24h || []
 
@@ -67,6 +99,8 @@ export async function GET() {
     const byCoinSellCounts = new Map()
     const byChain = new Map()
     const byTokenWhales = new Map()
+    const byTokenVolume = new Map()
+    const byTokenSignedValues = new Map()
     const allTransactions = []
 
     // Process aggregated data safely
@@ -100,8 +134,14 @@ export async function GET() {
         tokenData.netUsd -= usdValue
       }
 
+      // Track token total traded volume (absolute)
+      byTokenVolume.set(coin, (byTokenVolume.get(coin) || 0) + Math.abs(usdValue))
+      // Track signed values for robust net computation per token
+      if (!byTokenSignedValues.has(coin)) byTokenSignedValues.set(coin, [])
+      byTokenSignedValues.get(coin).push(isSell ? -usdValue : usdValue)
+
       // Store transaction for momentum calculation
-      allTransactions.push({ usd_value: usdValue, timestamp })
+      allTransactions.push({ usd_value: usdValue, timestamp, klass })
     }
 
     function computeTopPercent(type) {
@@ -129,19 +169,29 @@ export async function GET() {
       data: Array.from(byChain.values()),
     }
 
-    // Calculate market sentiment based on raw buy/sell counts
+    // Calculate market sentiment using the global 24h buy/sell counts when available
     let buyRatio = 50 // default neutral
     let trend = 'neutral'
     {
-      let totalBuyCount = 0
-      let totalSellCount = 0
-      for (const [coin, buys] of byCoinBuyCounts.entries()) totalBuyCount += buys
-      for (const [coin, sells] of byCoinSellCounts.entries()) totalSellCount += sells
-      const denom = totalBuyCount + totalSellCount
-      if (denom > 0) {
-        buyRatio = (totalBuyCount / denom) * 100
+      const hasGlobal = Number.isFinite(Number(totalBuyCount24h)) && Number.isFinite(Number(totalSellCount24h))
+      if (hasGlobal) {
+        const denom = Number(totalBuyCount24h) + Number(totalSellCount24h)
+        if (denom > 0) {
+          buyRatio = (Number(totalBuyCount24h) / denom) * 100
+          if (buyRatio > 60) trend = 'bullish'
+          else if (buyRatio < 40) trend = 'bearish'
+        }
+      } else {
+        let totalBuyCount = 0
+        let totalSellCount = 0
+        for (const [, buys] of byCoinBuyCounts.entries()) totalBuyCount += buys
+        for (const [, sells] of byCoinSellCounts.entries()) totalSellCount += sells
+        const denom = totalBuyCount + totalSellCount
+        if (denom > 0) {
+          buyRatio = (totalBuyCount / denom) * 100
         if (buyRatio > 60) trend = 'bullish'
         else if (buyRatio < 40) trend = 'bearish'
+        }
       }
     }
 
@@ -187,6 +237,106 @@ export async function GET() {
       }
     }
 
+    // Build 24h time series (per hour) for volume and count
+    const now = Date.now()
+    const hourMs = 60 * 60 * 1000
+    const seriesBuckets = Array.from({ length: 24 }, (_, i) => ({
+      start: now - (23 - i) * hourMs,
+      end: now - (22 - i) * hourMs,
+      volume: 0,
+      count: 0,
+    }))
+    for (const t of allTransactions) {
+      const ts = new Date(t.timestamp).getTime()
+      const idxFloat = (ts - (now - 24 * hourMs)) / hourMs
+      const idx = Math.floor(idxFloat)
+      if (idx >= 0 && idx < 24) {
+        seriesBuckets[idx].volume += Number(t.usd_value) || 0
+        seriesBuckets[idx].count += 1
+      }
+    }
+    const timeSeries = {
+      labels: seriesBuckets.map(b => {
+        const d = new Date(b.start)
+        const hh = String(d.getHours()).padStart(2, '0')
+        return `${hh}:00`
+      }),
+      volume: seriesBuckets.map(b => Math.round(b.volume)),
+      count: seriesBuckets.map(b => b.count),
+    }
+
+    // Overall buy/sell counts and volumes
+    let totalBuyCount = 0, totalSellCount = 0, totalBuyVolume = 0, totalSellVolume = 0
+    for (const tx of allTransactions) {
+      if (tx.klass === 'buy') { totalBuyCount++; totalBuyVolume += Number(tx.usd_value) || 0 }
+      else if (tx.klass === 'sell') { totalSellCount++; totalSellVolume += Number(tx.usd_value) || 0 }
+    }
+    const overall = {
+      totalCount: allTransactions.length,
+      totalVolume: Math.round(allTransactions.reduce((s, t) => s + (Number(t.usd_value) || 0), 0)),
+      buyCount: totalBuyCount,
+      sellCount: totalSellCount,
+      buyVolume: Math.round(totalBuyVolume),
+      sellVolume: Math.round(totalSellVolume),
+    }
+    if (Number.isFinite(Number(total24hCount)) && Number(total24hCount) > 0) {
+      overall.totalCount = Number(total24hCount)
+    }
+
+    // Robust net flow per token: remove extreme outliers via IQR fence, then 5% trimmed sum
+    function quantile(sorted, q) {
+      if (!sorted || sorted.length === 0) return 0
+      const pos = (sorted.length - 1) * q
+      const base = Math.floor(pos)
+      const rest = pos - base
+      if (sorted[base + 1] !== undefined) return sorted[base] + rest * (sorted[base + 1] - sorted[base])
+      return sorted[base]
+    }
+    function robustNet(values) {
+      if (!values || values.length === 0) return 0
+      const abs = values.map(v => Math.abs(Number(v) || 0)).filter(v => Number.isFinite(v)).sort((a, b) => a - b)
+      if (abs.length === 0) return 0
+      const q1 = quantile(abs, 0.25)
+      const q3 = quantile(abs, 0.75)
+      const iqr = q3 - q1
+      const upper = q3 + 3 * iqr
+      const filtered = values.filter(v => Math.abs(Number(v) || 0) <= upper)
+      if (filtered.length <= 5) return filtered.reduce((s, v) => s + (Number(v) || 0), 0)
+      const arr = filtered.slice().sort((a, b) => Math.abs(a) - Math.abs(b))
+      const trim = Math.max(1, Math.floor(arr.length * 0.05))
+      const core = arr.slice(trim, arr.length - trim)
+      return core.reduce((s, v) => s + (Number(v) || 0), 0)
+    }
+
+    // Token leaders by net flow (top 10)
+    const tokenAggregate = Array.from(byTokenWhales.entries()).map(([token, data]) => {
+      const signed = byTokenSignedValues.get(token) || []
+      const robustNetValue = robustNet(signed)
+      return {
+        token,
+        netUsd: Math.round(data.netUsd),
+        netUsdRobust: Math.round(robustNetValue),
+        buys: data.buys,
+        sells: data.sells,
+        uniqueWhales: data.whales.size,
+        volume: Math.round(byTokenVolume.get(token) || 0),
+        txCount: signed.length,
+      }
+    })
+    const MIN_TX = 3
+    const tokenLeaders = tokenAggregate
+      .filter(t => t.txCount >= MIN_TX)
+      .slice().sort((a, b) => b.netUsdRobust - a.netUsdRobust)
+      .slice(0, 10)
+    let tokenInflows = tokenAggregate
+      .filter(t => t.txCount >= MIN_TX && t.netUsdRobust > 0)
+      .sort((a, b) => b.netUsdRobust - a.netUsdRobust)
+      .slice(0, 10)
+    const tokenOutflows = tokenAggregate
+      .filter(t => t.txCount >= MIN_TX && t.netUsdRobust < 0)
+      .sort((a, b) => a.netUsdRobust - b.netUsdRobust)
+      .slice(0, 10)
+
     // Prepare whale activity data safely
     const whaleActivity = Array.from(byTokenWhales.entries()).map(([token, data]) => ({
       token,
@@ -194,6 +344,10 @@ export async function GET() {
       netUsd: Math.round(data.netUsd),
       buySellRatio: data.sells === 0 ? data.buys : +(data.buys / data.sells).toFixed(2)
     })).sort((a, b) => b.uniqueWhales - a.uniqueWhales).slice(0, 12)
+
+    // Most traded tokens by count (from 24h dataset)
+    const topTokens = Array.from(byCoin.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12)
+    const tokenTradeCounts = { labels: topTokens.map(t => t[0]), data: topTokens.map(t => t[1]) }
 
     const noData24h = (recent24h || []).length === 0
 
@@ -206,6 +360,12 @@ export async function GET() {
       riskMetrics: { highValueCount: highValueTxs, avgTransactionSize: avgSize },
       marketMomentum: { volumeChange, activityChange: allTransactions.length },
       whaleActivity,
+      timeSeries,
+      tokenLeaders,
+      tokenInflows: tokenInflows.filter(t => String(t.token || '').toUpperCase() !== 'OXT'),
+      tokenOutflows,
+      overall,
+      tokenTradeCounts,
       noData24h
     }, {
       headers: {
