@@ -100,6 +100,7 @@ const Navbar = ({ onLogout }) => {
 
   const handleLogout = async () => {
     try { await supabaseBrowser().auth.signOut(); } catch {}
+    try { if (typeof window !== 'undefined') window.localStorage.removeItem('adminLogin'); } catch {}
     if (onLogout) onLogout();
     router.push('/');
   };

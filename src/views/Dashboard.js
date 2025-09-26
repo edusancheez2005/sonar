@@ -316,6 +316,7 @@ const Dashboard = () => {
   const [topBuys, setTopBuys] = useState([]);
   const [topSells, setTopSells] = useState([]);
   const [blockchainData, setBlockchainData] = useState({ labels: [], data: [] });
+  const [noData24h, setNoData24h] = useState(false);
   const [minValue, setMinValue] = useState(0);
   const [lastUpdate, setLastUpdate] = useState('now');
   const [loading, setLoading] = useState(true);
@@ -361,6 +362,7 @@ const Dashboard = () => {
            setRiskMetrics(json.riskMetrics || { highValueCount: 0, avgTransactionSize: 0 });
            setMarketMomentum(json.marketMomentum || { volumeChange: 0, activityChange: 0 });
            setWhaleActivity(json.whaleActivity || []);
+          setNoData24h(Boolean(json.noData24h));
           
           setLastUpdate('just now')
         }
@@ -467,6 +469,8 @@ const Dashboard = () => {
           </IncomingDataHeader>
           {loading ? (
             <p style={{ color: 'var(--text-secondary)' }}>Loading…</p>
+          ) : noData24h ? (
+            <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>No data in the past 24 hours.</p>
           ) : (
             <TransactionTable>
               <thead>
@@ -640,8 +644,8 @@ const Dashboard = () => {
          <DashboardCard>
            <h2>Transaction Volume by Blockchain</h2>
           <div style={{ minHeight: '220px' }}>
-            {blockchainData.labels.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>No data</p>
+            {noData24h || blockchainData.labels.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
             ) : (
               <BarsContainer>
                 {blockchainData.labels.map((label, i) => {

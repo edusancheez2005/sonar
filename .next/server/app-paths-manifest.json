@@ -1,6 +1,8 @@
 {
-  "/page": "app/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
   "/api/health/algorithm/route": "app/api/health/algorithm/route.js",
-  "/api/dashboard/summary/route": "app/api/dashboard/summary/route.js"
+  "/api/dashboard/summary/route": "app/api/dashboard/summary/route.js",
+  "/statistics/page": "app/statistics/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/api/trades/route": "app/api/trades/route.js",
+  "/api/trades/chains/route": "app/api/trades/chains/route.js"
 }
