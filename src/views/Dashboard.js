@@ -699,9 +699,9 @@ const Dashboard = () => {
          <InsightGrid>
                        <InsightCard>
               <h3>Whale Activity Heatmap</h3>
-            <div className="insight-value">{whaleActivity.length}</div>
+            <div className="insight-value" style={{ marginBottom: '0.25rem' }}>{whaleActivity.length}</div>
                           <div className="insight-label">Active Tokens</div>
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: '8px', marginTop: '12px' }}>
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginTop: '12px' }}>
                {whaleActivity
                  .slice()
                  .sort((a,b)=> (b.uniqueWhales||0) - (a.uniqueWhales||0))
@@ -718,19 +718,21 @@ const Dashboard = () => {
                          display: 'flex',
                          alignItems: 'center',
                          justifyContent: 'space-between',
-                         padding: '8px 10px',
+                         padding: '10px 12px',
                          borderRadius: 6,
                          background: bg,
                          border: `1px solid ${border}`,
+                         boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
                          color: 'var(--text-primary)',
                          textDecoration: 'none',
                          fontWeight: 600,
-                         fontSize: '0.9rem'
+                         fontSize: '0.95rem',
+                         minHeight: '44px'
                        }}
                        title={`${t.token}: ${count} whales, $${formatNumber(Math.round(t.netUsd||0))} net flow`}
                      >
-                       <span>{t.token}</span>
-                       <span style={{ color: '#a0b2c6', fontWeight: 500 }}>{count}</span>
+                       <span style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{t.token}</span>
+                       <span style={{ color: '#a0b2c6', fontWeight: 600, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--secondary)', borderRadius: 12, padding: '2px 8px' }}>{count}</span>
                      </Link>
                    )
                  })}

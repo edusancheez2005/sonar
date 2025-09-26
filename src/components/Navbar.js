@@ -88,14 +88,7 @@ const SearchBox = styled.div`
     font-size: 0.95rem;
     padding: 0.2rem 0.4rem;
   }
-  .kbd {
-    margin-left: 0.5rem;
-    color: var(--text-secondary);
-    font-size: 0.75rem;
-    border: 1px solid var(--secondary);
-    border-radius: 4px;
-    padding: 0 0.3rem;
-  }
+  /* removed Enter hint */
 `;
 
 const Suggestions = styled.ul`
@@ -123,6 +116,7 @@ const Navbar = ({ onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
+  const [adminBypass, setAdminBypass] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -136,6 +130,7 @@ const Navbar = ({ onLogout }) => {
     const sb = supabaseBrowser();
     sb.auth.getSession().then(({ data }) => setSession(data.session || null));
     sb.auth.getUser().then(({ data }) => setUser(data?.user || null));
+    try { if (typeof window !== 'undefined') setAdminBypass(localStorage.getItem('isAdminBypass') === 'true'); } catch {}
     const { data: sub } = sb.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
       setUser(sess?.user || null);
@@ -146,7 +141,7 @@ const Navbar = ({ onLogout }) => {
 
   const isActive = (path) => pathname === path;
   const isOnLandingPage = pathname === '/';
-  const isAuthenticated = !!(session || user);
+  const isAuthenticated = !!(session || user || adminBypass);
 
   const menuVariants = { hidden: { opacity: 0, y: -10 }, visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } } };
   const itemVariants = { hidden: { opacity: 0, y: -10 }, visible: { opacity: 1, y: 0 } };
@@ -155,7 +150,7 @@ const Navbar = ({ onLogout }) => {
 
   const handleLogout = async () => {
     try { await supabaseBrowser().auth.signOut(); } catch {}
-    try { if (typeof window !== 'undefined') window.localStorage.removeItem('adminLogin'); } catch {}
+    try { if (typeof window !== 'undefined') { window.localStorage.removeItem('adminLogin'); window.localStorage.removeItem('isAdminBypass'); } } catch {}
     if (onLogout) onLogout();
     router.push('/');
   };
@@ -200,7 +195,7 @@ const Navbar = ({ onLogout }) => {
 
   const goToToken = (token) => {
     if (!token) return;
-    router.push(`/statistics?token=${encodeURIComponent(token)}&sinceHours=24`);
+    router.push(`/token/${encodeURIComponent(token)}?sinceHours=24`);
     setShowSug(false);
   };
 
@@ -247,7 +242,7 @@ const Navbar = ({ onLogout }) => {
                   onChange={onChangeQuery}
                   onFocus={() => setShowSug(true)}
                 />
-                <span className="kbd">Enter</span>
+                
                 {showSug && suggestions.length > 0 && (
                   <Suggestions onMouseLeave={() => setShowSug(false)}>
                     {suggestions.map((s) => (

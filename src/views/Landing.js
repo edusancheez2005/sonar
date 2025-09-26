@@ -1054,11 +1054,14 @@ const Landing = () => {
     setLoginError('');
     setLoginLoading(true);
     try {
-      // Admin bypass: email/password without Supabase verification
-      if ((formData.email || '').toLowerCase() === 'eduadminaccount@sonar.local' && formData.password === 'Rasca0404') {
+      // Admin bypass: allow username or email style, no Supabase verification
+      const entered = (formData.email || '').trim();
+      const adminEmail = (entered.includes('@') ? entered : `${entered}@sonar.local`).toLowerCase();
+      if (adminEmail === 'eduadminaccount@sonar.local' && formData.password === 'Rasca0404') {
         try {
           if (typeof window !== 'undefined') {
             window.localStorage.setItem('adminLogin', 'ZWR1YWRtaW5hY2NvdW50OjpSYXNjYTA0MDQ=');
+            window.localStorage.setItem('isAdminBypass', 'true');
           }
         } catch {}
         showToast('Admin login successful', 'success');
