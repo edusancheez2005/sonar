@@ -161,8 +161,51 @@ export async function GET() {
       return results.slice(0, 10)
     }
 
-    const topBuys = computeTopPercent('buy')
-    const topSells = computeTopPercent('sell')
+    // Start with sample-based percents
+    let topBuys = computeTopPercent('buy')
+    let topSells = computeTopPercent('sell')
+
+    // Correct percentages using exact 24h counts per token from Supabase (avoids sampling bias)
+    try {
+      const tokensForAccuracy = Array.from(byCoin.keys())
+      const counts = await Promise.all(tokensForAccuracy.map(async (token) => {
+        const [buys, sells] = await Promise.all([
+          supabaseAdmin.from('whale_transactions')
+            .select('transaction_hash', { count: 'exact', head: true })
+            .ilike('token_symbol', token)
+            .gte('timestamp', since24h)
+            .lte('timestamp', nowIso)
+            .ilike('classification', 'buy%'),
+          supabaseAdmin.from('whale_transactions')
+            .select('transaction_hash', { count: 'exact', head: true })
+            .ilike('token_symbol', token)
+            .gte('timestamp', since24h)
+            .lte('timestamp', nowIso)
+            .ilike('classification', 'sell%'),
+        ])
+        return { token, buys: Number(buys?.count || 0), sells: Number(sells?.count || 0) }
+      }))
+      const accurate = counts
+        .map(({ token, buys, sells }) => {
+          const denom = buys + sells
+          if (denom <= 0) return null
+          return {
+            token,
+            buyPct: +(buys / denom * 100).toFixed(1),
+            sellPct: +(sells / denom * 100).toFixed(1),
+          }
+        })
+        .filter(Boolean)
+
+      topBuys = accurate
+        .map(x => ({ coin: x.token, percentage: x.buyPct }))
+        .sort((a,b)=> b.percentage - a.percentage)
+        .slice(0, 10)
+      topSells = accurate
+        .map(x => ({ coin: x.token, percentage: x.sellPct }))
+        .sort((a,b)=> b.percentage - a.percentage)
+        .slice(0, 10)
+    } catch {}
 
     const blockchainVolume = {
       labels: Array.from(byChain.keys()),

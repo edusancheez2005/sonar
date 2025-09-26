@@ -1,7 +1,11 @@
 import React from 'react'
 import AuthGuard from '@/app/components/AuthGuard'
 
-export const metadata = { title: 'Tokens — Leaderboard' }
+export const metadata = { 
+  title: 'Token Leaderboard — Most Traded & Net Inflows (24h)',
+  description: 'Explore the most traded crypto tokens and top net inflows over the last 24 hours. Drill into token pages for whale trades, volume, and net flow.',
+  alternates: { canonical: 'https://www.sonartracker.io/tokens' }
+}
 
 export default async function TokensPage() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/tokens/leaderboard`, { cache: 'no-store' })

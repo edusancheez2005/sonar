@@ -42,6 +42,36 @@ export default function FAQPage() {
     <main className="container" style={{ padding: '2rem', maxWidth: 840 }}>
       <h1>Frequently Asked Questions</h1>
       <p style={{ color: 'var(--text-secondary)' }}>If your question isn’t here, reach us via the footer links.</p>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: QA.map(item => ({
+              '@type': 'Question',
+              name: item.q,
+              acceptedAnswer: { '@type': 'Answer', text: item.a },
+            })),
+          }),
+        }}
+      />
+      <section style={{ marginTop: '2rem', marginBottom: '1.5rem' }}>
+        <h2 id="whale-score" style={{ marginBottom: '0.5rem' }}>Whale Score Methodology</h2>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          Whale Score is a composite signal that emphasizes transaction impact and repeat behavior:
+        </p>
+        <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.25rem' }}>
+          <li>Trade size and USD impact (higher weight for larger, cleaner flows).</li>
+          <li>Counterparty and venue quality (DEX vs. internal transfers).</li>
+          <li>Recurrence from known high-influence wallets.</li>
+          <li>Market context filters (outlier suppression and de-duplication of batched txs).</li>
+        </ul>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          Scores are normalized to keep the scale stable across tokens and time. The score is not
+          financial advice; use alongside fundamentals and risk management.
+        </p>
+      </section>
       <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
         {QA.map((item, i) => (
           <details key={i} style={{ background: 'var(--background-card)', border: '1px solid var(--secondary)', borderRadius: 8, padding: '0.75rem 1rem' }}>

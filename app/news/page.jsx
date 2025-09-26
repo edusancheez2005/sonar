@@ -4,7 +4,7 @@ import AuthGuard from '@/app/components/AuthGuard'
 
 export const metadata = {
   title: 'Crypto News — Market Moves, Whale Impact, Token Trends',
-  description: 'Stay updated with curated crypto news aligned to market moves and whale activity.',
+  description: 'Stay updated with curated crypto news aligned to market moves and whale activity. Crypto sonar insights paired with institutional-grade analysis.',
   alternates: { canonical: 'https://www.sonartracker.io/news' },
 }
 

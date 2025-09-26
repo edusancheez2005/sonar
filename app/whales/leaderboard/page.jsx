@@ -1,7 +1,11 @@
 import React from 'react'
 import AuthGuard from '@/app/components/AuthGuard'
 
-export const metadata = { title: 'Whales — Leaderboard' }
+export const metadata = { 
+  title: 'Whale Leaderboard — Top Net Flow Wallets (24h)',
+  description: 'See the top crypto whale wallets by 24h net USD flow, tokens traded, buy/sell balance, and Whale Score.',
+  alternates: { canonical: 'https://www.sonartracker.io/whales/leaderboard' }
+}
 
 export default async function WhalesLeaderboardPage() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/whales/leaderboard`, { cache: 'no-store' })

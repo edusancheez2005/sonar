@@ -3,8 +3,8 @@ import Statistics from '@/src/views/Statistics'
 import AuthGuard from '@/app/components/AuthGuard'
 
 export const metadata = {
-  title: 'Whale Trades Scanner — Live Filters by Token, Chain, USD',
-  description: 'Scan real-time whale transactions with powerful filters for token, side, chain, USD range, and time window.',
+  title: 'Crypto Whale Scanner — Live Filters by Token, Chain, USD',
+  description: 'Scan real-time crypto whale transactions with powerful filters for token, side, chain, USD range, and time window. Track large crypto trades with Sonar Tracker.',
   alternates: { canonical: 'https://www.sonartracker.io/statistics' },
 }
 

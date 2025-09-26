@@ -1,10 +1,11 @@
 {
   "/statistics/page": "app/statistics/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/whale/[address]/page": "app/whale/[address]/page.js",
   "/token/[symbol]/page": "app/token/[symbol]/page.js",
   "/api/dashboard/summary/route": "app/api/dashboard/summary/route.js",
   "/api/health/algorithm/route": "app/api/health/algorithm/route.js",
+  "/faq/page": "app/faq/page.js",
+  "/news/page": "app/news/page.js",
   "/api/trades/chains/route": "app/api/trades/chains/route.js",
   "/api/trades/route": "app/api/trades/route.js"
 }

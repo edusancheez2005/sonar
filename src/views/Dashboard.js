@@ -554,7 +554,9 @@ const Dashboard = () => {
                   <th>Action</th>
                   <th>Blockchain</th>
                   <th>USD Value</th>
-                  <th>Whale Score</th>
+                  <th>
+                    <Link href="/faq#whale-score" style={{ color: 'inherit', textDecoration: 'none' }}>Whale Score</Link>
+                  </th>
                   <th>From Address</th>
                   <th>Transaction</th>
                 </tr>
@@ -645,43 +647,7 @@ const Dashboard = () => {
         </GridContainer>
       </motion.div>
 
-      {/* Buy vs Sell section below inflows/outflows */}
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }}>
-        <DashboardCard style={{ maxWidth: '600px', margin: '0 auto 2rem' }}>
-          <h2>Buy vs Sell Distribution (24h)</h2>
-          {(overall.buyCount + overall.sellCount) === 0 ? (
-            <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
-          ) : (
-            <Doughnut
-              data={{
-                labels: ['Buys (volume)', 'Sells (volume)'],
-                datasets: [{
-                  data: [overall.buyVolume, overall.sellVolume],
-                  backgroundColor: ['rgba(46,204,113,0.6)', 'rgba(231,76,60,0.6)'],
-                  borderColor: ['#2ecc71', '#e74c3c']
-                }]
-              }}
-              options={{ 
-                plugins: { 
-                  legend: { position: 'bottom' },
-                  tooltip: { callbacks: { label: (ctx) => {
-                    const total = (overall.buyVolume || 0) + (overall.sellVolume || 0);
-                    const val = ctx.parsed || 0; 
-                    const pct = total > 0 ? ((val/total)*100).toFixed(1) : '0.0';
-                    return `${ctx.label}: $${formatCompact(val)} (${pct}%)`;
-                  } } }
-                } 
-              }}
-            />
-          )}
-          <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
-            <div style={{ color: 'var(--text-secondary)' }}>Buy Volume: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>${formatCompact(overall.buyVolume)}</span></div>
-            <div style={{ color: 'var(--text-secondary)' }}>Sell Volume: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>${formatCompact(overall.sellVolume)}</span></div>
-            <div style={{ color: 'var(--text-secondary)' }}>Buy Count: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatNumber(overall.buyCount)}</span></div>
-            <div style={{ color: 'var(--text-secondary)' }}>Sell Count: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatNumber(overall.sellCount)}</span></div>
-          </div>
-        </DashboardCard>
-      </motion.div>
+      {/* Buy vs Sell section removed per request */}
 
       <GridContainer>
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
@@ -732,38 +698,43 @@ const Dashboard = () => {
          </div>
          <InsightGrid>
                        <InsightCard>
-              <h3>Market Sentiment</h3>
-             <div className="insight-value">{marketSentiment.ratio.toFixed(1)}%</div>
-                           <div className="insight-label">Buy vs Sell Ratio</div>
-              <SentimentMeter>
-                <div className="meter">
-                  <div 
-                    className={`meter-fill ${marketSentiment.trend}`}
-                    style={{ width: `${marketSentiment.ratio}%` }}
-                  />
-                </div>
-                <span style={{ color: getSentimentColor(marketSentiment.trend), fontWeight: '600' }}>
-                  {marketSentiment.trend.toUpperCase()}
-                </span>
-              </SentimentMeter>
-           </InsightCard>
-
-                       <InsightCard>
               <h3>Whale Activity Heatmap</h3>
-             <div className="insight-value">{whaleActivity.length}</div>
-                           <div className="insight-label">Active Tokens</div>
-              <TokenHeatmap>
-                {whaleActivity.slice(0, 8).map((token, index) => (
-                  <Link
-                    key={token.token}
-                    href={`/statistics?token=${encodeURIComponent(token.token)}&sinceHours=24`}
-                    className={`token-item ${getActivityLevel(token.uniqueWhales)}`}
-                    title={`${token.token}: ${token.uniqueWhales} whales, $${formatNumber(token.netUsd)} net flow`}
-                  >
-                    {token.token}
-                  </Link>
-                ))}
-              </TokenHeatmap>
+            <div className="insight-value">{whaleActivity.length}</div>
+                          <div className="insight-label">Active Tokens</div>
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: '8px', marginTop: '12px' }}>
+               {whaleActivity
+                 .slice()
+                 .sort((a,b)=> (b.uniqueWhales||0) - (a.uniqueWhales||0))
+                 .slice(0, 12)
+                 .map((t) => {
+                   const count = Number(t.uniqueWhales || 0)
+                   const intensity = Math.min(1, count / Math.max(1, whaleActivity[0]?.uniqueWhales || count || 1))
+                   const bg = `rgba(54,166,186,${0.15 + intensity * 0.5})`
+                   const border = `rgba(54,166,186,${0.3 + intensity * 0.4})`
+                   return (
+                     <Link key={t.token}
+                       href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`}
+                       style={{
+                         display: 'flex',
+                         alignItems: 'center',
+                         justifyContent: 'space-between',
+                         padding: '8px 10px',
+                         borderRadius: 6,
+                         background: bg,
+                         border: `1px solid ${border}`,
+                         color: 'var(--text-primary)',
+                         textDecoration: 'none',
+                         fontWeight: 600,
+                         fontSize: '0.9rem'
+                       }}
+                       title={`${t.token}: ${count} whales, $${formatNumber(Math.round(t.netUsd||0))} net flow`}
+                     >
+                       <span>{t.token}</span>
+                       <span style={{ color: '#a0b2c6', fontWeight: 500 }}>{count}</span>
+                     </Link>
+                   )
+                 })}
+             </div>
            </InsightCard>
 
                        <InsightCard>
