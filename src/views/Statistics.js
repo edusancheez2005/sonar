@@ -126,7 +126,16 @@ export default function Statistics() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchTrades(1) }, [])
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const qToken = params.get('token')
+      const qSince = params.get('sinceHours')
+      if (qToken) setToken(qToken.toUpperCase())
+      if (qSince && !Number.isNaN(Number(qSince))) setSinceHours(Number(qSince))
+    } catch {}
+    fetchTrades(1)
+  }, [])
 
   // Debounced refetch on changes
   useEffect(() => {

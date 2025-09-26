@@ -71,7 +71,7 @@ export async function GET() {
 
     // Process aggregated data safely
     for (const row of aggData || []) {
-      const coin = row.token_symbol || '—'
+      const coin = String(row.token_symbol || '—').trim().toUpperCase()
       const chain = row.blockchain || '—'
       const usdValue = Number(row.usd_value || 0)
       const timestamp = row.timestamp
@@ -79,9 +79,11 @@ export async function GET() {
       
       byChain.set(chain, (byChain.get(chain) || 0) + 1)
 
-      const klass = (row.classification || '').toLowerCase()
-      if (klass === 'buy') byCoinBuyCounts.set(coin, (byCoinBuyCounts.get(coin) || 0) + 1)
-      else if (klass === 'sell') byCoinSellCounts.set(coin, (byCoinSellCounts.get(coin) || 0) + 1)
+      const klass = String(row.classification || '').trim().toLowerCase()
+      const isBuy = klass.startsWith('buy')
+      const isSell = klass.startsWith('sell')
+      if (isBuy) byCoinBuyCounts.set(coin, (byCoinBuyCounts.get(coin) || 0) + 1)
+      else if (isSell) byCoinSellCounts.set(coin, (byCoinSellCounts.get(coin) || 0) + 1)
       byCoin.set(coin, (byCoin.get(coin) || 0) + 1)
 
       // Track whale activity per token
@@ -102,19 +104,25 @@ export async function GET() {
       allTransactions.push({ usd_value: usdValue, timestamp })
     }
 
-    function topPercent(mapCounts) {
-      const entries = Array.from(mapCounts.entries())
-      const results = entries.map(([coin, count]) => {
-        const total = byCoin.get(coin) || 1
-        const pct = (count / total) * 100
-        return { coin, percentage: Number(pct.toFixed(1)) }
-      })
+    function computeTopPercent(type) {
+      const coins = new Set([...byCoinBuyCounts.keys(), ...byCoinSellCounts.keys()])
+      const results = []
+      for (const coin of coins) {
+        const buys = Number(byCoinBuyCounts.get(coin) || 0)
+        const sells = Number(byCoinSellCounts.get(coin) || 0)
+        const denom = buys + sells
+        if (denom === 0) continue
+        const numerator = type === 'buy' ? buys : sells
+        let pct = (numerator / denom) * 100
+        if (!Number.isFinite(pct)) pct = 0
+        results.push({ coin, percentage: Number(pct.toFixed(1)) })
+      }
       results.sort((a, b) => b.percentage - a.percentage)
       return results.slice(0, 10)
     }
 
-    const topBuys = topPercent(byCoinBuyCounts)
-    const topSells = topPercent(byCoinSellCounts)
+    const topBuys = computeTopPercent('buy')
+    const topSells = computeTopPercent('sell')
 
     const blockchainVolume = {
       labels: Array.from(byChain.keys()),

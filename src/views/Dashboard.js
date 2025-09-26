@@ -535,7 +535,7 @@ const Dashboard = () => {
               <tbody>
                 {topBuys.map((item, index) => (
                   <motion.tr key={`buy-${item.coin}-${index}`} variants={itemVariants}>
-                    <td>{item.coin}</td>
+                    <td><Link href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`}>{item.coin}</Link></td>
                     <td className="percentage">{item.percentage.toFixed(1)}%</td>
                   </motion.tr>
                 ))}
@@ -552,7 +552,7 @@ const Dashboard = () => {
               <tbody>
                 {topSells.map((item, index) => (
                   <motion.tr key={`sell-${item.coin}-${index}`} variants={itemVariants}>
-                    <td>{item.coin}</td>
+                    <td><Link href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`}>{item.coin}</Link></td>
                     <td className="percentage">{item.percentage.toFixed(1)}%</td>
                   </motion.tr>
                 ))}
@@ -597,13 +597,14 @@ const Dashboard = () => {
                            <div className="insight-label">Active Tokens</div>
               <TokenHeatmap>
                 {whaleActivity.slice(0, 8).map((token, index) => (
-                  <div 
+                  <Link
                     key={token.token}
+                    href={`/statistics?token=${encodeURIComponent(token.token)}&sinceHours=24`}
                     className={`token-item ${getActivityLevel(token.uniqueWhales)}`}
                     title={`${token.token}: ${token.uniqueWhales} whales, $${formatNumber(token.netUsd)} net flow`}
                   >
                     {token.token}
-                  </div>
+                  </Link>
                 ))}
               </TokenHeatmap>
            </InsightCard>
