@@ -1,12 +1,11 @@
 {
   "/statistics/page": "app/statistics/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/faq/page": "app/faq/page.js",
-  "/news/page": "app/news/page.js",
   "/page": "app/page.js",
   "/api/dashboard/summary/route": "app/api/dashboard/summary/route.js",
-  "/api/health/algorithm/route": "app/api/health/algorithm/route.js",
+  "/token/[symbol]/page": "app/token/[symbol]/page.js",
   "/api/trades/chains/route": "app/api/trades/chains/route.js",
-  "/api/trades/route": "app/api/trades/route.js",
-  "/token/[symbol]/page": "app/token/[symbol]/page.js"
+  "/ai-advisor/page": "app/ai-advisor/page.js",
+  "/api/health/algorithm/route": "app/api/health/algorithm/route.js",
+  "/api/trades/route": "app/api/trades/route.js"
 }
