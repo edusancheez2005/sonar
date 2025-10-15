@@ -1,7 +1,9 @@
 {
   "/dashboard/page": "app/dashboard/page.js",
   "/page": "app/page.js",
-  "/news/page": "app/news/page.js",
+  "/profile/page": "app/profile/page.js",
   "/ai-advisor/page": "app/ai-advisor/page.js",
-  "/statistics/page": "app/statistics/page.js"
+  "/subscribe/page": "app/subscribe/page.js",
+  "/api/subscription/status/route": "app/api/subscription/status/route.js",
+  "/_not-found/page": "app/_not-found/page.js"
 }
