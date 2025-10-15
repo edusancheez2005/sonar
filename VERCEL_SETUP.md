@@ -31,6 +31,9 @@ STRIPE_PRICE_ID=your_stripe_price_id
 CRYPTOPANIC_API_KEY=your_cryptopanic_api_key
 NEWS_API_KEY=your_news_api_key
 COINGECKO_API_KEY=your_coingecko_api_key
+
+# Site URL (IMPORTANT!)
+NEXT_PUBLIC_BASE_URL=https://www.sonartracker.io
 ```
 
 **To get your values:**

@@ -54,6 +54,9 @@ export default function ClientProfile({ email: initialEmail }) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [subscription, setSubscription] = useState(null)
+  const [loadingSub, setLoadingSub] = useState(true)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   useEffect(() => {
     if (initialEmail) return
@@ -62,6 +65,34 @@ export default function ClientProfile({ email: initialEmail }) {
       if (data?.user?.email) setEmail(data.user.email)
     })
   }, [initialEmail])
+
+  // Fetch subscription status
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const sb = supabaseBrowser()
+        const { data: { session } } = await sb.auth.getSession()
+        if (!session?.access_token) {
+          setLoadingSub(false)
+          return
+        }
+        
+        const res = await fetch('/api/subscription/status', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+        
+        if (res.ok) {
+          const data = await res.json()
+          setSubscription(data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch subscription:', err)
+      } finally {
+        setLoadingSub(false)
+      }
+    }
+    fetchSubscription()
+  }, [])
 
   const save = async () => {
     setMessage(''); setError('')
@@ -81,6 +112,44 @@ export default function ClientProfile({ email: initialEmail }) {
     }
   }
 
+  const openBillingPortal = async () => {
+    try {
+      setPortalLoading(true)
+      const sb = supabaseBrowser()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) throw new Error('Not logged in')
+
+      // Get customer ID from subscription
+      const { data: subData } = await sb
+        .from('user_subscriptions')
+        .select('stripe_customer_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!subData?.stripe_customer_id) {
+        throw new Error('No subscription found')
+      }
+
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          customerId: subData.stripe_customer_id,
+          returnUrl: window.location.href
+        })
+      })
+
+      if (!res.ok) throw new Error('Failed to create portal session')
+      
+      const { url } = await res.json()
+      if (url) window.location.href = url
+    } catch (e) {
+      alert(e.message || 'Failed to open billing portal')
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
   if (!email) return <Muted>Not signed in.</Muted>
 
   return (
@@ -95,6 +164,68 @@ export default function ClientProfile({ email: initialEmail }) {
           <input type="text" value={email} readOnly />
         </Row>
       </Card>
+
+      <Card>
+        <SectionHeader>
+          <h2>Subscription</h2>
+          <Muted>Manage your billing and subscription.</Muted>
+        </SectionHeader>
+        {loadingSub ? (
+          <Muted>Loading subscription...</Muted>
+        ) : subscription?.isActive ? (
+          <>
+            <Row>
+              <label>Status</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ 
+                  display: 'inline-block', 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '50%', 
+                  background: '#2ecc71' 
+                }}></span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                  {subscription.status === 'active' ? 'Active' : 'Trial'}
+                </span>
+              </div>
+            </Row>
+            <Row>
+              <label>Plan</label>
+              <span style={{ color: 'var(--text-primary)' }}>Sonar Pro - £5/month</span>
+            </Row>
+            {subscription.currentPeriodEnd && (
+              <Row>
+                <label>Renews on</label>
+                <span style={{ color: 'var(--text-secondary)' }}>
+                  {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              </Row>
+            )}
+            <Actions>
+              <Primary onClick={openBillingPortal} disabled={portalLoading}>
+                {portalLoading ? 'Loading...' : 'Manage Subscription'}
+              </Primary>
+            </Actions>
+            <Muted style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+              You can update your payment method, view invoices, or cancel your subscription.
+            </Muted>
+          </>
+        ) : (
+          <>
+            <Muted>You don't have an active subscription.</Muted>
+            <Actions>
+              <Primary onClick={() => window.location.href = '/subscribe'}>
+                Upgrade to Pro
+              </Primary>
+            </Actions>
+          </>
+        )}
+      </Card>
+
       <Card>
         <SectionHeader>
           <h2>Change Password</h2>
