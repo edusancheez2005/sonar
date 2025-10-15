@@ -2,15 +2,13 @@ import React from 'react'
 import { supabaseServer } from '@/app/lib/supabaseServerClient'
 import ClientProfile from './ClientProfile'
 
-export const metadata = { title: 'Profile — Sonar' }
+export const metadata = { 
+  title: 'Account Settings — Sonar Tracker',
+  description: 'Manage your Sonar Tracker account, subscription, and security settings. Your data is protected with bank-grade encryption.'
+}
 
 export default async function ProfilePage() {
   const sb = supabaseServer()
   const { data: { user } } = await sb.auth.getUser()
-  return (
-    <main className="container" style={{ padding: '2rem' }}>
-      <h1>Profile</h1>
-      <ClientProfile email={user?.email || ''} />
-    </main>
-  )
+  return <ClientProfile email={user?.email || ''} />
 } 
