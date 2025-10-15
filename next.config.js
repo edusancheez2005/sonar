@@ -1,14 +1,15 @@
 /** @type {import('next').NextConfig} */
 const CONTENT_SECURITY_POLICY = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.com https://*.vercel-insights.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.com https://*.vercel-insights.com https://js.stripe.com;
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob:;
-  connect-src 'self' https://fwbwfvqzomipoftgodof.supabase.co https://*.vercel-insights.com;
+  img-src 'self' data: blob: https://*.stripe.com;
+  connect-src 'self' https://fwbwfvqzomipoftgodof.supabase.co https://*.vercel-insights.com https://api.stripe.com https://r.stripe.com;
   font-src 'self';
+  frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com;
   frame-ancestors 'none';
   base-uri 'self';
-  form-action 'self';
+  form-action 'self' https://checkout.stripe.com;
 `.replace(/\n/g, '')
 
 const securityHeaders = [

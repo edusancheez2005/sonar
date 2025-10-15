@@ -326,6 +326,23 @@ export async function GET() {
       overall.totalCount = Number(total24hCount)
     }
 
+    // Top 10 largest transactions (24h) for Risk Assessment
+    const topHighValueTxs = (recent24h || [])
+      .filter(t => Number(t.usd_value || 0) > 0)
+      .filter(t => String(t.token_symbol || '').trim().toUpperCase() !== 'OXT')
+      .slice()
+      .sort((a, b) => Number(b.usd_value || 0) - Number(a.usd_value || 0))
+      .slice(0, 10)
+      .map(t => ({
+        time: t.timestamp,
+        coin: String(t.token_symbol || '—').trim().toUpperCase(),
+        side: String(t.classification || '').trim().toUpperCase(),
+        usd: Math.round(Number(t.usd_value || 0)),
+        chain: t.blockchain || '—',
+        hash: t.transaction_hash || null,
+        whale_score: Number(t.whale_score || 0)
+      }))
+
     // Robust net flow per token: remove extreme outliers via IQR fence, then 5% trimmed sum
     function quantile(sorted, q) {
       if (!sorted || sorted.length === 0) return 0
@@ -408,6 +425,7 @@ export async function GET() {
       tokenInflows: tokenInflows.filter(t => String(t.token || '').toUpperCase() !== 'OXT'),
       tokenOutflows,
       overall,
+      topHighValueTxs,
       tokenTradeCounts,
       noData24h
     }, {

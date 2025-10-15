@@ -1,6 +1,6 @@
 import React from 'react'
-import Dashboard from '@/src/views/Dashboard'
 import AuthGuard from '@/app/components/AuthGuard'
+import DashboardWrapper from './DashboardWrapper'
 
 export const metadata = {
   title: 'Crypto Dashboard — Live Whale Flows & Token Leaders',
@@ -8,7 +8,7 @@ export const metadata = {
   alternates: { canonical: 'https://www.sonartracker.io/dashboard' },
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   return (
     <AuthGuard>
       <>
@@ -36,7 +36,7 @@ export default function DashboardPage() {
             }),
           }}
         />
-        <Dashboard />
+        <DashboardWrapper />
       </>
     </AuthGuard>
   )

@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
 
@@ -459,265 +460,113 @@ const LoadingAnimation = () => (
   </LoadingContainer>
 );
 
-// Expanded mock news data with categories and trending status
-const generateNewsData = () => {
-  const buyNews = [
-    {
-      id: 'dog-1',
-      coin: 'DOG',
-      coinFull: 'Dogecoin',
-      date: 'April 5, 2024',
-      timestamp: '2h ago',
-      source: 'Dogeo',
-      category: 'markets',
-      isNew: true,
-      trending: true,
-      change: '+20.3%',
-      title: 'Dogecoin Rallies 20% on Speculation of Tesla Integration',
-      content: 'Dogecoin rallies Wednesday on speculation of Tesla integration. Market analysts suggest this could be tied to recent comments from Elon Musk hinting at potential further adoption of the cryptocurrency.',
-    },
-    {
-      id: 'sol-1',
-      coin: 'SOL',
-      coinFull: 'Solana',
-      date: 'April 4, 2024',
-      timestamp: '23h ago',
-      source: 'Solana',
-      category: 'technology',
-      isNew: true,
-      trending: true,
-      change: '+15.7%',
-      title: 'Solana Surges as Network Activity Reaches All-Time High',
-      content: 'Solana surges as network activity reaches all-time high. The blockchain has seen unprecedented adoption, with transaction counts exceeding previous records by 35% as multiple new dApps launch on the platform.',
-    },
-    {
-      id: 'ada-1',
-      coin: 'ADA',
-      coinFull: 'Cardano',
-      date: 'April 3, 2024',
-      timestamp: '2d ago',
-      source: 'ADA',
-      category: 'development',
-      isNew: false,
-      trending: false,
-      change: '+12.1%',
-      title: 'Cardano Prices Climb 15% Amid Vasil Upgrade Optimism',
-      content: 'Cardano prices climb 15% amid optimism around the upcoming Vasil upgrade. Developers suggest this will be the most significant enhancement to the network since the Alonzo hard fork, bringing substantial performance improvements.',
-    },
-    {
-      id: 'eth-1',
-      coin: 'ETH',
-      coinFull: 'Ethereum',
-      date: 'April 3, 2024',
-      timestamp: '2d ago',
-      source: 'EthHub',
-      category: 'markets',
-      isNew: false,
-      trending: true,
-      change: '+8.2%',
-      title: 'Ethereum Shows Strength Following Successful Testnet Merge',
-      content: 'Ethereum is showing significant market strength after developers successfully completed the final testnet merge before the mainnet transitions to Proof of Stake. Analysts expect continued price action as the main event approaches.',
-    },
-    {
-      id: 'btc-1',
-      coin: 'BTC',
-      coinFull: 'Bitcoin',
-      date: 'April 2, 2024',
-      timestamp: '3d ago',
-      source: 'BitNews',
-      category: 'adoption',
-      isNew: false,
-      trending: true,
-      change: '+3.5%',
-      title: 'Major Retail Chain Announces Bitcoin Payment Integration',
-      content: 'A Fortune 500 retail giant has announced plans to accept Bitcoin as payment across all its North American stores by the end of 2024. The move represents one of the largest mainstream adoptions of cryptocurrency payment infrastructure to date.',
-    },
-    {
-      id: 'matic-1',
-      coin: 'MATIC',
-      coinFull: 'Polygon',
-      date: 'April 1, 2024',
-      timestamp: '4d ago',
-      source: 'Polygon',
-      category: 'partnerships',
-      isNew: false,
-      trending: false,
-      change: '+11.3%',
-      title: 'Polygon Partners With Major Social Media Platform for NFT Integration',
-      content: 'Polygon has announced a strategic partnership with one of the world\'s largest social media companies to power their upcoming NFT marketplace. The scalability of the Polygon network was cited as the primary reason for selection.',
-    },
-  ];
-  
-  const sellNews = [
-    {
-      id: 'shib-1',
-      coin: 'SHIB',
-      coinFull: 'Shiba Inu',
-      date: 'April 5, 2024',
-      timestamp: '4h ago',
-      source: 'Crypto Daily',
-      category: 'markets',
-      isNew: true,
-      trending: true,
-      change: '-18.2%',
-      title: 'Shiba Inu Drops as Whale Investors Trim Their Holdings',
-      content: 'Shiba Inu rupens as whale investors trim their holdings. On-chain analysis shows several wallets containing over 1 trillion SHIB tokens have reduced their positions by approximately 30%, triggering a market-wide selloff.',
-    },
-    {
-      id: 'avax-1',
-      coin: 'AVAX',
-      coinFull: 'Avalanche',
-      date: 'April 4, 2024',
-      timestamp: '1d ago',
-      source: 'Crypto News',
-      category: 'technology',
-      isNew: true,
-      trending: true,
-      change: '-12.5%',
-      title: 'Avalanche Declines Following Mainnet Outage',
-      content: 'Avalanche declines following a six-hour mainnet outage. The team has identified and resolved the issue, but investor confidence appears shaken in the short term as questions about network reliability surface.',
-    },
-    {
-      id: 'xrp-1',
-      coin: 'XRP',
-      coinFull: 'Ripple',
-      date: 'April 2, 2024',
-      timestamp: '3d ago',
-      source: 'Crypto Insight',
-      category: 'regulation',
-      isNew: false,
-      trending: false,
-      change: '-8.7%',
-      title: 'Ripple Faces Sell-Off as SEC Lawsuit Concerns Grow',
-      content: 'Ripple faces a significant sell-off as concerns grow regarding their ongoing lawsuit with the SEC. Legal analysts suggest upcoming court decisions could be unfavorable for the company, potentially impacting its long-term operations.',
-    },
-    {
-      id: 'link-1',
-      coin: 'LINK',
-      coinFull: 'Chainlink',
-      date: 'April 2, 2024',
-      timestamp: '3d ago',
-      source: 'Chain Report',
-      category: 'markets',
-      isNew: false,
-      trending: false,
-      change: '-6.3%',
-      title: 'Chainlink Corrects After Recent Rally, Whale Movements Detected',
-      content: 'Chainlink is undergoing a correction after its impressive rally last month. Blockchain analysts have detected significant movement from several whale wallets, potentially indicating profit-taking following the recent price surge.',
-    },
-    {
-      id: 'luna-1',
-      coin: 'LUNA',
-      coinFull: 'Terra Luna',
-      date: 'April 1, 2024',
-      timestamp: '4d ago',
-      source: 'Terra News',
-      category: 'development',
-      isNew: false,
-      trending: true,
-      change: '-15.9%',
-      title: 'Terra Luna Drops as Developers Announce Protocol Change Delays',
-      content: 'Terra Luna has experienced a significant price drop after the development team announced delays to their highly anticipated protocol upgrade. The timeline has been pushed back by at least two months, causing investor disappointment.',
-    },
-    {
-      id: 'atom-1',
-      coin: 'ATOM',
-      coinFull: 'Cosmos',
-      date: 'March 31, 2024',
-      timestamp: '5d ago',
-      source: 'Cosmos Hub',
-      category: 'security',
-      isNew: false,
-      trending: false,
-      change: '-7.2%',
-      title: 'Cosmos Falls as Vulnerability is Discovered and Patched',
-      content: 'Cosmos has fallen in value after security researchers discovered and disclosed a potential vulnerability in the network. While the issue was promptly patched before any exploitation, market confidence has temporarily weakened.',
-    },
-  ];
-  
-  return { buyNews, sellNews };
-};
+function timeAgo(iso) {
+  try {
+    const d = new Date(iso);
+    const diff = Math.max(0, Date.now() - d.getTime());
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  } catch {
+    return '';
+  }
+}
 
-const News = () => {
-  const [buyNews, setBuyNews] = useState([]);
-  const [sellNews, setSellNews] = useState([]);
-  const [trendingNews, setTrendingNews] = useState([]);
+function titleCase(word) {
+  return word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '';
+}
+
+function inferSourceFromUrl(urlStr) {
+  try {
+    if (!urlStr) return 'Unknown';
+    const u = new URL(urlStr);
+    let host = u.hostname || '';
+    // Strip common subdomains
+    host = host.replace(/^www\./i, '');
+    const parts = host.split('.');
+    if (parts.length < 2) return titleCase(host);
+    // Handle blog.<brand>.tld
+    if (parts[0].toLowerCase() === 'blog' && parts.length >= 3) {
+      return `${titleCase(parts[1])} Blog`;
+    }
+    const sld = parts[parts.length - 2];
+    const tld = parts[parts.length - 1];
+    const base = titleCase(sld);
+    // Friendly remaps
+    const map = {
+      coindesk: 'CoinDesk',
+      cointelegraph: 'Cointelegraph',
+      decrypt: 'Decrypt',
+      benzinga: 'Benzinga',
+      bloomberg: 'Bloomberg',
+      reuters: 'Reuters',
+      yahoo: 'Yahoo Finance',
+      forbes: 'Forbes',
+      finance: 'Yahoo Finance',
+      medium: 'Medium',
+      substack: 'Substack',
+      reddit: 'Reddit',
+      youtube: 'YouTube',
+      x: 'X',
+      twitter: 'X',
+    };
+    const key = sld.toLowerCase();
+    return map[key] || (tld.toLowerCase() === 'io' || tld.toLowerCase() === 'com' ? base : `${base}.${tld}`);
+  } catch {
+    return 'Unknown';
+  }
+}
+
+const News = ({ initialNews = [] }) => {
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [category, setCategory] = useState('all');
+  const [filterKind, setFilterKind] = useState('all'); // all|news|media
   const [bookmarkedNews, setBookmarkedNews] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
   
-  // Load initial data
   useEffect(() => {
-    const fetchData = async () => {
-      // Simulate API call with delay
-      setLoading(true);
-      
-      setTimeout(() => {
-        const { buyNews, sellNews } = generateNewsData();
-        setBuyNews(buyNews);
-        setSellNews(sellNews);
-        setTrendingNews([...buyNews, ...sellNews].filter(news => news.trending));
+    setItems(Array.isArray(initialNews) ? initialNews : []);
         setLoading(false);
-      }, 1500);
-    };
-    
-    fetchData();
-  }, []);
-  
-  // Filtered news for specific coin search
-  const getFilteredNewsByCoin = (coinFilter) => {
-    if (!coinFilter) return [];
-    
-    const term = coinFilter.toLowerCase();
-    return [...buyNews, ...sellNews].filter(news => 
-      news.coin.toLowerCase().includes(term) || 
-      news.coinFull.toLowerCase().includes(term)
-    );
-  };
-  
-  // Get news for top buying coins
-  const getTopBuyingCoinsNews = () => {
-    return buyNews;
-  };
-  
-  // Get news for top selling coins
-  const getTopSellingCoinsNews = () => {
-    return sellNews;
-  };
-  
-  // Filtered news based on search term (if provided)
-  const filteredNewsBySearch = searchTerm ? getFilteredNewsByCoin(searchTerm) : [];
-  
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
-  };
-  
-  const handleFilterChange = (newFilter) => {
-    setFilter(newFilter);
-    setCurrentPage(1);
-  };
-  
-  const handleCategoryChange = (e) => {
-    setCategory(e.target.value);
-    setCurrentPage(1);
-  };
-  
+  }, [initialNews]);
+
+  const tokensTrending = useMemo(() => {
+    const scoreByToken = new Map();
+    for (const it of items) {
+      const votes = Number(it?.votes?.positive || 0) + Number(it?.votes?.important || 0) + Number(it?.votes?.comments || 0);
+      const instruments = Array.isArray(it?.instruments) ? it.instruments : [];
+      for (const ins of instruments) {
+        const code = String(ins?.code || '').toUpperCase();
+        if (!code) continue;
+        scoreByToken.set(code, (scoreByToken.get(code) || 0) + votes + 1);
+      }
+    }
+    return Array.from(scoreByToken.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([code]) => code);
+  }, [items]);
+
+  const filtered = useMemo(() => {
+    let list = items;
+    if (filterKind !== 'all') list = list.filter(it => (it.kind || 'news') === filterKind);
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(it => {
+        const inTitle = (it.title || '').toLowerCase().includes(q);
+        const inDesc = (it.description || '').toLowerCase().includes(q);
+        const inTokens = (it.instruments || []).some(ins => String(ins.code || '').toLowerCase().includes(q) || String(ins.title || '').toLowerCase().includes(q));
+        return inTitle || inDesc || inTokens;
+      });
+    }
+    return list;
+  }, [items, filterKind, searchTerm]);
+
+  const handleSearch = (e) => setSearchTerm(e.target.value);
   const toggleBookmark = (id) => {
-    setBookmarkedNews(prev => 
-      prev.includes(id)
-        ? prev.filter(newsId => newsId !== id)
-        : [...prev, id]
-    );
-  };
-  
-  const changePage = (page) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setBookmarkedNews(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
   
   // Animation variants
@@ -748,37 +597,17 @@ const News = () => {
             <SearchIcon />
             <input
               type="text"
-              placeholder="Search by coin name or symbol..."
+              placeholder="Search by coin, keyword, or source..."
               value={searchTerm}
               onChange={handleSearch}
             />
           </SearchInput>
           
           <FiltersWrapper>
-            <FilterButton
-              active={filter === 'all'}
-              onClick={() => handleFilterChange('all')}
-            >
-              All
-            </FilterButton>
-            <FilterButton
-              active={filter === 'buy'}
-              onClick={() => handleFilterChange('buy')}
-            >
-              Top Buys
-            </FilterButton>
-            <FilterButton
-              active={filter === 'sell'}
-              onClick={() => handleFilterChange('sell')}
-            >
-              Top Sells
-            </FilterButton>
-            <FilterButton
-              active={filter === 'bookmarked'}
-              onClick={() => handleFilterChange('bookmarked')}
-            >
-              Bookmarked
-            </FilterButton>
+            <FilterButton active={filterKind === 'all'} onClick={() => setFilterKind('all')}>All</FilterButton>
+            <FilterButton active={filterKind === 'news'} onClick={() => setFilterKind('news')}>News</FilterButton>
+            <FilterButton active={filterKind === 'media'} onClick={() => setFilterKind('media')}>Media</FilterButton>
+            <FilterButton active={false} onClick={() => {}} style={{ opacity: 0.6, cursor: 'default' }}>Bookmarked ({bookmarkedNews.length})</FilterButton>
           </FiltersWrapper>
         </SearchFilterBar>
         
@@ -786,272 +615,101 @@ const News = () => {
           <LoadingAnimation />
         ) : (
           <>
+            {tokensTrending.length > 0 && (
             <TrendingSection>
-              <h2>
-                Trending Price Changes
-              </h2>
+                <h2>Trending Tokens In News</h2>
               <div className="trending-items">
-                {trendingNews.map((news) => (
-                  <TrendingItem
-                    key={`trending-${news.id}`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="trending-header">
-                      <span className="coin-symbol">{news.coin}</span>
-                      <span className={`trending-change ${news.change.startsWith('+') ? 'up' : 'down'}`}>
-                        {news.change}
-                      </span>
-                    </div>
-                    <div className="trending-title">{news.title}</div>
-                    <div className="trending-time">{news.timestamp}</div>
+                  {tokensTrending.map(tok => (
+                    <Link key={tok} href={`/statistics?token=${encodeURIComponent(tok)}&sinceHours=24`}>
+                      <TrendingItem whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+                        {tok}
                   </TrendingItem>
+                    </Link>
                 ))}
               </div>
             </TrendingSection>
+            )}
             
-            {searchTerm ? (
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={`search-${searchTerm}`}
+                key={`list-${filterKind}-${searchTerm}`}
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
                   exit="exit"
                 >
                   <SectionTitle>
-                    Search Results for "{searchTerm}"
-                    <span className="count">({filteredNewsBySearch.length} articles)</span>
+                  Latest Headlines
+                  <span className="count">({filtered.length} articles)</span>
                   </SectionTitle>
-                  
-                  {filteredNewsBySearch.length > 0 ? (
-                    <NewsSection>
-                      {filteredNewsBySearch.map((news) => (
-                        <NewsCard
-                          key={news.id}
-                          variants={itemVariants}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <CoinLabel isNew={news.isNew}>
-                            <div className="coin-symbol">{news.coin}</div>
-                            <h3>{news.coinFull}</h3>
-                            <div className="date">
-                              <span className="dot" />
-                              {news.timestamp} · {news.source}
-                            </div>
-                          </CoinLabel>
-                          <NewsContent>
-                            <h3>{news.title}</h3>
-                            <p>{news.content}</p>
-                            <NewsFooter>
-                              <a href="#read-more">
-                                Read more <ArrowRightIcon />
-                              </a>
-                              <div className="actions">
-                                <button 
-                                  className={bookmarkedNews.includes(news.id) ? 'active' : ''}
-                                  onClick={() => toggleBookmark(news.id)}
-                                >
-                                  <BookmarkIcon active={bookmarkedNews.includes(news.id)} />
-                                </button>
-                                <button>
-                                  <ShareIcon />
-                                </button>
-                              </div>
-                            </NewsFooter>
-                          </NewsContent>
-                        </NewsCard>
-                      ))}
-                    </NewsSection>
-                  ) : (
+                {filtered.length === 0 ? (
                     <div style={{ textAlign: 'center', margin: '3rem 0' }}>
-                      <p>No results found for "{searchTerm}"</p>
+                    <p>No news found.</p>
                     </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            ) : (
-              <>
-                {/* Top Buying Coins News Section */}
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key="top-buying"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                  >
-                    <SectionTitle>
-                      Top Buying Coins News
-                      <span className="count">({getTopBuyingCoinsNews().length} articles)</span>
-                    </SectionTitle>
-                    
+                ) : (
                     <NewsSection>
-                      {(filter === 'all' || filter === 'buy') && getTopBuyingCoinsNews().map((news) => (
-                        <NewsCard
-                          key={news.id}
-                          variants={itemVariants}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <CoinLabel isNew={news.isNew}>
-                            <div className="coin-symbol">{news.coin}</div>
-                            <h3>{news.coinFull}</h3>
+                    {filtered.map((it) => {
+                      const firstToken = (it.instruments && it.instruments[0]?.code) ? it.instruments[0].code.toUpperCase() : 'NEWS';
+                      const displaySource = it.source && it.source !== 'Unknown' ? it.source : inferSourceFromUrl(it.url);
+                      return (
+                        <NewsCard key={it.id} variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <CoinLabel>
+                            <div className="coin-symbol">{firstToken}</div>
+                            <h3>{displaySource || 'Source'}</h3>
                             <div className="date">
                               <span className="dot" />
-                              {news.timestamp} · {news.source}
+                              {timeAgo(it.published_at)}
                             </div>
                           </CoinLabel>
                           <NewsContent>
-                            <h3>{news.title}</h3>
-                            <p>{news.content}</p>
+                            <h3>{it.title}</h3>
+                            <p>{it.description}</p>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                              {(it.instruments || []).slice(0, 4).map((ins, idx) => (
+                                <span key={`${it.id}-ins-${idx}`} style={{ marginRight: '0.75rem' }}>
+                                  {ins.code}
+                                  {typeof ins.price_usd === 'number' && (
+                                    <>
+                                      {' '}· ${ins.price_usd.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                                    </>
+                                  )}
+                                  {typeof ins.change24h === 'number' && (
+                                    <>
+                                      {' '}(<span style={{ color: ins.change24h >= 0 ? '#2ecc71' : '#e74c3c' }}>{ins.change24h.toFixed(2)}%</span>)
+                                    </>
+                                  )}
+                                </span>
+                              ))}
+                            </div>
                             <NewsFooter>
-                              <a href="#read-more">
-                                Read more <ArrowRightIcon />
+                              {it.url ? (
+                                <a href={it.url} target="_blank" rel="noreferrer">
+                                  Read original <ArrowRightIcon />
                               </a>
+                              ) : (
+                                <span style={{ color: 'var(--text-secondary)' }}>Original link unavailable</span>
+                              )}
                               <div className="actions">
                                 <button 
-                                  className={bookmarkedNews.includes(news.id) ? 'active' : ''}
-                                  onClick={() => toggleBookmark(news.id)}
+                                  className={bookmarkedNews.includes(it.id) ? 'active' : ''}
+                                  onClick={() => toggleBookmark(it.id)}
+                                  aria-label="Bookmark"
                                 >
-                                  <BookmarkIcon active={bookmarkedNews.includes(news.id)} />
+                                  <BookmarkIcon active={bookmarkedNews.includes(it.id)} />
                                 </button>
-                                <button>
+                                <button onClick={() => navigator?.share?.({ title: it.title, url: it.url }).catch(() => {})} aria-label="Share">
                                   <ShareIcon />
                                 </button>
                               </div>
                             </NewsFooter>
                           </NewsContent>
                         </NewsCard>
-                      ))}
+                      );
+                    })}
                     </NewsSection>
-                  </motion.div>
-                </AnimatePresence>
-                
-                {/* Top Selling Coins News Section */}
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key="top-selling"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                  >
-                    <SectionTitle>
-                      Top Selling Coins News
-                      <span className="count">({getTopSellingCoinsNews().length} articles)</span>
-                    </SectionTitle>
-                    
-                    <NewsSection>
-                      {(filter === 'all' || filter === 'sell') && getTopSellingCoinsNews().map((news) => (
-                        <NewsCard
-                          key={news.id}
-                          variants={itemVariants}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <CoinLabel isNew={news.isNew}>
-                            <div className="coin-symbol">{news.coin}</div>
-                            <h3>{news.coinFull}</h3>
-                            <div className="date">
-                              <span className="dot" />
-                              {news.timestamp} · {news.source}
-                            </div>
-                          </CoinLabel>
-                          <NewsContent>
-                            <h3>{news.title}</h3>
-                            <p>{news.content}</p>
-                            <NewsFooter>
-                              <a href="#read-more">
-                                Read more <ArrowRightIcon />
-                              </a>
-                              <div className="actions">
-                                <button 
-                                  className={bookmarkedNews.includes(news.id) ? 'active' : ''}
-                                  onClick={() => toggleBookmark(news.id)}
-                                >
-                                  <BookmarkIcon active={bookmarkedNews.includes(news.id)} />
-                                </button>
-                                <button>
-                                  <ShareIcon />
-                                </button>
-                              </div>
-                            </NewsFooter>
-                          </NewsContent>
-                        </NewsCard>
-                      ))}
-                    </NewsSection>
-                  </motion.div>
-                </AnimatePresence>
-                
-                {/* Bookmarked News Section */}
-                {filter === 'bookmarked' && (
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key="bookmarked"
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                    >
-                      <SectionTitle>
-                        Bookmarked News
-                        <span className="count">({bookmarkedNews.length} articles)</span>
-                      </SectionTitle>
-                      
-                      {bookmarkedNews.length > 0 ? (
-                        <NewsSection>
-                          {[...buyNews, ...sellNews]
-                            .filter(news => bookmarkedNews.includes(news.id))
-                            .map((news) => (
-                              <NewsCard
-                                key={news.id}
-                                variants={itemVariants}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                <CoinLabel isNew={news.isNew}>
-                                  <div className="coin-symbol">{news.coin}</div>
-                                  <h3>{news.coinFull}</h3>
-                                  <div className="date">
-                                    <span className="dot" />
-                                    {news.timestamp} · {news.source}
-                                  </div>
-                                </CoinLabel>
-                                <NewsContent>
-                                  <h3>{news.title}</h3>
-                                  <p>{news.content}</p>
-                                  <NewsFooter>
-                                    <a href="#read-more">
-                                      Read more <ArrowRightIcon />
-                                    </a>
-                                    <div className="actions">
-                                      <button 
-                                        className="active"
-                                        onClick={() => toggleBookmark(news.id)}
-                                      >
-                                        <BookmarkIcon active={true} />
-                                      </button>
-                                      <button>
-                                        <ShareIcon />
-                                      </button>
-                                    </div>
-                                  </NewsFooter>
-                                </NewsContent>
-                              </NewsCard>
-                            ))}
-                        </NewsSection>
-                      ) : (
-                        <div style={{ textAlign: 'center', margin: '3rem 0' }}>
-                          <p>No bookmarked news yet. Click the bookmark icon on any news item to save it here.</p>
-                        </div>
                       )}
                     </motion.div>
                   </AnimatePresence>
-                )}
-              </>
-            )}
           </>
         )}
       </NewsContainer>

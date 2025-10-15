@@ -233,6 +233,11 @@ const Navbar = ({ onLogout }) => {
                 <NextLink href="/ai-advisor">Orca 2.0</NextLink>
               </MenuItem>
             </motion.div>
+            <motion.div variants={menuVariants} initial="hidden" animate="visible">
+              <MenuItem $active={isActive('/subscribe')} variants={itemVariants}>
+                <NextLink href="/subscribe">Pricing</NextLink>
+              </MenuItem>
+            </motion.div>
             <form onSubmit={onSubmitSearch} style={{ display: 'flex', alignItems: 'center' }}>
               <SearchBox>
                 <input
@@ -268,8 +273,17 @@ const Navbar = ({ onLogout }) => {
               </MenuItem>
             </motion.div>
             <motion.div variants={menuVariants} initial="hidden" animate="visible">
-              <MenuItem $active={isActive('/ai-advisor')} variants={itemVariants}>
-                <NextLink href="/ai-advisor">Orca 2.0</NextLink>
+              <MenuItem $active={false} variants={itemVariants}>
+                <a 
+                  href="#advisor" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('advisor')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Orca 2.0
+                </a>
               </MenuItem>
             </motion.div>
           </>

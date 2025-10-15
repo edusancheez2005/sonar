@@ -23,6 +23,138 @@ const DashboardContainer = styled.div`
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  position: relative;
+`;
+
+const PremiumOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 22, 33, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+`;
+
+const PremiumCard = styled(motion.div)`
+  background: linear-gradient(135deg, rgba(26, 40, 56, 0.98) 0%, rgba(15, 25, 38, 0.98) 100%);
+  border: 2px solid var(--primary);
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(54, 166, 186, 0.3), 0 0 100px rgba(54, 166, 186, 0.1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(54, 166, 186, 0.08) 0%, transparent 70%);
+    animation: pulse 4s ease-in-out infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+  }
+`;
+
+const PremiumIcon = styled.div`
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  filter: drop-shadow(0 4px 12px rgba(54, 166, 186, 0.4));
+`;
+
+const PremiumTitle = styled.h2`
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+`;
+
+const PremiumDescription = styled.p`
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+`;
+
+const PremiumFeatureList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+  text-align: left;
+  
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    
+    &::before {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: rgba(54, 166, 186, 0.2);
+      border: 2px solid var(--primary);
+      border-radius: 50%;
+      color: var(--primary);
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+  }
+`;
+
+const PremiumButton = styled(motion.button)`
+  background: linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 1.2rem 3rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(54, 166, 186, 0.35);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(54, 166, 186, 0.5);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const BlurredContent = styled.div`
+  filter: ${props => props.$isPremium ? 'none' : 'blur(8px)'};
+  pointer-events: ${props => props.$isPremium ? 'auto' : 'none'};
+  user-select: ${props => props.$isPremium ? 'auto' : 'none'};
+  transition: filter 0.3s ease;
 `;
 
 const StatusBadge = styled.div`
@@ -334,7 +466,7 @@ const formatCompact = (n) => {
   return `${Math.round(num)}`;
 }
 
-const Dashboard = () => {
+const Dashboard = ({ isPremium = false }) => {
   const [transactions, setTransactions] = useState([]);
   const [topBuys, setTopBuys] = useState([]);
   const [topSells, setTopSells] = useState([]);
@@ -349,7 +481,8 @@ const Dashboard = () => {
      // New state for enhanced insights
    const [marketSentiment, setMarketSentiment] = useState({ ratio: 0, trend: 'neutral' });
    const [whaleActivity, setWhaleActivity] = useState([]);
-   const [riskMetrics, setRiskMetrics] = useState({ highValueCount: 0, avgTransactionSize: 0 });
+  const [riskMetrics, setRiskMetrics] = useState({ highValueCount: 0, avgTransactionSize: 0 });
+  const [topHighValueTxs, setTopHighValueTxs] = useState([])
    const [marketMomentum, setMarketMomentum] = useState({ volumeChange: 0, activityChange: 0 });
   const [timeSeries, setTimeSeries] = useState({ labels: [], volume: [], count: [] })
   const [tokenLeaders, setTokenLeaders] = useState([])
@@ -390,7 +523,8 @@ const Dashboard = () => {
            setMarketSentiment(json.marketSentiment || { ratio: 0, trend: 'neutral' });
            setRiskMetrics(json.riskMetrics || { highValueCount: 0, avgTransactionSize: 0 });
            setMarketMomentum(json.marketMomentum || { volumeChange: 0, activityChange: 0 });
-           setWhaleActivity(json.whaleActivity || []);
+          setWhaleActivity(json.whaleActivity || []);
+          setTopHighValueTxs(json.topHighValueTxs || [])
           setTimeSeries(json.timeSeries || { labels: [], volume: [], count: [] })
           setTokenLeaders(json.tokenLeaders || [])
           setTokenInflows(json.tokenInflows || [])
@@ -497,9 +631,41 @@ const Dashboard = () => {
   };
 
   return (
-    <DashboardContainer>
-             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-         <PageHeader title="Real-Time" accentWord="Dashboard">
+    <>
+      {!isPremium && (
+        <PremiumOverlay>
+          <PremiumCard
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <PremiumIcon>🔒</PremiumIcon>
+            <PremiumTitle>Unlock Premium Dashboard</PremiumTitle>
+            <PremiumDescription>
+              Get full access to real-time whale analytics, advanced insights, and comprehensive market data.
+            </PremiumDescription>
+            <PremiumFeatureList>
+              <li>Live whale transaction tracking (24/7)</li>
+              <li>Advanced token analytics & heatmaps</li>
+              <li>Risk assessment & sentiment analysis</li>
+              <li>AI-powered market insights (Orca 2.0)</li>
+              <li>Custom alerts & notifications</li>
+            </PremiumFeatureList>
+            <PremiumButton
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => window.location.href = '/subscribe'}
+            >
+              Go Premium — £5/month
+            </PremiumButton>
+          </PremiumCard>
+        </PremiumOverlay>
+      )}
+      
+      <DashboardContainer>
+        <BlurredContent $isPremium={isPremium}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <PageHeader title="Real-Time" accentWord="Dashboard">
            <FilterContainer>
              <FilterGroup>
                <label htmlFor="min-value">Minimum Transaction Value ($)</label>
@@ -748,7 +914,25 @@ const Dashboard = () => {
                  <span>Avg Transaction Size:</span>
                  <span style={{ fontWeight: '600' }}>${formatNumber(Math.round(riskMetrics.avgTransactionSize))}</span>
                </div>
-               
+              {topHighValueTxs.length > 0 && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  <div style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '0.4rem' }}>Top 10 Largest (24h)</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem 0.75rem', alignItems: 'center' }}>
+                    <div style={{ color: 'var(--text-secondary)' }}>Token</div>
+                    <div style={{ color: 'var(--text-secondary)', textAlign: 'right' }}>USD</div>
+                    <div style={{ color: 'var(--text-secondary)' }}>Side</div>
+                    <div style={{ color: 'var(--text-secondary)' }}>Chain</div>
+                    {topHighValueTxs.map((t) => (
+                      <React.Fragment key={t.hash || `${t.coin}-${t.time}`}>
+                        <div><Link href={`/statistics?token=${encodeURIComponent(t.coin)}&sinceHours=24`}>{t.coin}</Link></div>
+                        <div style={{ textAlign: 'right' }}>${formatNumber(t.usd)}</div>
+                        <div><span className={`action-${(t.side||'').toLowerCase()}`}>{t.side}</span></div>
+                        <div>{t.chain}</div>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+              )}
              </div>
            </InsightCard>
 
@@ -800,7 +984,9 @@ const Dashboard = () => {
          </div>
        </DashboardCard>
      </motion.div>
-    </DashboardContainer>
+        </BlurredContent>
+      </DashboardContainer>
+    </>
   );
 };
 

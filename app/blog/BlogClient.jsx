@@ -313,14 +313,14 @@ const EmailInput = styled.input`
 `
 
 const SubscribeButton = styled.button`
-  padding: 1rem 2.5rem;
+  padding: 1.2rem 3.5rem;
   background: linear-gradient(135deg, var(--primary), #45a3d9);
   color: white;
   border: none;
   border-radius: 30px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.05rem;
   letter-spacing: 0.02em;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);

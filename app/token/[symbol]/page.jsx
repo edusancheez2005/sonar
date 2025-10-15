@@ -66,13 +66,82 @@ export default async function TokenDetail({ params, searchParams }) {
   const uniqueWhales = whales.size
   const chains = Array.from(chainMap.entries()).sort((a,b)=>b[1]-a[1])
 
+  function computeMedian(values) {
+    if (!values || values.length === 0) return 0
+    const arr = values.slice().sort((a,b)=>a-b)
+    const mid = Math.floor(arr.length/2)
+    return arr.length % 2 ? arr[mid] : (arr[mid-1]+arr[mid])/2
+  }
+
+  function computeSentiment(rows) {
+    if (!rows || rows.length === 0) return { label: 'NEUTRAL', color: '#f39c12', score: 0, details: {} }
+    const nowMs = Date.now()
+    const sixH = 6 * 60 * 60 * 1000
+    const last6Start = nowMs - sixH
+    const prev6Start = nowMs - 2 * sixH
+
+    let buys = 0, sells = 0, buyVol = 0, sellVol = 0, net = 0
+    const txSizes = []
+    let last6Net = 0, prev6Net = 0
+    for (const r of rows) {
+      const usd = Number(r.usd_value || 0)
+      const side = String(r.classification || '').toLowerCase()
+      const ts = new Date(r.timestamp).getTime()
+      txSizes.push(Math.abs(usd))
+      if (side === 'buy') { buys += 1; buyVol += usd; net += usd }
+      else if (side === 'sell') { sells += 1; sellVol += usd; net -= usd }
+      if (ts >= last6Start) {
+        last6Net += (side === 'sell' ? -usd : usd)
+      } else if (ts >= prev6Start && ts < last6Start) {
+        prev6Net += (side === 'sell' ? -usd : usd)
+      }
+    }
+    const total = buys + sells
+    const buyPct = total > 0 ? (buys / total) * 100 : 50
+    const median = computeMedian(txSizes) || 1
+    const scaleNet = Math.max(1, median * 20)
+    const scaleMom = Math.max(1, median * 10)
+
+    // Components normalized to [-1, 1]
+    const compBias = (buyPct - 50) / 50 // [-1,1]
+    const compNet = Math.tanh(net / scaleNet) // robust cap
+    const compMom = Math.tanh((last6Net - prev6Net) / scaleMom)
+
+    // Weights
+    const wBias = 0.4, wNet = 0.4, wMom = 0.2
+    const score = (wBias * compBias) + (wNet * compNet) + (wMom * compMom)
+    let label = 'NEUTRAL', color = '#f39c12'
+    if (score > 0.15) { label = 'BULLISH'; color = '#2ecc71' }
+    else if (score < -0.15) { label = 'BEARISH'; color = '#e74c3c' }
+    return {
+      label, color, score: Number(score.toFixed(2)),
+      details: {
+        buyPct: Number(buyPct.toFixed(1)), net: Math.round(net), last6Net: Math.round(last6Net), prev6Net: Math.round(prev6Net)
+      }
+    }
+  }
+
+  const sentiment = computeSentiment(data || [])
+
   return (
     <AuthGuard>
       <main className="container" style={{ padding: '2rem' }}>
         <BreadcrumbJsonLd symbol={symbol} />
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <h1 style={{ margin: 0 }}>{symbol}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <h1 style={{ margin: 0 }}>{symbol}</h1>
+              <span style={{
+                padding: '0.25rem 0.6rem',
+                borderRadius: '999px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                color: '#0a1621',
+                background: sentiment.color,
+              }} title={`Buy% ${sentiment.details.buyPct} | Net $${Math.round(sentiment.details.net).toLocaleString()} | Momentum $${Math.round(sentiment.details.last6Net - sentiment.details.prev6Net).toLocaleString()}`}>
+                {sentiment.label}
+              </span>
+            </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <a className={sinceHours===1?'buy':''} href={`/token/${encodeURIComponent(symbol)}?sinceHours=1`}>1h</a>
               <a className={sinceHours===6?'buy':''} href={`/token/${encodeURIComponent(symbol)}?sinceHours=6`}>6h</a>
