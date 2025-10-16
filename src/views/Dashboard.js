@@ -481,7 +481,7 @@ const Dashboard = ({ isPremium = false }) => {
      // New state for enhanced insights
    const [marketSentiment, setMarketSentiment] = useState({ ratio: 0, trend: 'neutral' });
    const [whaleActivity, setWhaleActivity] = useState([]);
-  const [riskMetrics, setRiskMetrics] = useState({ highValueCount: 0, avgTransactionSize: 0 });
+   const [riskMetrics, setRiskMetrics] = useState({ highValueCount: 0, avgTransactionSize: 0 });
   const [topHighValueTxs, setTopHighValueTxs] = useState([])
    const [marketMomentum, setMarketMomentum] = useState({ volumeChange: 0, activityChange: 0 });
   const [timeSeries, setTimeSeries] = useState({ labels: [], volume: [], count: [] })
@@ -523,7 +523,7 @@ const Dashboard = ({ isPremium = false }) => {
            setMarketSentiment(json.marketSentiment || { ratio: 0, trend: 'neutral' });
            setRiskMetrics(json.riskMetrics || { highValueCount: 0, avgTransactionSize: 0 });
            setMarketMomentum(json.marketMomentum || { volumeChange: 0, activityChange: 0 });
-          setWhaleActivity(json.whaleActivity || []);
+           setWhaleActivity(json.whaleActivity || []);
           setTopHighValueTxs(json.topHighValueTxs || [])
           setTimeSeries(json.timeSeries || { labels: [], volume: [], count: [] })
           setTokenLeaders(json.tokenLeaders || [])
@@ -662,10 +662,10 @@ const Dashboard = ({ isPremium = false }) => {
         </PremiumOverlay>
       )}
       
-      <DashboardContainer>
+    <DashboardContainer>
         <BlurredContent $isPremium={isPremium}>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <PageHeader title="Real-Time" accentWord="Dashboard">
+             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+         <PageHeader title="Real-Time" accentWord="Dashboard">
            <FilterContainer>
              <FilterGroup>
                <label htmlFor="min-value">Minimum Transaction Value ($)</label>
@@ -983,7 +983,7 @@ const Dashboard = ({ isPremium = false }) => {
                          <span style={{ 
                            fontSize: '1.1rem', 
                            fontWeight: 700, 
-                           color: 'var(--text-primary)',
+             color: 'var(--text-primary)', 
                            letterSpacing: '0.02em'
                          }}>
                            {t.token}
@@ -995,14 +995,14 @@ const Dashboard = ({ isPremium = false }) => {
                          }}>
                            {count}
                          </span>
-                       </div>
+         </div>
                        <div style={{ 
                          fontSize: '0.75rem', 
                          color: 'var(--text-secondary)',
                          fontWeight: 600
                        }}>
                          {count === 1 ? '1 Whale' : `${count} Whales`}
-                       </div>
+                </div>
                        <div style={{
                          position: 'absolute',
                          bottom: 0,
@@ -1033,7 +1033,7 @@ const Dashboard = ({ isPremium = false }) => {
                  }}>
                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#e74c3c' }}>
                      {riskMetrics.highValueCount}
-                   </span>
+                </span>
                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
                      High-Risk
                    </span>
@@ -1062,7 +1062,7 @@ const Dashboard = ({ isPremium = false }) => {
                    }}>
                      ${formatNumber(Math.round(riskMetrics.avgTransactionSize))}
                    </span>
-                 </div>
+                  </div>
                </div>
 
                {topHighValueTxs.length > 0 && (
@@ -1076,7 +1076,7 @@ const Dashboard = ({ isPremium = false }) => {
                      letterSpacing: '0.05em'
                    }}>
                      Top 5 Largest Transactions
-                   </div>
+               </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                      {topHighValueTxs.slice(0, 5).map((t, idx) => (
                        <div key={t.hash || `${t.coin}-${idx}`} style={{
@@ -1116,17 +1116,23 @@ const Dashboard = ({ isPremium = false }) => {
                          }}>
                            ${formatNumber(t.usd)}
                          </div>
-                         <span style={{
-                           padding: '0.25rem 0.6rem',
-                           borderRadius: '6px',
-                           fontSize: '0.8rem',
-                           fontWeight: 600,
-                           background: t.side?.toLowerCase() === 'buy' ? 'rgba(46,204,113,0.2)' : 'rgba(231,76,60,0.2)',
-                           color: t.side?.toLowerCase() === 'buy' ? '#2ecc71' : '#e74c3c',
-                           border: `1px solid ${t.side?.toLowerCase() === 'buy' ? 'rgba(46,204,113,0.4)' : 'rgba(231,76,60,0.4)'}`
-                         }}>
-                           {t.side}
-                         </span>
+                        <span style={{
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          background: t.side?.toLowerCase() === 'buy' ? 'rgba(46,204,113,0.2)' : 
+                                     t.side?.toLowerCase() === 'sell' ? 'rgba(231,76,60,0.2)' : 
+                                     'rgba(52,152,219,0.2)',
+                          color: t.side?.toLowerCase() === 'buy' ? '#2ecc71' : 
+                                t.side?.toLowerCase() === 'sell' ? '#e74c3c' : 
+                                '#3498db',
+                          border: `1px solid ${t.side?.toLowerCase() === 'buy' ? 'rgba(46,204,113,0.4)' : 
+                                              t.side?.toLowerCase() === 'sell' ? 'rgba(231,76,60,0.4)' : 
+                                              'rgba(52,152,219,0.4)'}`
+                        }}>
+                          {t.side}
+                        </span>
                          <span style={{ 
                            fontSize: '0.85rem', 
                            color: 'var(--text-secondary)',
@@ -1145,7 +1151,7 @@ const Dashboard = ({ isPremium = false }) => {
              <DashboardCard>
                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                  <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Market Momentum</h2>
-               </div>
+             </div>
 
                <div style={{
                  background: `linear-gradient(135deg, rgba(${marketMomentum.volumeChange > 0 ? '46,204,113' : '231,76,60'},0.1) 0%, rgba(${marketMomentum.volumeChange > 0 ? '46,204,113' : '231,76,60'},0.05) 100%)`,
@@ -1161,8 +1167,8 @@ const Dashboard = ({ isPremium = false }) => {
                    color: marketMomentum.volumeChange > 0 ? '#2ecc71' : '#e74c3c',
                    marginBottom: '0.5rem'
                  }}>
-                   {marketMomentum.volumeChange > 0 ? '+' : ''}{marketMomentum.volumeChange.toFixed(1)}%
-                 </div>
+               {marketMomentum.volumeChange > 0 ? '+' : ''}{marketMomentum.volumeChange.toFixed(1)}%
+             </div>
                  <div style={{ 
                    fontSize: '0.95rem', 
                    color: 'var(--text-secondary)',
@@ -1173,7 +1179,7 @@ const Dashboard = ({ isPremium = false }) => {
                    Volume Change (24h)
                  </div>
                </div>
-
+               
                <div style={{
                  display: 'grid',
                  gridTemplateColumns: '1fr 1fr',
@@ -1193,7 +1199,7 @@ const Dashboard = ({ isPremium = false }) => {
                      marginBottom: '0.25rem'
                    }}>
                      {formatNumber(overall.totalCount || 0)}
-                   </div>
+             </div>
                    <div style={{ 
                      fontSize: '0.85rem', 
                      color: 'var(--text-secondary)',
@@ -1235,36 +1241,36 @@ const Dashboard = ({ isPremium = false }) => {
              
 
       <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }}>
-        <DashboardCard>
+         <DashboardCard>
           <h2>Most Traded Tokens (24h)</h2>
-         <div style={{ minHeight: '220px' }}>
+          <div style={{ minHeight: '220px' }}>
            {noData24h || tokenTradeCounts.length === 0 ? (
              <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
-           ) : (
-             <BarsContainer>
+            ) : (
+              <BarsContainer>
                {tokenTradeCounts.map((t) => {
                  const max = Math.max(...tokenTradeCounts.map(x => Number(x.count || 0)), 1)
                  const value = Number(t.count || 0)
-                 const pct = Math.max(0, (value / max) * 100)
-                 return (
+                  const pct = Math.max(0, (value / max) * 100)
+                  return (
                   <BarRow key={t.token}>
                     <div style={{ color: 'var(--text-secondary)' }}>
                       <Link href={`/token/${encodeURIComponent(t.token)}?sinceHours=24`}>{t.token}</Link>
                     </div>
-                    <BarTrack>
-                      <BarFill style={{ width: `${pct}%` }} />
-                    </BarTrack>
+                      <BarTrack>
+                        <BarFill style={{ width: `${pct}%` }} />
+                      </BarTrack>
                     <div style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{formatNumber(value)}</div>
-                  </BarRow>
-                 )
-               })}
-             </BarsContainer>
-           )}
-         </div>
-       </DashboardCard>
-     </motion.div>
+                    </BarRow>
+                  )
+                })}
+              </BarsContainer>
+            )}
+          </div>
+        </DashboardCard>
+      </motion.div>
         </BlurredContent>
-      </DashboardContainer>
+    </DashboardContainer>
     </>
   );
 };
