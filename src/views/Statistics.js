@@ -396,6 +396,7 @@ export default function Statistics() {
           <button type="button" className={sinceHours===24?'active':''} onClick={()=>preset(24)}>24h</button>
           <button type="button" className={sinceHours===72?'active':''} onClick={()=>preset(72)}>3d</button>
           <button type="button" className={sinceHours===168?'active':''} onClick={()=>preset(168)}>7d</button>
+          <Button type="button" variant="danger" onClick={reset}>Reset All Filters</Button>
         </Presets>
         <Toolbar>
           <Field>
@@ -430,9 +431,6 @@ export default function Statistics() {
             <label>Since (hours)</label>
             <PillInput type="number" min="0" value={sinceHours} onChange={(e)=>setSinceHours(Number(e.target.value))} />
           </Field>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Button type="button" variant="danger" onClick={reset}>Reset</Button>
-          </div>
         </Toolbar>
 
         <div>
