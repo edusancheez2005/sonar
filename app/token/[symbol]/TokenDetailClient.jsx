@@ -556,8 +556,11 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     const num = Number(value)
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
     if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
-    if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`
-    return `$${num.toFixed(2)}`
+    if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`
+    if (num >= 1) return `$${num.toFixed(4)}`
+    if (num >= 0.0001) return `$${num.toFixed(4)}`
+    if (num > 0) return `$${num.toFixed(8)}` // For very small prices
+    return `$${num.toFixed(4)}`
   }
 
   const formatNumber = (value) => {
@@ -566,6 +569,26 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     if (num >= 1000000) return `${(num / 1000000).toFixed(2)}M`
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
     return num.toLocaleString()
+  }
+
+  const formatPrice = (value) => {
+    const num = Number(value)
+    if (!num || num === 0) return '$0.0000'
+    
+    // For very large numbers, use K/M/B notation
+    if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
+    if (num >= 10000) return `$${(num / 1000).toFixed(2)}K`
+    
+    // For prices >= $1, show 4 decimals
+    if (num >= 1) return `$${num.toFixed(4)}`
+    
+    // For prices < $1 but >= $0.0001, show 4 decimals
+    if (num >= 0.0001) return `$${num.toFixed(4)}`
+    
+    // For very small prices, show 8 decimals
+    if (num > 0) return `$${num.toFixed(8)}`
+    
+    return '$0.0000'
   }
 
   return (
@@ -625,7 +648,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           {priceData && (
             <>
               <PriceRow>
-                <Price>{formatUSD(priceData.price)}</Price>
+                <Price>{formatPrice(priceData.price)}</Price>
                 <PriceChange $positive={priceData.change24h >= 0}>
                   {priceData.change24h >= 0 ? '+' : ''}{priceData.change24h?.toFixed(2)}% (24h)
                 </PriceChange>
