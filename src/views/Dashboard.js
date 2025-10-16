@@ -904,106 +904,332 @@ const Dashboard = ({ isPremium = false }) => {
         </motion.div>
              </GridContainer>
 
-       {/* Enhanced Market Insights - Last 24 Hours */}
-       <motion.div variants={containerVariants} initial="hidden" animate="visible">
-         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-           <h2 style={{ 
-             color: 'var(--text-primary)', 
-             marginBottom: '0.5rem', 
-             fontSize: '2.5rem',
-             fontWeight: '700',
-             letterSpacing: '0.05em'
-           }}>Market Insights</h2>
-         </div>
-         <InsightGrid>
-                       <InsightCard>
-              <h3>Whale Activity Heatmap</h3>
-            <div className="insight-value" style={{ marginBottom: '0.25rem' }}>{whaleActivity.length}</div>
-                          <div className="insight-label">Active Tokens</div>
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginTop: '12px' }}>
+       {/* Professional Market Insights Section */}
+       <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '2rem' }}>
+         <div style={{ 
+           display: 'grid', 
+           gridTemplateColumns: '1fr 1fr', 
+           gap: '1.5rem',
+           '@media (max-width: 1024px)': { gridTemplateColumns: '1fr' }
+         }}>
+           
+           {/* Whale Activity Heatmap - Full Width Left Column */}
+           <DashboardCard style={{ gridColumn: '1 / 2' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+               <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Whale Activity Heatmap</h2>
+               <div style={{ 
+                 background: 'rgba(54, 166, 186, 0.15)',
+                 border: '1px solid rgba(54, 166, 186, 0.3)',
+                 borderRadius: '8px',
+                 padding: '0.5rem 1rem'
+               }}>
+                 <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>
+                   {whaleActivity.length}
+                 </span>
+                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
+                   Active Tokens
+                 </span>
+               </div>
+             </div>
+             
+             <div style={{ 
+               display: 'grid', 
+               gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+               gap: '0.75rem'
+             }}>
                {whaleActivity
                  .slice()
                  .sort((a,b)=> (b.uniqueWhales||0) - (a.uniqueWhales||0))
                  .slice(0, 12)
                  .map((t) => {
                    const count = Number(t.uniqueWhales || 0)
-                   const intensity = Math.min(1, count / Math.max(1, whaleActivity[0]?.uniqueWhales || count || 1))
-                   const bg = `rgba(54,166,186,${0.15 + intensity * 0.5})`
-                   const border = `rgba(54,166,186,${0.3 + intensity * 0.4})`
+                   const maxWhales = whaleActivity[0]?.uniqueWhales || count || 1
+                   const intensity = Math.min(1, count / maxWhales)
+                   const netFlow = t.netUsd || 0
+                   const isPositive = netFlow >= 0
+                   
                    return (
                      <Link key={t.token}
-                       href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`}
+                       href={`/token/${encodeURIComponent(t.token)}?sinceHours=24`}
                        style={{
                          display: 'flex',
-                         alignItems: 'center',
-                         justifyContent: 'space-between',
-                         padding: '10px 12px',
-                         borderRadius: 6,
-                         background: bg,
-                         border: `1px solid ${border}`,
-                         boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-                         color: 'var(--text-primary)',
+                         flexDirection: 'column',
+                         padding: '0.875rem',
+                         borderRadius: '10px',
+                         background: `linear-gradient(135deg, rgba(${isPositive ? '46,204,113' : '231,76,60'},${0.08 + intensity * 0.12}) 0%, rgba(54,166,186,${0.05 + intensity * 0.15}) 100%)`,
+                         border: `1.5px solid rgba(${isPositive ? '46,204,113' : '231,76,60'},${0.2 + intensity * 0.3})`,
                          textDecoration: 'none',
-                         fontWeight: 600,
-                         fontSize: '0.95rem',
-                         minHeight: '44px'
+                         transition: 'all 0.3s ease',
+                         cursor: 'pointer',
+                         position: 'relative',
+                         overflow: 'hidden'
                        }}
-                       title={`${t.token}: ${count} whales, $${formatNumber(Math.round(t.netUsd||0))} net flow`}
+                       onMouseEnter={(e) => {
+                         e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'
+                         e.currentTarget.style.boxShadow = `0 8px 20px rgba(${isPositive ? '46,204,113' : '231,76,60'},0.25)`
+                       }}
+                       onMouseLeave={(e) => {
+                         e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                         e.currentTarget.style.boxShadow = 'none'
+                       }}
+                       title={`${t.token}: ${count} unique whales trading • Net Flow: $${formatNumber(Math.abs(Math.round(netFlow)))}`}
                      >
-                       <span style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{t.token}</span>
-                       <span style={{ color: '#a0b2c6', fontWeight: 600, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--secondary)', borderRadius: 12, padding: '2px 8px' }}>{count}</span>
+                       <div style={{ 
+                         display: 'flex', 
+                         justifyContent: 'space-between', 
+                         alignItems: 'center',
+                         marginBottom: '0.5rem'
+                       }}>
+                         <span style={{ 
+                           fontSize: '1.1rem', 
+                           fontWeight: 700, 
+                           color: 'var(--text-primary)',
+                           letterSpacing: '0.02em'
+                         }}>
+                           {t.token}
+                         </span>
+                         <span style={{ 
+                           fontSize: '1.2rem',
+                           fontWeight: 800,
+                           color: isPositive ? '#2ecc71' : '#e74c3c'
+                         }}>
+                           {count}
+                         </span>
+                       </div>
+                       <div style={{ 
+                         fontSize: '0.75rem', 
+                         color: 'var(--text-secondary)',
+                         fontWeight: 600
+                       }}>
+                         {count === 1 ? '1 Whale' : `${count} Whales`}
+                       </div>
+                       <div style={{
+                         position: 'absolute',
+                         bottom: 0,
+                         left: 0,
+                         right: 0,
+                         height: '3px',
+                         background: `linear-gradient(90deg, ${isPositive ? '#2ecc71' : '#e74c3c'}, transparent)`,
+                         opacity: intensity
+                       }} />
                      </Link>
                    )
                  })}
              </div>
-           </InsightCard>
+           </DashboardCard>
 
-                       <InsightCard>
-              <h3>Risk Assessment</h3>
-             <div className="insight-value">{riskMetrics.highValueCount}</div>
-             <div className="insight-label">High-Value Transactions (&gt;$1M)</div>
-             <div style={{ marginTop: '1rem' }}>
-               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                 <span>Avg Transaction Size:</span>
-                 <span style={{ fontWeight: '600' }}>${formatNumber(Math.round(riskMetrics.avgTransactionSize))}</span>
+           {/* Right Column - Risk & Momentum */}
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+             
+             {/* Risk Assessment Card */}
+             <DashboardCard>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Risk Assessment</h2>
+                 <div style={{
+                   background: 'rgba(231, 76, 60, 0.15)',
+                   border: '1px solid rgba(231, 76, 60, 0.3)',
+                   borderRadius: '8px',
+                   padding: '0.5rem 1rem'
+                 }}>
+                   <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#e74c3c' }}>
+                     {riskMetrics.highValueCount}
+                   </span>
+                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
+                     High-Risk
+                   </span>
+                 </div>
                </div>
-              {topHighValueTxs.length > 0 && (
-                <div style={{ marginTop: '0.75rem' }}>
-                  <div style={{ color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '0.4rem' }}>Top 10 Largest (24h)</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem 0.75rem', alignItems: 'center' }}>
-                    <div style={{ color: 'var(--text-secondary)' }}>Token</div>
-                    <div style={{ color: 'var(--text-secondary)', textAlign: 'right' }}>USD</div>
-                    <div style={{ color: 'var(--text-secondary)' }}>Side</div>
-                    <div style={{ color: 'var(--text-secondary)' }}>Chain</div>
-                    {topHighValueTxs.map((t) => (
-                      <React.Fragment key={t.hash || `${t.coin}-${t.time}`}>
-                        <div><Link href={`/statistics?token=${encodeURIComponent(t.coin)}&sinceHours=24`}>{t.coin}</Link></div>
-                        <div style={{ textAlign: 'right' }}>${formatNumber(t.usd)}</div>
-                        <div><span className={`action-${(t.side||'').toLowerCase()}`}>{t.side}</span></div>
-                        <div>{t.chain}</div>
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-              )}
-             </div>
-           </InsightCard>
 
-                       <InsightCard>
-              <h3>Market Momentum</h3>
-             <div className="insight-value" style={{ color: marketMomentum.volumeChange > 0 ? '#2ecc71' : '#e74c3c' }}>
-               {marketMomentum.volumeChange > 0 ? '+' : ''}{marketMomentum.volumeChange.toFixed(1)}%
-             </div>
-                           <div className="insight-label">Volume Change</div>
-             <div style={{ marginTop: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span>Transaction Count:</span>
-                <span style={{ fontWeight: '600' }}>{formatNumber(overall.totalCount || 0)}</span>
-              </div>
-               
-             </div>
-           </InsightCard>
-         </InsightGrid>
+               <div style={{
+                 background: 'rgba(231, 76, 60, 0.08)',
+                 border: '1px solid rgba(231, 76, 60, 0.2)',
+                 borderRadius: '10px',
+                 padding: '1rem',
+                 marginBottom: '1rem'
+               }}>
+                 <div style={{ 
+                   display: 'flex', 
+                   justifyContent: 'space-between', 
+                   alignItems: 'center'
+                 }}>
+                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                     Avg Transaction Size
+                   </span>
+                   <span style={{ 
+                     fontSize: '1.3rem', 
+                     fontWeight: 700, 
+                     color: 'var(--text-primary)'
+                   }}>
+                     ${formatNumber(Math.round(riskMetrics.avgTransactionSize))}
+                   </span>
+                 </div>
+               </div>
+
+               {topHighValueTxs.length > 0 && (
+                 <div>
+                   <div style={{ 
+                     fontSize: '0.95rem', 
+                     fontWeight: 700, 
+                     color: 'var(--primary)', 
+                     marginBottom: '0.75rem',
+                     textTransform: 'uppercase',
+                     letterSpacing: '0.05em'
+                   }}>
+                     Top 5 Largest Transactions
+                   </div>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                     {topHighValueTxs.slice(0, 5).map((t, idx) => (
+                       <div key={t.hash || `${t.coin}-${idx}`} style={{
+                         display: 'grid',
+                         gridTemplateColumns: '80px 1fr auto auto',
+                         gap: '0.75rem',
+                         alignItems: 'center',
+                         padding: '0.75rem',
+                         background: 'rgba(30, 57, 81, 0.3)',
+                         borderRadius: '8px',
+                         border: '1px solid rgba(54, 166, 186, 0.15)',
+                         transition: 'all 0.3s ease'
+                       }}
+                       onMouseEnter={(e) => {
+                         e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'
+                         e.currentTarget.style.borderColor = 'rgba(54, 166, 186, 0.3)'
+                         e.currentTarget.style.transform = 'translateX(4px)'
+                       }}
+                       onMouseLeave={(e) => {
+                         e.currentTarget.style.background = 'rgba(30, 57, 81, 0.3)'
+                         e.currentTarget.style.borderColor = 'rgba(54, 166, 186, 0.15)'
+                         e.currentTarget.style.transform = 'translateX(0)'
+                       }}>
+                         <Link href={`/token/${encodeURIComponent(t.coin)}?sinceHours=24`} style={{
+                           fontWeight: 700,
+                           color: 'var(--primary)',
+                           textDecoration: 'none',
+                           fontSize: '0.95rem'
+                         }}>
+                           {t.coin}
+                         </Link>
+                         <div style={{ 
+                           fontWeight: 700, 
+                           color: 'var(--text-primary)',
+                           fontSize: '0.95rem',
+                           fontFamily: 'ui-monospace, monospace'
+                         }}>
+                           ${formatNumber(t.usd)}
+                         </div>
+                         <span style={{
+                           padding: '0.25rem 0.6rem',
+                           borderRadius: '6px',
+                           fontSize: '0.8rem',
+                           fontWeight: 600,
+                           background: t.side?.toLowerCase() === 'buy' ? 'rgba(46,204,113,0.2)' : 'rgba(231,76,60,0.2)',
+                           color: t.side?.toLowerCase() === 'buy' ? '#2ecc71' : '#e74c3c',
+                           border: `1px solid ${t.side?.toLowerCase() === 'buy' ? 'rgba(46,204,113,0.4)' : 'rgba(231,76,60,0.4)'}`
+                         }}>
+                           {t.side}
+                         </span>
+                         <span style={{ 
+                           fontSize: '0.85rem', 
+                           color: 'var(--text-secondary)',
+                           fontWeight: 600
+                         }}>
+                           {t.chain}
+                         </span>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )}
+             </DashboardCard>
+
+             {/* Market Momentum Card */}
+             <DashboardCard>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Market Momentum</h2>
+               </div>
+
+               <div style={{
+                 background: `linear-gradient(135deg, rgba(${marketMomentum.volumeChange > 0 ? '46,204,113' : '231,76,60'},0.1) 0%, rgba(${marketMomentum.volumeChange > 0 ? '46,204,113' : '231,76,60'},0.05) 100%)`,
+                 border: `1px solid rgba(${marketMomentum.volumeChange > 0 ? '46,204,113' : '231,76,60'},0.3)`,
+                 borderRadius: '10px',
+                 padding: '1.5rem',
+                 textAlign: 'center',
+                 marginBottom: '1rem'
+               }}>
+                 <div style={{ 
+                   fontSize: '3rem', 
+                   fontWeight: 800, 
+                   color: marketMomentum.volumeChange > 0 ? '#2ecc71' : '#e74c3c',
+                   marginBottom: '0.5rem'
+                 }}>
+                   {marketMomentum.volumeChange > 0 ? '+' : ''}{marketMomentum.volumeChange.toFixed(1)}%
+                 </div>
+                 <div style={{ 
+                   fontSize: '0.95rem', 
+                   color: 'var(--text-secondary)',
+                   fontWeight: 600,
+                   textTransform: 'uppercase',
+                   letterSpacing: '0.05em'
+                 }}>
+                   Volume Change (24h)
+                 </div>
+               </div>
+
+               <div style={{
+                 display: 'grid',
+                 gridTemplateColumns: '1fr 1fr',
+                 gap: '1rem'
+               }}>
+                 <div style={{
+                   background: 'rgba(54, 166, 186, 0.1)',
+                   border: '1px solid rgba(54, 166, 186, 0.25)',
+                   borderRadius: '8px',
+                   padding: '1rem',
+                   textAlign: 'center'
+                 }}>
+                   <div style={{ 
+                     fontSize: '1.8rem', 
+                     fontWeight: 800, 
+                     color: 'var(--primary)',
+                     marginBottom: '0.25rem'
+                   }}>
+                     {formatNumber(overall.totalCount || 0)}
+                   </div>
+                   <div style={{ 
+                     fontSize: '0.85rem', 
+                     color: 'var(--text-secondary)',
+                     fontWeight: 600
+                   }}>
+                     Transactions
+                   </div>
+                 </div>
+
+                 <div style={{
+                   background: 'rgba(243, 156, 18, 0.1)',
+                   border: '1px solid rgba(243, 156, 18, 0.25)',
+                   borderRadius: '8px',
+                   padding: '1rem',
+                   textAlign: 'center'
+                 }}>
+                   <div style={{ 
+                     fontSize: '1.8rem', 
+                     fontWeight: 800, 
+                     color: '#f39c12',
+                     marginBottom: '0.25rem'
+                   }}>
+                     {whaleActivity.length}
+                   </div>
+                   <div style={{ 
+                     fontSize: '0.85rem', 
+                     color: 'var(--text-secondary)',
+                     fontWeight: 600
+                   }}>
+                     Active Tokens
+                   </div>
+                 </div>
+               </div>
+             </DashboardCard>
+           </div>
+         </div>
        </motion.div>
 
              
