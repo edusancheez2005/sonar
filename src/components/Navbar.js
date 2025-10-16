@@ -155,12 +155,34 @@ const Navbar = ({ onLogout }) => {
     router.push('/');
   };
 
-  // Token search — queries distinct token_symbol in last 24h for responsiveness
+  // Top 100 tokens by market cap (for search suggestions)
+  const TOP_TOKENS = [
+    'BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'USDC', 'XRP', 'DOGE', 'ADA', 'TRX',
+    'AVAX', 'SHIB', 'DOT', 'LINK', 'MATIC', 'UNI', 'LTC', 'BCH', 'NEAR', 'LEO',
+    'DAI', 'ATOM', 'ETC', 'XLM', 'ICP', 'FIL', 'HBAR', 'APT', 'VET', 'OP',
+    'ARB', 'STX', 'IMX', 'MKR', 'AAVE', 'ALGO', 'INJ', 'RNDR', 'GRT', 'CRO',
+    'SAND', 'MANA', 'FTM', 'SNX', 'RUNE', 'THETA', 'AXS', 'EOS', 'XTZ', 'FLOW',
+    'KAVA', 'ZEC', 'XMR', 'DASH', 'NEO', 'WAVES', 'ONE', 'CELO', 'ROSE', 'GLMR',
+    'EGLD', 'TFUEL', 'HT', 'KCS', 'OKB', 'KLAY', 'ZIL', 'BAT', 'ENJ', 'LRC',
+    'CHZ', '1INCH', 'COMP', 'SUSHI', 'CRV', 'YFI', 'ZRX', 'OMG', 'ANKR', 'NMR',
+    'ALICE', 'FET', 'OCEAN', 'BLUR', 'PEPE', 'FLOKI', 'GALA', 'APE', 'LDO', 'RPL',
+    'SUI', 'SEI', 'TIA', 'WLD', 'PYTH', 'BONK', 'ORDI', 'JTO', 'ONDO', 'PENDLE'
+  ];
+
+  // Token search — combines top tokens with Supabase whale data
   const fetchSuggestions = async (text) => {
-    const t = (text || '').trim();
+    const t = (text || '').trim().toUpperCase();
     if (!t) { setSuggestions([]); return; }
     try {
       setLoadingSug(true);
+      
+      // First, filter top tokens
+      const topMatches = TOP_TOKENS
+        .filter(sym => sym.startsWith(t))
+        .slice(0, 5)
+        .map(sym => ({ token: sym, count: 0, isTop: true }));
+      
+      // Then query Supabase for whale activity
       const sinceIso = new Date(Date.now() - 24*60*60*1000).toISOString();
       const sb = supabaseBrowser();
       const { data, error } = await sb
@@ -169,17 +191,33 @@ const Navbar = ({ onLogout }) => {
         .ilike('token_symbol', `${t}%`)
         .gte('timestamp', sinceIso)
         .limit(20);
-      if (error) { setSuggestions([]); return; }
+      
       const map = new Map();
-      for (const r of data || []) {
-        const sym = String(r.token_symbol || '').trim().toUpperCase();
-        if (!sym) continue;
-        map.set(sym, (map.get(sym) || 0) + 1);
+      if (!error && data) {
+        for (const r of data) {
+          const sym = String(r.token_symbol || '').trim().toUpperCase();
+          if (!sym) continue;
+          map.set(sym, (map.get(sym) || 0) + 1);
+        }
       }
-      const list = Array.from(map.entries())
+      
+      const whaleMatches = Array.from(map.entries())
         .sort((a,b)=> b[1]-a[1])
-        .slice(0, 10)
-        .map(([sym, cnt]) => ({ token: sym, count: cnt }));
+        .slice(0, 5)
+        .map(([sym, cnt]) => ({ token: sym, count: cnt, isTop: false }));
+      
+      // Combine and deduplicate (prefer whale data if available)
+      const combined = new Map();
+      for (const match of whaleMatches) {
+        combined.set(match.token, match);
+      }
+      for (const match of topMatches) {
+        if (!combined.has(match.token)) {
+          combined.set(match.token, match);
+        }
+      }
+      
+      const list = Array.from(combined.values()).slice(0, 10);
       setSuggestions(list);
     } finally {
       setLoadingSug(false);
@@ -253,7 +291,9 @@ const Navbar = ({ onLogout }) => {
                     {suggestions.map((s) => (
                       <li key={s.token} onClick={() => goToToken(s.token)}>
                         <span className="sym">{s.token}</span>
-                        <span className="meta">{s.count}</span>
+                        <span className="meta">
+                          {s.count > 0 ? `${s.count} whale txs` : 'Top Token'}
+                        </span>
                       </li>
                     ))}
                   </Suggestions>
