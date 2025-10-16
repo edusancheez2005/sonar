@@ -84,7 +84,34 @@ const SYMBOL_TO_COINGECKO_ID = {
   'LPT': 'livepeer',
   'QNT': 'quant-network',
   'CRO': 'crypto-com-chain',
-  'AGIX': 'singularitynet'
+  'AGIX': 'singularitynet',
+  'ALICE': 'my-neighbor-alice',
+  'STETH': 'staked-ether',
+  'WSTETH': 'wrapped-steth',
+  'WETH': 'weth',
+  'WBNB': 'wbnb',
+  'BUSD': 'binance-usd',
+  'CAKE': 'pancakeswap-token',
+  'XLM': 'stellar',
+  'VET': 'vechain',
+  'TRX': 'tron',
+  'ETC': 'ethereum-classic',
+  'BCH': 'bitcoin-cash',
+  'LTC': 'litecoin',
+  'NEAR': 'near',
+  'HBAR': 'hedera-hashgraph',
+  'LEO': 'leo-token',
+  'QNT': 'quant-network',
+  'TON': 'the-open-network',
+  'STX': 'blockstack',
+  'RUNE': 'thorchain',
+  'EGLD': 'elrond-erd-2',
+  'FLOW': 'flow',
+  'ICP': 'internet-computer',
+  'THETA': 'theta-token',
+  'SAND': 'the-sandbox',
+  'AXS': 'axie-infinity',
+  'MANA': 'decentraland'
 }
 
 export async function GET(req) {
@@ -97,10 +124,10 @@ export async function GET(req) {
     }
 
     // Get CoinGecko ID
-    const cgId = SYMBOL_TO_COINGECKO_ID[symbol] || symbol.toLowerCase()
+    let cgId = SYMBOL_TO_COINGECKO_ID[symbol] || symbol.toLowerCase()
 
     // Fetch from CoinGecko
-    const res = await fetch(
+    let res = await fetch(
       `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=false&developer_data=false`,
       {
         headers: {
@@ -109,6 +136,39 @@ export async function GET(req) {
         next: { revalidate: 60 } // Cache for 60 seconds
       }
     )
+
+    // If not found, try searching by symbol
+    if (!res.ok && res.status === 404) {
+      const searchRes = await fetch(
+        `https://api.coingecko.com/api/v3/search?query=${symbol}`,
+        {
+          headers: {
+            'x-cg-demo-api-key': process.env.COINGECKO_API_KEY || ''
+          }
+        }
+      )
+      
+      if (searchRes.ok) {
+        const searchData = await searchRes.json()
+        const coin = searchData.coins?.find(c => 
+          c.symbol?.toUpperCase() === symbol
+        )
+        
+        if (coin) {
+          cgId = coin.id
+          // Retry with the found ID
+          res = await fetch(
+            `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=false&developer_data=false`,
+            {
+              headers: {
+                'x-cg-demo-api-key': process.env.COINGECKO_API_KEY || ''
+              },
+              next: { revalidate: 60 }
+            }
+          )
+        }
+      }
+    }
 
     if (!res.ok) {
       throw new Error(`CoinGecko API error: ${res.status}`)
