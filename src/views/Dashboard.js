@@ -701,71 +701,124 @@ const Dashboard = ({ isPremium = false }) => {
       
 
 
+      {/* Market Pulse - High-level sentiment overview */}
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
-        <IncomingDataSection>
-          <IncomingDataHeader>
-            <h2>Incoming Data</h2>
-            <span>Updated {lastUpdate}</span>
-          </IncomingDataHeader>
-          {loading ? (
-            <p style={{ color: 'var(--text-secondary)' }}>Loading…</p>
-          ) : noData24h ? (
-            <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>No data in the past 24 hours.</p>
-          ) : (
-            <TransactionTable>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Token</th>
-                  <th>Action</th>
-                  <th>Blockchain</th>
-                  <th>USD Value</th>
-                  <th>
-                    <Link href="/faq#whale-score" style={{ color: 'inherit', textDecoration: 'none' }}>Whale Score</Link>
-                  </th>
-                  <th>From Address</th>
-                  <th>Transaction</th>
-                </tr>
-              </thead>
-              <tbody>
-                <AnimatePresence>
-                  {filteredTransactions.length > 0 ? (
-                    filteredTransactions.slice(0, 5).map(transaction => (
-                      <motion.tr key={transaction.id} variants={itemVariants} initial="hidden" animate="visible" exit={{ opacity: 0, height: 0 }}>
-                        <td className="time">{transaction.time}</td>
-                        <td className="token">{transaction.coin ? (<Link href={`/token/${encodeURIComponent(transaction.coin)}`}>{transaction.coin}</Link>) : '—'}</td>
-                        <td><span className={`action-${transaction.action.toLowerCase() || 'transfer'}`}>{transaction.action}</span></td>
-                        <td>{transaction.blockchain}</td>
-                        <td className="price">${transaction.usdValue}</td>
-                        <td className="whale-score" style={{ 
-                          color: transaction.whale_score > 75 ? '#e74c3c' : 
-                                transaction.whale_score > 50 ? '#f39c12' : 
-                                transaction.whale_score > 25 ? '#3498db' : '#95a5a6',
-                          fontWeight: '600'
-                        }}>
-                          {transaction.whale_score > 0 ? Math.round(transaction.whale_score) : '—'}
-                        </td>
-                        <td className="address" style={{ 
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                          fontSize: '0.85rem',
-                          color: 'var(--text-secondary)'
-                        }}>
-                          {transaction.from_address !== '—' ? 
-                            `${transaction.from_address.slice(0, 6)}...${transaction.from_address.slice(-4)}` : 
-                            '—'
-                          }
-                        </td>
-                        <td className="hash">{transaction.hash ? `${transaction.hash.slice(0,6)}...${transaction.hash.slice(-4)}` : '—'}</td>
-                      </motion.tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>No transactions match the current minimum value. Try lowering the minimum value.</td></tr>
-                  )}
-                </AnimatePresence>
-              </tbody>
-            </TransactionTable>
-          )}
-        </IncomingDataSection>
+        <DashboardCard>
+          <h2>Market Pulse (24h)</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+            <div style={{ 
+              background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(46, 204, 113, 0.05) 100%)', 
+              border: '1px solid rgba(46, 204, 113, 0.3)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              textAlign: 'center',
+              transition: 'all 0.3s ease',
+              cursor: 'default'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = '0 8px 16px rgba(46, 204, 113, 0.2)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#2ecc71' }}>
+                {tokenInflows.filter(t => (t.netUsdRobust || 0) > 1000000).length}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', fontWeight: 600 }}>
+                Strong Accumulation
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#2ecc71', marginTop: '0.25rem' }}>
+                &gt; $1M Net Inflow
+              </div>
+            </div>
+            
+            <div style={{ 
+              background: 'linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(231, 76, 60, 0.05) 100%)', 
+              border: '1px solid rgba(231, 76, 60, 0.3)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              textAlign: 'center',
+              transition: 'all 0.3s ease',
+              cursor: 'default'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = '0 8px 16px rgba(231, 76, 60, 0.2)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#e74c3c' }}>
+                {tokenOutflows.filter(t => Math.abs(t.netUsdRobust || 0) > 1000000).length}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', fontWeight: 600 }}>
+                Heavy Distribution
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#e74c3c', marginTop: '0.25rem' }}>
+                &gt; $1M Net Outflow
+              </div>
+            </div>
+            
+            <div style={{ 
+              background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.1) 0%, rgba(54, 166, 186, 0.05) 100%)', 
+              border: '1px solid rgba(54, 166, 186, 0.3)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              textAlign: 'center',
+              transition: 'all 0.3s ease',
+              cursor: 'default'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = '0 8px 16px rgba(54, 166, 186, 0.2)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)' }}>
+                {whaleActivity.filter(t => (t.uniqueWhales || 0) > 10).length}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', fontWeight: 600 }}>
+                High Whale Activity
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--primary)', marginTop: '0.25rem' }}>
+                &gt; 10 Unique Whales
+              </div>
+            </div>
+            
+            <div style={{ 
+              background: 'linear-gradient(135deg, rgba(243, 156, 18, 0.1) 0%, rgba(243, 156, 18, 0.05) 100%)', 
+              border: '1px solid rgba(243, 156, 18, 0.3)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              textAlign: 'center',
+              transition: 'all 0.3s ease',
+              cursor: 'default'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = '0 8px 16px rgba(243, 156, 18, 0.2)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#f39c12' }}>
+                ${formatNumber(Math.abs(overall.totalVolume || 0))}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', fontWeight: 600 }}>
+                24h Whale Volume
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#f39c12', marginTop: '0.25rem' }}>
+                {overall.totalCount || 0} Transactions
+              </div>
+            </div>
+          </div>
+        </DashboardCard>
       </motion.div>
 
       {/* Net Inflows/Outflows section */}
