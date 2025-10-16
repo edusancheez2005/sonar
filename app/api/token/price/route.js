@@ -180,19 +180,63 @@ export async function GET(req) {
       symbol: symbol,
       name: data.name,
       image: data.image?.large || data.image?.small,
+      
+      // Price Data
       price: data.market_data?.current_price?.usd || 0,
       change24h: data.market_data?.price_change_percentage_24h || 0,
       change7d: data.market_data?.price_change_percentage_7d || 0,
+      change30d: data.market_data?.price_change_percentage_30d || 0,
+      change1y: data.market_data?.price_change_percentage_1y || 0,
+      
+      // 24h High/Low
       high24h: data.market_data?.high_24h?.usd || 0,
       low24h: data.market_data?.low_24h?.usd || 0,
+      
+      // Market Data
       marketCap: data.market_data?.market_cap?.usd || 0,
+      marketCapRank: data.market_cap_rank || 0,
+      fullyDilutedValuation: data.market_data?.fully_diluted_valuation?.usd || 0,
       volume24h: data.market_data?.total_volume?.usd || 0,
+      volumeMarketCapRatio: data.market_data?.total_volume?.usd && data.market_data?.market_cap?.usd 
+        ? (data.market_data.total_volume.usd / data.market_data.market_cap.usd) 
+        : 0,
+      
+      // Supply Data
       circulatingSupply: data.market_data?.circulating_supply || 0,
       totalSupply: data.market_data?.total_supply || 0,
+      maxSupply: data.market_data?.max_supply || null,
+      
+      // All-Time High/Low
       athPrice: data.market_data?.ath?.usd || 0,
       athDate: data.market_data?.ath_date?.usd || null,
+      athChangePercentage: data.market_data?.ath_change_percentage?.usd || 0,
       atlPrice: data.market_data?.atl?.usd || 0,
-      atlDate: data.market_data?.atl_date?.usd || null
+      atlDate: data.market_data?.atl_date?.usd || null,
+      atlChangePercentage: data.market_data?.atl_change_percentage?.usd || 0,
+      
+      // Additional Info
+      description: data.description?.en || '',
+      homepage: data.links?.homepage?.[0] || '',
+      blockchainSite: data.links?.blockchain_site?.filter(Boolean)?.[0] || '',
+      twitterHandle: data.links?.twitter_screen_name || '',
+      subredditUrl: data.links?.subreddit_url || '',
+      githubRepo: data.links?.repos_url?.github?.[0] || '',
+      
+      // Market Dominance
+      marketCapChangePercentage24h: data.market_data?.market_cap_change_percentage_24h || 0,
+      
+      // Sentiment (if available)
+      sentimentVotesUpPercentage: data.sentiment_votes_up_percentage || 0,
+      sentimentVotesDownPercentage: data.sentiment_votes_down_percentage || 0,
+      
+      // Genesis Date
+      genesisDate: data.genesis_date || null,
+      
+      // Categories
+      categories: data.categories || [],
+      
+      // Last Updated
+      lastUpdated: data.last_updated || null
     })
   } catch (error) {
     console.error('Price API error:', error)

@@ -656,22 +656,258 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
               <MetricsGrid>
                 <MetricCard>
-                  <MetricLabel>Market Cap</MetricLabel>
+                  <MetricLabel>Market Cap {priceData.marketCapRank && `#${priceData.marketCapRank}`}</MetricLabel>
                   <MetricValue>{formatUSD(priceData.marketCap)}</MetricValue>
+                  {priceData.marketCapChangePercentage24h !== 0 && (
+                    <div style={{ 
+                      fontSize: '0.85rem', 
+                      color: priceData.marketCapChangePercentage24h >= 0 ? '#2ecc71' : '#e74c3c',
+                      marginTop: '0.25rem'
+                    }}>
+                      {priceData.marketCapChangePercentage24h >= 0 ? '+' : ''}{priceData.marketCapChangePercentage24h?.toFixed(2)}% (24h)
+                    </div>
+                  )}
                 </MetricCard>
                 <MetricCard>
                   <MetricLabel>24h Volume</MetricLabel>
                   <MetricValue>{formatUSD(priceData.volume24h)}</MetricValue>
+                  {priceData.volumeMarketCapRatio > 0 && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                      Vol/MCap: {(priceData.volumeMarketCapRatio * 100).toFixed(2)}%
+                    </div>
+                  )}
                 </MetricCard>
                 <MetricCard>
                   <MetricLabel>24h High</MetricLabel>
-                  <MetricValue>{formatUSD(priceData.high24h)}</MetricValue>
+                  <MetricValue>{formatPrice(priceData.high24h)}</MetricValue>
                 </MetricCard>
                 <MetricCard>
                   <MetricLabel>24h Low</MetricLabel>
-                  <MetricValue>{formatUSD(priceData.low24h)}</MetricValue>
+                  <MetricValue>{formatPrice(priceData.low24h)}</MetricValue>
                 </MetricCard>
               </MetricsGrid>
+
+              {/* Additional Market Data */}
+              <MetricsGrid style={{ marginTop: '1rem' }}>
+                {priceData.fullyDilutedValuation > 0 && (
+                  <MetricCard>
+                    <MetricLabel>Fully Diluted Valuation</MetricLabel>
+                    <MetricValue>{formatUSD(priceData.fullyDilutedValuation)}</MetricValue>
+                  </MetricCard>
+                )}
+                <MetricCard>
+                  <MetricLabel>Circulating Supply</MetricLabel>
+                  <MetricValue>{formatNumber(priceData.circulatingSupply)} {symbol}</MetricValue>
+                  {priceData.totalSupply > 0 && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                      {((priceData.circulatingSupply / priceData.totalSupply) * 100).toFixed(1)}% of total
+                    </div>
+                  )}
+                </MetricCard>
+                <MetricCard>
+                  <MetricLabel>Total Supply</MetricLabel>
+                  <MetricValue>{priceData.totalSupply > 0 ? `${formatNumber(priceData.totalSupply)} ${symbol}` : 'N/A'}</MetricValue>
+                </MetricCard>
+                <MetricCard>
+                  <MetricLabel>Max Supply</MetricLabel>
+                  <MetricValue>{priceData.maxSupply ? `${formatNumber(priceData.maxSupply)} ${symbol}` : 'Unlimited'}</MetricValue>
+                </MetricCard>
+              </MetricsGrid>
+
+              {/* All-Time High/Low */}
+              {(priceData.athPrice > 0 || priceData.atlPrice > 0) && (
+                <MetricsGrid style={{ marginTop: '1rem' }}>
+                  {priceData.athPrice > 0 && (
+                    <MetricCard>
+                      <MetricLabel>All-Time High</MetricLabel>
+                      <MetricValue>{formatPrice(priceData.athPrice)}</MetricValue>
+                      <div style={{ 
+                        fontSize: '0.85rem', 
+                        color: '#e74c3c',
+                        marginTop: '0.25rem'
+                      }}>
+                        {priceData.athChangePercentage?.toFixed(1)}% from ATH
+                      </div>
+                      {priceData.athDate && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                          {new Date(priceData.athDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      )}
+                    </MetricCard>
+                  )}
+                  {priceData.atlPrice > 0 && (
+                    <MetricCard>
+                      <MetricLabel>All-Time Low</MetricLabel>
+                      <MetricValue>{formatPrice(priceData.atlPrice)}</MetricValue>
+                      <div style={{ 
+                        fontSize: '0.85rem', 
+                        color: '#2ecc71',
+                        marginTop: '0.25rem'
+                      }}>
+                        +{priceData.atlChangePercentage?.toFixed(1)}% from ATL
+                      </div>
+                      {priceData.atlDate && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                          {new Date(priceData.atlDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      )}
+                    </MetricCard>
+                  )}
+                  {priceData.change30d !== undefined && (
+                    <MetricCard>
+                      <MetricLabel>30d Change</MetricLabel>
+                      <MetricValue style={{ color: priceData.change30d >= 0 ? '#2ecc71' : '#e74c3c' }}>
+                        {priceData.change30d >= 0 ? '+' : ''}{priceData.change30d?.toFixed(2)}%
+                      </MetricValue>
+                    </MetricCard>
+                  )}
+                  {priceData.change1y !== undefined && (
+                    <MetricCard>
+                      <MetricLabel>1y Change</MetricLabel>
+                      <MetricValue style={{ color: priceData.change1y >= 0 ? '#2ecc71' : '#e74c3c' }}>
+                        {priceData.change1y >= 0 ? '+' : ''}{priceData.change1y?.toFixed(2)}%
+                      </MetricValue>
+                    </MetricCard>
+                  )}
+                </MetricsGrid>
+              )}
+
+              {/* Links & Resources */}
+              {(priceData.homepage || priceData.blockchainSite || priceData.twitterHandle || priceData.subredditUrl) && (
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1.5rem',
+                  background: 'rgba(30, 57, 81, 0.3)',
+                  border: '1px solid rgba(54, 166, 186, 0.2)',
+                  borderRadius: '12px'
+                }}>
+                  <h3 style={{ 
+                    fontSize: '1.1rem', 
+                    fontWeight: 600, 
+                    marginBottom: '1rem',
+                    color: 'var(--primary)'
+                  }}>
+                    Resources & Links
+                  </h3>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: '1rem',
+                    fontSize: '0.95rem'
+                  }}>
+                    {priceData.homepage && (
+                      <a 
+                        href={priceData.homepage} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ 
+                          color: 'var(--primary)', 
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          background: 'rgba(54, 166, 186, 0.1)',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
+                      >
+                        🌐 Official Website
+                      </a>
+                    )}
+                    {priceData.blockchainSite && (
+                      <a 
+                        href={priceData.blockchainSite} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ 
+                          color: 'var(--primary)', 
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          background: 'rgba(54, 166, 186, 0.1)',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
+                      >
+                        ⛓️ Explorer
+                      </a>
+                    )}
+                    {priceData.twitterHandle && (
+                      <a 
+                        href={`https://twitter.com/${priceData.twitterHandle}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ 
+                          color: 'var(--primary)', 
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          background: 'rgba(54, 166, 186, 0.1)',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
+                      >
+                        🐦 Twitter
+                      </a>
+                    )}
+                    {priceData.subredditUrl && (
+                      <a 
+                        href={priceData.subredditUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ 
+                          color: 'var(--primary)', 
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          background: 'rgba(54, 166, 186, 0.1)',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
+                      >
+                        💬 Reddit
+                      </a>
+                    )}
+                    {priceData.githubRepo && (
+                      <a 
+                        href={priceData.githubRepo} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ 
+                          color: 'var(--primary)', 
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          background: 'rgba(54, 166, 186, 0.1)',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
+                      >
+                        💻 GitHub
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </>
           )}
 
