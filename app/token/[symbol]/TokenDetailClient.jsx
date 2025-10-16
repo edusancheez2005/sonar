@@ -913,22 +913,74 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
           <MetricsGrid>
             <MetricCard>
-              <MetricLabel>Whale Volume ({sinceHours}h)</MetricLabel>
-              <MetricValue>{formatUSD(whaleMetrics.totalVolume)}</MetricValue>
+              <MetricLabel>
+                {whaleMetrics.totalVolume > 0 ? `Whale Volume (${sinceHours}h)` : '24h Trading Volume'}
+              </MetricLabel>
+              <MetricValue>
+                {whaleMetrics.totalVolume > 0 
+                  ? formatUSD(whaleMetrics.totalVolume)
+                  : priceData?.volume24h 
+                    ? formatUSD(priceData.volume24h)
+                    : '$0.0000'
+                }
+              </MetricValue>
+              {whaleMetrics.totalVolume === 0 && priceData?.volume24h > 0 && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  Total market volume
+                </div>
+              )}
             </MetricCard>
             <MetricCard>
-              <MetricLabel>Net Flow</MetricLabel>
-              <MetricValue style={{ color: whaleMetrics.netFlow >= 0 ? '#2ecc71' : '#e74c3c' }}>
-                {formatUSD(whaleMetrics.netFlow)}
+              <MetricLabel>
+                {whaleMetrics.totalVolume > 0 ? 'Whale Net Flow' : 'Market Cap Change'}
+              </MetricLabel>
+              <MetricValue style={{ 
+                color: whaleMetrics.totalVolume > 0 
+                  ? (whaleMetrics.netFlow >= 0 ? '#2ecc71' : '#e74c3c')
+                  : (priceData?.marketCapChangePercentage24h >= 0 ? '#2ecc71' : '#e74c3c')
+              }}>
+                {whaleMetrics.totalVolume > 0 
+                  ? formatUSD(whaleMetrics.netFlow)
+                  : priceData?.marketCapChangePercentage24h !== undefined
+                    ? `${priceData.marketCapChangePercentage24h >= 0 ? '+' : ''}${priceData.marketCapChangePercentage24h.toFixed(2)}%`
+                    : 'N/A'
+                }
               </MetricValue>
             </MetricCard>
             <MetricCard>
-              <MetricLabel>Buys / Sells</MetricLabel>
-              <MetricValue>{whaleMetrics.buys} / {whaleMetrics.sells}</MetricValue>
+              <MetricLabel>
+                {whaleMetrics.totalVolume > 0 ? 'Whale Buys / Sells' : 'Price Change (24h)'}
+              </MetricLabel>
+              <MetricValue style={{
+                color: whaleMetrics.totalVolume === 0 && priceData?.change24h !== undefined
+                  ? (priceData.change24h >= 0 ? '#2ecc71' : '#e74c3c')
+                  : 'inherit'
+              }}>
+                {whaleMetrics.totalVolume > 0 
+                  ? `${whaleMetrics.buys} / ${whaleMetrics.sells}`
+                  : priceData?.change24h !== undefined
+                    ? `${priceData.change24h >= 0 ? '+' : ''}${priceData.change24h.toFixed(2)}%`
+                    : 'N/A'
+                }
+              </MetricValue>
             </MetricCard>
             <MetricCard>
-              <MetricLabel>Unique Whales</MetricLabel>
-              <MetricValue>{whaleMetrics.uniqueWhales}</MetricValue>
+              <MetricLabel>
+                {whaleMetrics.totalVolume > 0 ? 'Unique Whales' : 'Circulating Supply'}
+              </MetricLabel>
+              <MetricValue>
+                {whaleMetrics.totalVolume > 0 
+                  ? whaleMetrics.uniqueWhales
+                  : priceData?.circulatingSupply > 0
+                    ? formatNumber(priceData.circulatingSupply)
+                    : 'N/A'
+                }
+              </MetricValue>
+              {whaleMetrics.totalVolume === 0 && priceData?.circulatingSupply > 0 && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  {symbol}
+                </div>
+              )}
             </MetricCard>
           </MetricsGrid>
 
@@ -941,14 +993,15 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </TimeFilters>
         </Header>
 
-        <SentimentSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <SectionTitle>Why is {symbol} {sentiment.label}?</SectionTitle>
-          
-          <ReasonsGrid>
+        {whaleMetrics.totalVolume > 0 && (
+          <SentimentSection
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <SectionTitle>Why is {symbol} {sentiment.label}?</SectionTitle>
+            
+            <ReasonsGrid>
             <ReasonCard>
               <ReasonIcon>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1042,57 +1095,141 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               </>
             )}
           </OrcaButton>
-        </SentimentSection>
+          </SentimentSection>
+        )}
 
         <TransactionsSection>
           <SectionTitle>Recent Whale Transactions</SectionTitle>
-          <Table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Side</th>
-                <th style={{ textAlign: 'right' }}>USD Value</th>
-                <th>Whale Score</th>
-                <th>Whale Address</th>
-                <th>Chain</th>
-                <th>Tx Hash</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.slice(0, 50).map(tx => (
-                <tr key={tx.transaction_hash}>
-                  <td>{new Date(tx.timestamp).toLocaleString()}</td>
-                  <td>
-                    <TxBadge $type={(tx.classification || '').toUpperCase()}>
-                      {tx.classification || 'TRANSFER'}
-                    </TxBadge>
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {formatUSD(tx.usd_value)}
-                  </td>
-                  <td>
-                    <span style={{ 
-                      color: tx.whale_score >= 80 ? '#2ecc71' : tx.whale_score >= 60 ? '#f39c12' : 'var(--text-secondary)',
-                      fontWeight: 700
-                    }}>
-                      {tx.whale_score || 'N/A'}
-                    </span>
-                  </td>
-                  <td>
-                    <Link href={`/whale/${encodeURIComponent(tx.from_address || '-')}`}>
-                      {tx.from_address?.slice(0, 6)}...{tx.from_address?.slice(-4)}
-                    </Link>
-                  </td>
-                  <td>{tx.blockchain}</td>
-                  <td>
-                    <a href={`#`} target="_blank" rel="noopener noreferrer">
-                      {tx.transaction_hash?.slice(0, 6)}...{tx.transaction_hash?.slice(-4)}
-                    </a>
-                  </td>
+          {data.length > 0 ? (
+            <Table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Side</th>
+                  <th style={{ textAlign: 'right' }}>USD Value</th>
+                  <th>Whale Score</th>
+                  <th>Whale Address</th>
+                  <th>Chain</th>
+                  <th>Tx Hash</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {data.slice(0, 50).map(tx => (
+                  <tr key={tx.transaction_hash}>
+                    <td>{new Date(tx.timestamp).toLocaleString()}</td>
+                    <td>
+                      <TxBadge $type={(tx.classification || '').toUpperCase()}>
+                        {tx.classification || 'TRANSFER'}
+                      </TxBadge>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {formatUSD(tx.usd_value)}
+                    </td>
+                    <td>
+                      <span style={{ 
+                        color: tx.whale_score >= 80 ? '#2ecc71' : tx.whale_score >= 60 ? '#f39c12' : 'var(--text-secondary)',
+                        fontWeight: 700
+                      }}>
+                        {tx.whale_score || 'N/A'}
+                      </span>
+                    </td>
+                    <td>
+                      <Link href={`/whale/${encodeURIComponent(tx.from_address || '-')}`}>
+                        {tx.from_address?.slice(0, 6)}...{tx.from_address?.slice(-4)}
+                      </Link>
+                    </td>
+                    <td>{tx.blockchain}</td>
+                    <td>
+                      <a href={`#`} target="_blank" rel="noopener noreferrer">
+                        {tx.transaction_hash?.slice(0, 6)}...{tx.transaction_hash?.slice(-4)}
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <div style={{
+              textAlign: 'center',
+              padding: '4rem 2rem',
+              background: 'rgba(30, 57, 81, 0.3)',
+              border: '1px solid rgba(54, 166, 186, 0.2)',
+              borderRadius: '12px',
+              marginTop: '1rem'
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🐋</div>
+              <h3 style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: 600, 
+                marginBottom: '0.5rem',
+                color: 'var(--text-primary)'
+              }}>
+                No Whale Activity Detected
+              </h3>
+              <p style={{ 
+                fontSize: '1rem', 
+                color: 'var(--text-secondary)',
+                maxWidth: '500px',
+                margin: '0 auto',
+                lineHeight: '1.6'
+              }}>
+                We haven't detected any whale transactions for {symbol} in the selected time period. 
+                This could mean low whale activity or that this token isn't being tracked yet.
+              </p>
+              <div style={{ 
+                marginTop: '2rem',
+                padding: '1.5rem',
+                background: 'rgba(54, 166, 186, 0.1)',
+                borderRadius: '8px',
+                maxWidth: '600px',
+                margin: '2rem auto 0'
+              }}>
+                <h4 style={{ 
+                  fontSize: '1.1rem', 
+                  fontWeight: 600, 
+                  marginBottom: '1rem',
+                  color: 'var(--primary)'
+                }}>
+                  Market Data Available
+                </h4>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '1rem',
+                  textAlign: 'left'
+                }}>
+                  {priceData?.volume24h > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>24h Volume</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary)' }}>
+                        {formatUSD(priceData.volume24h)}
+                      </div>
+                    </div>
+                  )}
+                  {priceData?.marketCap > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Market Cap</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary)' }}>
+                        {formatUSD(priceData.marketCap)}
+                      </div>
+                    </div>
+                  )}
+                  {priceData?.change24h !== undefined && (
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>24h Change</div>
+                      <div style={{ 
+                        fontSize: '1.1rem', 
+                        fontWeight: 600, 
+                        color: priceData.change24h >= 0 ? '#2ecc71' : '#e74c3c'
+                      }}>
+                        {priceData.change24h >= 0 ? '+' : ''}{priceData.change24h.toFixed(2)}%
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </TransactionsSection>
 
         {/* Orca Analysis Modal */}
