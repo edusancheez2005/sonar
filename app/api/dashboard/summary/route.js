@@ -167,42 +167,44 @@ export async function GET() {
 
     // Correct percentages using exact 24h counts per token from Supabase (avoids sampling bias)
     try {
-      const tokensForAccuracy = Array.from(byCoin.keys())
+      const tokensForAccuracy = Array.from(byCoin.keys()).filter(t => t !== '—' && t !== 'UNKNOWN')
       const counts = await Promise.all(tokensForAccuracy.map(async (token) => {
         const [buys, sells] = await Promise.all([
           supabaseAdmin.from('whale_transactions')
             .select('transaction_hash', { count: 'exact', head: true })
-            .ilike('token_symbol', token)
+            .eq('token_symbol', token)
             .gte('timestamp', since24h)
             .lte('timestamp', nowIso)
-            .ilike('classification', 'buy%'),
+            .in('classification', ['BUY', 'buy']),
           supabaseAdmin.from('whale_transactions')
             .select('transaction_hash', { count: 'exact', head: true })
-            .ilike('token_symbol', token)
+            .eq('token_symbol', token)
             .gte('timestamp', since24h)
             .lte('timestamp', nowIso)
-            .ilike('classification', 'sell%'),
+            .in('classification', ['SELL', 'sell']),
         ])
         return { token, buys: Number(buys?.count || 0), sells: Number(sells?.count || 0) }
       }))
       const accurate = counts
         .map(({ token, buys, sells }) => {
           const denom = buys + sells
-          if (denom <= 0) return null
+          // Require at least 3 transactions to show in top buys/sells (avoid misleading 100% from 1-2 txs)
+          if (denom < 3) return null
           return {
             token,
             buyPct: +(buys / denom * 100).toFixed(1),
             sellPct: +(sells / denom * 100).toFixed(1),
+            totalTxs: denom
           }
         })
         .filter(Boolean)
 
       topBuys = accurate
-        .map(x => ({ coin: x.token, percentage: x.buyPct }))
+        .map(x => ({ coin: x.token, percentage: x.buyPct, count: x.totalTxs }))
         .sort((a,b)=> b.percentage - a.percentage)
         .slice(0, 10)
       topSells = accurate
-        .map(x => ({ coin: x.token, percentage: x.sellPct }))
+        .map(x => ({ coin: x.token, percentage: x.sellPct, count: x.totalTxs }))
         .sort((a,b)=> b.percentage - a.percentage)
         .slice(0, 10)
     } catch {}
