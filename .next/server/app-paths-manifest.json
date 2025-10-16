@@ -1,7 +1,9 @@
 {
-  "/profile/page": "app/profile/page.js",
-  "/subscribe/page": "app/subscribe/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/page": "app/page.js",
-  "/ai-advisor/page": "app/ai-advisor/page.js"
+  "/subscribe/page": "app/subscribe/page.js",
+  "/statistics/page": "app/statistics/page.js",
+  "/token/[symbol]/page": "app/token/[symbol]/page.js",
+  "/api/token/price/route": "app/api/token/price/route.js",
+  "/api/orca/token-analysis/route": "app/api/orca/token-analysis/route.js",
+  "/page": "app/page.js"
 }

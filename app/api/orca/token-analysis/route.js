@@ -63,13 +63,10 @@ export async function POST(req) {
 
     // Determine sentiment
     let sentiment = 'NEUTRAL'
-    let sentimentEmoji = '🟡'
     if (buyPct > 60) {
       sentiment = 'BULLISH'
-      sentimentEmoji = '🟢'
     } else if (sellPct > 60) {
       sentiment = 'BEARISH'
-      sentimentEmoji = '🔴'
     }
 
     // Determine signal
@@ -94,7 +91,6 @@ export async function POST(req) {
     const analysis = {
       symbol: tokenSymbol,
       sentiment,
-      sentimentEmoji,
       signal,
       metrics: {
         totalTxs,
@@ -144,7 +140,7 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
   // Flow insight
   if (Math.abs(netFlow) > 1000000) {
     insights.push({
-      icon: '💰',
+      icon: 'flow',
       title: 'Significant Capital Flow',
       description: `${netFlow > 0 ? 'Net inflow' : 'Net outflow'} of ${formatUSD(Math.abs(netFlow))} detected. ${netFlow > 0 ? 'Whales are accumulating' : 'Heavy distribution in progress'}.`
     })
@@ -153,13 +149,13 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
   // Buy/sell pressure
   if (buyPct > 65) {
     insights.push({
-      icon: '📊',
+      icon: 'pressure-up',
       title: 'Strong Buy Pressure',
       description: `${buyPct}% of whale transactions are buys. Institutional-grade accumulation pattern detected.`
     })
   } else if (sellPct > 65) {
     insights.push({
-      icon: '⚠️',
+      icon: 'pressure-down',
       title: 'Heavy Sell Pressure',
       description: `${sellPct}% of transactions are sells. Whales may be taking profits or derisking positions.`
     })
@@ -168,13 +164,13 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
   // Whale participation
   if (whaleCount > 15) {
     insights.push({
-      icon: '🐋',
+      icon: 'whales-high',
       title: 'High Whale Activity',
       description: `${whaleCount} unique whales are actively trading. Elevated institutional interest.`
     })
   } else if (whaleCount < 5) {
     insights.push({
-      icon: '👀',
+      icon: 'whales-low',
       title: 'Limited Whale Interest',
       description: `Only ${whaleCount} whales detected. Low institutional participation may indicate reduced liquidity.`
     })
@@ -183,13 +179,13 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
   // Momentum
   if (momentum > 5) {
     insights.push({
-      icon: '📈',
+      icon: 'trend-up',
       title: 'Positive Momentum',
       description: `Buy pressure increasing in the last 6 hours (+${momentum} net buys). Bullish continuation likely.`
     })
   } else if (momentum < -5) {
     insights.push({
-      icon: '📉',
+      icon: 'trend-down',
       title: 'Negative Momentum',
       description: `Sell pressure accelerating in the last 6 hours (${momentum} net sells). Bearish trend developing.`
     })
@@ -198,7 +194,7 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
   // Volume insight
   if (volume > 10000000) {
     insights.push({
-      icon: '🔥',
+      icon: 'volume-high',
       title: 'Exceptional Volume',
       description: `${formatUSD(volume)} in 24h whale volume. High conviction trading from major players.`
     })

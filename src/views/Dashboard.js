@@ -968,15 +968,15 @@ const Dashboard = ({ isPremium = false }) => {
                  const value = Number(t.count || 0)
                  const pct = Math.max(0, (value / max) * 100)
                  return (
-                   <BarRow key={t.token}>
-                     <div style={{ color: 'var(--text-secondary)' }}>
-                       <Link href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`}>{t.token}</Link>
-                     </div>
-                     <BarTrack>
-                       <BarFill style={{ width: `${pct}%` }} />
-                     </BarTrack>
-                     <div style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{formatNumber(value)}</div>
-                   </BarRow>
+                  <BarRow key={t.token}>
+                    <div style={{ color: 'var(--text-secondary)' }}>
+                      <Link href={`/token/${encodeURIComponent(t.token)}?sinceHours=24`}>{t.token}</Link>
+                    </div>
+                    <BarTrack>
+                      <BarFill style={{ width: `${pct}%` }} />
+                    </BarTrack>
+                    <div style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{formatNumber(value)}</div>
+                  </BarRow>
                  )
                })}
              </BarsContainer>

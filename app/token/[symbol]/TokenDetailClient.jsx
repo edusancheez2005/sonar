@@ -487,6 +487,20 @@ const LoadingSpinner = styled.div`
   }
 `
 
+const getInsightIcon = (iconName) => {
+  const iconMap = {
+    'flow': <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="var(--primary)" strokeWidth="2"/><path d="M12 7v5l3 3" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/></svg>,
+    'pressure-up': <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="14" width="4" height="6" fill="#2ecc71"/><rect x="10" y="10" width="4" height="10" fill="#2ecc71"/><rect x="16" y="6" width="4" height="14" fill="#2ecc71"/></svg>,
+    'pressure-down': <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="6" width="4" height="14" fill="#e74c3c"/><rect x="10" y="10" width="4" height="10" fill="#e74c3c"/><rect x="16" y="14" width="4" height="6" fill="#e74c3c"/></svg>,
+    'whales-high': <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="var(--primary)"/></svg>,
+    'whales-low': <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="var(--text-secondary)" strokeWidth="2" fill="none"/><circle cx="12" cy="10" r="3" fill="var(--text-secondary)"/></svg>,
+    'trend-up': <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z" fill="#2ecc71"/></svg>,
+    'trend-down': <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 18l2.29-2.29-4.88-4.88-4 4L2 7.41 3.41 6l6 6 4-4 6.3 6.29L22 12v6h-6z" fill="#e74c3c"/></svg>,
+    'volume-high': <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="var(--primary)"/><path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" fill="var(--primary)"/></svg>
+  }
+  return iconMap[iconName] || <span style={{ fontSize: '1.5rem' }}>●</span>
+}
+
 export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetrics, sentiment }) {
   const [priceData, setPriceData] = useState(null)
   const [orcaAnalysis, setOrcaAnalysis] = useState(null)
@@ -565,7 +579,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               $color={sentiment.color}
               title={`Score: ${sentiment.score} | Buy%: ${sentiment.details.buyPct}% | Net Flow: ${formatUSD(sentiment.details.net)}`}
             >
-              {sentiment.label} {sentiment.label === 'BULLISH' ? '🟢' : sentiment.label === 'BEARISH' ? '🔴' : '🟡'}
+              <span style={{ marginRight: '0.5rem' }}>●</span>{sentiment.label}
             </SentimentBadge>
           </TokenTitle>
 
@@ -638,7 +652,13 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           
           <ReasonsGrid>
             <ReasonCard>
-              <ReasonIcon>📊</ReasonIcon>
+              <ReasonIcon>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="4" y="14" width="4" height="6" fill="var(--primary)"/>
+                  <rect x="10" y="10" width="4" height="10" fill="var(--primary)"/>
+                  <rect x="16" y="6" width="4" height="14" fill="var(--primary)"/>
+                </svg>
+              </ReasonIcon>
               <ReasonContent>
                 <ReasonTitle>Buy/Sell Pressure</ReasonTitle>
                 <ReasonText>
@@ -649,7 +669,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             </ReasonCard>
 
             <ReasonCard>
-              <ReasonIcon>💰</ReasonIcon>
+              <ReasonIcon>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="var(--primary)" strokeWidth="2" fill="none"/>
+                  <path d="M12 7v5l3 3" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </ReasonIcon>
               <ReasonContent>
                 <ReasonTitle>Net Capital Flow</ReasonTitle>
                 <ReasonText>
@@ -660,7 +685,11 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             </ReasonCard>
 
             <ReasonCard>
-              <ReasonIcon>🐋</ReasonIcon>
+              <ReasonIcon>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="var(--primary)"/>
+                </svg>
+              </ReasonIcon>
               <ReasonContent>
                 <ReasonTitle>Whale Participation</ReasonTitle>
                 <ReasonText>
@@ -672,7 +701,17 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
             {sentiment.details.last6Net - sentiment.details.prev6Net !== 0 && (
               <ReasonCard>
-                <ReasonIcon>{sentiment.details.last6Net > sentiment.details.prev6Net ? '📈' : '📉'}</ReasonIcon>
+                <ReasonIcon>
+                  {sentiment.details.last6Net > sentiment.details.prev6Net ? (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z" fill="#2ecc71"/>
+                    </svg>
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 18l2.29-2.29-4.88-4.88-4 4L2 7.41 3.41 6l6 6 4-4 6.3 6.29L22 12v6h-6z" fill="#e74c3c"/>
+                    </svg>
+                  )}
+                </ReasonIcon>
                 <ReasonContent>
                   <ReasonTitle>Recent Momentum</ReasonTitle>
                   <ReasonText>
@@ -698,7 +737,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               </>
             ) : (
               <>
-                🐋 Ask Orca for Detailed Analysis
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.5rem' }}>
+                  <path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/>
+                </svg>
+                Ask Orca for Detailed Analysis
               </>
             )}
           </OrcaButton>
@@ -779,9 +821,21 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                     background: 'linear-gradient(135deg, #9b59b6 0%, #36a6ba 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
-                    marginBottom: '0.5rem'
+                    marginBottom: '0.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem'
                   }}>
-                    🐋 ORCA 2.0 Analysis: {symbol}
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="url(#orcaGradient)" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="orcaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#9b59b6"/>
+                          <stop offset="100%" stopColor="#36a6ba"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/>
+                    </svg>
+                    ORCA 2.0 Analysis: {symbol}
                   </h2>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                     Professional Trading Intelligence • Real-Time Data
@@ -792,7 +846,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                   <h3>Market Sentiment</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                     <SentimentBadge $color={orcaAnalysis.sentiment === 'BULLISH' ? '#2ecc71' : orcaAnalysis.sentiment === 'BEARISH' ? '#e74c3c' : '#f39c12'}>
-                      {orcaAnalysis.sentiment} {orcaAnalysis.sentimentEmoji}
+                      <span style={{ marginRight: '0.5rem' }}>●</span>{orcaAnalysis.sentiment}
                     </SentimentBadge>
                     <span style={{ color: 'var(--text-secondary)' }}>
                       Signal: <strong style={{ color: 'var(--primary)' }}>{orcaAnalysis.signal}</strong>
@@ -829,7 +883,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                       <ReasonsGrid>
                         {orcaAnalysis.insights.map((insight, i) => (
                           <ReasonCard key={i}>
-                            <ReasonIcon>{insight.icon}</ReasonIcon>
+                            <ReasonIcon>{getInsightIcon(insight.icon)}</ReasonIcon>
                             <ReasonContent>
                               <ReasonTitle>{insight.title}</ReasonTitle>
                               <ReasonText>{insight.description}</ReasonText>
@@ -845,10 +899,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                       <h3>Professional Trading Recommendation</h3>
                       <RecommendationCard $type={orcaAnalysis.recommendation.type}>
                         <RecType $type={orcaAnalysis.recommendation.type}>
-                          {orcaAnalysis.recommendation.type === 'BUY' ? '🟢 BUY SIGNAL' :
-                           orcaAnalysis.recommendation.type === 'AVOID' ? '🔴 AVOID / SHORT' :
-                           orcaAnalysis.recommendation.type === 'WAIT' ? '🟡 WAIT FOR CONFIRMATION' :
-                           '🟡 CAUTIOUS ENTRY'}
+                          {orcaAnalysis.recommendation.type === 'BUY' ? '● BUY SIGNAL' :
+                           orcaAnalysis.recommendation.type === 'AVOID' ? '● AVOID / SHORT' :
+                           orcaAnalysis.recommendation.type === 'WAIT' ? '● WAIT FOR CONFIRMATION' :
+                           '● CAUTIOUS ENTRY'}
                         </RecType>
                         <RecConfidence>
                           Confidence: <strong>{orcaAnalysis.recommendation.confidence}</strong>
