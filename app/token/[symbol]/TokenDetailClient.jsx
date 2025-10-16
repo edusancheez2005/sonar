@@ -66,10 +66,13 @@ const TokenTitle = styled.div`
 `
 
 const TokenImage = styled.img`
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   border: 2px solid var(--primary);
+  box-shadow: 0 4px 12px rgba(54, 166, 186, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
 `
 
 const TokenName = styled.h1`
@@ -572,9 +575,45 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
         <Header>
           <TokenTitle>
-            {priceData?.image && <TokenImage src={priceData.image} alt={symbol} />}
-            <TokenName>{priceData?.name || symbol}</TokenName>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '1.5rem', fontWeight: 600 }}>({symbol})</span>
+            {priceData?.image ? (
+              <TokenImage 
+                src={priceData.image} 
+                alt={symbol}
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                }}
+              />
+            ) : (
+              <div style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                border: '2px solid var(--primary)',
+                background: 'linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.5rem',
+                fontWeight: 800,
+                color: 'white',
+                boxShadow: '0 4px 12px rgba(54, 166, 186, 0.3)'
+              }}>
+                {symbol.slice(0, 2)}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <TokenName>{symbol}</TokenName>
+              {priceData?.name && priceData.name !== symbol && (
+                <span style={{ 
+                  color: 'var(--text-secondary)', 
+                  fontSize: '1rem', 
+                  fontWeight: 500,
+                  marginTop: '-0.5rem'
+                }}>
+                  {priceData.name}
+                </span>
+              )}
+            </div>
             <SentimentBadge 
               $color={sentiment.color}
               title={`Score: ${sentiment.score} | Buy%: ${sentiment.details.buyPct}% | Net Flow: ${formatUSD(sentiment.details.net)}`}
