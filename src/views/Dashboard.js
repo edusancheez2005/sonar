@@ -473,7 +473,6 @@ const Dashboard = ({ isPremium = false }) => {
   const [blockchainData, setBlockchainData] = useState({ labels: [], data: [] });
   const [tokenTradeCounts, setTokenTradeCounts] = useState([]);
   const [noData24h, setNoData24h] = useState(false);
-  const [minValue, setMinValue] = useState(0);
   const [lastUpdate, setLastUpdate] = useState('now');
   const [loading, setLoading] = useState(true);
   const [algoActive, setAlgoActive] = useState(true);
@@ -596,19 +595,10 @@ const Dashboard = ({ isPremium = false }) => {
     return () => clearInterval(timer)
   }, [])
 
-  const filteredTransactions = transactions.filter(t => {
-    const min = typeof minValue === 'number' ? minValue : Number(minValue || 0)
-    const usd = Number(t.rawUsd || 0)
-    return usd >= min
-  })
+  const filteredTransactions = transactions;
 
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { when: 'beforeChildren', staggerChildren: 0.1 } } };
   const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
-
-  const handleMinValueChange = (e) => {
-    const value = e.target.value === '' ? '' : Number(e.target.value)
-    setMinValue(value)
-  };
 
   const getSentimentColor = (trend) => {
     switch(trend) {
@@ -667,10 +657,6 @@ const Dashboard = ({ isPremium = false }) => {
              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
          <PageHeader title="Real-Time" accentWord="Dashboard">
            <FilterContainer>
-             <FilterGroup>
-               <label htmlFor="min-value">Minimum Transaction Value ($)</label>
-               <input id="min-value" type="number" min="0" step="1000" value={minValue} onChange={handleMinValueChange} placeholder="Enter minimum value" />
-             </FilterGroup>
              <StatusBadge active={algoActive}>
                <Dot /> {algoActive ? 'Algorithm Active' : 'Algorithm Not Active'}
              </StatusBadge>
@@ -691,9 +677,18 @@ const Dashboard = ({ isPremium = false }) => {
              color: 'var(--primary)', 
              fontSize: '1.1rem', 
              fontWeight: '600',
-             margin: '0'
+             margin: '0',
+             marginBottom: '0.5rem'
            }}>
              ⏰ All data represents the last 24 hours of whale activity
+           </p>
+           <p style={{ 
+             color: 'var(--text-secondary)', 
+             fontSize: '0.95rem', 
+             fontWeight: '500',
+             margin: '0'
+           }}>
+             🐋 Tracking transactions $50,000+
            </p>
          </div>
        </motion.div>
