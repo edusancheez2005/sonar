@@ -814,7 +814,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                         onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
                         onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
                       >
-                        🌐 Official Website
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                        </svg>
+                        Official Website
                       </a>
                     )}
                     {priceData.blockchainSite && (
@@ -836,7 +839,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                         onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
                         onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
                       >
-                        ⛓️ Explorer
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zm-7-6.74L16.71 6H6.29l5.21-2.74m0-2.26L2 6v2h19V6l-9.5-5z"/>
+                        </svg>
+                        Explorer
                       </a>
                     )}
                     {priceData.twitterHandle && (
@@ -858,7 +864,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                         onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
                         onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
                       >
-                        🐦 Twitter
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M22.46 6c-.85.38-1.78.64-2.75.76 1-.6 1.76-1.55 2.12-2.68-.93.55-1.96.95-3.06 1.17-.88-.94-2.13-1.53-3.52-1.53-2.67 0-4.84 2.17-4.84 4.84 0 .38.04.75.13 1.1-4.02-.2-7.58-2.13-9.97-5.06-.42.72-.66 1.55-.66 2.44 0 1.68.85 3.16 2.15 4.03-.79-.02-1.54-.24-2.19-.6v.06c0 2.34 1.67 4.3 3.88 4.74-.41.11-.84.17-1.28.17-.31 0-.62-.03-.92-.08.62 1.94 2.42 3.35 4.55 3.39-1.67 1.31-3.77 2.09-6.05 2.09-.39 0-.78-.02-1.17-.07 2.18 1.4 4.77 2.21 7.55 2.21 9.06 0 14-7.5 14-14 0-.21 0-.42-.02-.63.96-.69 1.8-1.56 2.46-2.55z"/>
+                        </svg>
+                        Twitter
                       </a>
                     )}
                     {priceData.subredditUrl && (
@@ -880,7 +889,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                         onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
                         onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
                       >
-                        💬 Reddit
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M14.238 15.348c.085.084.085.221 0 .306-.465.462-1.194.687-2.231.687l-.008-.002-.008.002c-1.036 0-1.766-.225-2.231-.688-.085-.084-.085-.221 0-.305.084-.084.222-.084.307 0 .379.377 1.008.561 1.924.561l.008.002.008-.002c.915 0 1.544-.184 1.924-.561.085-.084.223-.084.307 0zm-3.44-2.418c0-.507-.414-.919-.922-.919-.509 0-.923.412-.923.919 0 .506.414.918.923.918.508.001.922-.411.922-.918zm13.202-.93c0 6.627-5.373 12-12 12s-12-5.373-12-12 5.373-12 12-12 12 5.373 12 12zm-5-.129c0-.851-.695-1.543-1.55-1.543-.417 0-.795.167-1.074.435-1.056-.695-2.485-1.137-4.066-1.194l.865-2.724 2.343.549-.003.034c0 .696.569 1.262 1.268 1.262.699 0 1.267-.566 1.267-1.262s-.568-1.262-1.267-1.262c-.537 0-.994.335-1.179.804l-2.525-.592c-.11-.027-.223.037-.257.145l-.965 3.038c-1.656.02-3.155.466-4.258 1.181-.277-.255-.644-.415-1.05-.415-.854.001-1.549.693-1.549 1.544 0 .566.311 1.056.768 1.325-.03.164-.05.331-.05.5 0 2.281 2.805 4.137 6.253 4.137s6.253-1.856 6.253-4.137c0-.16-.017-.317-.044-.472.486-.261.82-.766.82-1.353zm-4.872.141c-.509 0-.922.412-.922.919 0 .506.414.918.922.918s.922-.412.922-.918c0-.507-.413-.919-.922-.919z"/>
+                        </svg>
+                        Reddit
                       </a>
                     )}
                     {priceData.githubRepo && (
@@ -902,7 +914,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                         onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
                         onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
                       >
-                        💻 GitHub
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        GitHub
                       </a>
                     )}
                   </div>
