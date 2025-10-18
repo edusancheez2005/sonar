@@ -568,7 +568,27 @@ const Dashboard = ({ isPremium = false }) => {
             cleaned = fb
           }
           setTokenTradeCounts(cleaned)
-          setNoData24h(Boolean(json.noData24h));
+          let noData = Boolean(json.noData24h)
+          // Fallback: if API says no data, try computing from /api/trades
+          if (noData) {
+            try {
+              const tradesRes = await fetch('/api/trades?sinceHours=24&limit=1000', { cache: 'no-store' })
+              const tradesJson = await tradesRes.json()
+              const trades = Array.isArray(tradesJson?.data) ? tradesJson.data : []
+              if (trades.length > 0) {
+                // Build minimal aggregates to unlock UI
+                const byToken = new Map()
+                trades.forEach(t => {
+                  const sym = String(t.token_symbol || '—').trim().toUpperCase()
+                  byToken.set(sym, (byToken.get(sym) || 0) + 1)
+                })
+                const top = Array.from(byToken.entries()).sort((a,b)=>b[1]-a[1]).slice(0,12)
+                setTokenTradeCounts(top.map(([token, count]) => ({ token, count })))
+                noData = false
+              }
+            } catch {}
+          }
+          setNoData24h(noData);
           
           setLastUpdate('just now')
         }

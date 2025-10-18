@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 export async function GET() {
   try {
@@ -10,35 +9,24 @@ export async function GET() {
       return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
     }
 
-    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    const nowIso = new Date().toISOString()
+    // Use EXACT same pattern as /api/trades (which works!)
+    const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-    // Fetch recent transactions strictly from the last 24 hours
-    const { data: recentData, error: recentError } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('whale_transactions')
-      .select('transaction_hash, timestamp, token_symbol, classification, blockchain, usd_value, from_address, whale_score, to_address')
+      .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address', { count: 'estimated' })
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')
-      .gte('timestamp', since24h)
-      .lte('timestamp', nowIso)
-      .order('timestamp', { ascending: false })
-      .limit(1000)
 
-    console.log(`Dashboard API: Fetched ${recentData?.length || 0} transactions from Supabase, error:`, recentError)
+    q = q.gte('timestamp', sinceIso)
+
+    const { data: recentData, error: recentError } = await q.order('timestamp', { ascending: false }).limit(5000)
+
+    console.log(`Dashboard API: Fetched ${recentData?.length || 0} transactions, error:`, recentError)
 
     if (recentError) {
-      console.error('Error fetching recent transactions:', recentError)
-      // Return empty data instead of error
-      return NextResponse.json({
-        recent: [],
-        topBuys: [],
-        topSells: [],
-        blockchainVolume: { labels: [], data: [] },
-        marketSentiment: { ratio: 50, trend: 'neutral' },
-        riskMetrics: { highValueCount: 0, avgTransactionSize: 0 },
-        marketMomentum: { volumeChange: 0, activityChange: 0 },
-        whaleActivity: []
-      })
+      console.error('Dashboard API error:', recentError)
+      return NextResponse.json({ error: recentError.message }, { status: 500 })
     }
 
     // Data is already scoped to the last 24 hours, now take top 10 for the recent table
@@ -67,21 +55,18 @@ export async function GET() {
           .select('transaction_hash', { count: 'exact', head: true })
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
-          .gte('timestamp', since24h)
-          .lte('timestamp', nowIso),
+          .gte('timestamp', sinceIso),
         supabaseAdmin.from('whale_transactions')
           .select('classification', { count: 'exact', head: true })
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
-          .gte('timestamp', since24h)
-          .lte('timestamp', nowIso)
+          .gte('timestamp', sinceIso)
           .ilike('classification', 'buy%'),
         supabaseAdmin.from('whale_transactions')
           .select('classification', { count: 'exact', head: true })
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
-          .gte('timestamp', since24h)
-          .lte('timestamp', nowIso)
+          .gte('timestamp', sinceIso)
           .ilike('classification', 'sell%')
       ])
       total24hCount = tot?.count ?? null
@@ -173,14 +158,12 @@ export async function GET() {
           supabaseAdmin.from('whale_transactions')
             .select('transaction_hash', { count: 'exact', head: true })
             .eq('token_symbol', token)
-            .gte('timestamp', since24h)
-            .lte('timestamp', nowIso)
+            .gte('timestamp', sinceIso)
             .in('classification', ['BUY', 'buy']),
           supabaseAdmin.from('whale_transactions')
             .select('transaction_hash', { count: 'exact', head: true })
             .eq('token_symbol', token)
-            .gte('timestamp', since24h)
-            .lte('timestamp', nowIso)
+            .gte('timestamp', sinceIso)
             .in('classification', ['SELL', 'sell']),
         ])
         return { token, buys: Number(buys?.count || 0), sells: Number(sells?.count || 0) }
