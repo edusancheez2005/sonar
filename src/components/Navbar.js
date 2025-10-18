@@ -276,6 +276,11 @@ const Navbar = ({ onLogout }) => {
                 <NextLink href="/subscribe">Pricing</NextLink>
               </MenuItem>
             </motion.div>
+            <motion.div variants={menuVariants} initial="hidden" animate="visible">
+              <MenuItem $active={isActive('/help')} variants={itemVariants}>
+                <NextLink href="/help">Help</NextLink>
+              </MenuItem>
+            </motion.div>
             <form onSubmit={onSubmitSearch} style={{ display: 'flex', alignItems: 'center' }}>
               <SearchBox>
                 <input

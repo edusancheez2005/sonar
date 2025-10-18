@@ -121,21 +121,20 @@ const Footer = () => {
         <Column>
           <h3>Company</h3>
           <ul>
-            <li><a href="#" title="About Sonar Tracker">About Sonar Tracker</a></li>
-            <li><a href="#" title="Careers at Sonar Tracker">Careers</a></li>
-            <li><a href="/blog" title="Sonar crypto analytics blog">Crypto Analytics Blog</a></li>
-            <li><a href="#" title="Sonar press assets">Press Kit</a></li>
+            <li><a href="/careers" title="Careers at Sonar Tracker">Careers</a></li>
+            <li><a href="/press" title="Sonar press kit and media resources">Press Kit</a></li>
             <li><a href="/contact" title="Contact Sonar Tracker">Contact</a></li>
+            <li><a href="/community" title="Join the Sonar community">Community</a></li>
           </ul>
         </Column>
         <Column>
           <h3>Resources</h3>
           <ul>
-            <li><a href="/faq" title="Sonar Tracker help center">Help Center</a></li>
-            <li><a href="#" title="Developer documentation for Sonar Tracker API">Developer Docs</a></li>
-            <li><a href="#" title="Join the Sonar Tracker community">Community</a></li>
-            <li><a href="/pricing" title="Free crypto tracker tier">Free Access</a></li>
-            <li><a href="#" title="Platform status">Status</a></li>
+            <li><a href="/help" title="Sonar Tracker help center">Help Center</a></li>
+            <li><a href="/faq" title="Frequently asked questions">FAQ</a></li>
+            <li><a href="/pricing" title="Pricing and subscription plans">Pricing</a></li>
+            <li><a href="/terms" title="Terms of Service">Terms</a></li>
+            <li><a href="/privacy" title="Privacy Policy">Privacy</a></li>
           </ul>
         </Column>
       </FooterContent>
