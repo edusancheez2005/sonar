@@ -97,7 +97,7 @@ Professional contact form with:
 - Animated feedback
 
 **Info Cards:**
-- Email: sonartracker@gmail.com (24-48h response)
+- Email: eduardo@sonartracker.io (24-48h response)
 - Business Hours: Mon-Fri, 9 AM - 6 PM GMT
 - Quick Help: Link to FAQ
 
@@ -116,7 +116,7 @@ Robust email system using nodemailer + Gmail SMTP:
 **Features:**
 - Input validation (all required fields, email format)
 - Sends 2 emails:
-  1. **To sonartracker@gmail.com**: Professional HTML template with all form data
+  1. **To eduardo@sonartracker.io**: Professional HTML template with all form data
   2. **To user**: Confirmation email with thank you message
 - HTML email templates with:
   - Branded headers with gradient
@@ -135,7 +135,7 @@ Robust email system using nodemailer + Gmail SMTP:
 
 **Environment Variables Required:**
 ```bash
-GMAIL_USER=sonartracker@gmail.com
+GMAIL_USER=eduardo@sonartracker.io
 GMAIL_APP_PASSWORD=your_16_char_app_password
 ```
 
@@ -231,7 +231,7 @@ Add to Vercel (and `.env.local` for local testing):
 
 ```bash
 # Contact Form Email (NEW)
-GMAIL_USER=sonartracker@gmail.com
+GMAIL_USER=eduardo@sonartracker.io
 GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx  # Gmail App Password (16 chars, remove spaces)
 
 # Existing variables (already set)
@@ -286,7 +286,7 @@ Follow these steps to enable contact form emails:
 7. Add to Vercel:
    ```bash
    vercel env add GMAIL_USER
-   # Enter: sonartracker@gmail.com
+   # Enter: eduardo@sonartracker.io
    
    vercel env add GMAIL_APP_PASSWORD
    # Enter: xxxxxxxxxxxxxxxx (16 chars, no spaces)
@@ -310,7 +310,7 @@ Full instructions in `CONTACT_FORM_SETUP.md`.
 npm install
 
 # 2. Add to .env.local
-GMAIL_USER=sonartracker@gmail.com
+GMAIL_USER=eduardo@sonartracker.io
 GMAIL_APP_PASSWORD=your_app_password_here
 
 # 3. Start dev server
@@ -325,7 +325,7 @@ http://localhost:3000/statistics  # Try CSV export
 
 # 5. Test contact form
 - Fill out form at /contact
-- Check sonartracker@gmail.com inbox
+- Check eduardo@sonartracker.io inbox
 - Check confirmation email sent to your test email
 ```
 

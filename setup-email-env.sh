@@ -19,7 +19,7 @@ if ! command -v vercel &> /dev/null; then
 fi
 
 echo -e "${GREEN}Step 1: Gmail Account${NC}"
-echo "Email address: sonartracker@gmail.com"
+echo "Email address: eduardo@sonartracker.io"
 echo ""
 
 # Check if .env.local exists
@@ -70,10 +70,10 @@ echo -e "${GREEN}Step 4: Adding to .env.local${NC}"
 
 # Check if variables already exist and update them
 if grep -q "GMAIL_USER" .env.local; then
-    sed -i '' 's/^GMAIL_USER=.*/GMAIL_USER=sonartracker@gmail.com/' .env.local
+    sed -i '' 's/^GMAIL_USER=.*/GMAIL_USER=eduardo@sonartracker.io/' .env.local
     echo -e "${YELLOW}Updated GMAIL_USER in .env.local${NC}"
 else
-    echo "GMAIL_USER=sonartracker@gmail.com" >> .env.local
+    echo "GMAIL_USER=eduardo@sonartracker.io" >> .env.local
     echo -e "${GREEN}Added GMAIL_USER to .env.local${NC}"
 fi
 
@@ -92,7 +92,7 @@ read -p "Do you want to add these to Vercel now? (y/n): " add_vercel
 if [ "$add_vercel" == "y" ]; then
     echo ""
     echo "Adding GMAIL_USER to Vercel..."
-    echo "sonartracker@gmail.com" | vercel env add GMAIL_USER production
+    echo "eduardo@sonartracker.io" | vercel env add GMAIL_USER production
     
     echo ""
     echo "Adding GMAIL_APP_PASSWORD to Vercel..."
@@ -104,7 +104,7 @@ else
     echo ""
     echo -e "${YELLOW}Skipped Vercel setup. Add manually:${NC}"
     echo "vercel env add GMAIL_USER production"
-    echo "  → Enter: sonartracker@gmail.com"
+    echo "  → Enter: eduardo@sonartracker.io"
     echo ""
     echo "vercel env add GMAIL_APP_PASSWORD production"
     echo "  → Enter: $app_password"

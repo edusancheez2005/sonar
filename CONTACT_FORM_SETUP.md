@@ -7,7 +7,7 @@ The contact form (`/contact`) sends emails using Gmail SMTP via nodemailer.
 Add these to your `.env.local` file (for local development) and Vercel Environment Variables (for production):
 
 ```bash
-GMAIL_USER=sonartracker@gmail.com
+GMAIL_USER=eduardo@sonartracker.io
 GMAIL_APP_PASSWORD=your_app_password_here
 ```
 
@@ -56,14 +56,14 @@ Since you're using Gmail with 2FA (two-factor authentication), you need to creat
 2. Restart your dev server: `npm run dev`
 3. Go to http://localhost:3000/contact
 4. Fill out and submit the form
-5. Check your `sonartracker@gmail.com` inbox for the email
+5. Check your `eduardo@sonartracker.io` inbox for the email
 
 ## How It Works
 
 When a user submits the contact form:
 
 1. **Form data is validated** (name, email, subject, category, message)
-2. **Email is sent to `sonartracker@gmail.com`**
+2. **Email is sent to `eduardo@sonartracker.io`**
    - Professional HTML template
    - Includes all form data
    - Reply-to set to user's email
@@ -112,7 +112,7 @@ When a user submits the contact form:
 - [ ] `GMAIL_USER` added to Vercel env vars
 - [ ] `GMAIL_APP_PASSWORD` added to Vercel env vars
 - [ ] Test the contact form on production
-- [ ] Check sonartracker@gmail.com inbox for test email
+- [ ] Check eduardo@sonartracker.io inbox for test email
 - [ ] Verify confirmation email is received by test user
 
 ## Security Notes

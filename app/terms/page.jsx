@@ -1,8 +1,6 @@
 'use client'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
-import Navbar from '@/src/components/Navbar'
-import Footer from '@/src/components/Footer'
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -106,7 +104,6 @@ const LastUpdated = styled.p`
 export default function TermsOfService() {
   return (
     <PageContainer>
-      <Navbar />
       <Content>
         <Title
           initial={{ opacity: 0, y: -20 }}
@@ -314,13 +311,12 @@ export default function TermsOfService() {
             If you have any questions about these Terms of Service, please contact us at:
           </p>
           <p>
-            <strong>Email:</strong> <a href="mailto:sonartracker@gmail.com" style={{ color: 'var(--primary)' }}>sonartracker@gmail.com</a>
+            <strong>Email:</strong> <a href="mailto:eduardo@sonartracker.io" style={{ color: 'var(--primary)' }}>eduardo@sonartracker.io</a>
           </p>
         </Section>
 
         <LastUpdated>Last Updated: October 18, 2025</LastUpdated>
       </Content>
-      <Footer />
     </PageContainer>
   )
 }

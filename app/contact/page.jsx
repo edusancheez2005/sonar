@@ -2,8 +2,6 @@
 import { useState } from 'react'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
-import Navbar from '@/src/components/Navbar'
-import Footer from '@/src/components/Footer'
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -314,7 +312,6 @@ export default function ContactPage() {
 
   return (
     <PageContainer>
-      <Navbar />
       <Content>
         <Title
           initial={{ opacity: 0, y: -20 }}
@@ -437,7 +434,7 @@ export default function ContactPage() {
             </svg>
             <h3>Email Us</h3>
             <p>
-              <a href="mailto:sonartracker@gmail.com">sonartracker@gmail.com</a>
+              <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>
               <br />
               <small>Response time: 24-48 hours</small>
             </p>
@@ -474,7 +471,6 @@ export default function ContactPage() {
           </InfoCard>
         </InfoGrid>
       </Content>
-      <Footer />
     </PageContainer>
   )
 }

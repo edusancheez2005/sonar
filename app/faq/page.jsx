@@ -2,8 +2,6 @@
 import { useState } from 'react'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import Navbar from '@/src/components/Navbar'
-import Footer from '@/src/components/Footer'
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -292,7 +290,7 @@ const faqData = [
       },
       {
         question: 'How can I delete my account?',
-        answer: 'To delete your account, please contact us at <a href="mailto:sonartracker@gmail.com">sonartracker@gmail.com</a> with your request. We\'ll process your account deletion within 30 days in accordance with GDPR regulations.'
+        answer: 'To delete your account, please contact us at <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a> with your request. We\'ll process your account deletion within 30 days in accordance with GDPR regulations.'
       },
       {
         question: 'How do you use cookies?',
@@ -309,7 +307,7 @@ const faqData = [
       },
       {
         question: 'I forgot my password. How do I reset it?',
-        answer: 'Password reset functionality is coming soon. For now, if you\'ve forgotten your password, please contact us at <a href="mailto:sonartracker@gmail.com">sonartracker@gmail.com</a> and we\'ll help you regain access to your account.'
+        answer: 'Password reset functionality is coming soon. For now, if you\'ve forgotten your password, please contact us at <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a> and we\'ll help you regain access to your account.'
       },
       {
         question: 'Why am I seeing "No whale activity" for a token?',
@@ -342,7 +340,6 @@ export default function FAQPage() {
 
   return (
     <PageContainer>
-      <Navbar />
       <Content>
         <Title
           initial={{ opacity: 0, y: -20 }}
@@ -432,7 +429,6 @@ export default function FAQPage() {
           </a>
         </div>
       </Content>
-      <Footer />
     </PageContainer>
   )
 }

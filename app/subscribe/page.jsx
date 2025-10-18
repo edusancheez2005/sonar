@@ -294,20 +294,41 @@ export default function SubscribePage() {
     setLoading(true)
     try {
       const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || ''
+      
+      if (!priceId) {
+        throw new Error('Stripe price ID is not configured. Please contact support.')
+      }
+      
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId }),
       })
+      
+      // Check if response is ok before parsing JSON
+      if (!res.ok) {
+        const text = await res.text()
+        let errorMessage = 'Failed to create checkout session'
+        try {
+          const data = JSON.parse(text)
+          errorMessage = data.error || errorMessage
+        } catch {
+          errorMessage = text || errorMessage
+        }
+        throw new Error(errorMessage)
+      }
+      
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create checkout session')
+      
       if (data?.url) {
         window.location.href = data.url
         return
       }
-      setError('No checkout URL returned')
+      
+      setError('No checkout URL returned. Please try again or contact support.')
     } catch (e) {
-      setError(e.message || 'Subscription error')
+      console.error('Subscribe error:', e)
+      setError(e.message || 'An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }

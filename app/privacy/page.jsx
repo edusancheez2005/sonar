@@ -1,8 +1,6 @@
 'use client'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
-import Navbar from '@/src/components/Navbar'
-import Footer from '@/src/components/Footer'
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -116,7 +114,6 @@ const LastUpdated = styled.p`
 export default function PrivacyPolicy() {
   return (
     <PageContainer>
-      <Navbar />
       <Content>
         <Title
           initial={{ opacity: 0, y: -20 }}
@@ -137,7 +134,7 @@ export default function PrivacyPolicy() {
             Welcome to Sonar Tracker ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our cryptocurrency whale tracking platform.
           </p>
           <p>
-            If you have any questions or concerns about this Privacy Policy or our practices regarding your personal information, please contact us at <a href="mailto:sonartracker@gmail.com">sonartracker@gmail.com</a>.
+            If you have any questions or concerns about this Privacy Policy or our practices regarding your personal information, please contact us at <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>.
           </p>
         </Section>
 
@@ -268,7 +265,7 @@ export default function PrivacyPolicy() {
 
           <h3>6.3 Exercising Your Rights</h3>
           <p>
-            To exercise any of these rights, please contact us at <a href="mailto:sonartracker@gmail.com">sonartracker@gmail.com</a>. We will respond to your request within 30 days.
+            To exercise any of these rights, please contact us at <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>. We will respond to your request within 30 days.
           </p>
         </Section>
 
@@ -386,7 +383,7 @@ export default function PrivacyPolicy() {
             If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at:
           </p>
           <p>
-            <strong>Email:</strong> <a href="mailto:sonartracker@gmail.com">sonartracker@gmail.com</a>
+            <strong>Email:</strong> <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>
           </p>
           <p>
             <strong>Response Time:</strong> We aim to respond to all inquiries within 48 hours.
@@ -395,7 +392,6 @@ export default function PrivacyPolicy() {
 
         <LastUpdated>Last Updated: October 18, 2025</LastUpdated>
       </Content>
-      <Footer />
     </PageContainer>
   )
 }

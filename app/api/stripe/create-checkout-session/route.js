@@ -11,16 +11,27 @@ export async function POST(req) {
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
 
-  // Get user session
+  // Get user session from cookies
+  const cookieStore = cookies()
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        get(name) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    }
   )
   const { data: { session } } = await supabase.auth.getSession()
   
   if (!session?.user) {
+    console.log('No session found in create-checkout-session')
     return NextResponse.json({ error: 'You must be logged in to subscribe' }, { status: 401 })
   }
+  
+  console.log('User authenticated:', session.user.email)
 
   const userId = session.user.id
   const userEmail = session.user.email

@@ -26,7 +26,7 @@ export async function POST(req) {
     const transporter = nodemailer.createTransporter({
       service: 'gmail',
       auth: {
-        user: process.env.GMAIL_USER, // sonartracker@gmail.com
+        user: process.env.GMAIL_USER, // eduardo@sonartracker.io
         pass: process.env.GMAIL_APP_PASSWORD // Gmail App Password
       }
     })
@@ -34,7 +34,7 @@ export async function POST(req) {
     // Email to Sonar Tracker
     const mailOptions = {
       from: process.env.GMAIL_USER,
-      to: 'sonartracker@gmail.com',
+      to: 'eduardo@sonartracker.io',
       replyTo: email,
       subject: `[Sonar Contact] ${category.toUpperCase()}: ${subject}`,
       html: `
