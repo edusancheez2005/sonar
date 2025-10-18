@@ -177,6 +177,41 @@ const Presets = styled.div`
   }
 `;
 
+const ExportButton = styled(motion.button)`
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
 const Card = styled.div`
   background: rgba(13, 33, 52, 0.6);
   backdrop-filter: blur(10px);
@@ -331,6 +366,7 @@ export default function Statistics() {
   const [rows, setRows] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const debounceRef = useRef(null)
   const prevFiltersRef = useRef({ token:'', side:'', chain:'', minUsd:'', maxUsd:'', sinceHours:24 })
@@ -359,6 +395,69 @@ export default function Statistics() {
     const json = await res.json()
     if (res.ok) { setRows(json.data || []); setTotal(json.count || 0); setPage(json.page || p) }
     setLoading(false)
+  }
+
+  async function exportToCSV() {
+    setExporting(true)
+    try {
+      // Fetch up to 10,000 records for export
+      const params = new URLSearchParams()
+      params.set('sinceHours', String(sinceHours))
+      if (minUsd) params.set('minUsd', String(minUsd))
+      if (maxUsd) params.set('maxUsd', String(maxUsd))
+      if (token) params.set('token', token)
+      if (side) params.set('side', side)
+      if (chain) params.set('chain', chain)
+      params.set('limit', '100')
+      params.set('page', '1')
+      
+      const res = await fetch(`/api/trades?${params.toString()}`, { cache: 'no-store' })
+      const json = await res.json()
+      const data = json.data || []
+      
+      if (data.length === 0) {
+        alert('No data to export with current filters')
+        return
+      }
+      
+      // Create CSV content
+      const headers = ['Time', 'Token', 'Type', 'USD Value', 'Blockchain', 'Whale Score', 'From Address', 'Transaction Hash']
+      const csvRows = [headers.join(',')]
+      
+      data.forEach(row => {
+        const values = [
+          `"${new Date(row.timestamp).toLocaleString()}"`,
+          row.token_symbol || '',
+          (row.classification || '').toUpperCase(),
+          Number(row.usd_value || 0).toFixed(2),
+          row.blockchain || '',
+          row.whale_score || 0,
+          row.from_address || '',
+          row.transaction_hash || ''
+        ]
+        csvRows.push(values.join(','))
+      })
+      
+      // Download CSV
+      const csvContent = csvRows.join('\\n')
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      
+      const filename = `sonar_whale_transactions_${new Date().toISOString().split('T')[0]}.csv`
+      link.setAttribute('href', url)
+      link.setAttribute('download', filename)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Export error:', err)
+      alert('Failed to export CSV. Please try again.')
+    } finally {
+      setExporting(false)
+    }
   }
 
   useEffect(() => {
@@ -391,12 +490,25 @@ export default function Statistics() {
       
       <Card>
         <Presets>
-          <button type="button" className={sinceHours===1?'active':''} onClick={()=>preset(1)}>1h</button>
-          <button type="button" className={sinceHours===6?'active':''} onClick={()=>preset(6)}>6h</button>
-          <button type="button" className={sinceHours===24?'active':''} onClick={()=>preset(24)}>24h</button>
-          <button type="button" className={sinceHours===72?'active':''} onClick={()=>preset(72)}>3d</button>
-          <button type="button" className={sinceHours===168?'active':''} onClick={()=>preset(168)}>7d</button>
-          <Button type="button" variant="danger" onClick={reset}>Reset All Filters</Button>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button type="button" className={sinceHours===1?'active':''} onClick={()=>preset(1)}>1h</button>
+            <button type="button" className={sinceHours===6?'active':''} onClick={()=>preset(6)}>6h</button>
+            <button type="button" className={sinceHours===24?'active':''} onClick={()=>preset(24)}>24h</button>
+            <button type="button" className={sinceHours===72?'active':''} onClick={()=>preset(72)}>3d</button>
+            <button type="button" className={sinceHours===168?'active':''} onClick={()=>preset(168)}>7d</button>
+            <Button type="button" variant="danger" onClick={reset}>Reset All Filters</Button>
+          </div>
+          <ExportButton 
+            onClick={exportToCSV} 
+            disabled={exporting || loading || rows.length === 0}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {exporting ? 'Exporting...' : 'Export CSV'}
+          </ExportButton>
         </Presets>
         <Toolbar>
           <Field>

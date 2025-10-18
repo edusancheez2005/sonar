@@ -125,16 +125,16 @@ const Footer = () => {
             <li><a href="#" title="Careers at Sonar Tracker">Careers</a></li>
             <li><a href="/blog" title="Sonar crypto analytics blog">Crypto Analytics Blog</a></li>
             <li><a href="#" title="Sonar press assets">Press Kit</a></li>
-            <li><a href="#" title="Contact Sonar Tracker">Contact</a></li>
+            <li><a href="/contact" title="Contact Sonar Tracker">Contact</a></li>
           </ul>
         </Column>
         <Column>
           <h3>Resources</h3>
           <ul>
-            <li><a href="#" title="Sonar Tracker help center">Help Center</a></li>
+            <li><a href="/faq" title="Sonar Tracker help center">Help Center</a></li>
             <li><a href="#" title="Developer documentation for Sonar Tracker API">Developer Docs</a></li>
             <li><a href="#" title="Join the Sonar Tracker community">Community</a></li>
-            <li><a href="#pricing" title="Free crypto tracker tier">Free Access</a></li>
+            <li><a href="/pricing" title="Free crypto tracker tier">Free Access</a></li>
             <li><a href="#" title="Platform status">Status</a></li>
           </ul>
         </Column>
