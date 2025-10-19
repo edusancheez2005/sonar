@@ -266,11 +266,180 @@ const TrustBadge = styled.div`
   }
 `
 
+const InfoSection = styled.section`
+  margin-top: 6rem;
+  padding-top: 4rem;
+  border-top: 1px solid rgba(54, 166, 186, 0.2);
+`
+
+const SectionTitle = styled.h2`
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 3rem;
+  background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+`
+
+const FeatureGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 4rem;
+`
+
+const FeatureCard = styled(motion.div)`
+  background: rgba(26, 40, 56, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(54, 166, 186, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(54, 166, 186, 0.2);
+  }
+  
+  svg {
+    width: 48px;
+    height: 48px;
+    color: var(--primary);
+    margin-bottom: 1rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+  }
+  
+  p {
+    color: var(--text-secondary);
+    line-height: 1.8;
+  }
+`
+
+const ComparisonTable = styled.div`
+  background: rgba(26, 40, 56, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(54, 166, 186, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 4rem;
+  overflow-x: auto;
+`
+
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  
+  th {
+    padding: 1.5rem 1rem;
+    text-align: left;
+    border-bottom: 2px solid rgba(54, 166, 186, 0.3);
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  
+  td {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid rgba(54, 166, 186, 0.1);
+    color: var(--text-secondary);
+    
+    &:first-child {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+  }
+  
+  tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .check {
+    color: #2ecc71;
+    font-size: 1.5rem;
+  }
+  
+  .cross {
+    color: #e74c3c;
+    font-size: 1.5rem;
+  }
+`
+
+const FAQSection = styled.div`
+  margin-top: 4rem;
+`
+
+const FAQItem = styled(motion.div)`
+  background: rgba(26, 40, 56, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(54, 166, 186, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: var(--primary);
+  }
+`
+
+const FAQQuestion = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  
+  h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+    color: var(--primary);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+  
+  &.open svg {
+    transform: rotate(180deg);
+  }
+`
+
+const FAQAnswer = styled(motion.div)`
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(54, 166, 186, 0.2);
+  color: var(--text-secondary);
+  line-height: 1.8;
+  
+  p {
+    margin: 0;
+  }
+`
+
 export default function SubscribePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [openFAQ, setOpenFAQ] = useState(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -489,6 +658,320 @@ export default function SubscribePage() {
             Instant Access
           </TrustBadge>
         </TrustBadges>
+
+        {/* Features Section */}
+        <InfoSection>
+          <SectionTitle>Why Go Pro?</SectionTitle>
+          <FeatureGrid>
+            <FeatureCard
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <h3>Real-Time Tracking</h3>
+              <p>Monitor whale transactions as they happen across Ethereum, Polygon, Avalanche, and more. Never miss a significant market move.</p>
+            </FeatureCard>
+
+            <FeatureCard
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <h3>Advanced Analytics</h3>
+              <p>Interactive heatmaps, sentiment analysis, and risk assessments powered by our proprietary whale detection algorithm.</p>
+            </FeatureCard>
+
+            <FeatureCard
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <h3>AI-Powered Insights</h3>
+              <p>Orca 2.0 AI advisor provides deep token analysis, market sentiment, and actionable trading insights using live data.</p>
+            </FeatureCard>
+
+            <FeatureCard
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <h3>Custom Alerts</h3>
+              <p>Set up personalized notifications for specific tokens, whale addresses, or transaction thresholds that matter to you.</p>
+            </FeatureCard>
+
+            <FeatureCard
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              </svg>
+              <h3>Data Export</h3>
+              <p>Download comprehensive transaction data in CSV format for your own analysis, backtesting, or record keeping.</p>
+            </FeatureCard>
+
+            <FeatureCard
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <h3>Priority Support</h3>
+              <p>Get fast, dedicated support from our team. We're here to help you make the most of Sonar Tracker.</p>
+            </FeatureCard>
+          </FeatureGrid>
+
+          {/* Comparison Table */}
+          <SectionTitle>Free vs Pro Comparison</SectionTitle>
+          <ComparisonTable>
+            <Table>
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Free</th>
+                  <th>Pro</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>News & Market Updates</td>
+                  <td><span className="check">✓</span></td>
+                  <td><span className="check">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Basic Statistics</td>
+                  <td><span className="check">✓</span></td>
+                  <td><span className="check">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Real-Time Whale Tracking (24/7)</td>
+                  <td><span className="cross">✗</span></td>
+                  <td><span className="check">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Advanced Token Analytics & Heatmaps</td>
+                  <td><span className="cross">✗</span></td>
+                  <td><span className="check">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Risk Assessment & Sentiment Analysis</td>
+                  <td><span className="cross">✗</span></td>
+                  <td><span className="check">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Complete Transaction History</td>
+                  <td>Limited</td>
+                  <td><span className="check">✓ Unlimited</span></td>
+                </tr>
+                <tr>
+                  <td>AI Advisor (Orca 2.0)</td>
+                  <td>Basic</td>
+                  <td><span className="check">✓ Premium Prompts</span></td>
+                </tr>
+                <tr>
+                  <td>Custom Alerts & Notifications</td>
+                  <td><span className="cross">✗</span></td>
+                  <td><span className="check">✓</span></td>
+                </tr>
+                <tr>
+                  <td>CSV Data Export</td>
+                  <td><span className="cross">✗</span></td>
+                  <td><span className="check">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Support</td>
+                  <td>Community</td>
+                  <td><span className="check">✓ Priority</span></td>
+                </tr>
+              </tbody>
+            </Table>
+          </ComparisonTable>
+
+          {/* FAQ Section */}
+          <SectionTitle>Frequently Asked Questions</SectionTitle>
+          <FAQSection>
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 0 ? null : 0)}>
+              <FAQQuestion className={openFAQ === 0 ? 'open' : ''}>
+                <h3>Can I cancel my subscription at any time?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 0 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>Yes! You can cancel your subscription at any time through your account settings or the Stripe customer portal. There are no cancellation fees, and you'll retain access until the end of your current billing period.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 1 ? null : 1)}>
+              <FAQQuestion className={openFAQ === 1 ? 'open' : ''}>
+                <h3>What payment methods do you accept?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 1 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>We use Stripe for secure payment processing and accept all major credit cards (Visa, Mastercard, American Express), debit cards, and various local payment methods depending on your region.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 2 ? null : 2)}>
+              <FAQQuestion className={openFAQ === 2 ? 'open' : ''}>
+                <h3>How often is the data updated?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 2 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>Our whale intelligence algorithm runs continuously, processing blockchain data every 15 minutes. Pro subscribers get real-time access to the latest whale transactions and market insights as soon as they're detected and verified.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 3 ? null : 3)}>
+              <FAQQuestion className={openFAQ === 3 ? 'open' : ''}>
+                <h3>Which blockchains do you support?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 3 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>Currently, we track whale transactions on Ethereum, Polygon, Avalanche, and Binance Smart Chain. We're constantly expanding our blockchain coverage based on user demand and market significance.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 4 ? null : 4)}>
+              <FAQQuestion className={openFAQ === 4 ? 'open' : ''}>
+                <h3>What defines a "whale" transaction?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 4 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>We track transactions with a minimum value of $50,000 USD. Our algorithm analyzes these large movements, filtering out noise and identifying genuine whale activity that can indicate market trends and sentiment shifts.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 5 ? null : 5)}>
+              <FAQQuestion className={openFAQ === 5 ? 'open' : ''}>
+                <h3>Is my data secure?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 5 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>Absolutely. We use industry-standard encryption, secure authentication via Supabase, and never store your payment information (handled securely by Stripe). All blockchain data we display is public information from the blockchain itself.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 6 ? null : 6)}>
+              <FAQQuestion className={openFAQ === 6 ? 'open' : ''}>
+                <h3>Can I upgrade or downgrade my plan?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 6 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>Yes! You can upgrade to Pro at any time for instant access. If you wish to downgrade, you can cancel your Pro subscription and you'll revert to the Free plan at the end of your billing period.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 7 ? null : 7)}>
+              <FAQQuestion className={openFAQ === 7 ? 'open' : ''}>
+                <h3>Do you offer refunds?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 7 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>If you're not satisfied with Sonar Pro, contact us at eduardo@sonartracker.io within 7 days of your subscription start date, and we'll process a full refund. We want you to be completely satisfied with our service.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+          </FAQSection>
+        </InfoSection>
       </Container>
     </PageContainer>
   )
