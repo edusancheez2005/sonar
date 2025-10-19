@@ -293,17 +293,18 @@ export default function SubscribePage() {
     setError('')
     setLoading(true)
     try {
-      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || ''
+      // Hardcoded price ID to bypass env variable issues in client components
+      const priceId = 'price_1SITcJK8B21zF4WA5o9J1l7T'
       
-      if (!priceId) {
-        throw new Error('Stripe price ID is not configured. Please contact support.')
-      }
+      console.log('Creating checkout session with priceId:', priceId)
       
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId }),
       })
+      
+      console.log('Response status:', res.status)
       
       // Check if response is ok before parsing JSON
       if (!res.ok) {

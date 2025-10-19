@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient';
+
+// Typewriter Effect Component
+const TypeWriter = ({ text, delay = 100 }) => {
+  const [currentText, setCurrentText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      const timeout = setTimeout(() => {
+        setCurrentText(prevText => prevText + text[currentIndex]);
+        setCurrentIndex(prevIndex => prevIndex + 1);
+      }, delay);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [currentIndex, delay, text]);
+
+  return <span>{currentText}</span>;
+};
 
 // Styled components
 const LandingContainer = styled.div`
@@ -25,6 +44,29 @@ const HeroSection = styled.section`
   text-align: center;
   margin-top: 0;
   background-image: radial-gradient(circle at 70% 60%, rgba(54, 166, 186, 0.1), transparent 60%);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(54, 166, 186, 0.03) 50%, transparent 100%);
+    animation: dataFlow 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+  
+  @keyframes dataFlow {
+    0%, 100% {
+      opacity: 0.3;
+      transform: translateY(0);
+    }
+    50% {
+      opacity: 0.6;
+      transform: translateY(-20px);
+    }
+  }
 `;
 
 const NavBar = styled.nav`
@@ -64,6 +106,16 @@ const HeroTitle = styled(motion.h1)`
   -webkit-text-fill-color: transparent;
   background-clip: text;
   line-height: 1.2;
+  animation: glowPulse 3s ease-in-out infinite;
+  
+  @keyframes glowPulse {
+    0%, 100% {
+      filter: drop-shadow(0 0 10px rgba(54, 166, 186, 0.4));
+    }
+    50% {
+      filter: drop-shadow(0 0 20px rgba(93, 213, 237, 0.6));
+    }
+  }
   
   @media (max-width: 768px) {
     font-size: 2.8rem;
@@ -91,7 +143,7 @@ const HeroHighlight = styled(motion.div)`
   flex-wrap: wrap;
 `;
 
-const StatBadge = styled.div`
+const StatBadge = styled(motion.div)`
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -99,11 +151,20 @@ const StatBadge = styled.div`
   background: rgba(54, 166, 186, 0.1);
   border: 1px solid rgba(54, 166, 186, 0.3);
   border-radius: 50px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(54, 166, 186, 0.2);
+    border-color: rgba(54, 166, 186, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(54, 166, 186, 0.2);
+  }
   
   .number {
     font-size: 1.4rem;
     font-weight: 700;
     color: var(--primary);
+    text-shadow: 0 0 10px rgba(54, 166, 186, 0.5);
   }
   
   .label {
@@ -1744,8 +1805,13 @@ const Landing = () => {
             initial="hidden"
             animate="visible"
           >
-            <HeroTitle variants={itemVariants}>
-              Sonar Tracker: Real-Time Crypto Whale Intelligence
+            <HeroTitle 
+              variants={itemVariants}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <TypeWriter text="Sonar Tracker: Real-Time Crypto Whale Intelligence" delay={50} />
             </HeroTitle>
             
             <HeroSubtitle variants={itemVariants}>
@@ -1760,15 +1826,30 @@ const Landing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <StatBadge>
+              <StatBadge
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1.2 }}
+                whileHover={{ scale: 1.05 }}
+              >
                 <div className="number">$2.4B+</div>
                 <div className="label">Tracked Daily</div>
               </StatBadge>
-              <StatBadge>
+              <StatBadge
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1.4 }}
+                whileHover={{ scale: 1.05 }}
+              >
                 <div className="number">10K+</div>
                 <div className="label">Active Traders</div>
               </StatBadge>
-              <StatBadge>
+              <StatBadge
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 1.6 }}
+                whileHover={{ scale: 1.05 }}
+              >
                 <div className="number">24/7</div>
                 <div className="label">Live Monitoring</div>
               </StatBadge>
