@@ -20,7 +20,14 @@ export async function POST(req) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
 
   // Get user session from cookies
-  const cookieStore = await cookies()
+  let cookieStore
+  try {
+    cookieStore = await cookies()
+  } catch (cookieErr) {
+    console.error('Error getting cookies:', cookieErr)
+    return NextResponse.json({ error: 'Session error. Please try logging out and back in.' }, { status: 401 })
+  }
+  
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
