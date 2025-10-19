@@ -78,6 +78,20 @@ export async function POST(req) {
   }
 
   try {
+    // Verify the price exists in Stripe
+    console.log('Verifying Stripe price:', priceId)
+    try {
+      const price = await stripe.prices.retrieve(priceId)
+      console.log('Price verified:', { id: price.id, active: price.active, type: price.type })
+      if (!price.active) {
+        console.error('Price is not active')
+        return NextResponse.json({ error: 'This pricing plan is not currently available' }, { status: 400 })
+      }
+    } catch (priceErr) {
+      console.error('Price verification failed:', priceErr)
+      return NextResponse.json({ error: 'Invalid price ID. Please contact support.' }, { status: 400 })
+    }
+    
     // Check if customer already exists
     let customerId
     const { data: existing } = await supabaseAdmin
@@ -88,6 +102,7 @@ export async function POST(req) {
 
     if (existing?.stripe_customer_id) {
       customerId = existing.stripe_customer_id
+      console.log('Using existing customer:', customerId)
     } else {
       // Create new Stripe customer
       const customer = await stripe.customers.create({
@@ -107,6 +122,14 @@ export async function POST(req) {
         })
     }
 
+    console.log('Creating Stripe checkout session with:', {
+      mode: 'subscription',
+      customer: customerId,
+      priceId,
+      successUrl,
+      cancelUrl
+    })
+    
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
@@ -115,7 +138,7 @@ export async function POST(req) {
       cancel_url: cancelUrl,
       billing_address_collection: 'auto',
       allow_promotion_codes: true,
-      automatic_tax: { enabled: true },
+      automatic_tax: { enabled: false }, // Disable for now to avoid issues
       metadata: { supabase_user_id: userId },
     })
     console.log('Checkout session created successfully:', session.id)
