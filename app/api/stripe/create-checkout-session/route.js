@@ -92,48 +92,17 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Invalid price ID. Please contact support.' }, { status: 400 })
     }
     
-    // Check if customer already exists
-    let customerId
-    const { data: existing, error: fetchError } = await supabaseAdmin
-      .from('user_subscriptions')
-      .select('stripe_customer_id')
-      .eq('user_id', userId)
-      .single()
-
-    if (fetchError) {
-      console.log('No existing subscription record (or table error):', fetchError.message)
-    }
-
-    if (existing?.stripe_customer_id) {
-      customerId = existing.stripe_customer_id
-      console.log('Using existing customer:', customerId)
-    } else {
-      // Create new Stripe customer
-      console.log('Creating new Stripe customer for:', userEmail)
-      const customer = await stripe.customers.create({
-        email: userEmail,
-        metadata: { supabase_user_id: userId },
-      })
-      customerId = customer.id
-      console.log('Stripe customer created:', customerId)
-
-      // Store in database (may fail if table doesn't exist, but continue anyway)
-      const { error: insertError } = await supabaseAdmin
-        .from('user_subscriptions')
-        .insert({
-          user_id: userId,
-          email: userEmail,
-          stripe_customer_id: customerId,
-          subscription_status: 'pending',
-        })
-      
-      if (insertError) {
-        console.error('Failed to store customer in DB (continuing anyway):', insertError)
-        // Don't throw - Stripe customer is created, checkout can still proceed
-      } else {
-        console.log('Customer record stored in database')
-      }
-    }
+    // Create Stripe customer (we'll store the customer ID in metadata for now)
+    console.log('Creating new Stripe customer for:', userEmail)
+    const customer = await stripe.customers.create({
+      email: userEmail,
+      metadata: { 
+        supabase_user_id: userId,
+        user_email: userEmail 
+      },
+    })
+    const customerId = customer.id
+    console.log('Stripe customer created:', customerId)
 
     console.log('Creating Stripe checkout session with:', {
       mode: 'subscription',

@@ -31,17 +31,17 @@ export async function POST(req) {
         const customerId = session.customer
         const subscriptionId = session.subscription
 
-        if (userId && customerId) {
+        if (userId) {
+          // Update profiles table to set plan to 'premium'
           await supabaseAdmin
-            .from('user_subscriptions')
+            .from('profiles')
             .update({
-              stripe_subscription_id: subscriptionId,
-              subscription_status: 'active',
+              plan: 'premium',
               updated_at: new Date().toISOString(),
             })
-            .eq('user_id', userId)
+            .eq('id', userId)
 
-          console.log(`✅ Subscription activated for user ${userId}`)
+          console.log(`✅ Subscription activated for user ${userId} - plan set to premium`)
         }
         break
       }
@@ -50,34 +50,45 @@ export async function POST(req) {
         const subscription = event.data.object
         const customerId = subscription.customer
         const status = subscription.status // active, past_due, canceled, etc.
+        
+        // Get user ID from customer metadata
+        const customer = await stripe.customers.retrieve(customerId)
+        const userId = customer.metadata?.supabase_user_id
 
-        await supabaseAdmin
-          .from('user_subscriptions')
-          .update({
-            stripe_subscription_id: subscription.id,
-            subscription_status: status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_customer_id', customerId)
+        if (userId) {
+          const plan = (status === 'active') ? 'premium' : 'free'
+          
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              plan: plan,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', userId)
 
-        console.log(`✅ Subscription ${status} for customer ${customerId}`)
+          console.log(`✅ Subscription ${status} for user ${userId} - plan set to ${plan}`)
+        }
         break
       }
       case 'customer.subscription.deleted': {
         const subscription = event.data.object
         const customerId = subscription.customer
+        
+        // Get user ID from customer metadata
+        const customer = await stripe.customers.retrieve(customerId)
+        const userId = customer.metadata?.supabase_user_id
 
-        await supabaseAdmin
-          .from('user_subscriptions')
-          .update({
-            subscription_status: 'canceled',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_customer_id', customerId)
+        if (userId) {
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              plan: 'free',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', userId)
 
-        console.log(`❌ Subscription canceled for customer ${customerId}`)
+          console.log(`❌ Subscription canceled for user ${userId} - plan set to free`)
+        }
         break
       }
       default:

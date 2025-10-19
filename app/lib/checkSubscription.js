@@ -12,20 +12,20 @@ export async function checkUserSubscription(userId) {
 
   try {
     const { data, error } = await supabaseAdmin
-      .from('user_subscriptions')
-      .select('*')
-      .eq('user_id', userId)
+      .from('profiles')
+      .select('plan')
+      .eq('id', userId)
       .single()
 
     if (error || !data) {
       return { isActive: false, status: null, subscription: null }
     }
 
-    const isActive = data.subscription_status === 'active' || data.subscription_status === 'trialing'
+    const isActive = data.plan === 'premium'
 
     return {
       isActive,
-      status: data.subscription_status,
+      status: data.plan,
       subscription: data,
     }
   } catch (err) {
