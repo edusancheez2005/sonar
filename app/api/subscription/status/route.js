@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { checkUserSubscription } from '@/app/lib/checkSubscription'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(req) {
   try {
     // Extract session from Authorization header
