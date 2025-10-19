@@ -478,11 +478,14 @@ export default function SubscribePage() {
       // Check if response is ok before parsing JSON
       if (!res.ok) {
         const text = await res.text()
+        console.error('Server error response:', text)
         let errorMessage = 'Failed to create checkout session'
         try {
           const data = JSON.parse(text)
+          console.error('Parsed error data:', data)
           errorMessage = data.error || errorMessage
-        } catch {
+        } catch (parseErr) {
+          console.error('Could not parse error response:', parseErr)
           errorMessage = text || errorMessage
         }
         throw new Error(errorMessage)
@@ -498,6 +501,11 @@ export default function SubscribePage() {
       setError('No checkout URL returned. Please try again or contact support.')
     } catch (e) {
       console.error('Subscribe error:', e)
+      console.error('Error details:', {
+        message: e.message,
+        stack: e.stack
+      })
+      // Show the full error message to the user
       setError(e.message || 'An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
