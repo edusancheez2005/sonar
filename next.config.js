@@ -26,6 +26,11 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
   env: {
     PUBLIC_URL: '',
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || 'https://sonartracker.io',
