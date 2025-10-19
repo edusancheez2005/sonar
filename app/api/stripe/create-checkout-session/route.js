@@ -5,14 +5,22 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 export async function POST(req) {
+  console.log('=== CREATE CHECKOUT SESSION DEBUG ===')
+  console.log('Environment check:', {
+    hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  })
+  
   if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ error: 'Stripe is not configured' }, { status: 503 })
+    console.error('STRIPE_SECRET_KEY is not set')
+    return NextResponse.json({ error: 'Stripe is not configured. Please contact support.' }, { status: 503 })
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
 
   // Get user session from cookies
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -25,6 +33,8 @@ export async function POST(req) {
     }
   )
   const { data: { session } } = await supabase.auth.getSession()
+  
+  console.log('Session check:', { hasSession: !!session, hasUser: !!session?.user })
   
   if (!session?.user) {
     console.log('No session found in create-checkout-session')
@@ -47,7 +57,16 @@ export async function POST(req) {
   const successUrl = body?.successUrl || `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/dashboard?checkout=success`
   const cancelUrl = body?.cancelUrl || `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/subscribe?checkout=cancelled`
 
+  console.log('Request details:', {
+    priceId,
+    userId,
+    userEmail,
+    successUrl,
+    cancelUrl
+  })
+
   if (!priceId) {
+    console.error('No priceId provided')
     return NextResponse.json({ error: 'Missing priceId' }, { status: 400 })
   }
 
@@ -92,10 +111,20 @@ export async function POST(req) {
       automatic_tax: { enabled: true },
       metadata: { supabase_user_id: userId },
     })
+    console.log('Checkout session created successfully:', session.id)
     return NextResponse.json({ id: session.id, url: session.url })
   } catch (err) {
-    console.error('Stripe create session error', err)
-    return NextResponse.json({ error: err.message || 'Failed to create checkout session' }, { status: 500 })
+    console.error('Stripe create session error:', err)
+    console.error('Error details:', {
+      message: err.message,
+      type: err.type,
+      code: err.code,
+      statusCode: err.statusCode
+    })
+    return NextResponse.json({ 
+      error: err.message || 'Failed to create checkout session',
+      details: process.env.NODE_ENV === 'development' ? err.type : undefined
+    }, { status: 500 })
   }
 }
 
