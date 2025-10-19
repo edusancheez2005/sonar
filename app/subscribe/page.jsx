@@ -564,8 +564,11 @@ export default function SubscribePage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
           >
-            <strong>❌ Error</strong>
-            <p>{error}</p>
+            <strong>❌ Subscription Error</strong>
+            <p style={{ marginBottom: '0.5rem' }}>{error}</p>
+            <p style={{ fontSize: '0.9rem', opacity: 0.8, margin: 0 }}>
+              If this persists, please contact support at eduardo@sonartracker.io
+            </p>
           </Alert>
         )}
 
