@@ -628,32 +628,13 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     
     // (Removed TLDR computation per request)
     
-    // 1. Whale Sentiment Summary
-    if (buyPct > 65) {
-      tldr.push(`<strong>Heavy accumulation</strong> – ${buyPct.toFixed(1)}% buy pressure with ${formatUSD(netFlow)} net inflow from ${uniqueWhales} whales.`)
-    } else if (sellPct > 65) {
-      tldr.push(`<strong>Heavy distribution</strong> – ${sellPct.toFixed(1)}% sell pressure with ${formatUSD(Math.abs(netFlow))} net outflow from ${uniqueWhales} whales.`)
-    } else {
-      tldr.push(`<strong>Balanced whale activity</strong> – ${buyPct.toFixed(1)}% buys vs ${sellPct.toFixed(1)}% sells, ${uniqueWhales} unique whales trading.`)
-    }
+    // (Removed TLDR points)
     
     // 2. Price Performance
-    if (priceData) {
-      if (priceChangeAbs > 10) {
-        tldr.push(`<strong>Significant price ${priceDirection === 'up' ? 'surge' : 'decline'}</strong> – ${priceDirection === 'up' ? '+' : ''}${priceChange24h.toFixed(2)}% in 24h, ${priceChange7d > 0 ? 'extending' : 'reversing'} 7-day trend (${priceChange7d > 0 ? '+' : ''}${priceChange7d.toFixed(2)}%).`)
-      } else {
-        tldr.push(`<strong>Moderate price movement</strong> – ${priceChange24h > 0 ? '+' : ''}${priceChange24h.toFixed(2)}% in 24h, consolidating ${priceChange7d > 0 ? 'above' : 'below'} 7-day levels.`)
-      }
-    }
+    // (Removed TLDR points)
     
     // 3. Volume & Liquidity
-    if (totalVolume > 50000000) {
-      tldr.push(`<strong>Exceptional whale activity</strong> – ${formatUSD(totalVolume)} in whale volume, avg transaction ${formatUSD(avgTxSize)}.`)
-    } else if (totalVolume > 10000000) {
-      tldr.push(`<strong>High whale volume</strong> – ${formatUSD(totalVolume)} traded by institutional players.`)
-    } else {
-      tldr.push(`<strong>Moderate whale interest</strong> – ${formatUSD(totalVolume)} in whale transactions over ${sinceHours}h.`)
-    }
+    // (Removed TLDR points)
     
     // Deep Dive Blocks
     const blocks = []
