@@ -180,53 +180,7 @@ const DeepDiveSection = styled(motion.div)`
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 `
 
-const TLDRBox = styled.div`
-  background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(54, 166, 186, 0.1) 100%);
-  border-left: 4px solid var(--primary);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-`
-
-const TLDRTitle = styled.h3`
-  color: var(--primary);
-  font-size: 1.3rem;
-  font-weight: 800;
-  margin: 0 0 1rem 0;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-`
-
-const TLDRList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-`
-
-const TLDRItem = styled.li`
-  color: var(--text-primary);
-  font-size: 1rem;
-  line-height: 1.6;
-  padding-left: 1.5rem;
-  position: relative;
-
-  &::before {
-    content: '•';
-    position: absolute;
-    left: 0;
-    color: var(--primary);
-    font-weight: bold;
-    font-size: 1.2rem;
-  }
-
-  strong {
-    color: var(--primary);
-    font-weight: 700;
-  }
-`
+// (Removed TLDR styled components per request)
 
 const DeepDiveContent = styled.div`
   display: flex;
@@ -672,8 +626,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     const priceDirection = priceChange24h > 0 ? 'up' : 'down'
     const priceChangeAbs = Math.abs(priceChange24h)
     
-    // TLDR bullets
-    const tldr = []
+    // (Removed TLDR computation per request)
     
     // 1. Whale Sentiment Summary
     if (buyPct > 65) {
@@ -788,7 +741,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       conclusion = `${symbol} is in a <strong>consolidation phase</strong> with balanced whale activity (${buyPct.toFixed(1)}% / ${sellPct.toFixed(1)}%) and modest price movement (${priceChange24h > 0 ? '+' : ''}${priceChange24h.toFixed(2)}%). Watch for directional breakout. ${uniqueWhales} whales are actively trading – institutional interest remains. Support: ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'N/A'}. Resistance: ${priceData?.high_24h ? formatUSD(priceData.high_24h) : 'N/A'}.`
     }
     
-    return { tldr, blocks, conclusion }
+    return { blocks, conclusion }
   }
 
   // Fetch live price data
@@ -1299,22 +1252,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <SectionTitle>
-              Sonar Deep Dive
-              <span style={{ fontSize: '0.9rem', fontWeight: '600', marginLeft: '1rem', color: 'var(--text-secondary)' }}>
-                Why is {symbol}'s {priceData?.price_change_percentage_24h >= 0 ? 'price up' : 'price down'} today?
-              </span>
-            </SectionTitle>
-
-            {/* TLDR Section */}
-            <TLDRBox>
-              <TLDRTitle>TL;DR</TLDRTitle>
-              <TLDRList>
-                {deepDive.tldr.map((item, idx) => (
-                  <TLDRItem key={idx} dangerouslySetInnerHTML={{ __html: item }} />
-                ))}
-              </TLDRList>
-            </TLDRBox>
+            <SectionTitle>Sonar Deep Dive</SectionTitle>
 
             {/* Deep Dive Blocks */}
             <DeepDiveContent>
