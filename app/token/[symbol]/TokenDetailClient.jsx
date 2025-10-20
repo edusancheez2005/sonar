@@ -170,6 +170,149 @@ const TimeButton = styled(Link)`
   }
 `
 
+const DeepDiveSection = styled(motion.div)`
+  background: rgba(13, 33, 52, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(54, 166, 186, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+`
+
+const TLDRBox = styled.div`
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(54, 166, 186, 0.1) 100%);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+`
+
+const TLDRTitle = styled.h3`
+  color: var(--primary);
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+`
+
+const TLDRList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`
+
+const TLDRItem = styled.li`
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.6;
+  padding-left: 1.5rem;
+  position: relative;
+
+  &::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
+
+  strong {
+    color: var(--primary);
+    font-weight: 700;
+  }
+`
+
+const DeepDiveContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+`
+
+const AnalysisBlock = styled.div`
+  background: rgba(30, 57, 81, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(54, 166, 186, 0.15);
+`
+
+const BlockTitle = styled.h4`
+  color: var(--primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`
+
+const BlockSubtitle = styled.div`
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-bottom: 1rem;
+`
+
+const BlockContent = styled.div`
+  color: var(--text-primary);
+  line-height: 1.8;
+  
+  p {
+    margin: 0 0 1rem 0;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  strong {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  em {
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+`
+
+const ConclusionBox = styled.div`
+  background: linear-gradient(135deg, rgba(155, 89, 182, 0.1) 0%, rgba(54, 166, 186, 0.1) 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(155, 89, 182, 0.3);
+`
+
+const ConclusionTitle = styled.h4`
+  color: #9b59b6;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+`
+
+const ConclusionText = styled.div`
+  color: var(--text-primary);
+  line-height: 1.8;
+  
+  strong {
+    color: var(--primary);
+  }
+`
+
+const DisclaimerText = styled.div`
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+  text-align: center;
+  margin-top: 1.5rem;
+  opacity: 0.7;
+`
+
 const SentimentSection = styled(motion.div)`
   background: rgba(13, 33, 52, 0.6);
   backdrop-filter: blur(10px);
@@ -509,6 +652,146 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   const [orcaAnalysis, setOrcaAnalysis] = useState(null)
   const [showOrcaModal, setShowOrcaModal] = useState(false)
   const [loadingOrca, setLoadingOrca] = useState(false)
+
+  // Generate CMC-style Deep Dive analysis using heuristics
+  const generateDeepDive = () => {
+    if (whaleMetrics.totalVolume === 0) return null
+
+    const buyPct = sentiment.details.buyPct
+    const sellPct = 100 - buyPct
+    const netFlow = whaleMetrics.netFlow
+    const uniqueWhales = whaleMetrics.uniqueWhales
+    const totalVolume = whaleMetrics.totalVolume
+    const avgTxSize = whaleMetrics.totalVolume / (whaleMetrics.buys + whaleMetrics.sells)
+    
+    // Price changes
+    const priceChange24h = priceData?.price_change_percentage_24h || 0
+    const priceChange7d = priceData?.price_change_percentage_7d || 0
+    
+    // Determine overall performance
+    const priceDirection = priceChange24h > 0 ? 'up' : 'down'
+    const priceChangeAbs = Math.abs(priceChange24h)
+    
+    // TLDR bullets
+    const tldr = []
+    
+    // 1. Whale Sentiment Summary
+    if (buyPct > 65) {
+      tldr.push(`<strong>Heavy accumulation</strong> – ${buyPct.toFixed(1)}% buy pressure with ${formatUSD(netFlow)} net inflow from ${uniqueWhales} whales.`)
+    } else if (sellPct > 65) {
+      tldr.push(`<strong>Heavy distribution</strong> – ${sellPct.toFixed(1)}% sell pressure with ${formatUSD(Math.abs(netFlow))} net outflow from ${uniqueWhales} whales.`)
+    } else {
+      tldr.push(`<strong>Balanced whale activity</strong> – ${buyPct.toFixed(1)}% buys vs ${sellPct.toFixed(1)}% sells, ${uniqueWhales} unique whales trading.`)
+    }
+    
+    // 2. Price Performance
+    if (priceData) {
+      if (priceChangeAbs > 10) {
+        tldr.push(`<strong>Significant price ${priceDirection === 'up' ? 'surge' : 'decline'}</strong> – ${priceDirection === 'up' ? '+' : ''}${priceChange24h.toFixed(2)}% in 24h, ${priceChange7d > 0 ? 'extending' : 'reversing'} 7-day trend (${priceChange7d > 0 ? '+' : ''}${priceChange7d.toFixed(2)}%).`)
+      } else {
+        tldr.push(`<strong>Moderate price movement</strong> – ${priceChange24h > 0 ? '+' : ''}${priceChange24h.toFixed(2)}% in 24h, consolidating ${priceChange7d > 0 ? 'above' : 'below'} 7-day levels.`)
+      }
+    }
+    
+    // 3. Volume & Liquidity
+    if (totalVolume > 50000000) {
+      tldr.push(`<strong>Exceptional whale activity</strong> – ${formatUSD(totalVolume)} in whale volume, avg transaction ${formatUSD(avgTxSize)}.`)
+    } else if (totalVolume > 10000000) {
+      tldr.push(`<strong>High whale volume</strong> – ${formatUSD(totalVolume)} traded by institutional players.`)
+    } else {
+      tldr.push(`<strong>Moderate whale interest</strong> – ${formatUSD(totalVolume)} in whale transactions over ${sinceHours}h.`)
+    }
+    
+    // Deep Dive Blocks
+    const blocks = []
+    
+    // Block 1: Whale Accumulation/Distribution
+    blocks.push({
+      title: `${buyPct > 60 ? 'Whale Accumulation' : sellPct > 60 ? 'Whale Distribution' : 'Whale Trading Balance'}`,
+      impact: buyPct > 65 ? 'Bullish Impact' : sellPct > 65 ? 'Bearish Impact' : 'Neutral Impact',
+      content: `
+        <p><strong>Overview:</strong> Whale wallets (transactions $50K+) have executed <strong>${whaleMetrics.buys} buy orders</strong> versus <strong>${whaleMetrics.sells} sell orders</strong> in the last ${sinceHours} hours, resulting in a <strong>${buyPct.toFixed(1)}% / ${sellPct.toFixed(1)}%</strong> buy/sell ratio.</p>
+        
+        <p><strong>What this means:</strong> ${
+          buyPct > 65 
+            ? `Institutional players are <strong>heavily accumulating</strong> ${symbol}, signaling strong conviction. The ${formatUSD(netFlow)} net inflow suggests whales are positioning for upside. This level of buying pressure (${buyPct.toFixed(1)}%) typically precedes price appreciation if sustained.`
+            : sellPct > 65
+            ? `Whales are <strong>aggressively distributing</strong> ${symbol}, with ${formatUSD(Math.abs(netFlow))} flowing out. This selling pressure (${sellPct.toFixed(1)}%) indicates institutional players are de-risking or taking profits. Continued outflows could pressure prices lower.`
+            : `Trading activity is <strong>balanced</strong> between buyers and sellers. The relatively neutral flow (${formatUSD(Math.abs(netFlow))}) suggests indecision among institutional players. Watch for a breakout in either direction as whales pick a side.`
+        }</p>
+        
+        <p><em>Key metric: ${uniqueWhales} unique whale addresses actively trading ${symbol}${uniqueWhales > 20 ? ' – exceptionally high institutional interest.' : uniqueWhales > 10 ? ' – strong institutional participation.' : ' – moderate whale activity.'}</em></p>
+      `
+    })
+    
+    // Block 2: Technical Analysis
+    if (priceData) {
+      const nearATH = priceData.ath_change_percentage > -10
+      const nearATL = priceData.atl_change_percentage < 10
+      const pricePosition = priceData.high_24h && priceData.low_24h 
+        ? ((priceData.current_price - priceData.low_24h) / (priceData.high_24h - priceData.low_24h) * 100).toFixed(1)
+        : null
+      
+      blocks.push({
+        title: 'Technical Positioning',
+        impact: priceChange24h > 5 ? 'Bullish Momentum' : priceChange24h < -5 ? 'Bearish Momentum' : 'Consolidation',
+        content: `
+          <p><strong>Overview:</strong> ${symbol} is trading at <strong>${formatPrice(priceData.current_price)}</strong>, ${priceChange24h > 0 ? 'up' : 'down'} <strong>${Math.abs(priceChange24h).toFixed(2)}%</strong> in the last 24 hours${pricePosition ? `, currently at ${pricePosition}% of its 24h range` : ''}.</p>
+          
+          <p><strong>What this means:</strong> ${
+            nearATH 
+              ? `Price is near all-time highs (${priceData.ath_change_percentage.toFixed(2)}% from ATH of ${formatUSD(priceData.ath)}). This suggests strong momentum but also potential resistance. Profit-taking could emerge at these levels.`
+              : nearATL
+              ? `Price is close to all-time lows (${priceData.atl_change_percentage.toFixed(2)}% from ATL of ${formatUSD(priceData.atl)}). This could represent a value opportunity if fundamentals remain strong, but further downside is possible.`
+              : priceChange24h > 5
+              ? `Strong bullish momentum is building. The ${priceChange24h.toFixed(2)}% 24h gain aligns with ${netFlow > 0 ? 'positive' : 'negative'} whale flows, ${netFlow > 0 ? 'reinforcing' : 'contradicting'} the price action.`
+              : priceChange24h < -5
+              ? `Bearish pressure is mounting. The ${priceChange24h.toFixed(2)}% 24h decline ${netFlow < 0 ? 'matches' : 'contradicts'} whale outflows, ${netFlow < 0 ? 'confirming' : 'suggesting potential reversal if'} smart money continues selling.`
+              : `Price is consolidating in a tight range. The lack of strong directional movement suggests market indecision. Watch for a breakout on volume.`
+          }</p>
+          
+          <p><em>24h Range: ${formatUSD(priceData.low_24h)} - ${formatUSD(priceData.high_24h)}</em></p>
+        `
+      })
+    }
+    
+    // Block 3: Market Context
+    blocks.push({
+      title: 'Institutional Activity',
+      impact: avgTxSize > 500000 ? 'High Conviction' : avgTxSize > 200000 ? 'Moderate Activity' : 'Lower Conviction',
+      content: `
+        <p><strong>Overview:</strong> The average whale transaction size is <strong>${formatUSD(avgTxSize)}</strong>, with total institutional volume of <strong>${formatUSD(totalVolume)}</strong> over the last ${sinceHours} hours.</p>
+        
+        <p><strong>What this means:</strong> ${
+          avgTxSize > 500000
+            ? `Exceptionally large transaction sizes indicate <strong>high conviction</strong> from institutional players. These are not retail trades – whales are making significant capital commitments${netFlow > 0 ? ', betting on upside' : ', exiting positions'}. This level of activity often precedes major price moves.`
+            : avgTxSize > 200000
+            ? `Average transaction sizes suggest <strong>moderate institutional interest</strong>. Whales are active but not making outsized bets. This represents normal institutional trading flow${netFlow > 0 ? ' with a bullish bias' : ' with selling pressure'}.`
+            : `Smaller average transaction sizes may indicate <strong>cautious positioning</strong> or lower conviction. Whales are participating but sizing trades conservatively, suggesting uncertainty about ${symbol}'s near-term direction.`
+        }</p>
+        
+        <p><em>Total ${whaleMetrics.buys + whaleMetrics.sells} whale transactions executed by ${uniqueWhales} unique addresses.</em></p>
+      `
+    })
+    
+    // Conclusion
+    let conclusion = ''
+    if (buyPct > 65 && priceChange24h > 3) {
+      conclusion = `${symbol}'s outlook appears <strong>bullish</strong> with strong alignment between whale accumulation (${buyPct.toFixed(1)}% buys) and positive price action (+${priceChange24h.toFixed(2)}%). Key support: watch ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'recent lows'}. Key resistance: ${priceData?.high_24h ? formatUSD(priceData.high_24h) : 'recent highs'}. Continued whale buying could push prices higher.`
+    } else if (sellPct > 65 && priceChange24h < -3) {
+      conclusion = `${symbol} faces <strong>bearish pressure</strong> from both whale distribution (${sellPct.toFixed(1)}% sells) and negative price momentum (${priceChange24h.toFixed(2)}%). ${formatUSD(Math.abs(netFlow))} in net outflows suggests institutional capitulation. Watch for support at ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'recent lows'}. A break below could trigger further selling.`
+    } else if (buyPct > 60 && priceChange24h < -3) {
+      conclusion = `Interesting divergence: whales are <strong>accumulating on weakness</strong> (${buyPct.toFixed(1)}% buys) despite ${priceChange24h.toFixed(2)}% price decline. This suggests smart money sees value at current levels. If buying continues, expect a reversal. Monitor for price stabilization.`
+    } else if (sellPct > 60 && priceChange24h > 3) {
+      conclusion = `Concerning divergence: price is rising (+${priceChange24h.toFixed(2)}%) while whales distribute (${sellPct.toFixed(1)}% sells). This suggests retail buying into institutional selling – a classic distribution pattern. Caution advised as whale exits could pressure prices lower once retail demand fades.`
+    } else {
+      conclusion = `${symbol} is in a <strong>consolidation phase</strong> with balanced whale activity (${buyPct.toFixed(1)}% / ${sellPct.toFixed(1)}%) and modest price movement (${priceChange24h > 0 ? '+' : ''}${priceChange24h.toFixed(2)}%). Watch for directional breakout. ${uniqueWhales} whales are actively trading – institutional interest remains. Support: ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'N/A'}. Resistance: ${priceData?.high_24h ? formatUSD(priceData.high_24h) : 'N/A'}.`
+    }
+    
+    return { tldr, blocks, conclusion }
+  }
+
+  const deepDive = generateDeepDive()
 
   // Fetch live price data
   useEffect(() => {
@@ -1007,6 +1290,65 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             <TimeButton href={`/token/${encodeURIComponent(symbol)}?sinceHours=168`} $active={sinceHours === 168}>7d</TimeButton>
           </TimeFilters>
         </Header>
+
+        {/* CMC-Style Deep Dive Analysis */}
+        {deepDive && (
+          <DeepDiveSection
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <SectionTitle>
+              Sonar Deep Dive
+              <span style={{ fontSize: '0.9rem', fontWeight: '600', marginLeft: '1rem', color: 'var(--text-secondary)' }}>
+                Why is {symbol}'s {priceData?.price_change_percentage_24h >= 0 ? 'price up' : 'price down'} today?
+              </span>
+            </SectionTitle>
+
+            {/* TLDR Section */}
+            <TLDRBox>
+              <TLDRTitle>TL;DR</TLDRTitle>
+              <TLDRList>
+                {deepDive.tldr.map((item, idx) => (
+                  <TLDRItem key={idx} dangerouslySetInnerHTML={{ __html: item }} />
+                ))}
+              </TLDRList>
+            </TLDRBox>
+
+            {/* Deep Dive Blocks */}
+            <DeepDiveContent>
+              {deepDive.blocks.map((block, idx) => (
+                <AnalysisBlock key={idx}>
+                  <BlockTitle>
+                    {idx + 1}. {block.title}
+                    <span style={{ 
+                      marginLeft: 'auto', 
+                      fontSize: '0.85rem', 
+                      fontWeight: '600',
+                      color: block.impact.includes('Bullish') ? '#2ecc71' : block.impact.includes('Bearish') ? '#e74c3c' : '#f39c12',
+                      padding: '0.25rem 0.75rem',
+                      background: `${block.impact.includes('Bullish') ? '#2ecc71' : block.impact.includes('Bearish') ? '#e74c3c' : '#f39c12'}22`,
+                      borderRadius: '999px'
+                    }}>
+                      {block.impact}
+                    </span>
+                  </BlockTitle>
+                  <BlockContent dangerouslySetInnerHTML={{ __html: block.content }} />
+                </AnalysisBlock>
+              ))}
+            </DeepDiveContent>
+
+            {/* Conclusion */}
+            <ConclusionBox>
+              <ConclusionTitle>Conclusion</ConclusionTitle>
+              <ConclusionText dangerouslySetInnerHTML={{ __html: deepDive.conclusion }} />
+            </ConclusionBox>
+
+            <DisclaimerText>
+              Sonar Deep Dive analysis is generated using proprietary whale transaction data and technical indicators. Not financial advice.
+            </DisclaimerText>
+          </DeepDiveSection>
+        )}
 
         {whaleMetrics.totalVolume > 0 && (
           <SentimentSection
