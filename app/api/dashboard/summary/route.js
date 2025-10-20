@@ -3,6 +3,9 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
 
+// Stablecoins to exclude from dashboard analytics
+const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+
 export async function GET() {
   try {
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
@@ -29,7 +32,10 @@ export async function GET() {
       return NextResponse.json({ error: recentError.message }, { status: 500 })
     }
 
-    // Data is already scoped to the last 24 hours, now take top 10 for the recent table
+    // Filter out stablecoins from analytics (but keep in raw transaction list)
+    const analyticsData = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()))
+    
+    // Keep all data for recent transactions table (including stablecoins)
     const recent24h = recentData || []
     const recent = recent24h.slice(0, 10).map((t) => ({
       transaction_hash: t.transaction_hash,
@@ -42,6 +48,8 @@ export async function GET() {
       to_address: t.to_address || null,
       whale_score: Number(t.whale_score || 0),
     }))
+    
+    console.log(`Dashboard API: ${recentData?.length || 0} total transactions, ${analyticsData.length} after filtering stablecoins`)
 
     console.log(`Dashboard API: Found ${recentData?.length || 0} total transactions, ${recent24h.length} in last 24h, showing ${recent.length}`)
 
@@ -74,10 +82,10 @@ export async function GET() {
       totalSellCount24h = sells?.count ?? null
     } catch {}
 
-    // Use the 24-hour filtered data for aggregation
-    const aggData = recent24h || []
+    // Use analytics data (stablecoins filtered out) for aggregation
+    const aggData = analyticsData || []
 
-    // Process the data we have
+    // Process the data we have (excluding stablecoins)
 
     const byCoin = new Map()
     const byCoinBuyCounts = new Map()
