@@ -67,6 +67,7 @@ export async function POST(req) {
     const endTime = new Date(startTime.getTime() + hours * 60 * 60 * 1000)
     
     console.log(`🔬 Backtest: ${startTime.toISOString()} → ${endTime.toISOString()}`)
+    console.log(`⚙️ Config: £${allocation_per_signal_gbp} per signal, ${taker_fee_bps}bps fee, ${slippage_bps}bps slippage`)
 
     // Get GBPUSD rate (simplified: use latest)
     let gbpusd = 1.27 // Default fallback
@@ -105,16 +106,45 @@ export async function POST(req) {
         .map(([sym]) => sym)
       
       console.log(`📊 Auto-detected ${targetCoins.length} coins:`, targetCoins)
+      
+      if (targetCoins.length === 0) {
+        return NextResponse.json({
+          error: 'No active coins found in time window',
+          suggestion: 'Try a different time period or check if whale transactions exist',
+          config: { startTime: startTime.toISOString(), endTime: endTime.toISOString() }
+        }, { status: 400 })
+      }
     }
 
     // Filter out stablecoins
     targetCoins = targetCoins.filter(c => !STABLECOINS.includes(c.toUpperCase()))
 
     // Calculate sentiment signals for each coin at each hour
+    console.log(`🧠 Generating signals...`)
     const signalsByHour = await generateHourlySignals(targetCoins, startTime, endTime)
+    
+    // Count total signals
+    let totalSignals = 0
+    Object.values(signalsByHour).forEach(hours => {
+      totalSignals += hours.filter(h => h.signal).length
+    })
+    console.log(`✅ Generated ${totalSignals} tradeable signals`)
+    
+    if (totalSignals === 0) {
+      return NextResponse.json({
+        error: 'No valid signals generated',
+        suggestion: 'Try lowering thresholds or extending time window',
+        diagnostics: {
+          coins: targetCoins,
+          signalsByHour
+        }
+      }, { status: 400 })
+    }
 
     // Fetch hourly price data for each coin
+    console.log(`💰 Fetching price data...`)
     const priceData = await fetchHourlyPrices(targetCoins, startTime, endTime, gbpusd)
+    console.log(`✅ Fetched prices for ${Object.keys(priceData).length} coins`)
 
     // Run backtest
     const results = runBacktest({
@@ -190,13 +220,22 @@ async function generateHourlySignals(coins, startTime, endTime) {
       
       const buyPct = totalVolume > 0 ? (buyVolume / totalVolume) * 100 : 50
       
-      // Signal logic: >60% buys = BULLISH, >60% sells = BEARISH, else NEUTRAL (skip)
+      // Signal logic: RELAXED thresholds for testing
+      // >55% buys = BULLISH, <45% sells = BEARISH
       let signal = null
-      if (buyPct > 60 && netFlow > 50000) {
+      let reason = 'NEUTRAL'
+      
+      if (buyPct > 55 && netFlow > 10000) {
         signal = 'BULLISH'
-      } else if (buyPct < 40 && netFlow < -50000) {
+        reason = `${buyPct.toFixed(1)}% buy pressure, $${(netFlow/1000).toFixed(1)}K inflow`
+      } else if (buyPct < 45 && netFlow < -10000) {
         signal = 'BEARISH'
+        reason = `${(100-buyPct).toFixed(1)}% sell pressure, $${(Math.abs(netFlow)/1000).toFixed(1)}K outflow`
+      } else if (txs.length > 0) {
+        reason = `Insufficient signal: ${buyPct.toFixed(1)}% buys, $${(netFlow/1000).toFixed(1)}K net`
       }
+      
+      console.log(`${coin} hour ${h}: ${signal || 'SKIP'} - ${reason}`)
       
       signals[coin].push({
         hour: h,
@@ -204,7 +243,8 @@ async function generateHourlySignals(coins, startTime, endTime) {
         signal,
         buyPct: buyPct.toFixed(1),
         netFlow: netFlow.toFixed(2),
-        txCount: txs.length
+        txCount: txs.length,
+        reason
       })
     }
   }
@@ -258,7 +298,9 @@ async function fetchHourlyPrices(coins, startTime, endTime, gbpusd) {
         })
         
         prices[coin] = hourlyPrices
+        console.log(`  ${coin}: ${hourlyPrices.length} hourly prices`)
       } else {
+        console.warn(`  ${coin}: Price fetch failed (${res.status})`)
         prices[coin] = []
       }
       
