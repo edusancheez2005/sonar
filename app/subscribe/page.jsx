@@ -467,9 +467,18 @@ export default function SubscribePage() {
       
       console.log('Creating checkout session with priceId:', priceId)
       
+      // Get session token
+      const sb = supabaseBrowser()
+      const { data: { session } } = await sb.auth.getSession()
+      
+      const headers = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+      
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ priceId }),
       })
       

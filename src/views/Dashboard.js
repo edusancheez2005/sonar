@@ -467,6 +467,8 @@ const formatCompact = (n) => {
 }
 
 const Dashboard = ({ isPremium = false }) => {
+  console.log('🔍 Dashboard isPremium:', isPremium)
+  
   const [transactions, setTransactions] = useState([]);
   const [topBuys, setTopBuys] = useState([]);
   const [topSells, setTopSells] = useState([]);

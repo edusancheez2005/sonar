@@ -19,39 +19,53 @@ export async function POST(req) {
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
 
-  // Get user session from cookies
-  let cookieStore
-  try {
-    cookieStore = await cookies()
-  } catch (cookieErr) {
-    console.error('Error getting cookies:', cookieErr)
-    return NextResponse.json({ error: 'Session error. Please try logging out and back in.' }, { status: 401 })
+  // Get user session from Authorization header
+  const authHeader = req.headers.get('authorization')
+  let userId = null
+  let userEmail = null
+
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7)
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
+    if (!error && user) {
+      userId = user.id
+      userEmail = user.email
+    }
   }
   
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value
-        },
-      },
+  // Fallback: try cookies
+  if (!userId) {
+    try {
+      const cookieStore = await cookies()
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fwbwfvqzomipoftgodof.supabase.co',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YndmdnF6b21pcG9mdGdvZG9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5Mjc3MzMsImV4cCI6MjA2MzUwMzczM30.mJNKKhsCj-O4kKLzJrBRY85uIGqq47LPOjkxDPyq-ag',
+        {
+          cookies: {
+            get(name) {
+              return cookieStore.get(name)?.value
+            },
+          },
+        }
+      )
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        userId = session.user.id
+        userEmail = session.user.email
+      }
+    } catch (cookieErr) {
+      console.error('Error getting session from cookies:', cookieErr)
     }
-  )
-  const { data: { session } } = await supabase.auth.getSession()
+  }
   
-  console.log('Session check:', { hasSession: !!session, hasUser: !!session?.user })
+  console.log('Session check:', { hasUserId: !!userId, hasEmail: !!userEmail })
   
-  if (!session?.user) {
+  if (!userId || !userEmail) {
     console.log('No session found in create-checkout-session')
     return NextResponse.json({ error: 'You must be logged in to subscribe' }, { status: 401 })
   }
   
-  console.log('User authenticated:', session.user.email)
-
-  const userId = session.user.id
-  const userEmail = session.user.email
+  console.log('User authenticated:', userEmail)
 
   let body
   try {
