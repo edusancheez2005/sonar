@@ -17,8 +17,8 @@ const CONFIG = {
   INITIAL_CAPITAL_GBP: 2400,
   MAX_POSITION_SIZE_GBP: 200,
   MAX_POSITIONS: 12,
-  CHECK_INTERVAL_MS: 60 * 60 * 1000, // 1 hour
-  DURATION_HOURS: 24,
+  CHECK_INTERVAL_MS: 5 * 60 * 1000, // 5 minutes (faster testing)
+  DURATION_HOURS: 2, // 2 hours = 24 checks
   STOP_LOSS_PCT: -8, // Exit if down 8%
   TAKE_PROFIT_PCT: 12, // Exit if up 12%
   MIN_CONVICTION_SCORE: 6, // Out of 10
