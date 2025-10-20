@@ -1,0 +1,918 @@
+✅ Environment loaded:
+   Supabase: https://fwbwfvqzomipoftgodof.s...
+   CoinGecko: Yes
+   CryptoPanic: Yes
+
+[2025-10-20T16:29:57.090Z] 🤖 AUTONOMOUS TRADER STARTING
+[2025-10-20T16:29:57.092Z] 💰 Initial Capital: £2400
+[2025-10-20T16:29:57.092Z] ⏰ Duration: 2 hours
+[2025-10-20T16:29:57.092Z] 🔄 Check Interval: 5 minutes
+[2025-10-20T16:29:57.093Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T16:29:57.093Z] 
+🕐 HOUR 1 (0.0h elapsed)
+[2025-10-20T16:29:57.093Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T16:29:57.093Z] 📊 No open positions
+[2025-10-20T16:29:57.093Z] 
+🔍 Analyzing market...
+[2025-10-20T16:29:57.296Z]   Found 16 active coins
+[2025-10-20T16:30:05.428Z]   Identified 11 high-conviction opportunities
+[2025-10-20T16:30:05.428Z]     FET: BULLISH (10/10) - 97% whale buys, $73.0M flow, 48 whale txs
+[2025-10-20T16:30:05.428Z]     WBTC: BULLISH (10/10) - 71% whale buys, $4.8M flow, 44 whale txs
+[2025-10-20T16:30:05.428Z]     UNI: BEARISH (9/10) - 68% whale sells, $579K flow
+[2025-10-20T16:30:05.428Z]     BLUR: BULLISH (9/10) - 88% whale buys, $4.7M flow
+[2025-10-20T16:30:05.428Z]     LDO: BULLISH (8/10) - 62% whale buys (moderate), $502K flow, 21 whale txs
+[2025-10-20T16:30:05.428Z] 
+💡 Evaluating new positions (12 slots, £2400.00 cash)...
+[2025-10-20T16:30:05.596Z]   ✅ OPENED LONG FET at £0.2099 | Size: £199.70 | Conviction: 10/10
+[2025-10-20T16:30:05.596Z]      Reason: 97% whale buys, $73.0M flow, 48 whale txs
+[2025-10-20T16:30:05.748Z]   ✅ OPENED LONG WBTC at £82797.0000 | Size: £199.70 | Conviction: 10/10
+[2025-10-20T16:30:05.748Z]      Reason: 71% whale buys, $4.8M flow, 44 whale txs
+[2025-10-20T16:30:05.897Z]   ✅ OPENED SHORT UNI at £4.7400 | Size: £199.70 | Conviction: 9/10
+[2025-10-20T16:30:05.897Z]      Reason: 68% whale sells, $579K flow
+[2025-10-20T16:30:06.085Z]   ✅ OPENED LONG BLUR at £0.0398 | Size: £199.70 | Conviction: 9/10
+[2025-10-20T16:30:06.085Z]      Reason: 88% whale buys, $4.7M flow
+[2025-10-20T16:30:06.245Z]   ✅ OPENED LONG LDO at £0.6825 | Size: £199.70 | Conviction: 8/10
+[2025-10-20T16:30:06.245Z]      Reason: 62% whale buys (moderate), $502K flow, 21 whale txs
+[2025-10-20T16:30:06.398Z]   ✅ OPENED SHORT CRV at £0.4136 | Size: £199.70 | Conviction: 8/10
+[2025-10-20T16:30:06.398Z]      Reason: 70% whale sells
+[2025-10-20T16:30:06.549Z]   ✅ OPENED SHORT AAVE at £169.4300 | Size: £199.70 | Conviction: 8/10
+[2025-10-20T16:30:06.549Z]      Reason: 69% whale sells
+[2025-10-20T16:30:06.715Z]   ✅ OPENED SHORT MANA at £0.1792 | Size: £199.70 | Conviction: 8/10
+[2025-10-20T16:30:06.715Z]      Reason: 100% whale sells
+[2025-10-20T16:30:06.888Z]   ✅ OPENED SHORT INJ at £6.5800 | Size: £199.70 | Conviction: 8/10
+[2025-10-20T16:30:06.888Z]      Reason: 100% whale sells
+[2025-10-20T16:30:07.108Z]   ⚠️ SNX: No price data, skipping
+[2025-10-20T16:30:07.260Z]   ✅ OPENED LONG IMX at £0.3928 | Size: £199.70 | Conviction: 7/10
+[2025-10-20T16:30:07.261Z]      Reason: 77% whale buys
+[2025-10-20T16:30:07.261Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T16:30:07.261Z]    Cash: £400.00
+[2025-10-20T16:30:07.261Z]    Open Positions: 10
+[2025-10-20T16:30:07.261Z]    Closed Trades: 0
+[2025-10-20T16:30:07.261Z]    Total P&L: £0.00
+[2025-10-20T16:30:07.261Z]    Total Value: £2397.00 (-0.13%)
+[2025-10-20T16:30:07.261Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T16:35:07.276Z] 
+🕐 HOUR 2 (0.1h elapsed)
+[2025-10-20T16:35:07.279Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T16:35:07.280Z] 📊 Checking 10 open positions...
+[2025-10-20T16:35:07.528Z]   FET LONG: £199.70 → £198.88 (-0.41%)
+[2025-10-20T16:35:08.479Z]   WBTC LONG: £199.70 → £199.00 (-0.35%)
+[2025-10-20T16:35:09.061Z]   UNI SHORT: £199.70 → £200.54 (+0.42%)
+[2025-10-20T16:35:09.571Z]   BLUR LONG: £199.70 → £199.11 (-0.29%)
+[2025-10-20T16:35:10.040Z]   LDO LONG: £199.70 → £198.93 (-0.38%)
+[2025-10-20T16:35:10.619Z]   CRV SHORT: £199.70 → £200.61 (+0.46%)
+[2025-10-20T16:35:11.095Z]   AAVE SHORT: £199.70 → £200.32 (+0.31%)
+[2025-10-20T16:35:11.595Z]   MANA SHORT: £199.70 → £200.29 (+0.29%)
+[2025-10-20T16:35:12.091Z]   INJ SHORT: £199.70 → £200.61 (+0.46%)
+[2025-10-20T16:35:12.691Z]   IMX LONG: £199.70 → £199.12 (-0.29%)
+[2025-10-20T16:35:13.004Z] 
+🔍 Analyzing market...
+[2025-10-20T16:35:13.054Z]   Found 16 active coins
+[2025-10-20T16:35:15.971Z]   Identified 11 high-conviction opportunities
+[2025-10-20T16:35:15.972Z]     WBTC: BULLISH (10/10) - 71% whale buys, $5.0M flow, 47 whale txs
+[2025-10-20T16:35:15.972Z]     FET: BULLISH (10/10) - 95% whale buys, $41.8M flow, 47 whale txs
+[2025-10-20T16:35:15.972Z]     CRV: BEARISH (9/10) - 77% whale sells, $581K flow
+[2025-10-20T16:35:15.972Z]     UNI: BEARISH (9/10) - 74% whale sells, $698K flow
+[2025-10-20T16:35:15.972Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T16:35:15.973Z] 
+💡 Evaluating new positions (2 slots, £400.00 cash)...
+[2025-10-20T16:35:15.974Z]   ⏭️ WBTC: Already have position, skipping
+[2025-10-20T16:35:15.975Z]   ⏭️ FET: Already have position, skipping
+[2025-10-20T16:35:15.975Z]   ⏭️ CRV: Already have position, skipping
+[2025-10-20T16:35:15.975Z]   ⏭️ UNI: Already have position, skipping
+[2025-10-20T16:35:15.976Z]   ⏭️ BLUR: Already have position, skipping
+[2025-10-20T16:35:15.976Z]   ⏭️ LDO: Already have position, skipping
+[2025-10-20T16:35:15.976Z]   ⏭️ AAVE: Already have position, skipping
+[2025-10-20T16:35:15.976Z]   ⏭️ MANA: Already have position, skipping
+[2025-10-20T16:35:15.976Z]   ⏭️ INJ: Already have position, skipping
+[2025-10-20T16:35:15.976Z]   ⏭️ IMX: Already have position, skipping
+[2025-10-20T16:35:16.126Z]   ⚠️ SNX: No price data, skipping
+[2025-10-20T16:35:16.126Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T16:35:16.126Z]    Cash: £400.00
+[2025-10-20T16:35:16.126Z]    Open Positions: 10
+[2025-10-20T16:35:16.126Z]    Closed Trades: 0
+[2025-10-20T16:35:16.127Z]    Total P&L: £0.00
+[2025-10-20T16:35:16.127Z]    Total Value: £2397.00 (-0.13%)
+[2025-10-20T16:35:16.127Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T16:40:16.142Z] 
+🕐 HOUR 3 (0.2h elapsed)
+[2025-10-20T16:40:16.145Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T16:40:16.146Z] 📊 Checking 10 open positions...
+[2025-10-20T16:40:16.368Z]   FET LONG: £199.70 → £197.79 (-0.95%)
+[2025-10-20T16:40:17.045Z]   WBTC LONG: £199.70 → £198.90 (-0.40%)
+[2025-10-20T16:40:17.541Z]   UNI SHORT: £199.70 → £201.39 (+0.84%)
+[2025-10-20T16:40:18.031Z]   BLUR LONG: £199.70 → £198.63 (-0.53%)
+[2025-10-20T16:40:18.551Z]   LDO LONG: £199.70 → £197.96 (-0.87%)
+[2025-10-20T16:40:19.058Z]   CRV SHORT: £199.70 → £201.54 (+0.92%)
+[2025-10-20T16:40:19.781Z]   AAVE SHORT: £199.70 → £201.24 (+0.77%)
+[2025-10-20T16:40:20.247Z]   MANA SHORT: £199.70 → £200.95 (+0.63%)
+[2025-10-20T16:40:20.772Z]   INJ SHORT: £199.70 → £201.52 (+0.91%)
+[2025-10-20T16:40:21.303Z]   IMX LONG: £199.70 → £198.39 (-0.65%)
+[2025-10-20T16:40:21.627Z] 
+🔍 Analyzing market...
+[2025-10-20T16:40:21.665Z]   Found 16 active coins
+[2025-10-20T16:40:24.277Z]   Identified 11 high-conviction opportunities
+[2025-10-20T16:40:24.278Z]     WBTC: BULLISH (10/10) - 71% whale buys, $5.0M flow, 48 whale txs
+[2025-10-20T16:40:24.278Z]     FET: BULLISH (10/10) - 95% whale buys, $41.8M flow, 47 whale txs
+[2025-10-20T16:40:24.278Z]     UNI: BEARISH (9/10) - 74% whale sells, $698K flow
+[2025-10-20T16:40:24.278Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T16:40:24.278Z]     LDO: BULLISH (8/10) - 62% whale buys (moderate), $502K flow, 21 whale txs
+[2025-10-20T16:40:24.278Z] 
+💡 Evaluating new positions (2 slots, £400.00 cash)...
+[2025-10-20T16:40:24.278Z]   ⏭️ WBTC: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ FET: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ UNI: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ BLUR: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ LDO: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ CRV: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ AAVE: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ MANA: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ INJ: Already have position, skipping
+[2025-10-20T16:40:24.278Z]   ⏭️ IMX: Already have position, skipping
+[2025-10-20T16:40:24.475Z]   ⚠️ SNX: No price data, skipping
+[2025-10-20T16:40:24.475Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T16:40:24.475Z]    Cash: £400.00
+[2025-10-20T16:40:24.475Z]    Open Positions: 10
+[2025-10-20T16:40:24.476Z]    Closed Trades: 0
+[2025-10-20T16:40:24.476Z]    Total P&L: £0.00
+[2025-10-20T16:40:24.476Z]    Total Value: £2397.00 (-0.13%)
+[2025-10-20T16:40:24.476Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T16:45:24.485Z] 
+🕐 HOUR 4 (0.3h elapsed)
+[2025-10-20T16:45:24.492Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T16:45:24.492Z] 📊 Checking 10 open positions...
+[2025-10-20T16:45:24.720Z]   FET LONG: £199.70 → £198.12 (-0.79%)
+[2025-10-20T16:45:25.349Z]   WBTC LONG: £199.70 → £199.32 (-0.19%)
+[2025-10-20T16:46:25.806Z]   UNI SHORT: £199.70 → £201.39 (+0.84%)
+[2025-10-20T16:46:26.362Z]   BLUR LONG: £199.70 → £198.62 (-0.54%)
+[2025-10-20T16:46:26.771Z]   LDO LONG: £199.70 → £197.80 (-0.95%)
+[2025-10-20T16:46:27.168Z]   CRV SHORT: £199.70 → £201.59 (+0.95%)
+[2025-10-20T16:46:27.548Z]   AAVE SHORT: £199.70 → £201.23 (+0.77%)
+[2025-10-20T16:46:27.936Z]   MANA SHORT: £199.70 → £201.07 (+0.69%)
+[2025-10-20T16:46:28.352Z]   INJ SHORT: £199.70 → £201.22 (+0.76%)
+[2025-10-20T16:46:28.748Z]   IMX LONG: £199.70 → £198.15 (-0.78%)
+[2025-10-20T16:46:29.050Z] 
+🔍 Analyzing market...
+[2025-10-20T16:46:29.096Z]   Found 16 active coins
+[2025-10-20T16:46:31.066Z]   Identified 12 high-conviction opportunities
+[2025-10-20T16:46:31.066Z]     WBTC: BULLISH (10/10) - 72% whale buys, $5.0M flow, 46 whale txs
+[2025-10-20T16:46:31.066Z]     FET: BULLISH (10/10) - 93% whale buys, $30.8M flow, 44 whale txs
+[2025-10-20T16:46:31.066Z]     UNI: BEARISH (9/10) - 74% whale sells, $698K flow
+[2025-10-20T16:46:31.066Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T16:46:31.067Z]     CRV: BEARISH (8/10) - 68% whale sells
+[2025-10-20T16:46:31.067Z] 
+💡 Evaluating new positions (2 slots, £400.00 cash)...
+[2025-10-20T16:46:31.067Z]   ⏭️ WBTC: Already have position, skipping
+[2025-10-20T16:46:31.067Z]   ⏭️ FET: Already have position, skipping
+[2025-10-20T16:46:31.067Z]   ⏭️ UNI: Already have position, skipping
+[2025-10-20T16:46:31.067Z]   ⏭️ BLUR: Already have position, skipping
+[2025-10-20T16:46:31.067Z]   ⏭️ CRV: Already have position, skipping
+[2025-10-20T16:46:31.067Z]   ⏭️ AAVE: Already have position, skipping
+[2025-10-20T16:46:31.067Z]   ⏭️ MANA: Already have position, skipping
+[2025-10-20T16:46:31.067Z]   ⏭️ INJ: Already have position, skipping
+[2025-10-20T16:46:31.278Z]   ⚠️ SNX: No price data, skipping
+[2025-10-20T16:46:31.429Z]   ✅ OPENED SHORT API3 at £0.5300 | Size: £199.70 | Conviction: 7/10
+[2025-10-20T16:46:31.429Z]      Reason: 57% whale sells (moderate)
+[2025-10-20T16:46:31.429Z]   ⏭️ IMX: Already have position, skipping
+[2025-10-20T16:46:31.429Z]   ⏭️ LDO: Already have position, skipping
+[2025-10-20T16:46:31.429Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T16:46:31.429Z]    Cash: £200.00
+[2025-10-20T16:46:31.429Z]    Open Positions: 11
+[2025-10-20T16:46:31.429Z]    Closed Trades: 0
+[2025-10-20T16:46:31.429Z]    Total P&L: £0.00
+[2025-10-20T16:46:31.429Z]    Total Value: £2396.70 (-0.14%)
+[2025-10-20T16:46:31.430Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T16:51:31.438Z] 
+🕐 HOUR 5 (0.4h elapsed)
+[2025-10-20T16:51:31.441Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T16:51:31.441Z] 📊 Checking 11 open positions...
+[2025-10-20T16:51:31.670Z]   FET LONG: £199.70 → £197.58 (-1.06%)
+[2025-10-20T16:52:32.354Z]   WBTC LONG: £199.70 → £198.28 (-0.71%)
+[2025-10-20T16:52:32.813Z]   UNI SHORT: £199.70 → £201.39 (+0.84%)
+[2025-10-20T16:52:33.476Z]   BLUR LONG: £199.70 → £198.39 (-0.66%)
+[2025-10-20T16:52:33.895Z]   LDO LONG: £199.70 → £197.29 (-1.20%)
+[2025-10-20T16:52:34.301Z]   CRV SHORT: £199.70 → £201.95 (+1.13%)
+[2025-10-20T16:52:34.703Z]   AAVE SHORT: £199.70 → £201.22 (+0.76%)
+[2025-10-20T16:52:35.135Z]   MANA SHORT: £199.70 → £201.22 (+0.76%)
+[2025-10-20T16:52:35.570Z]   INJ SHORT: £199.70 → £201.52 (+0.91%)
+[2025-10-20T16:52:35.990Z]   IMX LONG: £199.70 → £197.85 (-0.93%)
+[2025-10-20T16:52:36.466Z]   API3 SHORT: £199.70 → £199.89 (+0.09%)
+[2025-10-20T16:52:36.725Z] 
+🔍 Analyzing market...
+[2025-10-20T16:52:36.761Z]   Found 16 active coins
+[2025-10-20T16:52:38.559Z]   Identified 12 high-conviction opportunities
+[2025-10-20T16:52:38.559Z]     WBTC: BULLISH (10/10) - 74% whale buys, $5.1M flow, 44 whale txs
+[2025-10-20T16:52:38.559Z]     FET: BULLISH (10/10) - 91% whale buys, $21.9M flow, 40 whale txs
+[2025-10-20T16:52:38.559Z]     CRV: BEARISH (9/10) - 72% whale sells, $543K flow
+[2025-10-20T16:52:38.559Z]     UNI: BEARISH (9/10) - 74% whale sells, $698K flow
+[2025-10-20T16:52:38.559Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T16:52:38.559Z] 
+💡 Evaluating new positions (1 slots, £200.00 cash)...
+[2025-10-20T16:52:38.559Z]   ⏭️ WBTC: Already have position, skipping
+[2025-10-20T16:52:38.559Z]   ⏭️ FET: Already have position, skipping
+[2025-10-20T16:52:38.559Z]   ⏭️ CRV: Already have position, skipping
+[2025-10-20T16:52:38.559Z]   ⏭️ UNI: Already have position, skipping
+[2025-10-20T16:52:38.559Z]   ⏭️ BLUR: Already have position, skipping
+[2025-10-20T16:52:38.559Z]   ⏭️ AAVE: Already have position, skipping
+[2025-10-20T16:52:38.559Z]   ⏭️ MANA: Already have position, skipping
+[2025-10-20T16:52:38.559Z]   ⏭️ INJ: Already have position, skipping
+[2025-10-20T16:52:38.710Z]   ⚠️ SNX: No price data, skipping
+[2025-10-20T16:52:38.710Z]   ⏭️ IMX: Already have position, skipping
+[2025-10-20T16:52:38.710Z]   ⏭️ API3: Already have position, skipping
+[2025-10-20T16:52:38.710Z]   ⏭️ LDO: Already have position, skipping
+[2025-10-20T16:52:38.710Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T16:52:38.710Z]    Cash: £200.00
+[2025-10-20T16:52:38.710Z]    Open Positions: 11
+[2025-10-20T16:52:38.710Z]    Closed Trades: 0
+[2025-10-20T16:52:38.710Z]    Total P&L: £0.00
+[2025-10-20T16:52:38.710Z]    Total Value: £2396.70 (-0.14%)
+[2025-10-20T16:52:38.710Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T16:57:38.717Z] 
+🕐 HOUR 6 (0.5h elapsed)
+[2025-10-20T16:57:38.725Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T16:57:38.726Z] 📊 Checking 11 open positions...
+[2025-10-20T16:57:38.942Z]   FET LONG: £199.70 → £197.18 (-1.26%)
+[2025-10-20T16:58:39.888Z]   WBTC LONG: £199.70 → £198.73 (-0.49%)
+[2025-10-20T16:58:40.401Z]   UNI SHORT: £199.70 → £201.39 (+0.84%)
+[2025-10-20T16:58:40.820Z]   BLUR LONG: £199.70 → £198.39 (-0.65%)
+[2025-10-20T16:58:41.241Z]   LDO LONG: £199.70 → £197.49 (-1.10%)
+[2025-10-20T16:58:41.832Z]   CRV SHORT: £199.70 → £201.68 (+0.99%)
+[2025-10-20T16:58:42.269Z]   AAVE SHORT: £199.70 → £201.07 (+0.68%)
+[2025-10-20T16:58:42.741Z]   MANA SHORT: £199.70 → £201.03 (+0.67%)
+[2025-10-20T16:58:43.165Z]   INJ SHORT: £199.70 → £201.22 (+0.76%)
+[2025-10-20T16:58:43.365Z]   IMX LONG: £199.70 → £197.70 (-1.00%)
+[2025-10-20T16:58:43.807Z]   API3 SHORT: £199.70 → £200.01 (+0.16%)
+[2025-10-20T16:58:44.103Z]   ✅ CLOSED API3 SHORT: SIGNAL FLIP (now bullish 7/10) | P&L: £0.01
+[2025-10-20T16:58:44.104Z] 
+🔍 Analyzing market...
+[2025-10-20T16:58:44.151Z]   Found 16 active coins
+[2025-10-20T16:58:45.807Z]   Identified 11 high-conviction opportunities
+[2025-10-20T16:58:45.807Z]     WBTC: BULLISH (10/10) - 75% whale buys, $5.2M flow, 37 whale txs
+[2025-10-20T16:58:45.807Z]     FET: BULLISH (10/10) - 78% whale buys, $5.9M flow, 36 whale txs
+[2025-10-20T16:58:45.807Z]     CRV: BEARISH (10/10) - 68% whale sells, $530K flow, 23 whale txs
+[2025-10-20T16:58:45.807Z]     GRT: BEARISH (10/10) - 86% whale sells, $1.8M flow
+[2025-10-20T16:58:45.807Z]     UNI: BEARISH (9/10) - 68% whale sells, $577K flow
+[2025-10-20T16:58:45.807Z] 
+💡 Evaluating new positions (2 slots, £399.71 cash)...
+[2025-10-20T16:58:45.807Z]   ⏭️ WBTC: Already have position, skipping
+[2025-10-20T16:58:45.807Z]   ⏭️ FET: Already have position, skipping
+[2025-10-20T16:58:45.807Z]   ⏭️ CRV: Already have position, skipping
+[2025-10-20T16:58:45.951Z]   ✅ OPENED SHORT GRT at £0.0488 | Size: £199.70 | Conviction: 10/10
+[2025-10-20T16:58:45.951Z]      Reason: 86% whale sells, $1.8M flow
+[2025-10-20T16:58:45.951Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T16:58:45.952Z]    Cash: £199.71
+[2025-10-20T16:58:45.952Z]    Open Positions: 11
+[2025-10-20T16:58:45.952Z]    Closed Trades: 1
+[2025-10-20T16:58:45.952Z]    Total P&L: £0.01
+[2025-10-20T16:58:45.952Z]    Total Value: £2396.41 (-0.15%)
+[2025-10-20T16:58:45.952Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:03:45.961Z] 
+🕐 HOUR 7 (0.6h elapsed)
+[2025-10-20T17:03:45.973Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:03:45.973Z] 📊 Checking 11 open positions...
+[2025-10-20T17:03:46.232Z]   FET LONG: £199.70 → £197.71 (-1.00%)
+[2025-10-20T17:04:46.808Z]   WBTC LONG: £199.70 → £199.39 (-0.15%)
+[2025-10-20T17:04:47.252Z]   UNI SHORT: £199.70 → £200.54 (+0.42%)
+[2025-10-20T17:04:47.799Z]   BLUR LONG: £199.70 → £198.88 (-0.41%)
+[2025-10-20T17:04:48.247Z]   LDO LONG: £199.70 → £198.52 (-0.59%)
+[2025-10-20T17:04:48.642Z]   CRV SHORT: £199.70 → £200.59 (+0.45%)
+[2025-10-20T17:04:49.050Z]   AAVE SHORT: £199.70 → £200.37 (+0.34%)
+[2025-10-20T17:04:49.450Z]   MANA SHORT: £199.70 → £200.36 (+0.33%)
+[2025-10-20T17:04:49.640Z]   INJ SHORT: £199.70 → £200.91 (+0.61%)
+[2025-10-20T17:04:49.837Z]   IMX LONG: £199.70 → £198.64 (-0.53%)
+[2025-10-20T17:04:50.212Z]   GRT SHORT: £199.70 → £198.96 (-0.37%)
+[2025-10-20T17:04:50.492Z] 
+🔍 Analyzing market...
+[2025-10-20T17:04:50.535Z]   Found 15 active coins
+[2025-10-20T17:04:52.165Z]   Identified 10 high-conviction opportunities
+[2025-10-20T17:04:52.165Z]     FET: BULLISH (10/10) - 67% whale buys, $2.6M flow, 37 whale txs
+[2025-10-20T17:04:52.165Z]     WBTC: BULLISH (10/10) - 87% whale buys, $6.1M flow, 33 whale txs
+[2025-10-20T17:04:52.165Z]     CRV: BEARISH (10/10) - 71% whale sells, $687K flow, 25 whale txs
+[2025-10-20T17:04:52.165Z]     GRT: BEARISH (10/10) - 86% whale sells, $1.8M flow
+[2025-10-20T17:04:52.165Z]     BLUR: BULLISH (10/10) - 86% whale buys, $4.5M flow
+[2025-10-20T17:04:52.165Z] 
+💡 Evaluating new positions (1 slots, £199.71 cash)...
+[2025-10-20T17:04:52.165Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:04:52.165Z]    Cash: £199.71
+[2025-10-20T17:04:52.165Z]    Open Positions: 11
+[2025-10-20T17:04:52.165Z]    Closed Trades: 1
+[2025-10-20T17:04:52.165Z]    Total P&L: £0.01
+[2025-10-20T17:04:52.165Z]    Total Value: £2396.41 (-0.15%)
+[2025-10-20T17:04:52.166Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:09:52.177Z] 
+🕐 HOUR 8 (0.7h elapsed)
+[2025-10-20T17:09:52.187Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:09:52.187Z] 📊 Checking 11 open positions...
+[2025-10-20T17:09:52.387Z]   FET LONG: £199.70 → £197.88 (-0.91%)
+[2025-10-20T17:10:23.188Z]   ✅ CLOSED FET LONG: SIGNAL FLIP (now bearish 10/10) | P&L: £-2.12
+[2025-10-20T17:10:23.364Z]   WBTC LONG: £199.70 → £199.43 (-0.13%)
+[2025-10-20T17:11:23.783Z]   UNI SHORT: £199.70 → £200.54 (+0.42%)
+[2025-10-20T17:11:24.219Z]   BLUR LONG: £199.70 → £199.21 (-0.24%)
+[2025-10-20T17:11:24.638Z]   LDO LONG: £199.70 → £198.51 (-0.59%)
+[2025-10-20T17:11:25.219Z]   CRV SHORT: £199.70 → £200.56 (+0.43%)
+[2025-10-20T17:11:25.633Z]   AAVE SHORT: £199.70 → £199.99 (+0.15%)
+[2025-10-20T17:11:26.046Z]   MANA SHORT: £199.70 → £200.16 (+0.23%)
+[2025-10-20T17:11:26.234Z]   INJ SHORT: £199.70 → £200.61 (+0.46%)
+[2025-10-20T17:11:26.407Z]   IMX LONG: £199.70 → £198.72 (-0.49%)
+[2025-10-20T17:11:26.803Z]   GRT SHORT: £199.70 → £198.86 (-0.42%)
+[2025-10-20T17:11:27.086Z] 
+🔍 Analyzing market...
+[2025-10-20T17:11:27.147Z]   Found 15 active coins
+[2025-10-20T17:11:28.770Z]   Identified 10 high-conviction opportunities
+[2025-10-20T17:11:28.770Z]     FET: BEARISH (10/10) - 66% whale sells, $1.2M flow, 37 whale txs
+[2025-10-20T17:11:28.770Z]     WBTC: BULLISH (10/10) - 89% whale buys, $5.8M flow, 32 whale txs
+[2025-10-20T17:11:28.770Z]     CRV: BEARISH (10/10) - 72% whale sells, $765K flow, 26 whale txs
+[2025-10-20T17:11:28.770Z]     GRT: BEARISH (10/10) - 86% whale sells, $1.8M flow
+[2025-10-20T17:11:28.771Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T17:11:28.771Z] 
+💡 Evaluating new positions (2 slots, £397.29 cash)...
+[2025-10-20T17:11:28.918Z]   ✅ OPENED SHORT FET at £0.2077 | Size: £199.70 | Conviction: 10/10
+[2025-10-20T17:11:28.919Z]      Reason: 66% whale sells, $1.2M flow, 37 whale txs
+[2025-10-20T17:11:28.919Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:11:28.919Z]    Cash: £197.29
+[2025-10-20T17:11:28.919Z]    Open Positions: 11
+[2025-10-20T17:11:28.919Z]    Closed Trades: 2
+[2025-10-20T17:11:28.919Z]    Total P&L: £-2.11
+[2025-10-20T17:11:28.919Z]    Total Value: £2393.99 (-0.25%)
+[2025-10-20T17:11:28.919Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:16:28.926Z] 
+🕐 HOUR 9 (0.8h elapsed)
+[2025-10-20T17:16:28.933Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:16:28.933Z] 📊 Checking 11 open positions...
+[2025-10-20T17:16:29.150Z]   WBTC LONG: £199.70 → £198.88 (-0.41%)
+[2025-10-20T17:17:29.680Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T17:17:30.102Z]   BLUR LONG: £199.70 → £198.45 (-0.63%)
+[2025-10-20T17:17:30.524Z]   LDO LONG: £199.70 → £197.67 (-1.01%)
+[2025-10-20T17:17:30.955Z]   CRV SHORT: £199.70 → £201.33 (+0.82%)
+[2025-10-20T17:17:31.220Z]   ✅ CLOSED CRV SHORT: SIGNAL FLIP (now bullish 10/10) | P&L: £1.33
+[2025-10-20T17:17:31.371Z]   AAVE SHORT: £199.70 → £200.49 (+0.40%)
+[2025-10-20T17:17:31.771Z]   MANA SHORT: £199.70 → £200.80 (+0.55%)
+[2025-10-20T17:17:32.045Z]   INJ SHORT: £199.70 → £201.22 (+0.76%)
+[2025-10-20T17:17:32.278Z]   IMX LONG: £199.70 → £197.80 (-0.95%)
+[2025-10-20T17:17:32.671Z]   GRT SHORT: £199.70 → £199.38 (-0.16%)
+[2025-10-20T17:17:32.979Z]   FET SHORT: £199.70 → £200.61 (+0.46%)
+[2025-10-20T17:17:33.231Z] 
+🔍 Analyzing market...
+[2025-10-20T17:17:33.272Z]   Found 15 active coins
+[2025-10-20T17:17:34.792Z]   Identified 10 high-conviction opportunities
+[2025-10-20T17:17:34.792Z]     WBTC: BULLISH (10/10) - 95% whale buys, $5.9M flow, 31 whale txs
+[2025-10-20T17:17:34.792Z]     CRV: BULLISH (10/10) - 71% whale buys, $1.8M flow, 27 whale txs
+[2025-10-20T17:17:34.792Z]     GRT: BEARISH (10/10) - 86% whale sells, $2.0M flow
+[2025-10-20T17:17:34.792Z]     FET: BEARISH (9/10) - 62% whale sells (moderate), $839K flow, 37 whale txs
+[2025-10-20T17:17:34.792Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T17:17:34.792Z] 
+💡 Evaluating new positions (2 slots, £398.32 cash)...
+[2025-10-20T17:17:34.792Z]   ⏭️ WBTC: Already have position, skipping
+[2025-10-20T17:17:34.810Z]   ✅ OPENED LONG CRV at £0.4102 | Size: £199.70 | Conviction: 10/10
+[2025-10-20T17:17:34.810Z]      Reason: 71% whale buys, $1.8M flow, 27 whale txs
+[2025-10-20T17:17:34.810Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:17:34.810Z]    Cash: £198.32
+[2025-10-20T17:17:34.810Z]    Open Positions: 11
+[2025-10-20T17:17:34.810Z]    Closed Trades: 3
+[2025-10-20T17:17:34.810Z]    Total P&L: £-0.78
+[2025-10-20T17:17:34.810Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T17:17:34.810Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:22:34.881Z] 
+🕐 HOUR 10 (0.9h elapsed)
+[2025-10-20T17:22:34.889Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:22:34.890Z] 📊 Checking 11 open positions...
+[2025-10-20T17:22:35.097Z]   WBTC LONG: £199.70 → £199.25 (-0.23%)
+[2025-10-20T17:23:35.926Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T17:23:36.417Z]   BLUR LONG: £199.70 → £198.51 (-0.60%)
+[2025-10-20T17:23:36.833Z]   LDO LONG: £199.70 → £198.38 (-0.66%)
+[2025-10-20T17:23:37.248Z]   AAVE SHORT: £199.70 → £200.08 (+0.19%)
+[2025-10-20T17:23:37.633Z]   MANA SHORT: £199.70 → £200.69 (+0.50%)
+[2025-10-20T17:23:37.817Z]   INJ SHORT: £199.70 → £200.91 (+0.61%)
+[2025-10-20T17:23:38.004Z]   IMX LONG: £199.70 → £198.14 (-0.78%)
+[2025-10-20T17:23:38.398Z]   GRT SHORT: £199.70 → £199.25 (-0.23%)
+[2025-10-20T17:23:38.818Z]   FET SHORT: £199.70 → £200.69 (+0.49%)
+[2025-10-20T17:23:39.211Z]   CRV LONG: £199.70 → £200.18 (+0.24%)
+[2025-10-20T17:23:39.452Z] 
+🔍 Analyzing market...
+[2025-10-20T17:23:39.484Z]   Found 14 active coins
+[2025-10-20T17:23:41.020Z]   Identified 10 high-conviction opportunities
+[2025-10-20T17:23:41.020Z]     CRV: BULLISH (10/10) - 73% whale buys, $2.0M flow, 28 whale txs
+[2025-10-20T17:23:41.020Z]     WBTC: BULLISH (10/10) - 100% whale buys, $8.5M flow, 26 whale txs
+[2025-10-20T17:23:41.020Z]     GRT: BEARISH (10/10) - 86% whale sells, $2.0M flow
+[2025-10-20T17:23:41.020Z]     FET: BEARISH (9/10) - 60% whale sells (moderate), $662K flow, 36 whale txs
+[2025-10-20T17:23:41.021Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T17:23:41.021Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T17:23:41.021Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:23:41.021Z]    Cash: £198.32
+[2025-10-20T17:23:41.021Z]    Open Positions: 11
+[2025-10-20T17:23:41.021Z]    Closed Trades: 3
+[2025-10-20T17:23:41.021Z]    Total P&L: £-0.78
+[2025-10-20T17:23:41.021Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T17:23:41.021Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:28:41.035Z] 
+🕐 HOUR 11 (1.0h elapsed)
+[2025-10-20T17:28:41.043Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:28:41.044Z] 📊 Checking 11 open positions...
+[2025-10-20T17:28:41.239Z]   WBTC LONG: £199.70 → £198.74 (-0.48%)
+[2025-10-20T17:29:41.742Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T17:29:42.179Z]   BLUR LONG: £199.70 → £198.37 (-0.66%)
+[2025-10-20T17:29:42.568Z]   LDO LONG: £199.70 → £197.78 (-0.96%)
+[2025-10-20T17:29:42.991Z]   AAVE SHORT: £199.70 → £200.18 (+0.24%)
+[2025-10-20T17:29:43.393Z]   MANA SHORT: £199.70 → £200.82 (+0.56%)
+[2025-10-20T17:29:43.589Z]   INJ SHORT: £199.70 → £201.22 (+0.76%)
+[2025-10-20T17:29:43.784Z]   IMX LONG: £199.70 → £198.20 (-0.75%)
+[2025-10-20T17:29:44.177Z]   GRT SHORT: £199.70 → £199.24 (-0.23%)
+[2025-10-20T17:29:44.668Z]   FET SHORT: £199.70 → £201.24 (+0.77%)
+[2025-10-20T17:29:45.076Z]   CRV LONG: £199.70 → £199.69 (-0.00%)
+[2025-10-20T17:29:45.368Z] 
+🔍 Analyzing market...
+[2025-10-20T17:29:45.412Z]   Found 14 active coins
+[2025-10-20T17:29:47.050Z]   Identified 9 high-conviction opportunities
+[2025-10-20T17:29:47.050Z]     CRV: BULLISH (10/10) - 73% whale buys, $2.0M flow, 28 whale txs
+[2025-10-20T17:29:47.050Z]     WBTC: BULLISH (10/10) - 94% whale buys, $8.1M flow, 27 whale txs
+[2025-10-20T17:29:47.050Z]     GRT: BEARISH (10/10) - 86% whale sells, $2.0M flow
+[2025-10-20T17:29:47.050Z]     FET: BEARISH (9/10) - 60% whale sells (moderate), $662K flow, 31 whale txs
+[2025-10-20T17:29:47.050Z]     LDO: BULLISH (9/10) - 92% whale buys, $1.6M flow
+[2025-10-20T17:29:47.050Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T17:29:47.050Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:29:47.050Z]    Cash: £198.32
+[2025-10-20T17:29:47.050Z]    Open Positions: 11
+[2025-10-20T17:29:47.050Z]    Closed Trades: 3
+[2025-10-20T17:29:47.050Z]    Total P&L: £-0.78
+[2025-10-20T17:29:47.050Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T17:29:47.050Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:34:47.063Z] 
+🕐 HOUR 12 (1.1h elapsed)
+[2025-10-20T17:34:47.075Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:34:47.075Z] 📊 Checking 11 open positions...
+[2025-10-20T17:34:47.311Z]   WBTC LONG: £199.70 → £198.67 (-0.51%)
+[2025-10-20T17:35:48.192Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T17:35:48.810Z]   BLUR LONG: £199.70 → £198.23 (-0.74%)
+[2025-10-20T17:35:49.636Z]   LDO LONG: £199.70 → £197.36 (-1.17%)
+[2025-10-20T17:35:50.377Z]   AAVE SHORT: £199.70 → £200.41 (+0.35%)
+[2025-10-20T17:35:50.956Z]   MANA SHORT: £199.70 → £201.02 (+0.66%)
+[2025-10-20T17:35:51.197Z]   INJ SHORT: £199.70 → £201.52 (+0.91%)
+[2025-10-20T17:35:51.848Z]   IMX LONG: £199.70 → £198.01 (-0.84%)
+[2025-10-20T17:35:52.238Z]   GRT SHORT: £199.70 → £199.27 (-0.21%)
+[2025-10-20T17:35:52.844Z]   FET SHORT: £199.70 → £201.52 (+0.91%)
+[2025-10-20T17:35:53.522Z]   CRV LONG: £199.70 → £199.53 (-0.08%)
+[2025-10-20T17:35:54.275Z] 
+🔍 Analyzing market...
+[2025-10-20T17:35:54.337Z]   Found 14 active coins
+[2025-10-20T17:35:55.927Z]   Identified 9 high-conviction opportunities
+[2025-10-20T17:35:55.927Z]     FET: BEARISH (10/10) - 64% whale sells (moderate), $1.1M flow, 31 whale txs
+[2025-10-20T17:35:55.927Z]     CRV: BULLISH (10/10) - 72% whale buys, $1.9M flow, 29 whale txs
+[2025-10-20T17:35:55.927Z]     WBTC: BULLISH (10/10) - 93% whale buys, $7.9M flow, 29 whale txs
+[2025-10-20T17:35:55.927Z]     GRT: BEARISH (10/10) - 84% whale sells, $1.6M flow
+[2025-10-20T17:35:55.927Z]     LDO: BULLISH (9/10) - 92% whale buys, $1.6M flow
+[2025-10-20T17:35:55.927Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T17:35:55.927Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:35:55.927Z]    Cash: £198.32
+[2025-10-20T17:35:55.927Z]    Open Positions: 11
+[2025-10-20T17:35:55.927Z]    Closed Trades: 3
+[2025-10-20T17:35:55.927Z]    Total P&L: £-0.78
+[2025-10-20T17:35:55.927Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T17:35:55.927Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:40:55.940Z] 
+🕐 HOUR 13 (1.2h elapsed)
+[2025-10-20T17:40:55.949Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:40:55.949Z] 📊 Checking 11 open positions...
+[2025-10-20T17:40:56.163Z]   WBTC LONG: £199.70 → £198.16 (-0.77%)
+[2025-10-20T17:41:57.055Z]   UNI SHORT: £199.70 → £201.81 (+1.05%)
+[2025-10-20T17:41:57.471Z]   BLUR LONG: £199.70 → £197.75 (-0.98%)
+[2025-10-20T17:41:57.896Z]   LDO LONG: £199.70 → £196.83 (-1.44%)
+[2025-10-20T17:41:58.325Z]   AAVE SHORT: £199.70 → £201.07 (+0.68%)
+[2025-10-20T17:41:58.777Z]   MANA SHORT: £199.70 → £201.80 (+1.05%)
+[2025-10-20T17:41:58.969Z]   INJ SHORT: £199.70 → £202.43 (+1.37%)
+[2025-10-20T17:41:59.172Z]   IMX LONG: £199.70 → £197.35 (-1.17%)
+[2025-10-20T17:41:59.560Z]   GRT SHORT: £199.70 → £199.74 (+0.02%)
+[2025-10-20T17:42:00.063Z]   FET SHORT: £199.70 → £202.31 (+1.31%)
+[2025-10-20T17:42:00.454Z]   CRV LONG: £199.70 → £198.91 (-0.40%)
+[2025-10-20T17:42:00.733Z] 
+🔍 Analyzing market...
+[2025-10-20T17:42:00.777Z]   Found 13 active coins
+[2025-10-20T17:42:02.329Z]   Identified 9 high-conviction opportunities
+[2025-10-20T17:42:02.329Z]     FET: BEARISH (10/10) - 64% whale sells (moderate), $1.1M flow, 30 whale txs
+[2025-10-20T17:42:02.329Z]     CRV: BULLISH (10/10) - 72% whale buys, $1.9M flow, 28 whale txs
+[2025-10-20T17:42:02.329Z]     WBTC: BULLISH (10/10) - 92% whale buys, $7.4M flow, 26 whale txs
+[2025-10-20T17:42:02.329Z]     GRT: BEARISH (10/10) - 84% whale sells, $1.6M flow
+[2025-10-20T17:42:02.329Z]     LDO: BULLISH (9/10) - 75% whale buys, $1.2M flow
+[2025-10-20T17:42:02.329Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T17:42:02.329Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:42:02.329Z]    Cash: £198.32
+[2025-10-20T17:42:02.329Z]    Open Positions: 11
+[2025-10-20T17:42:02.329Z]    Closed Trades: 3
+[2025-10-20T17:42:02.329Z]    Total P&L: £-0.78
+[2025-10-20T17:42:02.329Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T17:42:02.330Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:47:02.351Z] 
+🕐 HOUR 14 (1.3h elapsed)
+[2025-10-20T17:47:02.353Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:47:02.353Z] 📊 Checking 11 open positions...
+[2025-10-20T17:47:02.537Z]   WBTC LONG: £199.70 → £198.10 (-0.80%)
+[2025-10-20T17:47:05.088Z]   UNI SHORT: £199.70 → £201.81 (+1.05%)
+[2025-10-20T17:47:05.530Z]   BLUR LONG: £199.70 → £197.60 (-1.05%)
+[2025-10-20T17:47:06.090Z]   LDO LONG: £199.70 → £197.00 (-1.35%)
+[2025-10-20T17:47:07.571Z]   AAVE SHORT: £199.70 → £201.09 (+0.70%)
+[2025-10-20T17:47:08.013Z]   MANA SHORT: £199.70 → £201.82 (+1.06%)
+[2025-10-20T17:47:08.209Z]   INJ SHORT: £199.70 → £201.82 (+1.06%)
+[2025-10-20T17:47:08.787Z]   IMX LONG: £199.70 → £197.31 (-1.20%)
+[2025-10-20T17:47:08.960Z]   GRT SHORT: £199.70 → £199.71 (+0.00%)
+[2025-10-20T17:47:09.544Z]   FET SHORT: £199.70 → £201.78 (+1.04%)
+[2025-10-20T17:47:09.957Z]   CRV LONG: £199.70 → £198.68 (-0.51%)
+[2025-10-20T17:47:10.331Z] 
+🔍 Analyzing market...
+[2025-10-20T17:47:10.368Z]   Found 13 active coins
+[2025-10-20T17:47:11.832Z]   Identified 9 high-conviction opportunities
+[2025-10-20T17:47:11.832Z]     FET: BEARISH (10/10) - 70% whale sells, $1.8M flow, 29 whale txs
+[2025-10-20T17:47:11.832Z]     CRV: BULLISH (10/10) - 72% whale buys, $1.9M flow, 28 whale txs
+[2025-10-20T17:47:11.832Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.5M flow, 26 whale txs
+[2025-10-20T17:47:11.833Z]     GRT: BEARISH (10/10) - 84% whale sells, $1.6M flow
+[2025-10-20T17:47:11.833Z]     LDO: BULLISH (9/10) - 76% whale buys, $1.2M flow
+[2025-10-20T17:47:11.833Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T17:47:11.833Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:47:11.833Z]    Cash: £198.32
+[2025-10-20T17:47:11.833Z]    Open Positions: 11
+[2025-10-20T17:47:11.833Z]    Closed Trades: 3
+[2025-10-20T17:47:11.833Z]    Total P&L: £-0.78
+[2025-10-20T17:47:11.833Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T17:47:11.833Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:52:11.847Z] 
+🕐 HOUR 15 (1.4h elapsed)
+[2025-10-20T17:52:11.853Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:52:11.856Z] 📊 Checking 11 open positions...
+[2025-10-20T17:52:12.078Z]   WBTC LONG: £199.70 → £198.59 (-0.56%)
+[2025-10-20T17:52:12.839Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T17:52:13.321Z]   BLUR LONG: £199.70 → £198.36 (-0.67%)
+[2025-10-20T17:52:13.813Z]   LDO LONG: £199.70 → £198.20 (-0.75%)
+[2025-10-20T17:52:14.272Z]   AAVE SHORT: £199.70 → £200.48 (+0.39%)
+[2025-10-20T17:52:14.730Z]   MANA SHORT: £199.70 → £200.88 (+0.59%)
+[2025-10-20T17:52:14.939Z]   INJ SHORT: £199.70 → £200.91 (+0.61%)
+[2025-10-20T17:52:15.120Z]   IMX LONG: £199.70 → £198.26 (-0.72%)
+[2025-10-20T17:52:15.312Z]   GRT SHORT: £199.70 → £198.91 (-0.40%)
+[2025-10-20T17:52:15.774Z]   FET SHORT: £199.70 → £200.59 (+0.45%)
+[2025-10-20T17:52:16.220Z]   CRV LONG: £199.70 → £199.92 (+0.11%)
+[2025-10-20T17:52:16.548Z] 
+🔍 Analyzing market...
+[2025-10-20T17:52:16.597Z]   Found 13 active coins
+[2025-10-20T17:52:18.554Z]   Identified 9 high-conviction opportunities
+[2025-10-20T17:52:18.554Z]     CRV: BULLISH (10/10) - 74% whale buys, $2.1M flow, 29 whale txs
+[2025-10-20T17:52:18.554Z]     FET: BEARISH (10/10) - 70% whale sells, $1.8M flow, 29 whale txs
+[2025-10-20T17:52:18.554Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.5M flow, 26 whale txs
+[2025-10-20T17:52:18.554Z]     LDO: BULLISH (10/10) - 76% whale buys, $1.2M flow
+[2025-10-20T17:52:18.554Z]     BLUR: BULLISH (10/10) - 86% whale buys, $4.5M flow
+[2025-10-20T17:52:18.554Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T17:52:18.554Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:52:18.554Z]    Cash: £198.32
+[2025-10-20T17:52:18.554Z]    Open Positions: 11
+[2025-10-20T17:52:18.554Z]    Closed Trades: 3
+[2025-10-20T17:52:18.554Z]    Total P&L: £-0.78
+[2025-10-20T17:52:18.554Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T17:52:18.554Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T17:57:18.559Z] 
+🕐 HOUR 16 (1.5h elapsed)
+[2025-10-20T17:57:18.563Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T17:57:18.563Z] 📊 Checking 11 open positions...
+[2025-10-20T17:57:18.778Z]   WBTC LONG: £199.70 → £198.82 (-0.44%)
+[2025-10-20T17:57:19.316Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T17:57:19.730Z]   BLUR LONG: £199.70 → £198.72 (-0.49%)
+[2025-10-20T17:57:20.177Z]   LDO LONG: £199.70 → £198.30 (-0.70%)
+[2025-10-20T17:57:20.683Z]   AAVE SHORT: £199.70 → £200.42 (+0.36%)
+[2025-10-20T17:57:21.104Z]   MANA SHORT: £199.70 → £200.61 (+0.46%)
+[2025-10-20T17:57:21.284Z]   INJ SHORT: £199.70 → £200.91 (+0.61%)
+[2025-10-20T17:57:21.470Z]   IMX LONG: £199.70 → £198.69 (-0.51%)
+[2025-10-20T17:57:21.650Z]   GRT SHORT: £199.70 → £198.93 (-0.38%)
+[2025-10-20T17:57:22.118Z]   FET SHORT: £199.70 → £200.77 (+0.54%)
+[2025-10-20T17:57:22.588Z]   CRV LONG: £199.70 → £199.77 (+0.03%)
+[2025-10-20T17:57:22.906Z] 
+🔍 Analyzing market...
+[2025-10-20T17:57:22.953Z]   Found 13 active coins
+[2025-10-20T17:57:24.417Z]   Identified 8 high-conviction opportunities
+[2025-10-20T17:57:24.417Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.5M flow, 28 whale txs
+[2025-10-20T17:57:24.417Z]     FET: BEARISH (10/10) - 69% whale sells, $1.7M flow, 27 whale txs
+[2025-10-20T17:57:24.417Z]     CRV: BULLISH (10/10) - 77% whale buys, $2.3M flow, 27 whale txs
+[2025-10-20T17:57:24.417Z]     LDO: BULLISH (10/10) - 76% whale buys, $1.2M flow
+[2025-10-20T17:57:24.417Z]     BLUR: BULLISH (10/10) - 86% whale buys, $4.5M flow
+[2025-10-20T17:57:24.417Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T17:57:24.417Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T17:57:24.417Z]    Cash: £198.32
+[2025-10-20T17:57:24.417Z]    Open Positions: 11
+[2025-10-20T17:57:24.417Z]    Closed Trades: 3
+[2025-10-20T17:57:24.417Z]    Total P&L: £-0.78
+[2025-10-20T17:57:24.417Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T17:57:24.418Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T18:02:24.421Z] 
+🕐 HOUR 17 (1.5h elapsed)
+[2025-10-20T18:02:24.424Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T18:02:24.424Z] 📊 Checking 11 open positions...
+[2025-10-20T18:02:24.636Z]   WBTC LONG: £199.70 → £198.76 (-0.47%)
+[2025-10-20T18:02:25.335Z]   UNI SHORT: £199.70 → £200.54 (+0.42%)
+[2025-10-20T18:02:25.836Z]   BLUR LONG: £199.70 → £198.84 (-0.43%)
+[2025-10-20T18:02:26.330Z]   LDO LONG: £199.70 → £198.35 (-0.68%)
+[2025-10-20T18:02:26.840Z]   AAVE SHORT: £199.70 → £200.44 (+0.37%)
+[2025-10-20T18:02:27.357Z]   MANA SHORT: £199.70 → £200.59 (+0.45%)
+[2025-10-20T18:02:27.554Z]   INJ SHORT: £199.70 → £200.61 (+0.46%)
+[2025-10-20T18:02:27.768Z]   IMX LONG: £199.70 → £198.80 (-0.45%)
+[2025-10-20T18:02:27.955Z]   GRT SHORT: £199.70 → £198.87 (-0.42%)
+[2025-10-20T18:02:28.416Z]   FET SHORT: £199.70 → £200.80 (+0.55%)
+[2025-10-20T18:02:28.895Z]   CRV LONG: £199.70 → £199.70 (+0.00%)
+[2025-10-20T18:02:29.195Z] 
+🔍 Analyzing market...
+[2025-10-20T18:02:29.253Z]   Found 13 active coins
+[2025-10-20T18:02:30.948Z]   Identified 9 high-conviction opportunities
+[2025-10-20T18:02:30.948Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.7M flow, 29 whale txs
+[2025-10-20T18:02:30.948Z]     FET: BEARISH (10/10) - 71% whale sells, $1.9M flow, 28 whale txs
+[2025-10-20T18:02:30.948Z]     CRV: BULLISH (10/10) - 72% whale buys, $2.1M flow, 28 whale txs
+[2025-10-20T18:02:30.948Z]     LDO: BULLISH (10/10) - 76% whale buys, $1.2M flow
+[2025-10-20T18:02:30.948Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T18:02:30.948Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T18:02:30.948Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T18:02:30.949Z]    Cash: £198.32
+[2025-10-20T18:02:30.949Z]    Open Positions: 11
+[2025-10-20T18:02:30.949Z]    Closed Trades: 3
+[2025-10-20T18:02:30.949Z]    Total P&L: £-0.78
+[2025-10-20T18:02:30.949Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T18:02:30.949Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T18:07:30.945Z] 
+🕐 HOUR 18 (1.6h elapsed)
+[2025-10-20T18:07:30.945Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T18:07:30.945Z] 📊 Checking 11 open positions...
+[2025-10-20T18:07:31.155Z]   WBTC LONG: £199.70 → £198.66 (-0.52%)
+[2025-10-20T18:07:31.886Z]   UNI SHORT: £199.70 → £200.54 (+0.42%)
+[2025-10-20T18:07:32.450Z]   BLUR LONG: £199.70 → £198.76 (-0.47%)
+[2025-10-20T18:07:32.897Z]   LDO LONG: £199.70 → £198.59 (-0.56%)
+[2025-10-20T18:07:33.412Z]   AAVE SHORT: £199.70 → £200.37 (+0.34%)
+[2025-10-20T18:07:33.904Z]   MANA SHORT: £199.70 → £200.71 (+0.50%)
+[2025-10-20T18:07:34.082Z]   INJ SHORT: £199.70 → £200.91 (+0.61%)
+[2025-10-20T18:07:34.253Z]   IMX LONG: £199.70 → £198.78 (-0.46%)
+[2025-10-20T18:07:34.437Z]   GRT SHORT: £199.70 → £198.95 (-0.38%)
+[2025-10-20T18:07:34.981Z]   FET SHORT: £199.70 → £201.00 (+0.65%)
+[2025-10-20T18:07:35.560Z]   CRV LONG: £199.70 → £199.58 (-0.06%)
+[2025-10-20T18:07:35.884Z] 
+🔍 Analyzing market...
+[2025-10-20T18:07:35.928Z]   Found 13 active coins
+[2025-10-20T18:07:38.481Z]   Identified 10 high-conviction opportunities
+[2025-10-20T18:07:38.481Z]     CRV: BULLISH (10/10) - 74% whale buys, $2.5M flow, 29 whale txs
+[2025-10-20T18:07:38.481Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.7M flow, 29 whale txs
+[2025-10-20T18:07:38.481Z]     FET: BEARISH (10/10) - 71% whale sells, $1.8M flow, 27 whale txs
+[2025-10-20T18:07:38.481Z]     LDO: BULLISH (9/10) - 72% whale buys, $921K flow
+[2025-10-20T18:07:38.481Z]     BLUR: BULLISH (9/10) - 86% whale buys, $4.5M flow
+[2025-10-20T18:07:38.481Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T18:07:38.481Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T18:07:38.481Z]    Cash: £198.32
+[2025-10-20T18:07:38.481Z]    Open Positions: 11
+[2025-10-20T18:07:38.481Z]    Closed Trades: 3
+[2025-10-20T18:07:38.481Z]    Total P&L: £-0.78
+[2025-10-20T18:07:38.481Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T18:07:38.481Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T18:12:38.479Z] 
+🕐 HOUR 19 (1.7h elapsed)
+[2025-10-20T18:12:38.482Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T18:12:38.482Z] 📊 Checking 11 open positions...
+[2025-10-20T18:12:38.683Z]   WBTC LONG: £199.70 → £199.01 (-0.35%)
+[2025-10-20T18:12:39.291Z]   UNI SHORT: £199.70 → £200.54 (+0.42%)
+[2025-10-20T18:12:39.782Z]   BLUR LONG: £199.70 → £198.82 (-0.44%)
+[2025-10-20T18:12:40.262Z]   LDO LONG: £199.70 → £199.04 (-0.33%)
+[2025-10-20T18:12:40.736Z]   AAVE SHORT: £199.70 → £200.07 (+0.18%)
+[2025-10-20T18:12:41.196Z]   MANA SHORT: £199.70 → £200.59 (+0.44%)
+[2025-10-20T18:12:41.383Z]   INJ SHORT: £199.70 → £200.61 (+0.46%)
+[2025-10-20T18:12:41.596Z]   IMX LONG: £199.70 → £198.99 (-0.36%)
+[2025-10-20T18:12:41.940Z]   GRT SHORT: £199.70 → £198.75 (-0.48%)
+[2025-10-20T18:12:42.408Z]   FET SHORT: £199.70 → £200.92 (+0.61%)
+[2025-10-20T18:12:42.976Z]   CRV LONG: £199.70 → £199.76 (+0.03%)
+[2025-10-20T18:12:43.296Z] 
+🔍 Analyzing market...
+[2025-10-20T18:12:43.346Z]   Found 14 active coins
+[2025-10-20T18:12:44.999Z]   Identified 10 high-conviction opportunities
+[2025-10-20T18:12:44.999Z]     CRV: BULLISH (10/10) - 75% whale buys, $2.5M flow, 27 whale txs
+[2025-10-20T18:12:44.999Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.5M flow, 26 whale txs
+[2025-10-20T18:12:44.999Z]     FET: BEARISH (10/10) - 69% whale sells, $1.5M flow, 23 whale txs
+[2025-10-20T18:12:44.999Z]     BLUR: BULLISH (10/10) - 86% whale buys, $4.5M flow
+[2025-10-20T18:12:44.999Z]     GRT: BEARISH (9/10) - 85% whale sells, $1.7M flow
+[2025-10-20T18:12:44.999Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T18:12:45.000Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T18:12:45.000Z]    Cash: £198.32
+[2025-10-20T18:12:45.000Z]    Open Positions: 11
+[2025-10-20T18:12:45.000Z]    Closed Trades: 3
+[2025-10-20T18:12:45.000Z]    Total P&L: £-0.78
+[2025-10-20T18:12:45.000Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T18:12:45.000Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T18:17:45.010Z] 
+🕐 HOUR 20 (1.8h elapsed)
+[2025-10-20T18:17:45.016Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T18:17:45.016Z] 📊 Checking 11 open positions...
+[2025-10-20T18:17:45.233Z]   WBTC LONG: £199.70 → £199.08 (-0.31%)
+[2025-10-20T18:17:45.841Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T18:17:46.345Z]   BLUR LONG: £199.70 → £198.69 (-0.50%)
+[2025-10-20T18:17:46.819Z]   LDO LONG: £199.70 → £198.53 (-0.59%)
+[2025-10-20T18:17:47.315Z]   AAVE SHORT: £199.70 → £200.21 (+0.25%)
+[2025-10-20T18:17:47.970Z]   MANA SHORT: £199.70 → £200.82 (+0.56%)
+[2025-10-20T18:17:48.579Z]   INJ SHORT: £199.70 → £200.91 (+0.61%)
+[2025-10-20T18:17:48.769Z]   IMX LONG: £199.70 → £198.67 (-0.52%)
+[2025-10-20T18:17:49.142Z]   GRT SHORT: £199.70 → £199.07 (-0.31%)
+[2025-10-20T18:17:49.611Z]   FET SHORT: £199.70 → £201.39 (+0.85%)
+[2025-10-20T18:17:50.071Z]   CRV LONG: £199.70 → £198.59 (-0.56%)
+[2025-10-20T18:17:50.401Z] 
+🔍 Analyzing market...
+[2025-10-20T18:17:50.443Z]   Found 14 active coins
+[2025-10-20T18:17:52.123Z]   Identified 10 high-conviction opportunities
+[2025-10-20T18:17:52.123Z]     CRV: BULLISH (10/10) - 66% whale buys, $1.9M flow, 30 whale txs
+[2025-10-20T18:17:52.123Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.5M flow, 27 whale txs
+[2025-10-20T18:17:52.123Z]     FET: BEARISH (10/10) - 71% whale sells, $1.6M flow, 21 whale txs
+[2025-10-20T18:17:52.123Z]     BLUR: BULLISH (10/10) - 98% whale buys, $5.1M flow
+[2025-10-20T18:17:52.123Z]     LDO: BULLISH (9/10) - 71% whale buys, $820K flow
+[2025-10-20T18:17:52.123Z] 
+💡 Evaluating new positions (1 slots, £198.32 cash)...
+[2025-10-20T18:17:52.124Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T18:17:52.124Z]    Cash: £198.32
+[2025-10-20T18:17:52.124Z]    Open Positions: 11
+[2025-10-20T18:17:52.124Z]    Closed Trades: 3
+[2025-10-20T18:17:52.124Z]    Total P&L: £-0.78
+[2025-10-20T18:17:52.124Z]    Total Value: £2395.02 (-0.21%)
+[2025-10-20T18:17:52.124Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T18:22:52.130Z] 
+🕐 HOUR 21 (1.9h elapsed)
+[2025-10-20T18:22:52.140Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T18:22:52.141Z] 📊 Checking 11 open positions...
+[2025-10-20T18:22:52.328Z]   WBTC LONG: £199.70 → £198.89 (-0.41%)
+[2025-10-20T18:22:52.892Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T18:22:53.367Z]   BLUR LONG: £199.70 → £198.34 (-0.68%)
+[2025-10-20T18:22:53.853Z]   LDO LONG: £199.70 → £198.36 (-0.67%)
+[2025-10-20T18:22:54.339Z]   AAVE SHORT: £199.70 → £200.45 (+0.38%)
+[2025-10-20T18:22:54.619Z]   ✅ CLOSED AAVE SHORT: SIGNAL FLIP (now bullish 6/10) | P&L: £0.45
+[2025-10-20T18:22:54.766Z]   MANA SHORT: £199.70 → £200.94 (+0.62%)
+[2025-10-20T18:22:54.958Z]   INJ SHORT: £199.70 → £201.22 (+0.76%)
+[2025-10-20T18:22:55.151Z]   IMX LONG: £199.70 → £198.26 (-0.72%)
+[2025-10-20T18:22:55.350Z]   GRT SHORT: £199.70 → £199.35 (-0.17%)
+[2025-10-20T18:22:55.673Z]   FET SHORT: £199.70 → £201.57 (+0.94%)
+[2025-10-20T18:22:56.645Z]   CRV LONG: £199.70 → £198.15 (-0.77%)
+[2025-10-20T18:22:56.946Z] 
+🔍 Analyzing market...
+[2025-10-20T18:22:56.989Z]   Found 14 active coins
+[2025-10-20T18:22:59.596Z]   Identified 9 high-conviction opportunities
+[2025-10-20T18:22:59.596Z]     CRV: BULLISH (10/10) - 65% whale buys, $2.0M flow, 34 whale txs
+[2025-10-20T18:22:59.596Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.6M flow, 28 whale txs
+[2025-10-20T18:22:59.596Z]     FET: BEARISH (10/10) - 69% whale sells, $1.6M flow
+[2025-10-20T18:22:59.596Z]     GRT: BEARISH (10/10) - 90% whale sells, $3.0M flow
+[2025-10-20T18:22:59.596Z]     BLUR: BULLISH (9/10) - 98% whale buys, $5.1M flow
+[2025-10-20T18:22:59.596Z] 
+💡 Evaluating new positions (2 slots, £398.47 cash)...
+[2025-10-20T18:22:59.597Z]   ⏭️ CRV: Already have position, skipping
+[2025-10-20T18:22:59.597Z]   ⏭️ WBTC: Already have position, skipping
+[2025-10-20T18:22:59.597Z]   ⏭️ FET: Already have position, skipping
+[2025-10-20T18:22:59.597Z]   ⏭️ GRT: Already have position, skipping
+[2025-10-20T18:22:59.597Z]   ⏭️ BLUR: Already have position, skipping
+[2025-10-20T18:22:59.597Z]   ⏭️ LDO: Already have position, skipping
+[2025-10-20T18:22:59.795Z]   ⚠️ SNX: No price data, skipping
+[2025-10-20T18:22:59.994Z]   ✅ OPENED LONG API3 at £0.5299 | Size: £199.70 | Conviction: 7/10
+[2025-10-20T18:22:59.994Z]      Reason: 74% whale buys
+[2025-10-20T18:22:59.994Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T18:22:59.994Z]    Cash: £198.47
+[2025-10-20T18:22:59.994Z]    Open Positions: 11
+[2025-10-20T18:22:59.994Z]    Closed Trades: 4
+[2025-10-20T18:22:59.994Z]    Total P&L: £-0.33
+[2025-10-20T18:22:59.994Z]    Total Value: £2395.17 (-0.20%)
+[2025-10-20T18:22:59.994Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T18:28:00.003Z] 
+🕐 HOUR 22 (2.0h elapsed)
+[2025-10-20T18:28:00.007Z] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2025-10-20T18:28:00.008Z] 📊 Checking 11 open positions...
+[2025-10-20T18:28:00.328Z]   WBTC LONG: £199.70 → £199.04 (-0.33%)
+[2025-10-20T18:28:01.371Z]   UNI SHORT: £199.70 → £200.96 (+0.63%)
+[2025-10-20T18:28:01.771Z]   ✅ CLOSED UNI SHORT: SIGNAL FLIP (now bullish 7/10) | P&L: £0.96
+[2025-10-20T18:28:02.031Z]   BLUR LONG: £199.70 → £198.07 (-0.81%)
+[2025-10-20T18:28:02.254Z]   LDO LONG: £199.70 → £198.59 (-0.56%)
+[2025-10-20T18:28:02.795Z]   MANA SHORT: £199.70 → £200.92 (+0.61%)
+[2025-10-20T18:28:02.980Z]   INJ SHORT: £199.70 → £201.22 (+0.76%)
+[2025-10-20T18:28:03.137Z]   IMX LONG: £199.70 → £198.05 (-0.83%)
+[2025-10-20T18:28:03.270Z]   GRT SHORT: £199.70 → £199.29 (-0.21%)
+[2025-10-20T18:28:03.622Z]   FET SHORT: £199.70 → £200.86 (+0.58%)
+[2025-10-20T18:28:04.314Z]   CRV LONG: £199.70 → £198.34 (-0.68%)
+[2025-10-20T18:28:04.854Z]   API3 LONG: £199.70 → £199.63 (-0.04%)
+[2025-10-20T18:28:05.229Z] 
+🔍 Analyzing market...
+[2025-10-20T18:28:05.272Z]   Found 13 active coins
+[2025-10-20T18:28:08.739Z]   Identified 9 high-conviction opportunities
+[2025-10-20T18:28:08.739Z]     WBTC: BULLISH (10/10) - 85% whale buys, $6.5M flow, 27 whale txs
+[2025-10-20T18:28:08.740Z]     CRV: BULLISH (9/10) - 62% whale buys (moderate), $1.6M flow, 33 whale txs
+[2025-10-20T18:28:08.740Z]     LDO: BULLISH (9/10) - 65% whale buys, $683K flow
+[2025-10-20T18:28:08.740Z]     GRT: BEARISH (9/10) - 100% whale sells, $3.4M flow
+[2025-10-20T18:28:08.740Z]     UNI: BULLISH (7/10) - 68% whale buys
+[2025-10-20T18:28:08.740Z] 
+💡 Evaluating new positions (2 slots, £399.14 cash)...
+[2025-10-20T18:28:08.740Z]   ⏭️ WBTC: Already have position, skipping
+[2025-10-20T18:28:08.740Z]   ⏭️ CRV: Already have position, skipping
+[2025-10-20T18:28:08.740Z]   ⏭️ LDO: Already have position, skipping
+[2025-10-20T18:28:08.740Z]   ⏭️ GRT: Already have position, skipping
+[2025-10-20T18:28:08.839Z]   ✅ OPENED LONG UNI at £4.7100 | Size: £199.70 | Conviction: 7/10
+[2025-10-20T18:28:08.840Z]      Reason: 68% whale buys
+[2025-10-20T18:28:08.840Z] 
+💼 PORTFOLIO STATUS
+[2025-10-20T18:28:08.840Z]    Cash: £199.14
+[2025-10-20T18:28:08.840Z]    Open Positions: 11
+[2025-10-20T18:28:08.840Z]    Closed Trades: 5
+[2025-10-20T18:28:08.840Z]    Total P&L: £0.64
+[2025-10-20T18:28:08.840Z]    Total Value: £2395.84 (-0.17%)
+[2025-10-20T18:28:08.840Z] 
+⏳ Waiting 5 minutes until next check...
+[2025-10-20T18:33:08.845Z] 
+
+
+[2025-10-20T18:33:08.848Z] ╔══════════════════════════════════════════════════════════════════╗
+[2025-10-20T18:33:08.848Z] ║                    FINAL TRADING REPORT                          ║
+[2025-10-20T18:33:08.848Z] ╚══════════════════════════════════════════════════════════════════╝
+[2025-10-20T18:33:08.848Z] 
+📊 Closing all remaining positions...
+[2025-10-20T18:33:09.093Z]   ✅ CLOSED WBTC LONG: END OF TEST | P&L: £-0.71
+[2025-10-20T18:33:09.352Z]   ✅ CLOSED BLUR LONG: END OF TEST | P&L: £-1.82
+[2025-10-20T18:33:09.560Z]   ✅ CLOSED LDO LONG: END OF TEST | P&L: £-1.08
+[2025-10-20T18:33:09.767Z]   ✅ CLOSED MANA SHORT: END OF TEST | P&L: £0.92
+[2025-10-20T18:33:10.079Z]   ✅ CLOSED INJ SHORT: END OF TEST | P&L: £0.91
+[2025-10-20T18:33:10.266Z]   ✅ CLOSED IMX LONG: END OF TEST | P&L: £-1.70
+[2025-10-20T18:33:10.422Z]   ✅ CLOSED GRT SHORT: END OF TEST | P&L: £-0.83
+[2025-10-20T18:33:10.598Z]   ✅ CLOSED FET SHORT: END OF TEST | P&L: £0.66
+[2025-10-20T18:33:10.799Z]   ✅ CLOSED CRV LONG: END OF TEST | P&L: £-1.28
+[2025-10-20T18:33:10.942Z]   ✅ CLOSED API3 LONG: END OF TEST | P&L: £-0.39
+[2025-10-20T18:33:11.147Z]   ✅ CLOSED UNI LONG: END OF TEST | P&L: £-0.30
+[2025-10-20T18:33:11.147Z] 
+📈 PERFORMANCE SUMMARY
+[2025-10-20T18:33:11.147Z]    Starting Capital: £2400.00
+[2025-10-20T18:33:11.147Z]    Ending Capital:   £2390.22
+[2025-10-20T18:33:11.147Z]    Total Return:     £-9.78 (-0.41%)
+[2025-10-20T18:33:11.147Z] 
+[2025-10-20T18:33:11.147Z]    Total Trades:     16
+[2025-10-20T18:33:11.147Z]    Winning Trades:   7 (43.8%)
+[2025-10-20T18:33:11.147Z]    Losing Trades:    9
+[2025-10-20T18:33:11.147Z]    Avg Win:          £0.75
+[2025-10-20T18:33:11.147Z]    Avg Loss:         £-1.14
+[2025-10-20T18:33:11.148Z]    Win/Loss Ratio:   0.66
+[2025-10-20T18:33:11.148Z] 
+🏆 TOP 5 TRADES
+[2025-10-20T18:33:11.148Z]    1. CRV SHORT: £1.33 (0.7%) - SIGNAL FLIP (now bullish 10/10)
+[2025-10-20T18:33:11.148Z]    2. UNI SHORT: £0.96 (0.5%) - SIGNAL FLIP (now bullish 7/10)
+[2025-10-20T18:33:11.148Z]    3. MANA SHORT: £0.92 (0.5%) - END OF TEST
+[2025-10-20T18:33:11.148Z]    4. INJ SHORT: £0.91 (0.5%) - END OF TEST
+[2025-10-20T18:33:11.149Z]    5. FET SHORT: £0.66 (0.3%) - END OF TEST
+[2025-10-20T18:33:11.149Z] 
+💔 WORST 5 TRADES
+[2025-10-20T18:33:11.149Z]    1. FET LONG: £-2.12 (-1.1%) - SIGNAL FLIP (now bearish 10/10)
+[2025-10-20T18:33:11.149Z]    2. BLUR LONG: £-1.82 (-0.9%) - END OF TEST
+[2025-10-20T18:33:11.149Z]    3. IMX LONG: £-1.70 (-0.9%) - END OF TEST
+[2025-10-20T18:33:11.149Z]    4. CRV LONG: £-1.28 (-0.6%) - END OF TEST
+[2025-10-20T18:33:11.149Z]    5. LDO LONG: £-1.08 (-0.5%) - END OF TEST
+[2025-10-20T18:33:11.149Z] 
+🎯 VERDICT
+[2025-10-20T18:33:11.149Z]    ⚠️ BREAK-EVEN - Signals need improvement
+[2025-10-20T18:33:11.181Z] 
+📄 Full log saved to: ./backtest-report-1760985191159.txt
+[2025-10-20T18:33:11.181Z] 
+╔══════════════════════════════════════════════════════════════════╗
+[2025-10-20T18:33:11.181Z] ║                      TEST COMPLETE                               ║
+[2025-10-20T18:33:11.182Z] ╚══════════════════════════════════════════════════════════════════╝

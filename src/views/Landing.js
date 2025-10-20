@@ -1820,6 +1820,24 @@ const Landing = () => {
               Polygon, Avalanche, and more. Trusted by professional traders worldwide.
             </HeroSubtitle>
             
+            <motion.div
+              style={{
+                background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(54, 166, 186, 0.15) 100%)',
+                border: '2px solid rgba(46, 204, 113, 0.4)',
+                borderRadius: '12px',
+                padding: '1rem 2rem',
+                marginBottom: '2rem',
+                display: 'inline-block'
+              }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <span style={{ fontSize: '1.2rem', fontWeight: '700', color: '#2ecc71' }}>
+                🎉 DEMO PHASE - FREE ACCESS FOR ALL USERS!
+              </span>
+            </motion.div>
+            
             <HeroHighlight
               variants={itemVariants}
               initial={{ opacity: 0, y: 20 }}
@@ -2534,11 +2552,11 @@ const Landing = () => {
             </div>
             <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Pro</h3>
             <div style={{ margin: '1.5rem 0 2rem' }}>
-              <div style={{ fontSize: '3.5rem', fontWeight: '900', color: 'var(--primary)', lineHeight: '1', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.5rem' }}>
+              <div style={{ fontSize: '3.5rem', fontWeight: '900', color: '#2ecc71', lineHeight: '1', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.5rem', textDecoration: 'line-through', opacity: 0.6 }}>
                 £5<span style={{ fontSize: '1.3rem', color: 'var(--text-secondary)', fontWeight: '500' }}>/month</span>
               </div>
-              <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                Professional Crypto Analytics
+              <div style={{ fontSize: '2rem', color: '#2ecc71', marginTop: '0.5rem', fontWeight: '800' }}>
+                FREE DURING DEMO
               </div>
             </div>
             <ul style={{
