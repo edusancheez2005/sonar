@@ -8,8 +8,9 @@
  * Runs for 24 hours, checking every hour and updating positions.
  */
 
-const fetch = require('node-fetch')
-require('dotenv').config({ path: '.env.local' })
+// Node 18+ has native fetch
+const path = require('path')
+require('dotenv').config({ path: path.join(__dirname, '../.env.local') })
 
 // Configuration
 const CONFIG = {
@@ -26,11 +27,24 @@ const CONFIG = {
   GBPUSD: 1.27,
   
   // API Keys from env
-  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
   SUPABASE_KEY: process.env.SUPABASE_SERVICE_ROLE,
   COINGECKO_KEY: process.env.COINGECKO_API_KEY,
   CRYPTOPANIC_KEY: process.env.CRYPTOPANIC_API_KEY
 }
+
+// Validate env vars
+if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) {
+  console.error('❌ ERROR: Missing SUPABASE_URL or SUPABASE_KEY in .env.local')
+  console.error('Expected: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE')
+  process.exit(1)
+}
+
+console.log('✅ Environment loaded:')
+console.log(`   Supabase: ${CONFIG.SUPABASE_URL?.substring(0, 30)}...`)
+console.log(`   CoinGecko: ${CONFIG.COINGECKO_KEY ? 'Yes' : 'No'}`)
+console.log(`   CryptoPanic: ${CONFIG.CRYPTOPANIC_KEY ? 'Yes' : 'No'}`)
+console.log('')
 
 // Symbol to CoinGecko ID mapping
 const SYMBOL_TO_ID = {
