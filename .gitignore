@@ -13,3 +13,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Trading bot files
+trader-output.log
+trader.pid
+backtest-report-*.txt
