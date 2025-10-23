@@ -11,11 +11,18 @@ const ogImage = '/screenshots/stats-dashboard.png'
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Sonar Tracker — Crypto Tracker Sonar | Real‑Time Whale Tracking & Blockchain Analytics',
+    default: 'Crypto Tracker | Whale Wallet Tracker | Crypto Predictor Algorithm - Sonar Tracker',
     template: '%s | Sonar Tracker Crypto'
   },
-  description: 'Sonar Tracker: The leading crypto tracker sonar platform for real-time whale monitoring. Professional blockchain analytics, crypto tracker sonar technology, and institutional trading insights. Track crypto whales with Sonar Tracker.',
+  description: 'Sonar Tracker: The #1 crypto tracker and whale wallet tracker platform. Real-time crypto predictor algorithm monitors whale movements across blockchains. Professional crypto tracker for institutional traders. Track crypto whales with advanced analytics.',
   keywords: [
+    // Primary high-volume keywords
+    'crypto tracker',
+    'whale wallet tracker',
+    'crypto predictor algorithm',
+    'cryptocurrency tracker',
+    'whale tracker',
+    'crypto whale tracker',
     // Primary brand variations
     'sonar tracker',
     'sonar tracker crypto',
@@ -36,6 +43,10 @@ export const metadata = {
     'sonar crypto analytics',
     'blockchain tracker sonar',
     'crypto whale tracker sonar',
+    'whale wallet tracking',
+    'crypto prediction algorithm',
+    'whale activity tracker',
+    'crypto whale detector',
     // Professional/institutional terms
     'institutional crypto trading',
     'blockchain intelligence platform',
@@ -50,11 +61,18 @@ export const metadata = {
     'professional crypto analytics',
     'crypto sonar platform',
     'blockchain sonar analytics',
+    'whale wallet analysis',
+    'crypto predictor tool',
+    'algorithmic crypto prediction',
     // Long-tail variations
     'sonar tracker crypto whale',
     'crypto tracker sonar whale',
     'sonar whale tracking platform',
-    'crypto sonar whale tracker'
+    'crypto sonar whale tracker',
+    'best crypto tracker',
+    'real-time whale wallet tracker',
+    'crypto market predictor',
+    'whale movement tracker'
   ],
   authors: [{ name: 'Sonar Tracker Team' }],
   creator: 'Sonar Tracker',
@@ -81,8 +99,8 @@ export const metadata = {
     },
   },
   openGraph: {
-    title: 'Sonar Tracker — Crypto Tracker Sonar | Real‑Time Whale Transactions & Analytics',
-    description: 'Sonar Tracker: The leading crypto tracker sonar platform. Track crypto whales in real time with our crypto sonar tracker technology. Professional blockchain analytics for institutional traders.',
+    title: 'Crypto Tracker | Whale Wallet Tracker | Crypto Predictor Algorithm - Sonar Tracker',
+    description: 'Sonar Tracker: The #1 crypto tracker and whale wallet tracker. Real-time crypto predictor algorithm for tracking whale movements. Professional crypto tracker for institutional traders.',
     url: siteUrl,
     siteName: 'Sonar Tracker',
     images: [
@@ -111,7 +129,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Sonar Tracker — Crypto Tracker Sonar | Whale Tracking Platform',
-    description: 'Sonar Tracker: Professional crypto tracker sonar platform. Real-time whale monitoring with crypto sonar tracker technology for institutional trading.',
+    description: 'Sonar Tracker: #1 crypto tracker, whale wallet tracker, and crypto predictor algorithm. Real-time whale monitoring for professional traders.',
     images: [ogImage],
     creator: '@sonartracker',
     site: '@sonartracker',
@@ -205,7 +223,7 @@ function JsonLd() {
         '@id': `${siteUrl}#website`,
         url: siteUrl,
         name: 'Sonar Tracker',
-        description: 'Real-time crypto whale tracking and blockchain analytics platform',
+        description: 'Real-time crypto tracker, whale wallet tracker, and crypto predictor algorithm for blockchain analytics',
         publisher: { '@id': `${siteUrl}#organization` },
         potentialAction: {
           '@type': 'SearchAction',
@@ -229,7 +247,7 @@ function JsonLd() {
           height: 200,
         },
         foundingDate: '2024',
-        description: 'Leading provider of real-time crypto whale tracking and blockchain analytics',
+        description: 'Leading crypto tracker and whale wallet tracker platform with crypto predictor algorithm for blockchain analytics',
         sameAs: [
           'https://x.com/sonartracker',
           'https://www.linkedin.com/company/sonartracker',
@@ -250,7 +268,7 @@ function JsonLd() {
           price: '0',
           priceCurrency: 'USD',
         },
-        description: 'Real-time crypto whale tracking and blockchain analytics platform',
+        description: 'Real-time crypto tracker, whale wallet tracker, and crypto predictor algorithm for blockchain analytics',
         screenshot: [
           `${siteUrl}/screenshots/stats-dashboard.png`,
           `${siteUrl}/screenshots/top-coins.png`,

@@ -1859,8 +1859,8 @@ const Landing = () => {
                 transition={{ duration: 0.5, delay: 1.4 }}
                 whileHover={{ scale: 1.05 }}
               >
-                <div className="number">10K+</div>
-                <div className="label">Active Traders</div>
+                <div className="number">100+</div>
+                <div className="label">Users in 3 Weeks</div>
               </StatBadge>
               <StatBadge
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -1940,7 +1940,7 @@ const Landing = () => {
             maxWidth: '800px',
             margin: '0 auto',
           }}>
-            Join 10,000+ professional traders who gained a competitive edge
+            Join 100+ early adopters in 3 weeks of launch - no publicity, just organic growth
           </p>
         </motion.div>
 
@@ -1977,7 +1977,7 @@ const Landing = () => {
               Real-Time Precision
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              Monitor millions of transactions across multiple blockchains in real-time. Our AI-powered pipeline processes whale movements with sub-second latency, ensuring you never miss a critical opportunity.
+              Monitor millions of transactions across multiple blockchains in real-time. Our advanced pipeline processes whale movements with sub-second latency, ensuring you never miss a critical opportunity. AI integration is underway to enhance prediction accuracy.
             </p>
           </motion.div>
 
@@ -2234,8 +2234,8 @@ const Landing = () => {
               <CarouselSlide style={{ maxWidth: '500px', margin: '0 auto' }}>
                 <img src={`${process.env.PUBLIC_URL}/screenshots/orca-analysis.png`} alt="Sonar ORCA AI Analysis" loading="lazy" />
                 <div className="caption">
-                  <h4>AI-Powered Investment Insights</h4>
-                  <p>Get actionable investment recommendations from ORCA 2.0, our advanced AI advisor that analyzes whale flows and market sentiment in real-time.</p>
+                  <h4>ORCA 2.0 Investment Analysis</h4>
+                  <p>Get actionable investment recommendations from ORCA 2.0. Advanced AI integration is underway to deliver predictive analytics based on whale flows and market sentiment.</p>
                 </div>
               </CarouselSlide>
               
@@ -2362,7 +2362,7 @@ const Landing = () => {
           transition={{ duration: 0.7 }}
           viewport={{ once: true }}
         >
-          Trusted by 10,000+ Professional Traders
+          100+ Users in Just 3 Weeks - Zero Publicity
         </motion.h2>
         <p className="subtitle">See why traders are switching to Sonar for real-time whale tracking</p>
         
@@ -2415,8 +2415,8 @@ const Landing = () => {
           >
             <div className="rating">★★★★★</div>
             <p className="quote">
-              "The ORCA AI analysis is mind-blowing. It identified a bearish pattern on SOL 
-              before a 15% drop. Saved my portfolio $120K. Best investment I've made this year."
+              "The ORCA analysis tools are impressive. Real-time whale tracking helped me spot 
+              large movements in SOL before a major price shift. Invaluable for serious traders."
             </p>
             <div className="author">
               <div className="avatar">DR</div>
@@ -2463,7 +2463,7 @@ const Landing = () => {
             textAlign: 'center'
           }}
         >
-          Access professional-grade whale tracking, real-time alerts, and AI-powered market insights
+          Access professional-grade whale tracking, real-time alerts, and advanced market insights (AI integration underway)
         </motion.p>
           
           <div style={{ 
@@ -2582,7 +2582,7 @@ const Landing = () => {
               </li>
               <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.75rem 0', color: 'var(--text-primary)', fontSize: '1rem', lineHeight: '1.5' }}>
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '22px', height: '22px', background: 'rgba(54, 166, 186, 0.2)', border: '2px solid var(--primary)', borderRadius: '50%', color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.85rem', marginTop: '2px' }}>✓</span>
-                AI Advisor (Orca 2.0) with premium prompts
+                ORCA 2.0 Analysis (AI integration underway)
               </li>
               <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.75rem 0', color: 'var(--text-primary)', fontSize: '1rem', lineHeight: '1.5' }}>
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '22px', height: '22px', background: 'rgba(54, 166, 186, 0.2)', border: '2px solid var(--primary)', borderRadius: '50%', color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.85rem', marginTop: '2px' }}>✓</span>
@@ -2684,7 +2684,7 @@ const Landing = () => {
             lineHeight: '1.6',
             textAlign: 'center'
           }}>
-            Experience the next generation of AI-powered cryptocurrency analysis
+            Experience next-generation cryptocurrency analysis - AI predictive models coming soon
           </p>
         </motion.div>
         
@@ -2787,7 +2787,7 @@ const Landing = () => {
               <ul style={{ fontSize: '1.05rem', lineHeight: '2', color: 'var(--text-secondary)', paddingLeft: '1.5rem' }}>
                 <li><strong>Real-Time Transaction Monitoring</strong> - Track whale movements as they happen</li>
                 <li><strong>Multi-Chain Support</strong> - Ethereum, BSC, Polygon, Avalanche, and more</li>
-                <li><strong>AI-Powered Pattern Recognition</strong> - Identify market manipulation and trends</li>
+                <li><strong>Advanced Pattern Recognition</strong> - Identify market manipulation and trends (AI enhancement underway)</li>
                 <li><strong>Customizable Alerts</strong> - Get notified of significant transactions instantly</li>
                 <li><strong>Historical Data Analysis</strong> - Access months of blockchain transaction history</li>
                 <li><strong>Token Flow Visualization</strong> - See where cryptocurrencies are moving</li>
@@ -2857,13 +2857,13 @@ const Landing = () => {
           
           <div style={{ marginTop: '4rem', padding: '2rem', background: 'rgba(54, 166, 186, 0.05)', borderRadius: '12px', border: '1px solid rgba(54, 166, 186, 0.2)' }}>
             <h3 style={{ fontSize: '1.5rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: '700' }}>
-              How Sonar Tracker Works: Real-Time Blockchain Data Pipeline
+              How Our Crypto Tracker & Whale Wallet Tracker Works
             </h3>
             <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-              Our proprietary 8-phase AI analysis pipeline processes millions of blockchain transactions per day, 
-              filtering and analyzing data to identify significant whale movements. The system monitors mempool 
-              activities, validates transactions across multiple nodes, and applies machine learning algorithms 
-              to calculate whale scores and market impact assessments.
+              Our crypto tracker utilizes a proprietary 8-phase analysis pipeline to process millions of blockchain transactions daily. 
+              As a leading whale wallet tracker, we identify significant whale movements and apply our crypto predictor algorithm 
+              to calculate market impact assessments. This crypto tracker monitors mempool activities and validates transactions 
+              across multiple nodes. AI predictive models are in development to enhance our crypto predictor algorithm accuracy.
             </p>
             <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: 'var(--text-secondary)', marginTop: '1rem' }}>
               <strong>Data Sources:</strong> Our platform aggregates data from Etherscan, BscScan, PolygonScan, 
