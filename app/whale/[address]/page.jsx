@@ -28,25 +28,51 @@ function BreadcrumbJsonLd({ addr }) {
 export default async function WhaleProfile({ params }) {
   const addr = decodeURIComponent(params.address)
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  
+  // NEW: Use whale_address column and filter for real trades only
   const { data, error } = await supabaseAdmin
     .from('whale_transactions')
-    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score')
-    .eq('from_address', addr)
+    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address')
+    .eq('whale_address', addr)
+    .in('counterparty_type', ['CEX', 'DEX'])
+    .in('classification', ['BUY', 'SELL'])
     .gte('timestamp', since)
     .order('timestamp', { ascending: false })
     .limit(200)
 
   let netUsd = 0
+  let buyVolume = 0
+  let sellVolume = 0
   const byToken = new Map()
+  
   for (const r of data || []) {
     const isBuy = (r.classification || '').toLowerCase() === 'buy'
     const usd = Number(r.usd_value || 0)
-    netUsd += isBuy ? usd : -usd
+    
+    if (isBuy) {
+      buyVolume += usd
+      netUsd += usd
+    } else {
+      sellVolume += usd
+      netUsd -= usd
+    }
+    
     const token = r.token_symbol || '—'
-    byToken.set(token, (byToken.get(token) || 0) + (isBuy ? usd : -usd))
+    if (!byToken.has(token)) {
+      byToken.set(token, { net: 0, buy: 0, sell: 0 })
+    }
+    const tokenData = byToken.get(token)
+    if (isBuy) {
+      tokenData.net += usd
+      tokenData.buy += usd
+    } else {
+      tokenData.net -= usd
+      tokenData.sell += usd
+    }
   }
+  
   const topTokens = Array.from(byToken.entries())
-    .map(([token, net]) => ({ token, net }))
+    .map(([token, data]) => ({ token, net: data.net, buy: data.buy, sell: data.sell }))
     .sort((a, b) => Math.abs(b.net) - Math.abs(a.net))
     .slice(0, 10)
 

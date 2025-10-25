@@ -17,9 +17,10 @@ export async function GET() {
 
     let q = supabaseAdmin
       .from('whale_transactions')
-      .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address', { count: 'estimated' })
+      .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type', { count: 'estimated' })
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')
+      .not('whale_address', 'is', null)
 
     q = q.gte('timestamp', sinceIso)
 
@@ -102,7 +103,7 @@ export async function GET() {
       const chain = row.blockchain || '—'
       const usdValue = Number(row.usd_value || 0)
       const timestamp = row.timestamp
-      const fromAddress = row.from_address || ''
+      const whaleAddress = row.whale_address || row.from_address || '' // NEW: Use whale_address
       
       byChain.set(chain, (byChain.get(chain) || 0) + 1)
 
@@ -113,12 +114,12 @@ export async function GET() {
       else if (isSell) byCoinSellCounts.set(coin, (byCoinSellCounts.get(coin) || 0) + 1)
       byCoin.set(coin, (byCoin.get(coin) || 0) + 1)
 
-      // Track whale activity per token
+      // Track whale activity per token (NEW: Use whale_address for accurate whale tracking)
       if (!byTokenWhales.has(coin)) {
         byTokenWhales.set(coin, { whales: new Set(), netUsd: 0, buys: 0, sells: 0 })
       }
       const tokenData = byTokenWhales.get(coin)
-      tokenData.whales.add(fromAddress)
+      tokenData.whales.add(whaleAddress) // Use actual whale, not CEX address
       if (klass === 'buy') {
         tokenData.buys += 1
         tokenData.netUsd += usdValue
