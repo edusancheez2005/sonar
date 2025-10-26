@@ -20,7 +20,7 @@ export async function GET() {
       .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type', { count: 'estimated' })
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')
-      .not('whale_address', 'is', null)
+      // NOTE: Don't filter whale_address yet - backend migration still in progress
 
     q = q.gte('timestamp', sinceIso)
 
@@ -103,7 +103,8 @@ export async function GET() {
       const chain = row.blockchain || '—'
       const usdValue = Number(row.usd_value || 0)
       const timestamp = row.timestamp
-      const whaleAddress = row.whale_address || row.from_address || '' // NEW: Use whale_address
+      // Use whale_address if available, fallback to from_address for backward compatibility
+      const whaleAddress = row.whale_address || row.from_address || ''
       
       byChain.set(chain, (byChain.get(chain) || 0) + 1)
 

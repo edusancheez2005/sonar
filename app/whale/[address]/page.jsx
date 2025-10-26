@@ -29,13 +29,11 @@ export default async function WhaleProfile({ params }) {
   const addr = decodeURIComponent(params.address)
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   
-  // NEW: Use whale_address column and filter for real trades only
+  // Query with backward compatibility: check both whale_address and from_address
   const { data, error } = await supabaseAdmin
     .from('whale_transactions')
-    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address')
-    .eq('whale_address', addr)
-    .in('counterparty_type', ['CEX', 'DEX'])
-    .in('classification', ['BUY', 'SELL'])
+    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address')
+    .or(`whale_address.eq.${addr},from_address.eq.${addr}`)
     .gte('timestamp', since)
     .order('timestamp', { ascending: false })
     .limit(200)
@@ -46,7 +44,13 @@ export default async function WhaleProfile({ params }) {
   const byToken = new Map()
   
   for (const r of data || []) {
-    const isBuy = (r.classification || '').toLowerCase() === 'buy'
+    // Skip non-trading classifications if counterparty_type is available
+    if (r.counterparty_type && !['CEX', 'DEX'].includes(r.counterparty_type)) continue
+    
+    const classification = (r.classification || '').toUpperCase()
+    if (!['BUY', 'SELL'].includes(classification)) continue
+    
+    const isBuy = classification === 'BUY'
     const usd = Number(r.usd_value || 0)
     
     if (isBuy) {
