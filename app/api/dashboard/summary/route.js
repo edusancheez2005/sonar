@@ -20,7 +20,9 @@ export async function GET() {
       .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type', { count: 'estimated' })
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')
-      // NOTE: Don't filter whale_address yet - backend migration still in progress
+      .not('whale_address', 'is', null)
+      .in('counterparty_type', ['CEX', 'DEX'])
+      .in('classification', ['BUY', 'SELL'])
 
     q = q.gte('timestamp', sinceIso)
 
@@ -54,7 +56,7 @@ export async function GET() {
 
     console.log(`Dashboard API: Found ${recentData?.length || 0} total transactions, ${recent24h.length} in last 24h, showing ${recent.length}`)
 
-    // Accurate 24h counts for totals and global buy/sell ratio
+    // Accurate 24h counts for totals and global buy/sell ratio (only real whale trades)
     let total24hCount = null
     let totalBuyCount24h = null
     let totalSellCount24h = null
@@ -64,19 +66,26 @@ export async function GET() {
           .select('transaction_hash', { count: 'exact', head: true })
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
+          .not('whale_address', 'is', null)
+          .in('counterparty_type', ['CEX', 'DEX'])
+          .in('classification', ['BUY', 'SELL'])
           .gte('timestamp', sinceIso),
         supabaseAdmin.from('whale_transactions')
           .select('classification', { count: 'exact', head: true })
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
-          .gte('timestamp', sinceIso)
-          .ilike('classification', 'buy%'),
+          .not('whale_address', 'is', null)
+          .in('counterparty_type', ['CEX', 'DEX'])
+          .eq('classification', 'BUY')
+          .gte('timestamp', sinceIso),
         supabaseAdmin.from('whale_transactions')
           .select('classification', { count: 'exact', head: true })
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
+          .not('whale_address', 'is', null)
+          .in('counterparty_type', ['CEX', 'DEX'])
+          .eq('classification', 'SELL')
           .gte('timestamp', sinceIso)
-          .ilike('classification', 'sell%')
       ])
       total24hCount = tot?.count ?? null
       totalBuyCount24h = buys?.count ?? null
@@ -103,8 +112,8 @@ export async function GET() {
       const chain = row.blockchain || '—'
       const usdValue = Number(row.usd_value || 0)
       const timestamp = row.timestamp
-      // Use whale_address if available, fallback to from_address for backward compatibility
-      const whaleAddress = row.whale_address || row.from_address || ''
+      // Use whale_address (required now)
+      const whaleAddress = row.whale_address || ''
       
       byChain.set(chain, (byChain.get(chain) || 0) + 1)
 

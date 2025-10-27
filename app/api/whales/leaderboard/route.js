@@ -8,11 +8,14 @@ export async function GET() {
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   
-  // NEW: Use whale_address column (with fallback to from_address for backward compatibility)
+  // NEW: Use whale_address column and exclude CEX addresses
   const { data, error } = await supabaseAdmin
     .from('whale_transactions')
-    .select('whale_address, from_address, token_symbol, classification, usd_value, timestamp, whale_score, counterparty_type')
+    .select('whale_address, token_symbol, classification, usd_value, timestamp, whale_score, counterparty_type')
     .gte('timestamp', since)
+    .not('whale_address', 'is', null)
+    .in('counterparty_type', ['CEX', 'DEX'])
+    .in('classification', ['BUY', 'SELL'])
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -27,16 +30,10 @@ export async function GET() {
   const byWhale = new Map()
 
   for (const r of data || []) {
-    // Use whale_address if available, fallback to from_address
-    const addr = r.whale_address || r.from_address
+    const addr = r.whale_address
     if (!addr || cexSet.has(addr.toLowerCase())) continue // Skip CEX addresses
     
-    // Skip if not a real trade (if counterparty_type is available)
-    if (r.counterparty_type && !['CEX', 'DEX'].includes(r.counterparty_type)) continue
-    
-    // Skip if not BUY/SELL
-    const classification = (r.classification || '').toUpperCase()
-    if (!['BUY', 'SELL'].includes(classification)) continue
+    const classification = r.classification.toUpperCase()
     
     let rec = byWhale.get(addr)
     if (!rec) {
