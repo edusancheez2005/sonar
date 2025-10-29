@@ -117,6 +117,38 @@ export default function TermsOfService() {
         <Section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05, duration: 0.5 }}
+          style={{ 
+            background: 'rgba(255, 87, 34, 0.1)', 
+            borderColor: 'rgba(255, 87, 34, 0.5)',
+            borderWidth: '2px'
+          }}
+        >
+          <h2 style={{ color: '#ff5722' }}>⚠️ IMPORTANT DISCLAIMER - NO PROFIT GUARANTEE</h2>
+          <p>
+            <strong style={{ color: '#ff5722', fontSize: '1.1rem' }}>
+              SONAR TRACKER PROVIDES DATA AND ANALYTICS FOR INFORMATIONAL PURPOSES ONLY. WE DO NOT GUARANTEE PROFITS, INVESTMENT SUCCESS, OR ANY SPECIFIC FINANCIAL OUTCOMES.
+            </strong>
+          </p>
+          <p>
+            <strong>You acknowledge and agree that:</strong>
+          </p>
+          <ul>
+            <li><strong>Trading cryptocurrencies involves substantial risk of loss</strong> and is not suitable for all investors.</li>
+            <li><strong>Past performance is not indicative of future results.</strong> Historical data and whale activity patterns do not guarantee future price movements.</li>
+            <li><strong>You may lose some or all of your invested capital.</strong> Only invest what you can afford to lose.</li>
+            <li><strong>Our data and analysis are not financial advice.</strong> Always conduct your own research and consult with qualified financial advisors before making investment decisions.</li>
+            <li><strong>Market conditions can change rapidly.</strong> Whale transactions do not always predict price movements.</li>
+            <li><strong>You are solely responsible for your trading decisions.</strong> Sonar Tracker is not liable for any losses incurred from decisions made based on our platform data.</li>
+          </ul>
+          <p style={{ marginTop: '1rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+            By using this service, you confirm that you understand these risks and accept full responsibility for your trading and investment decisions.
+          </p>
+        </Section>
+
+        <Section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
         >
           <h2>1. Acceptance of Terms</h2>

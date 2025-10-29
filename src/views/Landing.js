@@ -2992,6 +2992,22 @@ const Landing = () => {
                   required
                 />
               </FormGroup>
+              
+              {/* Terms and Conditions Checkbox */}
+              <FormGroup style={{ flexDirection: 'row', alignItems: 'flex-start', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(54, 166, 186, 0.2)' }}>
+                <input
+                  type="checkbox"
+                  id="terms-checkbox"
+                  checked={formData.acceptedTerms || false}
+                  onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
+                  required
+                  style={{ marginTop: '0.25rem', width: 'auto', minWidth: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <label htmlFor="terms-checkbox" style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+                  I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Privacy Policy</a>. I understand that Sonar Tracker provides data and analytics for informational purposes only and does not guarantee profits or investment outcomes. Trading cryptocurrencies involves substantial risk of loss.
+                </label>
+              </FormGroup>
+              
               {signupError && <p style={{ color: 'tomato', margin: 0 }}>{signupError}</p>}
               {signupInfo && <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{signupInfo}</p>}
               {resendMsg && <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{resendMsg}</p>}
