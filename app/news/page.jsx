@@ -159,13 +159,17 @@ export default async function NewsPage() {
               const mRes = await fetch(marketsUrl, { cache: 'no-store' })
               if (mRes.ok) {
                 const m = await mRes.json()
-                const byId = new Map()
-                for (const row of m) {
-                  byId.set(row.id, {
-                    price_usd: Number(row.current_price),
-                    change24h: Number(row.price_change_percentage_24h_in_currency ?? row.price_change_percentage_24h),
-                  })
-                }
+              const byId = new Map()
+              for (const row of m) {
+                const change24h =
+                  typeof row.price_change_percentage_24h_in_currency?.usd === 'number'
+                    ? row.price_change_percentage_24h_in_currency.usd
+                    : row.price_change_percentage_24h
+                byId.set(row.id, {
+                  price_usd: Number(row.current_price),
+                  change24h: typeof change24h === 'number' && Number.isFinite(change24h) ? change24h : 0,
+                })
+              }
 
                 // Enrich instruments in-place
                 initialNews = initialNews.map((it) => {

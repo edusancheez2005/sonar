@@ -236,6 +236,29 @@ export async function GET(req) {
 
     const data = await res.json()
 
+    const getPct = (value, fallback = 0) => {
+      if (typeof value === 'number' && Number.isFinite(value)) return value
+      if (typeof fallback === 'number' && Number.isFinite(fallback)) return fallback
+      return 0
+    }
+
+    const change24h = getPct(
+      data.market_data?.price_change_percentage_24h_in_currency?.usd,
+      data.market_data?.price_change_percentage_24h
+    )
+    const change7d = getPct(
+      data.market_data?.price_change_percentage_7d_in_currency?.usd,
+      data.market_data?.price_change_percentage_7d
+    )
+    const change30d = getPct(
+      data.market_data?.price_change_percentage_30d_in_currency?.usd,
+      data.market_data?.price_change_percentage_30d
+    )
+    const change1y = getPct(
+      data.market_data?.price_change_percentage_1y_in_currency?.usd,
+      data.market_data?.price_change_percentage_1y
+    )
+
     return NextResponse.json({
       symbol: symbol,
       name: data.name,
@@ -243,10 +266,10 @@ export async function GET(req) {
       
       // Price Data
       price: data.market_data?.current_price?.usd || 0,
-      change24h: data.market_data?.price_change_percentage_24h || 0,
-      change7d: data.market_data?.price_change_percentage_7d || 0,
-      change30d: data.market_data?.price_change_percentage_30d || 0,
-      change1y: data.market_data?.price_change_percentage_1y || 0,
+      change24h,
+      change7d,
+      change30d,
+      change1y,
       
       // 24h High/Low
       high24h: data.market_data?.high_24h?.usd || 0,

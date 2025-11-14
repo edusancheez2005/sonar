@@ -1,8 +1,17 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
+
+const defaultSentimentStats = {
+  total: 0,
+  breakdown: {
+    bullish: 0,
+    bearish: 0,
+    neutral: 0
+  }
+}
 
 const PageWrapper = styled.div`
   min-height: 100vh;
@@ -326,6 +335,153 @@ const ReasonText = styled.div`
   line-height: 1.6;
 `
 
+const CommunitySentimentSection = styled(SentimentSection)`
+  margin-top: -0.5rem;
+`
+
+const SentimentStatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+`
+
+const SentimentStatCard = styled.div`
+  background: rgba(30, 57, 81, 0.4);
+  border: 1px solid rgba(54, 166, 186, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+`
+
+const SentimentStatLabel = styled.div`
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+`
+
+const SentimentStatValue = styled.div`
+  font-size: 2rem;
+  font-weight: 800;
+  color: ${props => props.$variant === 'bullish' ? '#2ecc71' : props.$variant === 'bearish' ? '#e74c3c' : 'var(--text-primary)'};
+  line-height: 1.2;
+`
+
+const SentimentStatSubtext = styled.div`
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+`
+
+const VoteForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`
+
+const VoteOptions = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+`
+
+const VoteToggle = styled.button`
+  border: 1px solid ${props => props.$active ? 'rgba(54,166,186,0.6)' : 'rgba(54,166,186,0.3)'};
+  background: ${props => props.$active ? 'rgba(54,166,186,0.15)' : 'transparent'};
+  color: ${props => props.$active ? 'var(--text-primary)' : 'var(--text-secondary)'};
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const VoteInput = styled.input`
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(54, 166, 186, 0.3);
+  background: rgba(10, 22, 33, 0.7);
+  padding: 0.9rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(54, 166, 186, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+`
+
+const VoteTextarea = styled.textarea`
+  width: 100%;
+  min-height: 110px;
+  border-radius: 12px;
+  border: 1px solid rgba(54, 166, 186, 0.3);
+  background: rgba(10, 22, 33, 0.7);
+  padding: 0.9rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(54, 166, 186, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+`
+
+const VoteHelperText = styled.p`
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+`
+
+const VoteStatusMessage = styled.div`
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: ${props => props.$type === 'error' ? '#e74c3c' : '#2ecc71'};
+`
+
+const VoteSubmitButton = styled.button`
+  border: none;
+  border-radius: 12px;
+  padding: 0.95rem 1rem;
+  background: linear-gradient(135deg, #36a6ba 0%, #2ecc71 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`
+
+const SentimentNote = styled.p`
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+`
+
 const OrcaButton = styled(motion.button)`
   width: 100%;
   padding: 1.25rem 2rem;
@@ -606,6 +762,16 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   const [orcaAnalysis, setOrcaAnalysis] = useState(null)
   const [showOrcaModal, setShowOrcaModal] = useState(false)
   const [loadingOrca, setLoadingOrca] = useState(false)
+  const [communityStats, setCommunityStats] = useState(defaultSentimentStats)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [voteForm, setVoteForm] = useState({ email: '', comment: '', vote: 'bullish' })
+  const [voteSending, setVoteSending] = useState(false)
+  const [voteStatus, setVoteStatus] = useState(null)
+  const [hasVoted, setHasVoted] = useState(false)
+  const [fingerprint, setFingerprint] = useState(null)
+
+  const sentimentStorageKey = `sonar_sentiment_${symbol}`
+  const emailStorageKey = 'sonar_feedback_email'
 
   // Generate CMC-style Deep Dive analysis using heuristics
   const generateDeepDive = () => {
@@ -725,6 +891,56 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     return { blocks, conclusion }
   }
 
+  const loadCommunitySentiment = useCallback(async () => {
+    try {
+      setStatsLoading(true)
+      const res = await fetch(`/api/sentiment/vote?symbol=${symbol}`, { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        setCommunityStats({
+          total: data.total || 0,
+          breakdown: {
+            bullish: data.breakdown?.bullish || 0,
+            bearish: data.breakdown?.bearish || 0,
+            neutral: data.breakdown?.neutral || 0
+          }
+        })
+      } else {
+        setCommunityStats(defaultSentimentStats)
+      }
+    } catch (error) {
+      console.error('Failed to fetch community sentiment:', error)
+      setCommunityStats(defaultSentimentStats)
+    } finally {
+      setStatsLoading(false)
+    }
+  }, [symbol])
+
+  useEffect(() => {
+    loadCommunitySentiment()
+  }, [loadCommunitySentiment])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const storedVote = localStorage.getItem(sentimentStorageKey)
+    setHasVoted(Boolean(storedVote))
+
+    const storedEmail = localStorage.getItem(emailStorageKey)
+    if (storedEmail) {
+      setVoteForm(prev => ({ ...prev, email: storedEmail }))
+    }
+  }, [symbol, sentimentStorageKey])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    let fp = localStorage.getItem('sonar_fp')
+    if (!fp && window.crypto?.randomUUID) {
+      fp = crypto.randomUUID()
+      localStorage.setItem('sonar_fp', fp)
+    }
+    setFingerprint(fp)
+  }, [])
+
   // Fetch live price data
   useEffect(() => {
     async function fetchPrice() {
@@ -767,6 +983,54 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     }
   }
 
+  const handleVoteSubmit = async (event) => {
+    event.preventDefault()
+    if (!voteForm.email.trim()) {
+      setVoteStatus({ type: 'error', message: 'Email is required to vote.' })
+      return
+    }
+
+    setVoteSending(true)
+    setVoteStatus(null)
+    try {
+      const res = await fetch('/api/sentiment/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokenSymbol: symbol,
+          vote: voteForm.vote,
+          email: voteForm.email.trim(),
+          comment: voteForm.comment.trim(),
+          fingerprint
+        })
+      })
+
+      const body = await res.json()
+      if (!res.ok) {
+        throw new Error(body.error || 'Unable to submit vote.')
+      }
+
+      setVoteStatus({ type: 'success', message: 'Vote recorded. Thanks for sharing your view!' })
+      setCommunityStats({
+        total: body.stats?.total || 0,
+        breakdown: {
+          bullish: body.stats?.breakdown?.bullish || 0,
+          bearish: body.stats?.breakdown?.bearish || 0,
+          neutral: body.stats?.breakdown?.neutral || 0
+        }
+      })
+      setHasVoted(true)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(sentimentStorageKey, 'true')
+        localStorage.setItem(emailStorageKey, voteForm.email.trim())
+      }
+    } catch (error) {
+      setVoteStatus({ type: 'error', message: error.message })
+    } finally {
+      setVoteSending(false)
+    }
+  }
+
   const formatUSD = (value) => {
     const num = Number(value)
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
@@ -777,6 +1041,18 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     if (num > 0) return `$${num.toFixed(8)}` // For very small prices
     return `$${num.toFixed(4)}`
   }
+
+  const totalVotes = communityStats.total || 0
+  const bullishCount = communityStats.breakdown?.bullish || 0
+  const bearishCount = communityStats.breakdown?.bearish || 0
+  const bullishPct = totalVotes ? Math.round((bullishCount / totalVotes) * 100) : 0
+  const bearishPct = totalVotes ? Math.round((bearishCount / totalVotes) * 100) : 0
+  const voteDisabled = voteSending || hasVoted
+  const sentimentNote = statsLoading
+    ? 'Updating sentiment...'
+    : totalVotes
+      ? `Based on ${totalVotes} community votes.`
+      : 'Be the first to share your sentiment.'
 
   const formatNumber = (value) => {
     const num = Number(value)
@@ -1374,6 +1650,94 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </OrcaButton>
           </SentimentSection>
         )}
+
+        <CommunitySentimentSection
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <SectionTitle>Community Sentiment</SectionTitle>
+          <SentimentNote>{sentimentNote}</SentimentNote>
+
+          <SentimentStatsGrid>
+            <SentimentStatCard>
+              <SentimentStatLabel>🐂 Bullish</SentimentStatLabel>
+              <SentimentStatValue $variant="bullish">
+                {statsLoading ? '—' : `${bullishPct}%`}
+              </SentimentStatValue>
+              <SentimentStatSubtext>
+                {statsLoading ? 'Updating...' : `${bullishCount} votes`}
+              </SentimentStatSubtext>
+            </SentimentStatCard>
+            <SentimentStatCard>
+              <SentimentStatLabel>🐻 Bearish</SentimentStatLabel>
+              <SentimentStatValue $variant="bearish">
+                {statsLoading ? '—' : `${bearishPct}%`}
+              </SentimentStatValue>
+              <SentimentStatSubtext>
+                {statsLoading ? 'Updating...' : `${bearishCount} votes`}
+              </SentimentStatSubtext>
+            </SentimentStatCard>
+            <SentimentStatCard>
+              <SentimentStatLabel>Total Votes</SentimentStatLabel>
+              <SentimentStatValue>
+                {statsLoading ? '—' : totalVotes}
+              </SentimentStatValue>
+              <SentimentStatSubtext>Last 24 hours</SentimentStatSubtext>
+            </SentimentStatCard>
+          </SentimentStatsGrid>
+
+          <VoteForm onSubmit={handleVoteSubmit}>
+            <VoteOptions>
+              {['bullish', 'bearish'].map(option => (
+                <VoteToggle
+                  key={option}
+                  type="button"
+                  $active={voteForm.vote === option}
+                  disabled={voteDisabled}
+                  onClick={() => {
+                    if (voteDisabled) return
+                    setVoteForm(prev => ({ ...prev, vote: option }))
+                  }}
+                >
+                  {option === 'bullish' ? '🐂 Bullish' : '🐻 Bearish'}
+                </VoteToggle>
+              ))}
+            </VoteOptions>
+
+            <VoteInput
+              placeholder="Email *"
+              type="email"
+              value={voteForm.email}
+              disabled={voteDisabled}
+              onChange={(e) => setVoteForm(prev => ({ ...prev, email: e.target.value }))}
+              required
+            />
+
+            <VoteTextarea
+              placeholder="Add context (optional)"
+              value={voteForm.comment}
+              disabled={voteDisabled}
+              onChange={(e) => setVoteForm(prev => ({ ...prev, comment: e.target.value }))}
+            />
+
+            <VoteHelperText>
+              {hasVoted
+                ? 'You have already voted in the past 24 hours.'
+                : 'One vote per email every 24 hours. Used only for sentiment analysis.'}
+            </VoteHelperText>
+
+            {voteStatus && (
+              <VoteStatusMessage $type={voteStatus.type}>
+                {voteStatus.message}
+              </VoteStatusMessage>
+            )}
+
+            <VoteSubmitButton type="submit" disabled={voteDisabled}>
+              {voteSending ? 'Submitting...' : hasVoted ? 'Vote Recorded' : 'Submit Sentiment'}
+            </VoteSubmitButton>
+          </VoteForm>
+        </CommunitySentimentSection>
 
         <TransactionsSection>
           <SectionTitle>Recent Whale Transactions</SectionTitle>

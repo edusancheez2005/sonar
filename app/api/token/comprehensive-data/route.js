@@ -101,6 +101,12 @@ const SYMBOL_TO_COINGECKO_ID = {
   'MASK': 'mask-network'
 }
 
+const getPct = (value, fallback = 0) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof fallback === 'number' && Number.isFinite(fallback)) return fallback
+  return 0
+}
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url)
@@ -159,10 +165,22 @@ export async function GET(req) {
             
             // Price Changes
             price_change_24h: cgData.market_data?.price_change_24h || 0,
-            price_change_percentage_24h: cgData.market_data?.price_change_percentage_24h || 0,
-            price_change_percentage_7d: cgData.market_data?.price_change_percentage_7d || 0,
-            price_change_percentage_30d: cgData.market_data?.price_change_percentage_30d || 0,
-            price_change_percentage_1y: cgData.market_data?.price_change_percentage_1y || 0,
+            price_change_percentage_24h: getPct(
+              cgData.market_data?.price_change_percentage_24h_in_currency?.usd,
+              cgData.market_data?.price_change_percentage_24h
+            ),
+            price_change_percentage_7d: getPct(
+              cgData.market_data?.price_change_percentage_7d_in_currency?.usd,
+              cgData.market_data?.price_change_percentage_7d
+            ),
+            price_change_percentage_30d: getPct(
+              cgData.market_data?.price_change_percentage_30d_in_currency?.usd,
+              cgData.market_data?.price_change_percentage_30d
+            ),
+            price_change_percentage_1y: getPct(
+              cgData.market_data?.price_change_percentage_1y_in_currency?.usd,
+              cgData.market_data?.price_change_percentage_1y
+            ),
             
             // All-Time Data
             ath: cgData.market_data?.ath?.usd || 0,

@@ -6,6 +6,7 @@ import isPropValid from '@emotion/is-prop-valid'
 import GlobalStyles from '@/src/styles/GlobalStyles'
 import Navbar from '@/src/components/Navbar'
 import Footer from '@/src/components/Footer'
+import FeedbackWidget from '@/src/components/FeedbackWidget'
 
 export default function ClientRoot({ children }) {
   return (
@@ -19,6 +20,7 @@ export default function ClientRoot({ children }) {
       <Navbar />
       <main>{children}</main>
       <Footer />
+      <FeedbackWidget />
     </StyleSheetManager>
   )
 } 

@@ -125,36 +125,30 @@ const ChatHeader = styled.div`
   }
 `;
 
-const InputContainer = styled.div`
-  display: flex;
-  gap: 1rem;
+const PromptCard = styled.div`
+  background: rgba(10, 22, 33, 0.85);
+  border: 1px solid rgba(54, 166, 186, 0.3);
+  border-radius: 20px;
+  padding: 1.75rem;
   margin-bottom: 2rem;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 `;
 
-const Input = styled.input`
-  flex: 1;
-  background: rgba(10,22,33,0.8);
-  border: 2px solid rgba(54,166,186,0.3);
-  border-radius: 16px;
-  padding: 1.2rem 1.5rem;
+const PromptTitle = styled.div`
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--text-primary);
-  font-size: 1.05rem;
-  outline: none;
-  transition: all 0.3s ease;
-  
-  &:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(54,166,186,0.15);
-  }
-  
-  &::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.6;
-  }
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const PromptText = styled.p`
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
 `;
 
 const AskButton = styled(motion.button)`
@@ -360,7 +354,7 @@ const FeatureCard = styled(motion.div)`
 `;
 
 export default function ClientOrca() {
-  const [prompt, setPrompt] = useState('Tell me the current crypto market trends and where should I invest.')
+  const analysisPrompt = 'Generate a professional-grade market briefing using the latest Sonar whale flows, market momentum, and top transactions.'
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -389,7 +383,7 @@ export default function ClientOrca() {
 - Most Active Tokens: ${activity.slice(0, 5).map(a => a.token).join(', ')}
 - Largest Transaction: ${topTx[0]?.token || 'N/A'} - ${fmt(topTx[0]?.usd_value)}
 
-User Question: ${prompt}
+Analysis Prompt: ${analysisPrompt}
 `
       
       // Generate structured response
@@ -663,22 +657,31 @@ ${strongDistribution.length > 0 ? `
             </div>
           </ChatHeader>
           
-          <InputContainer>
-            <Input
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Ask about market trends, token analysis, or investment opportunities..."
-              onKeyPress={(e) => e.key === 'Enter' && !loading && askOrca()}
-            />
+          <PromptCard>
+            <PromptTitle>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L13.09 8.26L19 9.27L14.5 13.14L15.82 19.02L12 15.9L8.18 19.02L9.5 13.14L5 9.27L10.91 8.26L12 2Z" fill="url(#orcaPromptGrad)"/>
+                <defs>
+                  <linearGradient id="orcaPromptGrad" x1="0" y1="0" x2="24" y2="24">
+                    <stop offset="0" stopColor="#9b59b6" />
+                    <stop offset="1" stopColor="#36a6ba" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              Institutional-Grade Analysis
+            </PromptTitle>
+            <PromptText>
+              Orca ingests live whale inflows/outflows, mega-transactions, and market momentum every few seconds. Tap below to generate a fresh institutional briefing—no prompt engineering required.
+            </PromptText>
             <AskButton
               onClick={askOrca}
-              disabled={loading || !prompt.trim()}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              disabled={loading}
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
             >
-              {loading ? 'Analyzing...' : 'Ask Orca'}
+              {loading ? 'Generating Analysis…' : 'Generate Orca Intelligence'}
             </AskButton>
-          </InputContainer>
+          </PromptCard>
           
           <AnimatePresence mode="wait">
             {loading && (
