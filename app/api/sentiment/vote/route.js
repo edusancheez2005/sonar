@@ -26,18 +26,50 @@ export async function POST(req) {
     const symbol = tokenSymbol?.toUpperCase()
     const voteValue = vote?.toLowerCase()
     const cleanEmail = email?.trim().toLowerCase()
+    const cleanFingerprint = fingerprint?.trim()
 
     if (!symbol || !VALID_VOTES.includes(voteValue)) {
       return NextResponse.json({ error: 'Invalid token or vote option.' }, { status: 400 })
     }
 
-    if (!cleanEmail) {
-      return NextResponse.json({ error: 'Email is required to vote.' }, { status: 400 })
+    if (!cleanEmail && !cleanFingerprint) {
+      return NextResponse.json(
+        { error: 'Fingerprint missing. Please refresh and try again.' },
+        { status: 400 }
+      )
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(cleanEmail)) {
-      return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 })
+    if (cleanEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(cleanEmail)) {
+        return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 })
+      }
+    }
+
+    const lookbackIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    let existingQuery = supabaseAdmin
+      .from('token_sentiment_votes')
+      .select('id')
+      .eq('token_symbol', symbol)
+      .gte('created_at', lookbackIso)
+
+    if (cleanEmail && cleanFingerprint) {
+      existingQuery = existingQuery.or(`voter_email.eq.${cleanEmail},voter_fingerprint.eq.${cleanFingerprint}`)
+    } else if (cleanEmail) {
+      existingQuery = existingQuery.eq('voter_email', cleanEmail)
+    } else if (cleanFingerprint) {
+      existingQuery = existingQuery.eq('voter_fingerprint', cleanFingerprint)
+    }
+
+    const { data: existing, error: existingError } = await existingQuery.limit(1)
+    if (existingError) {
+      console.error('Sentiment duplicate check error:', existingError)
+    }
+    if (existing && existing.length > 0) {
+      return NextResponse.json(
+        { error: 'Looks like you already voted today. Check back tomorrow!' },
+        { status: 409 }
+      )
     }
 
     const { error } = await supabaseAdmin
@@ -45,19 +77,13 @@ export async function POST(req) {
       .insert({
         token_symbol: symbol,
         vote: voteValue,
-        voter_email: cleanEmail,
+        voter_email: cleanEmail || null,
         comments: comment?.trim() || null,
-        voter_fingerprint: fingerprint || null,
+        voter_fingerprint: cleanFingerprint || null,
         source: source || 'token_page'
       })
 
     if (error) {
-      if (error.code === '23505') {
-        return NextResponse.json(
-          { error: 'Looks like you already voted today. Check back tomorrow!' },
-          { status: 409 }
-        )
-      }
       console.error('Sentiment vote insert error:', error)
       return NextResponse.json({ error: 'Failed to record vote.' }, { status: 500 })
     }

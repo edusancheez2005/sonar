@@ -40,27 +40,31 @@ export async function POST(req) {
       console.error('Failed to store feedback:', dbError)
     }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD
-      }
-    })
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD
+        }
+      })
 
-    await transporter.sendMail({
-      from: process.env.GMAIL_USER,
-      to: 'eduardo@sonartracker.io',
-      replyTo: cleanEmail,
-      subject: '[Sonar Feedback] New visitor feedback received',
-      html: `
-        <h2>New Feedback Submission</h2>
-        <p><strong>Name:</strong> ${cleanName}</p>
-        <p><strong>Email:</strong> ${cleanEmail}</p>
-        <p style="margin-top: 1rem;"><strong>Feedback:</strong></p>
-        <p style="white-space: pre-wrap; font-size: 15px;">${cleanMessage}</p>
-      `
-    })
+      await transporter.sendMail({
+        from: process.env.GMAIL_USER,
+        to: 'eduardo@sonartracker.io',
+        replyTo: cleanEmail,
+        subject: '[Sonar Feedback] New visitor feedback received',
+        html: `
+          <h2>New Feedback Submission</h2>
+          <p><strong>Name:</strong> ${cleanName}</p>
+          <p><strong>Email:</strong> ${cleanEmail}</p>
+          <p style="margin-top: 1rem;"><strong>Feedback:</strong></p>
+          <p style="white-space: pre-wrap; font-size: 15px;">${cleanMessage}</p>
+        `
+      })
+    } catch (emailError) {
+      console.error('Failed to send feedback email:', emailError)
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

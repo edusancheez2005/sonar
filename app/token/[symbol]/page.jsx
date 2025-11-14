@@ -40,7 +40,7 @@ export default async function TokenDetail({ params, searchParams }) {
   const sinceIso = new Date(Date.now() - (sinceHours > 0 ? sinceHours : 24) * 60 * 60 * 1000).toISOString()
   let q = supabaseAdmin
     .from('whale_transactions')
-    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score')
+    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,to_address,whale_score,confidence,whale_address,counterparty_address,counterparty_type,from_label,to_label,reasoning')
     .eq('token_symbol', symbol)
     .gte('timestamp', sinceIso)
     .order('timestamp', { ascending: false })
@@ -55,7 +55,7 @@ export default async function TokenDetail({ params, searchParams }) {
     totalVolume += usd
     const s = (r.classification || '').toLowerCase()
     if (s === 'buy') { buys += 1; netFlow += usd } else if (s === 'sell') { sells += 1; netFlow -= usd }
-    whales.add(r.from_address || '')
+    whales.add(r.whale_address || r.from_address || '')
     chainMap.set(r.blockchain || '—', (chainMap.get(r.blockchain || '—') || 0) + 1)
   }
   const uniqueWhales = whales.size
