@@ -925,7 +925,7 @@ export default function SubscribePage() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                   >
-                    <p>We track transactions with a minimum value of $50,000 USD. Our algorithm analyzes these large movements, filtering out noise and identifying genuine whale activity that can indicate market trends and sentiment shifts.</p>
+                    <p>We track transactions with a minimum value of $10,000 USD. Our algorithm analyzes these large movements, filtering out noise and identifying genuine whale activity that can indicate market trends and sentiment shifts.</p>
                   </FAQAnswer>
                 )}
               </AnimatePresence>

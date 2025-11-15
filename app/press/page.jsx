@@ -215,7 +215,7 @@ export default function PressKit() {
           <p><strong>Headquarters:</strong> United Kingdom</p>
           <p><strong>Key Features:</strong></p>
           <ul>
-            <li>Real-time tracking of cryptocurrency whale transactions over $50,000</li>
+            <li>Real-time tracking of cryptocurrency whale transactions over $10,000</li>
             <li>AI-powered market sentiment analysis with Orca 2.0</li>
             <li>Advanced token analytics and risk assessment</li>
             <li>15-minute data refresh rate for institutional-grade accuracy</li>
@@ -302,7 +302,7 @@ export default function PressKit() {
             <li><strong>500M+</strong> Transactions Tracked</li>
             <li><strong>24/7</strong> Real-Time Monitoring</li>
             <li><strong>15-Minute</strong> Data Refresh Rate</li>
-            <li><strong>$50,000</strong> Minimum Transaction Threshold</li>
+            <li><strong>$10,000</strong> Minimum Transaction Threshold</li>
             <li><strong>Ethereum</strong> Primary Blockchain (More Coming Soon)</li>
           </ul>
         </Section>
@@ -314,7 +314,7 @@ export default function PressKit() {
         >
           <h2>Boilerplate</h2>
           <p>
-            Sonar Tracker is a leading cryptocurrency whale transaction monitoring platform that provides real-time analytics and AI-powered market intelligence. Founded in 2024 and headquartered in the United Kingdom, Sonar Tracker empowers traders with institutional-grade data, tracking whale transactions over $50,000 across major blockchains. With features including real-time monitoring, advanced sentiment analysis, and the AI advisor Orca 2.0, Sonar Tracker has become the go-to platform for serious crypto traders seeking competitive advantages in volatile markets.
+            Sonar Tracker is a leading cryptocurrency whale transaction monitoring platform that provides real-time analytics and AI-powered market intelligence. Founded in 2024 and headquartered in the United Kingdom, Sonar Tracker empowers traders with institutional-grade data, tracking whale transactions over $10,000 across major blockchains. With features including real-time monitoring, advanced sentiment analysis, and the AI advisor Orca 2.0, Sonar Tracker has become the go-to platform for serious crypto traders seeking competitive advantages in volatile markets.
           </p>
         </Section>
       </Content>

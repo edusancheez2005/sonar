@@ -710,7 +710,7 @@ const Dashboard = ({ isPremium = false }) => {
              fontWeight: '500',
              margin: '0'
            }}>
-             🐋 Tracking transactions $50,000+
+             🐋 Tracking transactions $10,000+
            </p>
          </div>
        </motion.div>

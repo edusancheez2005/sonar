@@ -1,25 +1,40 @@
 import React from 'react'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import AuthGuard from '@/app/components/AuthGuard'
+import WhaleDetailClient from './WhaleDetailClient'
 
 export async function generateMetadata({ params }) {
   const addr = decodeURIComponent(params.address)
   const short = `${addr.slice(0, 6)}…${addr.slice(-4)}`
-  const title = `Whale ${short} — Net Flow, Top Tokens & Trades`
-  const description = `Profile of whale ${short}: 24h net flow, top tokens by net USD, and recent large transactions.`
+  
+  // Check if this is an exchange address
+  const { data: addressInfo } = await supabaseAdmin
+    .from('addresses')
+    .select('address_name, address_type')
+    .eq('address', addr.toLowerCase())
+    .maybeSingle()
+  
+  const isExchange = addressInfo && ['CEX Wallet', 'exchange', 'Exchange Wallet'].includes(addressInfo.address_type)
+  const title = isExchange 
+    ? `${addressInfo.address_name || 'Exchange'} Wallet — Verified Exchange Address`
+    : `Whale ${short} — Net Flow, Top Tokens & Trades`
+  const description = isExchange
+    ? `Verified ${addressInfo.address_type}: ${addressInfo.address_name || addr}. View trading activity and transaction history.`
+    : `Profile of whale ${short}: 24h net flow, top tokens by net USD, and recent large transactions.`
   const url = `https://www.sonartracker.io/whale/${encodeURIComponent(addr)}`
   return { title, description, alternates: { canonical: url }, openGraph: { title, description, url }, twitter: { title, description } }
 }
 
-function BreadcrumbJsonLd({ addr }) {
+function BreadcrumbJsonLd({ addr, isExchange, exchangeName }) {
   const short = `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  const name = isExchange ? exchangeName || 'Exchange Wallet' : `Whale ${short}`
   const json = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.sonartracker.io/' },
       { '@type': 'ListItem', position: 2, name: 'Whales', item: 'https://www.sonartracker.io/whales/leaderboard' },
-      { '@type': 'ListItem', position: 3, name: `Whale ${short}`, item: `https://www.sonartracker.io/whale/${encodeURIComponent(addr)}` },
+      { '@type': 'ListItem', position: 3, name, item: `https://www.sonartracker.io/whale/${encodeURIComponent(addr)}` },
     ],
   }
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }} />
@@ -29,7 +44,20 @@ export default async function WhaleProfile({ params }) {
   const addr = decodeURIComponent(params.address)
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   
-  // NEW: Use whale_address column and filter for real trades only
+  // Check if this is an exchange address
+  const { data: addressInfo } = await supabaseAdmin
+    .from('addresses')
+    .select('address_name, address_type')
+    .eq('address', addr.toLowerCase())
+    .maybeSingle()
+  
+  const isExchange = addressInfo && ['CEX Wallet', 'exchange', 'Exchange Wallet'].includes(addressInfo.address_type)
+  const exchangeInfo = isExchange ? {
+    name: addressInfo.address_name || 'Exchange',
+    type: addressInfo.address_type
+  } : null
+  
+  // Fetch whale transactions (works for both whales and exchanges)
   const { data, error } = await supabaseAdmin
     .from('whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address')
@@ -80,48 +108,21 @@ export default async function WhaleProfile({ params }) {
 
   return (
     <AuthGuard>
-      <main className="container" style={{ padding: '2rem' }}>
-        <BreadcrumbJsonLd addr={addr} />
-        <div className="card">
-          <h1>Whale {addr.slice(0, 6)}…{addr.slice(-4)}</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Net Flow (24h): ${Math.round(netUsd).toLocaleString()}</p>
-          <h2>Top Tokens (by net flow)</h2>
-          <table>
-            <thead><tr><th>Token</th><th style={{ textAlign: 'right' }}>Net USD</th></tr></thead>
-            <tbody>
-              {topTokens.map(t => (
-                <tr key={t.token}>
-                  <td><a href={`/token/${encodeURIComponent(t.token)}`}>{t.token}</a></td>
-                  <td style={{ textAlign: 'right' }}>${Math.round(Number(t.net)).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <h2>Recent Trades</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Token</th>
-                <th>Side</th>
-                <th style={{ textAlign: 'right' }}>USD</th>
-                <th style={{ textAlign: 'right' }}>Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data || []).map(t => (
-                <tr key={t.transaction_hash}>
-                  <td>{new Date(t.timestamp).toLocaleString()}</td>
-                  <td><a href={`/token/${encodeURIComponent(t.token_symbol || '-')}`}>{t.token_symbol || '-'}</a></td>
-                  <td>{t.classification}</td>
-                  <td style={{ textAlign: 'right' }}>${Math.round(Number(t.usd_value || 0)).toLocaleString()}</td>
-                  <td style={{ textAlign: 'right' }}>{t.whale_score ?? '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </main>
+      <BreadcrumbJsonLd 
+        addr={addr} 
+        isExchange={isExchange}
+        exchangeName={exchangeInfo?.name}
+      />
+      <WhaleDetailClient
+        address={addr}
+        netFlow={netUsd}
+        buyVolume={buyVolume}
+        sellVolume={sellVolume}
+        topTokens={topTokens}
+        trades={data || []}
+        isExchange={isExchange}
+        exchangeInfo={exchangeInfo}
+      />
     </AuthGuard>
   )
 } 

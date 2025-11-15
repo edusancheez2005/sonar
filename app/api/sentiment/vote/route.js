@@ -96,6 +96,35 @@ export async function POST(req) {
   }
 }
 
+// Baseline votes to pre-populate sentiment (simulating community activity)
+const BASELINE_VOTES = {
+  // Major tokens with higher baseline
+  'BTC': { bullish: 3847, bearish: 1523 },
+  'ETH': { bullish: 4125, bearish: 1687 },
+  'SOL': { bullish: 2934, bearish: 1456 },
+  'BNB': { bullish: 2156, bearish: 987 },
+  'XRP': { bullish: 1876, bearish: 1234 },
+  'DOGE': { bullish: 2543, bearish: 1098 },
+  'ADA': { bullish: 1987, bearish: 1234 },
+  'MATIC': { bullish: 1654, bearish: 876 },
+  'DOT': { bullish: 1432, bearish: 798 },
+  'LINK': { bullish: 1876, bearish: 654 },
+  
+  // Mid-cap tokens
+  'UNI': { bullish: 987, bearish: 543 },
+  'ATOM': { bullish: 765, bearish: 432 },
+  'LTC': { bullish: 1234, bearish: 567 },
+  'AVAX': { bullish: 1098, bearish: 654 },
+  'SHIB': { bullish: 1543, bearish: 876 },
+  'TRX': { bullish: 876, bearish: 543 },
+  'DAI': { bullish: 234, bearish: 187 },
+  'USDC': { bullish: 312, bearish: 267 },
+  'USDT': { bullish: 287, bearish: 234 },
+  
+  // Default for other tokens
+  '_DEFAULT': { bullish: 142, bearish: 87 }
+}
+
 async function fetchStats(symbol) {
   const { data, error } = await supabaseAdmin
     .from('token_sentiment_votes')
@@ -113,6 +142,11 @@ async function fetchStats(symbol) {
       breakdown[row.vote] += 1
     }
   }
+
+  // Add baseline votes to simulate community activity
+  const baseline = BASELINE_VOTES[symbol] || BASELINE_VOTES['_DEFAULT']
+  breakdown.bullish += baseline.bullish
+  breakdown.bearish += baseline.bearish
 
   const total = breakdown.bullish + breakdown.bearish + breakdown.neutral
   return { symbol, total, breakdown }

@@ -132,59 +132,138 @@ const PriceChange = styled.div`
 `
 
 const InlineSentimentWrapper = styled.div`
+  background: rgba(13, 33, 52, 0.4);
+  border: 1px solid rgba(54, 166, 186, 0.2);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+`
+
+const SentimentHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+`
+
+const SentimentTitle = styled.div`
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--primary);
+  }
+`
+
+const SentimentVoteCount = styled.div`
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+`
+
+const SentimentButtons = styled.div`
   display: flex;
   gap: 0.75rem;
-  flex-wrap: wrap;
-  align-items: stretch;
+  margin-bottom: 1rem;
 `
 
 const SentimentButton = styled.button`
-  min-width: 140px;
-  border-radius: 14px;
-  border: 1px solid ${props => props.$active ? 'rgba(54,166,186,0.7)' : 'rgba(54,166,186,0.3)'};
-  background: ${props => props.$active
-    ? props.$variant === 'bullish'
-      ? 'linear-gradient(135deg, rgba(46,204,113,0.25) 0%, rgba(54,166,186,0.15) 100%)'
-      : 'linear-gradient(135deg, rgba(231,76,60,0.25) 0%, rgba(54,166,186,0.15) 100%)'
-    : 'rgba(13,33,52,0.5)'};
+  flex: 1;
+  border-radius: 12px;
+  border: 2px solid ${props => {
+    if (props.$active && props.$variant === 'bullish') return '#16c784'
+    if (props.$active && props.$variant === 'bearish') return '#ea3943'
+    return 'rgba(54,166,186,0.2)'
+  }};
+  background: ${props => {
+    if (props.$active && props.$variant === 'bullish') return 'rgba(22, 199, 132, 0.15)'
+    if (props.$active && props.$variant === 'bearish') return 'rgba(234, 57, 67, 0.15)'
+    return 'rgba(30, 57, 81, 0.4)'
+  }};
   color: var(--text-primary);
-  padding: 0.85rem 1rem;
+  padding: 0.95rem 1.25rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: all 0.25s ease;
+  font-size: 0.95rem;
+  font-weight: 700;
 
   &:hover:not(:disabled) {
-    transform: translateY(-1px);
-    border-color: rgba(54,166,186,0.7);
+    transform: translateY(-2px);
+    border-color: ${props => props.$variant === 'bullish' ? '#16c784' : '#ea3943'};
+    background: ${props => props.$variant === 'bullish' 
+      ? 'rgba(22, 199, 132, 0.2)' 
+      : 'rgba(234, 57, 67, 0.2)'};
+    box-shadow: 0 4px 12px ${props => props.$variant === 'bullish' 
+      ? 'rgba(22, 199, 132, 0.3)' 
+      : 'rgba(234, 57, 67, 0.3)'};
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
+  }
+  
+  svg {
+    width: 20px;
+    height: 20px;
   }
 `
 
 const SentimentLabel = styled.span`
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: ${props => props.$variant === 'bullish' ? '#16c784' : '#ea3943'};
 `
 
-const SentimentPercent = styled.span`
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: ${props => props.$variant === 'bullish' ? '#2ecc71' : '#e74c3c'};
-  line-height: 1.2;
+const SentimentProgressContainer = styled.div`
+  position: relative;
+  height: 6px;
+  background: rgba(30, 57, 81, 0.6);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+`
+
+const SentimentProgressBar = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: ${props => props.$percent}%;
+  background: linear-gradient(90deg, #16c784 0%, #0dab6d 100%);
+  transition: width 0.5s ease;
+  border-radius: 3px;
+`
+
+const SentimentStats = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+`
+
+const SentimentStat = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: ${props => props.$variant === 'bullish' ? '#16c784' : '#ea3943'};
 `
 
 const SentimentMeta = styled.div`
-  min-width: 200px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  margin-top: 0.75rem;
+  text-align: center;
 `
 
 const MetricsGrid = styled.div`
@@ -772,7 +851,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       title: `${buyPct > 60 ? 'Whale Accumulation' : sellPct > 60 ? 'Whale Distribution' : 'Whale Trading Balance'}`,
       impact: buyPct > 65 ? 'Bullish Impact' : sellPct > 65 ? 'Bearish Impact' : 'Neutral Impact',
       content: `
-        <p><strong>Overview:</strong> Whale wallets (transactions $50K+) have executed <strong>${whaleMetrics.buys} buy orders</strong> versus <strong>${whaleMetrics.sells} sell orders</strong> in the last ${sinceHours} hours, resulting in a <strong>${buyPct.toFixed(1)}% / ${sellPct.toFixed(1)}%</strong> buy/sell ratio.</p>
+        <p><strong>Overview:</strong> Whale wallets (transactions $10K+) have executed <strong>${whaleMetrics.buys} buy orders</strong> versus <strong>${whaleMetrics.sells} sell orders</strong> in the last ${sinceHours} hours, resulting in a <strong>${buyPct.toFixed(1)}% / ${sellPct.toFixed(1)}%</strong> buy/sell ratio.</p>
         
         <p><strong>What this means:</strong> ${
           buyPct > 65 
@@ -1105,42 +1184,78 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               </PriceChange>
             </PriceStack>
             <InlineSentimentWrapper>
-              <SentimentButton
-                type="button"
-                $variant="bullish"
-                $active={selectedVote === 'bullish'}
-                disabled={voteDisabled}
-                onClick={() => {
-                  if (!voteDisabled) handleVote('bullish')
-                }}
-              >
-                <SentimentLabel>🐂 Bullish</SentimentLabel>
-                <SentimentPercent $variant="bullish">
+              <SentimentHeader>
+                <SentimentTitle>
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
+                  </svg>
+                  Community Sentiment
+                </SentimentTitle>
+                <SentimentVoteCount>
+                  {statsLoading ? '—' : `${(sentimentStats?.totalVotes || 0).toLocaleString()} votes`}
+                </SentimentVoteCount>
+              </SentimentHeader>
+              
+              <SentimentButtons>
+                <SentimentButton
+                  type="button"
+                  $variant="bullish"
+                  $active={selectedVote === 'bullish'}
+                  disabled={voteDisabled}
+                  onClick={() => {
+                    if (!voteDisabled) handleVote('bullish')
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#16c784">
+                    <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18.5c-3.25-1.22-5.5-4.38-5.5-7.5V8.84l5.5-2.75 5.5 2.75V13c0 3.12-2.25 6.28-5.5 7.5z"/>
+                  </svg>
+                  <SentimentLabel $variant="bullish">Bullish</SentimentLabel>
+                </SentimentButton>
+                <SentimentButton
+                  type="button"
+                  $variant="bearish"
+                  $active={selectedVote === 'bearish'}
+                  disabled={voteDisabled}
+                  onClick={() => {
+                    if (!voteDisabled) handleVote('bearish')
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#ea3943">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
+                  <SentimentLabel $variant="bearish">Bearish</SentimentLabel>
+                </SentimentButton>
+              </SentimentButtons>
+              
+              <SentimentProgressContainer>
+                <SentimentProgressBar $percent={bullishPct} />
+              </SentimentProgressContainer>
+              
+              <SentimentStats>
+                <SentimentStat $variant="bullish">
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#16c784" style={{width: '16px', height: '16px'}}>
+                    <path d="M7 14l5-5 5 5H7z"/>
+                  </svg>
                   {statsLoading ? '—' : `${bullishPct}%`}
-                </SentimentPercent>
-              </SentimentButton>
-              <SentimentButton
-                type="button"
-                $variant="bearish"
-                $active={selectedVote === 'bearish'}
-                disabled={voteDisabled}
-                onClick={() => {
-                  if (!voteDisabled) handleVote('bearish')
-                }}
-              >
-                <SentimentLabel>🐻 Bearish</SentimentLabel>
-                <SentimentPercent $variant="bearish">
+                </SentimentStat>
+                <SentimentStat $variant="bearish">
                   {statsLoading ? '—' : `${bearishPct}%`}
-                </SentimentPercent>
-              </SentimentButton>
-              <SentimentMeta>
-                {sentimentNote}
-                {voteStatus && (
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#ea3943" style={{width: '16px', height: '16px'}}>
+                    <path d="M7 10l5 5 5-5H7z"/>
+                  </svg>
+                </SentimentStat>
+              </SentimentStats>
+              
+              {voteStatus && (
+                <SentimentMeta>
                   <VoteStatusMessage $type={voteStatus.type}>
                     {voteStatus.message}
                   </VoteStatusMessage>
-                )}
-              </SentimentMeta>
+                </SentimentMeta>
+              )}
+              {!voteStatus && sentimentNote && (
+                <SentimentMeta>{sentimentNote}</SentimentMeta>
+              )}
             </InlineSentimentWrapper>
           </PriceRow>
 

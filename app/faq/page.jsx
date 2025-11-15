@@ -186,7 +186,7 @@ const faqData = [
     items: [
       {
         question: 'What is Sonar Tracker?',
-        answer: 'Sonar Tracker is a real-time cryptocurrency whale transaction monitoring and analytics platform. We track large transactions (over $50,000) across multiple blockchains and provide AI-powered insights to help traders make informed decisions. Our platform includes whale activity tracking, sentiment analysis, market statistics, and our AI advisor Orca 2.0.'
+        answer: 'Sonar Tracker is a real-time cryptocurrency whale transaction monitoring and analytics platform. We track large transactions (over $10,000) across multiple blockchains and provide AI-powered insights to help traders make informed decisions. Our platform includes whale activity tracking, sentiment analysis, market statistics, and our AI advisor Orca 2.0.'
       },
       {
         question: 'How do I sign up?',
@@ -194,7 +194,7 @@ const faqData = [
       },
       {
         question: 'What is whale activity?',
-        answer: 'Whale activity refers to large cryptocurrency transactions made by individuals or entities holding significant amounts of crypto (known as "whales"). These transactions can indicate market sentiment and potential price movements. Sonar Tracker monitors transactions over $50,000 across Ethereum and other major blockchains.'
+        answer: 'Whale activity refers to large cryptocurrency transactions made by individuals or entities holding significant amounts of crypto (known as "whales"). These transactions can indicate market sentiment and potential price movements. Sonar Tracker monitors transactions over $10,000 across Ethereum and other major blockchains.'
       },
       {
         question: 'Do I need a subscription to use Sonar Tracker?',
@@ -261,7 +261,7 @@ const faqData = [
       },
       {
         question: 'What is the minimum transaction size tracked?',
-        answer: 'Sonar Tracker monitors transactions with a minimum USD value of $50,000. This threshold ensures we\'re capturing meaningful whale activity that can impact market sentiment and price movements.'
+        answer: 'Sonar Tracker monitors transactions with a minimum USD value of $10,000. This threshold ensures we\'re capturing meaningful whale activity that can impact market sentiment and price movements.'
       },
       {
         question: 'How do you calculate whale scores?',
@@ -273,7 +273,7 @@ const faqData = [
       },
       {
         question: 'Why do some tokens show $0 or "No data"?',
-        answer: 'Tokens showing $0 or "No data" have not had any whale transactions (over $50k) in the selected timeframe. For popular tokens without whale data, we display market data from CoinGecko including 24h volume, market cap, and price changes as a fallback.'
+        answer: 'Tokens showing $0 or "No data" have not had any whale transactions (over $10k) in the selected timeframe. For popular tokens without whale data, we display market data from CoinGecko including 24h volume, market cap, and price changes as a fallback.'
       }
     ]
   },
@@ -311,7 +311,7 @@ const faqData = [
       },
       {
         question: 'Why am I seeing "No whale activity" for a token?',
-        answer: 'This means no transactions over $50,000 have been detected for that token in the selected timeframe. This is normal for smaller tokens or during low-activity periods. Try expanding your time range (e.g., from 24h to 7d) to see more data.'
+        answer: 'This means no transactions over $10,000 have been detected for that token in the selected timeframe. This is normal for smaller tokens or during low-activity periods. Try expanding your time range (e.g., from 24h to 7d) to see more data.'
       },
       {
         question: 'The page is loading slowly. What can I do?',
