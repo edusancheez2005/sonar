@@ -191,4 +191,3 @@ export default async function WhaleProfile({ params }) {
     </AuthGuard>
   )
 } 
-} 
