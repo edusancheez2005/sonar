@@ -75,35 +75,68 @@ export default async function WhaleProfile({ params }) {
   
   for (const r of data || []) {
     const usd = Number(r.usd_value || 0)
+    if (usd === 0) continue // Skip zero value transactions
     
-    // Determine if this is a BUY or SELL from the whale's perspective
-    // If whale_address is set and matches our address, use classification
-    // Otherwise, infer from from/to addresses
-    let isBuy = false
-    let classification = r.classification || 'UNKNOWN'
+    const fromAddr = (r.from_address || '').toLowerCase()
+    const toAddr = (r.to_address || '').toLowerCase()
+    const whaleAddr = (r.whale_address || '').toLowerCase()
+    const ourAddr = addr.toLowerCase()
+    const storedClassification = (r.classification || '').toUpperCase()
+    const counterpartyType = r.counterparty_type
     
-    if (r.whale_address && r.whale_address.toLowerCase() === addr.toLowerCase()) {
-      // Use the stored classification
-      isBuy = classification.toUpperCase() === 'BUY'
-    } else {
-      // Infer from addresses: if our address is 'to', it's receiving (BUY), if 'from', it's sending (SELL)
-      if (r.to_address && r.to_address.toLowerCase() === addr.toLowerCase()) {
-        isBuy = true
-        classification = 'BUY'
-      } else if (r.from_address && r.from_address.toLowerCase() === addr.toLowerCase()) {
-        isBuy = false
-        classification = 'SELL'
-      } else {
-        // Skip if we can't determine
-        continue
-      }
-    }
-    
-    // Only count BUY/SELL transactions
-    if (classification.toUpperCase() !== 'BUY' && classification.toUpperCase() !== 'SELL') {
+    // Skip TRANSFER and DEFI transactions - they're not real buy/sell
+    if (storedClassification === 'TRANSFER' || storedClassification === 'DEFI') {
       continue
     }
     
+    // Determine BUY/SELL from TOKEN FLOW DIRECTION, not stored classification
+    // Token flow: from_address -> to_address
+    // If our address is 'to' = we're RECEIVING tokens = BUY
+    // If our address is 'from' = we're SENDING tokens = SELL
+    
+    let isBuy = false
+    let classification = 'UNKNOWN'
+    
+    // Priority 1: Check whale_address position
+    if (whaleAddr === ourAddr) {
+      if (whaleAddr === toAddr) {
+        // Whale is receiving tokens = BUY
+        isBuy = true
+        classification = 'BUY'
+      } else if (whaleAddr === fromAddr) {
+        // Whale is sending tokens = SELL
+        isBuy = false
+        classification = 'SELL'
+      } else {
+        // Whale address doesn't match from/to - unusual, skip
+        continue
+      }
+    }
+    // Priority 2: Check from/to addresses directly
+    else if (toAddr === ourAddr) {
+      // Our address is receiving = BUY
+      isBuy = true
+      classification = 'BUY'
+    } else if (fromAddr === ourAddr) {
+      // Our address is sending = SELL
+      isBuy = false
+      classification = 'SELL'
+    } else {
+      // Our address isn't involved in the token transfer
+      continue
+    }
+    
+    // Only proceed if we successfully classified as BUY or SELL
+    if (classification !== 'BUY' && classification !== 'SELL') {
+      continue
+    }
+    
+    // Additional validation: if counterparty_type exists, transaction should involve CEX/DEX
+    if (counterpartyType && counterpartyType !== 'CEX' && counterpartyType !== 'DEX') {
+      continue
+    }
+    
+    // Aggregate volumes
     if (isBuy) {
       buyVolume += usd
       netUsd += usd
@@ -112,6 +145,7 @@ export default async function WhaleProfile({ params }) {
       netUsd -= usd
     }
     
+    // Aggregate by token
     const token = r.token_symbol || '—'
     if (!byToken.has(token)) {
       byToken.set(token, { net: 0, buy: 0, sell: 0 })
@@ -128,7 +162,7 @@ export default async function WhaleProfile({ params }) {
     // Store transaction with corrected classification
     transactions.push({
       ...r,
-      classification: classification.toUpperCase()
+      classification: classification
     })
   }
   
@@ -156,4 +190,5 @@ export default async function WhaleProfile({ params }) {
       />
     </AuthGuard>
   )
+} 
 } 
