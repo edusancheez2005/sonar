@@ -284,10 +284,254 @@ const QuickLinks = styled.div`
 `
 
 const blogPosts = {
+  'bullish-bearish-sentiment-trading': {
+    title: 'Using Community Sentiment to Trade: Bullish vs Bearish Signals',
+    category: 'Strategy',
+    date: 'Nov 16, 2025',
+    readTime: '9 min read',
+    content: {
+      intro: 'Community sentiment has emerged as a powerful trading indicator in cryptocurrency markets. By analyzing voting patterns, whale positioning, and crowd psychology, traders can identify high-probability setups and avoid costly mistakes. This guide explores how to leverage bullish and bearish sentiment signals for better trading decisions.',
+      sections: [
+        {
+          title: 'Understanding Sentiment Indicators',
+          content: `Community sentiment polls provide a real-time snapshot of market psychology. On Sonar Tracker, our Bullish/Bearish voting system aggregates thousands of trader opinions alongside actual whale transaction data to create a comprehensive sentiment picture.
+
+**Key Sentiment Metrics:**
+• **Vote Distribution**: The percentage split between bullish and bearish votes
+• **Vote Volume**: Total number of participants indicates signal strength
+• **Whale Alignment**: When sentiment matches whale buy/sell ratios
+• **Sentiment Shifts**: Rapid changes in vote distribution signal potential reversals
+
+**Why Sentiment Matters:**
+Sentiment indicators work because they capture the collective wisdom (or folly) of the crowd. When combined with whale data, you can identify:
+• **Contrarian Opportunities**: Extreme bearish sentiment at support levels
+• **Confirmation Signals**: Bullish sentiment aligned with whale accumulation
+• **Distribution Warnings**: Retail bullishness while whales are selling
+• **Accumulation Phases**: Bearish sentiment during whale buying`
+        },
+        {
+          title: 'Trading the Sentiment Extremes',
+          content: `**Contrarian Strategy (Advanced)**
+
+The most profitable trades often occur when sentiment reaches extremes:
+
+**When Bearish Sentiment Hits 70%+:**
+• Check if whale addresses are actually buying
+• Look for technical support levels holding
+• Consider this a potential "blood in the streets" buying opportunity
+• Use tight stops below recent lows
+
+**When Bullish Sentiment Hits 80%+:**
+• Verify if whales are distributing (selling)
+• Look for technical resistance levels
+• Consider taking profits or reducing exposure
+• Watch for sentiment/price divergences
+
+**Real Example:**
+Token XYZ shows 85% bullish votes but whale data reveals $2M net outflow. This divergence signals distribution phase - retail is buying while smart money exits. Result: 15% drop over next 48 hours.
+
+**Confluence Trading:**
+Combine sentiment with other factors:
+• **Bullish Setup**: 70%+ bullish + whale accumulation + technical breakout = High conviction long
+• **Bearish Setup**: 75%+ bearish + whale distribution + broken support = High conviction short or exit`
+        },
+        {
+          title: 'Advanced Sentiment Analysis Techniques',
+          content: `**Sentiment Velocity Tracking**
+
+Track how quickly sentiment changes:
+• **Rapid Shift Bullish**: Sentiment flips from 40% to 70% bullish in 24h = FOMO incoming
+• **Gradual Accumulation**: Steady increase from 45% to 60% over 7 days = Healthy trend
+• **Panic Capitulation**: Drop from 65% to 30% bullish in hours = Potential bottom
+
+**Cross-Token Sentiment Correlation**
+
+Compare sentiment across related tokens:
+• If BTC sentiment turns bearish, altcoin bearish votes often follow
+• Sector rotation: DeFi tokens gaining bullish votes while memes turn bearish
+• Leading indicators: Major caps sentiment shifts before small caps
+
+**Whale vs Retail Sentiment Divergence**
+
+The most powerful signal:
+• **Bullish Divergence**: Retail 70% bearish BUT whales net buying $5M+ = Major opportunity
+• **Bearish Divergence**: Retail 80% bullish BUT whales net selling $10M+ = Exit signal
+• **Alignment**: Both retail and whales bullish with rising volume = Continuation likely
+
+**Time-Based Sentiment Analysis**
+
+Different timeframes reveal different insights:
+• **Hourly**: Captures immediate reactions to news/events
+• **Daily**: Shows evolving narratives and trend changes
+• **Weekly**: Identifies longer-term positioning and market cycles
+
+**Practical Application:**
+1. Check token's current sentiment poll
+2. Compare to 24h ago and 7d ago for trend
+3. Cross-reference with whale buy/sell ratio
+4. Look for divergences or confirmations
+5. Size position based on conviction level`
+        }
+      ]
+    }
+  },
+  'top-whales-7day-analysis': {
+    title: 'Top 10 Whales This Week: What Are They Trading?',
+    category: 'Market Analysis',
+    date: 'Nov 16, 2025',
+    readTime: '10 min read',
+    content: {
+      intro: 'This week\'s most active crypto whales have made bold moves across multiple tokens. By analyzing their 7-day trading patterns, position sizes, and buy/sell ratios, we can identify emerging trends before they hit mainstream consciousness. Here\'s what the smart money is doing right now.',
+      sections: [
+        {
+          title: 'How We Identify Top Whales',
+          content: `Sonar Tracker's whale ranking system uses a sophisticated multi-factor algorithm to identify the most influential market participants:
+
+**Ranking Methodology:**
+
+**1. Net Flow Analysis (40% weight)**
+• Absolute dollar value of net buys/sells over 7 days
+• Whales with $10M+ net flow rank highest
+• Both accumulation (buying) and distribution (selling) score equally
+
+**2. Transaction Volume (30% weight)**
+• Total dollar value of all transactions
+• Higher volume = more market impact
+• Minimum $50M+ in weekly volume for top 10
+
+**3. Unique Token Diversity (20% weight)**
+• Number of different tokens traded
+• Diversified whales (5+ tokens) show sector expertise
+• Single-token whales may signal targeted accumulation
+
+**4. Whale Score (10% weight)**
+• Historical accuracy of whale's past moves
+• Address reputation and longevity
+• Smart contract interaction sophistication
+
+**Why 7 Days?**
+Weekly analysis smooths out daily noise while capturing meaningful position changes. It's long enough to see strategic shifts but short enough to be actionable.
+
+**Data Quality Filters:**
+• Excludes CEX cold wallets (not real whale trading)
+• Filters wash trading and self-transfers
+• Requires minimum $10K per transaction
+• Verifies counterparty is legitimate DEX/CEX`
+        },
+        {
+          title: 'This Week\'s Top Trading Patterns',
+          content: `**Pattern #1: DeFi Blue Chip Rotation**
+
+Rank #1-3 whales show heavy accumulation in:
+• AAVE: $15M net buying (72% buy ratio)
+• COMP: $8M net buying (68% buy ratio)
+• CRV: $12M net buying (75% buy ratio)
+
+**Analysis:** Smart money is rotating back into DeFi governance tokens after 3-month lull. Historical pattern suggests 2-3 week accumulation before 30-50% moves.
+
+**Action:** Watch for continuation. If net flow stays positive for 14 days, high probability of trend continuation.
+
+**Pattern #2: L2 Narrative Building**
+
+Rank #4-6 whales concentrated in:
+• ARB: $22M net buying (65% buy ratio)
+• OP: $18M net buying (70% buy ratio)
+• MATIC: $9M net selling (35% buy ratio)
+
+**Analysis:** Selective L2 accumulation. Arbitrum and Optimism seeing inflows while Polygon sees outflows. Narrative shift to Ethereum-aligned L2s.
+
+**Action:** Consider ARB/OP over MATIC. Whale preference clear.
+
+**Pattern #3: Memecoin Profit-Taking**
+
+Rank #7-10 whales show:
+• PEPE: $25M net selling (30% buy ratio)
+• DOGE: $31M net selling (28% buy ratio)
+• SHIB: $19M net selling (32% buy ratio)
+
+**Analysis:** Major distribution phase in memecoins. Whales took profits after recent rallies. Expect consolidation or retracement.
+
+**Action:** Avoid new memecoin longs until whale selling subsides.
+
+**Pattern #4: AI Token Accumulation**
+
+Cross-cutting pattern across ranks #2, #5, #8:
+• FET: $14M net buying (78% buy ratio)
+• RNDR: $11M net buying (73% buy ratio)
+• OCEAN: $6M net buying (69% buy ratio)
+
+**Analysis:** Multiple whales independently accumulating AI sector. Distributed buying is stronger signal than single whale.
+
+**Action:** AI narrative building strength. Consider sector exposure.`
+        },
+        {
+          title: 'How to Follow Whale Trades',
+          content: `**Real-Time Monitoring Strategy**
+
+**Step 1: Daily Whale Dashboard Check**
+• Review Top 10 Whales section on Sonar dashboard
+• Note any new whales entering the top 10
+• Check if existing whales changed their buy/sell ratios
+
+**Step 2: Individual Whale Deep Dive**
+Click on specific whale addresses to see:
+• Full transaction history with reasoning
+• Counterparty analysis (which DEXs/CEXs)
+• Confidence scores for each trade classification
+• Token preference patterns
+
+**Step 3: Pattern Recognition**
+Look for:
+• **Clustering**: 3+ whales buying same token
+• **Persistence**: Same whale buying for 5+ days straight
+• **Size**: Individual transactions >$1M show high conviction
+• **Speed**: Rapid accumulation often precedes news/catalysts
+
+**Step 4: Risk Management**
+
+**Never blindly copy whale trades:**
+• Whales have different time horizons (often 3-6 months)
+• Whales can handle 30-50% drawdowns
+• Whales may have inside information
+• Whales' average buy price may be very different
+
+**Smart Following Approach:**
+• Use whale accumulation as confirmation for your own analysis
+• Wait for technical entry points even if whales already bought
+• Size positions smaller than whales (they have deeper pockets)
+• Set stop losses 10-15% below whale entry zones
+
+**Advanced Technique: Whale Cohort Analysis**
+
+Track groups of whales that move together:
+• **DeFi Specialists**: Always in governance tokens
+• **NFT Whales**: Heavy ETH accumulation before big drops
+• **Smart Money**: Early in trends, early out of tops
+• **Diamond Hands**: Long-term holders, ignore short-term volatility
+
+**Red Flags to Avoid:**
+• Single whale buying while rest are selling
+• Whale buying on way down (catching falling knife)
+• Whale transactions on low-liquidity pairs (potential manipulation)
+• Whale selling accelerating (distribution phase)
+
+**Using Sonar's Whale Tools:**
+1. Set up whale address watchlists
+2. Enable notifications for large transactions
+3. Compare 24h vs 7d whale sentiment
+4. Cross-reference with community sentiment polls
+5. Export transaction data for deeper analysis
+
+**Practical Example:**
+Whale 0x1234 (Rank #3) buys $8M AAVE over 3 days while community sentiment is 65% bearish. This divergence signals insider confidence. Wait for support level test, enter with 2% position, add on confirmation.`
+        }
+      ]
+    }
+  },
   'what-is-whale-tracking': {
     title: 'What is Whale Tracking? How It Works and Why It Matters',
     category: 'Basics',
-    date: 'Dec 15, 2024',
+    date: 'Aug 15, 2025',
     readTime: '5 min read',
     content: {
       intro: 'Whale tracking is the practice of monitoring unusually large on‑chain transfers executed by high‑value addresses across major blockchains. These movements, often made by long‑tenured funds, market makers, treasuries, and early backers, can precede liquidity shifts and regime changes in specific tokens or sectors.',
@@ -352,7 +596,7 @@ Identify accumulation phases through sustained positive flows and distribution p
   'orca-ai-crypto-trading': {
     title: 'Orca AI: Next-Generation Crypto Trading Intelligence',
     category: 'AI & Technology',
-    date: 'Dec 18, 2024',
+    date: 'Sep 18, 2025',
     readTime: '7 min read',
     content: {
       intro: 'Orca AI represents the next evolution in cryptocurrency trading intelligence, combining advanced machine learning algorithms with real-time market data to provide unprecedented insights into crypto market dynamics.',

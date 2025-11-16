@@ -348,12 +348,28 @@ const SubscribeButton = styled.button`
 
 const posts = [
   { 
+    slug: 'bullish-bearish-sentiment-trading', 
+    title: 'Using Community Sentiment to Trade: Bullish vs Bearish Signals', 
+    summary: 'Learn how to leverage community sentiment polls and whale voting patterns to identify high-probability trades and market reversals.',
+    readTime: '9 min read',
+    category: 'Strategy',
+    date: 'Nov 16, 2025'
+  },
+  { 
+    slug: 'top-whales-7day-analysis', 
+    title: 'Top 10 Whales This Week: What Are They Trading?', 
+    summary: 'Deep dive into the most active crypto whales over the past 7 days, analyzing their buy/sell patterns and top token picks.',
+    readTime: '10 min read',
+    category: 'Market Analysis',
+    date: 'Nov 16, 2025'
+  },
+  { 
     slug: 'orca-ai-crypto-trading', 
     title: 'Orca AI: Next-Generation Crypto Trading Intelligence', 
     summary: 'Discover how Orca AI revolutionizes crypto trading with advanced pattern recognition and market analysis.',
     readTime: '7 min read',
     category: 'AI & Technology',
-    date: 'Dec 18, 2024'
+    date: 'Sep 18, 2025'
   },
   { 
     slug: 'what-is-whale-tracking', 
@@ -361,7 +377,7 @@ const posts = [
     summary: 'Understand how whale tracking reveals large on‑chain moves and how traders use it for edge.',
     readTime: '5 min read',
     category: 'Basics',
-    date: 'Dec 15, 2024'
+    date: 'Aug 15, 2025'
   },
   { 
     slug: 'copy-whale-trades', 
@@ -369,7 +385,7 @@ const posts = [
     summary: 'A practical framework to follow whales while managing risk and slippage.',
     readTime: '8 min read',
     category: 'Strategy',
-    date: 'Dec 12, 2024'
+    date: 'Jul 12, 2025'
   },
   { 
     slug: 'real-time-crypto-transactions', 
@@ -377,7 +393,7 @@ const posts = [
     summary: 'From mempools to settlement, how data flows into live dashboards and alerts.',
     readTime: '6 min read',
     category: 'Technical',
-    date: 'Dec 10, 2024'
+    date: 'Jun 10, 2025'
   },
 ]
 
