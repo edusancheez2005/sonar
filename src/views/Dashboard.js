@@ -1286,10 +1286,291 @@ const Dashboard = ({ isPremium = false }) => {
           </div>
         </DashboardCard>
       </motion.div>
+
+      {/* Top 10 Whales (7 Days) Section */}
+      <TopWhalesSection />
+
         </BlurredContent>
     </DashboardContainer>
     </>
   );
 };
+
+// Top Whales Section Component
+const TopWhalesSection = () => {
+  const [whales, setWhales] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchTopWhales = async () => {
+      try {
+        const res = await fetch('/api/whales/top-7day')
+        const data = await res.json()
+        setWhales(data?.whales || [])
+      } catch (err) {
+        console.error('Failed to fetch top whales:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTopWhales()
+  }, [])
+
+  const formatUSD = (value) => {
+    const num = Number(value)
+    const abs = Math.abs(num)
+    const sign = num >= 0 ? '+' : ''
+    
+    if (abs >= 1e9) return `${sign}$${(num / 1e9).toFixed(2)}B`
+    if (abs >= 1e6) return `${sign}$${(num / 1e6).toFixed(2)}M`
+    if (abs >= 1e3) return `${sign}$${(num / 1e3).toFixed(2)}K`
+    return `${sign}$${num.toFixed(2)}`
+  }
+
+  const timeAgo = (timestamp) => {
+    const now = Date.now()
+    const then = new Date(timestamp).getTime()
+    const diffMs = now - then
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    return `${diffDays}d ago`
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.5, delay: 0.3 }}
+      style={{ marginTop: '1.5rem' }}
+    >
+      <DashboardCard>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          marginBottom: '1.5rem',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '28px', height: '28px', fill: 'var(--primary)' }}>
+              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm-1.06 16.88L7.4 15.34l1.42-1.42 2.12 2.12 4.24-4.24 1.42 1.42-5.66 5.66z"/>
+            </svg>
+            <div>
+              <h2 style={{ margin: '0', fontSize: '1.5rem' }}>Top 10 Whales</h2>
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                Most active whale wallets in the past 7 days
+              </p>
+            </div>
+          </div>
+          <span style={{
+            padding: '0.5rem 1rem',
+            background: 'rgba(54, 166, 186, 0.15)',
+            border: '1px solid rgba(54, 166, 186, 0.3)',
+            borderRadius: '12px',
+            fontSize: '0.85rem',
+            fontWeight: '700',
+            color: 'var(--primary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            7-Day Activity
+          </span>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+            <p>Loading top whales...</p>
+          </div>
+        ) : whales.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '64px', height: '64px', fill: 'rgba(54, 166, 186, 0.3)', marginBottom: '1rem' }}>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: '1rem 0 0.5rem 0' }}>No Whale Activity</h3>
+            <p>No significant whale transactions detected in the past 7 days.</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
+                    Rank
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
+                    Whale Address
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
+                    Net Flow (7d)
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
+                    Buy/Sell
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
+                    Top Tokens
+                  </th>
+                  <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
+                    Last Active
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {whales.map((whale, idx) => {
+                  const rank = idx + 1
+                  const buyPct = parseInt(whale.buySellRatio?.split('/')[0]) || 50
+                  
+                  return (
+                    <motion.tr
+                      key={whale.address}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: idx * 0.05 }}
+                      style={{
+                        borderBottom: '1px solid rgba(54, 166, 186, 0.1)',
+                        transition: 'all 0.2s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(54, 166, 186, 0.08)'
+                        e.currentTarget.style.transform = 'translateX(2px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.transform = 'translateX(0)'
+                      }}
+                    >
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          fontWeight: '800',
+                          fontSize: '0.9rem',
+                          background: rank === 1 ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' 
+                                    : rank === 2 ? 'linear-gradient(135deg, #C0C0C0 0%, #808080 100%)'
+                                    : rank === 3 ? 'linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)'
+                                    : 'rgba(54, 166, 186, 0.2)',
+                          color: rank <= 3 ? '#0a1621' : 'var(--text-primary)',
+                          border: `2px solid ${
+                            rank === 1 ? 'rgba(255, 215, 0, 0.5)'
+                            : rank === 2 ? 'rgba(192, 192, 192, 0.5)'
+                            : rank === 3 ? 'rgba(205, 127, 50, 0.5)'
+                            : 'rgba(54, 166, 186, 0.3)'
+                          }`,
+                          boxShadow: rank <= 3 ? '0 4px 12px rgba(0,0,0,0.3)' : 'none'
+                        }}>
+                          {rank}
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <Link 
+                          href={`/whale/${encodeURIComponent(whale.address)}`}
+                          style={{
+                            color: 'var(--primary)',
+                            textDecoration: 'none',
+                            fontWeight: '700',
+                            fontFamily: 'Courier New, monospace',
+                            fontSize: '0.95rem',
+                            transition: 'color 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#5dd5ed'
+                            e.currentTarget.style.textDecoration = 'underline'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'var(--primary)'
+                            e.currentTarget.style.textDecoration = 'none'
+                          }}
+                        >
+                          {whale.address.slice(0, 6)}…{whale.address.slice(-4)}
+                        </Link>
+                      </td>
+                      <td style={{ padding: '1rem', textAlign: 'right' }}>
+                        <div style={{
+                          fontWeight: '800',
+                          fontSize: '1.05rem',
+                          color: whale.netUsd > 0 ? '#2ecc71' : whale.netUsd < 0 ? '#e74c3c' : 'var(--text-primary)'
+                        }}>
+                          {formatUSD(whale.netUsd)}
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem', textAlign: 'right' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '8px',
+                          fontSize: '0.8rem',
+                          fontWeight: '700',
+                          background: buyPct > 65 ? 'rgba(46, 204, 113, 0.2)'
+                                    : buyPct < 35 ? 'rgba(231, 76, 60, 0.2)'
+                                    : 'rgba(241, 196, 15, 0.2)',
+                          color: buyPct > 65 ? '#2ecc71'
+                               : buyPct < 35 ? '#e74c3c'
+                               : '#f1c40f',
+                          border: `1px solid ${
+                            buyPct > 65 ? 'rgba(46, 204, 113, 0.3)'
+                            : buyPct < 35 ? 'rgba(231, 76, 60, 0.3)'
+                            : 'rgba(241, 196, 15, 0.3)'
+                          }`
+                        }}>
+                          {whale.buySellRatio}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          {(whale.tokens || []).slice(0, 3).map(token => (
+                            <span key={token} style={{
+                              display: 'inline-block',
+                              padding: '0.25rem 0.6rem',
+                              background: 'rgba(54, 166, 186, 0.15)',
+                              border: '1px solid rgba(54, 166, 186, 0.25)',
+                              borderRadius: '6px',
+                              fontSize: '0.8rem',
+                              fontWeight: '600',
+                              color: 'var(--primary)'
+                            }}>
+                              {token}
+                            </span>
+                          ))}
+                          {(whale.tokens || []).length > 3 && (
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '0.25rem 0.6rem',
+                              background: 'rgba(54, 166, 186, 0.15)',
+                              border: '1px solid rgba(54, 166, 186, 0.25)',
+                              borderRadius: '6px',
+                              fontSize: '0.8rem',
+                              fontWeight: '600',
+                              color: 'var(--primary)'
+                            }}>
+                              +{whale.tokens.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem', textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          {whale.lastSeen ? timeAgo(whale.lastSeen) : '—'}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </DashboardCard>
+    </motion.div>
+  )
+}
 
 export default Dashboard; 

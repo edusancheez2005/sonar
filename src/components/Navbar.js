@@ -257,11 +257,6 @@ const Navbar = ({ onLogout }) => {
               </MenuItem>
             </motion.div>
             <motion.div variants={menuVariants} initial="hidden" animate="visible">
-              <MenuItem $active={isActive('/dashboard/top-whales')} variants={itemVariants}>
-                <NextLink href="/dashboard/top-whales">Top Whales</NextLink>
-              </MenuItem>
-            </motion.div>
-            <motion.div variants={menuVariants} initial="hidden" animate="visible">
               <MenuItem $active={isActive('/statistics')} variants={itemVariants}>
                 <NextLink href="/statistics">Statistics</NextLink>
               </MenuItem>
