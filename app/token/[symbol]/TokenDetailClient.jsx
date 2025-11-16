@@ -1192,7 +1192,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                   Community Sentiment
                 </SentimentTitle>
                 <SentimentVoteCount>
-                  {statsLoading ? '—' : `${(sentimentStats?.totalVotes || 0).toLocaleString()} votes`}
+                  {statsLoading ? '—' : `${(communityStats?.total || 0).toLocaleString()} votes`}
                 </SentimentVoteCount>
               </SentimentHeader>
               

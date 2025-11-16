@@ -391,8 +391,10 @@ export default function WhaleDetailClient({
                 <th>Time</th>
                 <th>Token</th>
                 <th>Side</th>
+                <th>Counterparty</th>
                 <th style={{ textAlign: 'right' }}>USD Value</th>
-                <th style={{ textAlign: 'right' }}>Whale Score</th>
+                <th style={{ textAlign: 'right' }}>Confidence</th>
+                <th>Reasoning</th>
               </tr>
             </thead>
             <tbody>
@@ -414,11 +416,45 @@ export default function WhaleDetailClient({
                   <td>
                     <Badge $type={t.classification}>{t.classification}</Badge>
                   </td>
+                  <td style={{ fontSize: '0.85rem' }}>
+                    <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
+                      {t.counterparty_type || '—'}
+                    </div>
+                    {(t.from_label || t.to_label) && (
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                        {t.classification === 'BUY' ? t.from_label : t.to_label}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ textAlign: 'right', fontWeight: '700' }}>
                     {formatUSD(t.usd_value)}
                   </td>
-                  <td style={{ textAlign: 'right', color: 'var(--primary)', fontWeight: '700' }}>
-                    {t.whale_score ?? '-'}
+                  <td style={{ textAlign: 'right' }}>
+                    {t.confidence ? (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '0.25rem 0.6rem',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        background: t.confidence >= 0.8 ? 'rgba(46, 204, 113, 0.2)' 
+                                  : t.confidence >= 0.6 ? 'rgba(52, 152, 219, 0.2)'
+                                  : 'rgba(241, 196, 15, 0.2)',
+                        color: t.confidence >= 0.8 ? '#2ecc71'
+                             : t.confidence >= 0.6 ? '#3498db'
+                             : '#f1c40f',
+                        border: `1px solid ${
+                          t.confidence >= 0.8 ? 'rgba(46, 204, 113, 0.3)'
+                          : t.confidence >= 0.6 ? 'rgba(52, 152, 219, 0.3)'
+                          : 'rgba(241, 196, 15, 0.3)'
+                        }`
+                      }}>
+                        {(t.confidence * 100).toFixed(0)}%
+                      </span>
+                    ) : '—'}
+                  </td>
+                  <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '300px' }}>
+                    {t.reasoning || '—'}
                   </td>
                 </tr>
               ))}

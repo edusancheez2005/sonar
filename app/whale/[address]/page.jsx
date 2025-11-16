@@ -58,26 +58,51 @@ export default async function WhaleProfile({ params }) {
   } : null
   
   // Fetch whale transactions (works for both whales and exchanges)
+  // Query using OR condition to catch whale_address OR from/to address
   const { data, error } = await supabaseAdmin
     .from('whale_transactions')
-    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address')
-    .eq('whale_address', addr)
-    .in('counterparty_type', ['CEX', 'DEX'])
-    .in('classification', ['BUY', 'SELL'])
+    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address,reasoning,confidence,from_label,to_label')
+    .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
     .gte('timestamp', since)
     .order('timestamp', { ascending: false })
-    .limit(200)
+    .limit(500)
 
   let netUsd = 0
   let buyVolume = 0
   let sellVolume = 0
   const byToken = new Map()
+  const transactions = []
   
   for (const r of data || []) {
-    const classification = (r.classification || '').toUpperCase()
-    
-    const isBuy = classification === 'BUY'
     const usd = Number(r.usd_value || 0)
+    
+    // Determine if this is a BUY or SELL from the whale's perspective
+    // If whale_address is set and matches our address, use classification
+    // Otherwise, infer from from/to addresses
+    let isBuy = false
+    let classification = r.classification || 'UNKNOWN'
+    
+    if (r.whale_address && r.whale_address.toLowerCase() === addr.toLowerCase()) {
+      // Use the stored classification
+      isBuy = classification.toUpperCase() === 'BUY'
+    } else {
+      // Infer from addresses: if our address is 'to', it's receiving (BUY), if 'from', it's sending (SELL)
+      if (r.to_address && r.to_address.toLowerCase() === addr.toLowerCase()) {
+        isBuy = true
+        classification = 'BUY'
+      } else if (r.from_address && r.from_address.toLowerCase() === addr.toLowerCase()) {
+        isBuy = false
+        classification = 'SELL'
+      } else {
+        // Skip if we can't determine
+        continue
+      }
+    }
+    
+    // Only count BUY/SELL transactions
+    if (classification.toUpperCase() !== 'BUY' && classification.toUpperCase() !== 'SELL') {
+      continue
+    }
     
     if (isBuy) {
       buyVolume += usd
@@ -99,6 +124,12 @@ export default async function WhaleProfile({ params }) {
       tokenData.net -= usd
       tokenData.sell += usd
     }
+    
+    // Store transaction with corrected classification
+    transactions.push({
+      ...r,
+      classification: classification.toUpperCase()
+    })
   }
   
   const topTokens = Array.from(byToken.entries())
@@ -119,7 +150,7 @@ export default async function WhaleProfile({ params }) {
         buyVolume={buyVolume}
         sellVolume={sellVolume}
         topTokens={topTokens}
-        trades={data || []}
+        trades={transactions}
         isExchange={isExchange}
         exchangeInfo={exchangeInfo}
       />
