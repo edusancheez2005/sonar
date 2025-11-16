@@ -266,12 +266,15 @@ function formatUSD(value) {
 export default function WhaleDetailClient({ 
   address, 
   netFlow, 
-  buyVolume,
-  sellVolume,
+  buyVolume, 
+  sellVolume, 
   topTokens, 
   trades,
+  tradeCount = trades?.length || 0,
+  totalTransactions = trades?.length || 0,
   isExchange,
-  exchangeInfo
+  exchangeInfo,
+  timeWindow = '24h'
 }) {
   const short = `${address.slice(0, 6)}…${address.slice(-4)}`
   
@@ -381,7 +384,17 @@ export default function WhaleDetailClient({
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
           </svg>
-          Recent Trades (Last 24h)
+          Recent Transactions
+          {totalTransactions > 0 && (
+            <span style={{ 
+              fontSize: '0.85rem', 
+              fontWeight: '400', 
+              color: 'var(--text-secondary)',
+              marginLeft: '0.5rem'
+            }}>
+              ({totalTransactions} total, {tradeCount} BUY/SELL, {timeWindow})
+            </span>
+          )}
         </SectionTitle>
         
         {trades.length > 0 ? (
@@ -465,8 +478,11 @@ export default function WhaleDetailClient({
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
             </svg>
-            <h3>No Recent Trades</h3>
-            <p>No transactions detected for this address in the last 24 hours.</p>
+            <h3>No Recent Activity</h3>
+            <p>This address has no recorded transactions in our database for the past 7 days.</p>
+            <p style={{ fontSize: '0.85rem', marginTop: '0.5rem', opacity: 0.7 }}>
+              We track transactions $10K+ involving exchanges and DeFi protocols. Smaller transactions or transfers between wallets may not appear.
+            </p>
           </EmptyState>
         )}
       </Section>

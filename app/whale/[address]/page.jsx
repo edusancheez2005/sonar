@@ -42,7 +42,7 @@ function BreadcrumbJsonLd({ addr, isExchange, exchangeName }) {
 
 export default async function WhaleProfile({ params }) {
   const addr = decodeURIComponent(params.address)
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  let since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   
   // Check if this is an exchange address
   const { data: addressInfo } = await supabaseAdmin
@@ -57,25 +57,38 @@ export default async function WhaleProfile({ params }) {
     type: addressInfo.address_type
   } : null
   
-  // Fetch whale transactions (works for both whales and exchanges)
-  // Query using OR condition to catch whale_address OR from/to address
-  const { data, error } = await supabaseAdmin
+  // First try 24h, if no data, try 7 days
+  let { data, error } = await supabaseAdmin
     .from('whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address,reasoning,confidence,from_label,to_label')
     .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
     .gte('timestamp', since)
     .order('timestamp', { ascending: false })
     .limit(500)
+  
+  // If no data in 24h, try last 7 days
+  if (!data || data.length === 0) {
+    since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const result = await supabaseAdmin
+      .from('whale_transactions')
+      .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address,reasoning,confidence,from_label,to_label')
+      .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
+      .gte('timestamp', since)
+      .order('timestamp', { ascending: false })
+      .limit(500)
+    data = result.data
+    error = result.error
+  }
 
   let netUsd = 0
   let buyVolume = 0
   let sellVolume = 0
   const byToken = new Map()
   const transactions = []
+  const allTransactions = [] // Store all transactions for display
   
   for (const r of data || []) {
     const usd = Number(r.usd_value || 0)
-    if (usd === 0) continue // Skip zero value transactions
     
     const fromAddr = (r.from_address || '').toLowerCase()
     const toAddr = (r.to_address || '').toLowerCase()
@@ -84,86 +97,78 @@ export default async function WhaleProfile({ params }) {
     const storedClassification = (r.classification || '').toUpperCase()
     const counterpartyType = r.counterparty_type
     
-    // Skip TRANSFER and DEFI transactions - they're not real buy/sell
-    if (storedClassification === 'TRANSFER' || storedClassification === 'DEFI') {
-      continue
-    }
-    
-    // Determine BUY/SELL from TOKEN FLOW DIRECTION, not stored classification
-    // Token flow: from_address -> to_address
-    // If our address is 'to' = we're RECEIVING tokens = BUY
-    // If our address is 'from' = we're SENDING tokens = SELL
-    
+    // Determine BUY/SELL from TOKEN FLOW DIRECTION
     let isBuy = false
-    let classification = 'UNKNOWN'
+    let classification = storedClassification
+    let shouldCountInMetrics = false
     
-    // Priority 1: Check whale_address position
-    if (whaleAddr === ourAddr) {
-      if (whaleAddr === toAddr) {
-        // Whale is receiving tokens = BUY
+    // Re-classify based on token flow if it's not TRANSFER/DEFI
+    if (storedClassification !== 'TRANSFER' && storedClassification !== 'DEFI') {
+      // Priority 1: Check whale_address position
+      if (whaleAddr === ourAddr) {
+        if (whaleAddr === toAddr) {
+          isBuy = true
+          classification = 'BUY'
+          shouldCountInMetrics = true
+        } else if (whaleAddr === fromAddr) {
+          isBuy = false
+          classification = 'SELL'
+          shouldCountInMetrics = true
+        }
+      }
+      // Priority 2: Check from/to addresses directly
+      else if (toAddr === ourAddr) {
         isBuy = true
         classification = 'BUY'
-      } else if (whaleAddr === fromAddr) {
-        // Whale is sending tokens = SELL
+        shouldCountInMetrics = true
+      } else if (fromAddr === ourAddr) {
         isBuy = false
         classification = 'SELL'
-      } else {
-        // Whale address doesn't match from/to - unusual, skip
-        continue
+        shouldCountInMetrics = true
+      }
+      
+      // Validate counterparty type for metrics
+      if (shouldCountInMetrics && counterpartyType && counterpartyType !== 'CEX' && counterpartyType !== 'DEX') {
+        shouldCountInMetrics = false
       }
     }
-    // Priority 2: Check from/to addresses directly
-    else if (toAddr === ourAddr) {
-      // Our address is receiving = BUY
-      isBuy = true
-      classification = 'BUY'
-    } else if (fromAddr === ourAddr) {
-      // Our address is sending = SELL
-      isBuy = false
-      classification = 'SELL'
-    } else {
-      // Our address isn't involved in the token transfer
-      continue
-    }
     
-    // Only proceed if we successfully classified as BUY or SELL
-    if (classification !== 'BUY' && classification !== 'SELL') {
-      continue
-    }
-    
-    // Additional validation: if counterparty_type exists, transaction should involve CEX/DEX
-    if (counterpartyType && counterpartyType !== 'CEX' && counterpartyType !== 'DEX') {
-      continue
-    }
-    
-    // Aggregate volumes
-    if (isBuy) {
-      buyVolume += usd
-      netUsd += usd
-    } else {
-      sellVolume += usd
-      netUsd -= usd
-    }
-    
-    // Aggregate by token
-    const token = r.token_symbol || '—'
-    if (!byToken.has(token)) {
-      byToken.set(token, { net: 0, buy: 0, sell: 0 })
-    }
-    const tokenData = byToken.get(token)
-    if (isBuy) {
-      tokenData.net += usd
-      tokenData.buy += usd
-    } else {
-      tokenData.net -= usd
-      tokenData.sell += usd
-    }
-    
-    // Store transaction with corrected classification
-    transactions.push({
+    // Add to all transactions for display (even if not counted in metrics)
+    allTransactions.push({
       ...r,
       classification: classification
     })
+    
+    // Only aggregate metrics for real BUY/SELL trades
+    if (shouldCountInMetrics && usd > 0) {
+      if (isBuy) {
+        buyVolume += usd
+        netUsd += usd
+      } else {
+        sellVolume += usd
+        netUsd -= usd
+      }
+      
+      // Aggregate by token
+      const token = r.token_symbol || '—'
+      if (!byToken.has(token)) {
+        byToken.set(token, { net: 0, buy: 0, sell: 0 })
+      }
+      const tokenData = byToken.get(token)
+      if (isBuy) {
+        tokenData.net += usd
+        tokenData.buy += usd
+      } else {
+        tokenData.net -= usd
+        tokenData.sell += usd
+      }
+      
+      // Add to transactions array (for metrics)
+      transactions.push({
+        ...r,
+        classification: classification
+      })
+    }
   }
   
   const topTokens = Array.from(byToken.entries())
@@ -184,9 +189,12 @@ export default async function WhaleProfile({ params }) {
         buyVolume={buyVolume}
         sellVolume={sellVolume}
         topTokens={topTokens}
-        trades={transactions}
+        trades={allTransactions.length > 0 ? allTransactions : transactions}
+        tradeCount={transactions.length}
+        totalTransactions={allTransactions.length}
         isExchange={isExchange}
         exchangeInfo={exchangeInfo}
+        timeWindow={allTransactions.length === 0 ? 'No data' : (data && data.length > 0 && new Date(data[0].timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000) ? '24h' : '7d')}
       />
     </AuthGuard>
   )
