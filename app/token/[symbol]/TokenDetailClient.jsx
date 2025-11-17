@@ -1737,6 +1737,38 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                 </ReasonContent>
               </ReasonCard>
             )}
+
+            {/* Special explanation for balanced/neutral sentiment */}
+            {sentiment.label === 'NEUTRAL' && sentiment.details.buyPct >= 45 && sentiment.details.buyPct <= 55 && (
+              <ReasonCard style={{ 
+                gridColumn: '1 / -1', 
+                background: 'linear-gradient(135deg, rgba(241, 196, 15, 0.1) 0%, rgba(243, 156, 18, 0.05) 100%)',
+                border: '1px solid rgba(241, 196, 15, 0.3)'
+              }}>
+                <ReasonIcon>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#f1c40f"/>
+                  </svg>
+                </ReasonIcon>
+                <ReasonContent>
+                  <ReasonTitle style={{ color: '#f1c40f' }}>⚖️ Balanced Trading Activity Detected</ReasonTitle>
+                  <ReasonText style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                    <strong>Why is this NEUTRAL?</strong> {symbol} shows nearly equal buy and sell pressure 
+                    ({sentiment.details.buyPct}% buy vs {100 - sentiment.details.buyPct}% sell). 
+                    This often indicates:
+                    <br/><br/>
+                    <strong>• Arbitrage Activity:</strong> Whales are buying on one exchange and selling on another to profit from price differences.
+                    <br/>
+                    <strong>• Market Equilibrium:</strong> No clear directional bias from institutional traders.
+                    <br/>
+                    <strong>• Range-Bound Trading:</strong> Price may be consolidating within a specific range.
+                    <br/><br/>
+                    <strong style={{ color: '#f39c12' }}>Trading Implication:</strong> Wait for a clear trend to emerge before entering positions. 
+                    Look for buy% to move above 60% (bullish) or below 40% (bearish) for a stronger signal.
+                  </ReasonText>
+                </ReasonContent>
+              </ReasonCard>
+            )}
           </ReasonsGrid>
 
           <OrcaButton
