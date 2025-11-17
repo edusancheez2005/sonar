@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { cookies } from 'next/headers'
 import { createClient } from '@/app/lib/supabase/server'
+import { isAdmin } from '@/app/lib/adminConfig'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,13 +26,8 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is admin (you can add your admin email check here)
-    const adminEmails = [
-      'eduardo@sonartracker.io',
-      'edusancheez2005@gmail.com'
-    ]
-    
-    if (!adminEmails.includes(user.email)) {
+    // Check if user is admin
+    if (!isAdmin(user.email)) {
       return NextResponse.json({ error: 'Forbidden - Admin access only' }, { status: 403 })
     }
 

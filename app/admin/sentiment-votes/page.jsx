@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import AuthGuard from '@/app/components/AuthGuard'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/app/lib/supabase/client'
+import { isAdmin } from '@/app/lib/adminConfig'
 
 const Container = styled.div`
   max-width: 1600px;
@@ -191,15 +193,43 @@ const LoadingMessage = styled.div`
 `
 
 export default function SentimentVotesAdmin() {
+  const router = useRouter()
   const [votes, setVotes] = useState([])
   const [aggregated, setAggregated] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [authorized, setAuthorized] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const [filters, setFilters] = useState({
     symbol: '',
     days: '7',
     limit: '100'
   })
+
+  // Check admin authorization on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (!user || !isAdmin(user.email)) {
+          // Not authorized - redirect to dashboard
+          router.push('/dashboard')
+          return
+        }
+        
+        setAuthorized(true)
+      } catch (err) {
+        console.error('Auth check error:', err)
+        router.push('/dashboard')
+      } finally {
+        setCheckingAuth(false)
+      }
+    }
+    
+    checkAuth()
+  }, [router])
 
   const fetchVotes = async () => {
     setLoading(true)
@@ -235,9 +265,22 @@ export default function SentimentVotesAdmin() {
   const uniqueTokens = Object.keys(aggregated).length
   const uniqueEmails = new Set(votes.filter(v => v.email !== 'Anonymous').map(v => v.email)).size
 
-  return (
-    <AuthGuard>
+  // Show nothing while checking auth
+  if (checkingAuth) {
+    return (
       <Container>
+        <LoadingMessage>Verifying access...</LoadingMessage>
+      </Container>
+    )
+  }
+
+  // Don't render if not authorized (will redirect)
+  if (!authorized) {
+    return null
+  }
+
+  return (
+    <Container>
         <Header>
           <Title>🗳️ Sentiment Votes Admin</Title>
           <Subtitle>View and analyze community sentiment votes</Subtitle>
@@ -343,7 +386,6 @@ export default function SentimentVotesAdmin() {
           </Table>
         )}
       </Container>
-    </AuthGuard>
   )
 }
 
