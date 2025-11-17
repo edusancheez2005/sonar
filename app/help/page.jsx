@@ -298,6 +298,18 @@ export default function HelpCenter() {
     {
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-6-2a9 9 0 0118 0v2H6v-2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16M8 11h8M8 15h5" />
+        </svg>
+      ),
+      title: 'Glossary & Terminology',
+      description: 'Understand BUY/SELL/TRANSFER/DEFI tags, whale flows, and key metrics.',
+      articles: 14,
+      link: '/glossary'
+    },
+    {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
@@ -378,6 +390,12 @@ export default function HelpCenter() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
             <span>What is Orca 2.0?</span>
+          </QuickLink>
+          <QuickLink href="/glossary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m8-2a7 7 0 00-14 0v2h14v-2zM6 12h8" />
+            </svg>
+            <span>Transaction Type Glossary</span>
           </QuickLink>
         </QuickLinksGrid>
 

@@ -825,9 +825,17 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     const totalVolume = whaleMetrics.totalVolume
     const avgTxSize = whaleMetrics.totalVolume / (whaleMetrics.buys + whaleMetrics.sells)
     
-    // Price changes
-    const priceChange24h = priceData?.price_change_percentage_24h || 0
-    const priceChange7d = priceData?.price_change_percentage_7d || 0
+    const priceChange24h = priceData?.price_change_percentage_24h ?? priceData?.change24h ?? 0
+    const priceChange7d = priceData?.price_change_percentage_7d ?? priceData?.change7d ?? 0
+    const priceChange30d = priceData?.price_change_percentage_30d ?? priceData?.change30d ?? 0
+    const priceChange1y = priceData?.price_change_percentage_1y ?? priceData?.change1y ?? 0
+    const dayHigh = priceData?.high_24h ?? priceData?.high24h ?? null
+    const dayLow = priceData?.low_24h ?? priceData?.low24h ?? null
+    const athChange = priceData?.ath_change_percentage ?? priceData?.athChangePercentage ?? 0
+    const atlChange = priceData?.atl_change_percentage ?? priceData?.atlChangePercentage ?? 0
+    const volume24h = priceData?.volume_24h ?? priceData?.volume24h ?? 0
+    const volumeToMc = priceData?.volume_to_market_cap_ratio ?? priceData?.volumeMarketCapRatio ?? 0
+    const marketCap = priceData?.market_cap ?? priceData?.marketCap ?? 0
     
     // Determine overall performance
     const priceDirection = priceChange24h > 0 ? 'up' : 'down'
@@ -869,21 +877,27 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     if (priceData) {
       const nearATH = priceData.ath_change_percentage > -10
       const nearATL = priceData.atl_change_percentage < 10
-      const pricePosition = priceData.high_24h && priceData.low_24h 
-        ? ((priceData.current_price - priceData.low_24h) / (priceData.high_24h - priceData.low_24h) * 100).toFixed(1)
-        : null
+      const pricePosition = priceData.range_position_24h
+        ?? (dayHigh && dayLow && dayHigh !== dayLow
+          ? ((priceData.price - dayLow) / (dayHigh - dayLow) * 100).toFixed(1)
+          : null)
+      const formatPct = (value) => `${value >= 0 ? '+' : ''}${Number(value).toFixed(2)}%`
       
       blocks.push({
         title: 'Technical Positioning',
         impact: priceChange24h > 5 ? 'Bullish Momentum' : priceChange24h < -5 ? 'Bearish Momentum' : 'Consolidation',
         content: `
-          <p><strong>Overview:</strong> ${symbol} is trading at <strong>${formatPrice(priceData.current_price)}</strong>, ${priceChange24h > 0 ? 'up' : 'down'} <strong>${Math.abs(priceChange24h).toFixed(2)}%</strong> in the last 24 hours${pricePosition ? `, currently at ${pricePosition}% of its 24h range` : ''}.</p>
+          <p><strong>Overview:</strong> ${symbol} is trading at <strong>${formatPrice(priceData.price)}</strong>, ${priceChange24h > 0 ? 'up' : 'down'} <strong>${Math.abs(priceChange24h).toFixed(2)}%</strong> in the last 24 hours${pricePosition ? `, currently sitting at <strong>${pricePosition}%</strong> of its daily range` : ''}.</p>
+          
+          <p><strong>Multi-timeframe momentum:</strong> 24h ${formatPct(priceChange24h)} • 7d ${formatPct(priceChange7d)} • 30d ${formatPct(priceChange30d)} • 1y ${formatPct(priceChange1y)}.</p>
+          
+          <p><strong>Liquidity pulse:</strong> ${formatUSD(volume24h)} traded in the last 24h (${Number(volumeToMc).toFixed(2)}% of market cap). Market cap currently stands at ${formatUSD(marketCap)}.</p>
           
           <p><strong>What this means:</strong> ${
             nearATH 
-              ? `Price is near all-time highs (${priceData.ath_change_percentage.toFixed(2)}% from ATH of ${formatUSD(priceData.ath)}). This suggests strong momentum but also potential resistance. Profit-taking could emerge at these levels.`
+              ? `Price is near all-time highs (${athChange.toFixed(2)}% from ATH of ${formatUSD(priceData.ath)}). This suggests strong momentum but also potential resistance. Profit-taking could emerge at these levels.`
               : nearATL
-              ? `Price is close to all-time lows (${priceData.atl_change_percentage.toFixed(2)}% from ATL of ${formatUSD(priceData.atl)}). This could represent a value opportunity if fundamentals remain strong, but further downside is possible.`
+              ? `Price is close to all-time lows (${atlChange.toFixed(2)}% from ATL of ${formatUSD(priceData.atl)}). This could represent a value opportunity if fundamentals remain strong, but further downside is possible.`
               : priceChange24h > 5
               ? `Strong bullish momentum is building. The ${priceChange24h.toFixed(2)}% 24h gain aligns with ${netFlow > 0 ? 'positive' : 'negative'} whale flows, ${netFlow > 0 ? 'reinforcing' : 'contradicting'} the price action.`
               : priceChange24h < -5
@@ -891,7 +905,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               : `Price is consolidating in a tight range. The lack of strong directional movement suggests market indecision. Watch for a breakout on volume.`
           }</p>
           
-          <p><em>24h Range: ${formatUSD(priceData.low_24h)} - ${formatUSD(priceData.high_24h)}</em></p>
+          <p><em>24h Range: ${formatUSD(dayLow)} - ${formatUSD(dayHigh)}</em></p>
         `
       })
     }

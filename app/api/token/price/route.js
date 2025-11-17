@@ -259,45 +259,61 @@ export async function GET(req) {
       data.market_data?.price_change_percentage_1y
     )
 
-    return NextResponse.json({
-      symbol: symbol,
+    const currentPrice = data.market_data?.current_price?.usd || 0
+    const high24 = data.market_data?.high_24h?.usd || 0
+    const low24 = data.market_data?.low_24h?.usd || 0
+    const marketCap = data.market_data?.market_cap?.usd || 0
+    const volume24 = data.market_data?.total_volume?.usd || 0
+    const volumeToMc =
+      data.market_data?.total_volume?.usd && data.market_data?.market_cap?.usd
+        ? (data.market_data.total_volume.usd / data.market_data.market_cap.usd) * 100
+        : 0
+
+    const response = {
+      symbol,
       name: data.name,
-      image: data.image?.large || data.image?.small,
+      image: data.image?.large || data.image?.small || data.image?.thumb || null,
       
-      // Price Data
-      price: data.market_data?.current_price?.usd || 0,
+      price: currentPrice,
+      price_change_percentage_24h: change24h,
+      price_change_percentage_7d: change7d,
+      price_change_percentage_30d: change30d,
+      price_change_percentage_1y: change1y,
       change24h,
       change7d,
       change30d,
       change1y,
       
-      // 24h High/Low
-      high24h: data.market_data?.high_24h?.usd || 0,
-      low24h: data.market_data?.low_24h?.usd || 0,
+      high_24h: high24,
+      low_24h: low24,
+      range_position_24h: high24 && low24 && high24 !== low24
+        ? ((currentPrice - low24) / (high24 - low24) * 100).toFixed(2)
+        : null,
       
-      // Market Data
-      marketCap: data.market_data?.market_cap?.usd || 0,
+      market_cap: marketCap,
+      marketCap: marketCap,
       marketCapRank: data.market_cap_rank || 0,
       fullyDilutedValuation: data.market_data?.fully_diluted_valuation?.usd || 0,
-      volume24h: data.market_data?.total_volume?.usd || 0,
-      volumeMarketCapRatio: data.market_data?.total_volume?.usd && data.market_data?.market_cap?.usd 
-        ? (data.market_data.total_volume.usd / data.market_data.market_cap.usd) 
-        : 0,
+      volume_24h: volume24,
+      volume24h: volume24,
+      volume_to_market_cap_ratio: Number(volumeToMc.toFixed(2)),
+      volumeMarketCapRatio: volumeToMc,
       
-      // Supply Data
       circulatingSupply: data.market_data?.circulating_supply || 0,
       totalSupply: data.market_data?.total_supply || 0,
       maxSupply: data.market_data?.max_supply || null,
       
-      // All-Time High/Low
+      ath: data.market_data?.ath?.usd || 0,
       athPrice: data.market_data?.ath?.usd || 0,
       athDate: data.market_data?.ath_date?.usd || null,
+      ath_change_percentage: data.market_data?.ath_change_percentage?.usd || 0,
       athChangePercentage: data.market_data?.ath_change_percentage?.usd || 0,
+      atl: data.market_data?.atl?.usd || 0,
       atlPrice: data.market_data?.atl?.usd || 0,
       atlDate: data.market_data?.atl_date?.usd || null,
+      atl_change_percentage: data.market_data?.atl_change_percentage?.usd || 0,
       atlChangePercentage: data.market_data?.atl_change_percentage?.usd || 0,
       
-      // Additional Info
       description: data.description?.en || '',
       homepage: data.links?.homepage?.[0] || '',
       blockchainSite: data.links?.blockchain_site?.filter(Boolean)?.[0] || '',
@@ -305,22 +321,17 @@ export async function GET(req) {
       subredditUrl: data.links?.subreddit_url || '',
       githubRepo: data.links?.repos_url?.github?.[0] || '',
       
-      // Market Dominance
       marketCapChangePercentage24h: data.market_data?.market_cap_change_percentage_24h || 0,
       
-      // Sentiment (if available)
       sentimentVotesUpPercentage: data.sentiment_votes_up_percentage || 0,
       sentimentVotesDownPercentage: data.sentiment_votes_down_percentage || 0,
       
-      // Genesis Date
       genesisDate: data.genesis_date || null,
-      
-      // Categories
       categories: data.categories || [],
-      
-      // Last Updated
       lastUpdated: data.last_updated || null
-    })
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Price API error:', error)
     return NextResponse.json(
