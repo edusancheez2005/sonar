@@ -96,34 +96,55 @@ export async function POST(req) {
   }
 }
 
-// Baseline votes to pre-populate sentiment (simulating community activity)
-const BASELINE_VOTES = {
-  // Major tokens with higher baseline
-  'BTC': { bullish: 3847, bearish: 1523 },
-  'ETH': { bullish: 4125, bearish: 1687 },
-  'SOL': { bullish: 2934, bearish: 1456 },
-  'BNB': { bullish: 2156, bearish: 987 },
-  'XRP': { bullish: 1876, bearish: 1234 },
-  'DOGE': { bullish: 2543, bearish: 1098 },
-  'ADA': { bullish: 1987, bearish: 1234 },
-  'MATIC': { bullish: 1654, bearish: 876 },
-  'DOT': { bullish: 1432, bearish: 798 },
-  'LINK': { bullish: 1876, bearish: 654 },
+// Generate randomized baseline votes to simulate realistic community activity
+// This creates pseudo-random but consistent values based on token symbol
+function generateBaselineVotes(symbol) {
+  // Use symbol as seed for consistent randomization
+  let hash = 0
+  for (let i = 0; i < symbol.length; i++) {
+    hash = ((hash << 5) - hash) + symbol.charCodeAt(i)
+    hash = hash & hash // Convert to 32-bit integer
+  }
   
-  // Mid-cap tokens
-  'UNI': { bullish: 987, bearish: 543 },
-  'ATOM': { bullish: 765, bearish: 432 },
-  'LTC': { bullish: 1234, bearish: 567 },
-  'AVAX': { bullish: 1098, bearish: 654 },
-  'SHIB': { bullish: 1543, bearish: 876 },
-  'TRX': { bullish: 876, bearish: 543 },
-  'DAI': { bullish: 234, bearish: 187 },
-  'USDC': { bullish: 312, bearish: 267 },
-  'USDT': { bullish: 287, bearish: 234 },
+  // Pseudo-random number generator with seed
+  const random = (seed) => {
+    const x = Math.sin(seed) * 10000
+    return x - Math.floor(x)
+  }
   
-  // Default for other tokens
-  '_DEFAULT': { bullish: 142, bearish: 87 }
+  // Token tier based on market importance (affects vote count)
+  const majorTokens = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'MATIC', 'DOT', 'LINK']
+  const midCapTokens = ['UNI', 'ATOM', 'LTC', 'AVAX', 'SHIB', 'TRX', 'AAVE', 'CRV', 'SUSHI', 'COMP']
+  const stablecoins = ['DAI', 'USDC', 'USDT', 'USDE', 'GUSD', 'TUSD']
+  
+  let baseTotal, sentimentBias
+  
+  if (majorTokens.includes(symbol)) {
+    // Major tokens: 2000-5000 total votes, slight bullish bias
+    baseTotal = 2000 + Math.floor(random(hash) * 3000)
+    sentimentBias = 0.55 + random(hash + 1) * 0.20 // 55-75% bullish
+  } else if (midCapTokens.includes(symbol)) {
+    // Mid-cap: 500-1500 total votes, mixed sentiment
+    baseTotal = 500 + Math.floor(random(hash) * 1000)
+    sentimentBias = 0.45 + random(hash + 2) * 0.30 // 45-75% bullish
+  } else if (stablecoins.includes(symbol)) {
+    // Stablecoins: 200-500 votes, neutral
+    baseTotal = 200 + Math.floor(random(hash) * 300)
+    sentimentBias = 0.48 + random(hash + 3) * 0.04 // 48-52% (nearly neutral)
+  } else {
+    // Small cap/other: 100-400 votes, variable sentiment
+    baseTotal = 100 + Math.floor(random(hash) * 300)
+    sentimentBias = 0.35 + random(hash + 4) * 0.40 // 35-75% bullish
+  }
+  
+  const bullish = Math.floor(baseTotal * sentimentBias)
+  const bearish = baseTotal - bullish
+  
+  return { bullish, bearish }
 }
+
+// Cache baseline votes per session to avoid recalculating
+const BASELINE_CACHE = {}
 
 async function fetchStats(symbol) {
   const { data, error } = await supabaseAdmin
@@ -143,8 +164,11 @@ async function fetchStats(symbol) {
     }
   }
 
-  // Add baseline votes to simulate community activity
-  const baseline = BASELINE_VOTES[symbol] || BASELINE_VOTES['_DEFAULT']
+  // Add baseline votes using randomized generator (cached per symbol)
+  if (!BASELINE_CACHE[symbol]) {
+    BASELINE_CACHE[symbol] = generateBaselineVotes(symbol)
+  }
+  const baseline = BASELINE_CACHE[symbol]
   breakdown.bullish += baseline.bullish
   breakdown.bearish += baseline.bearish
 
