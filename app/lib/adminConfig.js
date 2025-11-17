@@ -7,7 +7,8 @@
 
 export const ADMIN_EMAILS = [
   'eduardo@sonartracker.io',
-  'edusancheez2005@gmail.com'
+  'edusancheez2005@gmail.com',
+  'miaumiau@gmail.com'
 ]
 
 /**
