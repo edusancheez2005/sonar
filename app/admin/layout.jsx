@@ -1,11 +1,9 @@
-import { cookies } from 'next/headers'
-import { createClient } from '@/app/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { supabaseServer } from '@/app/lib/supabaseServerClient'
 import { isAdmin } from '@/app/lib/adminConfig'
 
 export default async function AdminLayout({ children }) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = supabaseServer()
   
   const { data: { user } } = await supabase.auth.getUser()
   

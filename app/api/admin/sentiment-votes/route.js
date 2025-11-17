@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
-import { cookies } from 'next/headers'
-import { createClient } from '@/app/lib/supabase/server'
+import { supabaseServer } from '@/app/lib/supabaseServerClient'
 import { isAdmin } from '@/app/lib/adminConfig'
 
 export const dynamic = 'force-dynamic'
@@ -18,8 +17,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(req) {
   try {
     // Check if user is admin
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = supabaseServer()
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {

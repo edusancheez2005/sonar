@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/app/lib/supabase/client'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { isAdmin } from '@/app/lib/adminConfig'
 
 const Container = styled.div`
@@ -210,7 +210,7 @@ export default function SentimentVotesAdmin() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const supabase = createClient()
+        const supabase = supabaseBrowser()
         const { data: { user } } = await supabase.auth.getUser()
         
         if (!user || !isAdmin(user.email)) {
