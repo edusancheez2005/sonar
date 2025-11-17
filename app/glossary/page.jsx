@@ -187,11 +187,6 @@ const BackLink = styled(Link)`
   }
 `
 
-export const metadata = {
-  title: 'Transaction Types Glossary — Sonar Tracker',
-  description: 'Learn what BUY, SELL, TRANSFER, and DEFI transactions mean in whale activity tracking. Understanding transaction classifications for crypto trading analysis.',
-}
-
 export default function GlossaryPage() {
   return (
     <AuthGuard>
