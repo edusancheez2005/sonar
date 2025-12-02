@@ -117,10 +117,10 @@ export function calculateEnhancedSentiment({
   // === 4. UNIFIED SENTIMENT SCORE ===
   // Weights: Whale data is most important, then price, then news
   const weights = {
-    whaleBias: 0.30,
-    whaleNetFlow: 0.25,
+    whaleBias: 0.25,
+    whaleNetFlow: 0.20,
     whaleMomentum: 0.15,
-    priceMomentum: priceData ? 0.20 : 0,
+    priceMomentum: priceData ? 0.30 : 0, // Increased from 0.20 to 0.30
     newsSentiment: newsData ? 0.10 : 0
   }
 
@@ -145,9 +145,19 @@ export function calculateEnhancedSentiment({
   let label = 'NEUTRAL'
   let color = '#f39c12'
   
+  // SAFEGUARD: The "Bullish Trap" Rule
+  // If price is down significantly (>5%), cap positive sentiment
+  const priceChange24h = priceData ? Number(priceData.change24h) : 0
+  
   if (score > 0.15) {
-    label = 'BULLISH'
-    color = '#2ecc71'
+    if (priceChange24h < -5) {
+       // Prevent BULLISH if down more than 5%
+       label = 'NEUTRAL'
+       color = '#f39c12'
+    } else {
+       label = 'BULLISH'
+       color = '#2ecc71'
+    }
   } else if (score < -0.15) {
     label = 'BEARISH'
     color = '#e74c3c'
