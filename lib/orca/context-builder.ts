@@ -473,7 +473,17 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
     }
     
     const coinId = coinGeckoIds[ticker.toUpperCase()]
-    let athData = null
+    let athData: {
+      ath: any
+      ath_date: any
+      ath_change_percentage: any
+      atl: any
+      atl_date: any
+      atl_change_percentage: any
+      market_cap_rank: any
+      total_supply: any
+      circulating_supply: any
+    } | null = null
     
     if (coinId) {
       try {
@@ -713,7 +723,7 @@ function processPriceData(priceData: any): PriceData {
   const athInfo = priceData.ath
   
   // Calculate distance from ATH
-  let athDistance = null
+  let athDistance: number | null = null
   if (athInfo?.ath && latest?.price_usd) {
     athDistance = ((latest.price_usd - athInfo.ath) / athInfo.ath) * 100
   }
