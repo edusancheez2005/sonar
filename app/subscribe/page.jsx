@@ -462,8 +462,8 @@ export default function SubscribePage() {
     setError('')
     setLoading(true)
     try {
-      // Hardcoded price ID to bypass env variable issues in client components
-      const priceId = 'price_1SITcJK8B21zF4WA5o9J1l7T'
+      // Updated Stripe Price ID for $7.99/month USD plan (Jan 2, 2026)
+      const priceId = 'price_1Sl6v8K8B21zF4WABaN32ivN'
       
       console.log('Creating checkout session with priceId:', priceId)
       
@@ -591,7 +591,7 @@ export default function SubscribePage() {
             <PlanName>Free</PlanName>
             <PriceContainer>
               <Price>
-                £0<span>/month</span>
+                $0<span>/month</span>
               </Price>
             </PriceContainer>
             <FeatureList>
@@ -621,7 +621,7 @@ export default function SubscribePage() {
             <PlanName>Pro</PlanName>
             <PriceContainer>
               <Price>
-                £5<span>/month</span>
+                $7.99<span>/month</span>
               </Price>
             </PriceContainer>
             <FeatureList>

@@ -1,0 +1,21 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/ingest-news",
+      "schedule": "0 */12 * * *"
+    },
+    {
+      "path": "/api/cron/analyze-sentiment",
+      "schedule": "30 */12 * * *"
+    },
+    {
+      "path": "/api/cron/aggregate-sentiment",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/fetch-prices",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
+
