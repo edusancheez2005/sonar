@@ -8,6 +8,8 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
+export const dynamic = 'force-dynamic'
+
 const BATCH_SIZE = 20 // Process 20 articles at a time
 
 interface NewsItem {

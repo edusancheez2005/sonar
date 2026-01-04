@@ -7,6 +7,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 // Top 50 crypto tickers with their CoinGecko IDs
 const TICKER_MAP = [
   { symbol: 'BTC', id: 'bitcoin' },

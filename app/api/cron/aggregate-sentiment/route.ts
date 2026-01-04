@@ -7,6 +7,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 interface NewsAggregation {
   ticker: string
   provider_sentiment_avg: number | null

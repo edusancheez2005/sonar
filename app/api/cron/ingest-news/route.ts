@@ -7,6 +7,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 // Top 100+ crypto tickers to track (prioritizing ERC-20 tokens)
 const TOP_TICKERS = [
   // Major Layer 1s
