@@ -10,6 +10,8 @@ import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extra
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 
+export const dynamic = 'force-dynamic'
+
 // ORCA System Prompt - Conversational & Friendly (Updated Jan 3, 2026)
 const ORCA_SYSTEM_PROMPT = `You are ORCA, a friendly crypto intelligence AI for Sonar. You're like a smart friend who helps people understand crypto through real data—not hype.
 
