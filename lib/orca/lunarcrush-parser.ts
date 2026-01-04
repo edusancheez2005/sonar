@@ -100,7 +100,7 @@ function extractThemes(text: string): string[] {
   const themes: string[] = []
   
   // Match pattern: "- Theme Name: (XX%) Description"
-  const matches = text.matchAll(/-\s*(.*?):\s*\((\d+)%\)\s*(.*?)(?=\n-|\n\n|$)/gs)
+  const matches = Array.from(text.matchAll(/-\s*(.*?):\s*\((\d+)%\)\s*(.*?)(?=\n-|\n\n|$)/gs))
   
   for (const match of matches) {
     const themeName = match[1].trim()
@@ -125,7 +125,7 @@ function extractTopNews(text: string): NewsItem[] {
   // Match pattern across lines:
   // Line 1: "Title"
   // Line 2: [News Link](url) ... timestamp
-  const matches = text.matchAll(/"([^"]+)"\s+\[News Link\]\(([^)]+)\)[^\n]*?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z?)/gs)
+  const matches = Array.from(text.matchAll(/"([^"]+)"\s+\[News Link\]\(([^)]+)\)[^\n]*?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z?)/gs))
   
   for (const match of matches) {
     const title = match[1].trim()
@@ -152,7 +152,7 @@ function extractTopCreators(text: string): Creator[] {
   const creators: Creator[] = []
   
   // Match pattern: | [@name]... | rank | followers | posts | engagements |
-  const matches = text.matchAll(/\|\s*\[@(\w+)\].*?\|\s*(\d+)\s*\|\s*([\d,]+)\s*\|\s*(\d+)\s*\|\s*([\d,]+)\s*\|/gs)
+  const matches = Array.from(text.matchAll(/\|\s*\[@(\w+)\].*?\|\s*(\d+)\s*\|\s*([\d,]+)\s*\|\s*(\d+)\s*\|\s*([\d,]+)\s*\|/gs))
   
   for (const match of matches) {
     creators.push({
