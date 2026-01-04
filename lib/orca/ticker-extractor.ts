@@ -103,18 +103,8 @@ const TICKER_MAP: Record<string, string> = {
   'inj': 'INJ',
   'render': 'RNDR',
   'rndr': 'RNDR',
-  'uniswap': 'UNI',
-  'uni': 'UNI',
-  'thegraph': 'GRT',
-  'grt': 'GRT',
   'apecoin': 'APE',
   'ape': 'APE',
-  'arbitrum': 'ARB',
-  'arb': 'ARB',
-  'optimism': 'OP',
-  'op': 'OP',
-  'immutable': 'IMX',
-  'imx': 'IMX',
   'blur': 'BLUR',
   'pendle': 'PENDLE',
   'sui': 'SUI',
@@ -334,7 +324,7 @@ export function suggestTickers(input: string): string[] {
   
   // Check ticker symbols
   const upper = input.toUpperCase()
-  for (const ticker of VALID_TICKERS) {
+  for (const ticker of Array.from(VALID_TICKERS)) {
     if (ticker.includes(upper) || upper.includes(ticker)) {
       if (!suggestions.includes(ticker)) {
         suggestions.push(ticker)
