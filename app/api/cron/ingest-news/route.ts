@@ -258,7 +258,7 @@ async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<numb
     for (const item of data.results.slice(0, 10)) { // Limit to 10 most recent
       try {
         // Calculate basic sentiment from votes
-        let sentimentRaw = null
+        let sentimentRaw: number | null = null
         if (item.votes) {
           const positive = item.votes.positive || 0
           const negative = item.votes.negative || 0
