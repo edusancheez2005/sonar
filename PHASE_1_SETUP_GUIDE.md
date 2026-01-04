@@ -29,10 +29,10 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_51SHsuJK8B21zF4WAKQOqIKEfG6ObJuClARwx
 STRIPE_SECRET_KEY=YOUR_STRIPE_SECRET_KEY_HERE
 STRIPE_PRICE_ID=price_1Sl6v8K8B21zF4WABaN32ivN
 STRIPE_PRODUCT_ID=prod_TEMooYyi24aFsY
-STRIPE_WEBHOOK_SECRET=whsec_0fEeniMI7yO2sygzRFx830Y5sjyDWOy6
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret_here
 
 # CryptoPanic (News Provider)
-CRYPTOPANIC_API_TOKEN=d79612ea75e8182db7ec32803e4ec0be87dca5ed
+CRYPTOPANIC_API_TOKEN=your_cryptopanic_api_token_here
 
 # LunarCrush (Social Sentiment & News - PAID PLAN)
 LUNARCRUSH_API_KEY=your_lunarcrush_api_key_here
@@ -41,7 +41,7 @@ LUNARCRUSH_API_KEY=your_lunarcrush_api_key_here
 COINGECKO_API_KEY=your_coingecko_api_key_here
 
 # Resend (Email Delivery)
-RESEND_API_KEY=re_6QsgQLuT_FvNHrnHQkJx1Srsd9YBaN7Ji
+RESEND_API_KEY=your_resend_api_key_here
 
 # Vercel Cron Authentication
 CRON_SECRET=dffe68424286373c3fd6fd52222701058c21e6b12921506c164d515776e2768b

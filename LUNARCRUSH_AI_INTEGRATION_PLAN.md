@@ -14,7 +14,7 @@ The user discovered an AMAZING endpoint that provides way more data than we're c
 https://lunarcrush.ai/topic/:topic
 ```
 
-**Authorization**: `Bearer unxdj7pa1xdr5248gjygdp7rskmjwsn9xonvw1su`
+**Authorization**: `Bearer your_lunarcrush_api_key_here`
 
 ---
 

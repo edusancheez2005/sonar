@@ -182,7 +182,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ### Authentication
 ```bash
-CRYPTOPANIC_API_TOKEN=d79612ea75e8182db7ec32803e4ec0be87dca5ed
+CRYPTOPANIC_API_TOKEN=your_cryptopanic_api_token_here
 ```
 
 ### API Details
@@ -196,7 +196,7 @@ CRYPTOPANIC_API_TOKEN=d79612ea75e8182db7ec32803e4ec0be87dca5ed
 
 #### `/posts/` - Get News
 ```bash
-GET https://cryptopanic.com/api/developer/v2/posts/?auth_token=d79612ea75e8182db7ec32803e4ec0be87dca5ed&currencies=BTC,ETH&public=true
+GET https://cryptopanic.com/api/developer/v2/posts/?auth_token=your_cryptopanic_api_token_here&currencies=BTC,ETH&public=true
 ```
 
 **Available Filters:**
@@ -366,7 +366,7 @@ STRIPE_SECRET_KEY=[provided earlier - check secure storage]
 ### Webhooks
 ```bash
 # Webhook Signing Secret
-STRIPE_WEBHOOK_SECRET=whsec_0fEeniMI7yO2sygzRFx830Y5sjyDWOy6
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret_here
 ```
 
 **Active Endpoint:**
@@ -406,7 +406,7 @@ COINGECKO_API_KEY=your_coingecko_api_key_here
 
 ### Authentication
 ```bash
-RESEND_API_KEY=re_6QsgQLuT_FvNHrnHQkJx1Srsd9YBaN7Ji
+RESEND_API_KEY=your_resend_api_key_here
 ```
 
 ### API Details

@@ -24,7 +24,7 @@ SUPABASE_SERVICE_ROLE=your_supabase_service_role_key
 # Stripe (LIVE MODE)
 STRIPE_SECRET_KEY=your_stripe_secret_key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-STRIPE_WEBHOOK_SECRET=whsec_0fEeniMI7yO2sygzRFx830Y5sjyDWOy6
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret_here
 STRIPE_PRICE_ID=your_stripe_price_id
 
 # News APIs
