@@ -52,52 +52,85 @@ export function ResponseCards({ data }: ResponseCardsProps) {
 }
 
 /**
- * 🐋 Whale Activity Card
+ * 🐋 Whale Activity Card - Enhanced with visual flow
  */
 function WhaleActivityCard({ whaleData }: { whaleData: any }) {
   const netFlowColor = whaleData.net_flow > 0 ? 'text-green-400' : 
                        whaleData.net_flow < 0 ? 'text-red-400' : 'text-gray-400'
+  const netFlowBg = whaleData.net_flow > 0 ? 'bg-green-500/10 border-green-500/30' : 
+                    whaleData.net_flow < 0 ? 'bg-red-500/10 border-red-500/30' : 'bg-gray-500/10 border-gray-500/30'
   const netFlowLabel = whaleData.net_flow > 0 ? 'Accumulation' :
                        whaleData.net_flow < 0 ? 'Distribution' : 'Neutral'
+  const flowIcon = whaleData.net_flow > 0 ? '📈' : whaleData.net_flow < 0 ? '📉' : '➡️'
+  
+  // Calculate percentage split
+  const totalTx = whaleData.accumulation + whaleData.distribution
+  const accumulationPct = totalTx > 0 ? (whaleData.accumulation / totalTx * 100).toFixed(0) : 50
+  const distributionPct = totalTx > 0 ? (whaleData.distribution / totalTx * 100).toFixed(0) : 50
   
   return (
     <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 backdrop-blur-sm">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-300 flex items-center">
           <span className="text-xl mr-2">🐋</span>
-          Whale Activity
+          On-Chain Activity
         </h3>
-        <span className="text-xs text-gray-500">Last 24h</span>
+        <span className="text-xs text-gray-500 bg-gray-700/50 px-2 py-0.5 rounded">Last 24h</span>
       </div>
       
-      <div className="space-y-3">
-        <div>
-          <div className="text-xs text-gray-400 mb-1">Net Flow</div>
-          <div className={`text-2xl font-bold ${netFlowColor}`}>
-            ${(whaleData.net_flow / 1e6).toFixed(2)}M
+      <div className="space-y-4">
+        {/* Net Flow - Main Metric */}
+        <div className={`border rounded-lg p-3 ${netFlowBg}`}>
+          <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Net Flow {flowIcon}</div>
+          <div className={`text-3xl font-bold ${netFlowColor} mb-1`}>
+            ${Math.abs(whaleData.net_flow / 1e6).toFixed(2)}M
           </div>
-          <div className="text-xs text-gray-500">{netFlowLabel}</div>
+          <div className="text-xs text-gray-400">
+            {whaleData.net_flow > 0 ? '↗️ Moving OUT of exchanges (Bullish)' : 
+             whaleData.net_flow < 0 ? '↘️ Moving INTO exchanges (Bearish)' : 
+             '↔️ Neutral flow'}
+          </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <div className="text-xs text-gray-400">Transactions</div>
-            <div className="text-lg font-semibold text-white">
+        {/* Buy vs Sell Pressure */}
+        <div>
+          <div className="flex justify-between text-xs text-gray-400 mb-2">
+            <span>Buy Pressure</span>
+            <span>Sell Pressure</span>
+          </div>
+          <div className="flex h-2 rounded-full overflow-hidden bg-gray-700">
+            <div 
+              className="bg-green-500 transition-all duration-500" 
+              style={{ width: `${accumulationPct}%` }}
+            />
+            <div 
+              className="bg-red-500 transition-all duration-500" 
+              style={{ width: `${distributionPct}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs mt-1">
+            <span className="text-green-400 font-semibold">
+              {whaleData.accumulation} buys ({accumulationPct}%)
+            </span>
+            <span className="text-red-400 font-semibold">
+              {whaleData.distribution} sells ({distributionPct}%)
+            </span>
+          </div>
+        </div>
+        
+        {/* Transaction Details */}
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-700">
+          <div className="bg-gray-700/30 rounded p-2">
+            <div className="text-xs text-gray-400 mb-0.5">Total Moves</div>
+            <div className="text-xl font-bold text-white">
               {whaleData.transactions}
             </div>
           </div>
-          <div>
-            <div className="text-xs text-gray-400">Accumulation</div>
-            <div className="text-lg font-semibold text-green-400">
-              {whaleData.accumulation}
+          <div className="bg-gray-700/30 rounded p-2">
+            <div className="text-xs text-gray-400 mb-0.5">Signal</div>
+            <div className={`text-xl font-bold ${netFlowColor}`}>
+              {netFlowLabel}
             </div>
-          </div>
-        </div>
-        
-        <div className="pt-2 border-t border-gray-700">
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-400">Distribution:</span>
-            <span className="text-red-400">{whaleData.distribution}</span>
           </div>
         </div>
       </div>

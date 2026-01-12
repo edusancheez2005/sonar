@@ -591,7 +591,7 @@ export default function SubscribePage() {
             <PlanName>Free</PlanName>
             <PriceContainer>
               <Price>
-                $0<span>/month</span>
+                Free<span> Forever</span>
               </Price>
             </PriceContainer>
             <FeatureList>

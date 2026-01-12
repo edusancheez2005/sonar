@@ -306,7 +306,7 @@ const WelcomeCard = styled(motion.div)`
     cursor: pointer;
     transition: all 0.3s ease;
     color: ${colors.textPrimary};
-    font-size: 0.9rem;
+      font-size: 0.9rem;
     
     &:hover {
       background: rgba(54, 166, 186, 0.2);
@@ -436,7 +436,7 @@ export default function ClientOrca() {
       setLoading(false)
     }
   }
-
+  
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -542,8 +542,8 @@ export default function ClientOrca() {
         {loading && (
           <MessageBubble
             $isUser={false}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
           >
             <Avatar $isUser={false}>🐋</Avatar>
             <MessageContent>
@@ -584,4 +584,4 @@ export default function ClientOrca() {
       </InputArea>
     </ChatContainer>
   )
-}
+} 
