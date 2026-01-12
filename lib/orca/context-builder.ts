@@ -202,6 +202,7 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<void>
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 10000)
     
+    // Try ticker-specific topic first
     const topicName = ticker.toLowerCase()
     const response = await fetch(
       `https://lunarcrush.com/api4/public/topic/${topicName}/news/v1`,
@@ -222,6 +223,25 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<void>
 
     console.log(`📰 Found ${articles.length} LunarCrush /news articles for ${ticker}`)
 
+    // Filter function to check if article is relevant to the crypto
+    const isRelevantArticle = (article: any, ticker: string): boolean => {
+      const title = (article.post_title || '').toLowerCase()
+      const tickerLower = ticker.toLowerCase()
+      
+      // Common crypto-related keywords
+      const cryptoKeywords = ['crypto', 'blockchain', 'bitcoin', 'ethereum', 'defi', 'web3', 'nft', 'token', 'coin', 'trading', 'wallet', 'exchange', 'binance', 'coinbase']
+      
+      // Check if title contains ticker or crypto keywords
+      const hasTicker = title.includes(tickerLower) || title.includes(`$${tickerLower}`)
+      const hasCryptoKeyword = cryptoKeywords.some(keyword => title.includes(keyword))
+      
+      // Exclude obvious non-crypto topics
+      const excludeKeywords = ['ozempic', 'healthy returns', 'bridge', 'mail', 'proton', 'bomb', 'war', 'election', 'covid', 'vaccine', 'weather']
+      const hasExcludeKeyword = excludeKeywords.some(keyword => title.includes(keyword))
+      
+      return (hasTicker || hasCryptoKeyword) && !hasExcludeKeyword
+    }
+
     let savedCount = 0
     for (const article of articles.slice(0, 20)) { // Limit to 20
       try {
@@ -229,6 +249,12 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<void>
         const articleTitle = article.post_title || 'Untitled'
         
         if (!articleUrl) continue
+        
+        // Filter out irrelevant articles
+        if (!isRelevantArticle(article, ticker)) {
+          console.log(`  ⏭️  Skipping irrelevant: "${articleTitle.substring(0, 50)}..."`)
+          continue
+        }
         
         // Check if exists
         const { data: existing } = await supabase

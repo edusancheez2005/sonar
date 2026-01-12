@@ -10,7 +10,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
-import { ResponseCards } from '@/components/orca/ResponseCards'
+// import { ResponseCards } from '@/components/orca/ResponseCards' // Not used - data in conversational text now
 
 // Theme colors from Sonar
 const colors = {
@@ -518,8 +518,8 @@ export default function ClientOrca() {
                     {formatTime(message.timestamp)}
                   </MessageTime>
                   
-                  {/* Show cards for ORCA responses */}
-                  {message.role === 'assistant' && message.data && (
+                  {/* Cards hidden - all data is now in conversational text */}
+                  {/* {message.role === 'assistant' && message.data && (
                     <CardsContainer>
                       <ResponseCards
                         data={{
@@ -531,7 +531,7 @@ export default function ClientOrca() {
                         }}
                       />
                     </CardsContainer>
-                  )}
+                  )} */}
                 </MessageContent>
               </MessageBubble>
             ))}
