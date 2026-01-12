@@ -462,8 +462,8 @@ export default function SubscribePage() {
     setError('')
     setLoading(true)
     try {
-      // Updated Stripe Price ID for $7.99/month USD plan (Jan 2, 2026)
-      const priceId = 'price_1Sl6v8K8B21zF4WABaN32ivN'
+      // Get Stripe Price ID from environment variable
+      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || 'price_1SITcJK8B21zF4WA5o9J1l7T'
       
       console.log('Creating checkout session with priceId:', priceId)
       
