@@ -40,9 +40,12 @@ const LogoSection = styled(motion.div)`
 `
 
 const OrcaLogo = styled.div`
-  font-size: 4rem;
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: ${colors.primary};
   margin-bottom: 1rem;
-  filter: drop-shadow(0 4px 20px rgba(54, 166, 186, 0.3));
+  text-shadow: 0 4px 30px rgba(54, 166, 186, 0.4);
 `
 
 const Title = styled.h1`
