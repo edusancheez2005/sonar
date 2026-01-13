@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import OrcaWelcome from './OrcaWelcome'
 
 // Original Sonar colors - clean and professional
 const colors = {
@@ -509,57 +510,11 @@ export default function ClientOrca() {
 
   return (
     <ChatContainer>
-      {/* Header */}
-      <ChatHeader>
-        <div>
-          <h1>
-            <span>🐋</span>
-            ORCA AI 2.0
-          </h1>
-          <div className="subtitle">
-            Crypto Intelligence powered by whale data, sentiment analysis, and social insights
-          </div>
-        </div>
-        {quota && (
-          <QuotaBadge>
-            Questions today: <span>
-              {quota.plan === 'unlimited' ? `${quota.used}/Unlimited ♾️` : `${quota.used}/${quota.limit}`}
-            </span>
-            {quota.plan === 'free' && (
-              <a href="/subscribe" className="upgrade">Upgrade to Pro for 5 questions/day!</a>
-            )}
-          </QuotaBadge>
-        )}
-      </ChatHeader>
 
       {/* Messages Area */}
       <MessagesArea>
         {messages.length === 0 ? (
-          <WelcomeCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2>👋 Hey there! I'm ORCA.</h2>
-            <p>
-              I'm your AI-powered crypto analyst. I track whale movements, analyze sentiment across news and social media, 
-              and combine it all to give you real insights. Ask me about any cryptocurrency!
-            </p>
-            <p style={{ fontSize: '0.95rem', fontWeight: 600, color: colors.textPrimary }}>
-              Try asking me:
-            </p>
-            <div className="examples">
-              {examples.map((example, i) => (
-                <div
-                  key={i}
-                  className="example"
-                  onClick={() => handleSubmit(null, example)}
-                >
-                  {example}
-                </div>
-              ))}
-            </div>
-          </WelcomeCard>
+          <OrcaWelcome onExampleClick={(example) => handleSubmit(null, example)} />
         ) : (
           <>
             {messages.map((message) => (
