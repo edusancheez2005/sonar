@@ -1,306 +1,235 @@
 'use client'
 
-import React, { useState } from 'react'
-import styled from 'styled-components'
+import React from 'react'
+import styled, { keyframes } from 'styled-components'
 import { motion } from 'framer-motion'
 
 const colors = {
   bgDark: '#0a1621',
   bgCard: '#0d2134',
   primary: '#36a6ba',
-  secondary: '#1e3951',
   textPrimary: '#ffffff',
   textSecondary: '#a0b2c6',
-  accent: '#9b59b6'
+  textMuted: '#6b7d8f',
+  borderLight: 'rgba(54, 166, 186, 0.15)',
 }
 
 const Container = styled.div`
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 3rem 2rem;
-`
-
-const Logo = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
   text-align: center;
+`
+
+const fadeInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`
+
+const LogoSection = styled(motion.div)`
   margin-bottom: 2rem;
-  
-  .icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-  }
-  
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    margin: 0;
-  }
-  
-  p {
-    font-size: 1.1rem;
-    color: ${colors.textSecondary};
-    margin-top: 0.5rem;
-  }
 `
 
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin: 3rem 0;
+const OrcaLogo = styled.div`
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 4px 20px rgba(54, 166, 186, 0.3));
 `
 
-const DataCard = styled(motion.div)`
-  background: ${colors.bgCard};
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 12px;
-  padding: 1.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    border-color: ${colors.primary};
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(54, 166, 186, 0.2);
-  }
-  
-  .icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    display: block;
-  }
-  
-  h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: ${colors.primary};
-    margin: 0 0 0.5rem 0;
-  }
-  
-  p {
-    font-size: 0.95rem;
-    color: ${colors.textSecondary};
-    line-height: 1.6;
-    margin: 0;
-  }
-  
-  .detail {
-    font-size: 0.85rem;
-    color: ${colors.textSecondary};
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(54, 166, 186, 0.1);
-    display: none;
-  }
-  
-  &:hover .detail {
-    display: block;
-  }
-`
-
-const Examples = styled.div`
-  margin-top: 3rem;
-  
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: ${colors.textPrimary};
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-  
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1.5rem;
-  }
-`
-
-const ExampleButton = styled(motion.button)`
-  background: rgba(54, 166, 186, 0.1);
-  border: 1px solid rgba(54, 166, 186, 0.3);
+const Title = styled.h1`
+  font-size: 2rem;
+  font-weight: 700;
   color: ${colors.textPrimary};
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+`
+
+const Subtitle = styled.p`
+  font-size: 1rem;
+  color: ${colors.primary};
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+`
+
+const DescriptionCard = styled(motion.div)`
+  max-width: 640px;
+  background: linear-gradient(135deg, ${colors.bgCard} 0%, rgba(13, 33, 52, 0.8) 100%);
+  border: 1px solid ${colors.borderLight};
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  margin-bottom: 2.5rem;
+`
+
+const Description = styled.p`
+  font-size: 1.05rem;
+  color: ${colors.textSecondary};
+  line-height: 1.8;
+  margin: 0;
+  
+  strong {
+    color: ${colors.textPrimary};
+    font-weight: 600;
+  }
+  
+  span.highlight {
+    color: ${colors.primary};
+  }
+`
+
+const Divider = styled.div`
+  width: 50px;
+  height: 2px;
+  background: ${colors.primary};
+  margin: 1.5rem auto;
+  opacity: 0.5;
+`
+
+const Stats = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid ${colors.borderLight};
+`
+
+const Stat = styled.div`
+  text-align: center;
+`
+
+const StatValue = styled.div`
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: ${colors.primary};
+  margin-bottom: 0.25rem;
+`
+
+const StatLabel = styled.div`
+  font-size: 0.75rem;
+  color: ${colors.textMuted};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`
+
+const ExamplesSection = styled(motion.div)`
+  width: 100%;
+  max-width: 700px;
+`
+
+const ExamplesTitle = styled.h3`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: ${colors.textMuted};
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+`
+
+const ExamplesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const ExampleButton = styled.button`
+  background: ${colors.bgCard};
+  border: 1px solid ${colors.borderLight};
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  color: ${colors.textSecondary};
+  font-size: 0.9rem;
   text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
   
   &:hover {
-    background: rgba(54, 166, 186, 0.2);
+    background: rgba(54, 166, 186, 0.08);
     border-color: ${colors.primary};
+    color: ${colors.textPrimary};
     transform: translateY(-2px);
   }
 `
 
-const HowItWorks = styled.div`
-  margin-top: 3rem;
-  padding: 2rem;
-  background: rgba(54, 166, 186, 0.05);
-  border: 1px solid rgba(54, 166, 186, 0.1);
-  border-radius: 12px;
-  
-  h2 {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: ${colors.primary};
-    margin: 0 0 1.5rem 0;
-  }
-  
-  .steps {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .step {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    
-    .number {
-      background: ${colors.primary};
-      color: white;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-    
-    .content {
-      flex: 1;
-      
-      h4 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: ${colors.textPrimary};
-        margin: 0 0 0.25rem 0;
-      }
-      
-      p {
-        font-size: 0.9rem;
-        color: ${colors.textSecondary};
-        margin: 0;
-        line-height: 1.5;
-      }
-    }
-  }
-`
+const examples = [
+  "Should I buy Bitcoin right now?",
+  "What's the sentiment on Ethereum?",
+  "Are whales accumulating Solana?",
+  "Is PEPE a good investment?",
+  "What does the news say about XRP?",
+  "Give me your analysis on DOGE",
+]
 
 export default function OrcaWelcome({ onExampleClick }) {
-  const dataTypes = [
-    {
-      icon: '🐋',
-      title: 'Whale Tracking',
-      description: 'Real-time monitoring of large cryptocurrency transactions',
-      detail: 'Track whale wallets moving millions in ERC-20 tokens. See buy/sell pressure from major holders.'
-    },
-    {
-      icon: '📊',
-      title: 'Sentiment Analysis',
-      description: 'AI-powered sentiment from news and social media',
-      detail: 'Our trained LLM analyzes thousands of articles to gauge market sentiment with 60% LLM + 40% provider weighting.'
-    },
-    {
-      icon: '🌙',
-      title: 'Social Intelligence',
-      description: 'Community buzz and trending topics from LunarCrush',
-      detail: 'Track social engagement, creator activity, and trending themes across crypto Twitter and Reddit.'
-    },
-    {
-      icon: '💰',
-      title: 'Price Data',
-      description: 'Real-time price, volume, and market cap from CoinGecko',
-      detail: '15-minute snapshots with 24h trends, ATH distance, and market cap rankings.'
-    }
-  ]
-
-  const examples = [
-    "What's happening with BTC?",
-    "Should I invest in ETH?",
-    "Tell me about SOL whale activity",
-    "Analyze DOGE sentiment",
-    "Compare BTC and ETH",
-    "What's the best altcoin right now?"
-  ]
-
   return (
     <Container>
-      <Logo>
-        <div className="icon">🐋</div>
-        <h1>ORCA AI</h1>
-        <p>Your AI-Powered Crypto Intelligence Assistant</p>
-      </Logo>
-
-      <Grid>
-        {dataTypes.map((data, index) => (
-          <DataCard
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <span className="icon">{data.icon}</span>
-            <h3>{data.title}</h3>
-            <p>{data.description}</p>
-            <div className="detail">{data.detail}</div>
-          </DataCard>
-        ))}
-      </Grid>
-
-      <HowItWorks>
-        <h2>⚡ How It Works</h2>
-        <div className="steps">
-          <div className="step">
-            <div className="number">1</div>
-            <div className="content">
-              <h4>Ask Anything</h4>
-              <p>Type your question about any cryptocurrency in plain English</p>
-            </div>
-          </div>
-          <div className="step">
-            <div className="number">2</div>
-            <div className="content">
-              <h4>ORCA Analyzes</h4>
-              <p>Our AI combines whale data, sentiment scores, social buzz, and price action</p>
-            </div>
-          </div>
-          <div className="step">
-            <div className="number">3</div>
-            <div className="content">
-              <h4>Get Insights</h4>
-              <p>Receive structured analysis with short-term and long-term perspectives</p>
-            </div>
-          </div>
-        </div>
-      </HowItWorks>
-
-      <Examples>
-        <h2>💡 Try asking:</h2>
-        <div className="grid">
-          {examples.map((example, index) => (
+      <LogoSection
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <OrcaLogo>ORCA</OrcaLogo>
+        <Title>AI-Powered Crypto Intelligence</Title>
+        <Subtitle>Your Personal Market Analyst</Subtitle>
+      </LogoSection>
+      
+      <DescriptionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.15 }}
+      >
+        <Description>
+          ORCA is trained on <strong>proprietary sentiment models</strong> analyzing millions of news articles, 
+          social media posts, and market signals in real-time. Our team tracks <span className="highlight">whale 
+          transaction data</span> across major blockchains, combining on-chain analytics with 
+          AI-driven sentiment scoring to give you <strong>institutional-grade insights</strong> that 
+          were previously only available to professional trading desks.
+        </Description>
+        
+        <Stats>
+          <Stat>
+            <StatValue>10M+</StatValue>
+            <StatLabel>News Analyzed</StatLabel>
+          </Stat>
+          <Stat>
+            <StatValue>Real-Time</StatValue>
+            <StatLabel>Whale Tracking</StatLabel>
+          </Stat>
+          <Stat>
+            <StatValue>50+</StatValue>
+            <StatLabel>Tokens Covered</StatLabel>
+          </Stat>
+        </Stats>
+      </DescriptionCard>
+      
+      <ExamplesSection
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+      >
+        <ExamplesTitle>Try Asking</ExamplesTitle>
+        <ExamplesGrid>
+          {examples.map((example, i) => (
             <ExampleButton
-              key={index}
-              onClick={() => onExampleClick(example)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              key={i}
+              onClick={() => onExampleClick?.(example)}
             >
               {example}
             </ExampleButton>
           ))}
-        </div>
-      </Examples>
+        </ExamplesGrid>
+      </ExamplesSection>
     </Container>
   )
 }
-

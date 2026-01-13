@@ -8,181 +8,240 @@ import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 const colors = {
   bgDark: '#0a1621',
   bgCard: '#0d2134',
+  bgCardHover: '#112940',
   primary: '#36a6ba',
   textPrimary: '#ffffff',
   textSecondary: '#a0b2c6',
+  textMuted: '#6b7d8f',
   borderLight: 'rgba(54, 166, 186, 0.1)',
   sentimentBull: '#16c784',
   sentimentBear: '#ed4c5c',
-  sentimentNeutral: '#f2bc1d'
 }
 
 const Container = styled.div`
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 3rem 2rem;
 `
 
 const Header = styled.div`
-  margin-bottom: 2rem;
+  text-align: center;
+  margin-bottom: 3rem;
 `
 
 const Title = styled.h1`
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
   color: ${colors.textPrimary};
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.02em;
 `
 
 const Subtitle = styled.p`
   font-size: 1rem;
   color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
   
-  strong {
+  span {
     color: ${colors.primary};
-    font-weight: 600;
+    font-weight: 500;
   }
 `
 
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 1.5rem;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+const Divider = styled.div`
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, ${colors.primary}, ${colors.sentimentBull});
+  margin: 1.5rem auto 0;
+  border-radius: 2px;
 `
 
-const NewsCard = styled(motion.article)`
-  background: ${colors.bgCard};
-  border: 1px solid ${colors.borderLight};
-  border-radius: 12px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  
-  &:hover {
-    border-color: ${colors.primary};
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  }
-`
-
-const CardHeader = styled.div`
+const NewsList = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
+  flex-direction: column;
   gap: 1rem;
 `
 
-const SourceBadge = styled.div`
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: ${colors.textSecondary};
-  background: rgba(54, 166, 186, 0.1);
-  padding: 0.375rem 0.75rem;
-  border-radius: 6px;
-  text-transform: uppercase;
+const NewsCard = styled(motion.a)`
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1.5rem;
+  align-items: start;
+  background: ${colors.bgCard};
+  border: 1px solid ${colors.borderLight};
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  
+  &:hover {
+    background: ${colors.bgCardHover};
+    border-color: ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
+    transform: translateX(4px);
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 `
 
-const SentimentBadge = styled.div`
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.5rem 0.875rem;
-  border-radius: 8px;
-  background: ${props => {
-    if (props.$score > 0.2) return 'rgba(22, 199, 132, 0.15)'
-    if (props.$score < -0.2) return 'rgba(237, 76, 92, 0.15)'
-    return 'rgba(242, 188, 29, 0.15)'
-  }};
-  color: ${props => {
-    if (props.$score > 0.2) return colors.sentimentBull
-    if (props.$score < -0.2) return colors.sentimentBear
-    return colors.sentimentNeutral
-  }};
-  border: 1px solid ${props => {
-    if (props.$score > 0.2) return colors.sentimentBull
-    if (props.$score < -0.2) return colors.sentimentBear
-    return colors.sentimentNeutral
-  }};
-  display: flex;
+const SentimentIndicator = styled.div`
+  width: 4px;
+  height: 100%;
+  min-height: 80px;
+  background: ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
+  border-radius: 2px;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    height: 4px;
+    min-height: auto;
+  }
+`
+
+const ContentArea = styled.div`
+  flex: 1;
+`
+
+const TokenBadge = styled.div`
+  display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  white-space: nowrap;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: ${colors.primary};
+  background: rgba(54, 166, 186, 0.1);
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-bottom: 0.625rem;
 `
 
 const NewsTitle = styled.h3`
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: ${colors.textPrimary};
-  line-height: 1.4;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+`
+
+const NewsSummary = styled.p`
+  font-size: 0.875rem;
+  color: ${colors.textSecondary};
+  line-height: 1.6;
   margin-bottom: 0.75rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 `
 
 const MetaRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid ${colors.borderLight};
-  margin-top: 1rem;
-`
-
-const TimeAgo = styled.div`
   font-size: 0.8rem;
-  color: ${colors.textSecondary};
+  color: ${colors.textMuted};
 `
 
-const LLMLabel = styled.div`
-  font-size: 0.75rem;
-  color: ${colors.primary};
-  background: rgba(54, 166, 186, 0.1);
-  padding: 0.25rem 0.625rem;
-  border-radius: 4px;
-  font-weight: 500;
+const Source = styled.span`
+  text-transform: capitalize;
+`
+
+const SentimentArea = styled.div`
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 100px;
   
-  &::before {
-    content: '🤖';
-    font-size: 0.9em;
+  @media (max-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
   }
+`
+
+const SentimentBadge = styled.div`
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: ${props => props.$bullish ? 'rgba(22, 199, 132, 0.12)' : 'rgba(237, 76, 92, 0.12)'};
+  color: ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
+  border: 1px solid ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
+`
+
+const SentimentScore = styled.div`
+  font-size: 0.75rem;
+  color: ${colors.textMuted};
 `
 
 const Loading = styled.div`
   text-align: center;
   padding: 4rem 2rem;
   color: ${colors.textSecondary};
-  font-size: 1.1rem;
+  font-size: 1rem;
 `
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 4rem 2rem;
+  color: ${colors.textSecondary};
+`
+
+// Generate a brief summary from the title
+function generateSummary(title, ticker) {
+  // Remove source prefixes and clean up
+  const cleanTitle = title
+    .replace(/^[A-Z0-9]+\s*-\s*/i, '')
+    .replace(/\s*-\s*[A-Za-z]+\s*News$/i, '')
+    .replace(/\s*\|.*$/i, '')
+    .trim()
+  
+  // Create a contextual summary based on keywords
+  const lowerTitle = cleanTitle.toLowerCase()
+  
+  if (lowerTitle.includes('etf') || lowerTitle.includes('fund')) {
+    return `Institutional investment activity affecting ${ticker || 'cryptocurrency'} markets. ETF flows often signal broader market sentiment.`
+  }
+  if (lowerTitle.includes('price') || lowerTitle.includes('rally') || lowerTitle.includes('surge')) {
+    return `Price movement update for ${ticker || 'the market'}. Monitor closely for potential trading opportunities.`
+  }
+  if (lowerTitle.includes('regulation') || lowerTitle.includes('sec') || lowerTitle.includes('law')) {
+    return `Regulatory developments that may impact ${ticker || 'crypto'} markets. Policy changes can create volatility.`
+  }
+  if (lowerTitle.includes('whale') || lowerTitle.includes('accumulation')) {
+    return `Large holder activity detected. Whale movements often precede significant price action.`
+  }
+  if (lowerTitle.includes('bank') || lowerTitle.includes('institution')) {
+    return `Traditional finance institutions showing interest in ${ticker || 'cryptocurrency'}. Adoption signals.`
+  }
+  if (lowerTitle.includes('bitcoin') || lowerTitle.includes('btc')) {
+    return `Bitcoin market update. As the leading cryptocurrency, BTC movements influence the broader market.`
+  }
+  if (lowerTitle.includes('ethereum') || lowerTitle.includes('eth')) {
+    return `Ethereum ecosystem news. ETH developments impact DeFi and Layer 2 solutions.`
+  }
+  
+  return `Market intelligence for ${ticker || 'cryptocurrency'} investors. Stay informed on the latest developments.`
+}
 
 export default function EnhancedNews({ ticker = null }) {
   const [news, setNews] = useState([])
   const [loading, setLoading] = useState(true)
-  const [sentimentScores, setSentimentScores] = useState({})
 
   useEffect(() => {
     async function fetchData() {
       try {
         const supabase = supabaseBrowser()
         
-        // Fetch news items with LLM sentiment
+        // Fetch news items
         let newsQuery = supabase
           .from('news_items')
           .select('*')
           .order('published_at', { ascending: false })
-          .limit(ticker ? 20 : 50)
+          .limit(100) // Fetch more to filter
         
         if (ticker) {
           newsQuery = newsQuery.eq('ticker', ticker.toUpperCase())
@@ -192,26 +251,27 @@ export default function EnhancedNews({ ticker = null }) {
         
         if (newsError) throw newsError
         
-        setNews(newsData || [])
-        
-        // Fetch sentiment scores for the tickers in the news
-        if (newsData && newsData.length > 0) {
-          const tickers = [...new Set(newsData.map(n => n.ticker))]
-          const { data: sentimentData } = await supabase
-            .from('sentiment_scores')
-            .select('*')
-            .in('ticker', tickers)
-            .order('date', { ascending: false })
-          
-          // Create a map of ticker -> latest sentiment
-          const sentimentMap = {}
-          sentimentData?.forEach(s => {
-            if (!sentimentMap[s.ticker]) {
-              sentimentMap[s.ticker] = s.combined_score
-            }
+        // Filter and process news
+        const processedNews = (newsData || [])
+          // Filter out untitled and neutral articles
+          .filter(article => {
+            const title = article.title?.trim()
+            if (!title || title.toLowerCase() === 'untitled') return false
+            
+            const sentiment = article.sentiment_llm || article.sentiment_raw || 0
+            // Only include bullish (> 0.2) or bearish (< -0.2)
+            return Math.abs(sentiment) > 0.2
           })
-          setSentimentScores(sentimentMap)
-        }
+          // Sort by absolute sentiment (highest first)
+          .sort((a, b) => {
+            const sentA = Math.abs(a.sentiment_llm || a.sentiment_raw || 0)
+            const sentB = Math.abs(b.sentiment_llm || b.sentiment_raw || 0)
+            return sentB - sentA
+          })
+          // Take top 15
+          .slice(0, 15)
+        
+        setNews(processedNews)
         
       } catch (error) {
         console.error('Error fetching news:', error)
@@ -234,27 +294,24 @@ export default function EnhancedNews({ ticker = null }) {
     return `${Math.floor(seconds / 86400)}d ago`
   }
 
-  const getSentimentLabel = (score) => {
-    if (score > 0.2) return '📈 Bullish'
-    if (score < -0.2) return '📉 Bearish'
-    return '➡️ Neutral'
-  }
-
-  const handleCardClick = (url) => {
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer')
-    }
+  const formatSource = (source) => {
+    if (!source) return 'News'
+    return source
+      .replace(/_/g, ' ')
+      .replace(/media$/i, '')
+      .replace(/news$/i, '')
+      .trim() || 'News'
   }
 
   if (loading) {
-    return <Loading>Loading news with AI sentiment analysis...</Loading>
+    return <Loading>Analyzing market sentiment...</Loading>
   }
 
   if (news.length === 0) {
     return (
-      <Loading>
-        No news articles found{ticker ? ` for ${ticker}` : ''}. Check back soon!
-      </Loading>
+      <EmptyState>
+        No significant sentiment signals found{ticker ? ` for ${ticker}` : ''} at this time.
+      </EmptyState>
     )
   }
 
@@ -262,57 +319,60 @@ export default function EnhancedNews({ ticker = null }) {
     <Container>
       {!ticker && (
         <Header>
-          <Title>📰 Crypto News</Title>
+          <Title>Crypto Market Intelligence</Title>
           <Subtitle>
-            Analyzed by <strong>ORCA's trained LLM</strong> for sentiment insights
+            Real-time news analyzed by <span>ORCA's proprietary LLM</span> for actionable sentiment signals
           </Subtitle>
+          <Divider />
         </Header>
       )}
       
-      <Grid>
+      <NewsList>
         {news.map((article, index) => {
-          const llmSentiment = article.sentiment_llm || article.sentiment_raw || 0
-          const tickerSentiment = sentimentScores[article.ticker]
+          const sentiment = article.sentiment_llm || article.sentiment_raw || 0
+          const isBullish = sentiment > 0
+          const score = Math.abs(sentiment * 100).toFixed(0)
           
           return (
             <NewsCard
               key={article.id}
-              onClick={() => handleCardClick(article.url)}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              $bullish={isBullish}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.04 }}
             >
-              <CardHeader>
-                <SourceBadge>{article.source || 'News'}</SourceBadge>
-                <SentimentBadge $score={llmSentiment}>
-                  {getSentimentLabel(llmSentiment)}
+              <SentimentIndicator $bullish={isBullish} />
+              
+              <ContentArea>
+                {article.ticker && (
+                  <TokenBadge>{article.ticker}</TokenBadge>
+                )}
+                <NewsTitle>{article.title}</NewsTitle>
+                <NewsSummary>
+                  {generateSummary(article.title, article.ticker)}
+                </NewsSummary>
+                <MetaRow>
+                  <Source>{formatSource(article.source)}</Source>
+                  <span>•</span>
+                  <span>{formatTimeAgo(article.published_at)}</span>
+                </MetaRow>
+              </ContentArea>
+              
+              <SentimentArea>
+                <SentimentBadge $bullish={isBullish}>
+                  {isBullish ? 'Bullish' : 'Bearish'}
                 </SentimentBadge>
-              </CardHeader>
-              
-              <NewsTitle>{article.title}</NewsTitle>
-              
-              {tickerSentiment !== undefined && (
-                <div style={{ 
-                  fontSize: '0.85rem', 
-                  color: tickerSentiment > 0 ? colors.sentimentBull : 
-                         tickerSentiment < 0 ? colors.sentimentBear : 
-                         colors.sentimentNeutral,
-                  fontWeight: 600,
-                  marginBottom: '0.5rem'
-                }}>
-                  {article.ticker} Overall Sentiment: {(tickerSentiment * 100).toFixed(0)}%
-                </div>
-              )}
-              
-              <MetaRow>
-                <TimeAgo>{formatTimeAgo(article.published_at)}</TimeAgo>
-                <LLMLabel>LLM Analyzed</LLMLabel>
-              </MetaRow>
+                <SentimentScore>
+                  Confidence: {score}%
+                </SentimentScore>
+              </SentimentArea>
             </NewsCard>
           )
         })}
-      </Grid>
+      </NewsList>
     </Container>
   )
 }
-
