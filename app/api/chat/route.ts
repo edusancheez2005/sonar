@@ -235,7 +235,10 @@ export async function POST(request: Request) {
         { 
           error: 'Rate limit exceeded', 
           quota: quotaStatus,
-          message: `You've used all ${quotaStatus.limit} questions for today. ${quotaStatus.plan === 'free' ? 'Upgrade to Pro for 5 questions/day!' : 'Come back tomorrow!'}`
+          isRateLimited: true,
+          message: quotaStatus.plan === 'free' 
+            ? `You've used your ${quotaStatus.limit} free ORCA conversations for today. Upgrade to Pro for 5 questions/day and unlock ORCA's full potential!`
+            : `You've used all ${quotaStatus.limit} ORCA conversations for today. Your limit resets at midnight UTC.`
         },
         { status: 429 }
       )

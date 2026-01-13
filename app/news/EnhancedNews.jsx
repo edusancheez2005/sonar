@@ -16,6 +16,7 @@ const colors = {
   borderLight: 'rgba(54, 166, 186, 0.1)',
   sentimentBull: '#16c784',
   sentimentBear: '#ed4c5c',
+  sentimentNeutral: '#a0b2c6',
 }
 
 const Container = styled.div`
@@ -79,7 +80,7 @@ const NewsCard = styled(motion.a)`
   
   &:hover {
     background: ${colors.bgCardHover};
-    border-color: ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
+    border-color: ${props => props.$neutral ? colors.sentimentNeutral : props.$bullish ? colors.sentimentBull : colors.sentimentBear};
     transform: translateX(4px);
   }
   
@@ -93,7 +94,7 @@ const SentimentIndicator = styled.div`
   width: 4px;
   height: auto;
   align-self: stretch;
-  background: ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
+  background: ${props => props.$neutral ? colors.sentimentNeutral : props.$bullish ? colors.sentimentBull : colors.sentimentBear};
   border-radius: 2px;
   
   @media (max-width: 768px) {
@@ -167,9 +168,9 @@ const SentimentBadge = styled.div`
   font-weight: 600;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  background: ${props => props.$bullish ? 'rgba(22, 199, 132, 0.12)' : 'rgba(237, 76, 92, 0.12)'};
-  color: ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
-  border: 1px solid ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
+  background: ${props => props.$neutral ? 'rgba(160, 178, 198, 0.12)' : props.$bullish ? 'rgba(22, 199, 132, 0.12)' : 'rgba(237, 76, 92, 0.12)'};
+  color: ${props => props.$neutral ? colors.sentimentNeutral : props.$bullish ? colors.sentimentBull : colors.sentimentBear};
+  border: 1px solid ${props => props.$neutral ? colors.sentimentNeutral : props.$bullish ? colors.sentimentBull : colors.sentimentBear};
 `
 
 const SentimentScore = styled.div`
@@ -251,33 +252,75 @@ export default function EnhancedNews({ ticker = null }) {
         
         if (newsError) throw newsError
         
-        // Filter and process news - balance bullish and bearish
+        // Filter and process news - ensure diversity of coins and sentiments
         const allFiltered = (newsData || [])
           .filter(article => {
             const title = article.title?.trim()
             if (!title || title.toLowerCase() === 'untitled') return false
-            const sentiment = article.sentiment_llm || article.sentiment_raw || 0
-            return Math.abs(sentiment) > 0.15 // Slightly lower threshold
+            return true // Accept all articles with valid titles
           })
         
-        // Separate bullish and bearish
-        const bullish = allFiltered
-          .filter(a => (a.sentiment_llm || a.sentiment_raw || 0) > 0.15)
-          .sort((a, b) => (b.sentiment_llm || b.sentiment_raw || 0) - (a.sentiment_llm || a.sentiment_raw || 0))
-          .slice(0, 10)
+        // Categorize by sentiment
+        const bullish = allFiltered.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) > 0.2)
+        const bearish = allFiltered.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) < -0.2)
+        const neutral = allFiltered.filter(a => {
+          const s = a.sentiment_llm || a.sentiment_raw || 0
+          return s >= -0.2 && s <= 0.2
+        })
         
-        const bearish = allFiltered
-          .filter(a => (a.sentiment_llm || a.sentiment_raw || 0) < -0.15)
-          .sort((a, b) => (a.sentiment_llm || a.sentiment_raw || 0) - (b.sentiment_llm || b.sentiment_raw || 0))
-          .slice(0, 5)
+        // Sort each category by sentiment strength
+        bullish.sort((a, b) => (b.sentiment_llm || b.sentiment_raw || 0) - (a.sentiment_llm || a.sentiment_raw || 0))
+        bearish.sort((a, b) => (a.sentiment_llm || a.sentiment_raw || 0) - (b.sentiment_llm || b.sentiment_raw || 0))
+        neutral.sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
         
-        // Combine and interleave (bullish first, then bearish, repeat)
-        const combined = []
-        const maxLen = Math.max(bullish.length, bearish.length)
-        for (let i = 0; i < maxLen; i++) {
-          if (bullish[i]) combined.push(bullish[i])
-          if (bearish[i]) combined.push(bearish[i])
+        // Ensure diversity: at least 5 different tickers
+        const usedTickers = new Set()
+        const diverseArticles = []
+        
+        // First pass: pick unique tickers from each category
+        const pickDiverse = (list, count) => {
+          const picked = []
+          for (const article of list) {
+            const ticker = article.ticker?.toUpperCase() || 'GENERAL'
+            if (!usedTickers.has(ticker) || usedTickers.size >= 5) {
+              if (!usedTickers.has(ticker)) usedTickers.add(ticker)
+              picked.push(article)
+              if (picked.length >= count) break
+            }
+          }
+          return picked
         }
+        
+        // Pick articles ensuring diversity
+        const diverseBullish = pickDiverse(bullish, 6)
+        const diverseBearish = pickDiverse(bearish, 4)
+        const diverseNeutral = pickDiverse(neutral, 3)
+        
+        // If we still need more diverse tickers, add from remaining
+        if (usedTickers.size < 5) {
+          const allRemaining = [...bullish, ...bearish, ...neutral]
+            .filter(a => !diverseBullish.includes(a) && !diverseBearish.includes(a) && !diverseNeutral.includes(a))
+          for (const article of allRemaining) {
+            const ticker = article.ticker?.toUpperCase() || 'GENERAL'
+            if (!usedTickers.has(ticker)) {
+              usedTickers.add(ticker)
+              diverseArticles.push(article)
+              if (usedTickers.size >= 5) break
+            }
+          }
+        }
+        
+        // Combine: interleave bullish, bearish, neutral
+        const combined = []
+        const maxLen = Math.max(diverseBullish.length, diverseBearish.length, diverseNeutral.length)
+        for (let i = 0; i < maxLen; i++) {
+          if (diverseBullish[i]) combined.push(diverseBullish[i])
+          if (diverseBearish[i]) combined.push(diverseBearish[i])
+          if (diverseNeutral[i]) combined.push(diverseNeutral[i])
+        }
+        
+        // Add any extra diverse articles
+        combined.push(...diverseArticles)
         
         // Take top 15
         setNews(combined.slice(0, 15))
@@ -339,8 +382,16 @@ export default function EnhancedNews({ ticker = null }) {
       <NewsList>
         {news.map((article, index) => {
           const sentiment = article.sentiment_llm || article.sentiment_raw || 0
-          const isBullish = sentiment > 0
+          const isBullish = sentiment > 0.2
+          const isBearish = sentiment < -0.2
+          const isNeutral = !isBullish && !isBearish
           const score = Math.abs(sentiment * 100).toFixed(0)
+          
+          const getSentimentLabel = () => {
+            if (isBullish) return 'Bullish'
+            if (isBearish) return 'Bearish'
+            return 'Neutral'
+          }
           
           return (
             <NewsCard
@@ -349,11 +400,12 @@ export default function EnhancedNews({ ticker = null }) {
               target="_blank"
               rel="noopener noreferrer"
               $bullish={isBullish}
+              $neutral={isNeutral}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: index * 0.04 }}
             >
-              <SentimentIndicator $bullish={isBullish} />
+              <SentimentIndicator $bullish={isBullish} $neutral={isNeutral} />
               
               <ContentArea>
                 {article.ticker && (
@@ -371,8 +423,8 @@ export default function EnhancedNews({ ticker = null }) {
               </ContentArea>
               
               <SentimentArea>
-                <SentimentBadge $bullish={isBullish}>
-                  {isBullish ? 'Bullish' : 'Bearish'}
+                <SentimentBadge $bullish={isBullish} $neutral={isNeutral}>
+                  {getSentimentLabel()}
                 </SentimentBadge>
                 <SentimentScore>
                   Confidence: {score}%

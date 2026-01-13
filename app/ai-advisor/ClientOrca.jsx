@@ -543,6 +543,20 @@ export default function ClientOrca() {
       const data = await response.json()
 
       if (!response.ok) {
+        // Special handling for rate limit errors
+        if (response.status === 429 && data.isRateLimited) {
+          const rateLimitMessage = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: data.message,
+            isRateLimited: true,
+            plan: data.quota?.plan || 'free',
+            timestamp: new Date()
+          }
+          setMessages(prev => [...prev, rateLimitMessage])
+          setQuota(data.quota)
+          return
+        }
         throw new Error(data.error || 'Failed to get response')
       }
 
@@ -609,6 +623,55 @@ export default function ClientOrca() {
                   <MessageText $isUser={message.role === 'user'}>
                     {message.role === 'user' ? (
                       message.content
+                    ) : message.isRateLimited ? (
+                      <div style={{ 
+                        padding: '1.5rem', 
+                        background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.1) 0%, rgba(26, 40, 56, 0.6) 100%)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(54, 166, 186, 0.3)'
+                      }}>
+                        <div style={{ 
+                          fontSize: '1.1rem', 
+                          fontWeight: '600', 
+                          color: colors.primary,
+                          marginBottom: '0.75rem'
+                        }}>
+                          Daily Limit Reached
+                        </div>
+                        <p style={{ 
+                          color: colors.textSecondary, 
+                          marginBottom: '1rem',
+                          lineHeight: '1.6'
+                        }}>
+                          {message.content}
+                        </p>
+                        {message.plan === 'free' && (
+                          <a 
+                            href="/subscribe"
+                            style={{
+                              display: 'inline-block',
+                              background: 'linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%)',
+                              color: '#ffffff',
+                              padding: '0.75rem 1.5rem',
+                              borderRadius: '8px',
+                              textDecoration: 'none',
+                              fontWeight: '600',
+                              fontSize: '0.95rem',
+                              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                            }}
+                            onMouseOver={(e) => {
+                              e.target.style.transform = 'translateY(-2px)'
+                              e.target.style.boxShadow = '0 8px 20px rgba(54, 166, 186, 0.4)'
+                            }}
+                            onMouseOut={(e) => {
+                              e.target.style.transform = 'translateY(0)'
+                              e.target.style.boxShadow = 'none'
+                            }}
+                          >
+                            Upgrade to ORCA Pro →
+                          </a>
+                        )}
+                      </div>
                     ) : (
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {message.content}
