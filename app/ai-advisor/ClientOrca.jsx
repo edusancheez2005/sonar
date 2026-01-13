@@ -10,21 +10,21 @@ import React, { useState, useRef, useEffect } from 'react'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
-// import { ResponseCards } from '@/components/orca/ResponseCards' // Not used - data in conversational text now
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
-// LunarCrush-inspired Design System
+// Original Sonar colors - clean and professional
 const colors = {
-  bgDark: '#0a0f19',
-  bgCard: '#0f1622',
-  primary: '#3f92ff',
-  secondary: '#16c784',
-  textPrimary: '#e1e8f0',
-  textSecondary: '#8aa7bf',
-  borderLight: '#1f2a3a',
+  bgDark: '#0a1621',
+  bgCard: '#0d2134',
+  primary: '#36a6ba',
+  secondary: '#1e3951',
+  textPrimary: '#ffffff',
+  textSecondary: '#a0b2c6',
+  borderLight: 'rgba(54, 166, 186, 0.1)',
+  accent: '#9b59b6',
   sentimentBull: '#16c784',
-  sentimentBear: '#ed4c5c',
-  sentimentNeutral: '#f2bc1d',
-  purple: '#9b59b6'
+  sentimentBear: '#ed4c5c'
 }
 
 // Main Container
@@ -127,18 +127,19 @@ const MessageBubble = styled(motion.div)`
 `
 
 const Avatar = styled.div`
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: ${props => props.$isUser ? 
-    `linear-gradient(135deg, ${colors.primary} 0%, #2d7bdb 100%)` :
-    `linear-gradient(135deg, ${colors.secondary} 0%, #0d9b65 100%)`};
+    `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)` :
+    colors.bgCard};
+  border: 2px solid ${props => props.$isUser ? colors.primary : colors.borderLight};
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 1.1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  font-size: 1.2rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   
   img {
     width: 100%;
@@ -155,40 +156,74 @@ const MessageContent = styled.div`
 
 const MessageText = styled.div`
   background: ${props => props.$isUser ? 
-    'rgba(63, 146, 255, 0.12)' :
-    colors.bgCard};
+    `linear-gradient(135deg, ${colors.primary} 0%, #2d8a99 100%)` :
+    'transparent'};
   color: ${colors.textPrimary};
-  padding: 1rem 1.25rem;
-  border-radius: 16px;
-  ${props => props.$isUser ? 'border-top-right-radius: 4px;' : 'border-top-left-radius: 4px;'}
-  line-height: 1.65;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(10px);
-  border: 1px solid ${props => props.$isUser ? 'rgba(63, 146, 255, 0.2)' : colors.borderLight};
+  padding: ${props => props.$isUser ? '1rem 1.25rem' : '0'};
+  border-radius: ${props => props.$isUser ? '18px' : '0'};
+  ${props => props.$isUser && 'border-bottom-right-radius: 4px;'}
+  line-height: 1.7;
   font-size: 0.95rem;
+  
+  /* Markdown styling */
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.75rem 0;
+    color: ${colors.primary};
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid ${colors.borderLight};
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1.25rem 0 0.5rem 0;
+    color: ${colors.textPrimary};
+  }
+  
+  p {
+    margin: 0.75rem 0;
+    line-height: 1.7;
+  }
+  
+  strong {
+    color: ${colors.textPrimary};
+    font-weight: 600;
+  }
+  
+  ul, ol {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+    
+    li {
+      margin: 0.5rem 0;
+      line-height: 1.6;
+    }
+  }
   
   a {
     color: ${colors.primary};
     text-decoration: none;
     border-bottom: 1px solid ${colors.primary};
     transition: all 0.2s ease;
+    font-weight: 500;
     
     &:hover {
-      color: ${colors.secondary};
-      border-bottom-color: ${colors.secondary};
+      color: ${colors.accent};
+      border-bottom-color: ${colors.accent};
     }
   }
   
-  h3 {
-    font-size: 1.05rem;
-    font-weight: 600;
-    margin: 0.75rem 0 0.5rem 0;
-    color: ${colors.primary};
-  }
-  
-  strong {
-    color: ${colors.textPrimary};
-    font-weight: 600;
+  code {
+    background: rgba(54, 166, 186, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
   }
 `
 
@@ -210,35 +245,33 @@ const CardsContainer = styled.div`
   ${props => props.$isUser && 'margin-left: auto;'}
 `
 
-// Input Area
+// Input Area - Seamless and clean
 const InputArea = styled.div`
-  padding: 1.25rem 1.5rem;
-  background: ${colors.bgCard};
+  padding: 1.5rem 2rem;
+  background: transparent;
   border-top: 1px solid ${colors.borderLight};
-  backdrop-filter: blur(10px);
 `
 
 const InputForm = styled.form`
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
   align-items: center;
 `
 
 const Input = styled.input`
   flex: 1;
-  background: rgba(15, 22, 34, 0.8);
+  background: ${colors.bgCard};
   border: 1px solid ${colors.borderLight};
-  border-radius: 20px;
-  padding: 0.875rem 1.25rem;
+  border-radius: 24px;
+  padding: 1rem 1.5rem;
   color: ${colors.textPrimary};
-  font-size: 0.95rem;
+  font-size: 1rem;
   outline: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   
   &:focus {
     border-color: ${colors.primary};
-    background: rgba(15, 22, 34, 1);
-    box-shadow: 0 0 0 3px rgba(63, 146, 255, 0.12);
+    box-shadow: 0 0 0 3px rgba(54, 166, 186, 0.1);
   }
   
   &::placeholder {
@@ -247,23 +280,18 @@ const Input = styled.input`
 `
 
 const SendButton = styled.button`
-  background: linear-gradient(135deg, ${colors.primary} 0%, #2d7bdb 100%);
+  background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%);
   color: white;
-  padding: 0.875rem 1.75rem;
-  border-radius: 20px;
+  padding: 1rem 2rem;
+  border-radius: 24px;
   font-weight: 600;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(63, 146, 255, 0.25);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(54, 166, 186, 0.3);
   
   &:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(63, 146, 255, 0.35);
-    background: linear-gradient(135deg, #5aa0ff 0%, #4487e8 100%);
-  }
-  
-  &:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(54, 166, 186, 0.4);
   }
   
   &:disabled {
@@ -547,7 +575,13 @@ export default function ClientOrca() {
                 </Avatar>
                 <MessageContent>
                   <MessageText $isUser={message.role === 'user'}>
-                    {message.content}
+                    {message.role === 'user' ? (
+                      message.content
+                    ) : (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.content}
+                      </ReactMarkdown>
+                    )}
                   </MessageText>
                   <MessageTime $isUser={message.role === 'user'}>
                     {formatTime(message.timestamp)}
@@ -620,3 +654,4 @@ export default function ClientOrca() {
     </ChatContainer>
   )
 } 
+
