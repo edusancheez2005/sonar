@@ -844,15 +844,19 @@ ${formatNewsHeadlinesDetailed(context.news.headlines.slice(0, 10))}
 ═══════════════════════════════════════════
 
 INSTRUCTIONS:
-1. **READ THE NEWS ARTICLES** above and identify key themes, catalysts, and sentiment
-2. **Analyze the data** holistically (whale + sentiment + social + news + price)
-3. **Provide SHORT-TERM outlook** (days to weeks) based on recent moves and news
-4. **Provide LONG-TERM outlook** (months to years) based on fundamentals and adoption
-5. **Consider GLOBAL MARKETS**: Fed policy, geopolitics, risk appetite, macro trends
-6. **Be conversational**: Use the ORCA persona—friendly, insightful, asks follow-ups
-7. **No predictions**: Share insights and data, not financial advice
+1. **Use the 3-PART STRUCTURE** defined in your system prompt (Data → News → Bottom Line)
+2. **Report EXACT net flow amounts** - Do NOT say "$0.00" unless net_flow_24h is literally 0. Report the actual value shown above.
+3. **Format news as markdown links** - Use [Title](URL) format with the exact URLs provided
+4. **READ THE NEWS ARTICLES** above and identify key themes, catalysts, sentiment
+5. **Analyze SHORT-TERM impact** (days-weeks) and **LONG-TERM impact** (months-years) of the news
+6. **Consider GLOBAL MARKETS**: Fed policy, geopolitics, risk appetite, macro trends
+7. **Be specific with numbers** - Don't round to zero, use the actual values
+8. **No predictions**: Share insights and data, not financial advice
 
-**CRITICAL**: Actually READ the news titles above and reference specific headlines in your analysis!
+**CRITICAL DATA ACCURACY:**
+- Net Flow above shows: ${formatCurrency(context.whales.net_flow_24h)} - Report this EXACT amount in Part 1
+- News URLs are provided - Format as clickable markdown links in Part 2
+- Answer the user's specific question in Part 3
 
 User's question: "${userMessage}"`
 }
