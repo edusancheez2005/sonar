@@ -9,6 +9,9 @@ import Footer from '@/src/components/Footer'
 import FeedbackWidget from '@/src/components/FeedbackWidget'
 
 export default function ClientRoot({ children }) {
+  const pathname = usePathname()
+  const hideFeedback = pathname === '/ai-advisor'
+
   return (
     <StyleSheetManager shouldForwardProp={(propName, target) => {
       if (typeof target === 'string') {
@@ -20,7 +23,7 @@ export default function ClientRoot({ children }) {
       <Navbar />
       <main>{children}</main>
       <Footer />
-      <FeedbackWidget />
+      {!hideFeedback && <FeedbackWidget />}
     </StyleSheetManager>
   )
 } 
