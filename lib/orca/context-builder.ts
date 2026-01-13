@@ -771,92 +771,74 @@ function processPriceData(priceData: any): PriceData {
 /**
  * Build formatted context string for GPT-4.0
  */
-export function buildGPTContext(context: OrcaContext, userMessage: string): string {
+export function buildGPTContext(context: OrcaContext, userMessage: string, isERC20: boolean = false): string {
+  // Build whale section only for ERC-20 tokens
+  const whaleSection = isERC20 && context.whales.transaction_count > 0 ? `
+WHALE ACTIVITY (ERC-20 Blockchain Data):
+Data Source: whale_transactions table (24h)
+Net Flow: ${formatCurrency(context.whales.net_flow_24h)} ${formatNetFlowInterpretation(context.whales.net_flow_24h)}
+Total Volume: ${formatCurrency(context.whales.total_volume_usd)}
+Transaction Count: ${context.whales.transaction_count}
+Avg Transaction: ${formatCurrency(context.whales.avg_transaction_usd)}
+CEX Transactions: ${context.whales.cex_transactions}
+DEX Transactions: ${context.whales.dex_transactions}
+Accumulation Count: ${context.whales.accumulation_count}
+Distribution Count: ${context.whales.distribution_count}
+Top Whale Moves:
+${formatWhaleMovesDetailed(context.whales.top_moves)}
+` : `
+WHALE ACTIVITY: Not available for ${context.ticker} (ERC-20 only for now, more chains coming soon)
+Do NOT show whale data in your response. Skip this section entirely.
+`
+
   return `User question: "${userMessage}"
 
-═══════════════════════════════════════════
 CONTEXT FOR ${context.ticker}
-═══════════════════════════════════════════
+${'='.repeat(50)}
 
-💰 PRICE DATA (CoinGecko):
-├─ Current Price: ${formatCurrency(context.price.current)}
-├─ 24h Change: ${formatPercentage(context.price.change_24h)}
-├─ Market Cap: ${formatCurrency(context.price.market_cap)}
-├─ 24h Volume: ${formatCurrency(context.price.volume_24h)}
-├─ Trend: ${context.price.trend}
-${context.price.ath ? `├─ All-Time High: ${formatCurrency(context.price.ath)}${context.price.ath_date ? ` (${new Date(context.price.ath_date).toLocaleDateString()})` : ''}` : ''}
-${context.price.ath_distance !== null ? `├─ Distance from ATH: ${formatPercentage(context.price.ath_distance)} ${context.price.ath_distance < -50 ? '⚠️ DEEP DISCOUNT' : context.price.ath_distance < -30 ? '💡 NOTABLE DISCOUNT' : context.price.ath_distance > -10 ? '🔥 NEAR ATH' : ''}` : ''}
-${context.price.market_cap_rank ? `└─ Market Cap Rank: #${context.price.market_cap_rank}` : ''}
+PRICE DATA (CoinGecko):
+Current Price: ${formatCurrency(context.price.current)}
+24h Change: ${formatPercentage(context.price.change_24h)}
+Market Cap: ${formatCurrency(context.price.market_cap)}
+24h Volume: ${formatCurrency(context.price.volume_24h)}
+Trend: ${context.price.trend}
+${context.price.ath ? `All Time High: ${formatCurrency(context.price.ath)}${context.price.ath_date ? ` (${new Date(context.price.ath_date).toLocaleDateString()})` : ''}` : ''}
+${context.price.ath_distance !== null ? `Distance from ATH: ${formatPercentage(context.price.ath_distance)} ${context.price.ath_distance < -50 ? '[SIGNIFICANT DISCOUNT]' : context.price.ath_distance < -30 ? '[NOTABLE DISCOUNT]' : context.price.ath_distance > -10 ? '[NEAR ATH]' : ''}` : ''}
+${context.price.market_cap_rank ? `Market Cap Rank: #${context.price.market_cap_rank}` : ''}
+${whaleSection}
+SENTIMENT ANALYSIS (Multi-Source):
+Combined Score: ${context.sentiment.current.toFixed(2)} (scale: -1 bearish to +1 bullish)
+Provider Sentiment: ${context.sentiment.provider_sentiment?.toFixed(2) || 'N/A'}
+LLM Sentiment: ${context.sentiment.llm_sentiment?.toFixed(2) || 'N/A'}
+Trend: ${context.sentiment.trend}
+Confidence: ${(context.sentiment.confidence * 100).toFixed(0)}%
+Based on: ${context.sentiment.news_count} news articles (24h)
 
-🐋 WHALE ACTIVITY (Your Personalized Data - ERC20 Focus):
-├─ Data Source: whale_transactions table (blockchain monitoring)
-├─ Time Range: Last 24 hours
-│
-├─ FLOW ANALYSIS:
-│  ├─ Net Flow: ${formatCurrency(context.whales.net_flow_24h)} ${formatNetFlowInterpretation(context.whales.net_flow_24h)}
-│  ├─ Total Volume: ${formatCurrency(context.whales.total_volume_usd)}
-│  ├─ Transaction Count: ${context.whales.transaction_count}
-│  └─ Avg Transaction: ${formatCurrency(context.whales.avg_transaction_usd)}
-│
-├─ ACTIVITY BREAKDOWN:
-│  ├─ CEX Transactions: ${context.whales.cex_transactions}
-│  ├─ DEX Transactions: ${context.whales.dex_transactions}
-│  ├─ Accumulation: ${context.whales.accumulation_count}
-│  ├─ Distribution: ${context.whales.distribution_count}
-│  └─ Avg Whale Score: ${context.whales.avg_whale_score.toFixed(2)}/10
-│
-└─ TOP 5 WHALE MOVES:
-${formatWhaleMovesDetailed(context.whales.top_moves)}
+SOCIAL INTELLIGENCE (LunarCrush):
+Social Sentiment: ${context.social.sentiment_pct || 'N/A'}% bullish
+Engagement (24h): ${context.social.engagement ? formatLargeNumber(context.social.engagement) : 'N/A'} interactions
+Mentions (24h): ${context.social.mentions ? formatLargeNumber(context.social.mentions) : 'N/A'}
+Active Creators: ${context.social.creators ? formatLargeNumber(context.social.creators) : 'N/A'}
+Supportive Themes: ${context.social.supportive_themes.join(', ') || 'None detected'}
+Critical Themes: ${context.social.critical_themes.join(', ') || 'None detected'}
 
-📊 SENTIMENT ANALYSIS (Multi-Source):
-├─ Combined Score: ${context.sentiment.current.toFixed(2)} (-1 bearish to +1 bullish)
-├─ Provider Sentiment: ${context.sentiment.provider_sentiment?.toFixed(2) || 'N/A'}
-├─ LLM Sentiment (GPT-4o-mini): ${context.sentiment.llm_sentiment?.toFixed(2) || 'N/A'}
-├─ Trend: ${context.sentiment.trend}
-├─ Confidence: ${(context.sentiment.confidence * 100).toFixed(0)}%
-└─ Based on: ${context.sentiment.news_count} news articles (24h)
+GLOBAL MARKET CONTEXT:
+Consider: Interest rates, Fed policy, geopolitical events, risk appetite, Bitcoin dominance, upcoming catalysts
 
-🌙 SOCIAL INTELLIGENCE (LunarCrush AI - Real-Time):
-├─ Social Sentiment: ${context.social.sentiment_pct || 'N/A'}% bullish
-├─ Engagement (24h): ${context.social.engagement ? formatLargeNumber(context.social.engagement) : 'N/A'} interactions
-├─ Mentions (24h): ${context.social.mentions ? formatLargeNumber(context.social.mentions) : 'N/A'}
-├─ Active Creators: ${context.social.creators ? formatLargeNumber(context.social.creators) : 'N/A'}
-│
-├─ 💚 SUPPORTIVE THEMES:
-${formatThemes(context.social.supportive_themes)}
-│
-└─ ⚠️ CRITICAL THEMES:
-${formatThemes(context.social.critical_themes)}
-
-🌍 GLOBAL MARKET CONTEXT:
-Consider these broader market factors when analyzing ${context.ticker}:
-├─ **Macro Environment**: Interest rates, inflation, Fed policy
-├─ **Risk Appetite**: Are investors favoring risky assets or fleeing to safety?
-├─ **Geopolitical Events**: Wars, elections, regulatory changes affecting crypto
-├─ **Traditional Markets**: Stocks, bonds, dollar strength correlation
-├─ **Crypto Market**: Bitcoin dominance, altseason signals, overall sentiment
-└─ **Upcoming Catalysts**: ETF decisions, regulations, major protocol upgrades
-
-📰 RECENT NEWS (Top 10):
-**Read these headlines carefully and reference specific articles in your analysis!**
+NEWS ARTICLES (Include 5 in your response with impact analysis):
 ${formatNewsHeadlinesDetailed(context.news.headlines.slice(0, 10))}
 
-═══════════════════════════════════════════
+${'='.repeat(50)}
 
 INSTRUCTIONS:
-1. **Use the 3-PART STRUCTURE** defined in your system prompt (Data → News → Bottom Line)
-2. **Report EXACT net flow amounts** - Do NOT say "$0.00" unless net_flow_24h is literally 0. Report the actual value shown above.
-3. **Format news as markdown links** - Use [Title](URL) format with the exact URLs provided
-4. **READ THE NEWS ARTICLES** above and identify key themes, catalysts, sentiment
-5. **Analyze SHORT-TERM impact** (days-weeks) and **LONG-TERM impact** (months-years) of the news
-6. **Consider GLOBAL MARKETS**: Fed policy, geopolitics, risk appetite, macro trends
-7. **Be specific with numbers** - Don't round to zero, use the actual values
-8. **No predictions**: Share insights and data, not financial advice
-
-**CRITICAL DATA ACCURACY:**
-- Net Flow above shows: ${formatCurrency(context.whales.net_flow_24h)} - Report this EXACT amount in Part 1
-- News URLs are provided - Format as clickable markdown links in Part 2
-- Answer the user's specific question in Part 3
+1. Use the 3-part structure: Data, News and Market Impact, Bottom Line
+2. NO emojis in your response
+3. NO dashes for lists (use colons or numbers)
+4. ${isERC20 ? 'Include whale data with exact net flow amount' : 'SKIP whale data entirely (not available for this token)'}
+5. Include 5 news articles as markdown links with WHY each impacts sentiment
+6. Analyze short-term (days/weeks) and long-term (months/years) impact
+7. Be conversational and ask a follow-up question
+8. End with disclaimer
 
 User's question: "${userMessage}"`
 }
