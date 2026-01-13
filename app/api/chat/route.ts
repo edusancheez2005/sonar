@@ -198,7 +198,7 @@ You will receive 3-20 news articles with titles and URLs. **FORMAT THEM AS MARKD
 - Example: [Article Title](https://url.com)
 
 **IMPORTANT:**
-1. **Use markdown link syntax**: `[Title](URL)` - this makes them clickable
+1. **Use markdown link syntax**: [Title](URL) format - this makes them clickable
 2. **Copy the EXACT title** from the context
 3. **Use the EXACT URL** provided in the context (look for "URL:" field)
 4. **List 3-5 most recent articles**
