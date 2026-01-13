@@ -237,12 +237,12 @@ export default function EnhancedNews({ ticker = null }) {
       try {
         const supabase = supabaseBrowser()
         
-        // Fetch news items
+        // Fetch news items - get more to ensure diversity
         let newsQuery = supabase
           .from('news_items')
           .select('*')
           .order('published_at', { ascending: false })
-          .limit(100) // Fetch more to filter
+          .limit(500) // Fetch many to find diverse tickers
         
         if (ticker) {
           newsQuery = newsQuery.eq('ticker', ticker.toUpperCase())
@@ -252,78 +252,113 @@ export default function EnhancedNews({ ticker = null }) {
         
         if (newsError) throw newsError
         
-        // Filter and process news - ensure diversity of coins and sentiments
-        const allFiltered = (newsData || [])
+        // Filter valid articles
+        const allArticles = (newsData || [])
           .filter(article => {
             const title = article.title?.trim()
             if (!title || title.toLowerCase() === 'untitled') return false
-            return true // Accept all articles with valid titles
+            return true
           })
         
-        // Categorize by sentiment
-        const bullish = allFiltered.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) > 0.2)
-        const bearish = allFiltered.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) < -0.2)
-        const neutral = allFiltered.filter(a => {
+        // STEP 1: Find ALL unique tickers in the dataset
+        const tickerMap = new Map() // ticker -> [articles]
+        for (const article of allArticles) {
+          const t = article.ticker?.toUpperCase() || 'GENERAL'
+          if (!tickerMap.has(t)) tickerMap.set(t, [])
+          tickerMap.get(t).push(article)
+        }
+        
+        // STEP 2: Get best article from each ticker (prioritize strong sentiment)
+        const getBestFromTicker = (articles) => {
+          // Sort by sentiment strength (strongest first)
+          return [...articles].sort((a, b) => {
+            const sA = Math.abs(a.sentiment_llm || a.sentiment_raw || 0)
+            const sB = Math.abs(b.sentiment_llm || b.sentiment_raw || 0)
+            return sB - sA
+          })[0]
+        }
+        
+        // Get unique tickers sorted by how many articles they have (more = more relevant)
+        const sortedTickers = Array.from(tickerMap.entries())
+          .sort((a, b) => b[1].length - a[1].length)
+          .map(([ticker]) => ticker)
+        
+        // STEP 3: Build final list with diversity guarantee
+        const finalArticles = []
+        const usedTickers = new Set()
+        const usedIds = new Set()
+        
+        // First: Pick one article from at least 5 different tickers (or all available)
+        const minDiverseTickers = Math.min(5, sortedTickers.length)
+        for (let i = 0; i < minDiverseTickers && finalArticles.length < 15; i++) {
+          const t = sortedTickers[i]
+          const best = getBestFromTicker(tickerMap.get(t))
+          if (best && !usedIds.has(best.id)) {
+            finalArticles.push(best)
+            usedTickers.add(t)
+            usedIds.add(best.id)
+          }
+        }
+        
+        // STEP 4: Fill remaining slots with sentiment-balanced articles
+        // Categorize remaining articles
+        const remaining = allArticles.filter(a => !usedIds.has(a.id))
+        const bullish = remaining.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) > 0.2)
+          .sort((a, b) => (b.sentiment_llm || b.sentiment_raw || 0) - (a.sentiment_llm || a.sentiment_raw || 0))
+        const bearish = remaining.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) < -0.2)
+          .sort((a, b) => (a.sentiment_llm || a.sentiment_raw || 0) - (b.sentiment_llm || b.sentiment_raw || 0))
+        const neutral = remaining.filter(a => {
           const s = a.sentiment_llm || a.sentiment_raw || 0
           return s >= -0.2 && s <= 0.2
+        }).sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
+        
+        // Add more: aim for ~6 bullish, ~4 bearish, ~3 neutral total (minus what we already have)
+        const addFromCategory = (list, targetTotal) => {
+          let added = 0
+          for (const article of list) {
+            if (finalArticles.length >= 15) break
+            if (!usedIds.has(article.id)) {
+              finalArticles.push(article)
+              usedIds.add(article.id)
+              added++
+              if (added >= targetTotal) break
+            }
+          }
+        }
+        
+        // Calculate how many we need from each category
+        const currentBullish = finalArticles.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) > 0.2).length
+        const currentBearish = finalArticles.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) < -0.2).length
+        const currentNeutral = finalArticles.filter(a => {
+          const s = a.sentiment_llm || a.sentiment_raw || 0
+          return s >= -0.2 && s <= 0.2
+        }).length
+        
+        addFromCategory(bullish, Math.max(0, 6 - currentBullish))
+        addFromCategory(bearish, Math.max(0, 4 - currentBearish))
+        addFromCategory(neutral, Math.max(0, 3 - currentNeutral))
+        
+        // If still under 15, add any remaining
+        if (finalArticles.length < 15) {
+          const stillRemaining = allArticles.filter(a => !usedIds.has(a.id))
+          for (const article of stillRemaining) {
+            if (finalArticles.length >= 15) break
+            finalArticles.push(article)
+          }
+        }
+        
+        // Sort final list: interleave by sentiment for visual variety
+        finalArticles.sort((a, b) => {
+          const sA = a.sentiment_llm || a.sentiment_raw || 0
+          const sB = b.sentiment_llm || b.sentiment_raw || 0
+          // Alternate: bullish, bearish, neutral pattern
+          const catA = sA > 0.2 ? 0 : sA < -0.2 ? 1 : 2
+          const catB = sB > 0.2 ? 0 : sB < -0.2 ? 1 : 2
+          if (catA !== catB) return catA - catB
+          return Math.abs(sB) - Math.abs(sA) // Within category, strongest first
         })
         
-        // Sort each category by sentiment strength
-        bullish.sort((a, b) => (b.sentiment_llm || b.sentiment_raw || 0) - (a.sentiment_llm || a.sentiment_raw || 0))
-        bearish.sort((a, b) => (a.sentiment_llm || a.sentiment_raw || 0) - (b.sentiment_llm || b.sentiment_raw || 0))
-        neutral.sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
-        
-        // Ensure diversity: at least 5 different tickers
-        const usedTickers = new Set()
-        const diverseArticles = []
-        
-        // First pass: pick unique tickers from each category
-        const pickDiverse = (list, count) => {
-          const picked = []
-          for (const article of list) {
-            const ticker = article.ticker?.toUpperCase() || 'GENERAL'
-            if (!usedTickers.has(ticker) || usedTickers.size >= 5) {
-              if (!usedTickers.has(ticker)) usedTickers.add(ticker)
-              picked.push(article)
-              if (picked.length >= count) break
-            }
-          }
-          return picked
-        }
-        
-        // Pick articles ensuring diversity
-        const diverseBullish = pickDiverse(bullish, 6)
-        const diverseBearish = pickDiverse(bearish, 4)
-        const diverseNeutral = pickDiverse(neutral, 3)
-        
-        // If we still need more diverse tickers, add from remaining
-        if (usedTickers.size < 5) {
-          const allRemaining = [...bullish, ...bearish, ...neutral]
-            .filter(a => !diverseBullish.includes(a) && !diverseBearish.includes(a) && !diverseNeutral.includes(a))
-          for (const article of allRemaining) {
-            const ticker = article.ticker?.toUpperCase() || 'GENERAL'
-            if (!usedTickers.has(ticker)) {
-              usedTickers.add(ticker)
-              diverseArticles.push(article)
-              if (usedTickers.size >= 5) break
-            }
-          }
-        }
-        
-        // Combine: interleave bullish, bearish, neutral
-        const combined = []
-        const maxLen = Math.max(diverseBullish.length, diverseBearish.length, diverseNeutral.length)
-        for (let i = 0; i < maxLen; i++) {
-          if (diverseBullish[i]) combined.push(diverseBullish[i])
-          if (diverseBearish[i]) combined.push(diverseBearish[i])
-          if (diverseNeutral[i]) combined.push(diverseNeutral[i])
-        }
-        
-        // Add any extra diverse articles
-        combined.push(...diverseArticles)
-        
-        // Take top 15
-        setNews(combined.slice(0, 15))
+        setNews(finalArticles.slice(0, 15))
         
       } catch (error) {
         console.error('Error fetching news:', error)
