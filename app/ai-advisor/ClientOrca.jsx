@@ -12,14 +12,18 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 // import { ResponseCards } from '@/components/orca/ResponseCards' // Not used - data in conversational text now
 
-// Theme colors from Sonar
+// LunarCrush-inspired Design System
 const colors = {
-  bgDark: '#0a1621',
-  bgCard: '#0d2134',
-  primary: '#36a6ba',
-  secondary: '#1e3951',
-  textPrimary: '#ffffff',
-  textSecondary: '#a0b2c6',
+  bgDark: '#0a0f19',
+  bgCard: '#0f1622',
+  primary: '#3f92ff',
+  secondary: '#16c784',
+  textPrimary: '#e1e8f0',
+  textSecondary: '#8aa7bf',
+  borderLight: '#1f2a3a',
+  sentimentBull: '#16c784',
+  sentimentBear: '#ed4c5c',
+  sentimentNeutral: '#f2bc1d',
   purple: '#9b59b6'
 }
 
@@ -115,7 +119,7 @@ const MessagesArea = styled.div`
 // Message Bubble
 const MessageBubble = styled(motion.div)`
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: flex-start;
   ${props => props.$isUser && 'flex-direction: row-reverse;'}
   max-width: 85%;
@@ -123,18 +127,18 @@ const MessageBubble = styled(motion.div)`
 `
 
 const Avatar = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: ${props => props.$isUser ? 
-    `linear-gradient(135deg, ${colors.primary} 0%, ${colors.purple} 100%)` :
-    colors.bgCard};
-  border: 2px solid ${props => props.$isUser ? colors.primary : colors.secondary};
+    `linear-gradient(135deg, ${colors.primary} 0%, #2d7bdb 100%)` :
+    `linear-gradient(135deg, ${colors.secondary} 0%, #0d9b65 100%)`};
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   
   img {
     width: 100%;
@@ -146,35 +150,59 @@ const Avatar = styled.div`
 
 const MessageContent = styled.div`
   flex: 1;
+  min-width: 0;
 `
 
 const MessageText = styled.div`
   background: ${props => props.$isUser ? 
-    `linear-gradient(135deg, ${colors.primary} 0%, #2d8a99 100%)` :
+    'rgba(63, 146, 255, 0.12)' :
     colors.bgCard};
   color: ${colors.textPrimary};
   padding: 1rem 1.25rem;
-  border-radius: 18px;
-  ${props => props.$isUser ? 'border-bottom-right-radius: 4px;' : 'border-bottom-left-radius: 4px;'}
-  line-height: 1.6;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  ${props => !props.$isUser && `border: 1px solid ${colors.secondary};`}
+  border-radius: 16px;
+  ${props => props.$isUser ? 'border-top-right-radius: 4px;' : 'border-top-left-radius: 4px;'}
+  line-height: 1.65;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  border: 1px solid ${props => props.$isUser ? 'rgba(63, 146, 255, 0.2)' : colors.borderLight};
+  font-size: 0.95rem;
   
   a {
-    color: ${colors.purple};
-    text-decoration: underline;
+    color: ${colors.primary};
+    text-decoration: none;
+    border-bottom: 1px solid ${colors.primary};
+    transition: all 0.2s ease;
     
     &:hover {
-      color: ${colors.primary};
+      color: ${colors.secondary};
+      border-bottom-color: ${colors.secondary};
     }
+  }
+  
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0.75rem 0 0.5rem 0;
+    color: ${colors.primary};
+  }
+  
+  strong {
+    color: ${colors.textPrimary};
+    font-weight: 600;
   }
 `
 
 const MessageTime = styled.div`
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: ${colors.textSecondary};
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
+  opacity: 0.7;
   ${props => props.$isUser && 'text-align: right;'}
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    opacity: 1;
+  }
 `
 
 const CardsContainer = styled.div`
@@ -184,31 +212,33 @@ const CardsContainer = styled.div`
 
 // Input Area
 const InputArea = styled.div`
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 1.5rem;
   background: ${colors.bgCard};
-  border-top: 1px solid ${colors.secondary};
+  border-top: 1px solid ${colors.borderLight};
+  backdrop-filter: blur(10px);
 `
 
 const InputForm = styled.form`
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
 `
 
 const Input = styled.input`
   flex: 1;
-  background: ${colors.bgDark};
-  border: 1px solid ${colors.secondary};
-  border-radius: 24px;
-  padding: 1rem 1.5rem;
+  background: rgba(15, 22, 34, 0.8);
+  border: 1px solid ${colors.borderLight};
+  border-radius: 20px;
+  padding: 0.875rem 1.25rem;
   color: ${colors.textPrimary};
-  font-size: 1rem;
+  font-size: 0.95rem;
   outline: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   
   &:focus {
     border-color: ${colors.primary};
-    box-shadow: 0 0 0 3px rgba(54, 166, 186, 0.1);
+    background: rgba(15, 22, 34, 1);
+    box-shadow: 0 0 0 3px rgba(63, 146, 255, 0.12);
   }
   
   &::placeholder {
@@ -217,18 +247,23 @@ const Input = styled.input`
 `
 
 const SendButton = styled.button`
-  background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.purple} 100%);
+  background: linear-gradient(135deg, ${colors.primary} 0%, #2d7bdb 100%);
   color: white;
-  padding: 1rem 2rem;
-  border-radius: 24px;
+  padding: 0.875rem 1.75rem;
+  border-radius: 20px;
   font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(54, 166, 186, 0.3);
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(63, 146, 255, 0.25);
   
   &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(54, 166, 186, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(63, 146, 255, 0.35);
+    background: linear-gradient(135deg, #5aa0ff 0%, #4487e8 100%);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
   }
   
   &:disabled {
