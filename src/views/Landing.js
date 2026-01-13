@@ -1820,24 +1820,6 @@ const Landing = () => {
               Polygon, Avalanche, and more. Trusted by professional traders worldwide.
             </HeroSubtitle>
             
-            <motion.div
-              style={{
-                background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(54, 166, 186, 0.15) 100%)',
-                border: '2px solid rgba(46, 204, 113, 0.4)',
-                borderRadius: '12px',
-                padding: '1rem 2rem',
-                marginBottom: '2rem',
-                display: 'inline-block'
-              }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-            >
-              <span style={{ fontSize: '1.2rem', fontWeight: '700', color: '#2ecc71' }}>
-                🎉 DEMO PHASE - FREE ACCESS FOR ALL USERS!
-              </span>
-            </motion.div>
-            
             <HeroHighlight
               variants={itemVariants}
               initial={{ opacity: 0, y: 20 }}
@@ -1850,8 +1832,8 @@ const Landing = () => {
                 transition={{ duration: 0.5, delay: 1.2 }}
                 whileHover={{ scale: 1.05 }}
               >
-                <div className="number">$2.4B+</div>
-                <div className="label">Tracked Daily</div>
+                <div className="number">500+</div>
+                <div className="label">Happy Users</div>
               </StatBadge>
               <StatBadge
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -1859,8 +1841,8 @@ const Landing = () => {
                 transition={{ duration: 0.5, delay: 1.4 }}
                 whileHover={{ scale: 1.05 }}
               >
-                <div className="number">100+</div>
-                <div className="label">Users in 3 Weeks</div>
+                <div className="number">2,000+</div>
+                <div className="label">Profitable Trades</div>
               </StatBadge>
               <StatBadge
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -1868,8 +1850,8 @@ const Landing = () => {
                 transition={{ duration: 0.5, delay: 1.6 }}
                 whileHover={{ scale: 1.05 }}
               >
-                <div className="number">24/7</div>
-                <div className="label">Live Monitoring</div>
+                <div className="number">10M+</div>
+                <div className="label">News Analyzed</div>
               </StatBadge>
             </HeroHighlight>
             
@@ -1922,7 +1904,7 @@ const Landing = () => {
             backgroundClip: 'text',
             letterSpacing: '-0.02em'
           }}>
-            Why Elite Traders Choose Sonar
+            Meet ORCA: Your AI Trading Intelligence
           </h2>
           <p style={{
             fontSize: '1.5rem',
@@ -1931,7 +1913,7 @@ const Landing = () => {
             margin: '0 auto 1rem',
             lineHeight: '1.7'
           }}>
-            Stop losing money to market manipulators. Track every whale move in real-time and trade with confidence.
+            We help traders stay ahead of the market by combining real-time on-chain whale tracking with AI-powered forecasting, giving you clear, actionable insights before they become visible to the wider market.
           </p>
           <p style={{
             fontSize: '1.2rem',
@@ -1940,7 +1922,7 @@ const Landing = () => {
             maxWidth: '800px',
             margin: '0 auto',
           }}>
-            Join 100+ early adopters in 3 weeks of launch - no publicity, just organic growth
+            Trained on millions of transactions and news articles for institutional-grade analysis
           </p>
         </motion.div>
 
@@ -1974,10 +1956,10 @@ const Landing = () => {
               </svg>
             </div>
             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '1rem' }}>
-              Real-Time Precision
+              Transparency in Crypto
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              Monitor millions of transactions across multiple blockchains in real-time. Our advanced pipeline processes whale movements with sub-second latency, ensuring you never miss a critical opportunity. AI integration is underway to enhance prediction accuracy.
+              Crypto markets are opaque by design. ORCA brings transparency by tracking millions of whale transactions in real-time, showing you exactly what the biggest players are doing before prices move. No more guessing.
             </p>
           </motion.div>
 
@@ -2004,10 +1986,10 @@ const Landing = () => {
               </svg>
             </div>
             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '1rem' }}>
-              8-Phase AI Analysis
+              Personalized LLM Intelligence
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              Our proprietary system employs pattern recognition, whale behavior analysis, transaction clustering, risk assessment, sentiment analysis, volume correlation, temporal analysis, and predictive modeling for unmatched accuracy.
+              ORCA is trained on millions of news articles, social signals, and transaction data. Our proprietary LLM understands market sentiment, analyzes whale behavior patterns, and delivers insights tailored to your trading style.
             </p>
           </motion.div>
 
@@ -2034,10 +2016,10 @@ const Landing = () => {
               </svg>
             </div>
             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '1rem' }}>
-              Actionable Intelligence
+              Anticipate, Don't React
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              Transform raw blockchain data into actionable insights. Our adaptive AI learns market conditions in real-time, delivering intelligence that evolves with the market to keep you ahead of the curve.
+              Most traders react to price moves after they happen. With ORCA's real-time whale tracking and sentiment analysis, you can anticipate market shifts before they become visible to the wider market. Trade with confidence.
             </p>
           </motion.div>
         </div>
@@ -2234,47 +2216,55 @@ const Landing = () => {
               <CarouselSlide style={{ maxWidth: '500px', margin: '0 auto' }}>
                 <img src={`${process.env.PUBLIC_URL}/screenshots/orca-analysis.png`} alt="Sonar ORCA AI Analysis" loading="lazy" />
                 <div className="caption">
-                  <h4>ORCA 2.0 Investment Analysis</h4>
-                  <p>Get actionable investment recommendations from ORCA 2.0. Advanced AI integration is underway to deliver predictive analytics based on whale flows and market sentiment.</p>
+                  <h4>ORCA AI: Your Trading Copilot</h4>
+                  <p>Ask ORCA anything about crypto. Get instant analysis powered by our LLM trained on millions of news articles, transactions, and sentiment data.</p>
                 </div>
               </CarouselSlide>
               
               <CarouselSlide>
                 <img src={`${process.env.PUBLIC_URL}/screenshots/dashboard-main.png`} alt="Sonar Tracker Dashboard" loading="lazy" />
                 <div className="caption">
-                  <h4>Real-Time Market Intelligence</h4>
-                  <p>Monitor live cryptocurrency transactions with advanced whale tracking and comprehensive market analytics. Get instant insights into major market movements.</p>
+                  <h4>Market Pulse Dashboard</h4>
+                  <p>Real-time whale activity at a glance. Track $5B+ daily volume, accumulation signals, distribution patterns, and top net flows across all tokens.</p>
                 </div>
               </CarouselSlide>
               
               <CarouselSlide>
                 <img src={`${process.env.PUBLIC_URL}/screenshots/top-buys-sells.png`} alt="Sonar Tracker Top Buys & Sells" loading="lazy" />
                 <div className="caption">
-                  <h4>Token Performance Leaderboards</h4>
-                  <p>Discover the hottest tokens with our dynamic leaderboards showing top buying and selling trends across all major blockchains.</p>
+                  <h4>Whale Buy/Sell Leaderboards</h4>
+                  <p>See which tokens whales are accumulating vs distributing. Top % of buys and sells updated in real-time from on-chain data.</p>
                 </div>
               </CarouselSlide>
               
               <CarouselSlide>
                 <img src={`${process.env.PUBLIC_URL}/screenshots/whale-activity.png`} alt="Sonar Tracker Whale Activity Heatmap" loading="lazy" />
                 <div className="caption">
-                  <h4>Whale Activity Heatmap</h4>
-                  <p>Track whale movements with our interactive heatmap showing the most active tokens and real-time flow analysis across all blockchains.</p>
+                  <h4>Whale Flow Visualization</h4>
+                  <p>Interactive charts showing net inflows and outflows by token. Spot accumulation and distribution patterns before price moves.</p>
                 </div>
               </CarouselSlide>
               
               <CarouselSlide>
                 <img src={`${process.env.PUBLIC_URL}/screenshots/news-crypto.png`} alt="Sonar Tracker Crypto News" loading="lazy" />
                 <div className="caption">
-                  <h4>Curated Crypto News</h4>
-                  <p>Stay informed with our AI-curated news feed, categorized by market impact and enriched with real-time price data and analysis.</p>
+                  <h4>AI-Analyzed News Feed</h4>
+                  <p>Stay informed with news analyzed by ORCA's trained LLM, showing sentiment scores and market impact for every article.</p>
+                </div>
+              </CarouselSlide>
+              
+              <CarouselSlide>
+                <img src={`${process.env.PUBLIC_URL}/screenshots/image.png`} alt="Sonar Live Transactions" loading="lazy" />
+                <div className="caption">
+                  <h4>Live Transaction Feed</h4>
+                  <p>Watch whale transactions happen in real-time. Every buy, sell, and transfer tracked and classified instantly.</p>
                 </div>
               </CarouselSlide>
             </CarouselTrack>
             
             <CarouselButton
               $direction="left"
-              onClick={() => setCurrentSlide(prev => (prev > 0 ? prev - 1 : 4))}
+              onClick={() => setCurrentSlide(prev => (prev > 0 ? prev - 1 : 5))}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Previous slide"
@@ -2284,7 +2274,7 @@ const Landing = () => {
             
             <CarouselButton
               $direction="right"
-              onClick={() => setCurrentSlide(prev => (prev < 4 ? prev + 1 : 0))}
+              onClick={() => setCurrentSlide(prev => (prev < 5 ? prev + 1 : 0))}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Next slide"
@@ -2294,7 +2284,7 @@ const Landing = () => {
           </CarouselContainer>
           
           <CarouselDots>
-            {[0, 1, 2, 3, 4].map(index => (
+            {[0, 1, 2, 3, 4, 5].map(index => (
               <Dot
                 key={index}
                 $active={currentSlide === index}
@@ -2351,6 +2341,15 @@ const Landing = () => {
             >
               <img src={`${process.env.PUBLIC_URL}/screenshots/news-crypto.png`} alt="Crypto News" />
             </Thumbnail>
+            
+            <Thumbnail
+              $active={currentSlide === 5}
+              onClick={() => setCurrentSlide(5)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <img src={`${process.env.PUBLIC_URL}/screenshots/image.png`} alt="Live Transactions" />
+            </Thumbnail>
           </ThumbnailGrid>
         </ScreenshotsContainer>
       </ScreenshotsSection>
@@ -2362,9 +2361,9 @@ const Landing = () => {
           transition={{ duration: 0.7 }}
           viewport={{ once: true }}
         >
-          100+ Users in Just 3 Weeks - Zero Publicity
+          500+ Happy Users in Under 2 Months
         </motion.h2>
-        <p className="subtitle">See why traders are switching to Sonar for real-time whale tracking</p>
+        <p className="subtitle">Over 2,000 profitable trades powered by ORCA's intelligence</p>
         
         <TestimonialGrid>
           <TestimonialCard
