@@ -99,12 +99,26 @@ const Avatar = styled.div`
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 1.1rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: ${props => props.$isUser ? 'white' : colors.primary};
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  
+  svg {
+    width: 26px;
+    height: 26px;
+    fill: ${colors.primary};
+  }
 `
+
+// Whale/Orca SVG Icon
+const WhaleIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22 12.5c0 .28-.22.5-.5.5h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5zM20.5 15h-1c-.28 0-.5.22-.5.5s.22.5.5.5h1c.28 0 .5-.22.5-.5s-.22-.5-.5-.5zM12 4C6.5 4 2 7.58 2 12c0 2.12.91 4.07 2.44 5.56-.47 1.33-1.37 2.44-2.42 3.44.83 0 2.27-.41 4-1.41C7.35 20.51 9.58 21 12 21c5.5 0 10-3.58 10-8s-4.5-9-10-9zm-4.75 9.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm3.75 3.5c-1.1 0-2-.9-2-2h4c0 1.1-.9 2-2 2z"/>
+  </svg>
+)
 
 const MessageContent = styled.div`
   flex: 1;
@@ -141,11 +155,11 @@ const MessageText = styled.div`
     padding-bottom: 0.5rem;
     border-bottom: 1px solid ${colors.borderLight};
   }
-  
+    
   /* First header no top margin */
   & > p:first-child strong:first-child,
   & > strong:first-child {
-    margin-top: 0;
+      margin-top: 0;
   }
   
   /* Part headers with icons */
@@ -221,7 +235,7 @@ const MessageText = styled.div`
         content: counter(item) ".";
         color: ${colors.primary};
         font-weight: 600;
-        font-size: 0.9rem;
+      font-size: 0.9rem;
       }
     }
   }
@@ -586,7 +600,7 @@ export default function ClientOrca() {
                 transition={{ duration: 0.3 }}
               >
                 <Avatar $isUser={message.role === 'user'}>
-                  {message.role === 'user' ? 'You' : 'O'}
+                  {message.role === 'user' ? 'You' : <WhaleIcon />}
                 </Avatar>
                 <MessageContent>
                   <SenderName $isUser={message.role === 'user'}>
@@ -689,10 +703,10 @@ export default function ClientOrca() {
         {loading && (
           <MessageBubble
             $isUser={false}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
           >
-            <Avatar $isUser={false}>O</Avatar>
+            <Avatar $isUser={false}><WhaleIcon /></Avatar>
             <MessageContent>
               <SenderName $isUser={false}>ORCA</SenderName>
               <TypingIndicator>
@@ -730,4 +744,4 @@ export default function ClientOrca() {
       </InputArea>
     </ChatContainer>
   )
-}
+} 

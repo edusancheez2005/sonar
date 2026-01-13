@@ -91,15 +91,15 @@ const NewsCard = styled(motion.a)`
 
 const SentimentIndicator = styled.div`
   width: 4px;
-  height: 100%;
-  min-height: 80px;
+  height: auto;
+  align-self: stretch;
   background: ${props => props.$bullish ? colors.sentimentBull : colors.sentimentBear};
   border-radius: 2px;
   
   @media (max-width: 768px) {
     width: 100%;
     height: 4px;
-    min-height: auto;
+    align-self: auto;
   }
 `
 
@@ -251,27 +251,36 @@ export default function EnhancedNews({ ticker = null }) {
         
         if (newsError) throw newsError
         
-        // Filter and process news
-        const processedNews = (newsData || [])
-          // Filter out untitled and neutral articles
+        // Filter and process news - balance bullish and bearish
+        const allFiltered = (newsData || [])
           .filter(article => {
             const title = article.title?.trim()
             if (!title || title.toLowerCase() === 'untitled') return false
-            
             const sentiment = article.sentiment_llm || article.sentiment_raw || 0
-            // Only include bullish (> 0.2) or bearish (< -0.2)
-            return Math.abs(sentiment) > 0.2
+            return Math.abs(sentiment) > 0.15 // Slightly lower threshold
           })
-          // Sort by absolute sentiment (highest first)
-          .sort((a, b) => {
-            const sentA = Math.abs(a.sentiment_llm || a.sentiment_raw || 0)
-            const sentB = Math.abs(b.sentiment_llm || b.sentiment_raw || 0)
-            return sentB - sentA
-          })
-          // Take top 15
-          .slice(0, 15)
         
-        setNews(processedNews)
+        // Separate bullish and bearish
+        const bullish = allFiltered
+          .filter(a => (a.sentiment_llm || a.sentiment_raw || 0) > 0.15)
+          .sort((a, b) => (b.sentiment_llm || b.sentiment_raw || 0) - (a.sentiment_llm || a.sentiment_raw || 0))
+          .slice(0, 10)
+        
+        const bearish = allFiltered
+          .filter(a => (a.sentiment_llm || a.sentiment_raw || 0) < -0.15)
+          .sort((a, b) => (a.sentiment_llm || a.sentiment_raw || 0) - (b.sentiment_llm || b.sentiment_raw || 0))
+          .slice(0, 5)
+        
+        // Combine and interleave (bullish first, then bearish, repeat)
+        const combined = []
+        const maxLen = Math.max(bullish.length, bearish.length)
+        for (let i = 0; i < maxLen; i++) {
+          if (bullish[i]) combined.push(bullish[i])
+          if (bearish[i]) combined.push(bearish[i])
+        }
+        
+        // Take top 15
+        setNews(combined.slice(0, 15))
         
       } catch (error) {
         console.error('Error fetching news:', error)
