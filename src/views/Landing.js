@@ -4,24 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient';
 
-// Typewriter Effect Component
-const TypeWriter = ({ text, delay = 100 }) => {
-  const [currentText, setCurrentText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    if (currentIndex < text.length) {
-      const timeout = setTimeout(() => {
-        setCurrentText(prevText => prevText + text[currentIndex]);
-        setCurrentIndex(prevIndex => prevIndex + 1);
-      }, delay);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [currentIndex, delay, text]);
-
-  return <span>{currentText}</span>;
-};
+// Note: previously used a typewriter effect for the hero title.
+// Keeping the landing page crisp and professional for a startup/CV application.
 
 // Styled components
 const LandingContainer = styled.div`
@@ -192,6 +176,16 @@ const TrustSection = styled.section`
     color: var(--text-secondary);
     margin-bottom: 3rem;
   }
+`;
+
+const TeamSection = styled.section`
+  padding: 5rem 2rem;
+  background: linear-gradient(180deg, rgba(10, 22, 33, 1) 0%, rgba(13, 33, 52, 0.75) 100%);
+`;
+
+const OrcaAccent = styled.span`
+  color: var(--primary);
+  font-weight: 800;
 `;
 
 const TestimonialGrid = styled.div`
@@ -1726,6 +1720,17 @@ const Landing = () => {
           </NavLink>
 
           <NavLink onClick={() => {
+            const element = document.getElementById('team');
+            const navbarHeight = 100; // approximate height of navbar
+            if (element) {
+              const offsetTop = element.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
+              window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+            }
+          }}>
+            Team
+          </NavLink>
+
+          <NavLink onClick={() => {
             const element = document.getElementById('screenshots');
             const navbarHeight = 100; // approximate height of navbar
             const elementPosition = element.getBoundingClientRect().top;
@@ -1811,13 +1816,12 @@ const Landing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <TypeWriter text="Sonar Tracker: Real-Time Crypto Whale Intelligence" delay={50} />
+              <span style={{ WebkitTextFillColor: 'var(--primary)' }}>ORCA 2.0</span>
+              <span style={{ WebkitTextFillColor: 'transparent' }}>{" "}Real-Time Crypto Intelligence</span>
             </HeroTitle>
             
             <HeroSubtitle variants={itemVariants}>
-              Professional blockchain analytics platform for tracking large cryptocurrency transactions. 
-              Monitor whale movements, detect market trends, and analyze on-chain data across Ethereum, 
-              Polygon, Avalanche, and more. Trusted by professional traders worldwide.
+              ORCA 2.0 brings transparency to crypto markets. It combines real-time on-chain whale tracking with a crypto-trained LLM that analyzes news and sentiment, so traders can understand what is moving the market and why, in minutes.
             </HeroSubtitle>
             
             <HeroHighlight
@@ -1879,7 +1883,7 @@ const Landing = () => {
                 }}
                 title="See Sonar Tracker dashboard screenshots and features"
               >
-                View Demo
+                See Product
               </Button>
             </ButtonGroup>
           </motion.div>
@@ -1904,7 +1908,7 @@ const Landing = () => {
             backgroundClip: 'text',
             letterSpacing: '-0.02em'
           }}>
-            Meet ORCA: Your AI Trading Intelligence
+            Meet <OrcaAccent>ORCA 2.0</OrcaAccent>: Your AI Trading Intelligence
           </h2>
           <p style={{
             fontSize: '1.5rem',
@@ -1913,7 +1917,7 @@ const Landing = () => {
             margin: '0 auto 1rem',
             lineHeight: '1.7'
           }}>
-            We help traders stay ahead of the market by combining real-time on-chain whale tracking with AI-powered forecasting, giving you clear, actionable insights before they become visible to the wider market.
+            We help traders stay ahead of the market by combining real-time on-chain whale tracking with AI-powered forecasting, giving clear, actionable insights before they become visible to the wider market.
           </p>
           <p style={{
             fontSize: '1.2rem',
@@ -2025,6 +2029,91 @@ const Landing = () => {
         </div>
 
       </AboutSection>
+
+      <TeamSection id="team">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true, amount: 0.2 }}
+          style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'left' }}
+        >
+          <h2 style={{
+            fontSize: '2.75rem',
+            fontWeight: '800',
+            marginBottom: '1rem',
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.02em'
+          }}>
+            Who we are
+          </h2>
+          <p style={{
+            fontSize: '1.2rem',
+            color: 'var(--text-secondary)',
+            lineHeight: '1.8',
+            maxWidth: '900px',
+            marginBottom: '1.25rem'
+          }}>
+            We have been in crypto for years and saw the same pattern again and again: retail traders react late because the real signals are scattered across explorers, paid groups, and noisy social feeds. We built <OrcaAccent>ORCA 2.0</OrcaAccent> to make the market readable in real time, with an LLM trained specifically for crypto and grounded in on-chain data.
+          </p>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '1.25rem',
+            marginTop: '2rem'
+          }}>
+            <div style={{
+              background: 'rgba(13, 33, 52, 0.75)',
+              border: '1px solid rgba(54, 166, 186, 0.2)',
+              borderRadius: '16px',
+              padding: '1.5rem'
+            }}>
+              <div style={{ color: 'var(--primary)', fontWeight: 800, marginBottom: '0.5rem' }}>
+                Built by engineers at Microsoft
+              </div>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
+                The founding team includes engineers currently working at Microsoft, with experience building reliable, large-scale systems.
+              </div>
+            </div>
+            <div style={{
+              background: 'rgba(13, 33, 52, 0.75)',
+              border: '1px solid rgba(54, 166, 186, 0.2)',
+              borderRadius: '16px',
+              padding: '1.5rem'
+            }}>
+              <div style={{ color: 'var(--primary)', fontWeight: 800, marginBottom: '0.5rem' }}>
+                Crypto-first AI expertise
+              </div>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
+                Our models are trained on millions of crypto news articles, sentiment signals, and transaction patterns to explain market moves clearly.
+              </div>
+            </div>
+            <div style={{
+              background: 'rgba(13, 33, 52, 0.75)',
+              border: '1px solid rgba(54, 166, 186, 0.2)',
+              borderRadius: '16px',
+              padding: '1.5rem'
+            }}>
+              <div style={{ color: 'var(--primary)', fontWeight: 800, marginBottom: '0.5rem' }}>
+                Built for real traders
+              </div>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
+                We combine whale tracking, sentiment, and news into one place, so traders can anticipate moves instead of reacting.
+              </div>
+            </div>
+          </div>
+
+          <p style={{
+            marginTop: '1.5rem',
+            fontSize: '0.95rem',
+            color: 'var(--text-secondary)',
+            opacity: 0.85,
+            lineHeight: '1.6'
+          }}>
+            Microsoft is a trademark of Microsoft Corporation. This product is not affiliated with or endorsed by Microsoft.
+          </p>
+        </motion.div>
+      </TeamSection>
 
       <PipelineSection id="pipeline">
         <motion.h2
@@ -2238,33 +2327,17 @@ const Landing = () => {
               </CarouselSlide>
               
               <CarouselSlide>
-                <img src={`${process.env.PUBLIC_URL}/screenshots/whale-activity.png`} alt="Sonar Tracker Whale Activity Heatmap" loading="lazy" />
-                <div className="caption">
-                  <h4>Whale Flow Visualization</h4>
-                  <p>Interactive charts showing net inflows and outflows by token. Spot accumulation and distribution patterns before price moves.</p>
-                </div>
-              </CarouselSlide>
-              
-              <CarouselSlide>
                 <img src={`${process.env.PUBLIC_URL}/screenshots/news-crypto.png`} alt="Sonar Tracker Crypto News" loading="lazy" />
                 <div className="caption">
                   <h4>AI-Analyzed News Feed</h4>
-                  <p>Stay informed with news analyzed by ORCA's trained LLM, showing sentiment scores and market impact for every article.</p>
-                </div>
-              </CarouselSlide>
-              
-              <CarouselSlide>
-                <img src={`${process.env.PUBLIC_URL}/screenshots/image.png`} alt="Sonar Live Transactions" loading="lazy" />
-                <div className="caption">
-                  <h4>Live Transaction Feed</h4>
-                  <p>Watch whale transactions happen in real-time. Every buy, sell, and transfer tracked and classified instantly.</p>
+                  <p>Stay informed with news analyzed by ORCA 2.0, showing sentiment scores and market impact for every article.</p>
                 </div>
               </CarouselSlide>
             </CarouselTrack>
             
             <CarouselButton
               $direction="left"
-              onClick={() => setCurrentSlide(prev => (prev > 0 ? prev - 1 : 5))}
+              onClick={() => setCurrentSlide(prev => (prev > 0 ? prev - 1 : 3))}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Previous slide"
@@ -2274,7 +2347,7 @@ const Landing = () => {
             
             <CarouselButton
               $direction="right"
-              onClick={() => setCurrentSlide(prev => (prev < 5 ? prev + 1 : 0))}
+              onClick={() => setCurrentSlide(prev => (prev < 3 ? prev + 1 : 0))}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Next slide"
@@ -2284,7 +2357,7 @@ const Landing = () => {
           </CarouselContainer>
           
           <CarouselDots>
-            {[0, 1, 2, 3, 4, 5].map(index => (
+            {[0, 1, 2, 3].map(index => (
               <Dot
                 key={index}
                 $active={currentSlide === index}
@@ -2330,25 +2403,7 @@ const Landing = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <img src={`${process.env.PUBLIC_URL}/screenshots/whale-activity.png`} alt="Whale Activity" />
-            </Thumbnail>
-            
-            <Thumbnail
-              $active={currentSlide === 4}
-              onClick={() => setCurrentSlide(4)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
               <img src={`${process.env.PUBLIC_URL}/screenshots/news-crypto.png`} alt="Crypto News" />
-            </Thumbnail>
-            
-            <Thumbnail
-              $active={currentSlide === 5}
-              onClick={() => setCurrentSlide(5)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <img src={`${process.env.PUBLIC_URL}/screenshots/image.png`} alt="Live Transactions" />
             </Thumbnail>
           </ThumbnailGrid>
         </ScreenshotsContainer>
@@ -2551,11 +2606,11 @@ const Landing = () => {
             </div>
             <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Pro</h3>
             <div style={{ margin: '1.5rem 0 2rem' }}>
-              <div style={{ fontSize: '3.5rem', fontWeight: '900', color: '#2ecc71', lineHeight: '1', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.5rem', textDecoration: 'line-through', opacity: 0.6 }}>
-                £5<span style={{ fontSize: '1.3rem', color: 'var(--text-secondary)', fontWeight: '500' }}>/month</span>
+              <div style={{ fontSize: '3.5rem', fontWeight: '900', color: '#2ecc71', lineHeight: '1', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.5rem' }}>
+                $7.99<span style={{ fontSize: '1.3rem', color: 'var(--text-secondary)', fontWeight: '500' }}>/month</span>
               </div>
-              <div style={{ fontSize: '2rem', color: '#2ecc71', marginTop: '0.5rem', fontWeight: '800' }}>
-                FREE DURING DEMO
+              <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginTop: '0.75rem', fontWeight: '600', textAlign: 'center' }}>
+                Billed monthly. Cancel anytime.
               </div>
             </div>
             <ul style={{
