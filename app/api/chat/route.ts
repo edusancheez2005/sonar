@@ -192,11 +192,10 @@ What's your investment horizon—short-term trade or long-term hold? (Not financ
 
 You will receive 3-20 news articles with titles and URLs. **FORMAT THEM AS MARKDOWN LINKS**:
 
-**CORRECT FORMAT:**
-```
-1. [Article Title Goes Here](https://actual-url.com/article)
-2. [Another Headline](https://example.com/news2)
-```
+**CORRECT FORMAT:** Use markdown link syntax with square brackets and parentheses:
+- First the title in square brackets
+- Then the URL in parentheses immediately after
+- Example: [Article Title](https://url.com)
 
 **IMPORTANT:**
 1. **Use markdown link syntax**: `[Title](URL)` - this makes them clickable
