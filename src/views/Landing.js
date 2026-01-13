@@ -1816,12 +1816,12 @@ const Landing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <span style={{ WebkitTextFillColor: 'var(--primary)' }}>ORCA 2.0</span>
+              <span style={{ WebkitTextFillColor: 'var(--primary)' }}>Sonar</span>
               <span style={{ WebkitTextFillColor: 'transparent' }}>{" "}Real-Time Crypto Intelligence</span>
             </HeroTitle>
             
             <HeroSubtitle variants={itemVariants}>
-              ORCA 2.0 brings transparency to crypto markets. It combines real-time on-chain whale tracking with a crypto-trained LLM that analyzes news and sentiment, so traders can understand what is moving the market and why, in minutes.
+              Sonar brings transparency to crypto markets. It combines real-time on-chain whale tracking with <span style={{ color: 'var(--primary)' }}>ORCA 2.0</span>, our crypto-trained AI that analyzes news and sentiment — so traders can understand what is moving the market and why, in minutes.
             </HeroSubtitle>
             
             <HeroHighlight
@@ -1908,7 +1908,7 @@ const Landing = () => {
             backgroundClip: 'text',
             letterSpacing: '-0.02em'
           }}>
-            Meet <OrcaAccent>ORCA 2.0</OrcaAccent>: Your AI Trading Intelligence
+            Why Traders Choose <span style={{ color: 'var(--primary)' }}>Sonar</span>
           </h2>
           <p style={{
             fontSize: '1.5rem',
@@ -1917,7 +1917,7 @@ const Landing = () => {
             margin: '0 auto 1rem',
             lineHeight: '1.7'
           }}>
-            We help traders stay ahead of the market by combining real-time on-chain whale tracking with AI-powered forecasting, giving clear, actionable insights before they become visible to the wider market.
+            Sonar helps traders stay ahead of the market by combining real-time on-chain whale tracking with AI-powered forecasting, giving clear, actionable insights before they become visible to the wider market.
           </p>
           <p style={{
             fontSize: '1.2rem',
@@ -1926,7 +1926,7 @@ const Landing = () => {
             maxWidth: '800px',
             margin: '0 auto',
           }}>
-            Trained on millions of transactions and news articles for institutional-grade analysis
+            Powered by <OrcaAccent>ORCA 2.0</OrcaAccent> — our AI trained on millions of transactions and news articles
           </p>
         </motion.div>
 
@@ -1963,7 +1963,7 @@ const Landing = () => {
               Transparency in Crypto
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              Crypto markets are opaque by design. ORCA brings transparency by tracking millions of whale transactions in real-time, showing you exactly what the biggest players are doing before prices move. No more guessing.
+              Crypto markets are opaque by design. Sonar brings transparency by tracking millions of whale transactions in real-time, showing you exactly what the biggest players are doing before prices move. No more guessing.
             </p>
           </motion.div>
 
@@ -1990,10 +1990,10 @@ const Landing = () => {
               </svg>
             </div>
             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '1rem' }}>
-              Personalized LLM Intelligence
+              Meet <span style={{ color: 'var(--primary)' }}>ORCA 2.0</span>
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              ORCA is trained on millions of news articles, social signals, and transaction data. Our proprietary LLM understands market sentiment, analyzes whale behavior patterns, and delivers insights tailored to your trading style.
+              Our AI agent, ORCA 2.0, is trained on millions of news articles, social signals, and transaction data. It understands market sentiment, analyzes whale behavior patterns, and delivers insights tailored to your trading style.
             </p>
           </motion.div>
 
@@ -2023,7 +2023,7 @@ const Landing = () => {
               Anticipate, Don't React
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '1.05rem' }}>
-              Most traders react to price moves after they happen. With ORCA's real-time whale tracking and sentiment analysis, you can anticipate market shifts before they become visible to the wider market. Trade with confidence.
+              Most traders react to price moves after they happen. With Sonar's real-time whale tracking and ORCA's sentiment analysis, you can anticipate market shifts before they become visible to the wider market. Trade with confidence.
             </p>
           </motion.div>
         </div>
@@ -2036,84 +2036,246 @@ const Landing = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
           viewport={{ once: true, amount: 0.2 }}
-          style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'left' }}
+          style={{ textAlign: 'center', marginBottom: '4rem' }}
         >
           <h2 style={{
-            fontSize: '2.75rem',
+            fontSize: '3.5rem',
             fontWeight: '800',
-            marginBottom: '1rem',
-            color: 'var(--text-primary)',
+            marginBottom: '1.5rem',
+            background: 'linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
             letterSpacing: '-0.02em'
           }}>
-            Who we are
+            Who We Are
           </h2>
           <p style={{
-            fontSize: '1.2rem',
+            fontSize: '1.4rem',
             color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            maxWidth: '900px',
-            marginBottom: '1.25rem'
+            maxWidth: '800px',
+            margin: '0 auto',
+            lineHeight: '1.8'
           }}>
-            We have been in crypto for years and saw the same pattern again and again: retail traders react late because the real signals are scattered across explorers, paid groups, and noisy social feeds. We built <OrcaAccent>ORCA 2.0</OrcaAccent> to make the market readable in real time, with an LLM trained specifically for crypto and grounded in on-chain data.
-          </p>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '1.25rem',
-            marginTop: '2rem'
-          }}>
-            <div style={{
-              background: 'rgba(13, 33, 52, 0.75)',
-              border: '1px solid rgba(54, 166, 186, 0.2)',
-              borderRadius: '16px',
-              padding: '1.5rem'
-            }}>
-              <div style={{ color: 'var(--primary)', fontWeight: 800, marginBottom: '0.5rem' }}>
-                Built by engineers at Microsoft
-              </div>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
-                The founding team includes engineers currently working at Microsoft, with experience building reliable, large-scale systems.
-              </div>
-            </div>
-            <div style={{
-              background: 'rgba(13, 33, 52, 0.75)',
-              border: '1px solid rgba(54, 166, 186, 0.2)',
-              borderRadius: '16px',
-              padding: '1.5rem'
-            }}>
-              <div style={{ color: 'var(--primary)', fontWeight: 800, marginBottom: '0.5rem' }}>
-                Crypto-first AI expertise
-              </div>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
-                Our models are trained on millions of crypto news articles, sentiment signals, and transaction patterns to explain market moves clearly.
-              </div>
-            </div>
-            <div style={{
-              background: 'rgba(13, 33, 52, 0.75)',
-              border: '1px solid rgba(54, 166, 186, 0.2)',
-              borderRadius: '16px',
-              padding: '1.5rem'
-            }}>
-              <div style={{ color: 'var(--primary)', fontWeight: 800, marginBottom: '0.5rem' }}>
-                Built for real traders
-              </div>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
-                We combine whale tracking, sentiment, and news into one place, so traders can anticipate moves instead of reacting.
-              </div>
-            </div>
-          </div>
-
-          <p style={{
-            marginTop: '1.5rem',
-            fontSize: '0.95rem',
-            color: 'var(--text-secondary)',
-            opacity: 0.85,
-            lineHeight: '1.6'
-          }}>
-            Microsoft is a trademark of Microsoft Corporation. This product is not affiliated with or endorsed by Microsoft.
+            We've been in crypto for years and saw the same pattern again and again: retail traders react late because the real signals are scattered across explorers, paid groups, and noisy social feeds.
           </p>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          viewport={{ once: true, amount: 0.2 }}
+          style={{
+            background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.1) 0%, rgba(26, 40, 56, 0.8) 100%)',
+            border: '2px solid rgba(54, 166, 186, 0.3)',
+            borderRadius: '24px',
+            padding: '3rem',
+            maxWidth: '900px',
+            margin: '0 auto 3rem',
+            textAlign: 'center'
+          }}
+        >
+          <p style={{
+            fontSize: '1.25rem',
+            color: 'var(--text-primary)',
+            lineHeight: '1.9',
+            marginBottom: '0'
+          }}>
+            We built <OrcaAccent>Sonar</OrcaAccent> to make the market readable in real time. Our AI agent, <OrcaAccent>ORCA 2.0</OrcaAccent>, is trained specifically for crypto — grounded in millions of on-chain transactions, news articles, and sentiment signals — so traders can finally <strong style={{ color: 'var(--primary)' }}>anticipate moves instead of reacting to them</strong>.
+          </p>
+        </motion.div>
+
+        {/* Credibility Cards */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '2rem',
+          maxWidth: '1100px',
+          margin: '0 auto',
+          padding: '0 1rem'
+        }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true, amount: 0.2 }}
+            whileHover={{ transform: 'translateY(-8px)', boxShadow: '0 20px 40px rgba(54, 166, 186, 0.2)' }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.08) 0%, rgba(26, 40, 56, 0.6) 100%)',
+              border: '1px solid rgba(54, 166, 186, 0.2)',
+              borderRadius: '20px',
+              padding: '2.5rem',
+              backdropFilter: 'blur(10px)',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ marginBottom: '1.5rem' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="3" width="20" height="14" rx="2" stroke="var(--primary)" strokeWidth="2" fill="var(--primary)" fillOpacity="0.2"/>
+                <path d="M8 21h8M12 17v4" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '1rem' }}>
+              Built by Microsoft Engineers
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', fontSize: '1.05rem' }}>
+              Our founding team includes engineers currently working at Microsoft, with deep experience building reliable, large-scale distributed systems.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true, amount: 0.2 }}
+            whileHover={{ transform: 'translateY(-8px)', boxShadow: '0 20px 40px rgba(54, 166, 186, 0.2)' }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.08) 0%, rgba(26, 40, 56, 0.6) 100%)',
+              border: '1px solid rgba(54, 166, 186, 0.2)',
+              borderRadius: '20px',
+              padding: '2.5rem',
+              backdropFilter: 'blur(10px)',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ marginBottom: '1.5rem' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="var(--primary)" strokeWidth="2" fill="var(--primary)" fillOpacity="0.2"/>
+                <path d="M12 6v6l4 2" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '1rem' }}>
+              Crypto-First AI
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', fontSize: '1.05rem' }}>
+              ORCA 2.0 is trained on millions of crypto news articles, sentiment signals, and transaction patterns to explain market moves clearly.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            viewport={{ once: true, amount: 0.2 }}
+            whileHover={{ transform: 'translateY(-8px)', boxShadow: '0 20px 40px rgba(54, 166, 186, 0.2)' }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.08) 0%, rgba(26, 40, 56, 0.6) 100%)',
+              border: '1px solid rgba(54, 166, 186, 0.2)',
+              borderRadius: '20px',
+              padding: '2.5rem',
+              backdropFilter: 'blur(10px)',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ marginBottom: '1.5rem' }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="var(--primary)" strokeWidth="2" fill="var(--primary)" fillOpacity="0.2"/>
+                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="var(--primary)" strokeWidth="2"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '1rem' }}>
+              Built for Real Traders
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', fontSize: '1.05rem' }}>
+              We combine whale tracking, sentiment analysis, and news into one platform — validated with 32 active traders before launch.
+            </p>
+          </motion.div>
+        </div>
+
+        <p style={{
+          marginTop: '3rem',
+          fontSize: '0.9rem',
+          color: 'var(--text-secondary)',
+          opacity: 0.7,
+          textAlign: 'center'
+        }}>
+          Microsoft is a trademark of Microsoft Corporation. This product is not affiliated with or endorsed by Microsoft.
+        </p>
       </TeamSection>
+
+      <AdvisorSection id="advisor">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true, amount: 0.2 }}
+          style={{ marginBottom: '3rem' }}
+        >
+          <h2 style={{ 
+            fontSize: '3.5rem',
+            fontWeight: '800',
+            marginBottom: '1rem',
+            background: 'linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            letterSpacing: '-0.02em',
+            textAlign: 'center'
+          }}>
+            The Future of Crypto Intelligence
+          </h2>
+          <p style={{ 
+            fontSize: '1.3rem', 
+            color: 'var(--text-secondary)', 
+            maxWidth: '700px', 
+            margin: '0 auto',
+            lineHeight: '1.6',
+            textAlign: 'center'
+          }}>
+            Experience next-generation cryptocurrency analysis with <span style={{ color: 'var(--primary)', fontWeight: '700' }}>ORCA 2.0</span>
+          </p>
+        </motion.div>
+        
+        <AdvisorCard>
+          <AdvisorBadge initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }}>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="var(--primary)"/>
+              <circle cx="8" cy="10" r="1.5" fill="var(--primary)"/>
+              <circle cx="16" cy="10" r="1.5" fill="var(--primary)"/>
+              <path d="M12 17c2.21 0 4-1.79 4-4H8c0 2.21 1.79 4 4 4z" fill="var(--primary)"/>
+            </svg>
+            ORCA 2.0 — AI Crypto Advisor
+          </AdvisorBadge>
+          <AdvisorTitle initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
+            Follow the Pods with Sonar Precision
+          </AdvisorTitle>
+          <AdvisorSub initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45, delay: 0.15 }}>
+            Personalized trading ideas from whale flows, risk-managed entries, and instant alerts. 
+            Get premium access to the most advanced crypto intelligence platform.
+          </AdvisorSub>
+          <Button
+            className="primary"
+            style={{ 
+              width: '100%', 
+              maxWidth: '400px',
+              margin: '2rem auto 0',
+              padding: '1.2rem 3rem', 
+              fontSize: '1.2rem', 
+              fontWeight: '700', 
+              borderRadius: '12px', 
+              background: 'linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%)', 
+              color: '#ffffff', 
+              border: 'none', 
+              boxShadow: '0 8px 24px rgba(54, 166, 186, 0.35)',
+              display: 'block'
+            }}
+            whileHover={{ scale: 1.05, boxShadow: '0 12px 32px rgba(54, 166, 186, 0.5)' }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setShowLoginModal(true);
+              setTimeout(() => {
+                window.location.href = '/subscribe';
+              }, 100);
+            }}
+          >
+            Get Premium Access →
+          </Button>
+        </AdvisorCard>
+      </AdvisorSection>
 
       <PipelineSection id="pipeline">
         <motion.h2
@@ -2418,7 +2580,7 @@ const Landing = () => {
         >
           500+ Happy Users in Under 2 Months
         </motion.h2>
-        <p className="subtitle">Over 2,000 profitable trades powered by ORCA's intelligence</p>
+        <p className="subtitle">Over 2,000 profitable trades powered by Sonar's intelligence</p>
         
         <TestimonialGrid>
           <TestimonialCard
@@ -2708,87 +2870,6 @@ const Landing = () => {
           </div>
         </motion.div>
       </PricingSection>
-      
-      <AdvisorSection id="advisor">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          viewport={{ once: true, amount: 0.2 }}
-          style={{ marginBottom: '3rem' }}
-        >
-          <h2 style={{ 
-            fontSize: '3.5rem',
-            fontWeight: '800',
-            marginBottom: '1rem',
-            background: 'linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            letterSpacing: '-0.02em',
-            textAlign: 'center'
-          }}>
-            The Future of Crypto Intelligence
-          </h2>
-          <p style={{ 
-            fontSize: '1.3rem', 
-            color: 'var(--text-secondary)', 
-            maxWidth: '700px', 
-            margin: '0 auto',
-            lineHeight: '1.6',
-            textAlign: 'center'
-          }}>
-            Experience next-generation cryptocurrency analysis - AI predictive models coming soon
-          </p>
-        </motion.div>
-        
-        <AdvisorCard>
-          <AdvisorBadge initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', marginRight: '0.5rem', verticalAlign: 'middle' }}>
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="var(--primary)"/>
-              <circle cx="8" cy="10" r="1.5" fill="var(--primary)"/>
-              <circle cx="16" cy="10" r="1.5" fill="var(--primary)"/>
-              <path d="M12 17c2.21 0 4-1.79 4-4H8c0 2.21 1.79 4 4 4z" fill="var(--primary)"/>
-            </svg>
-            ORCA 2.0 — AI Crypto Advisor
-          </AdvisorBadge>
-          <AdvisorTitle initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
-            Follow the Pods with SONAR Precision
-          </AdvisorTitle>
-          <AdvisorSub initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45, delay: 0.15 }}>
-            Personalized trading ideas from whale flows, risk-managed entries, and instant alerts. 
-            Get premium access to the most advanced crypto intelligence platform.
-          </AdvisorSub>
-          <Button
-            className="primary"
-            style={{ 
-              width: '100%', 
-              maxWidth: '400px',
-              margin: '2rem auto 0',
-              padding: '1.2rem 3rem', 
-              fontSize: '1.2rem', 
-              fontWeight: '700', 
-              borderRadius: '12px', 
-              background: 'linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%)', 
-              color: '#ffffff', 
-              border: 'none', 
-              boxShadow: '0 8px 24px rgba(54, 166, 186, 0.35)',
-              display: 'block'
-            }}
-            whileHover={{ scale: 1.05, boxShadow: '0 12px 32px rgba(54, 166, 186, 0.5)' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              setShowLoginModal(true);
-              // After login, redirect to subscribe page
-              setTimeout(() => {
-                window.location.href = '/subscribe';
-              }, 100);
-            }}
-          >
-            Get Premium Access →
-          </Button>
-        </AdvisorCard>
-      </AdvisorSection>
 
       {/* Comprehensive SEO Content Section */}
       <section style={{ 
