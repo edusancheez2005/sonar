@@ -59,6 +59,42 @@ const Divider = styled.div`
   border-radius: 2px;
 `
 
+const FilterBar = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+`
+
+const FilterButton = styled(motion.button)`
+  background: ${props => props.$active ? colors.primary : 'rgba(54, 166, 186, 0.1)'};
+  color: ${props => props.$active ? '#ffffff' : colors.textSecondary};
+  border: 1px solid ${props => props.$active ? colors.primary : 'rgba(54, 166, 186, 0.2)'};
+  padding: 0.625rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  
+  &:hover {
+    background: ${props => props.$active ? colors.primary : 'rgba(54, 166, 186, 0.15)'};
+    border-color: ${colors.primary};
+    transform: translateY(-2px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  .count {
+    margin-left: 0.5rem;
+    opacity: 0.8;
+    font-size: 0.85rem;
+  }
+`
+
 const NewsList = styled.div`
   display: flex;
   flex-direction: column;
@@ -231,6 +267,7 @@ function generateSummary(title, ticker) {
 export default function EnhancedNews({ ticker = null }) {
   const [news, setNews] = useState([])
   const [loading, setLoading] = useState(true)
+  const [sentimentFilter, setSentimentFilter] = useState('all') // all | bullish | bearish | neutral
 
   useEffect(() => {
     async function fetchData() {
@@ -358,7 +395,19 @@ export default function EnhancedNews({ ticker = null }) {
           return Math.abs(sB) - Math.abs(sA) // Within category, strongest first
         })
         
-        setNews(finalArticles.slice(0, 15))
+        // Apply sentiment filter if set
+        let filteredBysentiment = finalArticles
+        if (sentimentFilter !== 'all') {
+          filteredBysentiment = finalArticles.filter(article => {
+            const s = article.sentiment_llm || article.sentiment_raw || 0
+            if (sentimentFilter === 'bullish') return s > 0.2
+            if (sentimentFilter === 'bearish') return s < -0.2
+            if (sentimentFilter === 'neutral') return s >= -0.2 && s <= 0.2
+            return true
+          })
+        }
+        
+        setNews(filteredBysentiment.slice(0, 15))
         
       } catch (error) {
         console.error('Error fetching news:', error)
@@ -368,7 +417,7 @@ export default function EnhancedNews({ ticker = null }) {
     }
     
     fetchData()
-  }, [ticker])
+  }, [ticker, sentimentFilter])
 
   const formatTimeAgo = (dateString) => {
     const date = new Date(dateString)
@@ -402,6 +451,16 @@ export default function EnhancedNews({ ticker = null }) {
     )
   }
 
+  // Count articles by sentiment for filter badges
+  const allArticlesCounts = {
+    bullish: news.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) > 0.2).length,
+    bearish: news.filter(a => (a.sentiment_llm || a.sentiment_raw || 0) < -0.2).length,
+    neutral: news.filter(a => {
+      const s = a.sentiment_llm || a.sentiment_raw || 0
+      return s >= -0.2 && s <= 0.2
+    }).length
+  }
+
   return (
     <Container>
       {!ticker && (
@@ -413,6 +472,60 @@ export default function EnhancedNews({ ticker = null }) {
           <Divider />
         </Header>
       )}
+      
+      <FilterBar>
+        <FilterButton
+          $active={sentimentFilter === 'all'}
+          onClick={() => setSentimentFilter('all')}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+        >
+          All News
+          <span className="count">({news.length})</span>
+        </FilterButton>
+        <FilterButton
+          $active={sentimentFilter === 'bullish'}
+          onClick={() => setSentimentFilter('bullish')}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            borderColor: sentimentFilter === 'bullish' ? colors.sentimentBull : 'rgba(22, 199, 132, 0.2)',
+            background: sentimentFilter === 'bullish' ? colors.sentimentBull : 'rgba(22, 199, 132, 0.08)',
+            color: sentimentFilter === 'bullish' ? '#ffffff' : colors.sentimentBull
+          }}
+        >
+          Bullish
+          <span className="count">({allArticlesCounts.bullish})</span>
+        </FilterButton>
+        <FilterButton
+          $active={sentimentFilter === 'bearish'}
+          onClick={() => setSentimentFilter('bearish')}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            borderColor: sentimentFilter === 'bearish' ? colors.sentimentBear : 'rgba(237, 76, 92, 0.2)',
+            background: sentimentFilter === 'bearish' ? colors.sentimentBear : 'rgba(237, 76, 92, 0.08)',
+            color: sentimentFilter === 'bearish' ? '#ffffff' : colors.sentimentBear
+          }}
+        >
+          Bearish
+          <span className="count">({allArticlesCounts.bearish})</span>
+        </FilterButton>
+        <FilterButton
+          $active={sentimentFilter === 'neutral'}
+          onClick={() => setSentimentFilter('neutral')}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            borderColor: sentimentFilter === 'neutral' ? colors.sentimentNeutral : 'rgba(160, 178, 198, 0.2)',
+            background: sentimentFilter === 'neutral' ? 'rgba(160, 178, 198, 0.2)' : 'rgba(160, 178, 198, 0.08)',
+            color: sentimentFilter === 'neutral' ? '#ffffff' : colors.sentimentNeutral
+          }}
+        >
+          Neutral
+          <span className="count">({allArticlesCounts.neutral})</span>
+        </FilterButton>
+      </FilterBar>
       
       <NewsList>
         {news.map((article, index) => {
