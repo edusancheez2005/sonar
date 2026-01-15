@@ -477,10 +477,9 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
     
     if (error) {
       console.error('Error fetching price snapshots:', error)
-      return { snapshots: [], current: null, ath: null, atl: null }
     }
     
-    // Fetch additional data from CoinGecko (all-time high, all-time low)
+    // CoinGecko ID mapping (expanded)
     const coinGeckoIds: Record<string, string> = {
       'BTC': 'bitcoin',
       'ETH': 'ethereum',
@@ -491,28 +490,31 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
       'SHIB': 'shiba-inu',
       'PEPE': 'pepe',
       'MATIC': 'matic-network',
+      'POL': 'matic-network',
       'DOT': 'polkadot',
       'LINK': 'chainlink',
       'AVAX': 'avalanche-2',
       'UNI': 'uniswap',
-      'LTC': 'litecoin'
+      'LTC': 'litecoin',
+      'BNB': 'binancecoin',
+      'BONK': 'bonk',
+      'WIF': 'dogwifcoin',
+      'FLOKI': 'floki',
+      'AAVE': 'aave',
+      'CRV': 'curve-dao-token',
+      'SUSHI': 'sushi',
+      'ATOM': 'cosmos',
+      'NEAR': 'near'
     }
     
     const coinId = coinGeckoIds[ticker.toUpperCase()]
-    let athData: {
-      ath: any
-      ath_date: any
-      ath_change_percentage: any
-      atl: any
-      atl_date: any
-      atl_change_percentage: any
-      market_cap_rank: any
-      total_supply: any
-      circulating_supply: any
-    } | null = null
+    let athData: any = null
+    let livePrice: any = null
     
+    // ALWAYS fetch live CoinGecko data (more reliable than DB snapshots)
     if (coinId) {
       try {
+        console.log(`📊 Fetching live CoinGecko data for ${ticker} (${coinId})...`)
         const cgResponse = await fetch(
           `https://pro-api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false`,
           {
@@ -522,6 +524,9 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
         
         if (cgResponse.ok) {
           const cgData = await cgResponse.json()
+          console.log(`✅ Got live price for ${ticker}: $${cgData.market_data?.current_price?.usd}`)
+          
+          // Store ATH data
           athData = {
             ath: cgData.market_data?.ath?.usd || null,
             ath_date: cgData.market_data?.ath_date?.usd || null,
@@ -533,15 +538,32 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
             total_supply: cgData.market_data?.total_supply || null,
             circulating_supply: cgData.market_data?.circulating_supply || null
           }
+          
+          // Create a live price snapshot (use this if DB is empty)
+          livePrice = {
+            ticker: ticker.toUpperCase(),
+            price_usd: cgData.market_data?.current_price?.usd || 0,
+            price_change_24h: cgData.market_data?.price_change_percentage_24h || 0,
+            market_cap: cgData.market_data?.market_cap?.usd || 0,
+            volume_24h: cgData.market_data?.total_volume?.usd || 0,
+            timestamp: new Date().toISOString()
+          }
+        } else {
+          console.error(`CoinGecko API error: ${cgResponse.status}`)
         }
       } catch (cgError) {
-        console.error(`Error fetching CoinGecko ATH data for ${ticker}:`, cgError)
+        console.error(`Error fetching CoinGecko data for ${ticker}:`, cgError)
       }
     }
     
+    // Use DB snapshots if available, otherwise use live CoinGecko data
+    const finalSnapshots = (snapshots && snapshots.length > 0) ? snapshots : (livePrice ? [livePrice] : [])
+    
+    console.log(`📈 Price data for ${ticker}: ${finalSnapshots.length} snapshots, current: $${finalSnapshots[0]?.price_usd || 0}`)
+    
     return {
-      snapshots: snapshots || [],
-      current: snapshots?.[0] || null,
+      snapshots: finalSnapshots,
+      current: finalSnapshots[0] || null,
       ath: athData
     }
   } catch (error) {
@@ -551,7 +573,7 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
 }
 
 /**
- * Fetch LunarCrush AI data (real-time)
+ * Fetch LunarCrush AI data (real-time) - ENHANCED
  */
 async function fetchLunarCrushAI(ticker: string): Promise<any> {
   try {
@@ -562,23 +584,53 @@ async function fetchLunarCrushAI(ticker: string): Promise<any> {
       return null
     }
     
-    const response = await fetch(
-      `https://lunarcrush.ai/topic/${ticker.toLowerCase()}`,
-      {
+    console.log(`🌙 Fetching comprehensive LunarCrush data for ${ticker}...`)
+    
+    // Fetch multiple LunarCrush endpoints in parallel for richer data
+    const [aiResponse, postsResponse] = await Promise.all([
+      // Main AI page
+      fetch(`https://lunarcrush.ai/topic/${ticker.toLowerCase()}`, {
         headers: { 
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'text/html'
         }
-      }
-    )
+      }).catch(err => {
+        console.error('LunarCrush AI page error:', err)
+        return null
+      }),
+      
+      // Social posts (more detailed sentiment)
+      fetch(`https://lunarcrush.com/api4/public/topic/${ticker.toLowerCase()}/posts/v1`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      }).catch(err => {
+        console.error('LunarCrush posts error:', err)
+        return null
+      })
+    ])
     
-    if (!response.ok) {
-      console.error(`LunarCrush AI error: ${response.status}`)
-      return null
+    let aiData = null
+    let postsData = null
+    
+    // Parse AI page
+    if (aiResponse && aiResponse.ok) {
+      const html = await aiResponse.text()
+      aiData = parseLunarCrushAI(html)
+      console.log(`✅ LunarCrush AI data parsed for ${ticker}`)
     }
     
-    const html = await response.text()
-    return parseLunarCrushAI(html)
+    // Parse posts data
+    if (postsResponse && postsResponse.ok) {
+      const postsJson = await postsResponse.json()
+      postsData = postsJson.data || []
+      console.log(`✅ LunarCrush posts: ${postsData.length} recent posts for ${ticker}`)
+    }
+    
+    // Combine data for richer context
+    return {
+      ...aiData,
+      recentPosts: postsData?.slice(0, 10) || [], // Top 10 recent posts
+      postsCount: postsData?.length || 0
+    }
   } catch (error) {
     console.error('Error in fetchLunarCrushAI:', error)
     return null

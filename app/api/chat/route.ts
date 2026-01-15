@@ -66,18 +66,17 @@ Use clear section headers with bold text. No emojis. Use colons instead of dashe
 **Part 1: Sonar Data**
 
 Price Action:
-Current Price: $X,XXX
-24h Change: X.XX%
-Market Cap: $X.XXB
-Trend: [Uptrend/Downtrend/Sideways]
-Distance from ATH: X% [significant discount / near ATH]
+Use the EXACT numbers from the context - current price, 24h change %, market cap, volume.
+Include: Current price, 24h change, market cap, trend (uptrend/downtrend/sideways)
+Add: Distance from all-time high with interpretation (significant discount / near ATH)
+CRITICAL: Use real dollar amounts and percentages from the data, NOT placeholders like "X" or "XX"
 
 [ONLY if ERC-20 token:]
 Whale Activity:
-Net Flow: $X.XM [OUT of exchanges = accumulation / INTO exchanges = distribution]
-Total Volume: $X.XM
-Transactions: XX (XX accumulation, XX distribution)
-Notable Moves: [Describe top 2-3 whale moves with amounts]
+Net Flow: Use the exact dollar amount from context [explain if OUT of exchanges = accumulation / INTO exchanges = distribution]
+Total Volume: Exact dollar amount
+Transactions: Exact count (breakdown of accumulation vs distribution)
+Notable Moves: Describe top 2-3 whale moves with ACTUAL dollar amounts from the data
 
 Sentiment and Social:
 Sentiment Score: X.XX [Very Bullish/Bullish/Neutral/Bearish]
@@ -98,13 +97,21 @@ Short term impact (days to weeks): [2-3 sentences on catalysts, momentum, expect
 
 Long term impact (months to years): [2-3 sentences on fundamentals, adoption, ecosystem]
 
-**Part 3: Bottom Line**
+**Part 3: Bottom Line & Outlook**
 
 [2-3 conversational sentences directly answering user's question with your overall take]
 
+Price Outlook (Based on Data):
+Provide a short-term (1-7 days) and long-term (1-3 months) outlook based on ALL the data you have:
+- If whale net flow is OUT of exchanges + bullish sentiment → suggest potential upside range
+- If whale net flow is INTO exchanges + bearish sentiment → suggest potential downside risk
+- Use ATH distance, sentiment momentum, and news impact to estimate reasonable price ranges
+- Be specific but cautious: "Based on current whale accumulation and bullish sentiment, could see 5-15% upside if momentum continues" or "Current distribution patterns suggest 10-20% downside risk"
+- Always frame as "potential" or "possible" based on data, never as certainty
+
 [Engaging follow-up question to continue dialogue]
 
-(Not financial advice. Always DYOR!)
+(Not financial advice. This is data-driven analysis, not a guarantee. Always DYOR!)
 
 ### For FOLLOW-UP questions:
 
