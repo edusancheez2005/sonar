@@ -608,8 +608,8 @@ async function fetchLunarCrushAI(ticker: string): Promise<any> {
       })
     ])
     
-    let aiData = null
-    let postsData = null
+    let aiData: any = null
+    let postsData: any = null
     
     // Parse AI page
     if (aiResponse && aiResponse.ok) {
