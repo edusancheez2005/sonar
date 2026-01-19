@@ -1313,7 +1313,7 @@ const Dashboard = ({ isPremium = false }) => {
             </PremiumIcon>
             <PremiumTitle>Unlock Advanced Analytics</PremiumTitle>
             <PremiumDescription>
-              Upgrade to Sonar Pro to access advanced whale analytics, sentiment analysis, 
+              Upgrade to Sonar Premium to access advanced whale analytics, sentiment analysis, 
               risk assessments, and comprehensive market insights.
             </PremiumDescription>
             <PremiumFeatureList>
@@ -1329,7 +1329,7 @@ const Dashboard = ({ isPremium = false }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Upgrade to Pro - $7.99/month
+              Upgrade to Premium - $7.99/month
             </PremiumButton>
           </PremiumCard>
         </motion.div>

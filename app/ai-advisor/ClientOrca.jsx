@@ -1033,7 +1033,7 @@ export default function ClientOrca() {
           {!isPremium && freePromptsUsed === 0 ? (
             <span style={{ color: colors.primary }}>You have 1 free ORCA prompt — try it now!</span>
           ) : !isPremium && freePromptsUsed >= 1 ? (
-            <span style={{ color: colors.sentimentNeutral }}>Free prompt used. <a href="/subscribe" style={{ color: colors.primary, textDecoration: 'underline' }}>Upgrade to Pro</a> for 5 prompts/day.</span>
+            <span style={{ color: colors.sentimentNeutral }}>Free prompt used. <a href="/subscribe" style={{ color: colors.primary, textDecoration: 'underline' }}>Upgrade to Premium</a> for 5 prompts/day.</span>
           ) : (
             'ORCA provides educational analysis only. Not financial advice.'
           )}
@@ -1077,7 +1077,7 @@ export default function ClientOrca() {
           <PremiumTitle>You've Used Your Free Preview!</PremiumTitle>
           <PremiumDescription>
             You've experienced the power of ORCA AI with your free prompt. 
-            Upgrade to Pro for unlimited conversations and deeper market insights.
+            Upgrade to Premium for unlimited conversations and deeper market insights.
           </PremiumDescription>
           <PremiumFeatureList>
             <li>5 AI conversations per day with ORCA 2.0</li>
@@ -1091,7 +1091,7 @@ export default function ClientOrca() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Upgrade to Pro - $7.99/month
+            Upgrade to Premium - $7.99/month
           </PremiumButton>
           <div 
             style={{ 

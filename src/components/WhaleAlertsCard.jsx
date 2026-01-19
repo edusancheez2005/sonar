@@ -380,7 +380,7 @@ export default function WhaleAlertsCard({ isPremium = false }) {
             Whale Alerts track large cryptocurrency transactions ($50,000+) in real-time. 
             See when whales are accumulating or distributing, powered by Whale Alert API.
           </p>
-          <a href="/subscribe">Upgrade to Pro - $7.99/month</a>
+          <a href="/subscribe">Upgrade to Premium - $7.99/month</a>
         </PremiumLock>
       </Card>
     )

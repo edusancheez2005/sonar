@@ -503,14 +503,14 @@ export default function ClientProfile({ email: initialEmail }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <StatusBadge $active={true}>
                     <span className="dot"></span>
-                    {subscription.status === 'active' ? 'Active Subscription' : 'Trial Period'}
+                    Active Subscription
                   </StatusBadge>
                 </div>
                 
                 <Row>
                   <label>Current Plan</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>Sonar Pro</span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>Sonar Premium</span>
                     <span style={{ 
                       padding: '0.25rem 0.6rem', 
                       background: 'rgba(54, 166, 186, 0.15)', 
@@ -520,7 +520,7 @@ export default function ClientProfile({ email: initialEmail }) {
                       color: 'var(--primary)',
                       fontWeight: 600
                     }}>
-                      £5/month
+                      $7.99/month
                     </span>
                   </div>
                 </Row>
@@ -578,7 +578,7 @@ export default function ClientProfile({ email: initialEmail }) {
                 
                 <Actions>
                   <Primary onClick={() => window.location.href = '/subscribe'}>
-                    Upgrade to Sonar Pro
+                    Upgrade to Sonar Premium
                   </Primary>
                 </Actions>
               </>

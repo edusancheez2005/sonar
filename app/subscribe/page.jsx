@@ -562,7 +562,7 @@ export default function SubscribePage() {
             transition={{ duration: 0.4 }}
           >
             <strong>⚠️ Authentication Required</strong>
-            <p>Please log in or create an account to subscribe to Sonar Pro</p>
+            <p>Please log in or create an account to subscribe to Sonar Premium</p>
           </Alert>
         )}
 
@@ -611,7 +611,7 @@ export default function SubscribePage() {
             </Button>
           </PricingCard>
 
-          {/* Pro Plan */}
+          {/* Premium Plan */}
           <PricingCard
             $featured={true}
             initial={{ opacity: 0, y: -20 }}
@@ -619,7 +619,7 @@ export default function SubscribePage() {
             transition={{ duration: 0.5, delay: 0.4 }}
           >
             <Badge>MOST POPULAR</Badge>
-            <PlanName>Pro</PlanName>
+            <PlanName>Premium</PlanName>
             <PriceContainer>
               <Price>
                 $7.99<span>/month</span>
@@ -682,7 +682,7 @@ export default function SubscribePage() {
 
         {/* Features Section */}
         <InfoSection>
-          <SectionTitle>Why Go Pro?</SectionTitle>
+          <SectionTitle>Why Go Premium?</SectionTitle>
           <FeatureGrid>
             <FeatureCard
               initial={{ opacity: 0, y: 20 }}
@@ -764,14 +764,14 @@ export default function SubscribePage() {
           </FeatureGrid>
 
           {/* Comparison Table */}
-          <SectionTitle>Free vs Pro Comparison</SectionTitle>
+          <SectionTitle>Free vs Premium Comparison</SectionTitle>
           <ComparisonTable>
             <Table>
               <thead>
                 <tr>
                   <th>Feature</th>
                   <th>Free</th>
-                  <th>Pro</th>
+                  <th>Premium</th>
                 </tr>
               </thead>
               <tbody>
@@ -886,7 +886,7 @@ export default function SubscribePage() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                   >
-                    <p>Our whale intelligence system syncs every 10 minutes with Whale Alert API for real-time transaction data. We track ERC-20 tokens and major blockchain movements ($500k+ transactions). Pro subscribers get instant access to verified whale transactions from exchanges, known addresses, and large wallet movements as they happen.</p>
+                    <p>Our whale intelligence system syncs every 10 minutes with Whale Alert API for real-time transaction data. We track ERC-20 tokens and major blockchain movements ($50,000+ transactions). Premium subscribers get instant access to verified whale transactions from exchanges, known addresses, and large wallet movements as they happen.</p>
                   </FAQAnswer>
                 )}
               </AnimatePresence>
@@ -966,7 +966,7 @@ export default function SubscribePage() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                   >
-                    <p>Yes! You can upgrade to Pro at any time for instant access. If you wish to downgrade, you can cancel your Pro subscription and you'll revert to the Free plan at the end of your billing period.</p>
+                    <p>Yes! You can upgrade to Premium at any time for instant access. If you wish to downgrade, you can cancel your Premium subscription and you'll revert to the Free plan at the end of your billing period.</p>
                   </FAQAnswer>
                 )}
               </AnimatePresence>
@@ -986,7 +986,7 @@ export default function SubscribePage() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                   >
-                    <p>If you're not satisfied with Sonar Pro, contact us at eduardo@sonartracker.io within 7 days of your subscription start date, and we'll process a full refund. We want you to be completely satisfied with our service.</p>
+                    <p>If you're not satisfied with Sonar Premium, contact us at eduardo@sonartracker.io within 7 days of your subscription start date, and we'll process a full refund. We want you to be completely satisfied with our service.</p>
                   </FAQAnswer>
                 )}
               </AnimatePresence>
