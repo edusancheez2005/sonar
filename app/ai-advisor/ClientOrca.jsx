@@ -607,14 +607,14 @@ export default function ClientOrca() {
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
-  // Loading steps for animation
+  // Loading steps for animation (clean, no emojis)
   const loadingSteps = [
-    '🔍 Fetching latest market data...',
-    '📰 Analyzing breaking news & headlines...',
-    '🐋 Checking whale activity patterns...',
-    '📊 Processing social sentiment data...',
-    '🌐 Gathering macro-economic indicators...',
-    '🧠 ORCA is forming insights...'
+    'Fetching latest market data...',
+    'Analyzing breaking news & headlines...',
+    'Checking whale activity patterns...',
+    'Processing social sentiment data...',
+    'Gathering macro-economic indicators...',
+    'ORCA is forming insights...'
   ]
 
   // Auto-scroll to bottom
@@ -1031,9 +1031,9 @@ export default function ClientOrca() {
       <InputArea>
         <Disclaimer>
           {!isPremium && freePromptsUsed === 0 ? (
-            <span style={{ color: colors.primary }}>✨ You have 1 free ORCA prompt! Try it now.</span>
+            <span style={{ color: colors.primary }}>You have 1 free ORCA prompt — try it now!</span>
           ) : !isPremium && freePromptsUsed >= 1 ? (
-            <span style={{ color: colors.sentimentNeutral }}>🔒 Free prompt used. Upgrade to Pro for 5 prompts/day!</span>
+            <span style={{ color: colors.sentimentNeutral }}>Free prompt used. <a href="/subscribe" style={{ color: colors.primary, textDecoration: 'underline' }}>Upgrade to Pro</a> for 5 prompts/day.</span>
           ) : (
             'ORCA provides educational analysis only. Not financial advice.'
           )}
@@ -1048,7 +1048,11 @@ export default function ClientOrca() {
             disabled={loading || (!isPremium && freePromptsUsed >= 1)}
           />
           <SendButton type="submit" disabled={loading || !input.trim() || (!isPremium && freePromptsUsed >= 1)}>
-            {loading ? 'Analyzing' : !isPremium && freePromptsUsed >= 1 ? '🔒' : 'Send'}
+            {loading ? 'Analyzing' : !isPremium && freePromptsUsed >= 1 ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.7 }}>
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+            ) : 'Send'}
             {loading || (!isPremium && freePromptsUsed >= 1) ? null : <span className="arrow">→</span>}
           </SendButton>
         </InputForm>

@@ -340,12 +340,12 @@ export default function WhaleAlertsCard({ isPremium = false }) {
   
   const getTransactionLabel = (alert) => {
     const type = getTransactionType(alert)
-    if (type === 'exchange_out') return '🟢 Exchange → Wallet'
-    if (type === 'exchange_in') return '🔴 Wallet → Exchange'
+    if (type === 'exchange_out') return 'Exchange → Wallet'
+    if (type === 'exchange_in') return 'Wallet → Exchange'
     if (alert.from_owner_type === 'exchange' && alert.to_owner_type === 'exchange') {
-      return '↔️ Exchange → Exchange'
+      return 'Exchange → Exchange'
     }
-    return '📤 Transfer'
+    return 'Transfer'
   }
   
   const filteredAlerts = alerts.filter(alert => {
@@ -368,14 +368,14 @@ export default function WhaleAlertsCard({ isPremium = false }) {
               <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm-1.06 16.88L7.4 15.34l1.42-1.42 2.12 2.12 4.24-4.24 1.42 1.42-5.66 5.66z"/>
             </svg>
             <div>
-              <h2>🐋 Whale Alerts</h2>
+              <h2>Whale Alerts</h2>
               <span>Real-time large transactions</span>
             </div>
           </Title>
         </Header>
         
         <PremiumLock>
-          <h3>🔒 Premium Feature</h3>
+          <h3>Premium Feature</h3>
           <p>
             Whale Alerts track large cryptocurrency transactions ($500k+) in real-time. 
             See when whales are accumulating or distributing, powered by Whale Alert API.
@@ -398,7 +398,7 @@ export default function WhaleAlertsCard({ isPremium = false }) {
             <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm-1.06 16.88L7.4 15.34l1.42-1.42 2.12 2.12 4.24-4.24 1.42 1.42-5.66 5.66z"/>
           </svg>
           <div>
-            <h2>🐋 Whale Alerts</h2>
+            <h2>Whale Alerts</h2>
             <span>Real-time large transactions</span>
           </div>
         </Title>
@@ -413,10 +413,12 @@ export default function WhaleAlertsCard({ isPremium = false }) {
           All ({alerts.length})
         </button>
         <button className={filter === 'accumulation' ? 'active' : ''} onClick={() => setFilter('accumulation')}>
-          🟢 Accumulation
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#2ecc71', marginRight: '6px' }}></span>
+          Accumulation
         </button>
         <button className={filter === 'distribution' ? 'active' : ''} onClick={() => setFilter('distribution')}>
-          🔴 Distribution
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#e74c3c', marginRight: '6px' }}></span>
+          Distribution
         </button>
       </FilterButtons>
       

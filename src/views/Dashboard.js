@@ -1293,9 +1293,6 @@ const Dashboard = ({ isPremium = false }) => {
 
       {/* Top 10 Whales (7 Days) Section */}
       <TopWhalesSection />
-
-      {/* Whale Alerts - Real-time large transactions */}
-      <WhaleAlertsCard isPremium={isPremium} />
         </>
       ) : (
         <motion.div 
@@ -1309,7 +1306,11 @@ const Dashboard = ({ isPremium = false }) => {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <PremiumIcon>🔒</PremiumIcon>
+            <PremiumIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="var(--primary)">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+            </PremiumIcon>
             <PremiumTitle>Unlock Advanced Analytics</PremiumTitle>
             <PremiumDescription>
               Upgrade to Sonar Pro to access advanced whale analytics, sentiment analysis, 
@@ -1333,6 +1334,9 @@ const Dashboard = ({ isPremium = false }) => {
           </PremiumCard>
         </motion.div>
       )}
+      
+      {/* Whale Alerts - Visible to all users (locked state for free) */}
+      <WhaleAlertsCard isPremium={isPremium} />
         </BlurredContent>
     </DashboardContainer>
     </>
