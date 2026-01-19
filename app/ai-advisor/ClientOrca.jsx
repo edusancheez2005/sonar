@@ -636,26 +636,40 @@ export default function ClientOrca() {
       // Check premium status
       if (data.session?.user) {
         try {
-          const { data: profile } = await sb
+          const { data: profile, error: profileError } = await sb
             .from('profiles')
             .select('plan')
             .eq('id', data.session.user.id)
             .single()
           
-          setIsPremium(profile?.plan === 'premium' || profile?.plan === 'pro')
+          console.log('🔍 ORCA Premium Check:', { 
+            userId: data.session.user.id,
+            email: data.session.user.email,
+            plan: profile?.plan,
+            error: profileError?.message
+          })
           
-          // Load free prompts used today from localStorage
-          const today = new Date().toDateString()
-          const stored = localStorage.getItem(`orca_free_prompts_${data.session.user.id}`)
-          if (stored) {
-            const { date, count } = JSON.parse(stored)
-            if (date === today) {
-              setFreePromptsUsed(count)
-            } else {
-              // Reset for new day
-              localStorage.setItem(`orca_free_prompts_${data.session.user.id}`, JSON.stringify({ date: today, count: 0 }))
-              setFreePromptsUsed(0)
+          const userIsPremium = profile?.plan === 'premium' || profile?.plan === 'pro'
+          setIsPremium(userIsPremium)
+          console.log('✅ isPremium set to:', userIsPremium)
+          
+          // Only track free prompts for NON-premium users
+          if (!userIsPremium) {
+            const today = new Date().toDateString()
+            const stored = localStorage.getItem(`orca_free_prompts_${data.session.user.id}`)
+            if (stored) {
+              const { date, count } = JSON.parse(stored)
+              if (date === today) {
+                setFreePromptsUsed(count)
+              } else {
+                // Reset for new day
+                localStorage.setItem(`orca_free_prompts_${data.session.user.id}`, JSON.stringify({ date: today, count: 0 }))
+                setFreePromptsUsed(0)
+              }
             }
+          } else {
+            // Premium users: reset free prompts counter (not used)
+            setFreePromptsUsed(0)
           }
         } catch (err) {
           console.error('Error checking premium status:', err)
