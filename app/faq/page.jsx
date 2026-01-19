@@ -194,11 +194,11 @@ const faqData = [
       },
       {
         question: 'What is whale activity?',
-        answer: 'Whale activity refers to large cryptocurrency transactions made by individuals or entities holding significant amounts of crypto (known as "whales"). These transactions can indicate market sentiment and potential price movements. Sonar Tracker monitors transactions over $10,000 across Ethereum and other major blockchains.'
+        answer: 'Whale activity refers to large cryptocurrency transactions made by individuals or entities holding significant amounts of crypto (known as "whales"). These transactions can indicate market sentiment and potential price movements. Sonar Tracker monitors transactions over $10,000 across multiple blockchains. Premium subscribers also get access to real-time whale alerts for transactions over $500k from exchanges and known whale addresses.'
       },
       {
         question: 'Do I need a subscription to use Sonar Tracker?',
-        answer: 'Free users can access limited features including the landing page, news, and Orca 2.0 basic analysis. A Premium subscription (£5/month) unlocks full access to the real-time dashboard, detailed statistics, advanced filters, CSV exports, and premium Orca insights.'
+        answer: 'Free users can access news, market pulse, top net inflows/outflows, and basic dashboard views. A Premium subscription ($7.99/month) unlocks full access to advanced analytics, real-time whale alerts, Orca 2.0 AI advisor, detailed statistics, CSV exports, custom notifications, and priority support.'
       }
     ]
   },
@@ -219,7 +219,7 @@ const faqData = [
       },
       {
         question: 'How often is data updated?',
-        answer: 'Whale transaction data is updated every 15 minutes to ensure near real-time accuracy. Price data from CoinGecko is updated every 5 minutes. News articles from CryptoPanic are fetched continuously and displayed as they\'re published.'
+        answer: 'Whale transaction data is updated every 15 minutes to ensure near real-time accuracy. Premium whale alerts sync every 10 minutes with Whale Alert API for the latest large transactions. Price data from CoinGecko is updated every 15 minutes. News articles from CryptoPanic are fetched continuously and displayed as they\'re published.'
       },
       {
         question: 'Can I export data?',
@@ -232,7 +232,7 @@ const faqData = [
     items: [
       {
         question: 'How much does Premium cost?',
-        answer: 'Sonar Tracker Premium costs £5 per month, billed monthly. You can cancel anytime with no long-term commitment. All payments are processed securely through Stripe.'
+        answer: 'Sonar Tracker Pro costs $7.99 per month, billed monthly. You can cancel anytime with no long-term commitment. All payments are processed securely through Stripe.'
       },
       {
         question: 'How do I subscribe to Premium?',
@@ -248,7 +248,7 @@ const faqData = [
       },
       {
         question: 'Will my subscription auto-renew?',
-        answer: 'Yes, subscriptions automatically renew monthly unless cancelled. You\'ll be charged £5 on the same day each month. You can cancel at any time before your next billing date to avoid being charged.'
+        answer: 'Yes, subscriptions automatically renew monthly unless cancelled. You\'ll be charged $7.99 on the same day each month. You can cancel at any time before your next billing date to avoid being charged.'
       }
     ]
   },
@@ -257,7 +257,7 @@ const faqData = [
     items: [
       {
         question: 'Which blockchains do you support?',
-        answer: 'Currently, Sonar Tracker primarily monitors Ethereum blockchain transactions. We\'re actively working on expanding support to Binance Smart Chain (BSC), Polygon, Avalanche, and other major EVM-compatible chains. Updates will be announced on our platform.'
+        answer: 'Sonar Tracker monitors whale transactions across Ethereum (ERC-20 tokens), Bitcoin, Tron, Ripple, Binance Smart Chain, Polygon, Avalanche, and other major blockchains. Our whale alert system tracks large transactions ($500k+) from exchanges, known whale addresses, and significant wallet movements. Premium subscribers get real-time access to verified whale transactions powered by Whale Alert API.'
       },
       {
         question: 'What is the minimum transaction size tracked?',

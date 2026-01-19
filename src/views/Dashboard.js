@@ -885,6 +885,9 @@ const Dashboard = ({ isPremium = false }) => {
 
       {/* Buy vs Sell section removed per request */}
 
+      {/* Premium-only sections - wrapped with conditional rendering */}
+      {isPremium ? (
+        <>
       <GridContainer>
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
                      <StatsCard>
@@ -1570,6 +1573,43 @@ const TopWhalesSection = () => {
         )}
       </DashboardCard>
     </motion.div>
+        </>
+      ) : (
+        <motion.div 
+          variants={containerVariants} 
+          initial="hidden" 
+          animate="visible"
+          style={{ marginTop: '2rem' }}
+        >
+          <PremiumCard
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <PremiumIcon>🔒</PremiumIcon>
+            <PremiumTitle>Unlock Advanced Analytics</PremiumTitle>
+            <PremiumDescription>
+              Upgrade to Sonar Pro to access advanced whale analytics, sentiment analysis, 
+              risk assessments, and comprehensive market insights.
+            </PremiumDescription>
+            <PremiumFeatureList>
+              <li>Real-time whale activity heatmaps</li>
+              <li>Advanced sentiment & risk analysis</li>
+              <li>Top buy/sell percentage tracking</li>
+              <li>Blockchain distribution insights</li>
+              <li>High-value transaction monitoring</li>
+              <li>Custom whale alerts & notifications</li>
+            </PremiumFeatureList>
+            <PremiumButton
+              onClick={() => window.location.href = '/subscribe'}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Upgrade to Pro - $7.99/month
+            </PremiumButton>
+          </PremiumCard>
+        </motion.div>
+      )}
   )
 }
 

@@ -596,7 +596,8 @@ export default function SubscribePage() {
             </PriceContainer>
             <FeatureList>
               <li>Access to News & Market Updates</li>
-              <li>Basic Statistics View</li>
+              <li>Market Pulse Dashboard</li>
+              <li>Top Net Inflows & Outflows</li>
               <li>Limited Transaction History</li>
               <li>Community Support</li>
             </FeatureList>
@@ -625,12 +626,12 @@ export default function SubscribePage() {
               </Price>
             </PriceContainer>
             <FeatureList>
-              <li>Real-time whale transaction tracking (24/7)</li>
+              <li>Real-time whale transaction tracking (24/7) - ERC-20 & major chains</li>
               <li>Advanced token analytics & heatmaps</li>
               <li>Risk assessment & sentiment analysis</li>
               <li>Complete transaction history</li>
               <li>AI Advisor (Orca 2.0) with premium prompts</li>
-              <li>Custom alerts & notifications</li>
+              <li>Custom whale alerts & notifications</li>
               <li>Priority support</li>
               <li>Export data to CSV</li>
             </FeatureList>
@@ -693,7 +694,7 @@ export default function SubscribePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <h3>Real-Time Tracking</h3>
-              <p>Monitor whale transactions as they happen across Ethereum, Polygon, Avalanche, and more. Never miss a significant market move.</p>
+              <p>Monitor whale transactions as they happen across Ethereum (ERC-20), Bitcoin, Tron, Ripple, and other major blockchains. Track large movements from exchanges, wallets, and whale addresses. Never miss a significant market move.</p>
             </FeatureCard>
 
             <FeatureCard
@@ -731,8 +732,8 @@ export default function SubscribePage() {
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              <h3>Custom Alerts</h3>
-              <p>Set up personalized notifications for specific tokens, whale addresses, or transaction thresholds that matter to you.</p>
+              <h3>Custom Whale Alerts</h3>
+              <p>Get real-time notifications for large transactions ($500k+) on major blockchains. Track specific tokens, whale addresses, or set custom USD thresholds. Powered by Whale Alert API for accurate, verified whale movements.</p>
             </FeatureCard>
 
             <FeatureCard
@@ -806,11 +807,11 @@ export default function SubscribePage() {
                 </tr>
                 <tr>
                   <td>AI Advisor (Orca 2.0)</td>
-                  <td>Basic</td>
-                  <td><span className="check">✓ Premium Prompts</span></td>
+                  <td><span className="cross">✗</span></td>
+                  <td><span className="check">✓ Full Access</span></td>
                 </tr>
                 <tr>
-                  <td>Custom Alerts & Notifications</td>
+                  <td>Custom Whale Alerts & Notifications</td>
                   <td><span className="cross">✗</span></td>
                   <td><span className="check">✓</span></td>
                 </tr>
@@ -885,7 +886,7 @@ export default function SubscribePage() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                   >
-                    <p>Our whale intelligence algorithm runs continuously, processing blockchain data every 15 minutes. Pro subscribers get real-time access to the latest whale transactions and market insights as soon as they're detected and verified.</p>
+                    <p>Our whale intelligence system syncs every 10 minutes with Whale Alert API for real-time transaction data. We track ERC-20 tokens and major blockchain movements ($500k+ transactions). Pro subscribers get instant access to verified whale transactions from exchanges, known addresses, and large wallet movements as they happen.</p>
                   </FAQAnswer>
                 )}
               </AnimatePresence>
@@ -905,7 +906,7 @@ export default function SubscribePage() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                   >
-                    <p>Currently, we track whale transactions on Ethereum, Polygon, Avalanche, and Binance Smart Chain. We're constantly expanding our blockchain coverage based on user demand and market significance.</p>
+                    <p>We track whale transactions on Ethereum (ERC-20 tokens), Bitcoin, Tron, Ripple, Binance Smart Chain, Polygon, Avalanche, and other major blockchains. Our data focuses on significant transactions ($500k+) from exchanges, known whale addresses, and large wallet movements. Coverage is continuously updated based on market significance.</p>
                   </FAQAnswer>
                 )}
               </AnimatePresence>

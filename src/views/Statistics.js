@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
 import Link from 'next/link'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const StatisticsContainer = styled.div`
   min-height: 100vh;
@@ -367,6 +368,7 @@ export default function Statistics() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [isPremium, setIsPremium] = useState(false)
 
   const debounceRef = useRef(null)
   const prevFiltersRef = useRef({ token:'', side:'', chain:'', minUsd:'', maxUsd:'', sinceHours:24 })
@@ -398,6 +400,13 @@ export default function Statistics() {
   }
 
   async function exportToCSV() {
+    // Check if user is premium
+    if (!isPremium) {
+      alert('CSV Export is a premium feature. Please upgrade to Pro to export data.')
+      window.location.href = '/subscribe'
+      return
+    }
+    
     setExporting(true)
     try {
       // Fetch up to 10,000 records for export
@@ -461,14 +470,34 @@ export default function Statistics() {
   }
 
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search)
-      const qToken = params.get('token')
-      const qSince = params.get('sinceHours')
-      if (qToken) setToken(qToken.toUpperCase())
-      if (qSince && !Number.isNaN(Number(qSince))) setSinceHours(Number(qSince))
-    } catch {}
-    fetchTrades(1)
+    const init = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const qToken = params.get('token')
+        const qSince = params.get('sinceHours')
+        if (qToken) setToken(qToken.toUpperCase())
+        if (qSince && !Number.isNaN(Number(qSince))) setSinceHours(Number(qSince))
+      } catch {}
+      
+      // Check premium status
+      try {
+        const sb = supabaseBrowser()
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.user) {
+          const { data: profile } = await sb
+            .from('profiles')
+            .select('plan')
+            .eq('id', session.user.id)
+            .single()
+          setIsPremium(profile?.plan === 'premium')
+        }
+      } catch (err) {
+        console.error('Error checking premium status:', err)
+      }
+      
+      fetchTrades(1)
+    }
+    init()
   }, [])
 
   // Debounced refetch on changes
@@ -503,11 +532,12 @@ export default function Statistics() {
             disabled={exporting || loading || rows.length === 0}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            title={!isPremium ? 'Premium feature - Upgrade to export data' : 'Export data to CSV'}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            {exporting ? 'Exporting...' : 'Export CSV'}
+            {exporting ? 'Exporting...' : isPremium ? 'Export CSV' : '🔒 Export CSV (Pro)'}
           </ExportButton>
         </Presets>
         <Toolbar>

@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/fetch-prices",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/whale-alerts/sync",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

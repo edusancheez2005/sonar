@@ -42,6 +42,122 @@ const pulse = keyframes`
   50% { opacity: 0.5; }
 `
 
+// Premium Overlay
+const PremiumOverlay = styled(motion.div)`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 22, 33, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+`
+
+const PremiumCard = styled(motion.div)`
+  background: linear-gradient(135deg, rgba(26, 40, 56, 0.98) 0%, rgba(15, 25, 38, 0.98) 100%);
+  border: 2px solid ${colors.primary};
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(54, 166, 186, 0.3), 0 0 100px rgba(54, 166, 186, 0.1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(54, 166, 186, 0.08) 0%, transparent 70%);
+    animation: ${pulse} 4s ease-in-out infinite;
+  }
+`
+
+const PremiumIcon = styled.div`
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  filter: drop-shadow(0 4px 12px rgba(54, 166, 186, 0.4));
+  position: relative;
+  z-index: 1;
+`
+
+const PremiumTitle = styled.h2`
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+`
+
+const PremiumDescription = styled.p`
+  font-size: 1.1rem;
+  color: ${colors.textSecondary};
+  margin-bottom: 2rem;
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
+`
+
+const PremiumFeatureList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+  
+  li {
+    color: ${colors.textSecondary};
+    padding: 0.75rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+    
+    &::before {
+      content: '✓';
+      color: ${colors.primary};
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+  }
+`
+
+const PremiumButton = styled(motion.a)`
+  display: inline-block;
+  background: linear-gradient(135deg, ${colors.primary} 0%, #5dd5ed 100%);
+  color: white;
+  padding: 1rem 2.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 15px rgba(54, 166, 186, 0.3);
+  position: relative;
+  z-index: 1;
+  
+  &:hover {
+    box-shadow: 0 6px 20px rgba(54, 166, 186, 0.4);
+  }
+`
+
 // Main Container
 const ChatContainer = styled.div`
   display: flex;
@@ -483,6 +599,8 @@ export default function ClientOrca() {
   const [loading, setLoading] = useState(false)
   const [quota, setQuota] = useState(null)
   const [session, setSession] = useState(null)
+  const [isPremium, setIsPremium] = useState(false)
+  const [checkingPremium, setCheckingPremium] = useState(true)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -495,12 +613,29 @@ export default function ClientOrca() {
     scrollToBottom()
   }, [messages, loading])
 
-  // Get session
+  // Get session and check premium status
   useEffect(() => {
     const getSession = async () => {
       const sb = supabaseBrowser()
       const { data } = await sb.auth.getSession()
       setSession(data.session)
+      
+      // Check premium status
+      if (data.session?.user) {
+        try {
+          const { data: profile } = await sb
+            .from('profiles')
+            .select('plan')
+            .eq('id', data.session.user.id)
+            .single()
+          
+          setIsPremium(profile?.plan === 'premium')
+        } catch (err) {
+          console.error('Error checking premium status:', err)
+          setIsPremium(false)
+        }
+      }
+      setCheckingPremium(false)
     }
     getSession()
   }, [])
@@ -597,8 +732,26 @@ export default function ClientOrca() {
     })
   }
 
+  // Show loading while checking premium status
+  if (checkingPremium) {
+    return (
+      <ChatContainer>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '100%',
+          color: colors.textSecondary 
+        }}>
+          Loading...
+        </div>
+      </ChatContainer>
+    )
+  }
+
   return (
-    <ChatContainer>
+    <>
+      <ChatContainer style={{ filter: !isPremium ? 'blur(8px)' : 'none', pointerEvents: !isPremium ? 'none' : 'auto' }}>
       {/* Messages Area */}
       <MessagesArea>
         {messages.length === 0 ? (
@@ -806,5 +959,42 @@ export default function ClientOrca() {
         </InputForm>
       </InputArea>
     </ChatContainer>
+    
+    {/* Premium Overlay for Free Users */}
+    {!isPremium && (
+      <PremiumOverlay
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <PremiumCard
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <PremiumIcon>🐋</PremiumIcon>
+          <PremiumTitle>ORCA AI 2.0 - Premium Feature</PremiumTitle>
+          <PremiumDescription>
+            Unlock the full power of ORCA AI with premium access. Get deep market insights, 
+            whale analytics, and AI-powered trading intelligence.
+          </PremiumDescription>
+          <PremiumFeatureList>
+            <li>Unlimited AI conversations with ORCA 2.0</li>
+            <li>Real-time whale transaction analysis</li>
+            <li>Advanced sentiment & social insights</li>
+            <li>Custom alerts & notifications</li>
+            <li>Priority support & updates</li>
+          </PremiumFeatureList>
+          <PremiumButton
+            href="/subscribe"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Upgrade to Pro - $7.99/month
+          </PremiumButton>
+        </PremiumCard>
+      </PremiumOverlay>
+    )}
+    </>
   )
 } 
