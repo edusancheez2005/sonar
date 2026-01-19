@@ -36,18 +36,15 @@ export async function GET(req) {
       )
     }
     
-    // Check if user has premium subscription
-    const { isActive } = await checkUserSubscription(userId)
-    
-    if (!isActive) {
-      return NextResponse.json(
-        { 
-          error: 'Premium subscription required',
-          message: 'Whale alerts are a premium feature. Upgrade to Sonar Pro to access real-time whale transaction data.'
-        },
-        { status: 403 }
-      )
-    }
+    // 🎉 DEMO PHASE: Everyone gets access to whale alerts
+    // To re-enable premium check later, uncomment below:
+    // const { isActive } = await checkUserSubscription(userId)
+    // if (!isActive) {
+    //   return NextResponse.json(
+    //     { error: 'Premium subscription required', message: 'Whale alerts are a premium feature.' },
+    //     { status: 403 }
+    //   )
+    // }
     
     // Parse query parameters
     const { searchParams } = new URL(req.url)
