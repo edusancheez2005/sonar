@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
+import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import Link from 'next/link'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import {
@@ -1292,6 +1293,9 @@ const Dashboard = ({ isPremium = false }) => {
 
       {/* Top 10 Whales (7 Days) Section */}
       <TopWhalesSection />
+
+      {/* Whale Alerts - Real-time large transactions */}
+      <WhaleAlertsCard isPremium={isPremium} />
         </>
       ) : (
         <motion.div 

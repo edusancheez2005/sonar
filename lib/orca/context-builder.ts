@@ -29,6 +29,7 @@ interface OrcaContext {
   sentiment: SentimentData
   social: SocialData
   news: NewsData
+  whaleAlerts?: WhaleAlertsData
 }
 
 interface PriceData {
@@ -82,6 +83,14 @@ interface NewsData {
   total_count: number
 }
 
+interface WhaleAlertsData {
+  recent_alerts: any[]
+  total_volume_usd: number
+  accumulation_signals: number // Exchange -> Wallet movements
+  distribution_signals: number // Wallet -> Exchange movements
+  notable_movements: string[]
+}
+
 /**
  * Main function: Build complete ORCA context for a ticker
  */
@@ -99,13 +108,15 @@ export async function buildOrcaContext(
     sentimentData,
     newsData,
     priceData,
-    socialData
+    socialData,
+    whaleAlertsData
   ] = await Promise.all([
     fetchWhaleActivity(ticker, supabase),
     fetchSentiment(ticker, supabase),
     fetchNews(ticker, supabase),
     fetchPriceData(ticker, supabase),
-    fetchLunarCrushAI(ticker)
+    fetchLunarCrushAI(ticker),
+    fetchWhaleAlerts(ticker, supabase)
   ])
   
   return {
@@ -114,7 +125,8 @@ export async function buildOrcaContext(
     whales: processWhaleData(whaleData),
     sentiment: processSentimentData(sentimentData),
     social: processSocialData(socialData),
-    news: processNewsData(newsData)
+    news: processNewsData(newsData),
+    whaleAlerts: processWhaleAlertsData(whaleAlertsData)
   }
 }
 
@@ -714,6 +726,104 @@ function processWhaleData(whaleData: any[]): WhaleData {
 }
 
 /**
+ * Fetch whale alerts from Whale Alert API data
+ */
+async function fetchWhaleAlerts(ticker: string, supabase: any): Promise<any[]> {
+  try {
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    
+    // Query whale_alerts table for this token
+    const { data, error } = await supabase
+      .from('whale_alerts')
+      .select('*')
+      .ilike('symbol', ticker.toUpperCase())
+      .gte('timestamp', last24Hours)
+      .order('amount_usd', { ascending: false })
+      .limit(20)
+    
+    if (error) {
+      console.error('Error fetching whale alerts:', error)
+      return []
+    }
+    
+    console.log(`📡 Whale Alerts for ${ticker}: ${data?.length || 0} found`)
+    return data || []
+  } catch (error) {
+    console.error('Error in fetchWhaleAlerts:', error)
+    return []
+  }
+}
+
+/**
+ * Process whale alerts data into structured format
+ */
+function processWhaleAlertsData(alertsData: any[]): WhaleAlertsData {
+  if (!alertsData || alertsData.length === 0) {
+    return {
+      recent_alerts: [],
+      total_volume_usd: 0,
+      accumulation_signals: 0,
+      distribution_signals: 0,
+      notable_movements: []
+    }
+  }
+  
+  let total_volume_usd = 0
+  let accumulation_signals = 0
+  let distribution_signals = 0
+  const notable_movements: string[] = []
+  
+  for (const alert of alertsData) {
+    total_volume_usd += alert.amount_usd || 0
+    
+    // Detect accumulation (exchange to wallet)
+    if (alert.from_owner_type === 'exchange' && alert.to_owner_type !== 'exchange') {
+      accumulation_signals++
+      if (alert.amount_usd >= 10000000) {
+        notable_movements.push(
+          `🟢 ACCUMULATION: ${formatLargeNumber(alert.amount_usd)} ${alert.symbol} moved from ${alert.from_owner || 'exchange'} to wallet`
+        )
+      }
+    }
+    
+    // Detect distribution (wallet to exchange)
+    if (alert.to_owner_type === 'exchange' && alert.from_owner_type !== 'exchange') {
+      distribution_signals++
+      if (alert.amount_usd >= 10000000) {
+        notable_movements.push(
+          `🔴 DISTRIBUTION: ${formatLargeNumber(alert.amount_usd)} ${alert.symbol} moved to ${alert.to_owner || 'exchange'} from wallet`
+        )
+      }
+    }
+  }
+  
+  return {
+    recent_alerts: alertsData.slice(0, 10).map(a => ({
+      symbol: a.symbol,
+      amount_usd: a.amount_usd,
+      from: a.from_owner || 'unknown',
+      to: a.to_owner || 'unknown',
+      type: a.from_owner_type === 'exchange' && a.to_owner_type !== 'exchange' ? 'accumulation'
+            : a.to_owner_type === 'exchange' && a.from_owner_type !== 'exchange' ? 'distribution'
+            : 'transfer',
+      blockchain: a.blockchain,
+      timestamp: a.timestamp
+    })),
+    total_volume_usd,
+    accumulation_signals,
+    distribution_signals,
+    notable_movements: notable_movements.slice(0, 5)
+  }
+}
+
+function formatLargeNumber(num: number): string {
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`
+  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`
+  return `$${num.toFixed(2)}`
+}
+
+/**
  * Process sentiment data
  */
 function processSentimentData(sentimentData: any[]): SentimentData {
@@ -843,6 +953,20 @@ WHALE ACTIVITY: Not available for ${context.ticker} (ERC-20 only for now, more c
 Do NOT show whale data in your response. Skip this section entirely.
 `
 
+  // Build whale alerts section (from Whale Alert API)
+  const whaleAlertsSection = context.whaleAlerts && context.whaleAlerts.recent_alerts.length > 0 ? `
+WHALE ALERT API DATA (Multi-Chain - $500k+ transactions):
+Total 24h Volume: ${formatLargeNumber(context.whaleAlerts.total_volume_usd)}
+Accumulation Signals: ${context.whaleAlerts.accumulation_signals} (exchange to wallet movements)
+Distribution Signals: ${context.whaleAlerts.distribution_signals} (wallet to exchange movements)
+Notable Movements:
+${context.whaleAlerts.notable_movements.join('\n') || 'No major movements detected'}
+Recent Large Transactions:
+${context.whaleAlerts.recent_alerts.slice(0, 5).map((a: any) => 
+  `- ${formatLargeNumber(a.amount_usd)} ${a.symbol} | ${a.type.toUpperCase()} | ${a.from} → ${a.to} | ${a.blockchain}`
+).join('\n')}
+` : ''
+
   return `User question: "${userMessage}"
 
 CONTEXT FOR ${context.ticker}
@@ -858,6 +982,7 @@ ${context.price.ath ? `All Time High: ${formatCurrency(context.price.ath)}${cont
 ${context.price.ath_distance !== null ? `Distance from ATH: ${formatPercentage(context.price.ath_distance)} ${context.price.ath_distance < -50 ? '[SIGNIFICANT DISCOUNT]' : context.price.ath_distance < -30 ? '[NOTABLE DISCOUNT]' : context.price.ath_distance > -10 ? '[NEAR ATH]' : ''}` : ''}
 ${context.price.market_cap_rank ? `Market Cap Rank: #${context.price.market_cap_rank}` : ''}
 ${whaleSection}
+${whaleAlertsSection}
 SENTIMENT ANALYSIS (Multi-Source):
 Combined Score: ${context.sentiment.current.toFixed(2)} (scale: -1 bearish to +1 bullish)
 Provider Sentiment: ${context.sentiment.provider_sentiment?.toFixed(2) || 'N/A'}
@@ -875,7 +1000,8 @@ Supportive Themes: ${context.social.supportive_themes.join(', ') || 'None detect
 Critical Themes: ${context.social.critical_themes.join(', ') || 'None detected'}
 
 GLOBAL MARKET CONTEXT:
-Consider: Interest rates, Fed policy, geopolitical events, risk appetite, Bitcoin dominance, upcoming catalysts
+Consider: Interest rates, Fed policy, geopolitical events (e.g. US-Iran tensions, sanctions), risk appetite, Bitcoin dominance, upcoming catalysts
+Current macro trends: Dollar strength/weakness, institutional adoption, regulatory developments
 
 NEWS ARTICLES (Include 5 in your response with impact analysis):
 ${formatNewsHeadlinesDetailed(context.news.headlines.slice(0, 10))}
@@ -889,8 +1015,9 @@ INSTRUCTIONS:
 4. ${isERC20 ? 'Include whale data with exact net flow amount' : 'SKIP whale data entirely (not available for this token)'}
 5. Include 5 news articles as markdown links with WHY each impacts sentiment
 6. Analyze short-term (days/weeks) and long-term (months/years) impact
-7. Be conversational and ask a follow-up question
-8. End with disclaimer
+7. CONNECT to macro events and geopolitical factors when relevant
+8. Be conversational and ask a follow-up question
+9. End with disclaimer
 
 User's question: "${userMessage}"`
 }

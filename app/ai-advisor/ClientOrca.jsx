@@ -597,12 +597,25 @@ export default function ClientOrca() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingStep, setLoadingStep] = useState('')
   const [quota, setQuota] = useState(null)
   const [session, setSession] = useState(null)
   const [isPremium, setIsPremium] = useState(false)
   const [checkingPremium, setCheckingPremium] = useState(true)
+  const [freePromptsUsed, setFreePromptsUsed] = useState(0)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+
+  // Loading steps for animation
+  const loadingSteps = [
+    '🔍 Fetching latest market data...',
+    '📰 Analyzing breaking news & headlines...',
+    '🐋 Checking whale activity patterns...',
+    '📊 Processing social sentiment data...',
+    '🌐 Gathering macro-economic indicators...',
+    '🧠 ORCA is forming insights...'
+  ]
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -630,6 +643,20 @@ export default function ClientOrca() {
             .single()
           
           setIsPremium(profile?.plan === 'premium')
+          
+          // Load free prompts used today from localStorage
+          const today = new Date().toDateString()
+          const stored = localStorage.getItem(`orca_free_prompts_${data.session.user.id}`)
+          if (stored) {
+            const { date, count } = JSON.parse(stored)
+            if (date === today) {
+              setFreePromptsUsed(count)
+            } else {
+              // Reset for new day
+              localStorage.setItem(`orca_free_prompts_${data.session.user.id}`, JSON.stringify({ date: today, count: 0 }))
+              setFreePromptsUsed(0)
+            }
+          }
         } catch (err) {
           console.error('Error checking premium status:', err)
           setIsPremium(false)
@@ -639,6 +666,24 @@ export default function ClientOrca() {
     }
     getSession()
   }, [])
+
+  // Animate loading steps
+  useEffect(() => {
+    if (!loading) {
+      setLoadingStep('')
+      return
+    }
+    
+    let stepIndex = 0
+    setLoadingStep(loadingSteps[0])
+    
+    const interval = setInterval(() => {
+      stepIndex = (stepIndex + 1) % loadingSteps.length
+      setLoadingStep(loadingSteps[stepIndex])
+    }, 2000) // Change step every 2 seconds
+    
+    return () => clearInterval(interval)
+  }, [loading])
 
   const handleSubmit = async (e, exampleQuery = null) => {
     if (e) e.preventDefault()
@@ -650,6 +695,21 @@ export default function ClientOrca() {
     if (!session) {
       alert('Please log in to use ORCA AI')
       window.location.href = '/auth/signin?redirect=/ai-advisor'
+      return
+    }
+
+    // Check free user quota (1 free prompt, then need premium)
+    const FREE_PROMPT_LIMIT = 1
+    const PREMIUM_DAILY_LIMIT = 5
+    
+    if (!isPremium && freePromptsUsed >= FREE_PROMPT_LIMIT) {
+      setShowUpgradeModal(true)
+      return
+    }
+    
+    // Check premium daily limit
+    if (isPremium && quota?.used >= PREMIUM_DAILY_LIMIT) {
+      alert(`You've reached your daily limit of ${PREMIUM_DAILY_LIMIT} prompts. Try again tomorrow!`)
       return
     }
 
@@ -707,6 +767,14 @@ export default function ClientOrca() {
 
       setMessages(prev => [...prev, orcaMessage])
       setQuota(data.quota)
+      
+      // Track free prompt usage for non-premium users
+      if (!isPremium && session?.user) {
+        const newCount = freePromptsUsed + 1
+        setFreePromptsUsed(newCount)
+        const today = new Date().toDateString()
+        localStorage.setItem(`orca_free_prompts_${session.user.id}`, JSON.stringify({ date: today, count: newCount }))
+      }
 
     } catch (error) {
       console.error('Error:', error)
@@ -751,7 +819,7 @@ export default function ClientOrca() {
 
   return (
     <>
-      <ChatContainer style={{ filter: !isPremium ? 'blur(8px)' : 'none', pointerEvents: !isPremium ? 'none' : 'auto' }}>
+      <ChatContainer>
       {/* Messages Area */}
       <MessagesArea>
         {messages.length === 0 ? (
@@ -915,7 +983,7 @@ export default function ClientOrca() {
           </>
         )}
 
-        {/* Loading indicator */}
+        {/* Loading indicator with step-by-step animation */}
         {loading && (
           <MessageBubble
             $isUser={false}
@@ -925,12 +993,33 @@ export default function ClientOrca() {
             <Avatar $isUser={false}><WhaleIcon /></Avatar>
             <MessageContent>
               <SenderName $isUser={false}>ORCA</SenderName>
-              <TypingIndicator>
-                <span />
-                <span />
-                <span />
-              </TypingIndicator>
-              <MessageTime>Analyzing...</MessageTime>
+              <div style={{ 
+                background: `linear-gradient(135deg, ${colors.bgCardLight} 0%, ${colors.secondary} 100%)`,
+                borderRadius: '12px',
+                padding: '1rem 1.25rem',
+                marginBottom: '0.5rem'
+              }}>
+                <motion.div
+                  key={loadingStep}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  style={{
+                    color: colors.primary,
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    marginBottom: '0.75rem'
+                  }}
+                >
+                  {loadingStep}
+                </motion.div>
+                <TypingIndicator>
+                  <span />
+                  <span />
+                  <span />
+                </TypingIndicator>
+              </div>
+              <MessageTime>Deep analysis in progress...</MessageTime>
             </MessageContent>
           </MessageBubble>
         )}
@@ -941,7 +1030,13 @@ export default function ClientOrca() {
       {/* Input Area */}
       <InputArea>
         <Disclaimer>
-          ORCA provides educational analysis only. Not financial advice.
+          {!isPremium && freePromptsUsed === 0 ? (
+            <span style={{ color: colors.primary }}>✨ You have 1 free ORCA prompt! Try it now.</span>
+          ) : !isPremium && freePromptsUsed >= 1 ? (
+            <span style={{ color: colors.sentimentNeutral }}>🔒 Free prompt used. Upgrade to Pro for 5 prompts/day!</span>
+          ) : (
+            'ORCA provides educational analysis only. Not financial advice.'
+          )}
         </Disclaimer>
         <InputForm onSubmit={handleSubmit}>
           <Input
@@ -949,40 +1044,42 @@ export default function ClientOrca() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about any cryptocurrency..."
-            disabled={loading}
+            placeholder={!isPremium && freePromptsUsed >= 1 ? "Upgrade to continue chatting..." : "Ask about any cryptocurrency..."}
+            disabled={loading || (!isPremium && freePromptsUsed >= 1)}
           />
-          <SendButton type="submit" disabled={loading || !input.trim()}>
-            {loading ? 'Analyzing' : 'Send'}
-            <span className="arrow">→</span>
+          <SendButton type="submit" disabled={loading || !input.trim() || (!isPremium && freePromptsUsed >= 1)}>
+            {loading ? 'Analyzing' : !isPremium && freePromptsUsed >= 1 ? '🔒' : 'Send'}
+            {loading || (!isPremium && freePromptsUsed >= 1) ? null : <span className="arrow">→</span>}
           </SendButton>
         </InputForm>
       </InputArea>
     </ChatContainer>
     
-    {/* Premium Overlay for Free Users */}
-    {!isPremium && (
+    {/* Upgrade Modal - Shows after free prompt is used */}
+    {showUpgradeModal && (
       <PremiumOverlay
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
+        onClick={() => setShowUpgradeModal(false)}
       >
         <PremiumCard
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
+          onClick={(e) => e.stopPropagation()}
         >
           <PremiumIcon>🐋</PremiumIcon>
-          <PremiumTitle>ORCA AI 2.0 - Premium Feature</PremiumTitle>
+          <PremiumTitle>You've Used Your Free Preview!</PremiumTitle>
           <PremiumDescription>
-            Unlock the full power of ORCA AI with premium access. Get deep market insights, 
-            whale analytics, and AI-powered trading intelligence.
+            You've experienced the power of ORCA AI with your free prompt. 
+            Upgrade to Pro for unlimited conversations and deeper market insights.
           </PremiumDescription>
           <PremiumFeatureList>
-            <li>Unlimited AI conversations with ORCA 2.0</li>
+            <li>5 AI conversations per day with ORCA 2.0</li>
             <li>Real-time whale transaction analysis</li>
             <li>Advanced sentiment & social insights</li>
-            <li>Custom alerts & notifications</li>
+            <li>Custom whale alerts & notifications</li>
             <li>Priority support & updates</li>
           </PremiumFeatureList>
           <PremiumButton
@@ -992,6 +1089,18 @@ export default function ClientOrca() {
           >
             Upgrade to Pro - $7.99/month
           </PremiumButton>
+          <div 
+            style={{ 
+              marginTop: '1rem', 
+              color: colors.textSecondary, 
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}
+            onClick={() => setShowUpgradeModal(false)}
+          >
+            Maybe later
+          </div>
         </PremiumCard>
       </PremiumOverlay>
     )}
