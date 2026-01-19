@@ -679,6 +679,9 @@ export default function SubscribePage() {
             Instant Access
           </TrustBadge>
         </TrustBadges>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.6, marginTop: '0.75rem', textAlign: 'center' }}>
+          All sales are final. No refunds.
+        </p>
 
         {/* Features Section */}
         <InfoSection>
@@ -974,7 +977,7 @@ export default function SubscribePage() {
 
             <FAQItem onClick={() => setOpenFAQ(openFAQ === 7 ? null : 7)}>
               <FAQQuestion className={openFAQ === 7 ? 'open' : ''}>
-                <h3>Do you offer refunds?</h3>
+                <h3>What is your refund policy?</h3>
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -986,7 +989,7 @@ export default function SubscribePage() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                   >
-                    <p>If you're not satisfied with Sonar Premium, contact us at eduardo@sonartracker.io within 7 days of your subscription start date, and we'll process a full refund. We want you to be completely satisfied with our service.</p>
+                    <p>All subscriptions are non-refundable. You can cancel your subscription at any time and continue to access Premium features until the end of your current billing period. For any questions, contact us at eduardo@sonartracker.io.</p>
                   </FAQAnswer>
                 )}
               </AnimatePresence>
