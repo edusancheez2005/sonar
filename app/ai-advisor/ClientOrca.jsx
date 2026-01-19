@@ -642,7 +642,7 @@ export default function ClientOrca() {
             .eq('id', data.session.user.id)
             .single()
           
-          setIsPremium(profile?.plan === 'premium')
+          setIsPremium(profile?.plan === 'premium' || profile?.plan === 'pro')
           
           // Load free prompts used today from localStorage
           const today = new Date().toDateString()

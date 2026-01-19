@@ -377,7 +377,7 @@ export default function WhaleAlertsCard({ isPremium = false }) {
         <PremiumLock>
           <h3>Premium Feature</h3>
           <p>
-            Whale Alerts track large cryptocurrency transactions ($50,000+) in real-time. 
+            Whale Alerts track large cryptocurrency transactions ($500,000+) in real-time. 
             See when whales are accumulating or distributing, powered by Whale Alert API.
           </p>
           <a href="/subscribe">Upgrade to Premium - $7.99/month</a>

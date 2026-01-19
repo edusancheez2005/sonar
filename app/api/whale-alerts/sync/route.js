@@ -13,24 +13,27 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const WHALE_ALERT_API_KEY = 'ioqSOvTlUjNwbpoK2MFXUxg7LuS1nJaL'
+// Use environment variable or fallback
+const WHALE_ALERT_API_KEY = process.env.WHALE_ALERT_API_KEY || 'ioqSOvTlUjNwbpoK2MFXUxg7LuS1nJaL'
 const WHALE_ALERT_BASE_URL = 'https://api.whale-alert.io/v1'
 
 // Minimum transaction value to track (in USD)
-const MIN_VALUE_USD = 50000 // $50k+
+// Free tier: $500k minimum, paid tier: can be lower
+const MIN_VALUE_USD = 500000 // $500k+ (free tier requirement)
 
 /**
  * Fetch recent whale transactions from Whale Alert API
  */
 async function fetchWhaleAlerts() {
   try {
-    // Get transactions from last 10 minutes
+    // Get transactions from last 1 hour (free tier limit)
     const now = Math.floor(Date.now() / 1000)
-    const start = now - 600 // 10 minutes ago
+    const start = now - 3600 // 1 hour ago (free tier allows 1 hour max)
     
     const url = `${WHALE_ALERT_BASE_URL}/transactions?api_key=${WHALE_ALERT_API_KEY}&start=${start}&min_value=${MIN_VALUE_USD}`
     
     console.log(`📡 Fetching whale alerts from Whale Alert API...`)
+    console.log(`URL: ${WHALE_ALERT_BASE_URL}/transactions?api_key=***&start=${start}&min_value=${MIN_VALUE_USD}`)
     
     const response = await fetch(url, {
       headers: {
@@ -39,6 +42,8 @@ async function fetchWhaleAlerts() {
     })
     
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`API Response: ${errorText}`)
       throw new Error(`Whale Alert API error: ${response.status} ${response.statusText}`)
     }
     
