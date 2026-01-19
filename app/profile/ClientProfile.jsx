@@ -550,17 +550,21 @@ export default function ClientProfile({ email: initialEmail }) {
                   <li>Unlimited access to all features</li>
                 </FeatureList>
                 
-                <Actions>
-                  <Primary onClick={openBillingPortal} disabled={portalLoading}>
-                    {portalLoading ? 'Opening Portal...' : 'Manage Billing & Subscription'}
-                  </Primary>
-                </Actions>
+                <div style={{ 
+                  fontSize: '0.8rem', 
+                  color: 'var(--text-secondary)', 
+                  opacity: 0.7, 
+                  textAlign: 'center',
+                  marginTop: '0.5rem'
+                }}>
+                  For billing inquiries, contact your bank or email eduardo@sonartracker.io
+                </div>
                 
                 <InfoBox>
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  <p>Manage your payment method, view invoices, or cancel anytime. Your billing information is secured by Stripe, the industry standard for payment processing.</p>
+                  <p>Your subscription renews automatically each month. Your payment is securely processed by Stripe, the industry standard for payment processing.</p>
                 </InfoBox>
               </>
             ) : (
