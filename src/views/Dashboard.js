@@ -703,7 +703,7 @@ const Dashboard = ({ isPremium = false }) => {
              margin: '0',
              marginBottom: '0.5rem'
            }}>
-             ⏰ All data represents the last 24 hours of whale activity
+             All data represents the last 24 hours of whale activity
            </p>
            <p style={{ 
              color: 'var(--text-secondary)', 
@@ -711,7 +711,7 @@ const Dashboard = ({ isPremium = false }) => {
              fontWeight: '500',
              margin: '0'
            }}>
-             🐋 Tracking transactions $10,000+
+             Tracking transactions $50,000+
            </p>
          </div>
        </motion.div>

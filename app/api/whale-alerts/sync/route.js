@@ -17,7 +17,7 @@ const WHALE_ALERT_API_KEY = 'ioqSOvTlUjNwbpoK2MFXUxg7LuS1nJaL'
 const WHALE_ALERT_BASE_URL = 'https://api.whale-alert.io/v1'
 
 // Minimum transaction value to track (in USD)
-const MIN_VALUE_USD = 500000 // $500k+
+const MIN_VALUE_USD = 50000 // $50k+
 
 /**
  * Fetch recent whale transactions from Whale Alert API
