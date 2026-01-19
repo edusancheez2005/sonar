@@ -1331,6 +1331,7 @@ const Dashboard = ({ isPremium = false }) => {
       )}
         </BlurredContent>
     </DashboardContainer>
+    </>
   )
 }
 
