@@ -14,11 +14,21 @@ export const dynamic = 'force-dynamic'
 
 // ERC-20 tokens that have whale tracking data
 const ERC20_TOKENS = new Set([
-  'ETH', 'USDT', 'USDC', 'DAI', 'LINK', 'UNI', 'AAVE', 'MKR', 'SNX', 'CRV',
-  'COMP', 'YFI', 'SUSHI', 'LDO', '1INCH', 'DYDX', 'GMX', 'ARB', 'OP', 'IMX',
-  'LRC', 'SHIB', 'PEPE', 'FLOKI', 'BONK', 'MATIC', 'SAND', 'MANA', 'AXS',
-  'GALA', 'ENJ', 'APE', 'FET', 'GRT', 'RNDR', 'OCEAN', 'BUSD', 'WBTC', 'WETH',
-  'stETH', 'rETH', 'cbETH'
+  // Major tokens
+  'ETH', 'USDT', 'USDC', 'DAI', 'WBTC', 'WETH', 'stETH', 'rETH', 'cbETH', 'BUSD',
+  // DeFi
+  'LINK', 'UNI', 'AAVE', 'MKR', 'SNX', 'CRV', 'COMP', 'YFI', 'SUSHI', 'LDO',
+  '1INCH', 'DYDX', 'GMX', 'PENDLE', 'RPL', 'BAL', 'INST',
+  // Layer 2
+  'ARB', 'OP', 'IMX', 'LRC', 'MATIC', 'POL',
+  // Meme coins
+  'SHIB', 'PEPE', 'FLOKI', 'BONK',
+  // Gaming/Metaverse
+  'SAND', 'MANA', 'AXS', 'GALA', 'ENJ', 'APE', 'BLUR', 'MAGIC',
+  // AI/Infrastructure
+  'FET', 'GRT', 'RNDR', 'OCEAN', 'ANKR', 'AGIX', 'TAO',
+  // Other popular ERC-20
+  'BAT', 'CHZ', 'ENS', 'MASK', 'SSV', 'BLUR', 'WLD', 'PYTH', 'JUP'
 ])
 
 // Check if token has whale data
