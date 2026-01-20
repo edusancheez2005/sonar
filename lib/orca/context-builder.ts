@@ -9,6 +9,12 @@ import {
   fetchFreshLunarCrushData, 
   needsFreshData 
 } from './lunarcrush-parser'
+import {
+  fetchLunarCrushEnhanced,
+  interpretGalaxyScore,
+  interpretAltRank,
+  LunarCrushEnhancedData
+} from './lunarcrush-api'
 import { 
   formatWhaleMovesDetailed,
   formatThemes,
@@ -30,6 +36,18 @@ interface OrcaContext {
   social: SocialData
   news: NewsData
   whaleAlerts?: WhaleAlertsData
+  lunarcrush?: LunarCrushMetrics
+}
+
+interface LunarCrushMetrics {
+  galaxy_score: number
+  alt_rank: number
+  percent_change_7d: number  // WoW
+  percent_change_30d: number // MoM
+  volatility: number
+  market_cap_rank: number
+  social_dominance?: number
+  interactions_change_7d?: number
 }
 
 interface PriceData {
@@ -109,14 +127,16 @@ export async function buildOrcaContext(
     newsData,
     priceData,
     socialData,
-    whaleAlertsData
+    whaleAlertsData,
+    lunarcrushData
   ] = await Promise.all([
     fetchWhaleActivity(ticker, supabase),
     fetchSentiment(ticker, supabase),
     fetchNews(ticker, supabase),
     fetchPriceData(ticker, supabase),
     fetchLunarCrushAI(ticker),
-    fetchWhaleAlerts(ticker, supabase)
+    fetchWhaleAlerts(ticker, supabase),
+    fetchLunarCrushEnhanced(ticker)
   ])
   
   return {
@@ -126,7 +146,28 @@ export async function buildOrcaContext(
     sentiment: processSentimentData(sentimentData),
     social: processSocialData(socialData),
     news: processNewsData(newsData),
-    whaleAlerts: processWhaleAlertsData(whaleAlertsData)
+    whaleAlerts: processWhaleAlertsData(whaleAlertsData),
+    lunarcrush: processLunarCrushData(lunarcrushData)
+  }
+}
+
+/**
+ * Process LunarCrush enhanced data
+ */
+function processLunarCrushData(data: LunarCrushEnhancedData): LunarCrushMetrics | undefined {
+  if (!data.coin && !data.topic) {
+    return undefined
+  }
+  
+  return {
+    galaxy_score: data.coin?.galaxy_score || data.topic?.galaxy_score || 0,
+    alt_rank: data.coin?.alt_rank || 0,
+    percent_change_7d: data.coin?.percent_change_7d || 0,
+    percent_change_30d: data.coin?.percent_change_30d || 0,
+    volatility: data.coin?.volatility || 0,
+    market_cap_rank: data.coin?.market_cap_rank || 0,
+    social_dominance: data.topic?.social_dominance,
+    interactions_change_7d: data.topic?.interactions_change_7d
   }
 }
 
@@ -1046,6 +1087,15 @@ Mentions (24h): ${context.social.mentions ? formatLargeNumber(context.social.men
 Active Creators: ${context.social.creators ? formatLargeNumber(context.social.creators) : 'N/A'}
 Supportive Themes: ${context.social.supportive_themes.join(', ') || 'None detected'}
 Critical Themes: ${context.social.critical_themes.join(', ') || 'None detected'}
+
+LUNARCRUSH METRICS (Proprietary Scores):
+${context.lunarcrush ? `Galaxy Score: ${interpretGalaxyScore(context.lunarcrush.galaxy_score)}
+Alt Rank: ${interpretAltRank(context.lunarcrush.alt_rank)}
+7-Day Change (WoW): ${context.lunarcrush.percent_change_7d >= 0 ? '+' : ''}${context.lunarcrush.percent_change_7d.toFixed(2)}%
+30-Day Change (MoM): ${context.lunarcrush.percent_change_30d >= 0 ? '+' : ''}${context.lunarcrush.percent_change_30d.toFixed(2)}%
+Volatility: ${(context.lunarcrush.volatility * 100).toFixed(2)}%
+${context.lunarcrush.social_dominance ? `Social Dominance: ${context.lunarcrush.social_dominance.toFixed(3)}%` : ''}
+${context.lunarcrush.interactions_change_7d ? `Social Engagement (7d change): ${context.lunarcrush.interactions_change_7d >= 0 ? '+' : ''}${context.lunarcrush.interactions_change_7d.toFixed(1)}%` : ''}` : 'LunarCrush metrics not available for this token'}
 
 GLOBAL MARKET CONTEXT:
 Consider: Interest rates, Fed policy, geopolitical events (e.g. US-Iran tensions, sanctions), risk appetite, Bitcoin dominance, upcoming catalysts
