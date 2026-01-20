@@ -448,8 +448,12 @@ ${gptContext}`
         whale_summary: isERC20 ? {
           net_flow: context.whales.net_flow_24h,
           transactions: context.whales.transaction_count,
-          accumulation: context.whales.accumulation_count,
-          distribution: context.whales.distribution_count
+          buy_count: context.whales.buy_count,
+          sell_count: context.whales.sell_count,
+          buy_volume: context.whales.buy_volume,
+          sell_volume: context.whales.sell_volume,
+          unique_whales: context.whales.unique_whales,
+          buy_sell_ratio: context.whales.buy_sell_ratio
         } : null,
         sentiment: {
           score: context.sentiment.current,
