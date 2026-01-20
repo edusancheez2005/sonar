@@ -11,6 +11,7 @@ interface WhaleMove {
   to: string
   type: string | null
   reasoning: string | null
+  whale_score?: number | null
   timestamp: string
 }
 
@@ -37,11 +38,12 @@ export function formatWhaleMovesDetailed(moves: WhaleMove[]): string {
     const classification = move.classification || 'Unknown'
     const timeAgo = formatTimeAgo(move.timestamp)
     const reasoning = move.reasoning || 'No analysis available'
+    const scoreInfo = move.whale_score ? `Whale Score: ${move.whale_score.toFixed(1)}` : ''
     
-    return `   ${index + 1}. ${valueStr} - ${classification}
+    return `   ${index + 1}. ${valueStr} - ${classification.toUpperCase()}
       ├─ From: ${move.from}
       ├─ To: ${move.to}
-      ├─ Type: ${move.type || 'Unknown'}
+      ├─ Type: ${move.type || 'Unknown'}${scoreInfo ? `\n      ├─ ${scoreInfo}` : ''}
       ├─ Time: ${timeAgo}
       └─ Analysis: ${reasoning}`
   }).join('\n\n')

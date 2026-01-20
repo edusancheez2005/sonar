@@ -71,8 +71,12 @@ interface WhaleData {
   avg_whale_score: number
   cex_transactions: number
   dex_transactions: number
-  accumulation_count: number
-  distribution_count: number
+  buy_count: number
+  sell_count: number
+  buy_volume: number
+  sell_volume: number
+  unique_whales: number
+  buy_sell_ratio: string
   top_moves: any[]
   data_focus: string
 }
@@ -199,8 +203,8 @@ async function fetchWhaleActivity(ticker: string, supabase: any): Promise<any[]>
       `)
       .eq('token_symbol', ticker.toUpperCase())
       .gte('timestamp', last24Hours)
-      .order('usd_value', { ascending: false })
-      .limit(50)
+      .order('timestamp', { ascending: false })
+      .limit(200) // Match token page limit for complete data
     
     if (error) {
       console.error('Error fetching whale data:', error)
@@ -747,6 +751,8 @@ async function fetchLunarCrushAI(ticker: string): Promise<any> {
 
 /**
  * Process whale data into metrics
+ * IMPORTANT: Uses 'BUY' and 'SELL' classifications from whale_transactions table
+ * This matches the token page calculations for consistency
  */
 function processWhaleData(whaleData: any[]): WhaleData {
   if (!whaleData || whaleData.length === 0) {
@@ -758,53 +764,66 @@ function processWhaleData(whaleData: any[]): WhaleData {
       avg_whale_score: 0,
       cex_transactions: 0,
       dex_transactions: 0,
-      accumulation_count: 0,
-      distribution_count: 0,
+      buy_count: 0,
+      sell_count: 0,
+      buy_volume: 0,
+      sell_volume: 0,
+      unique_whales: 0,
+      buy_sell_ratio: '0% / 0%',
       top_moves: [],
       data_focus: 'ERC20-primary'
     }
   }
   
+  // Separate transactions by classification (BUY vs SELL)
+  const buys = whaleData.filter(tx => tx.classification?.toUpperCase() === 'BUY')
+  const sells = whaleData.filter(tx => tx.classification?.toUpperCase() === 'SELL')
+  
+  // Calculate volumes
+  const buy_volume = buys.reduce((sum, tx) => sum + (Number(tx.usd_value) || 0), 0)
+  const sell_volume = sells.reduce((sum, tx) => sum + (Number(tx.usd_value) || 0), 0)
+  
   // Calculate metrics
-  const transaction_count = whaleData.length
-  const total_volume_usd = whaleData.reduce((sum, tx) => sum + (tx.usd_value || 0), 0)
-  const avg_transaction_usd = total_volume_usd / transaction_count
+  const buy_count = buys.length
+  const sell_count = sells.length
+  const transaction_count = buy_count + sell_count
+  const total_volume_usd = buy_volume + sell_volume
+  const avg_transaction_usd = transaction_count > 0 ? total_volume_usd / transaction_count : 0
   
-  // Calculate net flow (CEX inflows are negative, outflows are positive)
-  let net_flow_24h = 0
-  for (const tx of whaleData) {
-    if (tx.is_cex_transaction) {
-      // From CEX to wallet = accumulation (positive)
-      // To CEX from wallet = distribution (negative)
-      if (tx.from_label && (tx.from_label.toLowerCase().includes('binance') || 
-          tx.from_label.toLowerCase().includes('coinbase') || 
-          tx.from_label.toLowerCase().includes('cex'))) {
-        net_flow_24h += tx.usd_value || 0
-      } else if (tx.to_label && (tx.to_label.toLowerCase().includes('binance') || 
-                 tx.to_label.toLowerCase().includes('coinbase') || 
-                 tx.to_label.toLowerCase().includes('cex'))) {
-        net_flow_24h -= tx.usd_value || 0
-      }
-    }
-  }
+  // Net flow: BUY = positive (accumulation), SELL = negative (distribution)
+  const net_flow_24h = buy_volume - sell_volume
   
-  const avg_whale_score = whaleData.reduce((sum, tx) => sum + (tx.whale_score || 0), 0) / transaction_count
+  // Calculate buy/sell ratio as percentage
+  const totalTxs = buy_count + sell_count
+  const buyPct = totalTxs > 0 ? (buy_count / totalTxs * 100).toFixed(1) : '0'
+  const sellPct = totalTxs > 0 ? (sell_count / totalTxs * 100).toFixed(1) : '0'
+  const buy_sell_ratio = `${buyPct}% / ${sellPct}%`
+  
+  // Unique whale addresses (using whale_address field, fallback to from_address)
+  const uniqueWhaleSet = new Set(
+    whaleData.map(tx => tx.whale_address || tx.from_address).filter(Boolean)
+  )
+  const unique_whales = uniqueWhaleSet.size
+  
+  const avg_whale_score = whaleData.reduce((sum, tx) => sum + (tx.whale_score || 0), 0) / whaleData.length
   const cex_transactions = whaleData.filter(tx => tx.is_cex_transaction).length
   const dex_transactions = whaleData.filter(tx => !tx.is_cex_transaction && tx.counterparty_type === 'DEX').length
-  const accumulation_count = whaleData.filter(tx => tx.classification === 'ACCUMULATION').length
-  const distribution_count = whaleData.filter(tx => tx.classification === 'DISTRIBUTION').length
   
-  // Top 5 largest moves
-  const top_moves = whaleData.slice(0, 5).map(tx => ({
-    hash: tx.transaction_hash,
-    value_usd: tx.usd_value,
-    classification: tx.classification,
-    from: tx.from_label || truncateAddress(tx.from_address),
-    to: tx.to_label || truncateAddress(tx.to_address),
-    type: tx.counterparty_type,
-    reasoning: tx.reasoning,
-    timestamp: tx.timestamp
-  }))
+  // Top 10 largest moves for better context
+  const top_moves = whaleData
+    .sort((a, b) => (b.usd_value || 0) - (a.usd_value || 0))
+    .slice(0, 10)
+    .map(tx => ({
+      hash: tx.transaction_hash,
+      value_usd: tx.usd_value,
+      classification: tx.classification,
+      from: tx.from_label || truncateAddress(tx.from_address),
+      to: tx.to_label || truncateAddress(tx.to_address),
+      type: tx.counterparty_type,
+      reasoning: tx.reasoning,
+      whale_score: tx.whale_score,
+      timestamp: tx.timestamp
+    }))
   
   return {
     transaction_count,
@@ -814,8 +833,12 @@ function processWhaleData(whaleData: any[]): WhaleData {
     avg_whale_score,
     cex_transactions,
     dex_transactions,
-    accumulation_count,
-    distribution_count,
+    buy_count,
+    sell_count,
+    buy_volume,
+    sell_volume,
+    unique_whales,
+    buy_sell_ratio,
     top_moves,
     data_focus: 'ERC20-primary'
   }
@@ -1024,17 +1047,28 @@ function processPriceData(priceData: any): PriceData {
  */
 export function buildGPTContext(context: OrcaContext, userMessage: string, isERC20: boolean = false): string {
   // Build whale section only for ERC-20 tokens
+  // This matches the token page data exactly (using BUY/SELL classifications)
   const whaleSection = isERC20 && context.whales.transaction_count > 0 ? `
 WHALE ACTIVITY (ERC-20 Blockchain Data):
 Data Source: whale_transactions table (24h)
+
+SUMMARY METRICS:
 Net Flow: ${formatCurrency(context.whales.net_flow_24h)} ${formatNetFlowInterpretation(context.whales.net_flow_24h)}
 Total Volume: ${formatCurrency(context.whales.total_volume_usd)}
-Transaction Count: ${context.whales.transaction_count}
-Avg Transaction: ${formatCurrency(context.whales.avg_transaction_usd)}
+Unique Whales Trading: ${context.whales.unique_whales} active whale addresses
+
+BUY/SELL BREAKDOWN:
+Buy Transactions: ${context.whales.buy_count} (${formatCurrency(context.whales.buy_volume)})
+Sell Transactions: ${context.whales.sell_count} (${formatCurrency(context.whales.sell_volume)})
+Buy/Sell Ratio: ${context.whales.buy_sell_ratio} ${context.whales.buy_count > context.whales.sell_count ? '[MORE BUYING - BULLISH SIGNAL]' : context.whales.sell_count > context.whales.buy_count ? '[MORE SELLING - BEARISH SIGNAL]' : '[NEUTRAL]'}
+Avg Transaction Size: ${formatCurrency(context.whales.avg_transaction_usd)}
 CEX Transactions: ${context.whales.cex_transactions}
 DEX Transactions: ${context.whales.dex_transactions}
-Accumulation Count: ${context.whales.accumulation_count}
-Distribution Count: ${context.whales.distribution_count}
+
+INTERPRETATION:
+${context.whales.net_flow_24h > 0 ? `Positive net flow of ${formatCurrency(context.whales.net_flow_24h)} indicates whale ACCUMULATION (bullish)` : context.whales.net_flow_24h < 0 ? `Negative net flow of ${formatCurrency(Math.abs(context.whales.net_flow_24h))} indicates whale DISTRIBUTION (bearish)` : 'Net flow is neutral'}
+${context.whales.buy_count > context.whales.sell_count * 1.5 ? 'Strong buy pressure detected - whales are accumulating!' : context.whales.sell_count > context.whales.buy_count * 1.5 ? 'Strong sell pressure detected - whales may be distributing!' : 'Buy/sell activity relatively balanced'}
+
 Top Whale Moves:
 ${formatWhaleMovesDetailed(context.whales.top_moves)}
 ` : `
