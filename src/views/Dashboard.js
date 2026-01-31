@@ -848,18 +848,53 @@ const Dashboard = ({ isPremium = false }) => {
             {tokenInflows.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
             ) : (
-              <Bar
-                data={{
-                  labels: tokenInflows.map(t => t.token),
-                  datasets: [{ label: 'Net USD', data: tokenInflows.map(t => t.netUsdRobust ?? t.netUsd), backgroundColor: 'rgba(46,204,113,0.6)', borderColor: '#2ecc71' }]
-                }}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `$${formatNumber(Math.round(ctx.parsed.y || 0))}` } } },
-                  onClick: (_evt, elements) => { try { if (!elements?.length) return; const idx = elements[0].index; const token = tokenInflows[idx]?.token; if (token) window.location.href = `/statistics?token=${encodeURIComponent(token)}&sinceHours=24` } catch {} },
-                  scales: { y: { beginAtZero: true, ticks: { color: '#a0b2c6', callback: (v) => `$${Number(v).toLocaleString()}` } }, x: { ticks: { color: '#a0b2c6' } } }
-                }}
-              />
+              <>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {tokenInflows.map((t, idx) => (
+                    <Link 
+                      key={t.token}
+                      href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        padding: '0.4rem 0.7rem',
+                        background: 'rgba(46, 204, 113, 0.15)',
+                        border: '1px solid rgba(46, 204, 113, 0.3)',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#2ecc71',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(46, 204, 113, 0.25)'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(46, 204, 113, 0.15)'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                      }}
+                    >
+                      <TokenIcon symbol={t.token} size={16} />
+                      {t.token}
+                    </Link>
+                  ))}
+                </div>
+                <Bar
+                  data={{
+                    labels: tokenInflows.map(t => t.token),
+                    datasets: [{ label: 'Net USD', data: tokenInflows.map(t => t.netUsdRobust ?? t.netUsd), backgroundColor: 'rgba(46,204,113,0.6)', borderColor: '#2ecc71' }]
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { title: (ctx) => tokenInflows[ctx[0].dataIndex]?.token || '', label: (ctx) => `$${formatNumber(Math.round(ctx.parsed.y || 0))}` } } },
+                    onClick: (_evt, elements) => { try { if (!elements?.length) return; const idx = elements[0].index; const token = tokenInflows[idx]?.token; if (token) window.location.href = `/statistics?token=${encodeURIComponent(token)}&sinceHours=24` } catch {} },
+                    scales: { y: { beginAtZero: true, ticks: { color: '#a0b2c6', callback: (v) => `$${Number(v).toLocaleString()}` } }, x: { ticks: { color: '#a0b2c6' } } }
+                  }}
+                />
+              </>
             )}
           </DashboardCard>
 
@@ -868,18 +903,53 @@ const Dashboard = ({ isPremium = false }) => {
             {tokenOutflows.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
             ) : (
-              <Bar
-                data={{
-                  labels: tokenOutflows.map(t => t.token),
-                  datasets: [{ label: 'Net USD', data: tokenOutflows.map(t => Math.abs(t.netUsdRobust ?? t.netUsd)), backgroundColor: 'rgba(231,76,60,0.6)', borderColor: '#e74c3c' }]
-                }}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `-$${formatNumber(Math.round(ctx.parsed.y || 0))}` } } },
-                  onClick: (_evt, elements) => { try { if (!elements?.length) return; const idx = elements[0].index; const token = tokenOutflows[idx]?.token; if (token) window.location.href = `/statistics?token=${encodeURIComponent(token)}&sinceHours=24` } catch {} },
-                  scales: { y: { beginAtZero: true, ticks: { color: '#a0b2c6', callback: (v) => `-$${Number(v).toLocaleString()}` } }, x: { ticks: { color: '#a0b2c6' } } }
-                }}
-              />
+              <>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {tokenOutflows.map((t, idx) => (
+                    <Link 
+                      key={t.token}
+                      href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        padding: '0.4rem 0.7rem',
+                        background: 'rgba(231, 76, 60, 0.15)',
+                        border: '1px solid rgba(231, 76, 60, 0.3)',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#e74c3c',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(231, 76, 60, 0.25)'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(231, 76, 60, 0.15)'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                      }}
+                    >
+                      <TokenIcon symbol={t.token} size={16} />
+                      {t.token}
+                    </Link>
+                  ))}
+                </div>
+                <Bar
+                  data={{
+                    labels: tokenOutflows.map(t => t.token),
+                    datasets: [{ label: 'Net USD', data: tokenOutflows.map(t => Math.abs(t.netUsdRobust ?? t.netUsd)), backgroundColor: 'rgba(231,76,60,0.6)', borderColor: '#e74c3c' }]
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { title: (ctx) => tokenOutflows[ctx[0].dataIndex]?.token || '', label: (ctx) => `-$${formatNumber(Math.round(ctx.parsed.y || 0))}` } } },
+                    onClick: (_evt, elements) => { try { if (!elements?.length) return; const idx = elements[0].index; const token = tokenOutflows[idx]?.token; if (token) window.location.href = `/statistics?token=${encodeURIComponent(token)}&sinceHours=24` } catch {} },
+                    scales: { y: { beginAtZero: true, ticks: { color: '#a0b2c6', callback: (v) => `-$${Number(v).toLocaleString()}` } }, x: { ticks: { color: '#a0b2c6' } } }
+                  }}
+                />
+              </>
             )}
           </DashboardCard>
         </GridContainer>
