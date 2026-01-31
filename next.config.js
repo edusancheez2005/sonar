@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const CONTENT_SECURITY_POLICY = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.com https://*.vercel-insights.com https://js.stripe.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.com https://*.vercel-insights.com https://js.stripe.com https://www.googletagmanager.com;
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://*.stripe.com;
-  connect-src 'self' https://fwbwfvqzomipoftgodof.supabase.co https://*.vercel-insights.com https://api.stripe.com https://r.stripe.com;
+  img-src 'self' data: blob: https://*.stripe.com https://coin-images.coingecko.com https://assets.coingecko.com;
+  connect-src 'self' https://fwbwfvqzomipoftgodof.supabase.co https://*.vercel-insights.com https://api.stripe.com https://r.stripe.com https://www.google-analytics.com https://www.googletagmanager.com;
   font-src 'self';
   frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com;
   frame-ancestors 'none';
