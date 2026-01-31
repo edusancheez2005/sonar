@@ -13,6 +13,7 @@ import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import OrcaWelcome from './OrcaWelcome'
+import TokenIcon from '@/components/TokenIcon'
 
 // Original Sonar colors - clean and professional
 const colors = {
@@ -816,7 +817,7 @@ export default function ClientOrca() {
 
   // Show loading while checking premium status
   if (checkingPremium) {
-    return (
+  return (
       <ChatContainer>
         <div style={{ 
           display: 'flex', 
@@ -833,7 +834,7 @@ export default function ClientOrca() {
 
   return (
     <>
-      <ChatContainer>
+    <ChatContainer>
       {/* Messages Area */}
       <MessagesArea>
         {messages.length === 0 ? (
@@ -913,6 +914,30 @@ export default function ClientOrca() {
                       </ReactMarkdown>
                     )}
                   </MessageText>
+                  
+                  {/* Token Header with Logo */}
+                  {message.role === 'assistant' && message.ticker && (
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '12px', 
+                      marginTop: '16px',
+                      marginBottom: '12px'
+                    }}>
+                      <TokenIcon 
+                        symbol={message.ticker} 
+                        size={32}
+                      />
+                      <div style={{
+                        fontSize: '1.1rem',
+                        fontWeight: '700',
+                        color: colors.textPrimary,
+                        letterSpacing: '0.5px'
+                      }}>
+                        {message.ticker}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Mini data cards for ORCA responses */}
                   {message.role === 'assistant' && message.data?.price && (
@@ -1027,11 +1052,11 @@ export default function ClientOrca() {
                 >
                   {loadingStep}
                 </motion.div>
-                <TypingIndicator>
-                  <span />
-                  <span />
-                  <span />
-                </TypingIndicator>
+              <TypingIndicator>
+                <span />
+                <span />
+                <span />
+              </TypingIndicator>
               </div>
               <MessageTime>Deep analysis in progress...</MessageTime>
             </MessageContent>

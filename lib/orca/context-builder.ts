@@ -9,12 +9,17 @@ import {
   fetchFreshLunarCrushData, 
   needsFreshData 
 } from './lunarcrush-parser'
-import {
+import { 
   fetchLunarCrushEnhanced,
   interpretGalaxyScore,
   interpretAltRank,
   LunarCrushEnhancedData
 } from './lunarcrush-api'
+import {
+  getCoinById,
+  getMarketChart,
+} from '@/lib/coingecko/client'
+import { coinRegistry } from '@/lib/coingecko/coin-registry'
 import { 
   formatWhaleMovesDetailed,
   formatThemes,
@@ -37,6 +42,19 @@ interface OrcaContext {
   news: NewsData
   whaleAlerts?: WhaleAlertsData
   lunarcrush?: LunarCrushMetrics
+  coingecko?: CoinGeckoChartData
+}
+
+interface CoinGeckoChartData {
+  id: string
+  name: string
+  image_url: string | null
+  trend_7d: string  // 'bullish' | 'bearish' | 'neutral'
+  trend_30d: string
+  volatility_7d: number
+  price_swing_7d: { high: number, low: number }
+  volume_trend: string
+  market_cap_rank: number | null
 }
 
 interface LunarCrushMetrics {
@@ -114,6 +132,111 @@ interface WhaleAlertsData {
 }
 
 /**
+ * Fetch CoinGecko chart data for trend analysis
+ */
+async function fetchCoinGeckoChartData(ticker: string) {
+  try {
+    // Resolve ticker to CoinGecko ID
+    const metadata = await coinRegistry.resolve(ticker)
+    if (!metadata) {
+      console.log(`⚠️ CoinGecko: ${ticker} not found in registry`)
+      return null
+    }
+
+    // Fetch 7-day and 30-day chart data
+    const [chart7d, chart30d, coinDetails] = await Promise.all([
+      getMarketChart(metadata.id, 7, 'daily').catch(() => null),
+      getMarketChart(metadata.id, 30, 'daily').catch(() => null),
+      getCoinById(metadata.id, { market_data: true }).catch(() => null),
+    ])
+
+    return {
+      id: metadata.id,
+      name: metadata.name,
+      image_url: metadata.image_url,
+      chart_7d: chart7d,
+      chart_30d: chart30d,
+      details: coinDetails,
+    }
+  } catch (error) {
+    console.error(`CoinGecko fetch error for ${ticker}:`, error)
+    return null
+  }
+}
+
+/**
+ * Process CoinGecko chart data for Orca
+ */
+function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
+  if (!data || !data.chart_7d) return undefined
+
+  try {
+    const prices7d = data.chart_7d.prices || []
+    const prices30d = data.chart_30d?.prices || []
+    const volumes7d = data.chart_7d.total_volumes || []
+
+    // Calculate trend
+    const getTrend = (prices: [number, number][]) => {
+      if (prices.length < 2) return 'neutral'
+      const first = prices[0][1]
+      const last = prices[prices.length - 1][1]
+      const change = ((last - first) / first) * 100
+      if (change > 5) return 'bullish'
+      if (change < -5) return 'bearish'
+      return 'neutral'
+    }
+
+    // Calculate volatility (standard deviation of daily changes)
+    const calculateVolatility = (prices: [number, number][]) => {
+      if (prices.length < 2) return 0
+      const changes = []
+      for (let i = 1; i < prices.length; i++) {
+        const change = ((prices[i][1] - prices[i - 1][1]) / prices[i - 1][1]) * 100
+        changes.push(change)
+      }
+      const mean = changes.reduce((sum, val) => sum + val, 0) / changes.length
+      const variance = changes.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / changes.length
+      return Math.sqrt(variance)
+    }
+
+    // Get price swing
+    const get7dSwing = (prices: [number, number][]) => {
+      if (prices.length === 0) return { high: 0, low: 0 }
+      const values = prices.map(p => p[1])
+      return {
+        high: Math.max(...values),
+        low: Math.min(...values),
+      }
+    }
+
+    // Volume trend
+    const getVolumeTrend = (volumes: [number, number][]) => {
+      if (volumes.length < 4) return 'stable'
+      const recent = volumes.slice(-3).reduce((sum, v) => sum + v[1], 0) / 3
+      const earlier = volumes.slice(0, 3).reduce((sum, v) => sum + v[1], 0) / 3
+      if (recent > earlier * 1.5) return 'increasing'
+      if (recent < earlier * 0.5) return 'decreasing'
+      return 'stable'
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      image_url: data.image_url,
+      trend_7d: getTrend(prices7d),
+      trend_30d: getTrend(prices30d),
+      volatility_7d: calculateVolatility(prices7d),
+      price_swing_7d: get7dSwing(prices7d),
+      volume_trend: getVolumeTrend(volumes7d),
+      market_cap_rank: data.details?.market_cap_rank || null,
+    }
+  } catch (error) {
+    console.error('Error processing CoinGecko chart data:', error)
+    return undefined
+  }
+}
+
+/**
  * Main function: Build complete ORCA context for a ticker
  */
 export async function buildOrcaContext(
@@ -132,7 +255,8 @@ export async function buildOrcaContext(
     priceData,
     socialData,
     whaleAlertsData,
-    lunarcrushData
+    lunarcrushData,
+    coingeckoData
   ] = await Promise.all([
     fetchWhaleActivity(ticker, supabase),
     fetchSentiment(ticker, supabase),
@@ -140,7 +264,8 @@ export async function buildOrcaContext(
     fetchPriceData(ticker, supabase),
     fetchLunarCrushAI(ticker),
     fetchWhaleAlerts(ticker, supabase),
-    fetchLunarCrushEnhanced(ticker)
+    fetchLunarCrushEnhanced(ticker),
+    fetchCoinGeckoChartData(ticker)
   ])
   
   return {
@@ -151,7 +276,8 @@ export async function buildOrcaContext(
     social: processSocialData(socialData),
     news: processNewsData(newsData),
     whaleAlerts: processWhaleAlertsData(whaleAlertsData),
-    lunarcrush: processLunarCrushData(lunarcrushData)
+    lunarcrush: processLunarCrushData(lunarcrushData),
+    coingecko: processCoinGeckoChartData(coingeckoData)
   }
 }
 
@@ -814,16 +940,16 @@ function processWhaleData(whaleData: any[]): WhaleData {
     .sort((a, b) => (b.usd_value || 0) - (a.usd_value || 0))
     .slice(0, 10)
     .map(tx => ({
-      hash: tx.transaction_hash,
-      value_usd: tx.usd_value,
-      classification: tx.classification,
-      from: tx.from_label || truncateAddress(tx.from_address),
-      to: tx.to_label || truncateAddress(tx.to_address),
-      type: tx.counterparty_type,
-      reasoning: tx.reasoning,
+    hash: tx.transaction_hash,
+    value_usd: tx.usd_value,
+    classification: tx.classification,
+    from: tx.from_label || truncateAddress(tx.from_address),
+    to: tx.to_label || truncateAddress(tx.to_address),
+    type: tx.counterparty_type,
+    reasoning: tx.reasoning,
       whale_score: tx.whale_score,
-      timestamp: tx.timestamp
-    }))
+    timestamp: tx.timestamp
+  }))
   
   return {
     transaction_count,
@@ -1104,7 +1230,14 @@ Trend: ${context.price.trend}
 ${context.price.ath ? `All Time High: ${formatCurrency(context.price.ath)}${context.price.ath_date ? ` (${new Date(context.price.ath_date).toLocaleDateString()})` : ''}` : ''}
 ${context.price.ath_distance !== null ? `Distance from ATH: ${formatPercentage(context.price.ath_distance)} ${context.price.ath_distance < -50 ? '[SIGNIFICANT DISCOUNT]' : context.price.ath_distance < -30 ? '[NOTABLE DISCOUNT]' : context.price.ath_distance > -10 ? '[NEAR ATH]' : ''}` : ''}
 ${context.price.market_cap_rank ? `Market Cap Rank: #${context.price.market_cap_rank}` : ''}
-${whaleSection}
+
+${context.coingecko ? `CHART & TREND ANALYSIS (CoinGecko Pro):
+7-Day Trend: ${context.coingecko.trend_7d.toUpperCase()} ${context.coingecko.trend_7d === 'bullish' ? '[UPTREND]' : context.coingecko.trend_7d === 'bearish' ? '[DOWNTREND]' : '[SIDEWAYS]'}
+30-Day Trend: ${context.coingecko.trend_30d.toUpperCase()}
+7-Day Price Range: ${formatCurrency(context.coingecko.price_swing_7d.low)} - ${formatCurrency(context.coingecko.price_swing_7d.high)}
+Volatility (7d): ${context.coingecko.volatility_7d.toFixed(2)}% ${context.coingecko.volatility_7d > 10 ? '[HIGH VOLATILITY]' : context.coingecko.volatility_7d < 5 ? '[LOW VOLATILITY]' : '[MODERATE]'}
+Volume Trend: ${context.coingecko.volume_trend.toUpperCase()} ${context.coingecko.volume_trend === 'increasing' ? '[RISING INTEREST]' : context.coingecko.volume_trend === 'decreasing' ? '[DECLINING INTEREST]' : ''}
+` : ''}${whaleSection}
 ${whaleAlertsSection}
 SENTIMENT ANALYSIS (Multi-Source):
 Combined Score: ${context.sentiment.current.toFixed(2)} (scale: -1 bearish to +1 bullish)

@@ -3,6 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
+import dynamic from 'next/dynamic'
+
+// Lazy load chart components for better performance
+const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false })
+const CandlestickChart = dynamic(() => import('@/components/charts/CandlestickChart'), { ssr: false })
 
 const defaultSentimentStats = {
   total: 0,
@@ -435,6 +440,42 @@ const SectionTitle = styled.h2`
   color: var(--primary);
 `
 
+const ChartsSection = styled(motion.div)`
+  background: rgba(13, 33, 52, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(54, 166, 186, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+`
+
+const ChartTabs = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 1rem;
+`
+
+const ChartTab = styled.button<{ $active: boolean }>`
+  padding: 10px 20px;
+  border: none;
+  background: ${props => props.$active ? 'rgba(102, 126, 234, 0.2)' : 'transparent'};
+  color: ${props => props.$active ? '#667eea' : 'rgba(255, 255, 255, 0.6)'};
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid ${props => props.$active ? '#667eea' : 'transparent'};
+
+  &:hover {
+    background: rgba(102, 126, 234, 0.15);
+    color: #667eea;
+  }
+`
+
 const ReasonsGrid = styled.div`
   display: grid;
   gap: 1rem;
@@ -801,6 +842,7 @@ const getInsightIcon = (iconName) => {
 
 export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetrics, sentiment }) {
   const [priceData, setPriceData] = useState(null)
+  const [activeChartTab, setActiveChartTab] = useState('line')
   const [orcaAnalysis, setOrcaAnalysis] = useState(null)
   const [showOrcaModal, setShowOrcaModal] = useState(false)
   const [loadingOrca, setLoadingOrca] = useState(false)
@@ -1626,6 +1668,46 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             <TimeButton href={`/token/${encodeURIComponent(symbol)}?sinceHours=168`} $active={sinceHours === 168}>7d</TimeButton>
           </TimeFilters>
         </Header>
+
+        {/* Price Charts Section */}
+        <ChartsSection
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <SectionTitle>Price Charts</SectionTitle>
+          
+          <ChartTabs>
+            <ChartTab 
+              $active={activeChartTab === 'line'}
+              onClick={() => setActiveChartTab('line')}
+            >
+              Line Chart
+            </ChartTab>
+            <ChartTab 
+              $active={activeChartTab === 'candlestick'}
+              onClick={() => setActiveChartTab('candlestick')}
+            >
+              Candlestick Chart
+            </ChartTab>
+          </ChartTabs>
+
+          {activeChartTab === 'line' && (
+            <LineChart 
+              symbol={symbol} 
+              coingeckoId={priceData?.coingeckoId}
+              height={450}
+            />
+          )}
+
+          {activeChartTab === 'candlestick' && (
+            <CandlestickChart 
+              symbol={symbol}
+              coingeckoId={priceData?.coingeckoId}
+              height={450}
+            />
+          )}
+        </ChartsSection>
 
         {/* CMC-Style Deep Dive Analysis */}
         {deepDive && (

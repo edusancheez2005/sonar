@@ -471,13 +471,13 @@ export default function Statistics() {
 
   useEffect(() => {
     const init = async () => {
-      try {
-        const params = new URLSearchParams(window.location.search)
-        const qToken = params.get('token')
-        const qSince = params.get('sinceHours')
-        if (qToken) setToken(qToken.toUpperCase())
-        if (qSince && !Number.isNaN(Number(qSince))) setSinceHours(Number(qSince))
-      } catch {}
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const qToken = params.get('token')
+      const qSince = params.get('sinceHours')
+      if (qToken) setToken(qToken.toUpperCase())
+      if (qSince && !Number.isNaN(Number(qSince))) setSinceHours(Number(qSince))
+    } catch {}
       
       // Check premium status
       try {
@@ -495,7 +495,7 @@ export default function Statistics() {
         console.error('Error checking premium status:', err)
       }
       
-      fetchTrades(1)
+    fetchTrades(1)
     }
     init()
   }, [])
