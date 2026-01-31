@@ -19,10 +19,6 @@
     {
       "path": "/api/whale-alerts/sync",
       "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/coingecko/exchanges-sync",
-      "schedule": "0 */6 * * *"
     }
   ]
 }

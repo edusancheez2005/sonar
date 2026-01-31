@@ -13,6 +13,20 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function GET(request: NextRequest) {
   try {
+    // Get limit from query parameter (useful for testing or limiting during builds)
+    const { searchParams } = new URL(request.url)
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : null
+    
+    // During build/validation, return quickly without syncing
+    if (limit === 0) {
+      console.log('⏭️ Skipping sync (limit=0)')
+      return NextResponse.json({
+        success: true,
+        message: 'Sync skipped',
+        timestamp: new Date().toISOString(),
+      })
+    }
+
     console.log('🔄 Starting exchanges sync...')
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -21,7 +35,8 @@ export async function GET(request: NextRequest) {
 
     // Get list of all exchanges
     const exchangesList = await getExchangesList()
-    console.log(`📊 Found ${exchangesList.length} exchanges`)
+    const exchangesToSync = limit ? exchangesList.slice(0, limit) : exchangesList
+    console.log(`📊 Found ${exchangesList.length} exchanges, syncing ${exchangesToSync.length}`)
 
     let synced = 0
     let failed = 0
@@ -30,18 +45,24 @@ export async function GET(request: NextRequest) {
     const BATCH_SIZE = 10
     const DELAY_BETWEEN_BATCHES = 2000 // 2 seconds
 
-    for (let i = 0; i < exchangesList.length; i += BATCH_SIZE) {
-      const batch = exchangesList.slice(i, i + BATCH_SIZE)
+    for (let i = 0; i < exchangesToSync.length; i += BATCH_SIZE) {
+      const batch = exchangesToSync.slice(i, i + BATCH_SIZE)
       
       const promises = batch.map(async (exchange) => {
         try {
+          // Skip if no ID
+          if (!exchange.id) {
+            console.warn(`⚠️ Skipping exchange with no ID:`, exchange)
+            return false
+          }
+
           // Fetch detailed exchange data
           const details = await getExchangeById(exchange.id)
 
-          // Prepare upsert data
+          // Prepare upsert data - use exchange.id from list, not details.id
           const exchangeData = {
-            id: details.id,
-            name: details.name,
+            id: exchange.id, // Use ID from list, not from details
+            name: details.name || exchange.name,
             image: details.image || null,
             url: details.url || null,
             country: details.country || null,
@@ -76,11 +97,11 @@ export async function GET(request: NextRequest) {
       await Promise.allSettled(promises)
 
       // Delay between batches to avoid rate limits
-      if (i + BATCH_SIZE < exchangesList.length) {
+      if (i + BATCH_SIZE < exchangesToSync.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
       }
 
-      console.log(`Progress: ${Math.min(i + BATCH_SIZE, exchangesList.length)}/${exchangesList.length}`)
+      console.log(`Progress: ${Math.min(i + BATCH_SIZE, exchangesToSync.length)}/${exchangesToSync.length}`)
     }
 
     console.log(`✅ Sync complete: ${synced} synced, ${failed} failed`)
@@ -88,6 +109,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       total: exchangesList.length,
+      processed: exchangesToSync.length,
       synced,
       failed,
       timestamp: new Date().toISOString(),
