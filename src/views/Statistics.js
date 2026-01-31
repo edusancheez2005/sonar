@@ -596,7 +596,12 @@ export default function Statistics() {
                   {rows.map(t => (
                     <tr key={t.transaction_hash}>
                       <td>{new Date(t.timestamp).toLocaleString()}</td>
-                      <td><Link href={`/token/${encodeURIComponent(t.token_symbol || '-')}`}>{t.token_symbol || '-'}</Link></td>
+                      <td>
+                        <Link href={`/token/${encodeURIComponent(t.token_symbol || '-')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <TokenIcon symbol={t.token_symbol} size={20} />
+                          {t.token_symbol || '-'}
+                        </Link>
+                      </td>
                       <td><Badge className={(t.classification||'').toLowerCase()}>{t.classification||'-'}</Badge></td>
                       <td className="usd">${Math.round(Number(t.usd_value||0)).toLocaleString()}</td>
                       <td>{t.blockchain}</td>

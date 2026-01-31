@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
+import TokenIcon from '@/components/TokenIcon'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const colors = {
@@ -557,7 +558,10 @@ export default function EnhancedNews({ ticker = null }) {
               
               <ContentArea>
                 {article.ticker && (
-                  <TokenBadge>{article.ticker}</TokenBadge>
+                  <TokenBadge>
+                    <TokenIcon symbol={article.ticker} size={16} />
+                    {article.ticker}
+                  </TokenBadge>
                 )}
                 <NewsTitle>{article.title}</NewsTitle>
                 <NewsSummary>

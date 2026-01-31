@@ -17,6 +17,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
+import TokenIcon from '@/components/TokenIcon'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend)
 
@@ -995,28 +996,31 @@ const Dashboard = ({ isPremium = false }) => {
                        }}
                        title={`${t.token}: ${count} unique whales trading • Net Flow: $${formatNumber(Math.abs(Math.round(netFlow)))}`}
                      >
-                       <div style={{ 
-                         display: 'flex', 
-                         justifyContent: 'space-between', 
-                         alignItems: 'center',
-                         marginBottom: '0.5rem'
-                       }}>
-                         <span style={{ 
-                           fontSize: '1.1rem', 
-                           fontWeight: 700, 
-             color: 'var(--text-primary)', 
-                           letterSpacing: '0.02em'
-                         }}>
-                           {t.token}
-                         </span>
-                         <span style={{ 
-                           fontSize: '1.2rem',
-                           fontWeight: 800,
-                           color: isPositive ? '#2ecc71' : '#e74c3c'
-                         }}>
-                           {count}
-                         </span>
-         </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '0.5rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <TokenIcon symbol={t.token} size={24} />
+                          <span style={{ 
+                            fontSize: '1.1rem', 
+                            fontWeight: 700, 
+                            color: 'var(--text-primary)', 
+                            letterSpacing: '0.02em'
+                          }}>
+                            {t.token}
+                          </span>
+                        </div>
+                        <span style={{ 
+                          fontSize: '1.2rem',
+                          fontWeight: 800,
+                          color: isPositive ? '#2ecc71' : '#e74c3c'
+                        }}>
+                          {count}
+                        </span>
+        </div>
                        <div style={{ 
                          fontSize: '0.75rem', 
                          color: 'var(--text-secondary)',
@@ -1575,7 +1579,9 @@ const TopWhalesSection = () => {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                           {(whale.tokens || []).slice(0, 3).map(token => (
                             <span key={token} style={{
-                              display: 'inline-block',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
                               padding: '0.25rem 0.6rem',
                               background: 'rgba(54, 166, 186, 0.15)',
                               border: '1px solid rgba(54, 166, 186, 0.25)',
@@ -1584,6 +1590,7 @@ const TopWhalesSection = () => {
                               fontWeight: '600',
                               color: 'var(--primary)'
                             }}>
+                              <TokenIcon symbol={token} size={16} />
                               {token}
                             </span>
                           ))}
