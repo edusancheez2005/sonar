@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import dynamic from 'next/dynamic'
+
+const TokenIcon = dynamic(() => import('@/components/TokenIcon'), { ssr: false })
 
 const StatisticsContainer = styled.div`
   min-height: 100vh;

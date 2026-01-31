@@ -892,14 +892,19 @@ const Dashboard = ({ isPremium = false }) => {
         <>
       <GridContainer>
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
-                     <StatsCard>
-             <h2>Top % of Buys</h2>
-            <table>
+             <StatsCard>
+            <h2>Top % of Buys</h2>
+           <table>
               <thead><tr><th>Coin</th><th>%</th></tr></thead>
               <tbody>
                 {topBuys.map((item, index) => (
                   <motion.tr key={`buy-${item.coin}-${index}`} variants={itemVariants}>
-                    <td><Link href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`}>{item.coin}</Link></td>
+                    <td>
+                      <Link href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <TokenIcon symbol={item.coin} size={20} />
+                        {item.coin}
+                      </Link>
+                    </td>
                     <td className="percentage">{item.percentage.toFixed(1)}%</td>
                   </motion.tr>
                 ))}
@@ -910,13 +915,18 @@ const Dashboard = ({ isPremium = false }) => {
 
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
                      <StatsCard>
-             <h2>Top % of Sells</h2>
-            <table>
+            <h2>Top % of Sells</h2>
+           <table>
               <thead><tr><th>Coin</th><th>%</th></tr></thead>
               <tbody>
                 {topSells.map((item, index) => (
                   <motion.tr key={`sell-${item.coin}-${index}`} variants={itemVariants}>
-                    <td><Link href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`}>{item.coin}</Link></td>
+                    <td>
+                      <Link href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <TokenIcon symbol={item.coin} size={20} />
+                        {item.coin}
+                      </Link>
+                    </td>
                     <td className="percentage">{item.percentage.toFixed(1)}%</td>
                   </motion.tr>
                 ))}
