@@ -1042,14 +1042,15 @@ const Dashboard = ({ isPremium = false }) => {
               gap: '1rem'
             }}>
               {tokenLeaders.slice(0, 12).map((t, idx) => {
-                const buyRatio = ((t.buyCount || 0) / ((t.buyCount || 0) + (t.sellCount || 1))) * 100
+                const totalTrades = (t.buys || 0) + (t.sells || 0)
+                const buyRatio = totalTrades > 0 ? ((t.buys || 0) / totalTrades) * 100 : 0
                 const isBuyHeavy = buyRatio > 60
                 const isSellHeavy = buyRatio < 40
                 
                 return (
                   <Link 
-                    key={t.coin}
-                    href={`/token/${encodeURIComponent(t.coin)}?sinceHours=24`}
+                    key={t.token}
+                    href={`/token/${encodeURIComponent(t.token)}?sinceHours=24`}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
@@ -1088,13 +1089,13 @@ const Dashboard = ({ isPremium = false }) => {
 
                     {/* Token Logo & Symbol */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                      <TokenIcon symbol={t.coin} size={36} />
+                      <TokenIcon symbol={t.token} size={36} />
                       <span style={{ 
                         fontSize: '1.3rem', 
                         fontWeight: 700, 
                         color: 'var(--text-primary)'
                       }}>
-                        {t.coin}
+                        {t.token}
                       </span>
                     </div>
 
@@ -1104,7 +1105,7 @@ const Dashboard = ({ isPremium = false }) => {
                         Trades
                       </div>
                       <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)' }}>
-                        {t.count}
+                        {t.txCount || 0}
                       </div>
                     </div>
 
@@ -1114,7 +1115,7 @@ const Dashboard = ({ isPremium = false }) => {
                         Volume
                       </div>
                       <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        ${formatCompact(t.usd)}
+                        ${formatCompact(t.volume || 0)}
                       </div>
                     </div>
 
