@@ -458,7 +458,7 @@ const ChartTabs = styled.div`
   padding-bottom: 1rem;
 `
 
-const ChartTab = styled.button<{ $active: boolean }>`
+const ChartTab = styled.button`
   padding: 10px 20px;
   border: none;
   background: ${props => props.$active ? 'rgba(102, 126, 234, 0.2)' : 'transparent'};
