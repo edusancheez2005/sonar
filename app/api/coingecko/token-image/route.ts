@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    let metadata = null
+    let metadata
 
     if (id) {
       metadata = await coinRegistry.getById(id)

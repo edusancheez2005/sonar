@@ -118,7 +118,7 @@ class CoinRegistry {
       if (a.market_cap_rank && !b.market_cap_rank) return -1
       if (!a.market_cap_rank && b.market_cap_rank) return 1
       if (!a.market_cap_rank && !b.market_cap_rank) return 0
-      return a.market_cap_rank - b.market_cap_rank
+      return (a.market_cap_rank || 0) - (b.market_cap_rank || 0)
     })
 
     return sorted[0]
@@ -164,7 +164,8 @@ class CoinRegistry {
     await this.initialize()
 
     // Search through registry for matching contract
-    for (const [_, metadata] of this.idToMetadata) {
+    const entries = Array.from(this.idToMetadata.entries())
+    for (const [_, metadata] of entries) {
       if (metadata.platforms && metadata.platforms[platform]) {
         if (metadata.platforms[platform].toLowerCase() === contractAddress.toLowerCase()) {
           return metadata

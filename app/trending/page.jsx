@@ -61,7 +61,7 @@ const FiltersBar = styled.div`
   align-items: center;
 `
 
-const FilterButton = styled.button<{ $active: boolean }>`
+const FilterButton = styled.button`
   padding: 10px 20px;
   border-radius: 8px;
   border: 1px solid ${props => props.$active ? '#667eea' : 'rgba(255, 255, 255, 0.2)'};
@@ -175,7 +175,7 @@ const MetricValue = styled.div`
   color: var(--text-primary);
 `
 
-const ChangeValue = styled.div<{ $positive: boolean }>`
+const ChangeValue = styled.div`
   font-size: 1rem;
   font-weight: 700;
   color: ${props => props.$positive ? '#2ecc71' : '#e74c3c'};
@@ -195,9 +195,9 @@ const ErrorState = styled(LoadingState)`
 `
 
 export default function TrendingPage() {
-  const [trendingData, setTrendingData] = useState<any>(null)
+  const [trendingData, setTrendingData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState('24h')
 
   useEffect(() => {
@@ -225,14 +225,14 @@ export default function TrendingPage() {
     }
   }
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price) => {
     if (price === null || price === undefined) return 'N/A'
     if (price < 0.01) return `$${price.toFixed(6)}`
     if (price < 1) return `$${price.toFixed(4)}`
     return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
-  const formatMarketCap = (mc: number) => {
+  const formatMarketCap = (mc) => {
     if (!mc) return 'N/A'
     if (mc >= 1e9) return `$${(mc / 1e9).toFixed(2)}B`
     if (mc >= 1e6) return `$${(mc / 1e6).toFixed(2)}M`
@@ -278,7 +278,7 @@ export default function TrendingPage() {
                 Trending Now
               </SectionTitle>
               <Grid>
-                {trendingData.trending?.map((coin: any) => (
+                {trendingData.trending?.map((coin) => (
                   <Link 
                     key={coin.id} 
                     href={`/token/${coin.symbol}`}
@@ -325,7 +325,7 @@ export default function TrendingPage() {
                     <span style={{ color: '#2ecc71' }}>Top Gainers</span>
                   </SectionTitle>
                   <Grid>
-                    {trendingData.top_gainers.slice(0, 12).map((coin: any) => (
+                    {trendingData.top_gainers.slice(0, 12).map((coin) => (
                       <Link 
                         key={coin.id} 
                         href={`/token/${coin.symbol}`}
@@ -388,7 +388,7 @@ export default function TrendingPage() {
                     <span style={{ color: '#e74c3c' }}>Top Losers</span>
                   </SectionTitle>
                   <Grid>
-                    {trendingData.top_losers.slice(0, 12).map((coin: any) => (
+                    {trendingData.top_losers.slice(0, 12).map((coin) => (
                       <Link 
                         key={coin.id} 
                         href={`/token/${coin.symbol}`}

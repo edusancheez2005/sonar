@@ -189,7 +189,7 @@ function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
     // Calculate volatility (standard deviation of daily changes)
     const calculateVolatility = (prices: [number, number][]) => {
       if (prices.length < 2) return 0
-      const changes = []
+      const changes: number[] = []
       for (let i = 1; i < prices.length; i++) {
         const change = ((prices[i][1] - prices[i - 1][1]) / prices[i - 1][1]) * 100
         changes.push(change)

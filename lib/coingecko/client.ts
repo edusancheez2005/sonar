@@ -315,11 +315,12 @@ export async function getTokenInfoByContract(
  */
 export function clearCache(pattern?: string) {
   if (pattern) {
-    for (const key of cache.keys()) {
+    const keys = Array.from(cache.keys())
+    keys.forEach(key => {
       if (key.includes(pattern)) {
         cache.delete(key)
       }
-    }
+    })
   } else {
     cache.clear()
   }
