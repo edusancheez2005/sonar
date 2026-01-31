@@ -86,17 +86,19 @@ async function fetchWithRetry<T>(
 /**
  * Get list of all coins (with optional filters)
  */
+interface CoinListItem {
+  id: string
+  symbol: string
+  name: string
+  platforms?: Record<string, string>
+}
+
 export async function getCoinsList(includeInactive = false) {
   const endpoint = includeInactive 
     ? '/coins/list?include_platform=true&status=inactive'
     : '/coins/list?include_platform=true'
   
-  return fetchWithRetry<Array<{
-    id: string
-    symbol: string
-    name: string
-    platforms?: Record<string, string>
-  }>>>(endpoint, { cacheTTL: 3600 }) // 1 hour
+  return fetchWithRetry<CoinListItem[]>(endpoint, { cacheTTL: 3600 }) // 1 hour
 }
 
 /**
