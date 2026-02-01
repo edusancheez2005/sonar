@@ -12,28 +12,14 @@ import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 
 export const dynamic = 'force-dynamic'
 
-// ERC-20 tokens that have whale tracking data
-const ERC20_TOKENS = new Set([
-  // Major tokens
-  'ETH', 'USDT', 'USDC', 'DAI', 'WBTC', 'WETH', 'stETH', 'rETH', 'cbETH', 'BUSD',
-  // DeFi
-  'LINK', 'UNI', 'AAVE', 'MKR', 'SNX', 'CRV', 'COMP', 'YFI', 'SUSHI', 'LDO',
-  '1INCH', 'DYDX', 'GMX', 'PENDLE', 'RPL', 'BAL', 'INST',
-  // Layer 2
-  'ARB', 'OP', 'IMX', 'LRC', 'MATIC', 'POL',
-  // Meme coins
-  'SHIB', 'PEPE', 'FLOKI', 'BONK',
-  // Gaming/Metaverse
-  'SAND', 'MANA', 'AXS', 'GALA', 'ENJ', 'APE', 'BLUR', 'MAGIC',
-  // AI/Infrastructure
-  'FET', 'GRT', 'RNDR', 'OCEAN', 'ANKR', 'AGIX', 'TAO',
-  // Other popular ERC-20
-  'BAT', 'CHZ', 'ENS', 'MASK', 'SSV', 'BLUR', 'WLD', 'PYTH', 'JUP'
-])
-
-// Check if token has whale data
-function hasWhaleData(ticker: string): boolean {
-  return ERC20_TOKENS.has(ticker.toUpperCase())
+/**
+ * Dynamically determine if whale data exists for a token
+ * This checks the actual fetched data instead of relying on a hardcoded list
+ */
+function hasWhaleData(context: any): boolean {
+  // A token has whale data if it has transactions in our database
+  return context?.whales?.transaction_count > 0 || 
+         context?.whales?.net_flow_24h !== 0
 }
 
 // ORCA System Prompt - Professional & Conversational (Updated Jan 13, 2026)
@@ -50,21 +36,24 @@ You are ORCA (On-chain Research & Crypto Analysis):
 
 ## DATA AVAILABILITY
 
-### Whale Transaction Data (ERC-20 ONLY)
-- Available for: ERC-20 tokens (ETH, USDT, LINK, UNI, AAVE, SHIB, PEPE, etc.)
-- What you see: Real wallet moves, CEX flows, accumulation/distribution
-- NOT available for: BTC, SOL, DOGE, XRP, ADA, and other non-ERC20 chains
+### Whale Transaction Data (DYNAMIC)
+- I automatically check our database for whale data on ANY token the user asks about
+- If whale data exists: Show detailed whale flows, CEX movements, accumulation/distribution
+- If NO whale data: Skip whale section entirely, focus on price, sentiment, social, news
+- Available for: Most ERC-20 tokens (ETH, USDT, LINK, UNI, AAVE, SHIB, PEPE, STRK, etc.)
+- NOT available for: BTC, SOL, DOGE, XRP, ADA (non-ERC20 chains)
 
-**CRITICAL: For non-ERC20 tokens (BTC, SOL, DOGE, XRP, ADA, etc.):**
+**CRITICAL: When NO whale data is available:**
 - Do NOT show whale activity section at all
 - Do NOT mention "$0.00 net flow" or "0 transactions"
-- Simply skip whale data entirely and focus on sentiment, social, price, news
+- Simply skip whale data entirely and focus on other data sources
 - Briefly mention: "Whale tracking for [TOKEN] coming soon (currently ERC-20 only)"
 
 ### Other Data (ALL cryptos):
 - Multi-Source Sentiment (60% LLM + 40% provider analysis)
 - Social Intelligence (LunarCrush: themes, engagement, community buzz)
-- Price Data (CoinGecko: live prices, 24h changes, ATH distance)
+- Price Data (CoinGecko: live prices, 24h changes, ATH distance, market cap, volume)
+- Chart Analysis (7-day and 30-day trends, volatility, price action patterns)
 - News Analysis (Headlines with sentiment impact analysis)
 
 ## RESPONSE FORMAT (No emojis, no dashes)
@@ -81,12 +70,21 @@ Include: Current price, 24h change, market cap, trend (uptrend/downtrend/sideway
 Add: Distance from all-time high with interpretation (significant discount / near ATH)
 CRITICAL: Use real dollar amounts and percentages from the data, NOT placeholders like "X" or "XX"
 
-[ONLY if ERC-20 token:]
+Chart Analysis (if available):
+7-Day Trend: [uptrend/downtrend/sideways] with X.XX% volatility
+30-Day Trend: [uptrend/downtrend/sideways]
+Recent Price Action: [describe key movements]
+Key Price Levels: [support/resistance if notable]
+
+[ONLY if whale data exists in the context:]
 Whale Activity:
 Net Flow: Use the exact dollar amount from context [explain if OUT of exchanges = accumulation / INTO exchanges = distribution]
 Total Volume: Exact dollar amount
-Transactions: Exact count (breakdown of accumulation vs distribution)
+Transactions: Exact count (breakdown of BUY vs SELL)
 Notable Moves: Describe top 2-3 whale moves with ACTUAL dollar amounts from the data
+
+[If NO whale data exists:]
+Skip whale section entirely. Mention briefly: "Whale tracking for [TOKEN] coming soon (currently ERC-20 only)" and move to sentiment.
 
 Sentiment and Social:
 Sentiment Score: X.XX [Very Bullish/Bullish/Neutral/Bearish]
@@ -335,7 +333,7 @@ Examples:
 - If they ask a general question: Answer briefly and suggest they ask about a specific coin
 - Be friendly, concise (2-3 sentences max), and helpful. No emojis.
 
-Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, ADA, XRP, AVAX, DOT, LINK, MATIC, and 140+ more.`
+Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP, ADA, XRP, AVAX, DOT, MATIC, and 200+ more tokens.`
           },
           {
             role: 'user',
@@ -347,7 +345,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, ADA, XRP, AVAX, DOT, LINK, MAT
       })
       
       const aiResponse = completion.choices[0]?.message?.content || 
-        "Hey! I'm ORCA, your crypto intelligence assistant. I analyze crypto using whale data, sentiment, and social insights. Which coin do you want me to check out? Try asking about BTC, ETH, SOL, SHIB, or any other crypto!"
+        "Hey! I'm ORCA, your crypto intelligence assistant. I analyze crypto using whale data, sentiment, social insights, and price trends. Which coin do you want me to check out? Try asking about BTC, ETH, SOL, STRK, SHIB, PEPE, LINK, UNI, or any other crypto!"
       
       return NextResponse.json({
         response: aiResponse,
@@ -357,7 +355,6 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, ADA, XRP, AVAX, DOT, LINK, MAT
     
     const ticker = tickerResult.ticker
     const isFollowUp = tickerResult.originalMatch === 'from_history'
-    const isERC20 = hasWhaleData(ticker)
     
     if (isFollowUp) {
       console.log(`💬 Follow-up question detected, continuing ${ticker} analysis...`)
@@ -366,7 +363,12 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, ADA, XRP, AVAX, DOT, LINK, MAT
     }
     
     // Build ORCA context (fetch all data)
+    console.log(`🔍 Fetching all data sources for ${ticker}...`)
     const context = await buildOrcaContext(ticker, userId)
+    
+    // Dynamically check if whale data exists for this token
+    const isERC20 = hasWhaleData(context)
+    console.log(`${isERC20 ? '🐋' : '📊'} Whale data ${isERC20 ? 'found' : 'not available'} for ${ticker}`)
     
     // Build GPT-4.0 context string
     let gptContext = buildGPTContext(context, message, isERC20)
