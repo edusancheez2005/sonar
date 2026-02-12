@@ -1,4 +1,5 @@
 import React from 'react'
+import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import AuthGuard from '@/app/components/AuthGuard'
 import TokenDetailClient from './TokenDetailClient'
@@ -33,7 +34,18 @@ function BreadcrumbJsonLd({ symbol }) {
 }
 
 export default async function TokenDetail({ params, searchParams }) {
-  const symbol = decodeURIComponent(params.symbol).toUpperCase()
+  const rawSymbol = decodeURIComponent(params.symbol)
+  const symbol = rawSymbol.toUpperCase()
+
+  // Redirect to canonical uppercase URL if needed
+  if (rawSymbol !== symbol) {
+    const query = new URLSearchParams()
+    if (searchParams?.sinceHours) query.set('sinceHours', searchParams.sinceHours)
+    if (searchParams?.minUsd) query.set('minUsd', searchParams.minUsd)
+    const qs = query.toString()
+    redirect(`/token/${encodeURIComponent(symbol)}${qs ? `?${qs}` : ''}`)
+  }
+
   const sinceHours = Number(searchParams?.sinceHours || 24)
   const minUsd = searchParams?.minUsd ? Number(searchParams.minUsd) : undefined
 

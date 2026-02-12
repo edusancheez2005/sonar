@@ -1,829 +1,389 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
 
-// Lazy load chart components for better performance
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false })
 const CandlestickChart = dynamic(() => import('@/components/charts/CandlestickChart'), { ssr: false })
 
-const defaultSentimentStats = {
-  total: 0,
-  breakdown: {
-    bullish: 0,
-    bearish: 0,
-    neutral: 0
-  }
+const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
+const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+const COLORS = {
+  cyan: '#00e5ff', green: '#00e676', red: '#ff1744', amber: '#ffab00',
+  textPrimary: '#e0e6ed', textMuted: '#5a6a7a',
+  panelBg: 'rgba(13, 17, 28, 0.8)', borderSubtle: 'rgba(0, 229, 255, 0.08)',
 }
+
+const defaultSentimentStats = { total: 0, breakdown: { bullish: 0, bearish: 0, neutral: 0 } }
 
 const PageWrapper = styled.div`
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a1621 0%, #0f1922 50%, #0a1621 100%);
+  background: #0a0e17;
   padding: 2rem;
   position: relative;
-
   &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 30%, rgba(54, 166, 186, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, rgba(46, 204, 113, 0.06) 0%, transparent 50%);
-    pointer-events: none;
+    content: ''; position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.008) 2px, rgba(0, 229, 255, 0.008) 4px);
+    pointer-events: none; z-index: 0;
   }
 `
 
-const Container = styled.div`
-  max-width: 1400px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 1;
-`
+const Container = styled.div`max-width: 1440px; margin: 0 auto; position: relative; z-index: 1;`
 
 const BackLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateX(-4px);
-    color: #5dd5ed;
-  }
+  display: inline-flex; align-items: center; gap: 0.4rem; color: ${COLORS.cyan};
+  text-decoration: none; font-weight: 600; margin-bottom: 1.5rem; font-family: ${MONO_FONT};
+  font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;
+  &:hover { text-decoration: underline; }
 `
 
-const Header = styled.div`
-  background: rgba(13, 33, 52, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+const Panel = styled.div`
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;
 `
 
-const TokenTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+const TerminalPrompt = styled.h2`
+  font-family: ${MONO_FONT}; font-size: 0.85rem; font-weight: 700; color: ${COLORS.cyan};
+  letter-spacing: 1px; text-transform: uppercase; margin: 0 0 1.25rem 0;
+  display: flex; align-items: center; gap: 0.5rem;
+  &::before { content: '>'; color: ${COLORS.green}; font-weight: 800; }
 `
+
+const Header = styled(Panel)``
+
+const TokenTitle = styled.div`display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;`
 
 const TokenImage = styled.img`
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 2px solid var(--primary);
-  box-shadow: 0 4px 12px rgba(54, 166, 186, 0.3);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px;
+  width: 44px; height: 44px; border-radius: 50%; border: 2px solid ${COLORS.borderSubtle};
+  background: rgba(255, 255, 255, 0.05); padding: 2px;
 `
 
 const TokenName = styled.h1`
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin: 0;
-  background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 2rem; font-weight: 800; margin: 0; font-family: ${MONO_FONT};
+  color: ${COLORS.cyan}; letter-spacing: 1px;
 `
 
 const SentimentBadge = styled.div`
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #0a1621;
-  background: ${props => props.$color || '#f39c12'};
-  box-shadow: 0 4px 12px ${props => props.$color || '#f39c12'}33;
-  cursor: help;
+  padding: 0.3rem 0.75rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;
+  font-family: ${MONO_FONT}; letter-spacing: 0.5px;
+  color: ${props => props.$color || COLORS.amber};
+  background: ${props => (props.$color || COLORS.amber) + '15'};
+  border: 1px solid ${props => (props.$color || COLORS.amber) + '30'};
 `
 
 const PriceRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem;
 `
 
-const PriceStack = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-`
+const PriceStack = styled.div`display: flex; flex-direction: column; gap: 0.25rem;`
 
 const Price = styled.div`
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: var(--text-primary);
+  font-size: 2.2rem; font-weight: 800; color: ${COLORS.textPrimary}; font-family: ${MONO_FONT};
+  text-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
 `
 
 const PriceChange = styled.div`
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: ${props => props.$positive ? '#2ecc71' : '#e74c3c'};
+  font-size: 1rem; font-weight: 700; font-family: ${MONO_FONT};
+  color: ${props => props.$positive ? COLORS.green : COLORS.red};
 `
 
 const InlineSentimentWrapper = styled.div`
-  background: rgba(13, 33, 52, 0.4);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 1.25rem;
-  margin-top: 1rem;
+  background: rgba(0, 229, 255, 0.02); border: 1px solid ${COLORS.borderSubtle};
+  border-radius: 6px; padding: 1rem;
 `
 
-const SentimentHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-`
+const SentimentHeader = styled.div`display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;`
 
 const SentimentTitle = styled.div`
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  
-  svg {
-    width: 18px;
-    height: 18px;
-    fill: var(--primary);
-  }
+  font-size: 0.75rem; font-weight: 700; color: ${COLORS.textPrimary}; font-family: ${SANS_FONT};
+  display: flex; align-items: center; gap: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;
+  svg { width: 16px; height: 16px; fill: ${COLORS.cyan}; }
 `
 
-const SentimentVoteCount = styled.div`
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-`
+const SentimentVoteCount = styled.div`font-size: 0.75rem; color: ${COLORS.textMuted}; font-family: ${MONO_FONT};`
 
-const SentimentButtons = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-`
+const SentimentButtons = styled.div`display: flex; gap: 0.5rem; margin-bottom: 0.75rem;`
 
 const SentimentButton = styled.button`
-  flex: 1;
-  border-radius: 12px;
-  border: 2px solid ${props => {
-    if (props.$active && props.$variant === 'bullish') return '#16c784'
-    if (props.$active && props.$variant === 'bearish') return '#ea3943'
-    return 'rgba(54,166,186,0.2)'
+  flex: 1; border-radius: 6px; font-family: ${MONO_FONT};
+  border: 1px solid ${props => {
+    if (props.$active && props.$variant === 'bullish') return COLORS.green
+    if (props.$active && props.$variant === 'bearish') return COLORS.red
+    return COLORS.borderSubtle
   }};
   background: ${props => {
-    if (props.$active && props.$variant === 'bullish') return 'rgba(22, 199, 132, 0.15)'
-    if (props.$active && props.$variant === 'bearish') return 'rgba(234, 57, 67, 0.15)'
-    return 'rgba(30, 57, 81, 0.4)'
+    if (props.$active && props.$variant === 'bullish') return 'rgba(0, 230, 118, 0.1)'
+    if (props.$active && props.$variant === 'bearish') return 'rgba(255, 23, 68, 0.1)'
+    return 'transparent'
   }};
-  color: var(--text-primary);
-  padding: 0.95rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  color: ${COLORS.textPrimary}; padding: 0.65rem 1rem;
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  transition: all 0.25s ease;
-  font-size: 0.95rem;
-  font-weight: 700;
-
+  transition: all 0.15s ease; font-size: 0.8rem; font-weight: 700;
   &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    border-color: ${props => props.$variant === 'bullish' ? '#16c784' : '#ea3943'};
-    background: ${props => props.$variant === 'bullish' 
-      ? 'rgba(22, 199, 132, 0.2)' 
-      : 'rgba(234, 57, 67, 0.2)'};
-    box-shadow: 0 4px 12px ${props => props.$variant === 'bullish' 
-      ? 'rgba(22, 199, 132, 0.3)' 
-      : 'rgba(234, 57, 67, 0.3)'};
+    border-color: ${props => props.$variant === 'bullish' ? COLORS.green : COLORS.red};
+    background: ${props => props.$variant === 'bullish' ? 'rgba(0, 230, 118, 0.08)' : 'rgba(255, 23, 68, 0.08)'};
   }
-
-  &:disabled {
-    opacity: 0.5;
-  }
-  
-  svg {
-    width: 20px;
-    height: 20px;
-  }
+  &:disabled { opacity: 0.4; }
+  svg { width: 16px; height: 16px; }
 `
 
 const SentimentLabel = styled.span`
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: ${props => props.$variant === 'bullish' ? '#16c784' : '#ea3943'};
+  font-size: 0.8rem; font-weight: 700;
+  color: ${props => props.$variant === 'bullish' ? COLORS.green : COLORS.red};
 `
 
 const SentimentProgressContainer = styled.div`
-  position: relative;
-  height: 6px;
-  background: rgba(30, 57, 81, 0.6);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 0.75rem;
+  position: relative; height: 4px; background: rgba(255, 255, 255, 0.04); border-radius: 2px; overflow: hidden; margin-bottom: 0.5rem;
 `
 
 const SentimentProgressBar = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: ${props => props.$percent}%;
-  background: linear-gradient(90deg, #16c784 0%, #0dab6d 100%);
-  transition: width 0.5s ease;
-  border-radius: 3px;
+  position: absolute; top: 0; left: 0; height: 100%; width: ${props => props.$percent}%;
+  background: ${COLORS.green}; transition: width 0.5s ease; border-radius: 2px;
 `
 
-const SentimentStats = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-`
+const SentimentStats = styled.div`display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;`
 
 const SentimentStat = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-weight: 600;
-  color: ${props => props.$variant === 'bullish' ? '#16c784' : '#ea3943'};
+  display: flex; align-items: center; gap: 0.25rem; font-weight: 700; font-family: ${MONO_FONT};
+  color: ${props => props.$variant === 'bullish' ? COLORS.green : COLORS.red};
 `
 
-const SentimentMeta = styled.div`
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-top: 0.75rem;
-  text-align: center;
-`
+const SentimentMeta = styled.div`font-size: 0.7rem; color: ${COLORS.textMuted}; margin-top: 0.5rem; text-align: center; font-family: ${SANS_FONT};`
 
 const MetricsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0; margin-bottom: 1.5rem;
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; overflow: hidden;
 `
 
 const MetricCard = styled.div`
-  background: rgba(30, 57, 81, 0.4);
-  border: 1px solid rgba(54, 166, 186, 0.15);
-  border-radius: 12px;
-  padding: 1rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: rgba(54, 166, 186, 0.4);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(54, 166, 186, 0.2);
+  padding: 1rem 1.25rem; text-align: center; position: relative;
+  &:not(:last-child)::after {
+    content: ''; position: absolute; right: 0; top: 20%; height: 60%; width: 1px; background: ${COLORS.borderSubtle};
   }
 `
 
 const MetricLabel = styled.div`
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.25rem;
+  font-size: 0.6rem; color: ${COLORS.textMuted}; margin-bottom: 0.4rem; text-transform: uppercase;
+  letter-spacing: 1.5px; font-family: ${SANS_FONT}; font-weight: 600;
 `
 
-const MetricValue = styled.div`
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text-primary);
-`
+const MetricValue = styled.div`font-size: 1.1rem; font-weight: 700; color: ${COLORS.textPrimary}; font-family: ${MONO_FONT};`
 
-const TimeFilters = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-`
+const TimeFilters = styled.div`display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.5rem;`
 
 const TimeButton = styled(Link)`
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  background: ${props => props.$active ? 'var(--primary)' : 'rgba(30, 57, 81, 0.6)'};
-  color: ${props => props.$active ? '#0a1621' : 'var(--text-primary)'};
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  border: 1px solid ${props => props.$active ? 'var(--primary)' : 'rgba(54, 166, 186, 0.2)'};
-
-  &:hover {
-    background: ${props => props.$active ? '#5dd5ed' : 'rgba(54, 166, 186, 0.2)'};
-    transform: translateY(-2px);
-  }
+  padding: 0.4rem 0.85rem; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 0.75rem;
+  font-family: ${MONO_FONT}; transition: all 0.15s ease;
+  background: ${props => props.$active ? 'rgba(0, 229, 255, 0.15)' : 'transparent'};
+  color: ${props => props.$active ? COLORS.cyan : COLORS.textMuted};
+  border: 1px solid ${props => props.$active ? 'rgba(0, 229, 255, 0.3)' : COLORS.borderSubtle};
+  &:hover { border-color: rgba(0, 229, 255, 0.2); color: ${COLORS.textPrimary}; }
 `
 
 const DeepDiveSection = styled(motion.div)`
-  background: rgba(13, 33, 52, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;
 `
 
-// (Removed TLDR styled components per request)
-
-const DeepDiveContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-`
+const DeepDiveContent = styled.div`display: flex; flex-direction: column; gap: 1.5rem;`
 
 const AnalysisBlock = styled.div`
-  background: rgba(30, 57, 81, 0.3);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid rgba(54, 166, 186, 0.15);
+  background: rgba(0, 229, 255, 0.02); border-radius: 6px; padding: 1.25rem;
+  border-left: 3px solid ${COLORS.cyan};
 `
 
 const BlockTitle = styled.h4`
-  color: var(--primary);
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  color: ${COLORS.cyan}; font-size: 0.95rem; font-weight: 700; margin: 0 0 0.4rem 0;
+  display: flex; align-items: center; gap: 0.5rem; font-family: ${SANS_FONT};
 `
 
 const BlockSubtitle = styled.div`
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-style: italic;
-  margin-bottom: 1rem;
+  color: ${COLORS.textMuted}; font-size: 0.8rem; font-style: italic; margin-bottom: 0.75rem; font-family: ${SANS_FONT};
 `
 
 const BlockContent = styled.div`
-  color: var(--text-primary);
-  line-height: 1.8;
-  
-  p {
-    margin: 0 0 1rem 0;
-    
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-  strong {
-    color: var(--primary);
-    font-weight: 700;
-  }
-
-  em {
-    color: var(--text-secondary);
-    font-style: italic;
-  }
+  color: ${COLORS.textPrimary}; line-height: 1.7; font-family: ${SANS_FONT}; font-size: 0.9rem;
+  p { margin: 0 0 0.75rem 0; &:last-child { margin-bottom: 0; } }
+  strong { color: ${COLORS.cyan}; font-weight: 700; }
+  em { color: ${COLORS.textMuted}; font-style: italic; }
 `
 
 const ConclusionBox = styled.div`
-  background: linear-gradient(135deg, rgba(155, 89, 182, 0.1) 0%, rgba(54, 166, 186, 0.1) 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid rgba(155, 89, 182, 0.3);
+  background: rgba(0, 229, 255, 0.03); border-radius: 6px; padding: 1.25rem;
+  border-left: 3px solid ${COLORS.cyan};
 `
 
-const ConclusionTitle = styled.h4`
-  color: #9b59b6;
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin: 0 0 1rem 0;
-`
+const ConclusionTitle = styled.h4`color: ${COLORS.cyan}; font-size: 1rem; font-weight: 700; margin: 0 0 0.75rem 0; font-family: ${SANS_FONT};`
 
 const ConclusionText = styled.div`
-  color: var(--text-primary);
-  line-height: 1.8;
-  
-  strong {
-    color: var(--primary);
-  }
+  color: ${COLORS.textPrimary}; line-height: 1.7; font-family: ${SANS_FONT}; font-size: 0.9rem;
+  strong { color: ${COLORS.cyan}; }
 `
 
 const DisclaimerText = styled.div`
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  font-style: italic;
-  text-align: center;
-  margin-top: 1.5rem;
-  opacity: 0.7;
+  color: ${COLORS.textMuted}; font-size: 0.75rem; font-style: italic; text-align: center;
+  margin-top: 1rem; opacity: 0.6; font-family: ${SANS_FONT};
 `
 
 const SentimentSection = styled(motion.div)`
-  background: rgba(13, 33, 52, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;
 `
 
 const SectionTitle = styled.h2`
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin: 0 0 1.5rem 0;
-  color: var(--primary);
+  font-family: ${MONO_FONT}; font-size: 0.85rem; font-weight: 700; color: ${COLORS.cyan};
+  letter-spacing: 1px; text-transform: uppercase; margin: 0 0 1.25rem 0;
+  &::before { content: '> '; color: ${COLORS.green}; font-weight: 800; }
 `
 
 const ChartsSection = styled(motion.div)`
-  background: rgba(13, 33, 52, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;
 `
 
 const ChartTabs = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 1rem;
+  display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 1px solid ${COLORS.borderSubtle};
 `
 
 const ChartTab = styled.button`
-  padding: 10px 20px;
-  border: none;
-  background: ${props => props.$active ? 'rgba(102, 126, 234, 0.2)' : 'transparent'};
-  color: ${props => props.$active ? '#667eea' : 'rgba(255, 255, 255, 0.6)'};
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid ${props => props.$active ? '#667eea' : 'transparent'};
-
-  &:hover {
-    background: rgba(102, 126, 234, 0.15);
-    color: #667eea;
-  }
+  padding: 0.6rem 1.25rem; border: none; background: transparent;
+  color: ${props => props.$active ? COLORS.cyan : COLORS.textMuted};
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: ${MONO_FONT};
+  transition: all 0.15s ease; position: relative;
+  border-bottom: 2px solid ${props => props.$active ? COLORS.cyan : 'transparent'};
+  margin-bottom: -1px;
+  &:hover { color: ${COLORS.textPrimary}; }
 `
 
-const ReasonsGrid = styled.div`
-  display: grid;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-`
+const ReasonsGrid = styled.div`display: grid; gap: 0.75rem; margin-bottom: 1.25rem;`
 
 const ReasonCard = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  background: rgba(30, 57, 81, 0.4);
-  border: 1px solid rgba(54, 166, 186, 0.15);
-  border-radius: 12px;
-  padding: 1.25rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: rgba(54, 166, 186, 0.4);
-    transform: translateX(4px);
-  }
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  background: rgba(0, 229, 255, 0.02); border: 1px solid ${COLORS.borderSubtle};
+  border-radius: 6px; padding: 1rem; transition: all 0.15s ease;
+  &:hover { border-color: rgba(0, 229, 255, 0.12); }
 `
 
-const ReasonIcon = styled.div`
-  font-size: 1.5rem;
-  flex-shrink: 0;
-`
-
-const ReasonContent = styled.div`
-  flex: 1;
-`
-
-const ReasonTitle = styled.div`
-  font-weight: 700;
-  color: var(--primary);
-  margin-bottom: 0.25rem;
-`
-
-const ReasonText = styled.div`
-  color: var(--text-secondary);
-  line-height: 1.6;
-`
+const ReasonIcon = styled.div`font-size: 1.2rem; flex-shrink: 0;`
+const ReasonContent = styled.div`flex: 1;`
+const ReasonTitle = styled.div`font-weight: 700; color: ${COLORS.cyan}; margin-bottom: 0.2rem; font-family: ${SANS_FONT}; font-size: 0.9rem;`
+const ReasonText = styled.div`color: ${COLORS.textMuted}; line-height: 1.5; font-family: ${SANS_FONT}; font-size: 0.85rem;`
 
 const VoteStatusMessage = styled.div`
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: ${props => props.$type === 'error' ? '#e74c3c' : '#2ecc71'};
+  font-size: 0.8rem; font-weight: 600; font-family: ${SANS_FONT};
+  color: ${props => props.$type === 'error' ? COLORS.red : COLORS.green};
 `
 
 const OrcaButton = styled(motion.button)`
-  width: 100%;
-  padding: 1.25rem 2rem;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #9b59b6 0%, #36a6ba 100%);
-  color: white;
-  font-size: 1.1rem;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(155, 89, 182, 0.3);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(155, 89, 182, 0.4);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+  width: 100%; padding: 1rem; border-radius: 6px;
+  background: transparent; color: ${COLORS.cyan}; font-size: 0.85rem; font-weight: 700;
+  border: 1px solid ${COLORS.borderSubtle}; cursor: pointer; font-family: ${MONO_FONT};
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  transition: all 0.15s ease; letter-spacing: 0.5px;
+  &:hover { border-color: rgba(0, 229, 255, 0.3); background: rgba(0, 229, 255, 0.04); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
 `
 
 const ModalOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  z-index: 9998;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  position: fixed; inset: 0; background: rgba(10, 14, 23, 0.92); backdrop-filter: blur(12px);
+  z-index: 9998; display: flex; align-items: center; justify-content: center; padding: 2rem;
 `
 
 const ModalContent = styled(motion.div)`
-  background: linear-gradient(135deg, #0d2134 0%, #1a2f42 100%);
-  border: 2px solid rgba(54, 166, 186, 0.3);
-  border-radius: 20px;
-  max-width: 900px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 2.5rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  position: relative;
-  z-index: 9999;
-
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: rgba(30, 57, 81, 0.3);
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 4px;
-  }
+  background: rgba(13, 17, 28, 0.95); border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 12px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto;
+  padding: 2rem; box-shadow: 0 0 60px rgba(0, 229, 255, 0.08); position: relative; z-index: 9999;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.1); border-radius: 2px; }
 `
 
 const CloseButton = styled.button`
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  background: rgba(231, 76, 60, 0.2);
-  border: 1px solid rgba(231, 76, 60, 0.4);
-  color: #e74c3c;
-  font-size: 1.5rem;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: rgba(231, 76, 60, 0.4);
-    transform: rotate(90deg);
-  }
+  position: absolute; top: 1rem; right: 1rem;
+  background: rgba(255, 23, 68, 0.1); border: 1px solid rgba(255, 23, 68, 0.2);
+  color: ${COLORS.red}; font-size: 1.2rem; width: 32px; height: 32px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  font-family: ${MONO_FONT}; transition: all 0.15s ease;
+  &:hover { background: rgba(255, 23, 68, 0.2); }
 `
 
 const AnalysisContent = styled.div`
-  h3 {
-    color: var(--primary);
-    font-size: 1.5rem;
-    font-weight: 800;
-    margin: 2rem 0 1rem 0;
-    
-    &:first-child {
-      margin-top: 0;
-    }
-  }
-
-  p {
-    color: var(--text-secondary);
-    line-height: 1.8;
-    margin: 1rem 0;
-  }
-
-  ul, ol {
-    color: var(--text-secondary);
-    line-height: 2;
-    padding-left: 1.5rem;
-  }
-
-  li {
-    margin: 0.5rem 0;
-  }
-
-  strong {
-    color: var(--text-primary);
-    font-weight: 700;
-  }
+  h3 { color: ${COLORS.cyan}; font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.75rem 0; font-family: ${SANS_FONT}; &:first-child { margin-top: 0; } }
+  p { color: ${COLORS.textMuted}; line-height: 1.7; margin: 0.75rem 0; font-family: ${SANS_FONT}; }
+  ul, ol { color: ${COLORS.textMuted}; line-height: 1.8; padding-left: 1.25rem; font-family: ${SANS_FONT}; }
+  li { margin: 0.4rem 0; }
+  strong { color: ${COLORS.textPrimary}; font-weight: 700; }
 `
 
 const RecommendationCard = styled.div`
-  background: ${props => 
-    props.$type === 'BUY' ? 'linear-gradient(135deg, rgba(46,204,113,0.15) 0%, rgba(46,204,113,0.05) 100%)' :
-    props.$type === 'AVOID' ? 'linear-gradient(135deg, rgba(231,76,60,0.15) 0%, rgba(231,76,60,0.05) 100%)' :
-    'linear-gradient(135deg, rgba(243,156,18,0.15) 0%, rgba(243,156,18,0.05) 100%)'
-  };
-  border: 1px solid ${props => 
-    props.$type === 'BUY' ? 'rgba(46,204,113,0.3)' :
-    props.$type === 'AVOID' ? 'rgba(231,76,60,0.3)' :
-    'rgba(243,156,18,0.3)'
-  };
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 1.5rem 0;
+  background: ${props => props.$type === 'BUY' ? 'rgba(0, 230, 118, 0.06)' : props.$type === 'AVOID' ? 'rgba(255, 23, 68, 0.06)' : 'rgba(255, 171, 0, 0.06)'};
+  border: 1px solid ${props => props.$type === 'BUY' ? 'rgba(0, 230, 118, 0.15)' : props.$type === 'AVOID' ? 'rgba(255, 23, 68, 0.15)' : 'rgba(255, 171, 0, 0.15)'};
+  border-radius: 6px; padding: 1.25rem; margin: 1.25rem 0;
 `
 
 const RecType = styled.div`
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: ${props => 
-    props.$type === 'BUY' ? '#2ecc71' :
-    props.$type === 'AVOID' ? '#e74c3c' :
-    '#f39c12'
-  };
-  margin-bottom: 0.5rem;
+  font-size: 1.1rem; font-weight: 800; font-family: ${MONO_FONT};
+  color: ${props => props.$type === 'BUY' ? COLORS.green : props.$type === 'AVOID' ? COLORS.red : COLORS.amber};
+  margin-bottom: 0.4rem;
 `
 
-const RecConfidence = styled.div`
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
-`
+const RecConfidence = styled.div`font-size: 0.8rem; color: ${COLORS.textMuted}; margin-bottom: 0.75rem; font-family: ${MONO_FONT};`
 
-const TransactionsSection = styled.div`
-  background: rgba(13, 33, 52, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-`
+const TransactionsSection = styled(Panel)``
 
 const Table = styled.table`
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 0.5rem;
-
-  thead tr {
-    background: rgba(30, 57, 81, 0.6);
-  }
-
+  width: 100%; border-collapse: collapse; font-family: ${MONO_FONT};
   th {
-    padding: 1rem;
-    text-align: left;
-    font-weight: 700;
-    color: var(--primary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border: none;
-
-    &:first-child {
-      border-top-left-radius: 8px;
-      border-bottom-left-radius: 8px;
-    }
-
-    &:last-child {
-      border-top-right-radius: 8px;
-      border-bottom-right-radius: 8px;
-    }
+    padding: 0.65rem 0.75rem; text-align: left; font-size: 0.65rem; font-weight: 600;
+    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
+    white-space: nowrap; font-family: ${SANS_FONT};
   }
-
   tbody tr {
-    background: rgba(30, 57, 81, 0.3);
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(54, 166, 186, 0.1);
-      transform: translateX(4px);
-    }
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02); transition: background 0.15s ease; cursor: default;
   }
-
+  tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
   td {
-    padding: 1rem;
-    color: var(--text-secondary);
-    border: none;
-
-    &:first-child {
-      border-top-left-radius: 8px;
-      border-bottom-left-radius: 8px;
-    }
-
-    &:last-child {
-      border-top-right-radius: 8px;
-      border-bottom-right-radius: 8px;
-    }
+    padding: 0.65rem 0.75rem; color: ${COLORS.textPrimary}; font-size: 0.8rem; white-space: nowrap;
   }
-
-  a {
-    color: var(--primary);
-    text-decoration: none;
-    transition: color 0.3s ease;
-
-    &:hover {
-      color: #5dd5ed;
-    }
-  }
+  a { color: ${COLORS.cyan}; text-decoration: none; font-weight: 600; &:hover { text-decoration: underline; } }
 `
 
 const EntityWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-
-  .primary {
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .secondary {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-  }
-
-  a {
-    color: var(--primary);
-    text-decoration: none;
-  }
+  display: flex; flex-direction: column; gap: 0.15rem;
+  .primary { font-weight: 600; color: ${COLORS.textPrimary}; }
+  .secondary { font-size: 0.7rem; color: ${COLORS.textMuted}; }
+  a { color: ${COLORS.cyan}; text-decoration: none; }
 `
 
 const CounterpartyTag = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: 1px solid rgba(54, 166, 186, 0.4);
-  color: var(--text-secondary);
-  margin-top: 0.25rem;
+  display: inline-flex; align-items: center; padding: 0.15rem 0.4rem; border-radius: 3px;
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;
+  border: 1px solid ${COLORS.borderSubtle}; color: ${COLORS.textMuted}; margin-top: 0.15rem;
+  font-family: ${MONO_FONT};
 `
 
 const ReasoningCell = styled.div`
-  max-width: 320px;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
+  max-width: 280px; font-size: 0.75rem; color: ${COLORS.textMuted}; line-height: 1.4; font-family: ${SANS_FONT};
 `
 
 const TxBadge = styled.span`
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  background: ${props => props.$type === 'BUY' ? 'rgba(46,204,113,0.2)' : props.$type === 'SELL' ? 'rgba(231,76,60,0.2)' : 'rgba(243,156,18,0.2)'};
-  color: ${props => props.$type === 'BUY' ? '#2ecc71' : props.$type === 'SELL' ? '#e74c3c' : '#f39c12'};
-  border: 1px solid ${props => props.$type === 'BUY' ? 'rgba(46,204,113,0.4)' : props.$type === 'SELL' ? 'rgba(231,76,60,0.4)' : 'rgba(243,156,18,0.4)'};
+  padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.7rem;
+  font-family: ${MONO_FONT}; letter-spacing: 0.5px; text-transform: uppercase;
+  background: ${props => props.$type === 'BUY' ? 'rgba(0, 230, 118, 0.08)' : props.$type === 'SELL' ? 'rgba(255, 23, 68, 0.08)' : 'rgba(255, 171, 0, 0.08)'};
+  color: ${props => props.$type === 'BUY' ? COLORS.green : props.$type === 'SELL' ? COLORS.red : COLORS.amber};
+  border: 1px solid ${props => props.$type === 'BUY' ? 'rgba(0, 230, 118, 0.12)' : props.$type === 'SELL' ? 'rgba(255, 23, 68, 0.12)' : 'rgba(255, 171, 0, 0.12)'};
 `
 
 const LoadingSpinner = styled.div`
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; border-top-color: ${COLORS.cyan};
   animation: spin 0.8s linear infinite;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 `
 
 const getInsightIcon = (iconName) => {
@@ -1179,7 +739,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   return (
     <PageWrapper>
       <Container>
-        <BackLink href="/dashboard">← Back to Dashboard</BackLink>
+        <BackLink href="/dashboard">&lt; BACK TO DASHBOARD</BackLink>
 
         <Header>
           <TokenTitle>
@@ -1193,30 +753,30 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               />
             ) : (
               <div style={{
-                width: '56px',
-                height: '56px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
-                border: '2px solid var(--primary)',
-                background: 'linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%)',
+                border: `1px solid ${COLORS.borderSubtle}`,
+                background: 'rgba(0, 229, 255, 0.08)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.5rem',
+                fontSize: '1rem',
                 fontWeight: 800,
-                color: 'white',
-                boxShadow: '0 4px 12px rgba(54, 166, 186, 0.3)'
+                color: COLORS.cyan,
+                fontFamily: MONO_FONT
               }}>
                 {symbol.slice(0, 2)}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
               <TokenName>{symbol}</TokenName>
               {priceData?.name && priceData.name !== symbol && (
                 <span style={{ 
-                  color: 'var(--text-secondary)', 
-                  fontSize: '1rem', 
+                  color: COLORS.textMuted, 
+                  fontSize: '0.85rem', 
                   fontWeight: 500,
-                  marginTop: '-0.5rem'
+                  fontFamily: SANS_FONT
                 }}>
                   {priceData.name}
                 </span>
