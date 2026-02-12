@@ -2,197 +2,162 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
 import { motion } from 'framer-motion'
 import TokenIcon from '@/components/TokenIcon'
 import AuthGuard from '@/app/components/AuthGuard'
 
+const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
+const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+const COLORS = {
+  cyan: '#00e5ff', green: '#00e676', red: '#ff1744', amber: '#ffab00',
+  textPrimary: '#e0e6ed', textMuted: '#5a6a7a',
+  panelBg: 'rgba(13, 17, 28, 0.8)', borderSubtle: 'rgba(0, 229, 255, 0.08)',
+}
+
+const pulseGlow = keyframes`
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px #00e676; }
+  50% { opacity: 0.4; box-shadow: 0 0 8px #00e676; }
+`
+
 const PageWrapper = styled.div`
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a1621 0%, #0f1922 50%, #0a1621 100%);
+  background: #0a0e17;
   padding: 2rem;
   position: relative;
-
   &::before {
     content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 30%, rgba(54, 166, 186, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, rgba(46, 204, 113, 0.06) 0%, transparent 50%);
-    pointer-events: none;
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.008) 2px, rgba(0, 229, 255, 0.008) 4px);
+    pointer-events: none; z-index: 0;
   }
 `
 
 const Container = styled.div`
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
   position: relative;
   z-index: 1;
 `
 
-const Header = styled.div`
-  margin-bottom: 2rem;
+const PageTitle = styled.div`
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;
+  font-family: ${MONO_FONT}; flex-wrap: wrap;
 `
 
-const Title = styled.h1`
-  font-size: 3rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem 0;
-  background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+const TitleText = styled.h1`
+  font-family: ${MONO_FONT}; font-size: 0.9rem; font-weight: 700;
+  color: ${COLORS.cyan}; letter-spacing: 1.5px; text-transform: uppercase; margin: 0;
+  &::before { content: '> '; color: ${COLORS.green}; font-weight: 800; }
 `
 
-const Subtitle = styled.p`
-  color: var(--text-secondary);
-  font-size: 1.1rem;
-  margin: 0;
-`
-
-const FiltersBar = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  align-items: center;
-`
-
-const FilterButton = styled.button`
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: 1px solid ${props => props.$active ? '#667eea' : 'rgba(255, 255, 255, 0.2)'};
-  background: ${props => props.$active ? 'rgba(102, 126, 234, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
-  color: ${props => props.$active ? '#667eea' : 'rgba(255, 255, 255, 0.8)'};
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(102, 126, 234, 0.15);
-    border-color: #667eea;
+const LiveDot = styled.span`
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.7rem; font-weight: 600; color: ${COLORS.green};
+  text-transform: uppercase; letter-spacing: 1px; font-family: ${MONO_FONT};
+  &::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: ${COLORS.green}; animation: ${pulseGlow} 2s ease-in-out infinite;
   }
 `
 
-const FilterLabel = styled.span`
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 600;
+const FiltersBar = styled.div`
+  display: flex; gap: 0.4rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;
 `
 
-const SectionTitle = styled.h2`
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin: 0 0 1.5rem 0;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  gap: 12px;
+const FilterButton = styled.button`
+  background: ${props => props.$active ? 'rgba(0, 229, 255, 0.15)' : 'transparent'};
+  color: ${props => props.$active ? COLORS.cyan : COLORS.textMuted};
+  border: 1px solid ${props => props.$active ? 'rgba(0, 229, 255, 0.3)' : COLORS.borderSubtle};
+  border-radius: 4px; padding: 0.4rem 0.85rem; font-size: 0.75rem;
+  font-weight: 600; font-family: ${MONO_FONT}; cursor: pointer;
+  transition: all 0.15s ease;
+  &:hover { border-color: rgba(0, 229, 255, 0.2); color: ${COLORS.textPrimary}; }
+`
+
+const Panel = styled.div`
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px;
+  padding: 1.5rem; margin-bottom: 1.5rem;
+`
+
+const TerminalPrompt = styled.h2`
+  font-family: ${MONO_FONT}; font-size: 0.85rem; font-weight: 700;
+  color: ${COLORS.cyan}; letter-spacing: 1px; text-transform: uppercase;
+  margin: 0 0 1.25rem 0; display: flex; align-items: center; gap: 0.5rem;
+  &::before { content: '>'; color: ${COLORS.green}; font-weight: 800; }
 `
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
 `
 
 const CoinCard = styled(motion.div)`
-  background: rgba(13, 33, 52, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 1.5rem;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  &:hover {
-    transform: translateY(-4px);
-    border-color: var(--primary);
-    box-shadow: 0 12px 40px rgba(54, 166, 186, 0.3);
-  }
+  background: rgba(0, 229, 255, 0.02);
+  border: 1px solid ${COLORS.borderSubtle};
+  border-radius: 6px; padding: 1.25rem; cursor: pointer;
+  transition: all 0.15s ease;
+  &:hover { border-color: rgba(0, 229, 255, 0.15); background: rgba(0, 229, 255, 0.04); }
 `
 
 const CoinHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
 `
 
-const CoinInfo = styled.div`
-  flex: 1;
-`
+const CoinInfo = styled.div`flex: 1;`
 
 const CoinName = styled.div`
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 2px;
+  font-size: 0.95rem; font-weight: 700; color: ${COLORS.textPrimary};
+  font-family: ${SANS_FONT}; margin-bottom: 2px;
 `
 
 const CoinSymbol = styled.div`
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
+  font-size: 0.75rem; color: ${COLORS.textMuted}; text-transform: uppercase;
+  font-family: ${MONO_FONT}; letter-spacing: 0.5px;
 `
 
 const Rank = styled.div`
-  background: rgba(102, 126, 234, 0.2);
-  color: #667eea;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 700;
+  background: rgba(0, 229, 255, 0.08); color: ${COLORS.cyan};
+  padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem;
+  font-weight: 700; font-family: ${MONO_FONT};
+  border: 1px solid rgba(0, 229, 255, 0.12);
 `
 
 const CoinMetrics = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
 `
 
-const Metric = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`
+const Metric = styled.div`display: flex; flex-direction: column; gap: 2px;`
 
 const MetricLabel = styled.div`
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 0.6rem; color: ${COLORS.textMuted}; text-transform: uppercase;
+  letter-spacing: 1.5px; font-family: ${SANS_FONT}; font-weight: 600;
 `
 
 const MetricValue = styled.div`
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 0.9rem; font-weight: 700; color: ${COLORS.textPrimary};
+  font-family: ${MONO_FONT};
 `
 
 const ChangeValue = styled.div`
-  font-size: 1rem;
-  font-weight: 700;
-  color: ${props => props.$positive ? '#2ecc71' : '#e74c3c'};
+  font-size: 0.9rem; font-weight: 700; font-family: ${MONO_FONT};
+  color: ${props => props.$positive ? COLORS.green : COLORS.red};
+  text-shadow: 0 0 15px ${props => props.$positive ? 'rgba(0, 230, 118, 0.2)' : 'rgba(255, 23, 68, 0.2)'};
 `
 
 const LoadingState = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  color: var(--text-secondary);
-  font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 400px; color: ${COLORS.textMuted}; font-family: ${MONO_FONT}; font-size: 0.85rem;
 `
 
-const ErrorState = styled(LoadingState)`
-  color: #ef4444;
-`
+const ErrorState = styled(LoadingState)`color: ${COLORS.red};`
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+}
 
 export default function TrendingPage() {
   const [trendingData, setTrendingData] = useState(null)
@@ -244,25 +209,18 @@ export default function TrendingPage() {
     <AuthGuard>
       <PageWrapper>
         <Container>
-          <Header>
-            <Title>Trending Coins</Title>
-            <Subtitle>Discover what's hot in crypto right now</Subtitle>
-          </Header>
+          <motion.div variants={fadeUp} initial="hidden" animate="visible">
+            <PageTitle>
+              <TitleText>TRENDING_COINS</TitleText>
+              <LiveDot>LIVE</LiveDot>
+            </PageTitle>
+          </motion.div>
 
           <FiltersBar>
-            <FilterLabel>Timeframe:</FilterLabel>
-            <FilterButton $active={activeFilter === '1h'} onClick={() => setActiveFilter('1h')}>
-              1 Hour
-            </FilterButton>
-            <FilterButton $active={activeFilter === '24h'} onClick={() => setActiveFilter('24h')}>
-              24 Hours
-            </FilterButton>
-            <FilterButton $active={activeFilter === '7d'} onClick={() => setActiveFilter('7d')}>
-              7 Days
-            </FilterButton>
-            <FilterButton $active={activeFilter === '30d'} onClick={() => setActiveFilter('30d')}>
-              30 Days
-            </FilterButton>
+            <FilterButton $active={activeFilter === '1h'} onClick={() => setActiveFilter('1h')}>1H</FilterButton>
+            <FilterButton $active={activeFilter === '24h'} onClick={() => setActiveFilter('24h')}>24H</FilterButton>
+            <FilterButton $active={activeFilter === '7d'} onClick={() => setActiveFilter('7d')}>7D</FilterButton>
+            <FilterButton $active={activeFilter === '30d'} onClick={() => setActiveFilter('30d')}>30D</FilterButton>
           </FiltersBar>
 
           {loading && <LoadingState>Loading trending coins...</LoadingState>}
@@ -271,85 +229,47 @@ export default function TrendingPage() {
           {!loading && !error && trendingData && (
             <>
               {/* Trending Coins */}
-              <SectionTitle>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-                </svg>
-                Trending Now
-              </SectionTitle>
-              <Grid>
-                {trendingData.trending?.map((coin) => (
-                  <Link 
-                    key={coin.id} 
-                    href={`/token/${coin.symbol}`}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <CoinCard
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <CoinHeader>
-                        <TokenIcon 
-                          symbol={coin.symbol}
-                          coingeckoId={coin.id}
-                          imageUrl={coin.large}
-                          size={48}
-                        />
-                        <CoinInfo>
-                          <CoinName>{coin.name}</CoinName>
-                          <CoinSymbol>{coin.symbol}</CoinSymbol>
-                        </CoinInfo>
-                        {coin.market_cap_rank && (
-                          <Rank>#{coin.market_cap_rank}</Rank>
-                        )}
-                      </CoinHeader>
-                      <CoinMetrics>
-                        <Metric>
-                          <MetricLabel>Score</MetricLabel>
-                          <MetricValue>{coin.score || 'N/A'}</MetricValue>
-                        </Metric>
-                      </CoinMetrics>
-                    </CoinCard>
-                  </Link>
-                ))}
-              </Grid>
+              <Panel>
+                <TerminalPrompt>TRENDING_NOW</TerminalPrompt>
+                <Grid>
+                  {trendingData.trending?.map((coin) => (
+                    <Link key={coin.id} href={`/token/${coin.symbol}`} style={{ textDecoration: 'none' }}>
+                      <CoinCard variants={fadeUp} initial="hidden" animate="visible">
+                        <CoinHeader>
+                          <TokenIcon symbol={coin.symbol} coingeckoId={coin.id} imageUrl={coin.large} size={36} />
+                          <CoinInfo>
+                            <CoinName>{coin.name}</CoinName>
+                            <CoinSymbol>{coin.symbol}</CoinSymbol>
+                          </CoinInfo>
+                          {coin.market_cap_rank && <Rank>#{coin.market_cap_rank}</Rank>}
+                        </CoinHeader>
+                        <CoinMetrics>
+                          <Metric>
+                            <MetricLabel>Score</MetricLabel>
+                            <MetricValue>{coin.score != null ? coin.score : 'N/A'}</MetricValue>
+                          </Metric>
+                        </CoinMetrics>
+                      </CoinCard>
+                    </Link>
+                  ))}
+                </Grid>
+              </Panel>
 
               {/* Top Gainers */}
               {trendingData.top_gainers && trendingData.top_gainers.length > 0 && (
-                <>
-                  <SectionTitle>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="#2ecc71"/>
-                    </svg>
-                    <span style={{ color: '#2ecc71' }}>Top Gainers</span>
-                  </SectionTitle>
+                <Panel>
+                  <TerminalPrompt style={{ color: COLORS.green }}>TOP_GAINERS</TerminalPrompt>
                   <Grid>
                     {trendingData.top_gainers.slice(0, 12).map((coin) => (
-                      <Link 
-                        key={coin.id} 
-                        href={`/token/${coin.symbol}`}
-                        style={{ textDecoration: 'none' }}
-                      >
-                        <CoinCard
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
+                      <Link key={coin.id} href={`/token/${coin.symbol}`} style={{ textDecoration: 'none' }}>
+                        <CoinCard variants={fadeUp} initial="hidden" animate="visible">
                           <CoinHeader>
-                            <TokenIcon 
-                              symbol={coin.symbol}
-                              coingeckoId={coin.id}
-                              imageUrl={coin.image}
-                              size={48}
-                            />
+                            <TokenIcon symbol={coin.symbol} coingeckoId={coin.id} imageUrl={coin.image} size={36} />
                             <CoinInfo>
                               <CoinName>{coin.name}</CoinName>
                               <CoinSymbol>{coin.symbol}</CoinSymbol>
                             </CoinInfo>
-                            {coin.market_cap_rank && (
-                              <Rank>#{coin.market_cap_rank}</Rank>
-                            )}
+                            {coin.market_cap_rank && <Rank>#{coin.market_cap_rank}</Rank>}
                           </CoinHeader>
                           <CoinMetrics>
                             <Metric>
@@ -358,9 +278,7 @@ export default function TrendingPage() {
                             </Metric>
                             <Metric>
                               <MetricLabel>{activeFilter} Change</MetricLabel>
-                              <ChangeValue $positive={true}>
-                                +{coin.price_change_percentage?.toFixed(2)}%
-                              </ChangeValue>
+                              <ChangeValue $positive={true}>+{coin.price_change_percentage?.toFixed(2)}%</ChangeValue>
                             </Metric>
                             <Metric>
                               <MetricLabel>Market Cap</MetricLabel>
@@ -375,44 +293,24 @@ export default function TrendingPage() {
                       </Link>
                     ))}
                   </Grid>
-                </>
+                </Panel>
               )}
 
               {/* Top Losers */}
               {trendingData.top_losers && trendingData.top_losers.length > 0 && (
-                <>
-                  <SectionTitle>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M16 18l2.29-2.29-4.88-4.88-4 4L2 7.41 3.41 6l6 6 4-4 6.3 6.29L22 12v6z" fill="#e74c3c"/>
-                    </svg>
-                    <span style={{ color: '#e74c3c' }}>Top Losers</span>
-                  </SectionTitle>
+                <Panel>
+                  <TerminalPrompt style={{ color: COLORS.red }}>TOP_LOSERS</TerminalPrompt>
                   <Grid>
                     {trendingData.top_losers.slice(0, 12).map((coin) => (
-                      <Link 
-                        key={coin.id} 
-                        href={`/token/${coin.symbol}`}
-                        style={{ textDecoration: 'none' }}
-                      >
-                        <CoinCard
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
+                      <Link key={coin.id} href={`/token/${coin.symbol}`} style={{ textDecoration: 'none' }}>
+                        <CoinCard variants={fadeUp} initial="hidden" animate="visible">
                           <CoinHeader>
-                            <TokenIcon 
-                              symbol={coin.symbol}
-                              coingeckoId={coin.id}
-                              imageUrl={coin.image}
-                              size={48}
-                            />
+                            <TokenIcon symbol={coin.symbol} coingeckoId={coin.id} imageUrl={coin.image} size={36} />
                             <CoinInfo>
                               <CoinName>{coin.name}</CoinName>
                               <CoinSymbol>{coin.symbol}</CoinSymbol>
                             </CoinInfo>
-                            {coin.market_cap_rank && (
-                              <Rank>#{coin.market_cap_rank}</Rank>
-                            )}
+                            {coin.market_cap_rank && <Rank>#{coin.market_cap_rank}</Rank>}
                           </CoinHeader>
                           <CoinMetrics>
                             <Metric>
@@ -421,9 +319,7 @@ export default function TrendingPage() {
                             </Metric>
                             <Metric>
                               <MetricLabel>{activeFilter} Change</MetricLabel>
-                              <ChangeValue $positive={false}>
-                                {coin.price_change_percentage?.toFixed(2)}%
-                              </ChangeValue>
+                              <ChangeValue $positive={false}>{coin.price_change_percentage?.toFixed(2)}%</ChangeValue>
                             </Metric>
                             <Metric>
                               <MetricLabel>Market Cap</MetricLabel>
@@ -438,7 +334,7 @@ export default function TrendingPage() {
                       </Link>
                     ))}
                   </Grid>
-                </>
+                </Panel>
               )}
             </>
           )}
