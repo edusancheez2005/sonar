@@ -1,10 +1,12 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
 import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import Link from 'next/link'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import OrcaTutorial from '@/components/onboarding/OrcaTutorial'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -468,6 +470,39 @@ const formatCompact = (n) => {
   return `${Math.round(num)}`;
 }
 
+// Greeting component for personalized welcome
+const GreetingBanner = styled(motion.div)`
+  background: linear-gradient(135deg, rgba(54, 166, 186, 0.1) 0%, rgba(30, 57, 81, 0.3) 100%);
+  border: 1px solid rgba(54, 166, 186, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  
+  .greeting-text {
+    font-size: 1.15rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 50%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .wave-emoji {
+    font-size: 1.4rem;
+    display: inline-block;
+    animation: wave 2s ease-in-out infinite;
+  }
+  
+  @keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(20deg); }
+    75% { transform: rotate(-10deg); }
+  }
+`;
+
 const Dashboard = ({ isPremium = false }) => {
   console.log('🔍 Dashboard isPremium:', isPremium)
   
@@ -478,6 +513,17 @@ const Dashboard = ({ isPremium = false }) => {
   const [tokenTradeCounts, setTokenTradeCounts] = useState([]);
   const [noData24h, setNoData24h] = useState(false);
   const [lastUpdate, setLastUpdate] = useState('now');
+  
+  // User greeting state
+  const [userName, setUserName] = useState('');
+  const [showTutorial, setShowTutorial] = useState(false);
+  
+  // Refs for tutorial targeting
+  const marketPulseRef = useRef(null);
+  const inflowsRef = useRef(null);
+  const outflowsRef = useRef(null);
+  const tradedTokensRef = useRef(null);
+  const topWhalesRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [algoActive, setAlgoActive] = useState(true);
   
@@ -492,6 +538,34 @@ const Dashboard = ({ isPremium = false }) => {
   const [tokenInflows, setTokenInflows] = useState([])
   const [tokenOutflows, setTokenOutflows] = useState([])
   const [overall, setOverall] = useState({ totalCount: 0, totalVolume: 0, buyCount: 0, sellCount: 0, buyVolume: 0, sellVolume: 0 })
+
+  // Fetch user info and check tutorial state
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const sb = supabaseBrowser()
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.user) {
+          const displayName = session.user.user_metadata?.full_name 
+            || session.user.user_metadata?.name 
+            || session.user.email?.split('@')[0]
+            || 'there'
+          setUserName(displayName)
+        }
+      } catch (err) {
+        console.error('Failed to fetch user info:', err)
+      }
+    }
+    
+    // Check if tutorial should show
+    const hasSeenTutorial = localStorage.getItem('sonar_tutorial_completed')
+    if (!hasSeenTutorial) {
+      // Small delay to let dashboard render first
+      setTimeout(() => setShowTutorial(true), 1000)
+    }
+    
+    fetchUserInfo()
+  }, [])
 
   useEffect(() => {
     let timer
@@ -684,6 +758,34 @@ const Dashboard = ({ isPremium = false }) => {
              <StatusBadge active={algoActive}>
                <Dot /> {algoActive ? 'Algorithm Active' : 'Algorithm Not Active'}
              </StatusBadge>
+             <button
+               onClick={() => {
+                 localStorage.removeItem('sonar_tutorial_completed')
+                 setShowTutorial(true)
+               }}
+               style={{
+                 background: 'rgba(54, 166, 186, 0.15)',
+                 border: '1px solid rgba(54, 166, 186, 0.3)',
+                 borderRadius: '999px',
+                 padding: '0.35rem 0.75rem',
+                 color: 'var(--primary)',
+                 fontSize: '0.85rem',
+                 fontWeight: 500,
+                 cursor: 'pointer',
+                 display: 'flex',
+                 alignItems: 'center',
+                 gap: '0.4rem',
+                 transition: 'all 0.2s ease'
+               }}
+               onMouseEnter={(e) => {
+                 e.currentTarget.style.background = 'rgba(54, 166, 186, 0.25)'
+               }}
+               onMouseLeave={(e) => {
+                 e.currentTarget.style.background = 'rgba(54, 166, 186, 0.15)'
+               }}
+             >
+               🐋 Tutorial
+             </button>
            </FilterContainer>
          </PageHeader>
          
@@ -715,15 +817,24 @@ const Dashboard = ({ isPremium = false }) => {
              Tracking transactions $500,000+
            </p>
          </div>
+         
+         {/* Personalized Greeting */}
+         {userName && (
+           <GreetingBanner
+             initial={{ opacity: 0, x: -20 }}
+             animate={{ opacity: 1, x: 0 }}
+             transition={{ duration: 0.5, delay: 0.2 }}
+           >
+             <span className="wave-emoji">👋</span>
+             <span className="greeting-text">Welcome back, {userName}!</span>
+           </GreetingBanner>
+         )}
        </motion.div>
 
-      
-
-
       {/* Market Pulse - High-level sentiment overview */}
-      <motion.div variants={containerVariants} initial="hidden" animate="visible">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" ref={marketPulseRef} data-tutorial="market-pulse">
         <DashboardCard>
-          <h2>Market Pulse (24h)</h2>
+          <h2>Market Pulse</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
             <div style={{ 
               background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(46, 204, 113, 0.05) 100%)', 
@@ -841,10 +952,10 @@ const Dashboard = ({ isPremium = false }) => {
       </motion.div>
 
       {/* Net Inflows/Outflows section */}
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }}>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }} ref={inflowsRef} data-tutorial="inflows-outflows">
         <GridContainer>
           <DashboardCard>
-            <h2>Top Net Inflows (24h)</h2>
+            <h2>Top Net Inflows</h2>
             {tokenInflows.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
             ) : (
@@ -899,7 +1010,7 @@ const Dashboard = ({ isPremium = false }) => {
           </DashboardCard>
 
           <DashboardCard>
-            <h2>Top Net Outflows (24h)</h2>
+            <h2>Top Net Outflows</h2>
             {tokenOutflows.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
             ) : (
@@ -1010,7 +1121,7 @@ const Dashboard = ({ isPremium = false }) => {
 
              
 
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }}>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }} ref={tradedTokensRef} data-tutorial="traded-tokens">
         <DashboardCard>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
@@ -1158,7 +1269,9 @@ const Dashboard = ({ isPremium = false }) => {
       </motion.div>
 
       {/* Top 10 Whales (7 Days) Section */}
-      <TopWhalesSection />
+      <div ref={topWhalesRef} data-tutorial="top-whales">
+        <TopWhalesSection />
+      </div>
         </>
       ) : (
         <motion.div 
@@ -1205,6 +1318,18 @@ const Dashboard = ({ isPremium = false }) => {
       <WhaleAlertsCard isPremium={isPremium} />
         </BlurredContent>
     </DashboardContainer>
+    
+    {/* Orca Onboarding Tutorial */}
+    <OrcaTutorial 
+      isOpen={showTutorial} 
+      onClose={() => setShowTutorial(false)}
+      refs={{
+        marketPulse: marketPulseRef,
+        inflowsOutflows: inflowsRef,
+        tradedTokens: tradedTokensRef,
+        topWhales: topWhalesRef
+      }}
+    />
     </>
   )
 }
