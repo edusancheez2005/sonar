@@ -55,6 +55,27 @@ interface CoinGeckoChartData {
   price_swing_7d: { high: number, low: number }
   volume_trend: string
   market_cap_rank: number | null
+  sentiment_votes_up_pct: number | null
+  watchlist_users: number | null
+  community_data: any | null
+  developer_data: any | null
+  market_data_enriched: {
+    price_change_1h: number | null
+    price_change_24h: number | null
+    price_change_7d: number | null
+    price_change_14d: number | null
+    price_change_30d: number | null
+    price_change_60d: number | null
+    price_change_200d: number | null
+    price_change_1y: number | null
+    total_supply: number | null
+    max_supply: number | null
+    circulating_supply: number | null
+    fdv: number | null
+    mcap_fdv_ratio: number | null
+    total_volume: number | null
+    volume_to_mcap: number | null
+  } | null
 }
 
 interface LunarCrushMetrics {
