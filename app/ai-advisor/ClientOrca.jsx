@@ -722,6 +722,68 @@ export default function ClientOrca() {
                         )}
                       </div>
 
+                      {/* 7-Day Price Sparkline Chart */}
+                      {message.data.sparkline_7d && message.data.sparkline_7d.length > 5 && (() => {
+                        const prices = message.data.sparkline_7d
+                        const min = Math.min(...prices)
+                        const max = Math.max(...prices)
+                        const range = max - min || 1
+                        const width = 400
+                        const height = 60
+                        const padding = 2
+                        const isPositive = prices[prices.length - 1] >= prices[0]
+                        const color = isPositive ? colors.sentimentBull : colors.sentimentBear
+                        
+                        const points = prices.map((p, i) => {
+                          const x = padding + (i / (prices.length - 1)) * (width - padding * 2)
+                          const y = padding + (1 - (p - min) / range) * (height - padding * 2)
+                          return `${x},${y}`
+                        }).join(' ')
+                        
+                        // Area fill path
+                        const firstX = padding
+                        const lastX = padding + ((prices.length - 1) / (prices.length - 1)) * (width - padding * 2)
+                        const areaPath = `M${firstX},${height} L${points.split(' ').map(p => `L${p}`).join(' ')} L${lastX},${height} Z`
+                        
+                        return (
+                          <div style={{
+                            margin: '0.5rem 0', padding: '0.5rem', borderRadius: '4px',
+                            background: 'rgba(0, 229, 255, 0.02)', border: `1px solid ${colors.borderLight}`,
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                              <span style={{ fontSize: '0.6rem', fontFamily: MONO_FONT, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>
+                                7D PRICE CHART
+                              </span>
+                              <span style={{ fontSize: '0.6rem', fontFamily: MONO_FONT, color: isPositive ? colors.sentimentBull : colors.sentimentBear, fontWeight: 700 }}>
+                                {isPositive ? '▲' : '▼'} {((prices[prices.length-1] - prices[0]) / prices[0] * 100).toFixed(2)}%
+                              </span>
+                            </div>
+                            <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+                              <defs>
+                                <linearGradient id={`grad-${message.id}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+                                  <stop offset="100%" stopColor={color} stopOpacity="0" />
+                                </linearGradient>
+                              </defs>
+                              {/* Grid lines */}
+                              {[0.25, 0.5, 0.75].map(pct => (
+                                <line key={pct} x1={0} y1={pct * height} x2={width} y2={pct * height} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                              ))}
+                              {/* Area fill */}
+                              <path d={areaPath} fill={`url(#grad-${message.id})`} />
+                              {/* Price line */}
+                              <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              {/* Current price dot */}
+                              <circle cx={lastX} cy={padding + (1 - (prices[prices.length-1] - min) / range) * (height - padding * 2)} r="2.5" fill={color} />
+                            </svg>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
+                              <span style={{ fontSize: '0.55rem', fontFamily: MONO_FONT, color: colors.textMuted }}>{formatPrice(min)}</span>
+                              <span style={{ fontSize: '0.55rem', fontFamily: MONO_FONT, color: colors.textMuted }}>{formatPrice(max)}</span>
+                            </div>
+                          </div>
+                        )
+                      })()}
+
                       {/* Whale + LunarCrush row */}
                       {(message.data.whale_summary || message.data.lunarcrush) && (
                         <div style={{

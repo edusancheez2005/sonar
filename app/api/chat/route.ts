@@ -381,6 +381,7 @@ ${gptContext}`
           galaxy_score: context.lunarcrush.galaxy_score,
           alt_rank: context.lunarcrush.alt_rank,
         } : null,
+        sparkline_7d: context.coingecko?.sparkline_7d || null,
         news_headlines: context.news.headlines.slice(0, 5).map(n => ({
           title: n.title || 'Untitled Article',
           url: n.url || '',

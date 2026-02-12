@@ -76,6 +76,7 @@ interface CoinGeckoChartData {
     total_volume: number | null
     volume_to_mcap: number | null
   } | null
+  sparkline_7d: number[] | null
 }
 
 interface LunarCrushMetrics {
@@ -273,6 +274,10 @@ function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
         volume_to_mcap: data.details.market_data.total_volume?.usd && data.details.market_data.market_cap?.usd
           ? (data.details.market_data.total_volume.usd / data.details.market_data.market_cap.usd) : null,
       } : null,
+      // 7-day sparkline: sample every 4th point to get ~42 data points
+      sparkline_7d: prices7d.length > 0 
+        ? prices7d.filter((_: any, i: number) => i % 4 === 0).map((p: [number, number]) => p[1])
+        : null,
     }
   } catch (error) {
     console.error('Error processing CoinGecko chart data:', error)
