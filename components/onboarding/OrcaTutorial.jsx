@@ -326,7 +326,10 @@ const OrcaTutorial = ({ isOpen, onClose, refs }) => {
     }
 
     const ref = refs[step.target]
-    if (ref?.current) {
+    if (!ref?.current) return
+
+    const updateRect = () => {
+      if (!ref?.current) return
       const rect = ref.current.getBoundingClientRect()
       setTargetRect({
         top: rect.top - 10,
@@ -334,12 +337,29 @@ const OrcaTutorial = ({ isOpen, onClose, refs }) => {
         width: rect.width + 20,
         height: rect.height + 20
       })
-      
-      // Smooth scroll to element
-      ref.current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'center'
-      })
+    }
+
+    // Scroll to element first, then measure after scroll settles
+    ref.current.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'center'
+    })
+
+    // Measure after scroll animation completes
+    const timer = setTimeout(updateRect, 450)
+    // Also re-measure periodically in case scroll is still in progress
+    const timer2 = setTimeout(updateRect, 700)
+
+    // Keep spotlight in sync while scrolling/resizing
+    const handleScroll = () => requestAnimationFrame(updateRect)
+    window.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('resize', updateRect)
+
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(timer2)
+      window.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('resize', updateRect)
     }
   }, [currentStep, step.target, refs])
 
