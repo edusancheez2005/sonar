@@ -6,7 +6,7 @@ import TokenDetailClient from './TokenDetailClient'
 export const revalidate = 15
 
 export async function generateMetadata({ params }) {
-  const symbol = decodeURIComponent(params.symbol)
+  const symbol = decodeURIComponent(params.symbol).toUpperCase()
   const title = `${symbol} Token Analysis — Live Whale Tracking & Price Data | Sonar`
   const description = `Real-time ${symbol} whale transactions, live price, market sentiment, AI-powered analysis, buy/sell pressure, and professional trading insights.`
   const url = `https://www.sonartracker.io/token/${encodeURIComponent(symbol)}`
@@ -33,7 +33,7 @@ function BreadcrumbJsonLd({ symbol }) {
 }
 
 export default async function TokenDetail({ params, searchParams }) {
-  const symbol = decodeURIComponent(params.symbol)
+  const symbol = decodeURIComponent(params.symbol).toUpperCase()
   const sinceHours = Number(searchParams?.sinceHours || 24)
   const minUsd = searchParams?.minUsd ? Number(searchParams.minUsd) : undefined
 
