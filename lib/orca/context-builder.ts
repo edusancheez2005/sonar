@@ -143,11 +143,11 @@ async function fetchCoinGeckoChartData(ticker: string) {
       return null
     }
 
-    // Fetch 7-day and 30-day chart data
+    // Fetch 7-day and 30-day chart data + enriched coin details
     const [chart7d, chart30d, coinDetails] = await Promise.all([
       getMarketChart(metadata.id, 7, 'daily').catch(() => null),
       getMarketChart(metadata.id, 30, 'daily').catch(() => null),
-      getCoinById(metadata.id, { market_data: true }).catch(() => null),
+      getCoinById(metadata.id, { market_data: true, community_data: true, developer_data: true }).catch(() => null),
     ])
 
     return {
@@ -229,6 +229,29 @@ function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
       price_swing_7d: get7dSwing(prices7d),
       volume_trend: getVolumeTrend(volumes7d),
       market_cap_rank: data.details?.market_cap_rank || null,
+      // Enriched data from /coins/{id}
+      sentiment_votes_up_pct: data.details?.sentiment_votes_up_percentage || null,
+      watchlist_users: data.details?.watchlist_portfolio_users || null,
+      community_data: data.details?.community_data || null,
+      developer_data: data.details?.developer_data || null,
+      market_data_enriched: data.details?.market_data ? {
+        price_change_1h: data.details.market_data.price_change_percentage_1h_in_currency?.usd || null,
+        price_change_24h: data.details.market_data.price_change_percentage_24h || null,
+        price_change_7d: data.details.market_data.price_change_percentage_7d || null,
+        price_change_14d: data.details.market_data.price_change_percentage_14d || null,
+        price_change_30d: data.details.market_data.price_change_percentage_30d || null,
+        price_change_60d: data.details.market_data.price_change_percentage_60d || null,
+        price_change_200d: data.details.market_data.price_change_percentage_200d || null,
+        price_change_1y: data.details.market_data.price_change_percentage_1y || null,
+        total_supply: data.details.market_data.total_supply || null,
+        max_supply: data.details.market_data.max_supply || null,
+        circulating_supply: data.details.market_data.circulating_supply || null,
+        fdv: data.details.market_data.fully_diluted_valuation?.usd || null,
+        mcap_fdv_ratio: data.details.market_data.market_cap_fdv_ratio || null,
+        total_volume: data.details.market_data.total_volume?.usd || null,
+        volume_to_mcap: data.details.market_data.total_volume?.usd && data.details.market_data.market_cap?.usd
+          ? (data.details.market_data.total_volume.usd / data.details.market_data.market_cap.usd) : null,
+      } : null,
     }
   } catch (error) {
     console.error('Error processing CoinGecko chart data:', error)
@@ -1237,6 +1260,29 @@ ${context.coingecko ? `CHART & TREND ANALYSIS (CoinGecko Pro):
 7-Day Price Range: ${formatCurrency(context.coingecko.price_swing_7d.low)} - ${formatCurrency(context.coingecko.price_swing_7d.high)}
 Volatility (7d): ${context.coingecko.volatility_7d.toFixed(2)}% ${context.coingecko.volatility_7d > 10 ? '[HIGH VOLATILITY]' : context.coingecko.volatility_7d < 5 ? '[LOW VOLATILITY]' : '[MODERATE]'}
 Volume Trend: ${context.coingecko.volume_trend.toUpperCase()} ${context.coingecko.volume_trend === 'increasing' ? '[RISING INTEREST]' : context.coingecko.volume_trend === 'decreasing' ? '[DECLINING INTEREST]' : ''}
+${(context.coingecko as any).sentiment_votes_up_pct != null ? `CoinGecko Community Sentiment: ${(context.coingecko as any).sentiment_votes_up_pct.toFixed(1)}% bullish votes` : ''}
+${(context.coingecko as any).watchlist_users ? `Watchlist Users: ${formatLargeNumber((context.coingecko as any).watchlist_users)} (popularity indicator)` : ''}
+${(context.coingecko as any).market_data_enriched ? `
+MULTI-TIMEFRAME PRICE CHANGES:
+1h: ${(context.coingecko as any).market_data_enriched.price_change_1h != null ? formatPercentage((context.coingecko as any).market_data_enriched.price_change_1h) : 'N/A'}
+24h: ${(context.coingecko as any).market_data_enriched.price_change_24h != null ? formatPercentage((context.coingecko as any).market_data_enriched.price_change_24h) : 'N/A'}
+7d: ${(context.coingecko as any).market_data_enriched.price_change_7d != null ? formatPercentage((context.coingecko as any).market_data_enriched.price_change_7d) : 'N/A'}
+14d: ${(context.coingecko as any).market_data_enriched.price_change_14d != null ? formatPercentage((context.coingecko as any).market_data_enriched.price_change_14d) : 'N/A'}
+30d: ${(context.coingecko as any).market_data_enriched.price_change_30d != null ? formatPercentage((context.coingecko as any).market_data_enriched.price_change_30d) : 'N/A'}
+Volume/MCap Ratio: ${(context.coingecko as any).market_data_enriched.volume_to_mcap != null ? (context.coingecko as any).market_data_enriched.volume_to_mcap.toFixed(4) : 'N/A'} ${(context.coingecko as any).market_data_enriched.volume_to_mcap > 0.1 ? '[VERY ACTIVE TRADING]' : (context.coingecko as any).market_data_enriched.volume_to_mcap > 0.05 ? '[HEALTHY ACTIVITY]' : '[LOW ACTIVITY]'}
+FDV/MCap Ratio: ${(context.coingecko as any).market_data_enriched.mcap_fdv_ratio != null ? (context.coingecko as any).market_data_enriched.mcap_fdv_ratio.toFixed(2) : 'N/A'} ${(context.coingecko as any).market_data_enriched.mcap_fdv_ratio > 0.9 ? '[LOW INFLATION RISK]' : (context.coingecko as any).market_data_enriched.mcap_fdv_ratio < 0.5 ? '[HIGH FUTURE DILUTION]' : ''}
+Supply: ${(context.coingecko as any).market_data_enriched.circulating_supply ? formatLargeNumber((context.coingecko as any).market_data_enriched.circulating_supply) : '?'} circulating${(context.coingecko as any).market_data_enriched.max_supply ? ` / ${formatLargeNumber((context.coingecko as any).market_data_enriched.max_supply)} max` : ' (unlimited supply)'}` : ''}
+${(context.coingecko as any).developer_data?.commit_count_4_weeks ? `
+DEVELOPER ACTIVITY (GitHub):
+Commits (4 weeks): ${(context.coingecko as any).developer_data.commit_count_4_weeks}
+PRs Merged: ${(context.coingecko as any).developer_data.pull_requests_merged || 'N/A'}
+GitHub Stars: ${(context.coingecko as any).developer_data.stars || 'N/A'}
+Forks: ${(context.coingecko as any).developer_data.forks || 'N/A'}` : ''}
+${(context.coingecko as any).community_data?.reddit_subscribers ? `
+COMMUNITY DATA:
+Reddit Subscribers: ${formatLargeNumber((context.coingecko as any).community_data.reddit_subscribers)}
+Reddit Active (48h): ${(context.coingecko as any).community_data.reddit_accounts_active_48h || 'N/A'}
+Telegram Users: ${(context.coingecko as any).community_data.telegram_channel_user_count || 'N/A'}` : ''}
 ` : ''}${whaleSection}
 ${whaleAlertsSection}
 SENTIMENT ANALYSIS (Multi-Source):
