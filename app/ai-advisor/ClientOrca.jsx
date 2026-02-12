@@ -1,7 +1,7 @@
 /**
- * ORCA AI 2.0 - Professional Chat Interface
- * Updated: January 13, 2026
- * Theme: Sonar colors with enhanced visuals
+ * ORCA AI 2.0 - Terminal Command Center Interface
+ * Updated: February 12, 2026
+ * Theme: Terminal/Bloomberg aesthetic
  */
 
 'use client'
@@ -15,219 +15,125 @@ import remarkGfm from 'remark-gfm'
 import OrcaWelcome from './OrcaWelcome'
 import TokenIcon from '@/components/TokenIcon'
 
-// Original Sonar colors - clean and professional
+const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
+const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
 const colors = {
-  bgDark: '#0a1621',
-  bgCard: '#0d2134',
-  bgCardLight: '#112940',
-  primary: '#36a6ba',
-  secondary: '#1e3951',
-  textPrimary: '#ffffff',
-  textSecondary: '#a0b2c6',
-  textMuted: '#6b7d8f',
-  borderLight: 'rgba(54, 166, 186, 0.15)',
+  bgDark: '#0a0e17',
+  bgCard: 'rgba(13, 17, 28, 0.8)',
+  bgCardLight: 'rgba(13, 17, 28, 0.6)',
+  primary: '#00e5ff',
+  secondary: 'rgba(0, 229, 255, 0.08)',
+  textPrimary: '#e0e6ed',
+  textSecondary: '#8a9ab0',
+  textMuted: '#5a6a7a',
+  borderLight: 'rgba(0, 229, 255, 0.08)',
   accent: '#9b59b6',
-  sentimentBull: '#16c784',
-  sentimentBear: '#ed4c5c',
-  sentimentNeutral: '#f2bc1d'
+  sentimentBull: '#00e676',
+  sentimentBear: '#ff1744',
+  sentimentNeutral: '#ffab00'
 }
 
-// Animations
-const shimmer = keyframes`
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+const pulseGlow = keyframes`
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px #00e676; }
+  50% { opacity: 0.4; box-shadow: 0 0 8px #00e676; }
 `
 
-const pulse = keyframes`
+const blink = keyframes`
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0; }
 `
 
 // Premium Overlay
 const PremiumOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(10, 22, 33, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  position: fixed; inset: 0;
+  background: rgba(10, 14, 23, 0.92); backdrop-filter: blur(16px);
+  z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 2rem;
 `
 
 const PremiumCard = styled(motion.div)`
-  background: linear-gradient(135deg, rgba(26, 40, 56, 0.98) 0%, rgba(15, 25, 38, 0.98) 100%);
-  border: 2px solid ${colors.primary};
-  border-radius: 24px;
-  padding: 3rem 2.5rem;
-  max-width: 580px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(54, 166, 186, 0.3), 0 0 100px rgba(54, 166, 186, 0.1);
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(54, 166, 186, 0.08) 0%, transparent 70%);
-    animation: ${pulse} 4s ease-in-out infinite;
-  }
+  background: rgba(13, 17, 28, 0.95);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 12px; padding: 2.5rem; max-width: 560px; width: 100%;
+  box-shadow: 0 0 60px rgba(0, 229, 255, 0.08); text-align: center;
 `
 
-const PremiumIcon = styled.div`
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
-  filter: drop-shadow(0 4px 12px rgba(54, 166, 186, 0.4));
-  position: relative;
-  z-index: 1;
-`
+const PremiumIcon = styled.div`font-size: 3rem; margin-bottom: 1.5rem;`
 
 const PremiumTitle = styled.h2`
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 1rem;
-  background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  position: relative;
-  z-index: 1;
+  font-size: 1.6rem; font-weight: 700; color: ${colors.textPrimary}; margin-bottom: 1rem;
+  font-family: ${SANS_FONT};
+  background: linear-gradient(135deg, ${colors.primary} 0%, #00b8d4 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 `
 
 const PremiumDescription = styled.p`
-  font-size: 1.1rem;
-  color: ${colors.textSecondary};
-  margin-bottom: 2rem;
-  line-height: 1.6;
-  position: relative;
-  z-index: 1;
+  font-size: 0.95rem; color: ${colors.textMuted}; margin-bottom: 2rem;
+  line-height: 1.6; font-family: ${SANS_FONT};
 `
 
 const PremiumFeatureList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0;
-  text-align: left;
-  position: relative;
-  z-index: 1;
-  
+  list-style: none; padding: 0; margin: 1.5rem 0; text-align: left;
   li {
-    color: ${colors.textSecondary};
-    padding: 0.75rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1rem;
-    
-    &::before {
-      content: '✓';
-      color: ${colors.primary};
-      font-weight: bold;
-      font-size: 1.2rem;
-    }
+    color: ${colors.textSecondary}; padding: 0.6rem 0; display: flex;
+    align-items: center; gap: 0.75rem; font-size: 0.9rem; font-family: ${SANS_FONT};
+    &::before { content: '▸'; color: ${colors.primary}; font-weight: bold; }
   }
 `
 
 const PremiumButton = styled(motion.a)`
   display: inline-block;
-  background: linear-gradient(135deg, ${colors.primary} 0%, #5dd5ed 100%);
-  color: white;
-  padding: 1rem 2.5rem;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 1.1rem;
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 4px 15px rgba(54, 166, 186, 0.3);
-  position: relative;
-  z-index: 1;
-  
-  &:hover {
-    box-shadow: 0 6px 20px rgba(54, 166, 186, 0.4);
-  }
+  background: linear-gradient(135deg, ${colors.primary} 0%, #00b8d4 100%);
+  color: #0a0e17; padding: 0.9rem 2rem; border-radius: 8px; font-weight: 700;
+  font-size: 1rem; text-decoration: none; cursor: pointer; border: none;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.25); font-family: ${SANS_FONT};
 `
 
 // Main Container
 const ChatContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 100px);
-  max-width: 1000px;
-  margin: 0 auto;
-  background: ${colors.bgDark};
-  border-radius: 16px;
-  overflow: hidden;
+  display: flex; flex-direction: column;
+  height: calc(100vh - 100px); max-width: 1000px; margin: 0 auto;
+  background: ${colors.bgDark}; border-radius: 8px; overflow: hidden;
+  border: 1px solid ${colors.borderLight};
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.005) 2px, rgba(0, 229, 255, 0.005) 4px);
+    pointer-events: none; z-index: 0;
+  }
 `
 
-// Messages Area
+const ChatHeader = styled.div`
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.75rem 1.5rem; border-bottom: 1px solid ${colors.borderLight};
+  font-family: ${MONO_FONT}; background: rgba(13, 17, 28, 0.6);
+  position: relative; z-index: 1;
+`
+
 const MessagesArea = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: ${colors.secondary};
-    border-radius: 3px;
-  }
+  flex: 1; overflow-y: auto; padding: 1.5rem; display: flex;
+  flex-direction: column; gap: 1.5rem; position: relative; z-index: 1;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.1); border-radius: 2px; }
 `
 
-// Message Bubble
 const MessageBubble = styled(motion.div)`
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
+  display: flex; gap: 0.75rem; align-items: flex-start;
   ${props => props.$isUser && 'flex-direction: row-reverse;'}
   max-width: 90%;
   ${props => props.$isUser && 'margin-left: auto;'}
 `
 
 const Avatar = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: ${props => props.$isUser ? 
-    `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)` :
-    `linear-gradient(135deg, ${colors.bgCardLight} 0%, ${colors.secondary} 100%)`};
-  border: 2px solid ${props => props.$isUser ? colors.primary : colors.borderLight};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: ${props => props.$isUser ? 'white' : colors.primary};
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  letter-spacing: 0.02em;
-  overflow: hidden;
-  
-  svg {
-    width: 26px;
-    height: 26px;
-    fill: ${colors.primary};
-  }
+  width: 36px; height: 36px; border-radius: 8px;
+  background: ${props => props.$isUser ? `rgba(0, 229, 255, 0.1)` : `rgba(13, 17, 28, 0.9)`};
+  border: 1px solid ${props => props.$isUser ? 'rgba(0, 229, 255, 0.2)' : colors.borderLight};
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-size: 0.65rem; font-weight: 700; font-family: ${MONO_FONT};
+  color: ${props => props.$isUser ? colors.primary : colors.primary};
+  svg { width: 20px; height: 20px; fill: ${colors.primary}; }
 `
 
 // Whale/Orca SVG Icon
@@ -237,341 +143,134 @@ const WhaleIcon = () => (
   </svg>
 )
 
-const MessageContent = styled.div`
-  flex: 1;
-  min-width: 0;
-`
+const MessageContent = styled.div`flex: 1; min-width: 0;`
 
 const SenderName = styled.div`
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: ${props => props.$isUser ? colors.primary : colors.textSecondary};
-  margin-bottom: 0.5rem;
+  font-size: 0.7rem; font-weight: 600; font-family: ${MONO_FONT};
+  color: ${props => props.$isUser ? colors.primary : colors.textMuted};
+  margin-bottom: 0.4rem; letter-spacing: 0.5px; text-transform: uppercase;
   ${props => props.$isUser && 'text-align: right;'}
 `
 
 const MessageText = styled.div`
-  background: ${props => props.$isUser ? 
-    `linear-gradient(135deg, ${colors.primary} 0%, #2d8a99 100%)` :
-    colors.bgCard};
+  background: ${props => props.$isUser ? 'rgba(0, 229, 255, 0.08)' : colors.bgCard};
   color: ${colors.textPrimary};
-  padding: ${props => props.$isUser ? '1rem 1.5rem' : '1.5rem'};
-  border-radius: 16px;
-  ${props => props.$isUser ? 'border-bottom-right-radius: 4px;' : 'border-bottom-left-radius: 4px;'}
-  border: ${props => props.$isUser ? 'none' : `1px solid ${colors.borderLight}`};
-  line-height: 1.8;
-  font-size: 1.05rem;
+  padding: ${props => props.$isUser ? '1rem 1.25rem' : '1.25rem'};
+  border-radius: 8px;
+  ${props => props.$isUser ? 'border-bottom-right-radius: 2px;' : 'border-bottom-left-radius: 2px;'}
+  border: 1px solid ${props => props.$isUser ? 'rgba(0, 229, 255, 0.12)' : colors.borderLight};
+  line-height: 1.7;
+  font-size: 0.95rem;
+  font-family: ${SANS_FONT};
   
-  /* Section Headers */
-  h3, strong:first-child {
-    display: block;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 1.5rem 0 1rem 0;
-    color: ${colors.textPrimary};
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid ${colors.borderLight};
-  }
-    
-  /* First header no top margin */
-  & > p:first-child strong:first-child,
-  & > strong:first-child {
-      margin-top: 0;
-  }
-  
-  /* Part headers with icons */
-  strong:contains("Part 1"), strong:contains("Sonar Data") {
-    &::before {
-      content: "◆ ";
-      color: ${colors.primary};
+  h3, h4 { font-family: ${SANS_FONT}; color: ${colors.primary}; margin: 1.25rem 0 0.75rem 0; font-size: 1rem; }
+  & > p:first-child strong:first-child { margin-top: 0; }
+  strong { color: ${colors.primary}; font-weight: 600; }
+  p { margin: 0.6rem 0; line-height: 1.7; }
+  ul, ol { margin: 0.6rem 0; padding-left: 0; list-style: none;
+    li { margin: 0.4rem 0; line-height: 1.6; padding-left: 1rem; position: relative;
+      &::before { content: "›"; position: absolute; left: 0; color: ${colors.primary}; font-weight: 600; }
     }
   }
-  
-  strong:contains("Part 2"), strong:contains("News") {
-    &::before {
-      content: "◇ ";
-      color: ${colors.sentimentBull};
+  ol { counter-reset: item;
+    li { counter-increment: item;
+      &::before { content: counter(item) "."; color: ${colors.primary}; font-weight: 600; font-size: 0.85rem; }
     }
   }
-  
-  strong:contains("Part 3"), strong:contains("Bottom Line") {
-    &::before {
-      content: "◈ ";
-      color: ${colors.accent};
-    }
+  a { color: ${colors.primary}; text-decoration: none; font-weight: 500; border-bottom: 1px dashed rgba(0, 229, 255, 0.3);
+    &:hover { border-bottom-color: ${colors.primary}; }
+    &[href^="http"]::after { content: " ↗"; font-size: 0.8em; opacity: 0.5; }
   }
-  
-  /* Subheaders */
-  h4 {
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin: 1rem 0 0.5rem 0;
-    color: ${colors.primary};
-  }
-  
-  p {
-    margin: 0.75rem 0;
-    line-height: 1.8;
-  }
-  
-  /* Data labels */
-  strong {
-    color: ${colors.textPrimary};
-    font-weight: 600;
-  }
-  
-  /* Lists */
-  ul, ol {
-    margin: 0.75rem 0;
-    padding-left: 0;
-    list-style: none;
-    
-    li {
-      margin: 0.6rem 0;
-      line-height: 1.7;
-      padding-left: 1.25rem;
-      position: relative;
-      
-      &::before {
-        content: "›";
-        position: absolute;
-        left: 0;
-        color: ${colors.primary};
-        font-weight: 600;
-      }
-    }
-  }
-  
-  ol {
-    counter-reset: item;
-    
-    li {
-      counter-increment: item;
-      
-      &::before {
-        content: counter(item) ".";
-        color: ${colors.primary};
-        font-weight: 600;
-      font-size: 0.9rem;
-      }
-    }
-  }
-  
-  /* Links - News articles */
-  a {
-    color: ${colors.primary};
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    border-bottom: 1px dashed ${colors.primary};
-    
-    &:hover {
-      color: ${colors.sentimentBull};
-      border-bottom-color: ${colors.sentimentBull};
-    }
-    
-    /* External link indicator */
-    &[href^="http"]::after {
-      content: " ↗";
-      font-size: 0.8em;
-      opacity: 0.7;
-    }
-  }
-  
-  /* Inline code for values */
   code {
-    background: rgba(54, 166, 186, 0.15);
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-family: 'SF Mono', 'Consolas', monospace;
-    font-size: 0.9em;
-    color: ${colors.primary};
+    background: rgba(0, 229, 255, 0.08); padding: 0.15rem 0.4rem; border-radius: 3px;
+    font-family: ${MONO_FONT}; font-size: 0.85em; color: ${colors.primary};
+    border: 1px solid rgba(0, 229, 255, 0.1);
   }
-  
-  /* Highlight positive/negative values */
-  em {
-    font-style: normal;
-    font-weight: 500;
-  }
+  pre > code { display: block; padding: 1rem; border-radius: 6px; overflow-x: auto; }
 `
 
 const MessageTime = styled.div`
-  font-size: 0.75rem;
-  color: ${colors.textMuted};
-  margin-top: 0.5rem;
+  font-size: 0.65rem; color: ${colors.textMuted}; margin-top: 0.4rem;
+  font-family: ${MONO_FONT};
   ${props => props.$isUser && 'text-align: right;'}
 `
 
-// Data Cards for visual enhancement
 const DataCardsRow = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
+  display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem;
 `
 
 const MiniCard = styled(motion.div)`
-  background: ${colors.bgCardLight};
+  background: rgba(13, 17, 28, 0.6);
   border: 1px solid ${colors.borderLight};
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  min-width: 120px;
+  border-left: 3px solid ${props => props.$color || colors.primary};
+  border-radius: 4px; padding: 0.6rem 0.85rem;
+  display: flex; align-items: center; gap: 0.5rem; min-width: 110px;
   
   .icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    background: ${props => props.$color || colors.primary}20;
-    color: ${props => props.$color || colors.primary};
+    width: 24px; height: 24px; border-radius: 4px; display: flex;
+    align-items: center; justify-content: center; font-size: 0.75rem;
+    background: ${props => props.$color || colors.primary}15;
+    color: ${props => props.$color || colors.primary}; font-family: ${MONO_FONT};
   }
-  
   .content {
     flex: 1;
-    
-    .label {
-      font-size: 0.7rem;
-      color: ${colors.textMuted};
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    
-    .value {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: ${colors.textPrimary};
-    }
+    .label { font-size: 0.6rem; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 1px; font-family: ${SANS_FONT}; font-weight: 600; }
+    .value { font-size: 0.85rem; font-weight: 700; color: ${colors.textPrimary}; font-family: ${MONO_FONT}; }
   }
 `
 
-// Mini Sparkline for price
 const Sparkline = styled.div`
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 24px;
-  
+  display: flex; align-items: flex-end; gap: 2px; height: 24px;
   .bar {
-    width: 3px;
-    background: ${props => props.$positive ? colors.sentimentBull : colors.sentimentBear};
-    border-radius: 1px;
-    opacity: 0.7;
-    
-    &:last-child {
-      opacity: 1;
-    }
+    width: 3px; background: ${props => props.$positive ? colors.sentimentBull : colors.sentimentBear};
+    border-radius: 1px; opacity: 0.6; &:last-child { opacity: 1; }
   }
 `
 
-// Input Area
 const InputArea = styled.div`
-  padding: 1.5rem 2rem;
-  background: ${colors.bgCard};
-  border-top: 1px solid ${colors.borderLight};
+  padding: 1rem 1.5rem; background: rgba(13, 17, 28, 0.9);
+  border-top: 1px solid ${colors.borderLight}; position: relative; z-index: 1;
 `
 
-const InputForm = styled.form`
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-`
+const InputForm = styled.form`display: flex; gap: 0.6rem; align-items: center;`
 
 const Input = styled.input`
-  flex: 1;
-  background: ${colors.bgDark};
-  border: 1px solid ${colors.borderLight};
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  color: ${colors.textPrimary};
-  font-size: 1rem;
-  outline: none;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 3px rgba(54, 166, 186, 0.1);
-  }
-  
-  &::placeholder {
-    color: ${colors.textMuted};
-  }
+  flex: 1; background: rgba(10, 14, 23, 0.9);
+  border: 1px solid ${colors.borderLight}; border-radius: 6px;
+  padding: 0.75rem 1rem; color: ${colors.textPrimary};
+  font-size: 0.9rem; font-family: ${MONO_FONT}; outline: none;
+  transition: border-color 0.15s ease;
+  &:focus { border-color: ${colors.primary}; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.06); }
+  &::placeholder { color: ${colors.textMuted}; font-family: ${MONO_FONT}; }
 `
 
 const SendButton = styled.button`
-  background: ${colors.primary};
-  color: white;
-  padding: 1rem 1.75rem;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  
-  &:hover:not(:disabled) {
-    background: #2d8a99;
-    transform: translateY(-1px);
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .arrow {
-    font-size: 1.1rem;
-    transition: transform 0.2s ease;
-  }
-  
-  &:hover:not(:disabled) .arrow {
-    transform: translateX(2px);
-  }
+  background: linear-gradient(135deg, ${colors.primary} 0%, #00b8d4 100%);
+  color: #0a0e17; padding: 0.75rem 1.25rem; border-radius: 6px;
+  font-weight: 700; font-size: 0.8rem; font-family: ${MONO_FONT};
+  transition: all 0.15s ease; display: flex; align-items: center; gap: 0.4rem;
+  border: none; cursor: pointer;
+  &:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(0, 229, 255, 0.3); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  .arrow { font-size: 1rem; transition: transform 0.15s ease; }
+  &:hover:not(:disabled) .arrow { transform: translateX(2px); }
 `
 
-// Loading indicator
 const TypingIndicator = styled(motion.div)`
-  display: flex;
-  gap: 0.5rem;
-  padding: 1rem 1.25rem;
-  background: ${colors.bgCard};
-  border: 1px solid ${colors.borderLight};
-  border-radius: 16px;
-  border-bottom-left-radius: 4px;
-  width: fit-content;
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1rem;
+  font-family: ${MONO_FONT}; font-size: 0.8rem; color: ${colors.primary};
   
-  span {
-    width: 8px;
-    height: 8px;
-    background: ${colors.primary};
-    border-radius: 50%;
-    animation: bounce 1.4s infinite ease-in-out both;
-    
-    &:nth-child(1) { animation-delay: -0.32s; }
-    &:nth-child(2) { animation-delay: -0.16s; }
-  }
-  
-  @keyframes bounce {
-    0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-    40% { transform: scale(1.2); opacity: 1; }
+  &::after {
+    content: '▎';
+    animation: ${blink} 1s step-end infinite;
   }
 `
 
 const Disclaimer = styled.div`
-  background: rgba(54, 166, 186, 0.05);
-  border: 1px solid ${colors.borderLight};
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  color: ${colors.textMuted};
-  text-align: center;
+  background: rgba(0, 229, 255, 0.03); border: 1px solid ${colors.borderLight};
+  padding: 0.6rem 0.85rem; margin-bottom: 0.75rem; border-radius: 4px;
+  font-size: 0.7rem; color: ${colors.textMuted}; text-align: center; font-family: ${SANS_FONT};
+  a { color: ${colors.primary}; text-decoration: underline; }
 `
 
 // Format price with smart decimals
@@ -835,6 +534,16 @@ export default function ClientOrca() {
   return (
     <>
     <ChatContainer>
+      {/* Terminal Header */}
+      <ChatHeader>
+        <span style={{ fontWeight: 800, color: colors.primary, fontSize: '0.8rem', letterSpacing: '2px' }}>ORCA_TERMINAL</span>
+        <span style={{ color: colors.textMuted, fontSize: '0.7rem' }}>v2.0</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.7rem', color: colors.sentimentBull, marginLeft: 'auto' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.sentimentBull, display: 'inline-block' }} />
+          ONLINE
+        </span>
+      </ChatHeader>
+
       {/* Messages Area */}
       <MessagesArea>
         {messages.length === 0 ? (
@@ -861,10 +570,10 @@ export default function ClientOrca() {
                       message.content
                     ) : message.isRateLimited ? (
                       <div style={{ 
-                        padding: '1.5rem', 
-                        background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.1) 0%, rgba(26, 40, 56, 0.6) 100%)',
-                        borderRadius: '12px',
-                        border: '1px solid rgba(54, 166, 186, 0.3)'
+                        padding: '1.25rem', 
+                        background: colors.bgCard,
+                        borderRadius: '8px',
+                        border: `1px solid ${colors.borderLight}`
                       }}>
                         <div style={{ 
                           fontSize: '1.1rem', 
@@ -886,8 +595,8 @@ export default function ClientOrca() {
                             href="/subscribe"
                             style={{
                               display: 'inline-block',
-                              background: 'linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%)',
-                              color: '#ffffff',
+                              background: `linear-gradient(135deg, ${colors.primary} 0%, #00b8d4 100%)`,
+                              color: '#0a0e17',
                               padding: '0.75rem 1.5rem',
                               borderRadius: '8px',
                               textDecoration: 'none',
@@ -1033,29 +742,28 @@ export default function ClientOrca() {
             <MessageContent>
               <SenderName $isUser={false}>ORCA</SenderName>
               <div style={{ 
-                background: `linear-gradient(135deg, ${colors.bgCardLight} 0%, ${colors.secondary} 100%)`,
-                borderRadius: '12px',
-                padding: '1rem 1.25rem',
-                marginBottom: '0.5rem'
+                background: colors.bgCard,
+                border: `1px solid ${colors.borderLight}`,
+                borderRadius: '8px',
+                padding: '0.85rem 1rem',
+                marginBottom: '0.4rem'
               }}>
                 <motion.div
                   key={loadingStep}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   style={{
-                    color: colors.primary,
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    marginBottom: '0.75rem'
+                    color: colors.textMuted,
+                    fontFamily: MONO_FONT,
+                    fontSize: '0.8rem',
+                    marginBottom: '0.5rem'
                   }}
                 >
                   {loadingStep}
                 </motion.div>
               <TypingIndicator>
-                <span />
-                <span />
-                <span />
+                {loadingStep}
+              </TypingIndicator>
               </TypingIndicator>
               </div>
               <MessageTime>Deep analysis in progress...</MessageTime>

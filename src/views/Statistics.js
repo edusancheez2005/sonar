@@ -1,40 +1,262 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
-import PageHeader from '../components/PageHeader';
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import dynamic from 'next/dynamic'
 
 const TokenIcon = dynamic(() => import('@/components/TokenIcon'), { ssr: false })
 
+const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
+const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+const COLORS = {
+  cyan: '#00e5ff', green: '#00e676', red: '#ff1744', amber: '#ffab00',
+  textPrimary: '#e0e6ed', textMuted: '#5a6a7a',
+  panelBg: 'rgba(13, 17, 28, 0.8)', borderSubtle: 'rgba(0, 229, 255, 0.08)',
+}
+
+const pulseGlow = keyframes`
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px #00e676; }
+  50% { opacity: 0.4; box-shadow: 0 0 8px #00e676, 0 0 16px rgba(0, 230, 118, 0.3); }
+`
+
 const StatisticsContainer = styled.div`
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a1621 0%, #0f1922 50%, #0a1621 100%);
+  background: #0a0e17;
   padding: 2rem;
   position: relative;
 
   &::before {
     content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 30%, rgba(54, 166, 186, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, rgba(46, 204, 113, 0.06) 0%, transparent 50%);
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.008) 2px, rgba(0, 229, 255, 0.008) 4px);
     pointer-events: none;
+    z-index: 0;
   }
 `;
 
 const Container = styled.div`
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
   position: relative;
   z-index: 1;
 `;
+
+const PageTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  font-family: ${MONO_FONT};
+  flex-wrap: wrap;
+`
+
+const TitleText = styled.h1`
+  font-family: ${MONO_FONT};
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: ${COLORS.cyan};
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin: 0;
+  &::before { content: '> '; color: ${COLORS.green}; font-weight: 800; }
+`
+
+const LiveDot = styled.span`
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.7rem; font-weight: 600; color: ${COLORS.green};
+  text-transform: uppercase; letter-spacing: 1px; font-family: ${MONO_FONT};
+  &::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: ${COLORS.green}; animation: ${pulseGlow} 2s ease-in-out infinite;
+  }
+`
+
+const Panel = styled.div`
+  background: ${COLORS.panelBg};
+  backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle};
+  border-radius: 8px;
+  padding: 1.5rem;
+`
+
+const Toolbar = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  @media (max-width: 768px) { grid-template-columns: 1fr; }
+`;
+
+const Field = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  label {
+    color: ${COLORS.textMuted};
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: ${SANS_FONT};
+    padding-left: 0.1rem;
+  }
+`;
+
+const PillInput = styled.input`
+  background: rgba(10, 14, 23, 0.9);
+  border: 1px solid ${COLORS.borderSubtle};
+  color: ${COLORS.textPrimary};
+  padding: 0.55rem 0.75rem;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-size: 0.85rem;
+  font-family: ${MONO_FONT};
+  height: 36px;
+  &::placeholder { color: ${COLORS.textMuted}; opacity: 0.5; }
+  &:focus { border-color: ${COLORS.cyan}; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.08); }
+`;
+
+const PillSelect = styled.select`
+  appearance: none;
+  background: rgba(10, 14, 23, 0.9);
+  border: 1px solid ${COLORS.borderSubtle};
+  color: ${COLORS.textPrimary};
+  padding: 0.55rem 2rem 0.55rem 0.75rem;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-size: 0.85rem;
+  font-family: ${MONO_FONT};
+  height: 36px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20'%3E%3Cpath fill='%2300e5ff' d='M5.5 7l4.5 6 4.5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  &:focus { border-color: ${COLORS.cyan}; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.08); }
+  option { background: #0a0e17; color: ${COLORS.textPrimary}; }
+`;
+
+const Presets = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  align-items: center;
+  justify-content: space-between;
+  
+  .preset-group {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+  }
+  
+  button.preset {
+    background: transparent;
+    color: ${COLORS.textMuted};
+    border: 1px solid ${COLORS.borderSubtle};
+    border-radius: 4px;
+    padding: 0.4rem 0.85rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    font-family: ${MONO_FONT};
+    cursor: pointer;
+    transition: all 0.15s ease;
+    
+    &:hover { border-color: rgba(0, 229, 255, 0.2); color: ${COLORS.textPrimary}; }
+    
+    &.active {
+      background: rgba(0, 229, 255, 0.15);
+      color: ${COLORS.cyan};
+      border-color: rgba(0, 229, 255, 0.3);
+    }
+  }
+`;
+
+const GhostButton = styled.button`
+  background: transparent;
+  color: ${props => props.$danger ? COLORS.red : COLORS.cyan};
+  border: 1px solid ${props => props.$danger ? 'rgba(255, 23, 68, 0.2)' : COLORS.borderSubtle};
+  border-radius: 4px;
+  padding: 0.4rem 0.85rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  font-family: ${MONO_FONT};
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex; align-items: center; gap: 0.4rem;
+  
+  &:hover { border-color: ${props => props.$danger ? 'rgba(255, 23, 68, 0.4)' : 'rgba(0, 229, 255, 0.3)'}; }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  
+  svg { width: 14px; height: 14px; }
+`;
+
+const DataTable = styled.div`
+  width: 100%; overflow-x: auto;
+  table { width: 100%; border-collapse: collapse; font-family: ${MONO_FONT}; }
+  thead th {
+    padding: 0.75rem 1rem; text-align: left; font-size: 0.7rem; font-weight: 600;
+    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
+    white-space: nowrap; font-family: ${SANS_FONT};
+  }
+  thead th.right { text-align: right; }
+  tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    transition: background 0.15s ease; cursor: default;
+  }
+  tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
+  tbody td {
+    padding: 0.65rem 1rem; font-size: 0.8rem; color: ${COLORS.textPrimary}; white-space: nowrap;
+  }
+  tbody td.right { text-align: right; }
+  tbody td.muted { color: ${COLORS.textMuted}; }
+  a { color: ${COLORS.cyan}; text-decoration: none; font-weight: 600; }
+  a:hover { text-decoration: underline; }
+`
+
+const Badge = styled.span`
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  font-family: ${MONO_FONT};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &.buy { color: ${COLORS.green}; background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.12); }
+  &.sell { color: ${COLORS.red}; background: rgba(255, 23, 68, 0.08); border: 1px solid rgba(255, 23, 68, 0.12); }
+  &.transfer { color: ${COLORS.cyan}; background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.12); }
+  &.defi { color: ${COLORS.amber}; background: rgba(255, 171, 0, 0.08); border: 1px solid rgba(255, 171, 0, 0.12); }
+`;
+
+const Pagination = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid ${COLORS.borderSubtle};
+  font-family: ${MONO_FONT};
+  font-size: 0.8rem;
+  color: ${COLORS.textMuted};
+`;
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] } }
+}
+
+const rowVariant = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.2, delay: i * 0.03, ease: [0.25, 0.46, 0.45, 0.94] }
+  })
+}
 
 const Toolbar = styled.div`
   display: grid;
@@ -116,245 +338,7 @@ const PillSelect = styled.select`
   
   option {
     background: rgba(13, 33, 52, 1);
-    color: var(--text-primary);
-  }
-`;
-
-const Button = styled.button`
-  background: ${({ variant }) => 
-    variant === 'danger' ? 'rgba(231, 76, 60, 0.15)' : 
-    'linear-gradient(135deg, #36a6ba 0%, #2ecc71 100%)'};
-  color: ${({ variant }) => variant === 'danger' ? '#e74c3c' : 'white'};
-  border: 1px solid ${({ variant }) => 
-    variant === 'danger' ? 'rgba(231, 76, 60, 0.4)' : 
-    'var(--primary)'};
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: ${({ variant }) => 
-    variant === 'danger' ? 'none' : 
-    '0 4px 12px rgba(54, 166, 186, 0.3)'};
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${({ variant }) => 
-      variant === 'danger' ? '0 4px 12px rgba(231, 76, 60, 0.3)' : 
-      '0 8px 16px rgba(54, 166, 186, 0.4)'};
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
-const Presets = styled.div`
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-  
-  button {
-    background: rgba(30, 57, 81, 0.4);
-    color: var(--text-secondary);
-    border: 1px solid rgba(54, 166, 186, 0.2);
-    border-radius: 8px;
-    padding: 0.6rem 1.2rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    
-    &:hover {
-      border-color: rgba(54, 166, 186, 0.4);
-      color: var(--text-primary);
-      transform: translateY(-2px);
-    }
-    
-    &.active {
-      background: var(--primary);
-      color: #0a1621;
-      border-color: var(--primary);
-      box-shadow: 0 4px 12px rgba(54, 166, 186, 0.3);
-    }
-  }
-`;
-
-const ExportButton = styled(motion.button)`
-  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  border: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-  
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(46, 204, 113, 0.4);
-  }
-  
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`;
-
-const Card = styled.div`
-  background: rgba(13, 33, 52, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-`;
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 0.5rem;
-  margin-top: 1rem;
-  
-  thead tr {
-    background: rgba(30, 57, 81, 0.6);
-  }
-  
-  th {
-    padding: 1rem;
-    text-align: left;
-    font-weight: 700;
-    color: var(--primary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border: none;
-    
-    &:first-child {
-      border-top-left-radius: 8px;
-      border-bottom-left-radius: 8px;
-    }
-    
-    &:last-child {
-      border-top-right-radius: 8px;
-      border-bottom-right-radius: 8px;
-    }
-    
-    &:nth-child(4),
-    &:nth-child(7) {
-      text-align: right;
-    }
-  }
-  
-  tbody tr {
-    background: rgba(30, 57, 81, 0.3);
-    transition: all 0.3s ease;
-    
-    &:hover {
-      background: rgba(54, 166, 186, 0.1);
-      transform: translateX(4px);
-    }
-  }
-  
-  td {
-    padding: 1rem;
-    color: var(--text-secondary);
-    border: none;
-    
-    &:first-child {
-      border-top-left-radius: 8px;
-      border-bottom-left-radius: 8px;
-    }
-    
-    &:last-child {
-      border-top-right-radius: 8px;
-      border-bottom-right-radius: 8px;
-    }
-    
-    &:nth-child(4),
-    &:nth-child(7) {
-      text-align: right;
-    }
-    
-    &.usd {
-      font-variant-numeric: tabular-nums;
-      font-feature-settings: 'tnum' 1;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-  }
-  
-  a {
-    color: var(--primary);
-    text-decoration: none;
-    transition: color 0.3s ease;
-    font-weight: 600;
-    
-    &:hover {
-      color: #5dd5ed;
-    }
-  }
-`;
-
-const Badge = styled.span`
-  display: inline-block;
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  
-  &.buy {
-    color: #2ecc71;
-    background: rgba(46, 204, 113, 0.2);
-    border: 1px solid rgba(46, 204, 113, 0.4);
-  }
-  
-  &.sell {
-    color: #e74c3c;
-    background: rgba(231, 76, 60, 0.2);
-    border: 1px solid rgba(231, 76, 60, 0.4);
-  }
-  
-  &.transfer {
-    color: #3498db;
-    background: rgba(52, 152, 219, 0.2);
-    border: 1px solid rgba(52, 152, 219, 0.4);
-  }
-  
-  &.defi {
-    color: #f39c12;
-    background: rgba(243, 156, 18, 0.2);
-    border: 1px solid rgba(243, 156, 18, 0.4);
-  }
-`;
-
-const Pagination = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(54, 166, 186, 0.2);
-  
-  span {
-    color: var(--text-secondary);
-    font-weight: 600;
+    color: ${COLORS.textPrimary};
   }
 `;
 
@@ -516,33 +500,36 @@ export default function Statistics() {
   return (
     <StatisticsContainer>
       <Container>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <PageHeader title="Market" accentWord="Statistics" />
+      <motion.div variants={fadeUp} initial="hidden" animate="visible">
+        <PageTitle>
+          <TitleText>MARKET_STATISTICS</TitleText>
+          <LiveDot>LIVE</LiveDot>
+        </PageTitle>
       </motion.div>
-      
-      <Card>
+
+      <Panel>
         <Presets>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <button type="button" className={sinceHours===1?'active':''} onClick={()=>preset(1)}>1h</button>
-            <button type="button" className={sinceHours===6?'active':''} onClick={()=>preset(6)}>6h</button>
-            <button type="button" className={sinceHours===24?'active':''} onClick={()=>preset(24)}>24h</button>
-            <button type="button" className={sinceHours===72?'active':''} onClick={()=>preset(72)}>3d</button>
-            <button type="button" className={sinceHours===168?'active':''} onClick={()=>preset(168)}>7d</button>
-            <Button type="button" variant="danger" onClick={reset}>Reset All Filters</Button>
+          <div className="preset-group">
+            <button type="button" className={`preset ${sinceHours===1?'active':''}`} onClick={()=>preset(1)}>1H</button>
+            <button type="button" className={`preset ${sinceHours===6?'active':''}`} onClick={()=>preset(6)}>6H</button>
+            <button type="button" className={`preset ${sinceHours===24?'active':''}`} onClick={()=>preset(24)}>24H</button>
+            <button type="button" className={`preset ${sinceHours===72?'active':''}`} onClick={()=>preset(72)}>3D</button>
+            <button type="button" className={`preset ${sinceHours===168?'active':''}`} onClick={()=>preset(168)}>7D</button>
+            <GhostButton $danger type="button" onClick={reset}>RESET</GhostButton>
           </div>
-          <ExportButton 
-            onClick={exportToCSV} 
+          <GhostButton
+            type="button"
+            onClick={exportToCSV}
             disabled={exporting || loading || rows.length === 0}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            title={!isPremium ? 'Premium feature - Upgrade to export data' : 'Export data to CSV'}
+            title={!isPremium ? 'Premium feature' : 'Export CSV'}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            {exporting ? 'Exporting...' : isPremium ? 'Export CSV' : 'Export CSV (Premium)'}
-          </ExportButton>
+            {exporting ? 'EXPORTING...' : isPremium ? 'EXPORT CSV' : 'EXPORT (PRO)'}
+          </GhostButton>
         </Presets>
+
         <Toolbar>
           <Field>
             <label>Token</label>
@@ -580,49 +567,59 @@ export default function Statistics() {
 
         <div>
           {loading ? (
-            <p style={{ color: 'var(--text-secondary)' }}>Loading…</p>
+            <motion.p
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              style={{ color: COLORS.textMuted, fontFamily: MONO_FONT, fontSize: '0.85rem', padding: '2rem', textAlign: 'center' }}
+            >
+              Loading transactions...
+            </motion.p>
           ) : (
             <>
-              <Table>
+              <DataTable>
+              <table>
               <thead>
                 <tr>
                     <th>Time</th>
                     <th>Token</th>
                     <th>Side</th>
-                    <th>USD</th>
+                    <th className="right">USD</th>
                     <th>Chain</th>
                     <th>Whale</th>
-                    <th>Score</th>
+                    <th className="right">Score</th>
                 </tr>
               </thead>
               <tbody>
-                  {rows.map(t => (
-                    <tr key={t.transaction_hash}>
-                      <td>{new Date(t.timestamp).toLocaleString()}</td>
+                  {rows.map((t, idx) => (
+                    <motion.tr key={t.transaction_hash} custom={idx} variants={rowVariant} initial="hidden" animate="visible">
+                      <td className="muted" style={{ fontSize: '0.75rem' }}>{new Date(t.timestamp).toLocaleString()}</td>
                       <td>
-                        <Link href={`/token/${encodeURIComponent(t.token_symbol || '-')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <TokenIcon symbol={t.token_symbol} size={20} />
+                        <Link href={`/token/${encodeURIComponent(t.token_symbol || '-')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <TokenIcon symbol={t.token_symbol} size={18} />
                           {t.token_symbol || '-'}
                         </Link>
                       </td>
-                      <td><Badge className={(t.classification||'').toLowerCase()}>{t.classification||'-'}</Badge></td>
-                      <td className="usd">${Math.round(Number(t.usd_value||0)).toLocaleString()}</td>
-                      <td>{t.blockchain}</td>
+                      <td><Badge className={(t.classification||'').toLowerCase()}>{(t.classification||'-').toUpperCase()}</Badge></td>
+                      <td className="right" style={{ fontWeight: 700, color: (t.classification||'').toLowerCase() === 'buy' ? COLORS.green : (t.classification||'').toLowerCase() === 'sell' ? COLORS.red : COLORS.textPrimary }}>
+                        ${Math.round(Number(t.usd_value||0)).toLocaleString()}
+                      </td>
+                      <td className="muted">{t.blockchain}</td>
                       <td><Link href={`/whale/${encodeURIComponent(t.from_address || '-')}`}>{t.from_address?.slice(0,6)}…{t.from_address?.slice(-4)}</Link></td>
-                      <td className="usd">{t.whale_score ?? '-'}</td>
-                </tr>
-                ))}
+                      <td className="right" style={{ fontWeight: 600, color: COLORS.cyan }}>{t.whale_score ?? '-'}</td>
+                    </motion.tr>
+                  ))}
               </tbody>
-              </Table>
+              </table>
+              </DataTable>
               <Pagination>
-                <Button type="button" onClick={()=>fetchTrades(Math.max(1, page-1))}>← Previous</Button>
-                <Button type="button" onClick={()=>fetchTrades(page+1)}>Next →</Button>
-                <span>Page {page} • Total: {total.toLocaleString()} transactions</span>
+                <GhostButton type="button" onClick={()=>fetchTrades(Math.max(1, page-1))}>← PREV</GhostButton>
+                <span style={{ fontFamily: MONO_FONT }}>Page {page} · {total.toLocaleString()} txns</span>
+                <GhostButton type="button" onClick={()=>fetchTrades(page+1)}>NEXT →</GhostButton>
               </Pagination>
             </>
             )}
           </div>
-      </Card>
+      </Panel>
       </Container>
     </StatisticsContainer>
   );

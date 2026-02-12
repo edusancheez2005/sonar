@@ -1,17 +1,15 @@
 'use client'
 
 import React from 'react'
-import styled, { keyframes } from 'styled-components'
+import styled from 'styled-components'
 import { motion } from 'framer-motion'
 
-const colors = {
-  bgDark: '#0a1621',
-  bgCard: '#0d2134',
-  primary: '#36a6ba',
-  textPrimary: '#ffffff',
-  textSecondary: '#a0b2c6',
-  textMuted: '#6b7d8f',
-  borderLight: 'rgba(54, 166, 186, 0.15)',
+const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
+const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+const COLORS = {
+  cyan: '#00e5ff', green: '#00e676', textPrimary: '#e0e6ed',
+  textMuted: '#5a6a7a', panelBg: 'rgba(13, 17, 28, 0.8)',
+  borderSubtle: 'rgba(0, 229, 255, 0.08)',
 }
 
 const Container = styled.div`
@@ -24,75 +22,54 @@ const Container = styled.div`
   text-align: center;
 `
 
-const fadeInUp = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`
-
 const LogoSection = styled(motion.div)`
   margin-bottom: 2rem;
 `
 
 const OrcaLogo = styled.div`
-  font-size: 3.5rem;
+  font-size: 3rem;
   font-weight: 800;
-  letter-spacing: 0.15em;
-  color: ${colors.primary};
-  margin-bottom: 1rem;
-  text-shadow: 0 4px 30px rgba(54, 166, 186, 0.4);
+  letter-spacing: 0.2em;
+  color: ${COLORS.cyan};
+  margin-bottom: 0.75rem;
+  text-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+  font-family: ${MONO_FONT};
 `
 
 const Title = styled.h1`
-  font-size: 2rem;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.02em;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: ${COLORS.textPrimary};
+  margin-bottom: 0.4rem;
+  font-family: ${SANS_FONT};
 `
 
 const Subtitle = styled.p`
-  font-size: 1rem;
-  color: ${colors.primary};
-  font-weight: 500;
+  font-size: 0.85rem;
+  color: ${COLORS.textMuted};
+  font-family: ${MONO_FONT};
+  letter-spacing: 0.5px;
 `
 
 const DescriptionCard = styled(motion.div)`
   max-width: 640px;
-  background: linear-gradient(135deg, ${colors.bgCard} 0%, rgba(13, 33, 52, 0.8) 100%);
-  border: 1px solid ${colors.borderLight};
-  border-radius: 16px;
+  background: ${COLORS.panelBg};
+  backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle};
+  border-radius: 8px;
   padding: 2rem 2.5rem;
   margin-bottom: 2.5rem;
 `
 
 const Description = styled.p`
-  font-size: 1.05rem;
-  color: ${colors.textSecondary};
+  font-size: 0.95rem;
+  color: ${COLORS.textMuted};
   line-height: 1.8;
   margin: 0;
+  font-family: ${SANS_FONT};
   
-  strong {
-    color: ${colors.textPrimary};
-    font-weight: 600;
-  }
-  
-  span.highlight {
-    color: ${colors.primary};
-  }
-`
-
-const Divider = styled.div`
-  width: 50px;
-  height: 2px;
-  background: ${colors.primary};
-  margin: 1.5rem auto;
-  opacity: 0.5;
+  strong { color: ${COLORS.textPrimary}; font-weight: 600; }
+  span.highlight { color: ${COLORS.cyan}; }
 `
 
 const Stats = styled.div`
@@ -101,25 +78,27 @@ const Stats = styled.div`
   gap: 2.5rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid ${colors.borderLight};
+  border-top: 1px solid ${COLORS.borderSubtle};
 `
 
-const Stat = styled.div`
-  text-align: center;
-`
+const Stat = styled.div`text-align: center;`
 
 const StatValue = styled.div`
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  color: ${colors.primary};
+  color: ${COLORS.cyan};
   margin-bottom: 0.25rem;
+  font-family: ${MONO_FONT};
+  text-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
 `
 
 const StatLabel = styled.div`
-  font-size: 0.75rem;
-  color: ${colors.textMuted};
+  font-size: 0.65rem;
+  color: ${COLORS.textMuted};
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 1.5px;
+  font-family: ${SANS_FONT};
+  font-weight: 600;
 `
 
 const ExamplesSection = styled(motion.div)`
@@ -128,40 +107,38 @@ const ExamplesSection = styled(motion.div)`
 `
 
 const ExamplesTitle = styled.h3`
-  font-size: 0.875rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  color: ${colors.textMuted};
+  color: ${COLORS.textMuted};
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 1.5px;
   margin-bottom: 1rem;
+  font-family: ${SANS_FONT};
 `
 
 const ExamplesGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
+  gap: 0.6rem;
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
 `
 
 const ExampleButton = styled.button`
-  background: ${colors.bgCard};
-  border: 1px solid ${colors.borderLight};
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  color: ${colors.textSecondary};
-  font-size: 0.9rem;
+  background: rgba(0, 229, 255, 0.04);
+  border: 1px solid ${COLORS.borderSubtle};
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  color: ${COLORS.textMuted};
+  font-size: 0.85rem;
+  font-family: ${MONO_FONT};
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   
   &:hover {
-    background: rgba(54, 166, 186, 0.08);
-    border-color: ${colors.primary};
-    color: ${colors.textPrimary};
-    transform: translateY(-2px);
+    background: rgba(0, 229, 255, 0.08);
+    border-color: rgba(0, 229, 255, 0.2);
+    color: ${COLORS.textPrimary};
   }
 `
 
@@ -180,17 +157,17 @@ export default function OrcaWelcome({ onExampleClick }) {
       <LogoSection
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5 }}
       >
         <OrcaLogo>ORCA</OrcaLogo>
         <Title>AI-Powered Crypto Intelligence</Title>
-        <Subtitle>Your Personal Market Analyst</Subtitle>
+        <Subtitle>// your personal market analyst</Subtitle>
       </LogoSection>
       
       <DescriptionCard
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.15 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
         <Description>
           ORCA is trained on <strong>proprietary sentiment models</strong> analyzing millions of news articles, 
@@ -219,7 +196,7 @@ export default function OrcaWelcome({ onExampleClick }) {
       <ExamplesSection
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
       >
         <ExamplesTitle>Try Asking</ExamplesTitle>
         <ExamplesGrid>
