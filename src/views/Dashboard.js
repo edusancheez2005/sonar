@@ -1,9 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import PageHeader from '../components/PageHeader';
-import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import OrcaTutorial from '@/components/onboarding/OrcaTutorial'
@@ -20,138 +18,178 @@ import {
   Legend
 } from 'chart.js'
 import TokenIcon from '@/components/TokenIcon'
+import WhaleAlertsCard from '../components/WhaleAlertsCard';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend)
 
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
+const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+const COLORS = {
+  cyan: '#00e5ff',
+  green: '#00e676',
+  red: '#ff1744',
+  amber: '#ffab00',
+  textPrimary: '#e0e6ed',
+  textMuted: '#5a6a7a',
+  panelBg: 'rgba(13, 17, 28, 0.8)',
+  borderSubtle: 'rgba(0, 229, 255, 0.08)',
+  gridLine: 'rgba(255, 255, 255, 0.03)',
+}
+
+// ─── ANIMATIONS ───────────────────────────────────────────────────────────────
+const pulseGlow = keyframes`
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px #00e676; }
+  50% { opacity: 0.4; box-shadow: 0 0 8px #00e676, 0 0 16px rgba(0, 230, 118, 0.3); }
+`
+
+// ─── STYLED COMPONENTS ────────────────────────────────────────────────────────
+const DashboardShell = styled.div`
+  min-height: 100vh;
+  background: #0a0e17;
+  position: relative;
+  overflow-x: hidden;
+
+  &::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0, 229, 255, 0.008) 2px, rgba(0, 229, 255, 0.008) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+`
+
 const DashboardContainer = styled.div`
-  padding: 2rem;
-  max-width: 1400px;
+  padding: 0 2rem 4rem 2rem;
+  max-width: 1440px;
   margin: 0 auto;
   position: relative;
+  z-index: 1;
+  @media (max-width: 768px) { padding: 0 1rem 3rem 1rem; }
 `;
 
-const PremiumOverlay = styled.div`
-  position: fixed;
+const CommandBar = styled.div`
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(10, 22, 33, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 9999;
+  z-index: 100;
+  height: 48px;
+  background: rgba(10, 14, 23, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.1);
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  justify-content: space-between;
+  padding: 0 2rem;
+  font-family: ${MONO_FONT};
+  gap: 1rem;
+  @media (max-width: 768px) {
+    padding: 0.5rem 1rem;
+    height: auto;
+    min-height: 48px;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+`
+
+const CommandBarLeft = styled.div`
+  display: flex; align-items: center; gap: 1rem; flex-shrink: 0;
+  @media (max-width: 768px) { gap: 0.5rem; }
+`
+const CommandBarCenter = styled.div`
+  display: flex; align-items: center; gap: 1.5rem; font-size: 0.8rem; color: ${COLORS.textMuted};
+  @media (max-width: 768px) { gap: 0.75rem; font-size: 0.7rem; order: 3; width: 100%; justify-content: center; }
+`
+const CommandBarRight = styled.div`
+  display: flex; align-items: center; gap: 1rem; flex-shrink: 0;
+  @media (max-width: 768px) { gap: 0.5rem; }
+`
+
+const TerminalLogo = styled.span`
+  font-weight: 800; font-size: 0.85rem; letter-spacing: 2px; color: ${COLORS.cyan}; text-transform: uppercase;
+`
+
+const LiveDot = styled.span`
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.75rem; font-weight: 600; color: ${COLORS.green};
+  text-transform: uppercase; letter-spacing: 1px;
+  &::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: ${COLORS.green}; animation: ${pulseGlow} 2s ease-in-out infinite;
+  }
+`
+
+const StatChip = styled.span`
+  color: ${COLORS.textPrimary}; font-family: ${MONO_FONT}; font-size: 0.8rem; font-weight: 600;
+  .label { color: ${COLORS.textMuted}; margin-right: 0.35rem; font-weight: 400; }
+`
+
+const TimeBadge = styled.span`
+  background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 4px; padding: 0.2rem 0.6rem; font-size: 0.7rem;
+  font-weight: 600; color: ${COLORS.cyan}; letter-spacing: 0.5px;
+`
+
+const UserChip = styled.span`
+  font-size: 0.75rem; color: ${COLORS.textMuted}; font-weight: 400;
+  strong { color: #8a9ab0; font-weight: 600; }
+`
+
+const TutorialBtn = styled.button`
+  background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 4px; padding: 0.25rem 0.65rem; color: ${COLORS.cyan};
+  font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: ${MONO_FONT};
+  transition: all 0.15s ease; display: flex; align-items: center; gap: 0.35rem;
+  &:hover { background: rgba(0, 229, 255, 0.15); border-color: rgba(0, 229, 255, 0.3); }
+`
+
+const CmdDivider = styled.span`color: rgba(0, 229, 255, 0.15); font-size: 0.9rem;`
+
+// ─── PREMIUM OVERLAY ────────────────────────────────────────────────────────
+const PremiumOverlay = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(10, 14, 23, 0.92); backdrop-filter: blur(16px);
+  z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 2rem;
 `;
 
 const PremiumCard = styled(motion.div)`
-  background: linear-gradient(135deg, rgba(26, 40, 56, 0.98) 0%, rgba(15, 25, 38, 0.98) 100%);
-  border: 2px solid var(--primary);
-  border-radius: 24px;
-  padding: 3rem 2.5rem;
-  max-width: 580px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(54, 166, 186, 0.3), 0 0 100px rgba(54, 166, 186, 0.1);
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(54, 166, 186, 0.08) 0%, transparent 70%);
-    animation: pulse 4s ease-in-out infinite;
-  }
-  
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.1); opacity: 0.8; }
-  }
+  background: rgba(13, 17, 28, 0.95);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 16px; padding: 3rem 2.5rem; max-width: 560px; width: 100%;
+  box-shadow: 0 0 60px rgba(0, 229, 255, 0.08); text-align: center; position: relative;
 `;
 
-const PremiumIcon = styled.div`
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
-  filter: drop-shadow(0 4px 12px rgba(54, 166, 186, 0.4));
-`;
+const PremiumIcon = styled.div`font-size: 3.5rem; margin-bottom: 1.5rem;`;
 
 const PremiumTitle = styled.h2`
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 2rem; font-weight: 700; font-family: ${SANS_FONT}; color: ${COLORS.textPrimary};
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: linear-gradient(135deg, ${COLORS.cyan} 0%, #00b8d4 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 `;
 
 const PremiumDescription = styled.p`
-  font-size: 1.1rem;
-  color: var(--text-secondary);
-  margin-bottom: 2rem;
-  line-height: 1.6;
+  font-size: 1rem; color: ${COLORS.textMuted}; margin-bottom: 2rem; line-height: 1.6; font-family: ${SANS_FONT};
 `;
 
 const PremiumFeatureList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0;
-  text-align: left;
-  
+  list-style: none; padding: 0; margin: 2rem 0; text-align: left;
   li {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 0;
-    color: var(--text-primary);
-    font-size: 1rem;
-    
-    &::before {
-      content: '✓';
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      background: rgba(54, 166, 186, 0.2);
-      border: 2px solid var(--primary);
-      border-radius: 50%;
-      color: var(--primary);
-      font-weight: bold;
-      flex-shrink: 0;
-    }
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0;
+    color: #8a9ab0; font-size: 0.95rem; font-family: ${SANS_FONT};
+    &::before { content: '▸'; color: ${COLORS.cyan}; font-weight: bold; flex-shrink: 0; }
   }
 `;
 
 const PremiumButton = styled(motion.button)`
-  background: linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%);
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
-  padding: 1.2rem 3rem;
-  font-size: 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(54, 166, 186, 0.35);
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 1;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(54, 166, 186, 0.5);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
+  background: linear-gradient(135deg, ${COLORS.cyan} 0%, #00b8d4 100%);
+  color: #0a0e17; border: none; border-radius: 8px; padding: 1rem 2.5rem;
+  font-size: 1.1rem; font-weight: 700; cursor: pointer; font-family: ${SANS_FONT};
+  box-shadow: 0 4px 24px rgba(0, 229, 255, 0.25); transition: all 0.2s ease;
+  &:hover { box-shadow: 0 8px 32px rgba(0, 229, 255, 0.4); }
 `;
 
 const BlurredContent = styled.div`
@@ -161,304 +199,196 @@ const BlurredContent = styled.div`
   transition: filter 0.3s ease;
 `;
 
-const StatusBadge = styled.div`
-  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem;
-  border-radius: 999px; font-weight: 500; font-size: 0.95rem;
-  color: ${({ active }) => active ? '#2ecc71' : '#e74c3c'};
-  background: ${({ active }) => active ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)'};
-  border: 1px solid ${({ active }) => active ? 'rgba(46, 204, 113, 0.35)' : 'rgba(231, 76, 60, 0.35)'};
-`;
+// ─── PANEL (GLASS CARD) ──────────────────────────────────────────────────────
+const Panel = styled.div`
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.5rem;
+  transition: border-color 0.2s ease;
+  &:hover { border-color: rgba(0, 229, 255, 0.12); }
+`
 
-const Dot = styled.span`
-  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
-  background: currentColor;
-`;
+const PanelHeader = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;
+`
 
-const FilterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  
+const TerminalPrompt = styled.h2`
+  font-family: ${MONO_FONT}; font-size: 0.85rem; font-weight: 700; color: ${COLORS.cyan};
+  letter-spacing: 1px; text-transform: uppercase; margin: 0;
+  display: flex; align-items: center; gap: 0.5rem;
+  &::before { content: '>'; color: ${COLORS.green}; font-weight: 800; }
+`
+
+const PanelBadge = styled.span`
+  background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.1);
+  border-radius: 4px; padding: 0.2rem 0.65rem; font-size: 0.7rem; font-weight: 600;
+  color: ${COLORS.textMuted}; font-family: ${MONO_FONT}; letter-spacing: 0.5px; text-transform: uppercase;
+`
+
+const PanelSubtext = styled.p`
+  font-size: 0.8rem; color: ${COLORS.textMuted}; margin: 0.25rem 0 0 1.1rem; font-family: ${SANS_FONT};
+`
+
+// ─── KPI STRIP ──────────────────────────────────────────────────────────────
+const KPIStrip = styled.div`
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem;
+  @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
+`
+
+const KPICell = styled.div`
+  padding: 1.25rem 1.5rem; text-align: center; position: relative;
+  &:not(:last-child)::after {
+    content: ''; position: absolute; right: 0; top: 20%; height: 60%; width: 1px;
+    background: ${COLORS.borderSubtle};
+  }
   @media (max-width: 768px) {
-    margin-top: 1rem;
+    &:nth-child(2)::after { display: none; }
+    &:nth-child(1), &:nth-child(2) { border-bottom: 1px solid ${COLORS.borderSubtle}; }
   }
-`;
+`
 
-const FilterGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  
-  label {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-  }
-  
-  select, input {
-    background-color: var(--background-card);
-    border: 1px solid var(--secondary);
-    color: var(--text-primary);
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    min-width: 150px;
-    
-    &:focus { outline: none; border-color: var(--primary); }
-  }
-`;
+const KPILabel = styled.div`
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+  color: ${COLORS.textMuted}; margin-bottom: 0.5rem; font-family: ${SANS_FONT};
+`
 
-const FilterInfo = styled.div`
-  display: flex;
-  align-items: center;
-  margin-top: 1rem;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  
-  span { color: var(--primary); font-weight: 500; margin: 0 0.25rem; }
-`;
+const KPIValue = styled.div`
+  font-size: 1.8rem; font-weight: 800; font-family: ${MONO_FONT};
+  color: ${props => props.$color || COLORS.textPrimary};
+  text-shadow: 0 0 20px ${props => (props.$color || COLORS.cyan) + '30'};
+  line-height: 1; margin-bottom: 0.3rem;
+`
 
-const DashboardCard = styled.div`
-   background-color: var(--background-card);
-   border-radius: 8px;
-   padding: 1.5rem;
-   margin-bottom: 2rem;
-   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-   transition: transform 0.3s ease, box-shadow 0.3s ease;
-   
-   &:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); }
-   
-   h2 { 
-     display: flex; 
-     align-items: center; 
-     margin-bottom: 1.5rem; 
-     font-size: 1.6rem; 
-     color: var(--text-primary);
-     font-weight: 600;
-     letter-spacing: 0.03em;
-     border-bottom: 2px solid rgba(52, 152, 219, 0.2);
-     padding-bottom: 0.75rem;
-   }
- `;
+const KPISub = styled.div`
+  font-size: 0.7rem; color: ${props => props.$color || COLORS.textMuted};
+  font-family: ${MONO_FONT}; font-weight: 500;
+`
 
-const IncomingDataSection = styled(DashboardCard)``;
-
-const IncomingDataHeader = styled.div`
-   display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;
-   h2 { 
-     font-size: 1.75rem; 
-     margin-bottom: 0; 
-     color: var(--text-primary);
-     font-weight: 600;
-     letter-spacing: 0.03em;
-     border-bottom: 2px solid rgba(52, 152, 219, 0.2);
-     padding-bottom: 0.75rem;
-   }
-   span { color: var(--text-secondary); }
- `;
-
-const TransactionTable = styled.table`
-  width: 100%;
-  table-layout: fixed;
-  tr { transition: background-color 0.3s ease; }
-  tr:hover { background-color: rgba(30, 57, 81, 0.5); }
-  td, th { padding: 1rem; text-align: left; }
-  .time { color: var(--text-secondary); }
-  .amount {
-    font-weight: 500;
-    text-align: left;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: 'tnum' 1;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  }
-  .price {
-    font-weight: 500;
-    text-align: left;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: 'tnum' 1;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  }
-  .token { font-weight: 500; }
-  .action-buy { color: var(--buy-color); background-color: rgba(54, 166, 186, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
-  .action-sell { color: var(--sell-color); background-color: rgba(231, 76, 60, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
-  .action-transfer { color: var(--transfer-color); background-color: rgba(52, 152, 219, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
-  .action-defi { color: #ff8c00; background-color: rgba(255, 140, 0, 0.15); border-radius: 4px; padding: 0.25rem 0.75rem; font-weight: 500; }
-  .hash { 
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-  }
-`;
-
+// ─── LAYOUTS ────────────────────────────────────────────────────────────────
 const GridContainer = styled.div`
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;
   @media (max-width: 768px) { grid-template-columns: 1fr; }
 `;
 
-const StatsCard = styled(DashboardCard)`
-  table { width: 100%; }
-  th, td { padding: 0.75rem 0; text-align: left; }
-  th:last-child, td:last-child { text-align: left; }
-  .percentage { font-weight: 500; color: var(--primary); }
-`;
+const SectionGap = styled.div`margin-bottom: 1.5rem;`
 
-const BarsContainer = styled.div`
-  display: grid; grid-template-columns: 1fr; gap: 10px;
-`;
-const BarRow = styled.div`
-  display: grid; grid-template-columns: 160px 1fr 60px; gap: 10px; align-items: center;
-`;
-const BarTrack = styled.div`
-  background: rgba(30, 57, 81, 0.7);
-  height: 12px; border-radius: 6px; overflow: hidden;
-`;
-const BarFill = styled.div`
-  height: 100%; background: linear-gradient(90deg, var(--primary), #2ecc71);
-`;
+// ─── DATA TABLE ─────────────────────────────────────────────────────────────
+const DataTable = styled.div`
+  width: 100%; overflow-x: auto;
+  table { width: 100%; border-collapse: collapse; font-family: ${MONO_FONT}; }
+  thead th {
+    padding: 0.75rem 1rem; text-align: left; font-size: 0.7rem; font-weight: 600;
+    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
+    white-space: nowrap; font-family: ${SANS_FONT};
+  }
+  thead th.right { text-align: right; }
+  thead th.center { text-align: center; }
+  tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    transition: background 0.15s ease; cursor: pointer;
+  }
+  tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
+  tbody td {
+    padding: 0.75rem 1rem; font-size: 0.85rem; color: ${COLORS.textPrimary}; white-space: nowrap;
+  }
+  tbody td.right { text-align: right; }
+  tbody td.center { text-align: center; }
+  tbody td.muted { color: ${COLORS.textMuted}; }
+`
 
-// New styled components for enhanced insights
-const InsightGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
-`;
+// ─── HORIZONTAL BAR ROW ────────────────────────────────────────────────────
+const HBarRow = styled.div`
+  display: grid; grid-template-columns: 120px 1fr 80px; gap: 0.75rem; align-items: center;
+  padding: 0.5rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  transition: background 0.15s ease;
+  &:hover { background: rgba(0, 229, 255, 0.03); }
+  &:last-child { border-bottom: none; }
+  @media (max-width: 768px) { grid-template-columns: 80px 1fr 60px; }
+`
 
-const InsightCard = styled(DashboardCard)`
-   h3 {
-     color: var(--text-primary);
-     font-size: 1.4rem;
-     margin-bottom: 1.5rem;
-     display: flex;
-     align-items: center;
-     gap: 0.5rem;
-     font-weight: 600;
-     letter-spacing: 0.03em;
-     border-bottom: 2px solid rgba(52, 152, 219, 0.2);
-     padding-bottom: 0.75rem;
-   }
-  
-  .insight-value {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
-  }
-  
-  .insight-label {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-  }
-  
-  .trend-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    margin-top: 0.5rem;
-  }
-  
-  .trend-up {
-    background: rgba(46, 204, 113, 0.15);
-    color: #2ecc71;
-    border: 1px solid rgba(46, 204, 113, 0.3);
-  }
-  
-  .trend-down {
-    background: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-  }
-  
-  .trend-neutral {
-    background: rgba(52, 152, 219, 0.15);
-    color: #3498db;
-    border: 1px solid rgba(52, 152, 219, 0.3);
-  }
-`;
+const HBarLabel = styled.div`
+  display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;
+  font-weight: 600; color: ${COLORS.textPrimary}; font-family: ${MONO_FONT};
+`
 
-const SentimentMeter = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin: 1rem 0;
-  
-  .meter {
-    flex: 1;
-    height: 8px;
-    background: rgba(30, 57, 81, 0.7);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-  }
-  
-  .meter-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.3s ease;
-  }
-  
-  .bullish { background: linear-gradient(90deg, #2ecc71, #27ae60); }
-  .neutral { background: linear-gradient(90deg, #f39c12, #e67e22); }
-  .bearish { background: linear-gradient(90deg, #e74c3c, #c0392b); }
-`;
+const HBarTrack = styled.div`
+  height: 6px; background: rgba(255, 255, 255, 0.04); border-radius: 3px; overflow: hidden;
+`
 
-const TokenHeatmap = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.5rem;
-  margin-top: 1rem;
-  
-  .token-item {
-    padding: 0.5rem;
-    border-radius: 6px;
-    text-align: center;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-  }
-  
-  .high-activity { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-  .medium-activity { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
-  .low-activity { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
-`;
+const HBarFill = styled(motion.div)`
+  height: 100%; border-radius: 3px; background: ${props => props.$color || COLORS.cyan};
+`
 
-const RiskIndicator = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  
-  &.low-risk {
-    background: rgba(46, 204, 113, 0.15);
-    color: #2ecc71;
-    border: 1px solid rgba(46, 204, 113, 0.3);
-  }
-  
-  &.medium-risk {
-    background: rgba(243, 156, 18, 0.15);
-    color: #f39c12;
-    border: 1px solid rgba(243, 156, 18, 0.3);
-  }
-  
-  &.high-risk {
-    background: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-  }
-`;
+const HBarValue = styled.div`
+  font-size: 0.8rem; font-weight: 600; color: ${props => props.$color || COLORS.textPrimary};
+  font-family: ${MONO_FONT}; text-align: right;
+`
 
+// ─── PRESSURE ROW ───────────────────────────────────────────────────────────
+const PressureRow = styled.div`
+  display: grid; grid-template-columns: 32px 80px 1fr 50px; gap: 0.75rem;
+  align-items: center; padding: 0.55rem 0.5rem; border-radius: 4px;
+  border-left: 2px solid transparent; transition: all 0.15s ease;
+  &:nth-child(even) { background: rgba(0, 229, 255, 0.015); }
+  &:hover {
+    border-left-color: ${props => props.$accent || COLORS.cyan};
+    background: rgba(0, 229, 255, 0.04);
+  }
+`
+
+const PressureBar = styled.div`
+  height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.04); overflow: hidden;
+`
+
+const PressureFill = styled.div`
+  height: 100%; border-radius: 2px;
+  background: ${props => props.$color || COLORS.cyan}; transition: width 0.4s ease;
+`
+
+// ─── MINI BAR ───────────────────────────────────────────────────────────────
+const MiniBar = styled.div`
+  display: flex; height: 4px; border-radius: 2px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.04); width: ${props => props.$width || '80px'};
+`
+
+const MiniBarFill = styled.div`
+  height: 100%; background: ${props => props.$color || COLORS.green}; transition: width 0.3s ease;
+`
+
+const FlowDot = styled.span`
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: ${props => props.$color || COLORS.textMuted}; flex-shrink: 0;
+`
+
+const RankBadge = styled.div`
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%; font-weight: 800;
+  font-size: 0.75rem; font-family: ${MONO_FONT}; flex-shrink: 0;
+  background: ${p => p.$rank === 1 ? 'linear-gradient(135deg, #FFD700, #FFA500)' :
+    p.$rank === 2 ? 'linear-gradient(135deg, #C0C0C0, #808080)' :
+    p.$rank === 3 ? 'linear-gradient(135deg, #CD7F32, #8B4513)' : 'rgba(0, 229, 255, 0.1)'};
+  color: ${p => p.$rank <= 3 ? '#0a0e17' : COLORS.textMuted};
+  border: 1px solid ${p => p.$rank === 1 ? 'rgba(255, 215, 0, 0.4)' :
+    p.$rank === 2 ? 'rgba(192, 192, 192, 0.4)' :
+    p.$rank === 3 ? 'rgba(205, 127, 50, 0.4)' : 'rgba(0, 229, 255, 0.1)'};
+`
+
+const TokenPill = styled.span`
+  display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem;
+  background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.1);
+  border-radius: 4px; font-size: 0.7rem; font-weight: 600; color: ${COLORS.cyan};
+  font-family: ${MONO_FONT};
+`
+
+const EmptyState = styled.div`
+  text-align: center; padding: 3rem 1rem; color: ${COLORS.textMuted};
+  font-family: ${SANS_FONT}; font-size: 0.9rem;
+`
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
 const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const formatCompact = (n) => {
   const num = Number(n || 0);
@@ -470,42 +400,60 @@ const formatCompact = (n) => {
   return `${Math.round(num)}`;
 }
 
-// Greeting component for personalized welcome
-const GreetingBanner = styled(motion.div)`
-  background: linear-gradient(135deg, rgba(54, 166, 186, 0.1) 0%, rgba(30, 57, 81, 0.3) 100%);
-  border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  
-  .greeting-text {
-    font-size: 1.15rem;
-    font-weight: 600;
-    background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 50%, #ffffff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+// Count-up hook for animated numbers
+const useCountUp = (target, duration = 800) => {
+  const [value, setValue] = useState(0)
+  const prevTarget = useRef(0)
+  useEffect(() => {
+    if (target === prevTarget.current) return
+    const start = prevTarget.current
+    const diff = target - start
+    const startTime = performance.now()
+    prevTarget.current = target
+    const animate = (now) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3) // cubic ease-out
+      setValue(Math.round(start + diff * eased))
+      if (progress < 1) requestAnimationFrame(animate)
+    }
+    requestAnimationFrame(animate)
+  }, [target, duration])
+  return value
+}
+
+const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
+  const animated = useCountUp(Number(value) || 0)
+  return <>{prefix}{formatNumber(animated)}{suffix}</>
+}
+
+// ─── MOTION VARIANTS ────────────────────────────────────────────────────────
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { when: 'beforeChildren', staggerChildren: 0.08, ease: [0.25, 0.46, 0.45, 0.94] }
   }
-  
-  .wave-emoji {
-    font-size: 1.4rem;
-    display: inline-block;
-    animation: wave 2s ease-in-out infinite;
-  }
-  
-  @keyframes wave {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(20deg); }
-    75% { transform: rotate(-10deg); }
-  }
-`;
+}
+const fadeUp = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] } }
+}
+const rowVariant = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.25, delay: i * 0.04, ease: [0.25, 0.46, 0.45, 0.94] }
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DASHBOARD COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 
 const Dashboard = ({ isPremium = false }) => {
   console.log('🔍 Dashboard isPremium:', isPremium)
-  
+
   const [transactions, setTransactions] = useState([]);
   const [topBuys, setTopBuys] = useState([]);
   const [topSells, setTopSells] = useState([]);
@@ -513,7 +461,7 @@ const Dashboard = ({ isPremium = false }) => {
   const [tokenTradeCounts, setTokenTradeCounts] = useState([]);
   const [noData24h, setNoData24h] = useState(false);
   const [lastUpdate, setLastUpdate] = useState('now');
-  
+
   // User greeting state
   const [userName, setUserName] = useState('');
   const [showTutorial, setShowTutorial] = useState(false);
@@ -695,29 +643,7 @@ const Dashboard = ({ isPremium = false }) => {
 
   const filteredTransactions = transactions;
 
-  const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { when: 'beforeChildren', staggerChildren: 0.1 } } };
-  const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
-
-  const getSentimentColor = (trend) => {
-    switch(trend) {
-      case 'bullish': return '#2ecc71';
-      case 'bearish': return '#e74c3c';
-      default: return '#f39c12';
-    }
-  };
-
-  const getRiskLevel = (value) => {
-    if (value > 1000000) return 'high-risk';
-    if (value > 100000) return 'medium-risk';
-    return 'low-risk';
-  };
-
-  const getActivityLevel = (count) => {
-    if (count > 50) return 'high-activity';
-    if (count > 20) return 'medium-activity';
-    return 'low-activity';
-  };
-
+  // ─── RENDER ─────────────────────────────────────────────────────────────────
   return (
     <>
       {!isPremium && (
@@ -734,10 +660,10 @@ const Dashboard = ({ isPremium = false }) => {
             </PremiumDescription>
             <PremiumFeatureList>
               <li>Live whale transaction tracking (24/7)</li>
-              <li>Advanced token analytics & heatmaps</li>
-              <li>Risk assessment & sentiment analysis</li>
+              <li>Advanced token analytics &amp; heatmaps</li>
+              <li>Risk assessment &amp; sentiment analysis</li>
               <li>AI-powered market insights (Orca 2.0)</li>
-              <li>Custom alerts & notifications</li>
+              <li>Custom alerts &amp; notifications</li>
             </PremiumFeatureList>
             <PremiumButton
               whileHover={{ scale: 1.05 }}
@@ -749,592 +675,389 @@ const Dashboard = ({ isPremium = false }) => {
           </PremiumCard>
         </PremiumOverlay>
       )}
-      
-    <DashboardContainer>
-        <BlurredContent $isPremium={isPremium}>
-             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-         <PageHeader title="Real-Time" accentWord="Dashboard">
-           <FilterContainer>
-             <StatusBadge active={algoActive}>
-               <Dot /> {algoActive ? 'Algorithm Active' : 'Algorithm Not Active'}
-             </StatusBadge>
-             <button
-               onClick={() => {
-                 localStorage.removeItem('sonar_tutorial_completed')
-                 setShowTutorial(true)
-               }}
-               style={{
-                 background: 'rgba(54, 166, 186, 0.15)',
-                 border: '1px solid rgba(54, 166, 186, 0.3)',
-                 borderRadius: '999px',
-                 padding: '0.35rem 0.75rem',
-                 color: 'var(--primary)',
-                 fontSize: '0.85rem',
-                 fontWeight: 500,
-                 cursor: 'pointer',
-                 display: 'flex',
-                 alignItems: 'center',
-                 gap: '0.4rem',
-                 transition: 'all 0.2s ease'
-               }}
-               onMouseEnter={(e) => {
-                 e.currentTarget.style.background = 'rgba(54, 166, 186, 0.25)'
-               }}
-               onMouseLeave={(e) => {
-                 e.currentTarget.style.background = 'rgba(54, 166, 186, 0.15)'
-               }}
-             >
-               🐋 Tutorial
-             </button>
-           </FilterContainer>
-         </PageHeader>
-         
-         {/* 24-Hour Data Indicator */}
-         <div style={{ 
-           background: 'rgba(52, 152, 219, 0.1)', 
-           border: '1px solid rgba(52, 152, 219, 0.3)',
-           borderRadius: '8px',
-           padding: '1rem',
-           marginTop: '1.5rem',
-           marginBottom: '2rem',
-           textAlign: 'center'
-         }}>
-           <p style={{ 
-             color: 'var(--primary)', 
-             fontSize: '1.1rem', 
-             fontWeight: '600',
-             margin: '0',
-             marginBottom: '0.5rem'
-           }}>
-             All data represents the last 24 hours of whale activity
-           </p>
-           <p style={{ 
-             color: 'var(--text-secondary)', 
-             fontSize: '0.95rem', 
-             fontWeight: '500',
-             margin: '0'
-           }}>
-             Tracking transactions $500,000+
-           </p>
-         </div>
-         
-         {/* Personalized Greeting */}
-         {userName && (
-           <GreetingBanner
-             initial={{ opacity: 0, x: -20 }}
-             animate={{ opacity: 1, x: 0 }}
-             transition={{ duration: 0.5, delay: 0.2 }}
-           >
-             <span className="wave-emoji">👋</span>
-             <span className="greeting-text">Welcome back, {userName}!</span>
-           </GreetingBanner>
-         )}
-       </motion.div>
 
-      {/* Market Pulse - High-level sentiment overview */}
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" ref={marketPulseRef} data-tutorial="market-pulse">
-        <DashboardCard>
-          <h2>Market Pulse</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
-            <div style={{ 
-              background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(46, 204, 113, 0.05) 100%)', 
-              border: '1px solid rgba(46, 204, 113, 0.3)',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              textAlign: 'center',
-              transition: 'all 0.3s ease',
-              cursor: 'default'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)'
-              e.currentTarget.style.boxShadow = '0 8px 16px rgba(46, 204, 113, 0.2)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#2ecc71' }}>
-                {tokenInflows.filter(t => (t.netUsdRobust || 0) > 1000000).length}
-              </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', fontWeight: 600 }}>
-                Strong Accumulation
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#2ecc71', marginTop: '0.25rem' }}>
-                &gt; $1M Net Inflow
-              </div>
-            </div>
-            
-            <div style={{ 
-              background: 'linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(231, 76, 60, 0.05) 100%)', 
-              border: '1px solid rgba(231, 76, 60, 0.3)',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              textAlign: 'center',
-              transition: 'all 0.3s ease',
-              cursor: 'default'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)'
-              e.currentTarget.style.boxShadow = '0 8px 16px rgba(231, 76, 60, 0.2)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#e74c3c' }}>
-                {tokenOutflows.filter(t => Math.abs(t.netUsdRobust || 0) > 1000000).length}
-              </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', fontWeight: 600 }}>
-                Heavy Distribution
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#e74c3c', marginTop: '0.25rem' }}>
-                &gt; $1M Net Outflow
-              </div>
-            </div>
-            
-            <div style={{ 
-              background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.1) 0%, rgba(54, 166, 186, 0.05) 100%)', 
-              border: '1px solid rgba(54, 166, 186, 0.3)',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              textAlign: 'center',
-              transition: 'all 0.3s ease',
-              cursor: 'default'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)'
-              e.currentTarget.style.boxShadow = '0 8px 16px rgba(54, 166, 186, 0.2)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)' }}>
-                {whaleActivity.filter(t => (t.uniqueWhales || 0) > 10).length}
-              </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', fontWeight: 600 }}>
-                High Whale Activity
-              </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--primary)', marginTop: '0.25rem' }}>
-                &gt; 10 Unique Whales
-              </div>
-            </div>
-            
-            <div style={{ 
-              background: 'linear-gradient(135deg, rgba(243, 156, 18, 0.1) 0%, rgba(243, 156, 18, 0.05) 100%)', 
-              border: '1px solid rgba(243, 156, 18, 0.3)',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              textAlign: 'center',
-              transition: 'all 0.3s ease',
-              cursor: 'default'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)'
-              e.currentTarget.style.boxShadow = '0 8px 16px rgba(243, 156, 18, 0.2)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#f39c12' }}>
-                ${formatNumber(Math.abs(overall.totalVolume || 0))}
-              </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', fontWeight: 600 }}>
-                24h Whale Volume
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#f39c12', marginTop: '0.25rem' }}>
-                {overall.totalCount || 0} Transactions
-              </div>
-            </div>
-          </div>
-        </DashboardCard>
-      </motion.div>
+      <DashboardShell>
+        {/* ─── COMMAND BAR ───────────────────────────────────────────── */}
+        <CommandBar>
+          <CommandBarLeft>
+            <TerminalLogo>SONAR</TerminalLogo>
+            <LiveDot>{algoActive ? 'LIVE' : 'OFFLINE'}</LiveDot>
+            <TimeBadge>24H WINDOW</TimeBadge>
+          </CommandBarLeft>
 
-      {/* Net Inflows/Outflows section */}
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }} ref={inflowsRef} data-tutorial="inflows-outflows">
-        <GridContainer>
-          <DashboardCard>
-            <h2>Top Net Inflows</h2>
-            {tokenInflows.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
-            ) : (
-              <>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-                  {tokenInflows.map((t, idx) => (
-                    <Link 
-                      key={t.token}
-                      href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        padding: '0.4rem 0.7rem',
-                        background: 'rgba(46, 204, 113, 0.15)',
-                        border: '1px solid rgba(46, 204, 113, 0.3)',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: '#2ecc71',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(46, 204, 113, 0.25)'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(46, 204, 113, 0.15)'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                      }}
-                    >
-                      <TokenIcon symbol={t.token} size={16} />
-                      {t.token}
-                    </Link>
-                  ))}
-                </div>
-                <Bar
-                  data={{
-                    labels: tokenInflows.map(t => t.token),
-                    datasets: [{ label: 'Net USD', data: tokenInflows.map(t => t.netUsdRobust ?? t.netUsd), backgroundColor: 'rgba(46,204,113,0.6)', borderColor: '#2ecc71' }]
-                  }}
-                  options={{
-                    responsive: true,
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { title: (ctx) => tokenInflows[ctx[0].dataIndex]?.token || '', label: (ctx) => `$${formatNumber(Math.round(ctx.parsed.y || 0))}` } } },
-                    onClick: (_evt, elements) => { try { if (!elements?.length) return; const idx = elements[0].index; const token = tokenInflows[idx]?.token; if (token) window.location.href = `/statistics?token=${encodeURIComponent(token)}&sinceHours=24` } catch {} },
-                    scales: { y: { beginAtZero: true, ticks: { color: '#a0b2c6', callback: (v) => `$${Number(v).toLocaleString()}` } }, x: { ticks: { color: '#a0b2c6' } } }
-                  }}
-                />
-              </>
+          <CommandBarCenter>
+            <StatChip>
+              <span className="label">TXN:</span>
+              <AnimatedNumber value={overall.totalCount || 0} />
+            </StatChip>
+            <CmdDivider>|</CmdDivider>
+            <StatChip>
+              <span className="label">VOL:</span>
+              ${formatCompact(Math.abs(overall.totalVolume || 0))}
+            </StatChip>
+            <CmdDivider>|</CmdDivider>
+            <StatChip>
+              <span className="label">BUYS:</span>
+              <span style={{ color: COLORS.green }}>{overall.buyCount || 0}</span>
+            </StatChip>
+            <StatChip>
+              <span className="label">SELLS:</span>
+              <span style={{ color: COLORS.red }}>{overall.sellCount || 0}</span>
+            </StatChip>
+          </CommandBarCenter>
+
+          <CommandBarRight>
+            {userName && (
+              <UserChip>
+                Welcome, <strong>{userName}</strong>
+              </UserChip>
             )}
-          </DashboardCard>
-
-          <DashboardCard>
-            <h2>Top Net Outflows</h2>
-            {tokenOutflows.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>No data in the past 24 hours.</p>
-            ) : (
-              <>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-                  {tokenOutflows.map((t, idx) => (
-                    <Link 
-                      key={t.token}
-                      href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        padding: '0.4rem 0.7rem',
-                        background: 'rgba(231, 76, 60, 0.15)',
-                        border: '1px solid rgba(231, 76, 60, 0.3)',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: '#e74c3c',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(231, 76, 60, 0.25)'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(231, 76, 60, 0.15)'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                      }}
-                    >
-                      <TokenIcon symbol={t.token} size={16} />
-                      {t.token}
-                    </Link>
-                  ))}
-                </div>
-                <Bar
-                  data={{
-                    labels: tokenOutflows.map(t => t.token),
-                    datasets: [{ label: 'Net USD', data: tokenOutflows.map(t => Math.abs(t.netUsdRobust ?? t.netUsd)), backgroundColor: 'rgba(231,76,60,0.6)', borderColor: '#e74c3c' }]
-                  }}
-                  options={{
-                    responsive: true,
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { title: (ctx) => tokenOutflows[ctx[0].dataIndex]?.token || '', label: (ctx) => `-$${formatNumber(Math.round(ctx.parsed.y || 0))}` } } },
-                    onClick: (_evt, elements) => { try { if (!elements?.length) return; const idx = elements[0].index; const token = tokenOutflows[idx]?.token; if (token) window.location.href = `/statistics?token=${encodeURIComponent(token)}&sinceHours=24` } catch {} },
-                    scales: { y: { beginAtZero: true, ticks: { color: '#a0b2c6', callback: (v) => `-$${Number(v).toLocaleString()}` } }, x: { ticks: { color: '#a0b2c6' } } }
-                  }}
-                />
-              </>
-            )}
-          </DashboardCard>
-        </GridContainer>
-      </motion.div>
-
-      {/* Buy vs Sell section removed per request */}
-
-      {/* Premium-only sections - wrapped with conditional rendering */}
-      {isPremium ? (
-        <>
-      <GridContainer>
-        <motion.div variants={containerVariants} initial="hidden" animate="visible">
-             <StatsCard>
-            <h2>Top % of Buys</h2>
-           <table>
-              <thead><tr><th>Coin</th><th>%</th></tr></thead>
-              <tbody>
-                {topBuys.map((item, index) => (
-                  <motion.tr key={`buy-${item.coin}-${index}`} variants={itemVariants}>
-                    <td>
-                      <Link href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <TokenIcon symbol={item.coin} size={20} />
-                        {item.coin}
-                      </Link>
-                    </td>
-                    <td className="percentage">{item.percentage.toFixed(1)}%</td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </StatsCard>
-        </motion.div>
-
-        <motion.div variants={containerVariants} initial="hidden" animate="visible">
-                     <StatsCard>
-            <h2>Top % of Sells</h2>
-           <table>
-              <thead><tr><th>Coin</th><th>%</th></tr></thead>
-              <tbody>
-                {topSells.map((item, index) => (
-                  <motion.tr key={`sell-${item.coin}-${index}`} variants={itemVariants}>
-                    <td>
-                      <Link href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <TokenIcon symbol={item.coin} size={20} />
-                        {item.coin}
-                      </Link>
-                    </td>
-                    <td className="percentage">{item.percentage.toFixed(1)}%</td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </StatsCard>
-        </motion.div>
-             </GridContainer>
-
-       {/* Professional Market Insights Section */}
-
-             
-
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ marginTop: '1.5rem' }} ref={tradedTokensRef} data-tutorial="traded-tokens">
-        <DashboardCard>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>Most Traded Tokens by Institutional Whales</h2>
-              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Top tokens with highest transaction volume in the last 24 hours
-              </p>
-            </div>
-            <div style={{ 
-              background: 'rgba(54, 166, 186, 0.15)',
-              border: '1px solid rgba(54, 166, 186, 0.3)',
-              borderRadius: '8px',
-              padding: '0.5rem 1rem'
+            <TutorialBtn onClick={() => {
+              localStorage.removeItem('sonar_tutorial_completed')
+              setShowTutorial(true)
             }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                Last 24 Hours
-              </span>
-            </div>
-          </div>
+              ▶ Tutorial
+            </TutorialBtn>
+          </CommandBarRight>
+        </CommandBar>
 
-          {noData24h || tokenLeaders.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>
-              No trading data available for the past 24 hours.
-            </p>
-          ) : (
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
-              gap: '1rem'
-            }}>
-              {tokenLeaders.slice(0, 12).map((t, idx) => {
-                const totalTrades = (t.buys || 0) + (t.sells || 0)
-                const buyRatio = totalTrades > 0 ? ((t.buys || 0) / totalTrades) * 100 : 0
-                const isBuyHeavy = buyRatio > 60
-                const isSellHeavy = buyRatio < 40
-                
-                return (
-                  <Link 
-                    key={t.token}
-                    href={`/token/${encodeURIComponent(t.token)}?sinceHours=24`}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      padding: '1.25rem',
-                      borderRadius: '12px',
-                      background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.08) 0%, rgba(30, 57, 81, 0.6) 100%)',
-                      border: `1.5px solid ${isBuyHeavy ? 'rgba(46, 204, 113, 0.3)' : isSellHeavy ? 'rgba(231, 76, 60, 0.3)' : 'rgba(54, 166, 186, 0.3)'}`,
-                      textDecoration: 'none',
-                      transition: 'all 0.3s ease',
-                      cursor: 'pointer',
-                      position: 'relative'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'
-                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(54, 166, 186, 0.25)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0) scale(1)'
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
-                  >
-                    {/* Rank Badge */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '0.75rem',
-                      right: '0.75rem',
-                      background: 'rgba(54, 166, 186, 0.2)',
-                      borderRadius: '6px',
-                      padding: '0.25rem 0.5rem',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      color: 'var(--primary)'
-                    }}>
-                      #{idx + 1}
-                    </div>
-
-                    {/* Token Logo & Symbol */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                      <TokenIcon symbol={t.token} size={36} />
-                      <span style={{ 
-                        fontSize: '1.3rem', 
-                        fontWeight: 700, 
-                        color: 'var(--text-primary)'
-                      }}>
-                        {t.token}
-                      </span>
-                    </div>
-
-                    {/* Trade Count */}
-                    <div style={{ marginBottom: '0.75rem' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Trades
-                      </div>
-                      <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)' }}>
-                        {t.txCount || 0}
-                      </div>
-                    </div>
-
-                    {/* Volume */}
-                    <div style={{ marginBottom: '1rem' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Volume
-                      </div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        ${formatCompact(t.volume || 0)}
-                      </div>
-                    </div>
-
-                    {/* Buy/Sell Ratio Bar */}
-                    <div style={{ marginTop: 'auto' }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        fontSize: '0.7rem', 
-                        color: 'var(--text-secondary)',
-                        marginBottom: '0.4rem',
-                        fontWeight: 600
-                      }}>
-                        <span style={{ color: isBuyHeavy ? '#2ecc71' : 'inherit' }}>Buy {buyRatio.toFixed(0)}%</span>
-                        <span style={{ color: isSellHeavy ? '#e74c3c' : 'inherit' }}>Sell {(100 - buyRatio).toFixed(0)}%</span>
-                      </div>
-                      <div style={{
-                        height: '5px',
-                        borderRadius: '3px',
-                        background: 'rgba(30, 57, 81, 0.7)',
-                        overflow: 'hidden',
-                        border: '1px solid rgba(54, 166, 186, 0.2)'
-                      }}>
-                        <div style={{
-                          height: '100%',
-                          width: `${buyRatio}%`,
-                          background: isBuyHeavy ? 'linear-gradient(90deg, #2ecc71, #27ae60)' : 
-                                     isSellHeavy ? 'linear-gradient(90deg, #e74c3c, #c0392b)' : 
-                                     'linear-gradient(90deg, var(--primary), #5dd5ed)',
-                          transition: 'width 0.3s ease'
-                        }} />
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </DashboardCard>
-      </motion.div>
-
-      {/* Top 10 Whales (7 Days) Section */}
-      <div ref={topWhalesRef} data-tutorial="top-whales">
-        <TopWhalesSection />
-      </div>
-        </>
-      ) : (
-        <motion.div 
-          variants={containerVariants} 
-          initial="hidden" 
-          animate="visible"
-          style={{ marginTop: '2rem' }}
-        >
-          <PremiumCard
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <PremiumIcon>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="var(--primary)">
-                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-              </svg>
-            </PremiumIcon>
-            <PremiumTitle>Unlock Advanced Analytics</PremiumTitle>
-            <PremiumDescription>
-              Upgrade to Sonar Premium to access advanced whale analytics, sentiment analysis, 
-              risk assessments, and comprehensive market insights.
-            </PremiumDescription>
-            <PremiumFeatureList>
-              <li>Real-time whale activity heatmaps</li>
-              <li>Advanced sentiment & risk analysis</li>
-              <li>Top buy/sell percentage tracking</li>
-              <li>Blockchain distribution insights</li>
-              <li>High-value transaction monitoring</li>
-              <li>Custom whale alerts & notifications</li>
-            </PremiumFeatureList>
-            <PremiumButton
-              onClick={() => window.location.href = '/subscribe'}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+        <DashboardContainer>
+          <BlurredContent $isPremium={isPremium}>
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+              style={{ paddingTop: '1.5rem' }}
             >
-              Upgrade to Premium - $7.99/month
-            </PremiumButton>
-          </PremiumCard>
-        </motion.div>
-      )}
-      
-      {/* Whale Alerts - Visible to all users (locked state for free) */}
-      <WhaleAlertsCard isPremium={isPremium} />
-        </BlurredContent>
-    </DashboardContainer>
-    
-    {/* Orca Onboarding Tutorial */}
-    <OrcaTutorial 
-      isOpen={showTutorial} 
-      onClose={() => setShowTutorial(false)}
-      refs={{
-        marketPulse: marketPulseRef,
-        inflowsOutflows: inflowsRef,
-        tradedTokens: tradedTokensRef,
-        topWhales: topWhalesRef
-      }}
-    />
+
+              {/* ─── KPI TICKER STRIP (MARKET PULSE) ─────────────────── */}
+              <motion.div variants={fadeUp} ref={marketPulseRef} data-tutorial="market-pulse">
+                <KPIStrip>
+                  <KPICell>
+                    <KPILabel>Strong Accumulation</KPILabel>
+                    <KPIValue $color={COLORS.green}>
+                      <AnimatedNumber value={tokenInflows.filter(t => (t.netUsdRobust || 0) > 1000000).length} />
+                    </KPIValue>
+                    <KPISub $color={COLORS.green}>&gt; $1M Net Inflow</KPISub>
+                  </KPICell>
+
+                  <KPICell>
+                    <KPILabel>Heavy Distribution</KPILabel>
+                    <KPIValue $color={COLORS.red}>
+                      <AnimatedNumber value={tokenOutflows.filter(t => Math.abs(t.netUsdRobust || 0) > 1000000).length} />
+                    </KPIValue>
+                    <KPISub $color={COLORS.red}>&gt; $1M Net Outflow</KPISub>
+                  </KPICell>
+
+                  <KPICell>
+                    <KPILabel>High Whale Activity</KPILabel>
+                    <KPIValue $color={COLORS.cyan}>
+                      <AnimatedNumber value={whaleActivity.filter(t => (t.uniqueWhales || 0) > 10).length} />
+                    </KPIValue>
+                    <KPISub $color={COLORS.cyan}>&gt; 10 Unique Whales</KPISub>
+                  </KPICell>
+
+                  <KPICell>
+                    <KPILabel>24H Whale Volume</KPILabel>
+                    <KPIValue $color={COLORS.amber}>
+                      ${formatCompact(Math.abs(overall.totalVolume || 0))}
+                    </KPIValue>
+                    <KPISub $color={COLORS.amber}>
+                      {overall.totalCount || 0} Transactions
+                    </KPISub>
+                  </KPICell>
+                </KPIStrip>
+              </motion.div>
+
+              {/* ─── NET INFLOWS / OUTFLOWS ───────────────────────────── */}
+              <motion.div variants={fadeUp} ref={inflowsRef} data-tutorial="inflows-outflows">
+                <SectionGap>
+                  <GridContainer>
+                    {/* Inflows Panel */}
+                    <Panel>
+                      <PanelHeader>
+                        <TerminalPrompt>NET_INFLOWS</TerminalPrompt>
+                        <PanelBadge>24H</PanelBadge>
+                      </PanelHeader>
+                      {tokenInflows.length === 0 ? (
+                        <EmptyState>No inflow data in the past 24 hours.</EmptyState>
+                      ) : (
+                        <div>
+                          {tokenInflows.map((t, idx) => {
+                            const maxVal = Math.abs(tokenInflows[0]?.netUsdRobust || 1)
+                            const pct = Math.min(100, (Math.abs(t.netUsdRobust || 0) / maxVal) * 100)
+                            return (
+                              <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
+                                <HBarRow>
+                                  <HBarLabel>
+                                    <TokenIcon symbol={t.token} size={18} />
+                                    {t.token}
+                                  </HBarLabel>
+                                  <HBarTrack>
+                                    <HBarFill
+                                      $color={COLORS.green}
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${pct}%` }}
+                                      transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                    />
+                                  </HBarTrack>
+                                  <HBarValue $color={COLORS.green}>
+                                    +${formatCompact(t.netUsdRobust || 0)}
+                                  </HBarValue>
+                                </HBarRow>
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </Panel>
+
+                    {/* Outflows Panel */}
+                    <Panel>
+                      <PanelHeader>
+                        <TerminalPrompt>NET_OUTFLOWS</TerminalPrompt>
+                        <PanelBadge>24H</PanelBadge>
+                      </PanelHeader>
+                      {tokenOutflows.length === 0 ? (
+                        <EmptyState>No outflow data in the past 24 hours.</EmptyState>
+                      ) : (
+                        <div>
+                          {tokenOutflows.map((t, idx) => {
+                            const maxVal = Math.abs(tokenOutflows[0]?.netUsdRobust || 1)
+                            const pct = Math.min(100, (Math.abs(t.netUsdRobust || 0) / maxVal) * 100)
+                            return (
+                              <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
+                                <HBarRow>
+                                  <HBarLabel>
+                                    <TokenIcon symbol={t.token} size={18} />
+                                    {t.token}
+                                  </HBarLabel>
+                                  <HBarTrack>
+                                    <HBarFill
+                                      $color={COLORS.red}
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${pct}%` }}
+                                      transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                    />
+                                  </HBarTrack>
+                                  <HBarValue $color={COLORS.red}>
+                                    -${formatCompact(Math.abs(t.netUsdRobust || 0))}
+                                  </HBarValue>
+                                </HBarRow>
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </Panel>
+                  </GridContainer>
+                </SectionGap>
+              </motion.div>
+
+              {/* ─── PREMIUM SECTIONS ─────────────────────────────────── */}
+              {isPremium ? (
+                <>
+                  {/* ─── BUY / SELL PRESSURE ───────────────────────────── */}
+                  <motion.div variants={fadeUp}>
+                    <SectionGap>
+                      <GridContainer>
+                        <Panel>
+                          <PanelHeader>
+                            <TerminalPrompt>BUY_PRESSURE</TerminalPrompt>
+                          </PanelHeader>
+                          {topBuys.map((item, index) => (
+                            <Link key={`buy-${item.coin}-${index}`} href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
+                              <PressureRow $accent={COLORS.green}>
+                                <TokenIcon symbol={item.coin} size={18} />
+                                <span style={{ fontFamily: MONO_FONT, fontWeight: 600, color: COLORS.textPrimary, fontSize: '0.85rem' }}>
+                                  {item.coin}
+                                </span>
+                                <PressureBar>
+                                  <PressureFill $color={COLORS.green} style={{ width: `${item.percentage}%` }} />
+                                </PressureBar>
+                                <span style={{ fontFamily: MONO_FONT, fontWeight: 700, color: COLORS.green, fontSize: '0.8rem', textAlign: 'right' }}>
+                                  {item.percentage.toFixed(1)}%
+                                </span>
+                              </PressureRow>
+                            </Link>
+                          ))}
+                        </Panel>
+
+                        <Panel>
+                          <PanelHeader>
+                            <TerminalPrompt>SELL_PRESSURE</TerminalPrompt>
+                          </PanelHeader>
+                          {topSells.map((item, index) => (
+                            <Link key={`sell-${item.coin}-${index}`} href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
+                              <PressureRow $accent={COLORS.red}>
+                                <TokenIcon symbol={item.coin} size={18} />
+                                <span style={{ fontFamily: MONO_FONT, fontWeight: 600, color: COLORS.textPrimary, fontSize: '0.85rem' }}>
+                                  {item.coin}
+                                </span>
+                                <PressureBar>
+                                  <PressureFill $color={COLORS.red} style={{ width: `${item.percentage}%` }} />
+                                </PressureBar>
+                                <span style={{ fontFamily: MONO_FONT, fontWeight: 700, color: COLORS.red, fontSize: '0.8rem', textAlign: 'right' }}>
+                                  {item.percentage.toFixed(1)}%
+                                </span>
+                              </PressureRow>
+                            </Link>
+                          ))}
+                        </Panel>
+                      </GridContainer>
+                    </SectionGap>
+                  </motion.div>
+
+                  {/* ─── MOST TRADED TOKENS — DATA TABLE ───────────────── */}
+                  <motion.div variants={fadeUp} ref={tradedTokensRef} data-tutorial="traded-tokens">
+                    <SectionGap>
+                      <Panel>
+                        <PanelHeader>
+                          <div>
+                            <TerminalPrompt>MOST_TRADED_TOKENS</TerminalPrompt>
+                            <PanelSubtext>Top tokens by institutional whale transaction volume — 24H</PanelSubtext>
+                          </div>
+                          <PanelBadge>LAST 24H</PanelBadge>
+                        </PanelHeader>
+
+                        {noData24h || tokenLeaders.length === 0 ? (
+                          <EmptyState>No trading data available for the past 24 hours.</EmptyState>
+                        ) : (
+                          <DataTable>
+                            <table>
+                              <thead>
+                                <tr>
+                                  <th style={{ width: '50px' }}>#</th>
+                                  <th>Token</th>
+                                  <th className="right">Trades</th>
+                                  <th className="right">Volume</th>
+                                  <th className="center" style={{ width: '100px' }}>Buy / Sell</th>
+                                  <th className="center" style={{ width: '120px' }}>Flow</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {tokenLeaders.slice(0, 12).map((t, idx) => {
+                                  const totalTrades = (t.buys || 0) + (t.sells || 0)
+                                  const buyRatio = totalTrades > 0 ? ((t.buys || 0) / totalTrades) * 100 : 50
+                                  const isBuyHeavy = buyRatio > 60
+                                  const isSellHeavy = buyRatio < 40
+                                  const flowColor = isBuyHeavy ? COLORS.green : isSellHeavy ? COLORS.red : COLORS.amber
+
+                                  return (
+                                    <motion.tr
+                                      key={t.token}
+                                      custom={idx}
+                                      variants={rowVariant}
+                                      initial="hidden"
+                                      animate="visible"
+                                      onClick={() => window.location.href = `/token/${encodeURIComponent(t.token)}?sinceHours=24`}
+                                    >
+                                      <td className="muted" style={{ fontWeight: 700 }}>{idx + 1}</td>
+                                      <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                          <TokenIcon symbol={t.token} size={22} />
+                                          <span style={{ fontWeight: 700, letterSpacing: '0.5px' }}>{t.token}</span>
+                                          <FlowDot $color={flowColor} />
+                                        </div>
+                                      </td>
+                                      <td className="right" style={{ fontWeight: 700, color: COLORS.cyan }}>{t.txCount || 0}</td>
+                                      <td className="right" style={{ fontWeight: 600 }}>${formatCompact(t.volume || 0)}</td>
+                                      <td className="center">
+                                        <span style={{ fontSize: '0.75rem', color: isBuyHeavy ? COLORS.green : isSellHeavy ? COLORS.red : COLORS.textMuted }}>
+                                          {buyRatio.toFixed(0)}/{(100 - buyRatio).toFixed(0)}
+                                        </span>
+                                      </td>
+                                      <td className="center">
+                                        <MiniBar $width="100%">
+                                          <MiniBarFill $color={COLORS.green} style={{ width: `${buyRatio}%` }} />
+                                          <MiniBarFill $color={COLORS.red} style={{ width: `${100 - buyRatio}%` }} />
+                                        </MiniBar>
+                                      </td>
+                                    </motion.tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </DataTable>
+                        )}
+                      </Panel>
+                    </SectionGap>
+                  </motion.div>
+
+                  {/* ─── TOP 10 WHALES ──────────────────────────────────── */}
+                  <motion.div variants={fadeUp}>
+                    <div ref={topWhalesRef} data-tutorial="top-whales">
+                      <TopWhalesSection />
+                    </div>
+                  </motion.div>
+                </>
+              ) : (
+                /* Premium gate for free users */
+                <motion.div variants={fadeUp} style={{ marginTop: '2rem' }}>
+                  <PremiumCard
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <PremiumIcon>
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill={COLORS.cyan}>
+                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                      </svg>
+                    </PremiumIcon>
+                    <PremiumTitle>Unlock Advanced Analytics</PremiumTitle>
+                    <PremiumDescription>
+                      Upgrade to Sonar Premium to access advanced whale analytics, sentiment analysis,
+                      risk assessments, and comprehensive market insights.
+                    </PremiumDescription>
+                    <PremiumFeatureList>
+                      <li>Real-time whale activity heatmaps</li>
+                      <li>Advanced sentiment &amp; risk analysis</li>
+                      <li>Top buy/sell percentage tracking</li>
+                      <li>Blockchain distribution insights</li>
+                      <li>High-value transaction monitoring</li>
+                      <li>Custom whale alerts &amp; notifications</li>
+                    </PremiumFeatureList>
+                    <PremiumButton
+                      onClick={() => window.location.href = '/subscribe'}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Upgrade to Premium - $7.99/month
+                    </PremiumButton>
+                  </PremiumCard>
+                </motion.div>
+              )}
+
+              {/* Whale Alerts */}
+              <motion.div variants={fadeUp}>
+                <WhaleAlertsCard isPremium={isPremium} />
+              </motion.div>
+
+            </motion.div>
+          </BlurredContent>
+        </DashboardContainer>
+      </DashboardShell>
+
+      {/* Orca Onboarding Tutorial */}
+      <OrcaTutorial
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        refs={{
+          marketPulse: marketPulseRef,
+          inflowsOutflows: inflowsRef,
+          tradedTokens: tradedTokensRef,
+          topWhales: topWhalesRef
+        }}
+      />
     </>
   )
 }
 
-// Top Whales Section Component
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOP WHALES SECTION COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 const TopWhalesSection = () => {
   const [whales, setWhales] = useState([])
   const [loading, setLoading] = useState(true)
@@ -1379,239 +1102,129 @@ const TopWhalesSection = () => {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      transition={{ duration: 0.5, delay: 0.3 }}
-      style={{ marginTop: '1.5rem' }}
-    >
-      <DashboardCard>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          marginBottom: '1.5rem',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '28px', height: '28px', fill: 'var(--primary)' }}>
-              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm-1.06 16.88L7.4 15.34l1.42-1.42 2.12 2.12 4.24-4.24 1.42 1.42-5.66 5.66z"/>
-            </svg>
-            <div>
-              <h2 style={{ margin: '0', fontSize: '1.5rem' }}>Top 10 Whales</h2>
-              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Most active whale wallets in the past 7 days
-              </p>
-            </div>
+    <SectionGap>
+      <Panel>
+        <PanelHeader>
+          <div>
+            <TerminalPrompt>TOP_WHALES</TerminalPrompt>
+            <PanelSubtext>Most active whale wallets in the past 7 days</PanelSubtext>
           </div>
-          <span style={{
-            padding: '0.5rem 1rem',
-            background: 'rgba(54, 166, 186, 0.15)',
-            border: '1px solid rgba(54, 166, 186, 0.3)',
-            borderRadius: '12px',
-            fontSize: '0.85rem',
-            fontWeight: '700',
-            color: 'var(--primary)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}>
-            7-Day Activity
-          </span>
-        </div>
+          <PanelBadge>7-DAY ACTIVITY</PanelBadge>
+        </PanelHeader>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-            <p>Loading top whales...</p>
-          </div>
+          <EmptyState>
+            <motion.div
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              style={{ fontFamily: MONO_FONT }}
+            >
+              Loading top whales...
+            </motion.div>
+          </EmptyState>
         ) : whales.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '64px', height: '64px', fill: 'rgba(54, 166, 186, 0.3)', marginBottom: '1rem' }}>
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-            </svg>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: '1rem 0 0.5rem 0' }}>No Whale Activity</h3>
-            <p>No significant whale transactions detected in the past 7 days.</p>
-          </div>
+          <EmptyState>
+            <div style={{ opacity: 0.4, fontSize: '2.5rem', marginBottom: '1rem' }}>⊘</div>
+            <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#8a9ab0' }}>No Whale Activity</div>
+            No significant whale transactions detected in the past 7 days.
+          </EmptyState>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <DataTable>
+            <table>
               <thead>
                 <tr>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
-                    Rank
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
-                    Whale Address
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
-                    Net Flow (7d)
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
-                    Buy/Sell
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
-                    Top Tokens
-                  </th>
-                  <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', background: 'rgba(30, 57, 81, 0.3)', borderBottom: '1px solid rgba(54, 166, 186, 0.1)' }}>
-                    Last Active
-                  </th>
+                  <th style={{ width: '50px' }}>Rank</th>
+                  <th>Address</th>
+                  <th className="right">Net Flow (7d)</th>
+                  <th className="center" style={{ width: '90px' }}>Buy/Sell</th>
+                  <th>Top Tokens</th>
+                  <th className="right">Last Active</th>
                 </tr>
               </thead>
               <tbody>
                 {whales.map((whale, idx) => {
                   const rank = idx + 1
                   const buyPct = parseInt(whale.buySellRatio?.split('/')[0]) || 50
-                  
+
                   return (
                     <motion.tr
                       key={whale.address}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: idx * 0.05 }}
-                      style={{
-                        borderBottom: '1px solid rgba(54, 166, 186, 0.1)',
-                        transition: 'all 0.2s ease',
-                        cursor: 'pointer'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(54, 166, 186, 0.08)'
-                        e.currentTarget.style.transform = 'translateX(2px)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent'
-                        e.currentTarget.style.transform = 'translateX(0)'
-                      }}
+                      custom={idx}
+                      variants={rowVariant}
+                      initial="hidden"
+                      animate="visible"
+                      onClick={() => window.location.href = `/whale/${encodeURIComponent(whale.address)}`}
                     >
-                      <td style={{ padding: '1rem' }}>
-                        <div style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          fontWeight: '800',
-                          fontSize: '0.9rem',
-                          background: rank === 1 ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' 
-                                    : rank === 2 ? 'linear-gradient(135deg, #C0C0C0 0%, #808080 100%)'
-                                    : rank === 3 ? 'linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)'
-                                    : 'rgba(54, 166, 186, 0.2)',
-                          color: rank <= 3 ? '#0a1621' : 'var(--text-primary)',
-                          border: `2px solid ${
-                            rank === 1 ? 'rgba(255, 215, 0, 0.5)'
-                            : rank === 2 ? 'rgba(192, 192, 192, 0.5)'
-                            : rank === 3 ? 'rgba(205, 127, 50, 0.5)'
-                            : 'rgba(54, 166, 186, 0.3)'
-                          }`,
-                          boxShadow: rank <= 3 ? '0 4px 12px rgba(0,0,0,0.3)' : 'none'
-                        }}>
-                          {rank}
-                        </div>
+                      <td>
+                        <RankBadge $rank={rank}>{rank}</RankBadge>
                       </td>
-                      <td style={{ padding: '1rem' }}>
-                        <Link 
+                      <td>
+                        <Link
                           href={`/whale/${encodeURIComponent(whale.address)}`}
                           style={{
-                            color: 'var(--primary)',
+                            color: COLORS.cyan,
                             textDecoration: 'none',
-                            fontWeight: '700',
-                            fontFamily: 'Courier New, monospace',
-                            fontSize: '0.95rem',
-                            transition: 'color 0.2s ease'
+                            fontWeight: 700,
+                            fontFamily: MONO_FONT,
+                            fontSize: '0.85rem',
                           }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = '#5dd5ed'
-                            e.currentTarget.style.textDecoration = 'underline'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = 'var(--primary)'
-                            e.currentTarget.style.textDecoration = 'none'
-                          }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {whale.address.slice(0, 6)}…{whale.address.slice(-4)}
                         </Link>
                       </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        <div style={{
-                          fontWeight: '800',
-                          fontSize: '1.05rem',
-                          color: whale.netUsd > 0 ? '#2ecc71' : whale.netUsd < 0 ? '#e74c3c' : 'var(--text-primary)'
+                      <td className="right">
+                        <span style={{
+                          fontWeight: 800,
+                          fontSize: '0.9rem',
+                          color: whale.netUsd > 0 ? COLORS.green : whale.netUsd < 0 ? COLORS.red : COLORS.textPrimary,
+                          fontFamily: MONO_FONT,
                         }}>
                           {formatUSD(whale.netUsd)}
-                        </div>
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: '8px',
-                          fontSize: '0.8rem',
-                          fontWeight: '700',
-                          background: buyPct > 65 ? 'rgba(46, 204, 113, 0.2)'
-                                    : buyPct < 35 ? 'rgba(231, 76, 60, 0.2)'
-                                    : 'rgba(241, 196, 15, 0.2)',
-                          color: buyPct > 65 ? '#2ecc71'
-                               : buyPct < 35 ? '#e74c3c'
-                               : '#f1c40f',
-                          border: `1px solid ${
-                            buyPct > 65 ? 'rgba(46, 204, 113, 0.3)'
-                            : buyPct < 35 ? 'rgba(231, 76, 60, 0.3)'
-                            : 'rgba(241, 196, 15, 0.3)'
-                          }`
-                        }}>
-                          {whale.buySellRatio}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                      <td className="center">
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                          <span style={{
+                            fontSize: '0.7rem',
+                            fontFamily: MONO_FONT,
+                            fontWeight: 600,
+                            color: buyPct > 65 ? COLORS.green : buyPct < 35 ? COLORS.red : COLORS.amber,
+                          }}>
+                            {whale.buySellRatio}
+                          </span>
+                          <MiniBar $width="60px">
+                            <MiniBarFill $color={COLORS.green} style={{ width: `${buyPct}%` }} />
+                            <MiniBarFill $color={COLORS.red} style={{ width: `${100 - buyPct}%` }} />
+                          </MiniBar>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                           {(whale.tokens || []).slice(0, 3).map(token => (
-                            <span key={token} style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              padding: '0.25rem 0.6rem',
-                              background: 'rgba(54, 166, 186, 0.15)',
-                              border: '1px solid rgba(54, 166, 186, 0.25)',
-                              borderRadius: '6px',
-                              fontSize: '0.8rem',
-                              fontWeight: '600',
-                              color: 'var(--primary)'
-                            }}>
-                              <TokenIcon symbol={token} size={16} />
+                            <TokenPill key={token}>
+                              <TokenIcon symbol={token} size={14} />
                               {token}
-                            </span>
+                            </TokenPill>
                           ))}
                           {(whale.tokens || []).length > 3 && (
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '0.25rem 0.6rem',
-                              background: 'rgba(54, 166, 186, 0.15)',
-                              border: '1px solid rgba(54, 166, 186, 0.25)',
-                              borderRadius: '6px',
-                              fontSize: '0.8rem',
-                              fontWeight: '600',
-                              color: 'var(--primary)'
-                            }}>
-                              +{whale.tokens.length - 3}
-                            </span>
+                            <TokenPill>+{whale.tokens.length - 3}</TokenPill>
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                          {whale.lastSeen ? timeAgo(whale.lastSeen) : '—'}
-                        </div>
+                      <td className="right muted" style={{ fontSize: '0.8rem', fontFamily: MONO_FONT }}>
+                        {whale.lastSeen ? timeAgo(whale.lastSeen) : '—'}
                       </td>
                     </motion.tr>
                   )
                 })}
               </tbody>
             </table>
-          </div>
+          </DataTable>
         )}
-      </DashboardCard>
-    </motion.div>
+      </Panel>
+    </SectionGap>
   )
 }
 
-export default Dashboard; 
+export default Dashboard;
