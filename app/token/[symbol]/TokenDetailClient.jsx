@@ -1404,8 +1404,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               </div>
             )}
           </Panel>
-        )}
-
           </PremiumGate>
         )}
 
@@ -1462,8 +1460,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               ))}
             </div>
           </Panel>
-        )}
-
           </PremiumGate>
         )}
 
@@ -1510,8 +1506,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               ))}
             </div>
           </Panel>
-        )}
-
           </PremiumGate>
         )}
 
@@ -1576,8 +1570,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               </div>
             )}
           </Panel>
-        )}
-
           </PremiumGate>
         )}
 
