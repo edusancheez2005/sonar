@@ -19,6 +19,7 @@ import {
 } from 'chart.js'
 import TokenIcon from '@/components/TokenIcon'
 import WhaleAlertsCard from '../components/WhaleAlertsCard';
+import PremiumGate from '@/components/PremiumGate'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend)
 
@@ -646,36 +647,6 @@ const Dashboard = ({ isPremium = false }) => {
   // ─── RENDER ─────────────────────────────────────────────────────────────────
   return (
     <>
-      {!isPremium && (
-        <PremiumOverlay>
-          <PremiumCard
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <PremiumIcon>🔒</PremiumIcon>
-            <PremiumTitle>Unlock Premium Dashboard</PremiumTitle>
-            <PremiumDescription>
-              Get full access to real-time whale analytics, advanced insights, and comprehensive market data.
-            </PremiumDescription>
-            <PremiumFeatureList>
-              <li>Live whale transaction tracking (24/7)</li>
-              <li>Advanced token analytics &amp; heatmaps</li>
-              <li>Risk assessment &amp; sentiment analysis</li>
-              <li>AI-powered market insights (Orca 2.0)</li>
-              <li>Custom alerts &amp; notifications</li>
-            </PremiumFeatureList>
-            <PremiumButton
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => window.location.href = '/subscribe'}
-            >
-              Go Premium — £5/month
-            </PremiumButton>
-          </PremiumCard>
-        </PremiumOverlay>
-      )}
-
       <DashboardShell>
         {/* ─── COMMAND BAR ───────────────────────────────────────────── */}
         <CommandBar>
@@ -722,7 +693,6 @@ const Dashboard = ({ isPremium = false }) => {
         </CommandBar>
 
         <DashboardContainer>
-          <BlurredContent $isPremium={isPremium}>
             <motion.div
               variants={staggerContainer}
               initial="hidden"
@@ -854,10 +824,9 @@ const Dashboard = ({ isPremium = false }) => {
                 </SectionGap>
               </motion.div>
 
-              {/* ─── PREMIUM SECTIONS ─────────────────────────────────── */}
-              {isPremium ? (
-                <>
+              {/* ─── PREMIUM SECTIONS (gated with PremiumGate) ──────── */}
                   {/* ─── BUY / SELL PRESSURE ───────────────────────────── */}
+                  <PremiumGate isPremium={isPremium} feature="Buy/Sell Pressure Analysis">
                   <motion.div variants={fadeUp}>
                     <SectionGap>
                       <GridContainer>
@@ -907,8 +876,10 @@ const Dashboard = ({ isPremium = false }) => {
                       </GridContainer>
                     </SectionGap>
                   </motion.div>
+                  </PremiumGate>
 
                   {/* ─── MOST TRADED TOKENS — DATA TABLE ───────────────── */}
+                  <PremiumGate isPremium={isPremium} feature="Most Traded Tokens">
                   <motion.div variants={fadeUp} ref={tradedTokensRef} data-tutorial="traded-tokens">
                     <SectionGap>
                       <Panel>
@@ -983,58 +954,25 @@ const Dashboard = ({ isPremium = false }) => {
                       </Panel>
                     </SectionGap>
                   </motion.div>
+                  </PremiumGate>
 
                   {/* ─── TOP 10 WHALES ──────────────────────────────────── */}
+                  <PremiumGate isPremium={isPremium} feature="Top Whale Wallets">
                   <motion.div variants={fadeUp}>
                     <div ref={topWhalesRef} data-tutorial="top-whales">
                       <TopWhalesSection />
                     </div>
                   </motion.div>
-                </>
-              ) : (
-                /* Premium gate for free users */
-                <motion.div variants={fadeUp} style={{ marginTop: '2rem' }}>
-                  <PremiumCard
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <PremiumIcon>
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill={COLORS.cyan}>
-                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                      </svg>
-                    </PremiumIcon>
-                    <PremiumTitle>Unlock Advanced Analytics</PremiumTitle>
-                    <PremiumDescription>
-                      Upgrade to Sonar Premium to access advanced whale analytics, sentiment analysis,
-                      risk assessments, and comprehensive market insights.
-                    </PremiumDescription>
-                    <PremiumFeatureList>
-                      <li>Real-time whale activity heatmaps</li>
-                      <li>Advanced sentiment &amp; risk analysis</li>
-                      <li>Top buy/sell percentage tracking</li>
-                      <li>Blockchain distribution insights</li>
-                      <li>High-value transaction monitoring</li>
-                      <li>Custom whale alerts &amp; notifications</li>
-                    </PremiumFeatureList>
-                    <PremiumButton
-                      onClick={() => window.location.href = '/subscribe'}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Upgrade to Premium - $7.99/month
-                    </PremiumButton>
-                  </PremiumCard>
-                </motion.div>
-              )}
+                  </PremiumGate>
 
               {/* Whale Alerts */}
+              <PremiumGate isPremium={isPremium} feature="Real-Time Whale Alerts">
               <motion.div variants={fadeUp}>
                 <WhaleAlertsCard isPremium={isPremium} />
               </motion.div>
+              </PremiumGate>
 
             </motion.div>
-          </BlurredContent>
         </DashboardContainer>
       </DashboardShell>
 
