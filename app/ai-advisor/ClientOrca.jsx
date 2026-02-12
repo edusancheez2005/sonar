@@ -764,7 +764,6 @@ export default function ClientOrca() {
               <TypingIndicator>
                 {loadingStep}
               </TypingIndicator>
-              </TypingIndicator>
               </div>
               <MessageTime>Deep analysis in progress...</MessageTime>
             </MessageContent>
