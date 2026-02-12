@@ -56,9 +56,9 @@ LOW CONVICTION (insufficient data):
 
 **Part 1: Sonar Data**
 
-Price Action: Use EXACT numbers from context. Include: price, 24h change, market cap, trend, ATH distance with interpretation.
+Price Action: Use EXACT numbers from context. Include: price, 24h change, market cap, trend, ATH distance with interpretation. Wrap key metrics in \`backticks\` for emphasis (e.g. \`$67,234.12\`, \`+2.4%\`, \`$1.2T\`).
 
-Multi-Timeframe View: Cite 1h/7d/14d/30d changes to show if momentum is accelerating or decelerating.
+Multi-Timeframe View: Cite 1h/7d/14d/30d changes. Use \`+X.XX%\` or \`-X.XX%\` format to show if momentum is accelerating or decelerating.
 
 Chart Analysis: If available, reference 7d/30d trend direction, volatility level, volume trend.
 
@@ -68,24 +68,22 @@ Chart Analysis: If available, reference 7d/30d trend direction, volatility level
 
 Social & Sentiment: Galaxy Score with interpretation, social sentiment %, engagement level, community vote %, key themes.
 
-Developer Activity: If data exists, cite commits, PRs, GitHub stars. Strong dev activity = bullish signal for fundamentals.
+Supply Analysis: Circulating/max supply ratio, FDV/MCap ratio if relevant.
 
-Supply Analysis: Circulating/max supply ratio, FDV/MCap ratio (dilution risk assessment).
+Developer Activity: If data exists, cite commits, PRs, GitHub stars.
 
 **Part 2: News & Market Impact**
 
-5 headlines as markdown links: [Title](URL) with 1-sentence impact explanation each.
+5 headlines as markdown links: [Title](URL) with 1-sentence impact explanation each. If no news available, state "No recent news articles available for [TOKEN]."
 
 Short-term impact (days/weeks): Catalysts, momentum, expected moves.
-Long-term impact (months/years): Fundamentals, adoption, ecosystem growth.
-
-Connect to macro: Fed policy, BTC dominance shifts, geopolitical events, risk-on/risk-off sentiment.
+Connect to macro: Fed policy, BTC dominance shifts, geopolitical events.
 
 **Part 3: Bottom Line**
 
-State your CONVICTION LEVEL (High/Medium/Low) and WHY.
+State your CONVICTION LEVEL clearly: **High Conviction**, **Medium Conviction**, or **Low Conviction** and WHY.
 2-3 sentences directly answering the user's question.
-Price outlook based on ALL data: "Based on [specific metrics], potential [X-Y%] [upside/downside] if [condition]."
+Price outlook based on ALL data with specific percentages when possible.
 End with an engaging follow-up question.
 
 (Not financial advice. Data-driven analysis only. DYOR.)
@@ -352,7 +350,11 @@ ${gptContext}`
         price: {
           current: context.price.current,
           change_24h: context.price.change_24h,
-          trend: context.price.trend
+          trend: context.price.trend,
+          market_cap: context.price.market_cap,
+          volume_24h: context.price.volume_24h,
+          ath: context.price.ath,
+          ath_distance: context.price.ath_distance,
         },
         whale_summary: isERC20 ? {
           net_flow: context.whales.net_flow_24h,
@@ -375,6 +377,10 @@ ${gptContext}`
           supportive_themes: context.social.supportive_themes.slice(0, 2),
           critical_themes: context.social.critical_themes.slice(0, 2)
         },
+        lunarcrush: context.lunarcrush ? {
+          galaxy_score: context.lunarcrush.galaxy_score,
+          alt_rank: context.lunarcrush.alt_rank,
+        } : null,
         news_headlines: context.news.headlines.slice(0, 5).map(n => ({
           title: n.title || 'Untitled Article',
           url: n.url || '',

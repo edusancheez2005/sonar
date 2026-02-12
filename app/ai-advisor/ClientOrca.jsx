@@ -281,6 +281,16 @@ function formatPrice(price) {
   return `$${price.toFixed(8)}`
 }
 
+function formatCompact(n) {
+  const num = Number(n || 0)
+  const abs = Math.abs(num)
+  if (abs >= 1e12) return `$${(num/1e12).toFixed(2)}T`
+  if (abs >= 1e9) return `$${(num/1e9).toFixed(2)}B`
+  if (abs >= 1e6) return `$${(num/1e6).toFixed(2)}M`
+  if (abs >= 1e3) return `$${(num/1e3).toFixed(2)}K`
+  return `$${Math.round(num)}`
+}
+
 // Generate mini sparkline data
 function generateSparkline(change) {
   const bars = []
@@ -627,99 +637,125 @@ export default function ClientOrca() {
                   {/* Token Header with Logo */}
                   {message.role === 'assistant' && message.ticker && (
                     <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '12px', 
-                      marginTop: '16px',
-                      marginBottom: '12px'
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      marginTop: '12px', marginBottom: '8px', flexWrap: 'wrap', gap: '0.5rem'
                     }}>
-                      <TokenIcon 
-                        symbol={message.ticker} 
-                        size={32}
-                      />
-                      <div style={{
-                        fontSize: '1.1rem',
-                        fontWeight: '700',
-                        color: colors.textPrimary,
-                        letterSpacing: '0.5px'
-                      }}>
-                        {message.ticker}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <TokenIcon symbol={message.ticker} size={28} />
+                        <span style={{ fontSize: '1rem', fontWeight: 700, color: colors.textPrimary, fontFamily: MONO_FONT, letterSpacing: '1px' }}>
+                          {message.ticker}
+                        </span>
+                        {message.data?.price?.current > 0 && (
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: colors.primary, fontFamily: MONO_FONT }}>
+                            {formatPrice(message.data.price.current)}
+                          </span>
+                        )}
+                        {message.data?.price?.change_24h != null && (
+                          <span style={{
+                            fontSize: '0.75rem', fontWeight: 700, fontFamily: MONO_FONT,
+                            color: message.data.price.change_24h >= 0 ? colors.sentimentBull : colors.sentimentBear,
+                            padding: '0.15rem 0.35rem', borderRadius: '3px',
+                            background: message.data.price.change_24h >= 0 ? 'rgba(0, 230, 118, 0.08)' : 'rgba(255, 23, 68, 0.08)',
+                          }}>
+                            {message.data.price.change_24h >= 0 ? '▲' : '▼'} {Math.abs(message.data.price.change_24h).toFixed(2)}%
+                          </span>
+                        )}
                       </div>
+                      <a href={`/token/${encodeURIComponent(message.ticker)}?sinceHours=24`} style={{
+                        fontSize: '0.7rem', fontFamily: MONO_FONT, fontWeight: 600,
+                        color: colors.primary, textDecoration: 'none',
+                        padding: '0.25rem 0.6rem', borderRadius: '4px',
+                        border: `1px solid ${colors.borderLight}`,
+                        transition: 'all 0.15s ease',
+                      }}>
+                        VIEW CHART →
+                      </a>
                     </div>
                   )}
                   
-                  {/* Mini data cards for ORCA responses */}
+                  {/* Terminal-style data dashboard after ORCA responses */}
                   {message.role === 'assistant' && message.data?.price && (
-                    <DataCardsRow>
-                      <MiniCard
-                        $color={message.data.price.change_24h >= 0 ? colors.sentimentBull : colors.sentimentBear}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        <div className="icon">$</div>
-                        <div className="content">
-                          <div className="label">Price</div>
-                          <div className="value">{formatPrice(message.data.price.current)}</div>
+                    <div style={{
+                      background: 'rgba(0, 229, 255, 0.02)', border: `1px solid ${colors.borderLight}`,
+                      borderRadius: '6px', padding: '0.75rem', marginTop: '0.5rem', marginBottom: '0.5rem',
+                    }}>
+                      {/* KPI Row */}
+                      <div style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                        gap: '0.5rem', marginBottom: message.data.whale_summary || message.data.lunarcrush ? '0.6rem' : 0,
+                      }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.55rem', color: colors.textMuted, fontFamily: SANS_FONT, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }}>Price</div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: MONO_FONT, color: colors.textPrimary }}>{formatPrice(message.data.price.current)}</div>
                         </div>
-                      </MiniCard>
-                      
-                      <MiniCard
-                        $color={message.data.price.change_24h >= 0 ? colors.sentimentBull : colors.sentimentBear}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.25 }}
-                      >
-                        <Sparkline $positive={message.data.price.change_24h >= 0}>
-                          {generateSparkline(message.data.price.change_24h).map((height, i) => (
-                            <div key={i} className="bar" style={{ height: `${height}px` }} />
-                          ))}
-                        </Sparkline>
-                        <div className="content">
-                          <div className="label">24h</div>
-                          <div className="value" style={{ 
-                            color: message.data.price.change_24h >= 0 ? colors.sentimentBull : colors.sentimentBear 
-                          }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.55rem', color: colors.textMuted, fontFamily: SANS_FONT, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }}>24h</div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: MONO_FONT, color: message.data.price.change_24h >= 0 ? colors.sentimentBull : colors.sentimentBear }}>
                             {message.data.price.change_24h >= 0 ? '+' : ''}{message.data.price.change_24h?.toFixed(2)}%
                           </div>
                         </div>
-                      </MiniCard>
-                      
-                      {message.data.sentiment && (
-                        <MiniCard
-                          $color={message.data.sentiment.score > 0.2 ? colors.sentimentBull : 
-                                  message.data.sentiment.score < -0.2 ? colors.sentimentBear : 
-                                  colors.sentimentNeutral}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.3 }}
-                        >
-                          <div className="icon">◆</div>
-                          <div className="content">
-                            <div className="label">Sentiment</div>
-                            <div className="value">
-                              {message.data.sentiment.score > 0.2 ? 'Bullish' : 
-                               message.data.sentiment.score < -0.2 ? 'Bearish' : 'Neutral'}
+                        {message.data.price.market_cap > 0 && (
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.55rem', color: colors.textMuted, fontFamily: SANS_FONT, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }}>MCap</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: MONO_FONT, color: colors.textPrimary }}>{formatCompact(message.data.price.market_cap)}</div>
+                          </div>
+                        )}
+                        {message.data.price.volume_24h > 0 && (
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.55rem', color: colors.textMuted, fontFamily: SANS_FONT, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }}>Volume</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: MONO_FONT, color: colors.textPrimary }}>{formatCompact(message.data.price.volume_24h)}</div>
+                          </div>
+                        )}
+                        {message.data.sentiment && (
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.55rem', color: colors.textMuted, fontFamily: SANS_FONT, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }}>Sentiment</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: MONO_FONT, color: message.data.sentiment.score > 0.2 ? colors.sentimentBull : message.data.sentiment.score < -0.2 ? colors.sentimentBear : colors.sentimentNeutral }}>
+                              {message.data.sentiment.score > 0.2 ? 'Bullish' : message.data.sentiment.score < -0.2 ? 'Bearish' : 'Neutral'}
                             </div>
                           </div>
-                        </MiniCard>
-                      )}
-                      
-                      {message.data.social?.sentiment_pct && (
-                        <MiniCard
-                          $color={colors.primary}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.35 }}
-                        >
-                          <div className="icon">◇</div>
-                          <div className="content">
-                            <div className="label">Social</div>
-                            <div className="value">{message.data.social.sentiment_pct}% Bullish</div>
+                        )}
+                        {message.data.social?.sentiment_pct && (
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.55rem', color: colors.textMuted, fontFamily: SANS_FONT, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }}>Social</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: MONO_FONT, color: colors.primary }}>{message.data.social.sentiment_pct}%</div>
                           </div>
-                        </MiniCard>
+                        )}
+                      </div>
+
+                      {/* Whale + LunarCrush row */}
+                      {(message.data.whale_summary || message.data.lunarcrush) && (
+                        <div style={{
+                          display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
+                          paddingTop: '0.6rem', borderTop: `1px solid ${colors.borderLight}`,
+                        }}>
+                          {message.data.whale_summary && (
+                            <>
+                              <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: message.data.whale_summary.net_flow >= 0 ? colors.sentimentBull : colors.sentimentBear, padding: '0.15rem 0.4rem', borderRadius: '3px', background: message.data.whale_summary.net_flow >= 0 ? 'rgba(0, 230, 118, 0.06)' : 'rgba(255, 23, 68, 0.06)', border: `1px solid ${message.data.whale_summary.net_flow >= 0 ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255, 23, 68, 0.1)'}` }}>
+                                WHALE: {message.data.whale_summary.net_flow >= 0 ? '+' : ''}{formatCompact(message.data.whale_summary.net_flow)}
+                              </span>
+                              <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: colors.textMuted, padding: '0.15rem 0.4rem', borderRadius: '3px', border: `1px solid ${colors.borderLight}` }}>
+                                {message.data.whale_summary.transactions} TXN ({message.data.whale_summary.buy_sell_ratio})
+                              </span>
+                            </>
+                          )}
+                          {message.data.lunarcrush?.galaxy_score > 0 && (
+                            <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: message.data.lunarcrush.galaxy_score >= 60 ? colors.sentimentBull : message.data.lunarcrush.galaxy_score >= 40 ? colors.sentimentNeutral : colors.sentimentBear, padding: '0.15rem 0.4rem', borderRadius: '3px', background: 'rgba(0, 229, 255, 0.04)', border: `1px solid ${colors.borderLight}` }}>
+                              GALAXY: {message.data.lunarcrush.galaxy_score}/100
+                            </span>
+                          )}
+                          {message.data.lunarcrush?.alt_rank > 0 && (
+                            <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: colors.primary, padding: '0.15rem 0.4rem', borderRadius: '3px', border: `1px solid ${colors.borderLight}` }}>
+                              ALT RANK: #{message.data.lunarcrush.alt_rank}
+                            </span>
+                          )}
+                          {message.data.price.ath_distance != null && (
+                            <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: colors.textMuted, padding: '0.15rem 0.4rem', borderRadius: '3px', border: `1px solid ${colors.borderLight}` }}>
+                              ATH: {message.data.price.ath_distance.toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
                       )}
-                    </DataCardsRow>
+                    </div>
                   )}
                   
                   <MessageTime $isUser={message.role === 'user'}>
