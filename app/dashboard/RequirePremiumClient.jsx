@@ -21,13 +21,22 @@ export default function RequirePremiumClient({ children }) {
         
         // Check actual premium status from profiles table
         try {
-          const { data: profile } = await sb
+          const { data: profile, error: profileError } = await sb
             .from('profiles')
             .select('plan')
             .eq('id', session.user.id)
             .single()
+          
+          console.log('🔍 Dashboard premium check:', { 
+            userId: session.user.id, 
+            plan: profile?.plan, 
+            error: profileError?.message,
+            isPremium: profile?.plan === 'premium' || profile?.plan === 'pro'
+          })
+          
           setIsPremium(profile?.plan === 'premium' || profile?.plan === 'pro')
-        } catch {
+        } catch (err) {
+          console.error('Premium check failed:', err)
           setIsPremium(false)
         }
       } finally {
