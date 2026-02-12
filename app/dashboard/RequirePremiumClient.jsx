@@ -19,8 +19,17 @@ export default function RequirePremiumClient({ children }) {
           return
         }
         
-        // 🎉 DEMO PHASE: Everyone gets full access for free!
-        setIsPremium(true)
+        // Check actual premium status from profiles table
+        try {
+          const { data: profile } = await sb
+            .from('profiles')
+            .select('plan')
+            .eq('id', session.user.id)
+            .single()
+          setIsPremium(profile?.plan === 'premium' || profile?.plan === 'pro')
+        } catch {
+          setIsPremium(false)
+        }
       } finally {
         if (!cancelled) setChecked(true)
       }
