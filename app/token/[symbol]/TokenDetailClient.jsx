@@ -402,12 +402,15 @@ const getInsightIcon = (iconName) => {
 
 export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetrics, sentiment }) {
   const [priceData, setPriceData] = useState(null)
-  const [activeChartTab, setActiveChartTab] = useState('line')
+  const [activeChartTab, setActiveChartTab] = useState('candlestick')
   const [orcaAnalysis, setOrcaAnalysis] = useState(null)
   const [showOrcaModal, setShowOrcaModal] = useState(false)
   const [loadingOrca, setLoadingOrca] = useState(false)
   const [communityStats, setCommunityStats] = useState(defaultSentimentStats)
   const [statsLoading, setStatsLoading] = useState(true)
+  // LunarCrush social intelligence
+  const [socialData, setSocialData] = useState(null)
+  const [socialLoading, setSocialLoading] = useState(true)
   const [voteSending, setVoteSending] = useState(false)
   const [voteStatus, setVoteStatus] = useState(null)
   const [hasVoted, setHasVoted] = useState(false)
@@ -615,6 +618,24 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     fetchPrice()
     const interval = setInterval(fetchPrice, 60000) // Update every minute
     return () => clearInterval(interval)
+  }, [symbol])
+
+  // Fetch LunarCrush social intelligence
+  useEffect(() => {
+    async function fetchSocial() {
+      try {
+        const res = await fetch(`/api/token/social?symbol=${symbol}`)
+        if (res.ok) {
+          const json = await res.json()
+          if (json.available) setSocialData(json)
+        }
+      } catch (error) {
+        console.error('Failed to fetch social data:', error)
+      } finally {
+        setSocialLoading(false)
+      }
+    }
+    fetchSocial()
   }, [symbol])
 
   // Fetch Orca analysis
@@ -1229,6 +1250,175 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </TimeFilters>
         </Header>
 
+        {/* ─── SOCIAL INTELLIGENCE (LunarCrush) ──────────────────── */}
+        {!socialLoading && socialData && (
+          <Panel style={{ marginBottom: '1.5rem' }}>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>SOCIAL_INTELLIGENCE</TerminalPrompt>
+            <MetricsGrid>
+              {socialData.galaxy_score != null && (
+                <MetricCard>
+                  <MetricLabel>Galaxy Score</MetricLabel>
+                  <MetricValue style={{ color: socialData.galaxy_score >= 60 ? COLORS.green : socialData.galaxy_score >= 40 ? COLORS.amber : COLORS.red }}>
+                    {socialData.galaxy_score}/100
+                  </MetricValue>
+                </MetricCard>
+              )}
+              {socialData.alt_rank != null && (
+                <MetricCard>
+                  <MetricLabel>Alt Rank</MetricLabel>
+                  <MetricValue style={{ color: socialData.alt_rank <= 50 ? COLORS.green : socialData.alt_rank <= 100 ? COLORS.amber : COLORS.textMuted }}>
+                    #{socialData.alt_rank}
+                  </MetricValue>
+                </MetricCard>
+              )}
+              {socialData.sentiment != null && (
+                <MetricCard>
+                  <MetricLabel>Social Sentiment</MetricLabel>
+                  <MetricValue style={{ color: socialData.sentiment >= 60 ? COLORS.green : socialData.sentiment >= 40 ? COLORS.amber : COLORS.red }}>
+                    {socialData.sentiment}% bullish
+                  </MetricValue>
+                </MetricCard>
+              )}
+              {socialData.social_dominance != null && (
+                <MetricCard>
+                  <MetricLabel>Social Dominance</MetricLabel>
+                  <MetricValue>{socialData.social_dominance.toFixed(3)}%</MetricValue>
+                </MetricCard>
+              )}
+              {socialData.interactions_24h != null && (
+                <MetricCard>
+                  <MetricLabel>24h Interactions</MetricLabel>
+                  <MetricValue>
+                    {formatNumber(socialData.interactions_24h)}
+                    {socialData.interactions_change_7d != null && (
+                      <span style={{ fontSize: '0.7rem', marginLeft: '0.4rem', color: socialData.interactions_change_7d >= 0 ? COLORS.green : COLORS.red }}>
+                        {socialData.interactions_change_7d >= 0 ? '+' : ''}{socialData.interactions_change_7d.toFixed(1)}% 7d
+                      </span>
+                    )}
+                  </MetricValue>
+                </MetricCard>
+              )}
+              {socialData.posts_24h != null && (
+                <MetricCard>
+                  <MetricLabel>24h Posts</MetricLabel>
+                  <MetricValue>{formatNumber(socialData.posts_24h)}</MetricValue>
+                </MetricCard>
+              )}
+              {socialData.social_contributors != null && (
+                <MetricCard>
+                  <MetricLabel>Social Contributors</MetricLabel>
+                  <MetricValue>{formatNumber(socialData.social_contributors)}</MetricValue>
+                </MetricCard>
+              )}
+            </MetricsGrid>
+            {socialData.categories && socialData.categories.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.75rem' }}>
+                {socialData.categories.slice(0, 6).map(cat => (
+                  <span key={cat} style={{
+                    padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem',
+                    fontFamily: MONO_FONT, fontWeight: 600, color: COLORS.cyan,
+                    background: 'rgba(0, 229, 255, 0.06)', border: `1px solid ${COLORS.borderSubtle}`,
+                    textTransform: 'uppercase', letterSpacing: '0.5px'
+                  }}>{cat}</span>
+                ))}
+              </div>
+            )}
+          </Panel>
+        )}
+
+        {/* ─── COMMUNITY DATA (CoinGecko) ────────────────────────── */}
+        {priceData && (priceData.sentimentVotesUpPercentage > 0 || priceData.redditSubscribers > 0 || priceData.telegramUsers > 0 || priceData.description) && (
+          <Panel style={{ marginBottom: '1.5rem' }}>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>COMMUNITY_DATA</TerminalPrompt>
+            <MetricsGrid>
+              {priceData.sentimentVotesUpPercentage > 0 && (
+                <MetricCard>
+                  <MetricLabel>CoinGecko Sentiment</MetricLabel>
+                  <MetricValue style={{ color: priceData.sentimentVotesUpPercentage >= 60 ? COLORS.green : priceData.sentimentVotesUpPercentage >= 40 ? COLORS.amber : COLORS.red }}>
+                    {priceData.sentimentVotesUpPercentage.toFixed(1)}% bullish
+                  </MetricValue>
+                </MetricCard>
+              )}
+              {priceData.watchlistUsers > 0 && (
+                <MetricCard>
+                  <MetricLabel>Watchlist Users</MetricLabel>
+                  <MetricValue>{formatNumber(priceData.watchlistUsers)}</MetricValue>
+                </MetricCard>
+              )}
+              {priceData.redditSubscribers > 0 && (
+                <MetricCard>
+                  <MetricLabel>Reddit Subscribers</MetricLabel>
+                  <MetricValue>{formatNumber(priceData.redditSubscribers)}</MetricValue>
+                </MetricCard>
+              )}
+              {priceData.redditActive48h > 0 && (
+                <MetricCard>
+                  <MetricLabel>Reddit Active (48h)</MetricLabel>
+                  <MetricValue>{formatNumber(priceData.redditActive48h)}</MetricValue>
+                </MetricCard>
+              )}
+              {priceData.telegramUsers > 0 && (
+                <MetricCard>
+                  <MetricLabel>Telegram Users</MetricLabel>
+                  <MetricValue>{formatNumber(priceData.telegramUsers)}</MetricValue>
+                </MetricCard>
+              )}
+            </MetricsGrid>
+            {priceData.description && (
+              <div style={{
+                marginTop: '1rem', padding: '1rem', borderRadius: '6px',
+                background: 'rgba(0, 229, 255, 0.02)', border: `1px solid ${COLORS.borderSubtle}`,
+                fontSize: '0.85rem', color: COLORS.textMuted, lineHeight: '1.6', fontFamily: SANS_FONT
+              }}>
+                {priceData.description.replace(/<[^>]+>/g, '').slice(0, 300)}
+                {priceData.description.length > 300 ? '...' : ''}
+              </div>
+            )}
+            {priceData.categories && priceData.categories.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.75rem' }}>
+                {priceData.categories.filter(Boolean).slice(0, 8).map(cat => (
+                  <span key={cat} style={{
+                    padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem',
+                    fontFamily: MONO_FONT, fontWeight: 600, color: COLORS.textMuted,
+                    background: 'rgba(0, 229, 255, 0.04)', border: `1px solid ${COLORS.borderSubtle}`,
+                  }}>{cat}</span>
+                ))}
+              </div>
+            )}
+          </Panel>
+        )}
+
+        {/* ─── DEVELOPER ACTIVITY (GitHub) ────────────────────────── */}
+        {priceData && priceData.githubCommits4w > 0 && (
+          <Panel style={{ marginBottom: '1.5rem' }}>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>DEVELOPER_ACTIVITY</TerminalPrompt>
+            <MetricsGrid>
+              <MetricCard>
+                <MetricLabel>Commits (4 weeks)</MetricLabel>
+                <MetricValue>{priceData.githubCommits4w}</MetricValue>
+              </MetricCard>
+              {priceData.githubStars > 0 && (
+                <MetricCard>
+                  <MetricLabel>GitHub Stars</MetricLabel>
+                  <MetricValue>{formatNumber(priceData.githubStars)}</MetricValue>
+                </MetricCard>
+              )}
+              {priceData.githubForks > 0 && (
+                <MetricCard>
+                  <MetricLabel>Forks</MetricLabel>
+                  <MetricValue>{formatNumber(priceData.githubForks)}</MetricValue>
+                </MetricCard>
+              )}
+              {priceData.githubPRsMerged > 0 && (
+                <MetricCard>
+                  <MetricLabel>PRs Merged</MetricLabel>
+                  <MetricValue>{formatNumber(priceData.githubPRsMerged)}</MetricValue>
+                </MetricCard>
+              )}
+            </MetricsGrid>
+          </Panel>
+        )}
+
         {/* Price Charts Section */}
         <ChartsSection
           initial={{ opacity: 0, y: 20 }}
@@ -1537,83 +1727,71 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           ) : (
             <div style={{
               textAlign: 'center',
-              padding: '4rem 2rem',
-              background: 'rgba(30, 57, 81, 0.3)',
-              border: '1px solid rgba(54, 166, 186, 0.2)',
-              borderRadius: '12px',
+              padding: '3rem 2rem',
+              background: 'rgba(0, 229, 255, 0.02)',
+              border: `1px solid ${COLORS.borderSubtle}`,
+              borderRadius: '6px',
               marginTop: '1rem'
             }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🐋</div>
-              <h3 style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: 600, 
-                marginBottom: '0.5rem',
-                color: 'var(--text-primary)'
-              }}>
-                No Whale Activity Detected
-              </h3>
+              <div style={{ fontSize: '0.9rem', fontFamily: MONO_FONT, color: COLORS.cyan, fontWeight: 700, letterSpacing: '1px', marginBottom: '1rem' }}>
+                &gt; WHALE_TRACKING_STATUS
+              </div>
               <p style={{ 
-                fontSize: '1rem', 
-                color: 'var(--text-secondary)',
+                fontSize: '0.9rem', 
+                color: COLORS.textMuted,
                 maxWidth: '500px',
                 margin: '0 auto',
-                lineHeight: '1.6'
+                lineHeight: '1.6',
+                fontFamily: SANS_FONT
               }}>
-                We haven't detected any whale transactions for {symbol} in the selected time period. 
-                This could mean low whale activity or that this token isn't being tracked yet.
+                Whale transaction tracking for {symbol} is not yet active. Sonar currently tracks whale activity for ERC-20 tokens. We're expanding coverage — check back soon.
               </p>
-              <div style={{ 
-                marginTop: '2rem',
-                padding: '1.5rem',
-                background: 'rgba(54, 166, 186, 0.1)',
-                borderRadius: '8px',
-                maxWidth: '600px',
-                margin: '2rem auto 0'
-              }}>
-                <h4 style={{ 
-                  fontSize: '1.1rem', 
-                  fontWeight: 600, 
-                  marginBottom: '1rem',
-                  color: 'var(--primary)'
-                }}>
-                  Market Data Available
-                </h4>
+              {priceData && (priceData.volume24h > 0 || priceData.marketCap > 0) && (
                 <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  gap: '1rem',
-                  textAlign: 'left'
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  background: COLORS.panelBg,
+                  borderRadius: '6px',
+                  border: `1px solid ${COLORS.borderSubtle}`,
+                  maxWidth: '600px',
+                  margin: '1.5rem auto 0'
                 }}>
-                  {priceData?.volume24h > 0 && (
-                    <div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>24h Volume</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary)' }}>
-                        {formatUSD(priceData.volume24h)}
+                  <div style={{ 
+                    fontSize: '0.7rem', fontWeight: 600, letterSpacing: '1.5px',
+                    textTransform: 'uppercase', color: COLORS.textMuted, marginBottom: '0.75rem',
+                    fontFamily: SANS_FONT
+                  }}>
+                    CoinGecko Market Data
+                  </div>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                    gap: '0.75rem',
+                    textAlign: 'left'
+                  }}>
+                    {priceData.volume24h > 0 && (
+                      <div>
+                        <div style={{ fontSize: '0.6rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: SANS_FONT, fontWeight: 600 }}>24h Volume</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: COLORS.cyan, fontFamily: MONO_FONT }}>{formatUSD(priceData.volume24h)}</div>
                       </div>
-                    </div>
-                  )}
-                  {priceData?.marketCap > 0 && (
-                    <div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Market Cap</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary)' }}>
-                        {formatUSD(priceData.marketCap)}
+                    )}
+                    {priceData.marketCap > 0 && (
+                      <div>
+                        <div style={{ fontSize: '0.6rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: SANS_FONT, fontWeight: 600 }}>Market Cap</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: COLORS.cyan, fontFamily: MONO_FONT }}>{formatUSD(priceData.marketCap)}</div>
                       </div>
-                    </div>
-                  )}
-                  {priceData?.change24h !== undefined && (
-                    <div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>24h Change</div>
-                      <div style={{ 
-                        fontSize: '1.1rem', 
-                        fontWeight: 600, 
-                        color: priceData.change24h >= 0 ? '#2ecc71' : '#e74c3c'
-                      }}>
-                        {priceData.change24h >= 0 ? '+' : ''}{priceData.change24h.toFixed(2)}%
+                    )}
+                    {priceData.change24h !== undefined && priceData.change24h !== null && (
+                      <div>
+                        <div style={{ fontSize: '0.6rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: SANS_FONT, fontWeight: 600 }}>24h Change</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: priceData.change24h >= 0 ? COLORS.green : COLORS.red, fontFamily: MONO_FONT }}>
+                          {priceData.change24h >= 0 ? '+' : ''}{priceData.change24h.toFixed(2)}%
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </TransactionsSection>

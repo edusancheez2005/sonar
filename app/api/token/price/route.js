@@ -186,14 +186,14 @@ export async function GET(req) {
     // Get CoinGecko ID
     let cgId = SYMBOL_TO_COINGECKO_ID[symbol] || symbol.toLowerCase()
 
-    // Fetch from CoinGecko
+    // Fetch from CoinGecko (with community + developer data)
     let res = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=false&developer_data=false`,
+      `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=true&developer_data=true`,
       {
         headers: {
           'x-cg-demo-api-key': process.env.COINGECKO_API_KEY || ''
         },
-        next: { revalidate: 60 } // Cache for 60 seconds
+        next: { revalidate: 60 }
       }
     )
 
@@ -218,7 +218,7 @@ export async function GET(req) {
           cgId = coin.id
           // Retry with the found ID
           res = await fetch(
-            `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=false&developer_data=false`,
+            `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=true&developer_data=true`,
             {
               headers: {
                 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY || ''
@@ -325,6 +325,18 @@ export async function GET(req) {
       
       sentimentVotesUpPercentage: data.sentiment_votes_up_percentage || 0,
       sentimentVotesDownPercentage: data.sentiment_votes_down_percentage || 0,
+      watchlistUsers: data.watchlist_portfolio_users || 0,
+      
+      // Community data
+      redditSubscribers: data.community_data?.reddit_subscribers || 0,
+      redditActive48h: data.community_data?.reddit_accounts_active_48h || 0,
+      telegramUsers: data.community_data?.telegram_channel_user_count || 0,
+      
+      // Developer data
+      githubCommits4w: data.developer_data?.commit_count_4_weeks || 0,
+      githubStars: data.developer_data?.stars || 0,
+      githubForks: data.developer_data?.forks || 0,
+      githubPRsMerged: data.developer_data?.pull_requests_merged || 0,
       
       genesisDate: data.genesis_date || null,
       categories: data.categories || [],
