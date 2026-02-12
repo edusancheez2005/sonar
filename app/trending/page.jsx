@@ -6,6 +6,7 @@ import styled, { keyframes } from 'styled-components'
 import { motion } from 'framer-motion'
 import TokenIcon from '@/components/TokenIcon'
 import AuthGuard from '@/app/components/AuthGuard'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
 const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
@@ -164,6 +165,21 @@ export default function TrendingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState('24h')
+  const [isPremium, setIsPremium] = useState(false)
+
+  useEffect(() => {
+    async function checkPremium() {
+      try {
+        const sb = supabaseBrowser()
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.user) {
+          const { data: profile } = await sb.from('profiles').select('plan').eq('id', session.user.id).single()
+          setIsPremium(profile?.plan === 'premium' || profile?.plan === 'pro')
+        }
+      } catch {}
+    }
+    checkPremium()
+  }, [])
 
   useEffect(() => {
     fetchTrendingData()
@@ -232,7 +248,7 @@ export default function TrendingPage() {
               <Panel>
                 <TerminalPrompt>TRENDING_NOW</TerminalPrompt>
                 <Grid>
-                  {trendingData.trending?.map((coin) => (
+                  {(isPremium ? trendingData.trending : trendingData.trending?.slice(0, 5))?.map((coin) => (
                     <Link key={coin.id} href={`/token/${coin.symbol}`} style={{ textDecoration: 'none' }}>
                       <CoinCard variants={fadeUp} initial="hidden" animate="visible">
                         <CoinHeader>
@@ -260,7 +276,7 @@ export default function TrendingPage() {
                 <Panel>
                   <TerminalPrompt style={{ color: COLORS.green }}>TOP_GAINERS</TerminalPrompt>
                   <Grid>
-                    {trendingData.top_gainers.slice(0, 12).map((coin) => (
+                    {trendingData.top_gainers.slice(0, isPremium ? 12 : 5).map((coin) => (
                       <Link key={coin.id} href={`/token/${coin.symbol}`} style={{ textDecoration: 'none' }}>
                         <CoinCard variants={fadeUp} initial="hidden" animate="visible">
                           <CoinHeader>
@@ -301,7 +317,7 @@ export default function TrendingPage() {
                 <Panel>
                   <TerminalPrompt style={{ color: COLORS.red }}>TOP_LOSERS</TerminalPrompt>
                   <Grid>
-                    {trendingData.top_losers.slice(0, 12).map((coin) => (
+                    {trendingData.top_losers.slice(0, isPremium ? 12 : 5).map((coin) => (
                       <Link key={coin.id} href={`/token/${coin.symbol}`} style={{ textDecoration: 'none' }}>
                         <CoinCard variants={fadeUp} initial="hidden" animate="visible">
                           <CoinHeader>
@@ -335,6 +351,26 @@ export default function TrendingPage() {
                     ))}
                   </Grid>
                 </Panel>
+              )}
+
+              {!isPremium && (
+                <div style={{
+                  textAlign: 'center', padding: '1.25rem', marginBottom: '1.5rem',
+                  background: COLORS.panelBg, border: `1px solid ${COLORS.borderSubtle}`,
+                  borderRadius: '8px', fontFamily: SANS_FONT,
+                }}>
+                  <div style={{ fontSize: '0.8rem', color: COLORS.textMuted, marginBottom: '0.5rem' }}>
+                    Showing top 5 per section. Premium shows all 12+ coins with full data.
+                  </div>
+                  <a href="/subscribe" style={{
+                    display: 'inline-block', padding: '0.4rem 1rem', borderRadius: '4px',
+                    background: 'linear-gradient(135deg, #00e5ff, #00b8d4)', color: '#0a0e17',
+                    fontFamily: MONO_FONT, fontSize: '0.7rem', fontWeight: 700, textDecoration: 'none',
+                    letterSpacing: '0.5px',
+                  }}>
+                    UPGRADE →
+                  </a>
+                </div>
               )}
             </>
           )}

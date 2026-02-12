@@ -433,17 +433,19 @@ export default function Statistics() {
             <button type="button" className={`preset ${sinceHours===168?'active':''}`} onClick={()=>preset(168)}>7D</button>
             <GhostButton $danger type="button" onClick={reset}>RESET</GhostButton>
           </div>
+          {isPremium && (
           <GhostButton
             type="button"
             onClick={exportToCSV}
             disabled={exporting || loading || rows.length === 0}
-            title={!isPremium ? 'Premium feature' : 'Export CSV'}
+            title="Export CSV"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            {exporting ? 'EXPORTING...' : isPremium ? 'EXPORT CSV' : 'EXPORT (PRO)'}
+            {exporting ? 'EXPORTING...' : 'EXPORT CSV'}
           </GhostButton>
+          )}
         </Presets>
 
         <Toolbar>
@@ -506,7 +508,7 @@ export default function Statistics() {
                 </tr>
               </thead>
               <tbody>
-                  {rows.map((t, idx) => (
+                  {(isPremium ? rows : rows.slice(0, 25)).map((t, idx) => (
                     <motion.tr key={t.transaction_hash} custom={idx} variants={rowVariant} initial="hidden" animate="visible">
                       <td className="muted" style={{ fontSize: '0.75rem' }}>{new Date(t.timestamp).toLocaleString()}</td>
                       <td>
@@ -527,6 +529,18 @@ export default function Statistics() {
               </tbody>
               </table>
               </DataTable>
+              {!isPremium && rows.length > 25 && (
+                <div style={{
+                  textAlign: 'center', padding: '1rem', marginTop: '0.5rem',
+                  background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${COLORS.borderSubtle}`,
+                  borderRadius: '4px', fontFamily: SANS_FONT, fontSize: '0.8rem', color: COLORS.textMuted
+                }}>
+                  Showing 25 of {total.toLocaleString()} transactions.
+                  <a href="/subscribe" style={{ color: COLORS.cyan, marginLeft: '0.4rem', fontWeight: 600, textDecoration: 'underline' }}>
+                    Upgrade for full data + CSV export
+                  </a>
+                </div>
+              )}
               <Pagination>
                 <GhostButton type="button" onClick={()=>fetchTrades(Math.max(1, page-1))}>← PREV</GhostButton>
                 <span style={{ fontFamily: MONO_FONT }}>Page {page} · {total.toLocaleString()} txns</span>

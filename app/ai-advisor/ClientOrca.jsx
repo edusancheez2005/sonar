@@ -424,7 +424,7 @@ export default function ClientOrca() {
 
     // Check free user quota (1 free prompt, then need premium)
     const FREE_PROMPT_LIMIT = 1
-    const PREMIUM_DAILY_LIMIT = 5
+    const PREMIUM_DAILY_LIMIT = 10
     
     if (!isPremium && freePromptsUsed >= FREE_PROMPT_LIMIT) {
       setShowUpgradeModal(true)
@@ -924,7 +924,7 @@ export default function ClientOrca() {
             Upgrade to Premium for unlimited conversations and deeper market insights.
           </PremiumDescription>
           <PremiumFeatureList>
-            <li>5 AI conversations per day with ORCA 2.0</li>
+            <li>10 AI conversations per day with ORCA 2.0</li>
             <li>Real-time whale transaction analysis</li>
             <li>Advanced sentiment & social insights</li>
             <li>Custom whale alerts & notifications</li>

@@ -5,6 +5,8 @@ import styled, { keyframes } from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { calculateEnhancedSentiment } from '@/app/lib/sentimentAlgorithm'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import PremiumGate from '@/components/PremiumGate'
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false })
 const CandlestickChart = dynamic(() => import('@/components/charts/CandlestickChart'), { ssr: false })
@@ -415,6 +417,8 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   // News articles
   const [newsArticles, setNewsArticles] = useState([])
   const [newsLoading, setNewsLoading] = useState(true)
+  // Premium status
+  const [isPremium, setIsPremium] = useState(false)
   const [voteSending, setVoteSending] = useState(false)
   const [voteStatus, setVoteStatus] = useState(null)
   const [hasVoted, setHasVoted] = useState(false)
@@ -604,6 +608,21 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       localStorage.setItem('sonar_fp', fp)
     }
     setFingerprint(fp)
+  }, [])
+
+  // Check premium status
+  useEffect(() => {
+    async function checkPremium() {
+      try {
+        const sb = supabaseBrowser()
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.user) {
+          const { data: profile } = await sb.from('profiles').select('plan').eq('id', session.user.id).single()
+          setIsPremium(profile?.plan === 'premium' || profile?.plan === 'pro')
+        }
+      } catch {}
+    }
+    checkPremium()
   }, [])
 
   // Fetch live price data
@@ -809,8 +828,8 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     return result
   }, [data, priceData, socialData])
 
-  // Use enhanced sentiment if available, else fall back to server-provided
-  const displaySentiment = enhancedSentiment.confidence > 0 ? enhancedSentiment : sentiment
+  // Use enhanced sentiment only for premium users
+  const displaySentiment = (isPremium && enhancedSentiment.confidence > 0) ? enhancedSentiment : sentiment
 
   return (
     <PageWrapper>
@@ -1312,6 +1331,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
         {/* ─── SOCIAL INTELLIGENCE (LunarCrush) ──────────────────── */}
         {!socialLoading && socialData && (
+          <PremiumGate isPremium={isPremium} feature="Social Intelligence">
           <Panel style={{ marginBottom: '1.5rem' }}>
             <TerminalPrompt style={{ marginBottom: '1.25rem' }}>SOCIAL_INTELLIGENCE</TerminalPrompt>
             <MetricsGrid>
@@ -1386,8 +1406,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </Panel>
         )}
 
+          </PremiumGate>
+        )}
+
         {/* ─── NEWS ARTICLES ─────────────────────────────────────── */}
         {!newsLoading && newsArticles.length > 0 && (
+          <PremiumGate isPremium={isPremium} feature="News & Analysis">
           <Panel style={{ marginBottom: '1.5rem' }}>
             <TerminalPrompt style={{ marginBottom: '1.25rem' }}>LATEST_NEWS</TerminalPrompt>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1440,8 +1464,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </Panel>
         )}
 
+          </PremiumGate>
+        )}
+
         {/* ─── TOP SOCIAL POSTS (LunarCrush) ─────────────────────── */}
         {socialData?.top_posts && socialData.top_posts.length > 0 && (
+          <PremiumGate isPremium={isPremium} feature="Social Buzz">
           <Panel style={{ marginBottom: '1.5rem' }}>
             <TerminalPrompt style={{ marginBottom: '1.25rem' }}>SOCIAL_BUZZ</TerminalPrompt>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1484,8 +1512,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </Panel>
         )}
 
+          </PremiumGate>
+        )}
+
         {/* ─── COMMUNITY DATA (CoinGecko) ────────────────────────── */}
         {priceData && (priceData.sentimentVotesUpPercentage > 0 || priceData.redditSubscribers > 0 || priceData.telegramUsers > 0 || priceData.description) && (
+          <PremiumGate isPremium={isPremium} feature="Community Data">
           <Panel style={{ marginBottom: '1.5rem' }}>
             <TerminalPrompt style={{ marginBottom: '1.25rem' }}>COMMUNITY_DATA</TerminalPrompt>
             <MetricsGrid>
@@ -1546,8 +1578,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </Panel>
         )}
 
+          </PremiumGate>
+        )}
+
         {/* ─── DEVELOPER ACTIVITY (GitHub) ────────────────────────── */}
         {priceData && priceData.githubCommits4w > 0 && (
+          <PremiumGate isPremium={isPremium} feature="Developer Activity">
           <Panel style={{ marginBottom: '1.5rem' }}>
             <TerminalPrompt style={{ marginBottom: '1.25rem' }}>DEVELOPER_ACTIVITY</TerminalPrompt>
             <MetricsGrid>
@@ -1575,6 +1611,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               )}
             </MetricsGrid>
           </Panel>
+          </PremiumGate>
         )}
 
         {/* Price Charts Section */}
@@ -1619,6 +1656,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
         {/* CMC-Style Deep Dive Analysis */}
         {deepDive && (
+          <PremiumGate isPremium={isPremium} feature="Whale Deep Dive Analysis">
           <DeepDiveSection
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1659,9 +1697,11 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               Sonar Deep Dive analysis is generated using proprietary whale transaction data and technical indicators. Not financial advice.
             </DisclaimerText>
           </DeepDiveSection>
+          </PremiumGate>
         )}
 
         {whaleMetrics.totalVolume > 0 && (
+          <PremiumGate isPremium={isPremium} feature="Sentiment Analysis & Whale Transactions">
           <SentimentSection
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1796,8 +1836,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             )}
           </OrcaButton>
           </SentimentSection>
+          </PremiumGate>
         )}
 
+        <PremiumGate isPremium={isPremium} feature="Whale Transactions">
         <TransactionsSection>
           <SectionTitle>Recent Whale Transactions</SectionTitle>
           {data.length > 0 ? (
@@ -1953,6 +1995,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             </div>
           )}
         </TransactionsSection>
+        </PremiumGate>
 
         {/* Orca Analysis Modal */}
         <AnimatePresence>
