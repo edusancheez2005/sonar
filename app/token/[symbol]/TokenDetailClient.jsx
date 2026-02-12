@@ -4,6 +4,7 @@ import Link from 'next/link'
 import styled, { keyframes } from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
+import { calculateEnhancedSentiment } from '@/app/lib/sentimentAlgorithm'
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false })
 const CandlestickChart = dynamic(() => import('@/components/charts/CandlestickChart'), { ssr: false })
@@ -411,6 +412,9 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   // LunarCrush social intelligence
   const [socialData, setSocialData] = useState(null)
   const [socialLoading, setSocialLoading] = useState(true)
+  // News articles
+  const [newsArticles, setNewsArticles] = useState([])
+  const [newsLoading, setNewsLoading] = useState(true)
   const [voteSending, setVoteSending] = useState(false)
   const [voteStatus, setVoteStatus] = useState(null)
   const [hasVoted, setHasVoted] = useState(false)
@@ -638,6 +642,24 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     fetchSocial()
   }, [symbol])
 
+  // Fetch news articles
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        const res = await fetch(`/api/token/news?symbol=${symbol}&limit=10`)
+        if (res.ok) {
+          const json = await res.json()
+          setNewsArticles(json.articles || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch news:', error)
+      } finally {
+        setNewsLoading(false)
+      }
+    }
+    fetchNews()
+  }, [symbol])
+
   // Fetch Orca analysis
   async function handleAskOrca() {
     if (loadingOrca) return
@@ -757,6 +779,39 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   // Compute deep dive AFTER helpers are defined to avoid TDZ
   const deepDive = generateDeepDive()
 
+  // Compute enhanced sentiment using all available data sources
+  const enhancedSentiment = React.useMemo(() => {
+    const result = calculateEnhancedSentiment({
+      transactions: data || [],
+      priceData: priceData ? {
+        change24h: priceData.change24h,
+        change7d: priceData.change7d,
+      } : null,
+      lunarcrush: socialData ? {
+        galaxy_score: socialData.galaxy_score,
+        alt_rank: socialData.alt_rank,
+        sentiment: socialData.sentiment,
+        social_dominance: socialData.social_dominance,
+        interactions_24h: socialData.interactions_24h,
+      } : null,
+      coingeckoSentiment: priceData ? {
+        votes_up_pct: priceData.sentimentVotesUpPercentage || null,
+        volume_to_mcap_ratio: priceData.volumeMarketCapRatio ? priceData.volumeMarketCapRatio / 100 : null,
+      } : null,
+      priceMultiframe: priceData ? {
+        change_1h: priceData.price_change_percentage_1h || null,
+        change_24h: priceData.change24h,
+        change_7d: priceData.change7d,
+        change_14d: priceData.price_change_percentage_14d || null,
+        change_30d: priceData.change30d,
+      } : null,
+    })
+    return result
+  }, [data, priceData, socialData])
+
+  // Use enhanced sentiment if available, else fall back to server-provided
+  const displaySentiment = enhancedSentiment.confidence > 0 ? enhancedSentiment : sentiment
+
   return (
     <PageWrapper>
       <Container>
@@ -804,10 +859,15 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               )}
             </div>
             <SentimentBadge 
-              $color={sentiment.color}
-              title={`Score: ${sentiment.score} | Buy%: ${sentiment.details.buyPct}% | Net Flow: ${formatUSD(sentiment.details.net)}`}
+              $color={displaySentiment.color}
+              title={`Score: ${displaySentiment.score} | Confidence: ${displaySentiment.confidence || 'N/A'}%${displaySentiment.divergence ? ' | DIVERGENCE DETECTED' : ''}`}
             >
-              <span style={{ marginRight: '0.5rem' }}>●</span>{sentiment.label}
+              <span style={{ marginRight: '0.5rem' }}>●</span>{displaySentiment.label}
+              {displaySentiment.confidence > 0 && (
+                <span style={{ marginLeft: '0.5rem', fontSize: '0.6rem', opacity: 0.7 }}>
+                  {displaySentiment.confidence}%
+                </span>
+              )}
             </SentimentBadge>
           </TokenTitle>
 
@@ -1323,6 +1383,104 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                 ))}
               </div>
             )}
+          </Panel>
+        )}
+
+        {/* ─── NEWS ARTICLES ─────────────────────────────────────── */}
+        {!newsLoading && newsArticles.length > 0 && (
+          <Panel style={{ marginBottom: '1.5rem' }}>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>LATEST_NEWS</TerminalPrompt>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {newsArticles.slice(0, 8).map((article, idx) => (
+                <a
+                  key={idx}
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.75rem 1rem', borderRadius: '4px', textDecoration: 'none',
+                    background: 'rgba(0, 229, 255, 0.02)', border: `1px solid ${COLORS.borderSubtle}`,
+                    transition: 'all 0.15s ease', gap: '1rem',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.15)'; e.currentTarget.style.background = 'rgba(0, 229, 255, 0.04)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = COLORS.borderSubtle; e.currentTarget.style.background = 'rgba(0, 229, 255, 0.02)' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '0.85rem', fontWeight: 600, color: COLORS.textPrimary,
+                      fontFamily: SANS_FONT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                    }}>
+                      {article.title}
+                    </div>
+                    <div style={{
+                      fontSize: '0.7rem', color: COLORS.textMuted, marginTop: '0.2rem',
+                      fontFamily: MONO_FONT, display: 'flex', gap: '0.75rem'
+                    }}>
+                      <span>{article.source}</span>
+                      {article.published_at && (
+                        <span>{new Date(article.published_at).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                  {article.sentiment != null && (
+                    <span style={{
+                      fontSize: '0.65rem', fontFamily: MONO_FONT, fontWeight: 600, flexShrink: 0,
+                      padding: '0.15rem 0.4rem', borderRadius: '3px',
+                      color: article.sentiment > 0.1 ? COLORS.green : article.sentiment < -0.1 ? COLORS.red : COLORS.amber,
+                      background: article.sentiment > 0.1 ? 'rgba(0, 230, 118, 0.08)' : article.sentiment < -0.1 ? 'rgba(255, 23, 68, 0.08)' : 'rgba(255, 171, 0, 0.08)',
+                      border: `1px solid ${article.sentiment > 0.1 ? 'rgba(0, 230, 118, 0.12)' : article.sentiment < -0.1 ? 'rgba(255, 23, 68, 0.12)' : 'rgba(255, 171, 0, 0.12)'}`,
+                    }}>
+                      {article.sentiment > 0.1 ? 'BULLISH' : article.sentiment < -0.1 ? 'BEARISH' : 'NEUTRAL'}
+                    </span>
+                  )}
+                </a>
+              ))}
+            </div>
+          </Panel>
+        )}
+
+        {/* ─── TOP SOCIAL POSTS (LunarCrush) ─────────────────────── */}
+        {socialData?.top_posts && socialData.top_posts.length > 0 && (
+          <Panel style={{ marginBottom: '1.5rem' }}>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>SOCIAL_BUZZ</TerminalPrompt>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {socialData.top_posts.map((post, idx) => (
+                <a
+                  key={idx}
+                  href={post.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.75rem 1rem', borderRadius: '4px', textDecoration: 'none',
+                    background: 'rgba(0, 229, 255, 0.02)', border: `1px solid ${COLORS.borderSubtle}`,
+                    transition: 'all 0.15s ease', gap: '1rem',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.15)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = COLORS.borderSubtle }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '0.85rem', fontWeight: 600, color: COLORS.textPrimary,
+                      fontFamily: SANS_FONT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                    }}>
+                      {post.title || 'Social post'}
+                    </div>
+                    <div style={{
+                      fontSize: '0.7rem', color: COLORS.textMuted, marginTop: '0.2rem',
+                      fontFamily: MONO_FONT, display: 'flex', gap: '0.75rem'
+                    }}>
+                      <span>{post.creator}</span>
+                      <span>{post.source}</span>
+                      {post.interactions > 0 && (
+                        <span style={{ color: COLORS.cyan }}>{post.interactions.toLocaleString()} interactions</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
           </Panel>
         )}
 
