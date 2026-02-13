@@ -1936,6 +1936,84 @@ const Landing = () => {
           </motion.div>
         </HeroContent>
       </HeroSection>
+
+      {/* ─── TERMINAL DEMO MOCKUP (moved to top for impact) ────────── */}
+      <section style={{
+        padding: '4rem 2rem 3rem',
+        background: '#0a0e17',
+      }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.75rem', background: 'linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em' }}>Your Crypto Command Center</h2>
+            <p style={{ fontSize: '1.1rem', color: '#5a6a7a', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>See what institutional traders see. Real-time whale flows, social intelligence, and AI analysis — all in one terminal-style dashboard.</p>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ background: 'rgba(13, 17, 28, 0.9)', border: '1px solid rgba(0, 229, 255, 0.1)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 229, 255, 0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 1.5rem', borderBottom: '1px solid rgba(0, 229, 255, 0.08)', fontFamily: "'JetBrains Mono', monospace", background: 'rgba(10, 14, 23, 0.8)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontWeight: 800, fontSize: '0.8rem', color: '#00e5ff', letterSpacing: '2px' }}>SONAR</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: '#00e676', fontWeight: 600 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00e676', display: 'inline-block' }} />LIVE</span>
+                <span style={{ background: 'rgba(0, 229, 255, 0.08)', border: '1px solid rgba(0, 229, 255, 0.15)', borderRadius: '3px', padding: '0.15rem 0.5rem', fontSize: '0.65rem', color: '#00e5ff', fontWeight: 600 }}>24H</span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#5a6a7a' }}>TXN: <span style={{ color: '#e0e6ed', fontWeight: 600 }}>216</span> | VOL: <span style={{ color: '#e0e6ed', fontWeight: 600 }}>$369M</span></div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid rgba(0, 229, 255, 0.06)' }}>
+              {[{ label: 'ACCUMULATION', value: '3', color: '#00e676', sub: '> $1M Inflow' }, { label: 'DISTRIBUTION', value: '6', color: '#ff1744', sub: '> $1M Outflow' }, { label: 'WHALE ACTIVITY', value: '8', color: '#00e5ff', sub: '> 10 Whales' }, { label: 'VOLUME (24H)', value: '$369M', color: '#ffab00', sub: '216 Transactions' }].map((kpi, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 + i * 0.1 }} style={{ padding: '1rem', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(0, 229, 255, 0.06)' : 'none' }}>
+                  <div style={{ fontSize: '0.55rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '0.3rem' }}>{kpi.label}</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: kpi.color, textShadow: `0 0 15px ${kpi.color}30` }}>{kpi.value}</div>
+                  <div style={{ fontSize: '0.6rem', color: kpi.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, opacity: 0.7 }}>{kpi.sub}</div>
+                </motion.div>
+              ))}
+            </div>
+            <div style={{ padding: '1.25rem 1.5rem' }}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', marginBottom: '1rem' }}><span style={{ color: '#00e676', fontWeight: 800 }}>&gt;</span> NET_INFLOWS</div>
+              {[{ token: 'IMX', value: '+$1.42M', pct: 100 }, { token: 'SNX', value: '+$710K', pct: 50 }, { token: 'ALICE', value: '+$244K', pct: 17 }, { token: 'AXS', value: '+$192K', pct: 14 }].map((item, i) => (
+                <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.5 + i * 0.1 }} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px', gap: '0.75rem', alignItems: 'center', padding: '0.35rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem', fontWeight: 600, color: '#e0e6ed' }}>{item.token}</span>
+                  <div style={{ height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} whileInView={{ width: `${item.pct}%` }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.6 + i * 0.1 }} style={{ height: '100%', background: '#00e676', borderRadius: '3px' }} />
+                  </div>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 600, color: '#00e676', textAlign: 'right' }}>{item.value}</span>
+                </motion.div>
+              ))}
+            </div>
+            <div style={{ padding: '2rem 1.5rem', textAlign: 'center', filter: 'blur(4px)', opacity: 0.4, pointerEvents: 'none', userSelect: 'none', borderTop: '1px solid rgba(0, 229, 255, 0.06)' }}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#00e5ff', marginBottom: '1rem' }}>&gt; MOST_TRADED_TOKENS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+                {['BTC', 'ETH', 'SOL', 'LINK', 'UNI'].map(t => (<div key={t} style={{ background: 'rgba(0,229,255,0.03)', borderRadius: '4px', padding: '0.75rem', fontFamily: "'JetBrains Mono', monospace", color: '#e0e6ed', fontSize: '0.8rem', fontWeight: 700 }}>{t}</div>))}
+              </div>
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.5 }} style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); setShowLoginModal(true) }} style={{ display: 'inline-block', padding: '0.75rem 2rem', borderRadius: '6px', background: 'linear-gradient(135deg, #00e5ff, #00b8d4)', color: '#0a0e17', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.85rem', fontWeight: 700, textDecoration: 'none', letterSpacing: '0.5px' }}>Sign up free to explore →</a>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ─── VALUE PROPS + SOCIAL PROOF ───────────────────────────────── */}
+      <section style={{ padding: '3rem 2rem', background: '#0a0e17' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            {[{ value: '$0.26/day', title: 'Premium Access', desc: 'Institutional-grade whale intelligence for less than a coffee per day' }, { value: '10/day', title: 'Orca AI Prompts', desc: 'Deep analysis on any token with live whale data, sentiment, and price charts' }, { value: '24/7', title: 'Whale Tracking', desc: 'Real-time alerts across Ethereum, Bitcoin, Tron, and major blockchains' }].map((item, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} style={{ background: 'rgba(0, 229, 255, 0.03)', border: '1px solid rgba(0, 229, 255, 0.08)', borderRadius: '8px', padding: '1.5rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#00e5ff', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.5rem' }}>{item.value}</div>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#e0e6ed', marginBottom: '0.4rem' }}>{item.title}</div>
+                <div style={{ fontSize: '0.8rem', color: '#5a6a7a', lineHeight: 1.5 }}>{item.desc}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', padding: '1rem 0', borderTop: '1px solid rgba(0, 229, 255, 0.08)', borderBottom: '1px solid rgba(0, 229, 255, 0.08)', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#5a6a7a' }}>
+            <span>Tracking <strong style={{ color: '#e0e6ed' }}>200+</strong> tokens</span>
+            <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
+            <span>Powered by <strong style={{ color: '#e0e6ed' }}>CoinGecko</strong> + <strong style={{ color: '#e0e6ed' }}>LunarCrush</strong></span>
+            <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
+            <span><strong style={{ color: '#e0e6ed' }}>$7.99</strong>/month premium</span>
+          </motion.div>
+          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <a href="/subscribe" style={{ display: 'inline-block', padding: '0.6rem 1.5rem', borderRadius: '4px', border: '1px solid rgba(0, 229, 255, 0.2)', color: '#00e5ff', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none', letterSpacing: '0.5px' }}>See Full Pricing →</a>
+          </div>
+        </div>
+      </section>
       
       <AboutSection id="about">
         <motion.div
@@ -2487,71 +2565,62 @@ const Landing = () => {
         }} />
       </div>
 
-      {/* ─── TERMINAL DEMO MOCKUP ─────────────────────────────────── */}
-      <section style={{
-        padding: '5rem 2rem',
-        background: 'linear-gradient(180deg, rgba(10, 14, 23, 0.95) 0%, rgba(10, 14, 23, 1) 100%)',
-      }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <motion.div
+      <TrustSection>
+        <motion.h2
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+        >
+          500+ Happy Users in Under 2 Months
+        </motion.h2>
+        <p className="subtitle">Over 2,000 profitable trades powered by Sonar's intelligence</p>
+        
+        <TestimonialGrid>
+          <TestimonialCard
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            style={{ textAlign: 'center', marginBottom: '3rem' }}
           >
-            <h2 style={{
-              fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem',
-              background: 'linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em'
-            }}>
-              Your Crypto Command Center
-            </h2>
-            <p style={{ fontSize: '1.1rem', color: '#5a6a7a', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>
-              See what institutional traders see. Real-time whale flows, social intelligence, and AI analysis — all in one terminal-style dashboard.
+            <div className="rating">★★★★★</div>
+            <p className="quote">
+              &quot;Sonar helped me catch a $500K WETH whale transaction 15 minutes before it hit the market. 
+              Made 23% profit in 2 hours. This tool pays for itself every single day.&quot;
             </p>
-          </motion.div>
-
-          {/* Fake Terminal Window */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            style={{
-              background: 'rgba(13, 17, 28, 0.9)', border: '1px solid rgba(0, 229, 255, 0.1)',
-              borderRadius: '12px', overflow: 'hidden',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 229, 255, 0.05)',
-            }}
-          >
-            {/* Fake command bar */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '0.6rem 1.5rem', borderBottom: '1px solid rgba(0, 229, 255, 0.08)',
-              fontFamily: "'JetBrains Mono', monospace",
-              background: 'rgba(10, 14, 23, 0.8)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontWeight: 800, fontSize: '0.8rem', color: '#00e5ff', letterSpacing: '2px' }}>SONAR</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: '#00e676', fontWeight: 600 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00e676', display: 'inline-block' }} />
-                  LIVE
-                </span>
-                <span style={{ background: 'rgba(0, 229, 255, 0.08)', border: '1px solid rgba(0, 229, 255, 0.15)', borderRadius: '3px', padding: '0.15rem 0.5rem', fontSize: '0.65rem', color: '#00e5ff', fontWeight: 600 }}>24H</span>
-              </div>
-              <div style={{ fontSize: '0.7rem', color: '#5a6a7a' }}>
-                TXN: <span style={{ color: '#e0e6ed', fontWeight: 600 }}>216</span> | VOL: <span style={{ color: '#e0e6ed', fontWeight: 600 }}>$369M</span>
+            <div className="author">
+              <div className="avatar">JM</div>
+              <div className="info">
+                <div className="name">James Martinez</div>
+                <div className="title">Crypto Day Trader</div>
               </div>
             </div>
-
-            {/* Fake KPI Strip */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-              borderBottom: '1px solid rgba(0, 229, 255, 0.06)',
-            }}>
-              {[
-                { label: 'ACCUMULATION', value: '3', color: '#00e676', sub: '> $1M Inflow' },
-                { label: 'DISTRIBUTION', value: '6', color: '#ff1744', sub: '> $1M Outflow' },
+          </TestimonialCard>
+          
+          <TestimonialCard initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} viewport={{ once: true }}>
+            <div className="rating">★★★★★</div>
+            <p className="quote">&quot;I used to miss whale movements and wonder why prices suddenly spiked. Not anymore. Sonar&apos;s real-time alerts have completely changed my trading strategy.&quot;</p>
+            <div className="author"><div className="avatar">SK</div><div className="info"><div className="name">Sarah Kim</div><div className="title">Portfolio Manager</div></div></div>
+          </TestimonialCard>
+          
+          <TestimonialCard initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} viewport={{ once: true }}>
+            <div className="rating">★★★★★</div>
+            <p className="quote">&quot;The ORCA analysis tools are impressive. Real-time whale tracking helped me spot large movements in SOL before a major price shift.&quot;</p>
+            <div className="author"><div className="avatar">DR</div><div className="info"><div className="name">David Rodriguez</div><div className="title">Institutional Trader</div></div></div>
+          </TestimonialCard>
+        </TestimonialGrid>
+      </TrustSection>
+      
+      <PricingSection id="pricing">
+        <motion.h2
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true, amount: 0.2 }}
+          style={{
+            fontSize: '3.5rem',
+            fontWeight: '800',
+            marginBottom: '1.5rem',
                 { label: 'WHALE ACTIVITY', value: '8', color: '#00e5ff', sub: '> 10 Whales' },
                 { label: 'VOLUME (24H)', value: '$369M', color: '#ffab00', sub: '216 Transactions' },
               ].map((kpi, i) => (
