@@ -2610,7 +2610,7 @@ const Landing = () => {
           </TestimonialCard>
         </TestimonialGrid>
       </TrustSection>
-      
+
       <PricingSection id="pricing">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
@@ -2620,64 +2620,61 @@ const Landing = () => {
           style={{
             fontSize: '3.5rem',
             fontWeight: '800',
-            marginBottom: '1.5rem',
-                { label: 'WHALE ACTIVITY', value: '8', color: '#00e5ff', sub: '> 10 Whales' },
-                { label: 'VOLUME (24H)', value: '$369M', color: '#ffab00', sub: '216 Transactions' },
-              ].map((kpi, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                  style={{
-                    padding: '1rem', textAlign: 'center',
-                    borderRight: i < 3 ? '1px solid rgba(0, 229, 255, 0.06)' : 'none',
-                  }}
-                >
-                  <div style={{ fontSize: '0.55rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '0.3rem' }}>{kpi.label}</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: kpi.color, textShadow: `0 0 15px ${kpi.color}30` }}>{kpi.value}</div>
-                  <div style={{ fontSize: '0.6rem', color: kpi.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, opacity: 0.7 }}>{kpi.sub}</div>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Fake inflow bars */}
-            <div style={{ padding: '1.25rem 1.5rem' }}>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', marginBottom: '1rem' }}>
-                <span style={{ color: '#00e676', fontWeight: 800 }}>&gt;</span> NET_INFLOWS
-              </div>
-              {[
-                { token: 'IMX', value: '+$1.42M', pct: 100 },
-                { token: 'SNX', value: '+$710K', pct: 50 },
-                { token: 'ALICE', value: '+$244K', pct: 17 },
-                { token: 'AXS', value: '+$192K', pct: 14 },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5 + i * 0.1 }}
-                  style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px', gap: '0.75rem', alignItems: 'center', padding: '0.35rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}
-                >
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem', fontWeight: 600, color: '#e0e6ed' }}>{item.token}</span>
-                  <div style={{ height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${item.pct}%` }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.8, delay: 0.6 + i * 0.1 }}
-                      style={{ height: '100%', background: '#00e676', borderRadius: '3px' }}
-                    />
-                  </div>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 600, color: '#00e676', textAlign: 'right' }}>{item.value}</span>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Blurred premium section */}
-            <div style={{
+            marginBottom: '1rem',
+            background: 'linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            letterSpacing: '-0.02em'
+          }}
+        >
+          Unlock Premium Crypto Analytics
+        </motion.h2>
+        
+        <motion.p
+          initial={{ opacity: 0, y: -10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          viewport={{ once: true, amount: 0.2 }}
+          style={{
+            fontSize: '1.4rem',
+            color: 'var(--text-secondary)',
+            maxWidth: '700px',
+            margin: '0 auto 3rem',
+            lineHeight: '1.6',
+            textAlign: 'center'
+          }}
+        >
+          Join traders who use Sonar to get ahead of market movements. Real-time whale intelligence, powered by on-chain data.
+        </motion.p>
+          
+          <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '2rem',
+          maxWidth: '900px',
+          margin: '0 auto'
+        }}>
+          {/* Free Plan */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            viewport={{ once: true, amount: 0.2 }}
+            whileHover={{ transform: 'translateY(-8px)' }}
+            style={{
+              background: 'rgba(26, 40, 56, 0.8)',
+              border: '1px solid rgba(54, 166, 186, 0.2)',
+              borderRadius: '20px',
+              padding: '2.5rem',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Free</h3>
+            <div style={{ margin: '1.5rem 0 2rem' }}>
+              <div style={{ fontSize: '3rem',
               padding: '2rem 1.5rem', textAlign: 'center',
               filter: 'blur(4px)', opacity: 0.4, pointerEvents: 'none', userSelect: 'none',
               borderTop: '1px solid rgba(0, 229, 255, 0.06)',
