@@ -1,20 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100">
+  <defs>
+    <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#5bcbf5"/>
+      <stop offset="100%" stop-color="#3a9fd8"/>
+    </linearGradient>
+  </defs>
   <style>
-    .logo-text { fill: #36a6ba; font-size: 72px; font-family: Arial, sans-serif; font-weight: bold; }
-    .whale { fill: #36a6ba; }
-    .sonar-wave { fill: none; stroke: #36a6ba; stroke-width: 6; stroke-linecap: round; }
+    .s-letter { fill: #5bcbf5; font-size: 64px; font-family: 'Segoe UI', Arial, sans-serif; font-weight: 300; letter-spacing: 8px; }
+    .logo-text { fill: #c8d0d8; font-size: 64px; font-family: 'Segoe UI', Arial, sans-serif; font-weight: 300; letter-spacing: 8px; }
+    .sonar-wave { fill: none; stroke: url(#waveGrad); stroke-width: 4; stroke-linecap: round; }
   </style>
   <g>
-    <!-- Whale -->
-    <path class="whale" d="M40,70 C35,60 30,65 25,70 C20,75 15,80 15,90 C15,95 20,100 25,100 C30,100 30,95 35,95 C40,95 45,100 50,100 C55,100 60,95 65,90 C70,85 80,80 85,75 C90,70 95,65 100,60 L80,60 C75,65 70,70 65,75 C60,80 55,85 50,85 C45,85 40,80 40,70 Z" />
-    <circle class="whale" cx="30" cy="80" r="2" />
-    
-    <!-- Sonar Waves -->
-    <path class="sonar-wave" d="M100,60 C110,50 120,45 130,45" />
-    <path class="sonar-wave" d="M100,50 C115,40 130,35 145,35" />
-    <path class="sonar-wave" d="M100,40 C120,30 140,25 160,25" />
-    
-    <!-- Sonar Text -->
-    <text x="140" y="85" class="logo-text">Sonar</text>
+    <!-- SONAR Text -->
+    <text x="30" y="65" class="s-letter">S</text>
+    <text x="68" y="65" class="logo-text">ONAR</text>
+
+    <!-- Sonar Waves (top right) -->
+    <path class="sonar-wave" d="M265,22 C275,14 285,10 295,10" />
+    <path class="sonar-wave" d="M270,32 C280,24 290,20 300,18" />
+    <path class="sonar-wave" d="M275,42 C285,34 295,30 305,28" />
   </g>
 </svg> 

@@ -1,0 +1,8 @@
+# Marketing automation output
+output/
+*.png
+*.mp4
+*.jpg
+
+# Local secrets
+config.local.js

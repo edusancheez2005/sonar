@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect to Wi-Fi</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f2f2f7;color:#1c1c1e;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.container{width:100%;max-width:400px}
+.card{background:#fff;border-radius:14px;padding:32px 24px 24px;box-shadow:0 1px 10px rgba(0,0,0,0.08)}
+.wifi{width:44px;height:44px;background:#007aff;border-radius:50%;margin:0 auto 18px;display:flex;align-items:center;justify-content:center}
+.wifi svg{width:24px;height:24px;fill:#fff}
+h1{font-size:20px;font-weight:600;text-align:center;margin-bottom:4px}
+.sub{font-size:14px;color:#8e8e93;text-align:center;margin-bottom:24px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:500;color:#3a3a3c;margin-bottom:5px}
+.field input{width:100%;padding:11px 12px;border:1px solid #d1d1d6;border-radius:8px;font-size:16px;font-family:inherit;color:#1c1c1e;background:#fff;outline:none;transition:border-color 0.2s;-webkit-appearance:none}
+.field input:focus{border-color:#007aff;box-shadow:0 0 0 3px rgba(0,122,255,0.12)}
+.field input::placeholder{color:#c7c7cc}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{width:100%;padding:12px;margin-top:8px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;transition:background 0.15s;-webkit-appearance:none}
+.btn:active{background:#0062cc}
+.terms{margin-top:16px;padding-top:16px;border-top:1px solid #e5e5ea}
+.terms label{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#3a3a3c;line-height:1.5;cursor:pointer}
+.terms input[type=checkbox]{width:18px;height:18px;margin-top:1px;accent-color:#007aff;flex-shrink:0;cursor:pointer}
+.terms a{color:#007aff;text-decoration:none}
+.legal{font-size:11px;color:#aeaeb2;text-align:center;margin-top:16px;line-height:1.5}
+.legal a{color:#8e8e93;text-decoration:none}
+.footer{text-align:center;margin-top:16px;font-size:11px;color:#c7c7cc}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="wifi">
+      <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+    </div>
+    <h1>Free Wi-Fi Access</h1>
+    <p class="sub">Create an account to connect to the internet</p>
+    <form onsubmit="return false;">
+      <div class="row">
+        <div class="field">
+          <label for="fname">First name</label>
+          <input id="fname" type="text" placeholder="John" autocomplete="given-name" required>
+        </div>
+        <div class="field">
+          <label for="lname">Last name</label>
+          <input id="lname" type="text" placeholder="Smith" autocomplete="family-name" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" type="email" placeholder="john@example.com" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="phone">Phone number</label>
+        <input id="phone" type="tel" placeholder="+44 7700 000000" autocomplete="tel" required>
+      </div>
+      <div class="field">
+        <label for="pass">Create a password</label>
+        <input id="pass" type="password" placeholder="At least 8 characters" autocomplete="new-password" required minlength="8">
+      </div>
+      <div class="terms">
+        <label>
+          <input type="checkbox" required>
+          <span>I agree to the <a href="#" onclick="return false">Terms of Service</a> and <a href="#" onclick="return false">Privacy Policy</a>. I understand my data may be used to improve network services.</span>
+        </label>
+      </div>
+      <button class="btn" type="submit">Connect to Wi-Fi</button>
+    </form>
+    <p class="legal">This network is provided as a free public service. By connecting you consent to acceptable use monitoring. <a href="#" onclick="return false">Acceptable Use Policy</a></p>
+  </div>
+  <div class="footer">Managed Wi-Fi Service</div>
+</div>
+</body>
+</html>
