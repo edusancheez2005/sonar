@@ -15,7 +15,7 @@ export async function GET() {
 
   const lastTs = data && data[0]?.timestamp ? new Date(data[0].timestamp).getTime() : 0
   const now = Date.now()
-  const active = lastTs > 0 && (now - lastTs) <= 30 * 60 * 1000 // Active if transaction within last 30 min
+  const active = lastTs > 0 && (now - lastTs) <= 120 * 60 * 1000 // Active if transaction within last 2 hours
 
   return NextResponse.json({ active, lastTs: lastTs || null })
 } 
