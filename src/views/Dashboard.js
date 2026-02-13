@@ -467,6 +467,9 @@ const Dashboard = ({ isPremium = false }) => {
   // User greeting state
   const [userName, setUserName] = useState('');
   const [showTutorial, setShowTutorial] = useState(false);
+  // Watchlist
+  const [watchlist, setWatchlist] = useState([])
+  const [watchlistLoading, setWatchlistLoading] = useState(true)
   
   // Refs for tutorial targeting
   const marketPulseRef = useRef(null);
@@ -515,6 +518,34 @@ const Dashboard = ({ isPremium = false }) => {
     }
     
     fetchUserInfo()
+
+    // Fetch watchlist with enriched price data
+    async function fetchWatchlist() {
+      try {
+        const sb = supabaseBrowser()
+        const { data: { session } } = await sb.auth.getSession()
+        if (!session) { setWatchlistLoading(false); return }
+        const res = await fetch('/api/watchlist', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
+        if (res.ok) {
+          const { watchlist: wl } = await res.json()
+          if (wl && wl.length > 0) {
+            const enriched = await Promise.all(wl.map(async (item) => {
+              try {
+                const priceRes = await fetch(`/api/token/price?symbol=${item.symbol}`)
+                if (priceRes.ok) {
+                  const p = await priceRes.json()
+                  return { ...item, price: p.price, change24h: p.change24h, name: p.name }
+                }
+              } catch {}
+              return { ...item, price: null, change24h: null, name: null }
+            }))
+            setWatchlist(enriched)
+          }
+        }
+      } catch {}
+      finally { setWatchlistLoading(false) }
+    }
+    fetchWatchlist()
   }, [])
 
   useEffect(() => {
@@ -768,6 +799,49 @@ const Dashboard = ({ isPremium = false }) => {
                     </a>
                   </span>
                 </div>
+              )}
+
+              {/* ─── MY WATCHLIST ─────────────────────────────────────── */}
+              {!watchlistLoading && watchlist.length > 0 && (
+                <motion.div variants={fadeUp}>
+                  <SectionGap>
+                    <Panel>
+                      <PanelHeader>
+                        <TerminalPrompt>MY_WATCHLIST</TerminalPrompt>
+                        <PanelBadge>{watchlist.length} TOKEN{watchlist.length !== 1 ? 'S' : ''}</PanelBadge>
+                      </PanelHeader>
+                      <div>
+                        {watchlist.map((item) => (
+                          <Link key={item.symbol} href={`/token/${encodeURIComponent(item.symbol)}?sinceHours=24`} style={{ textDecoration: 'none' }}>
+                            <HBarRow>
+                              <HBarLabel>
+                                <TokenIcon symbol={item.symbol} size={18} />
+                                {item.symbol}
+                              </HBarLabel>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'flex-end', flex: 1 }}>
+                                {item.price != null && (
+                                  <span style={{ fontFamily: MONO_FONT, fontSize: '0.85rem', fontWeight: 700, color: COLORS.textPrimary }}>
+                                    ${item.price >= 1 ? item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : item.price.toFixed(6)}
+                                  </span>
+                                )}
+                                {item.change24h != null && (
+                                  <span style={{
+                                    fontFamily: MONO_FONT, fontSize: '0.75rem', fontWeight: 700,
+                                    color: item.change24h >= 0 ? COLORS.green : COLORS.red,
+                                    padding: '0.1rem 0.35rem', borderRadius: '3px',
+                                    background: item.change24h >= 0 ? 'rgba(0,230,118,0.08)' : 'rgba(255,23,68,0.08)',
+                                  }}>
+                                    {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(2)}%
+                                  </span>
+                                )}
+                              </div>
+                            </HBarRow>
+                          </Link>
+                        ))}
+                      </div>
+                    </Panel>
+                  </SectionGap>
+                </motion.div>
               )}
 
               {/* ─── NET INFLOWS / OUTFLOWS ───────────────────────────── */}
