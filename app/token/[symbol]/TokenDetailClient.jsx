@@ -8,6 +8,7 @@ import { calculateEnhancedSentiment } from '@/app/lib/sentimentAlgorithm'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonMetrics } from '@/components/SkeletonLoader'
+import { calculateTokenScore, getScoreLabel } from '@/app/lib/tokenScore'
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false })
 const CandlestickChart = dynamic(() => import('@/components/charts/CandlestickChart'), { ssr: false })
@@ -337,24 +338,41 @@ const RecType = styled.div`
 
 const RecConfidence = styled.div`font-size: 0.8rem; color: ${COLORS.textMuted}; margin-bottom: 0.75rem; font-family: ${MONO_FONT};`
 
-const TransactionsSection = styled(Panel)``
+const TransactionsSection = styled(Panel)`
+  overflow-x: auto;
+`
 
 const Table = styled.table`
   width: 100%; border-collapse: collapse; font-family: ${MONO_FONT};
+  table-layout: fixed;
   th {
-    padding: 0.65rem 0.75rem; text-align: left; font-size: 0.65rem; font-weight: 600;
-    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 1px;
+    padding: 0.65rem 0.5rem; text-align: left; font-size: 0.6rem; font-weight: 600;
+    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.5px;
     border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
     white-space: nowrap; font-family: ${SANS_FONT};
   }
+  th:nth-child(1) { width: 110px; } /* Time */
+  th:nth-child(2) { width: 160px; } /* Whale */
+  th:nth-child(3) { width: 160px; } /* Counterparty */
+  th:nth-child(4) { width: 70px; }  /* Side */
+  th:nth-child(5) { width: 80px; }  /* USD */
+  th:nth-child(6) { width: 60px; }  /* Score */
+  th:nth-child(7) { width: 180px; } /* Reasoning */
+  th:nth-child(8) { width: 65px; }  /* Chain */
+  th:nth-child(9) { width: 75px; }  /* Tx Hash */
   tbody tr {
     border-bottom: 1px solid rgba(255, 255, 255, 0.02); transition: background 0.15s ease; cursor: default;
   }
   tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
   td {
-    padding: 0.65rem 0.75rem; color: ${COLORS.textPrimary}; font-size: 0.8rem; white-space: nowrap;
+    padding: 0.5rem 0.5rem; color: ${COLORS.textPrimary}; font-size: 0.75rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   a { color: ${COLORS.cyan}; text-decoration: none; font-weight: 600; &:hover { text-decoration: underline; } }
+  @media (max-width: 768px) {
+    th:nth-child(7), td:nth-child(7),
+    th:nth-child(8), td:nth-child(8) { display: none; }
+  }
 `
 
 const EntityWrapper = styled.div`
@@ -420,6 +438,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   const [newsLoading, setNewsLoading] = useState(true)
   // Premium status
   const [isPremium, setIsPremium] = useState(false)
+  // Watchlist
+  const [isWatchlisted, setIsWatchlisted] = useState(false)
+  const [watchlistLoading, setWatchlistLoading] = useState(false)
+  // Whale patterns
+  const [whalePatterns, setWhalePatterns] = useState([])
+  const [patternsLoading, setPatternsLoading] = useState(true)
   const [voteSending, setVoteSending] = useState(false)
   const [voteStatus, setVoteStatus] = useState(null)
   const [hasVoted, setHasVoted] = useState(false)
@@ -626,6 +650,38 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     checkPremium()
   }, [])
 
+  // Check watchlist status
+  useEffect(() => {
+    async function checkWatchlist() {
+      try {
+        const sb = supabaseBrowser()
+        const { data: { session } } = await sb.auth.getSession()
+        if (!session) return
+        const res = await fetch('/api/watchlist', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
+        if (res.ok) {
+          const { watchlist } = await res.json()
+          setIsWatchlisted(watchlist?.some(w => w.symbol === symbol))
+        }
+      } catch {}
+    }
+    checkWatchlist()
+  }, [symbol])
+
+  // Fetch whale patterns
+  useEffect(() => {
+    async function fetchPatterns() {
+      try {
+        const res = await fetch(`/api/whales/patterns?symbol=${symbol}&days=30`)
+        if (res.ok) {
+          const json = await res.json()
+          setWhalePatterns(json.patterns || [])
+        }
+      } catch {}
+      finally { setPatternsLoading(false) }
+    }
+    fetchPatterns()
+  }, [symbol])
+
   // Fetch live price data
   useEffect(() => {
     async function fetchPrice() {
@@ -796,6 +852,24 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     return '$0.0000'
   }
 
+  // Toggle watchlist
+  const toggleWatchlist = async () => {
+    try {
+      setWatchlistLoading(true)
+      const sb = supabaseBrowser()
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) return
+      const method = isWatchlisted ? 'DELETE' : 'POST'
+      const res = await fetch('/api/watchlist', {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ symbol })
+      })
+      if (res.ok) setIsWatchlisted(!isWatchlisted)
+    } catch {}
+    finally { setWatchlistLoading(false) }
+  }
+
   // Compute deep dive AFTER helpers are defined to avoid TDZ
   const deepDive = generateDeepDive()
 
@@ -831,6 +905,23 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
   // Use enhanced sentiment only for premium users
   const displaySentiment = (isPremium && enhancedSentiment.confidence > 0) ? enhancedSentiment : sentiment
+
+  // Compute Token Score
+  const tokenScore = React.useMemo(() => {
+    return calculateTokenScore({
+      sentimentScore: enhancedSentiment.score || 0,
+      sentimentConfidence: enhancedSentiment.confidence || 0,
+      galaxyScore: socialData?.galaxy_score || null,
+      socialSentimentPct: socialData?.sentiment || null,
+      priceChange24h: priceData?.change24h || 0,
+      priceChange7d: priceData?.change7d || 0,
+      whaleNetFlow: whaleMetrics?.netFlow || 0,
+      whaleVolume: whaleMetrics?.totalVolume || 0,
+      volumeToMcap: priceData?.volumeMarketCapRatio ? priceData.volumeMarketCapRatio / 100 : 0,
+      devActivity: priceData?.githubCommits4w || 0,
+    })
+  }, [enhancedSentiment, socialData, priceData, whaleMetrics])
+  const scoreInfo = getScoreLabel(tokenScore)
 
   return (
     <PageWrapper>
@@ -889,6 +980,30 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                 </span>
               )}
             </SentimentBadge>
+            {/* Token Score Badge */}
+            <div style={{
+              padding: '0.3rem 0.75rem', borderRadius: '4px', fontWeight: 700, fontSize: '0.75rem',
+              fontFamily: MONO_FONT, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '0.4rem',
+              color: scoreInfo.color, background: scoreInfo.color + '15', border: `1px solid ${scoreInfo.color}30`,
+            }}>
+              <span style={{ fontSize: '1rem', fontWeight: 800 }}>{tokenScore}</span>
+              <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>/100</span>
+              <span>{scoreInfo.label}</span>
+            </div>
+            {/* Watchlist Star */}
+            <button
+              onClick={toggleWatchlist}
+              disabled={watchlistLoading}
+              style={{
+                background: 'none', border: `1px solid ${isWatchlisted ? COLORS.amber : COLORS.borderSubtle}`,
+                borderRadius: '4px', padding: '0.3rem 0.5rem', cursor: 'pointer',
+                color: isWatchlisted ? COLORS.amber : COLORS.textMuted, fontSize: '1rem',
+                transition: 'all 0.15s ease', display: 'flex', alignItems: 'center',
+              }}
+              title={isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
+            >
+              {isWatchlisted ? '★' : '☆'}
+            </button>
           </TokenTitle>
 
           {priceData && (
@@ -1603,6 +1718,55 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                 </MetricCard>
               )}
             </MetricsGrid>
+          </Panel>
+          </PremiumGate>
+        )}
+
+        {/* ─── WHALE PATTERNS ─────────────────────────────────────── */}
+        {!patternsLoading && whalePatterns.length > 0 && (
+          <PremiumGate isPremium={isPremium} feature="Whale Pattern Analysis">
+          <Panel style={{ marginBottom: '1.5rem' }}>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>WHALE_PATTERNS</TerminalPrompt>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: MONO_FONT }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Address</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Txns</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Volume</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Net Flow</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Pattern</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {whalePatterns.slice(0, 5).map((w, idx) => (
+                    <tr key={idx} style={{ borderBottom: `1px solid rgba(255,255,255,0.02)` }}>
+                      <td style={{ padding: '0.5rem' }}>
+                        <a href={`/whale/${encodeURIComponent(w.address)}`} style={{ color: COLORS.cyan, textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}>
+                          {w.address.slice(0, 6)}...{w.address.slice(-4)}
+                        </a>
+                      </td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.8rem', fontWeight: 700, color: COLORS.cyan }}>{w.txCount}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.8rem' }}>{formatUSD(w.totalVolume)}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.8rem', fontWeight: 700, color: w.netFlow >= 0 ? COLORS.green : COLORS.red }}>
+                        {w.netFlow >= 0 ? '+' : ''}{formatUSD(w.netFlow)}
+                      </td>
+                      <td style={{ padding: '0.5rem' }}>
+                        <span style={{
+                          fontSize: '0.65rem', fontFamily: MONO_FONT, fontWeight: 600, padding: '0.15rem 0.4rem',
+                          borderRadius: '3px', letterSpacing: '0.5px',
+                          color: w.pattern.includes('ACCUMUL') ? COLORS.green : w.pattern.includes('DISTRIBUT') ? COLORS.red : COLORS.amber,
+                          background: w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.08)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)',
+                          border: `1px solid ${w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.12)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.12)' : 'rgba(255,171,0,0.12)'}`,
+                        }}>
+                          {w.pattern}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Panel>
           </PremiumGate>
         )}
