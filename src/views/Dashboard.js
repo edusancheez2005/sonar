@@ -20,6 +20,7 @@ import {
 import TokenIcon from '@/components/TokenIcon'
 import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import PremiumGate from '@/components/PremiumGate'
+import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend)
 
@@ -712,6 +713,7 @@ const Dashboard = ({ isPremium = false }) => {
 
               {/* ─── KPI TICKER STRIP (MARKET PULSE) ─────────────────── */}
               <motion.div variants={fadeUp} ref={marketPulseRef} data-tutorial="market-pulse">
+                {loading ? <SkeletonKPIStrip /> : (
                 <KPIStrip>
                   <KPICell>
                     <KPILabel>Strong Accumulation</KPILabel>
@@ -747,6 +749,7 @@ const Dashboard = ({ isPremium = false }) => {
                     </KPISub>
                   </KPICell>
                 </KPIStrip>
+                )}
               </motion.div>
 
               {/* Free user conversion banner */}
@@ -778,6 +781,7 @@ const Dashboard = ({ isPremium = false }) => {
                         <PanelBadge>24H</PanelBadge>
                       </PanelHeader>
                       {tokenInflows.length === 0 ? (
+                        loading ? <SkeletonBarRows count={5} /> :
                         <EmptyState>No inflow data in the past 24 hours.</EmptyState>
                       ) : (
                         <div>
@@ -817,6 +821,7 @@ const Dashboard = ({ isPremium = false }) => {
                         <PanelBadge>24H</PanelBadge>
                       </PanelHeader>
                       {tokenOutflows.length === 0 ? (
+                        loading ? <SkeletonBarRows count={5} /> :
                         <EmptyState>No outflow data in the past 24 hours.</EmptyState>
                       ) : (
                         <div>

@@ -1996,7 +1996,7 @@ const Landing = () => {
 
             {/* Fake KPI Strip */}
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
               borderBottom: '1px solid rgba(0, 229, 255, 0.06)',
             }}>
               {[
@@ -2104,7 +2104,7 @@ const Landing = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem',
               marginBottom: '3rem',
             }}
           >
@@ -2852,7 +2852,7 @@ const Landing = () => {
             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Free</h3>
             <div style={{ margin: '1.5rem 0 2rem' }}>
               <div style={{ fontSize: '3rem', fontWeight: '800', color: 'var(--primary)', lineHeight: '1' }}>
-                £0<span style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontWeight: '500' }}>/month</span>
+                Free<span style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', fontWeight: '500' }}> forever</span>
               </div>
             </div>
             <ul style={{ 

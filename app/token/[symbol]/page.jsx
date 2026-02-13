@@ -8,15 +8,27 @@ export const revalidate = 15
 
 export async function generateMetadata({ params }) {
   const symbol = decodeURIComponent(params.symbol).toUpperCase()
-  const title = `${symbol} Token Analysis — Live Whale Tracking & Price Data | Sonar`
-  const description = `Real-time ${symbol} whale transactions, live price, market sentiment, AI-powered analysis, buy/sell pressure, and professional trading insights.`
+  const title = `${symbol} Whale Activity & Price Analysis | Sonar Tracker`
+  const description = `Track ${symbol} whale transactions, buy/sell pressure, social sentiment, Galaxy Score, and real-time price charts. Institutional-grade crypto analytics by Sonar.`
   const url = `https://www.sonartracker.io/token/${encodeURIComponent(symbol)}`
   return {
     title,
     description,
+    keywords: `${symbol}, ${symbol} whale tracking, ${symbol} price, ${symbol} sentiment, crypto whale tracker, ${symbol} analysis`,
     alternates: { canonical: url },
-    openGraph: { title, description, url },
-    twitter: { title, description },
+    openGraph: { 
+      title, 
+      description, 
+      url,
+      type: 'website',
+      siteName: 'Sonar Tracker',
+    },
+    twitter: { 
+      title, 
+      description,
+      card: 'summary',
+    },
+    robots: { index: true, follow: true },
   }
 }
 

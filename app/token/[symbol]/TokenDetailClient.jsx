@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 import { calculateEnhancedSentiment } from '@/app/lib/sentimentAlgorithm'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import PremiumGate from '@/components/PremiumGate'
+import { SkeletonMetrics } from '@/components/SkeletonLoader'
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false })
 const CandlestickChart = dynamic(() => import('@/components/charts/CandlestickChart'), { ssr: false })
