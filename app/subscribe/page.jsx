@@ -552,6 +552,37 @@ export default function SubscribePage() {
           >
             Get real-time whale analytics, advanced insights, and AI-powered market intelligence
           </Subtitle>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            style={{
+              display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap',
+              marginTop: '1.5rem',
+            }}
+          >
+            <div style={{
+              background: 'rgba(0, 229, 255, 0.06)', border: '1px solid rgba(0, 229, 255, 0.15)',
+              borderRadius: '8px', padding: '0.75rem 1.25rem', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#00e5ff', fontFamily: "'JetBrains Mono', monospace" }}>$0.26</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>per day</div>
+            </div>
+            <div style={{
+              background: 'rgba(0, 230, 118, 0.06)', border: '1px solid rgba(0, 230, 118, 0.15)',
+              borderRadius: '8px', padding: '0.75rem 1.25rem', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#00e676', fontFamily: "'JetBrains Mono', monospace" }}>10</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>AI prompts/day</div>
+            </div>
+            <div style={{
+              background: 'rgba(255, 171, 0, 0.06)', border: '1px solid rgba(255, 171, 0, 0.15)',
+              borderRadius: '8px', padding: '0.75rem 1.25rem', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffab00', fontFamily: "'JetBrains Mono', monospace" }}>24/7</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>whale tracking</div>
+            </div>
+          </motion.div>
         </Header>
 
         {!isAuthenticated && (
@@ -595,11 +626,13 @@ export default function SubscribePage() {
               </Price>
             </PriceContainer>
             <FeatureList>
-              <li>Access to News & Market Updates</li>
-              <li>Market Pulse Dashboard</li>
-              <li>Top Net Inflows & Outflows</li>
-              <li>Limited Transaction History</li>
-              <li>Community Support</li>
+              <li>Access to News and Market Updates</li>
+              <li>Basic Market Pulse (KPI strip)</li>
+              <li>Top Net Inflows and Outflows</li>
+              <li>Limited Statistics (25 rows)</li>
+              <li>Trending: Top 5 only</li>
+              <li>1 Orca AI prompt per day</li>
+              <li>Basic 3-level sentiment</li>
             </FeatureList>
             <Button
               $featured={false}
@@ -626,14 +659,19 @@ export default function SubscribePage() {
               </Price>
             </PriceContainer>
             <FeatureList>
-              <li>Real-time whale transaction tracking (24/7) - ERC-20 & major chains</li>
-              <li>Advanced token analytics & heatmaps</li>
-              <li>Risk assessment & sentiment analysis</li>
-              <li>Complete transaction history</li>
-              <li>AI Advisor (Orca 2.0) with premium prompts</li>
-              <li>Custom whale alerts & notifications</li>
+              <li>Everything in Free, plus:</li>
+              <li>Real-time whale transaction tracking (24/7)</li>
+              <li>Full buy/sell pressure, most traded tokens, top whales</li>
+              <li>Social Intelligence: Galaxy Score, Alt Rank, sentiment</li>
+              <li>News and social buzz on every token page</li>
+              <li>Community data, developer activity, CoinGecko insights</li>
+              <li>Enhanced 6-level sentiment with confidence scoring</li>
+              <li>10 Orca AI conversations per day with inline charts</li>
+              <li>Full statistics (200 rows) + CSV export</li>
+              <li>Full trending (12+ coins per section)</li>
+              <li>Whale deep dive analysis per token</li>
+              <li>Real-time whale alerts ($500k+)</li>
               <li>Priority support</li>
-              <li>Export data to CSV</li>
             </FeatureList>
             <Button
               $featured={true}
@@ -779,54 +817,69 @@ export default function SubscribePage() {
               </thead>
               <tbody>
                 <tr>
-                  <td>News & Market Updates</td>
-                  <td><span className="check">✓</span></td>
-                  <td><span className="check">✓</span></td>
+                  <td>News and Market Updates</td>
+                  <td><span className="check">Full</span></td>
+                  <td><span className="check">Full</span></td>
                 </tr>
                 <tr>
-                  <td>Basic Statistics</td>
-                  <td><span className="check">✓</span></td>
-                  <td><span className="check">✓</span></td>
+                  <td>Market Pulse KPIs</td>
+                  <td><span className="check">View only</span></td>
+                  <td><span className="check">Full + Analysis</span></td>
                 </tr>
                 <tr>
-                  <td>Real-Time Whale Tracking (24/7)</td>
-                  <td><span className="cross">✗</span></td>
-                  <td><span className="check">✓</span></td>
+                  <td>Net Inflows / Outflows</td>
+                  <td><span className="check">Full</span></td>
+                  <td><span className="check">Full</span></td>
                 </tr>
                 <tr>
-                  <td>Advanced Token Analytics & Heatmaps</td>
-                  <td><span className="cross">✗</span></td>
-                  <td><span className="check">✓</span></td>
+                  <td>Buy/Sell Pressure + Most Traded</td>
+                  <td><span className="cross">Locked</span></td>
+                  <td><span className="check">Full</span></td>
                 </tr>
                 <tr>
-                  <td>Risk Assessment & Sentiment Analysis</td>
-                  <td><span className="cross">✗</span></td>
-                  <td><span className="check">✓</span></td>
+                  <td>Top 10 Whales + Whale Alerts</td>
+                  <td><span className="cross">Locked</span></td>
+                  <td><span className="check">Full + Real-time</span></td>
                 </tr>
                 <tr>
-                  <td>Complete Transaction History</td>
-                  <td>Limited</td>
-                  <td><span className="check">✓ Unlimited</span></td>
+                  <td>Token Pages: Social Intelligence</td>
+                  <td><span className="cross">Locked</span></td>
+                  <td><span className="check">Galaxy Score, Alt Rank, Sentiment</span></td>
                 </tr>
                 <tr>
-                  <td>AI Advisor (Orca 2.0)</td>
-                  <td><span className="cross">✗</span></td>
-                  <td><span className="check">✓ Full Access</span></td>
+                  <td>Token Pages: News + Social Buzz</td>
+                  <td><span className="cross">Locked</span></td>
+                  <td><span className="check">Full</span></td>
                 </tr>
                 <tr>
-                  <td>Custom Whale Alerts & Notifications</td>
-                  <td><span className="cross">✗</span></td>
-                  <td><span className="check">✓</span></td>
+                  <td>Token Pages: Whale Transactions</td>
+                  <td><span className="cross">Locked</span></td>
+                  <td><span className="check">Full History + Deep Dive</span></td>
                 </tr>
                 <tr>
-                  <td>CSV Data Export</td>
-                  <td><span className="cross">✗</span></td>
-                  <td><span className="check">✓</span></td>
+                  <td>Sentiment Algorithm</td>
+                  <td>Basic (3-level)</td>
+                  <td><span className="check">Enhanced (6-level + confidence %)</span></td>
+                </tr>
+                <tr>
+                  <td>Orca AI Conversations</td>
+                  <td>1 per day</td>
+                  <td><span className="check">10 per day + inline charts</span></td>
+                </tr>
+                <tr>
+                  <td>Statistics</td>
+                  <td>25 rows</td>
+                  <td><span className="check">200 rows + CSV export</span></td>
+                </tr>
+                <tr>
+                  <td>Trending Coins</td>
+                  <td>Top 5 per section</td>
+                  <td><span className="check">12+ per section</span></td>
                 </tr>
                 <tr>
                   <td>Support</td>
                   <td>Community</td>
-                  <td><span className="check">✓ Priority</span></td>
+                  <td><span className="check">Priority Email</span></td>
                 </tr>
               </tbody>
             </Table>

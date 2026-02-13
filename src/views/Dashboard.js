@@ -683,6 +683,16 @@ const Dashboard = ({ isPremium = false }) => {
                 Welcome, <strong>{userName}</strong>
               </UserChip>
             )}
+            {!isPremium && (
+              <a href="/subscribe" style={{
+                background: 'linear-gradient(135deg, #00e5ff, #00b8d4)', color: '#0a0e17',
+                fontFamily: MONO_FONT, fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.5px',
+                padding: '0.2rem 0.6rem', borderRadius: '3px', textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+              }}>
+                UPGRADE
+              </a>
+            )}
             <TutorialBtn onClick={() => {
               localStorage.removeItem('sonar_tutorial_completed')
               setShowTutorial(true)
@@ -738,6 +748,24 @@ const Dashboard = ({ isPremium = false }) => {
                   </KPICell>
                 </KPIStrip>
               </motion.div>
+
+              {/* Free user conversion banner */}
+              {!isPremium && (
+                <div style={{
+                  textAlign: 'center', padding: '0.75rem 1rem', marginBottom: '1.5rem',
+                  background: COLORS.panelBg, border: `1px solid ${COLORS.borderSubtle}`,
+                  borderRadius: '8px', fontFamily: SANS_FONT,
+                }}>
+                  <span style={{ fontSize: '0.8rem', color: COLORS.textMuted }}>
+                    <span style={{ fontFamily: MONO_FONT, fontWeight: 700, color: COLORS.cyan }}>
+                      {overall.totalCount || 0}
+                    </span> whale transactions tracked today.{' '}
+                    <a href="/subscribe" style={{ color: COLORS.cyan, fontWeight: 600, textDecoration: 'underline' }}>
+                      Upgrade to see full analysis — $7.99/mo
+                    </a>
+                  </span>
+                </div>
+              )}
 
               {/* ─── NET INFLOWS / OUTFLOWS ───────────────────────────── */}
               <motion.div variants={fadeUp} ref={inflowsRef} data-tutorial="inflows-outflows">

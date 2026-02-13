@@ -1,11 +1,20 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import Link from 'next/link'
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
 const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+
+const TEASERS = [
+  'See which whales are buying right now',
+  'Track smart money flows in real-time',
+  'Galaxy Score, Alt Rank, social sentiment',
+  '10 AI conversations per day with Orca',
+  'Full whale transaction history + CSV export',
+  '$0.26/day for institutional-grade intelligence',
+]
 
 const GateWrapper = styled.div`
   position: relative;
@@ -67,16 +76,26 @@ const GateDescription = styled.div`
   font-family: ${SANS_FONT};
   font-size: 0.8rem;
   color: #5a6a7a;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   max-width: 300px;
   line-height: 1.4;
+`
+
+const TeaserText = styled.div`
+  font-family: ${SANS_FONT};
+  font-size: 0.7rem;
+  color: #8a9ab0;
+  margin-bottom: 0.75rem;
+  font-style: italic;
+  min-height: 1.2em;
+  transition: opacity 0.3s ease;
 `
 
 const UpgradeButton = styled(Link)`
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.45rem 1rem;
+  padding: 0.5rem 1.2rem;
   border-radius: 4px;
   background: linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%);
   color: #0a0e17;
@@ -92,8 +111,24 @@ const UpgradeButton = styled(Link)`
   }
 `
 
+const PriceTag = styled.span`
+  font-family: ${MONO_FONT};
+  font-size: 0.6rem;
+  color: #5a6a7a;
+  margin-top: 0.5rem;
+`
+
 export default function PremiumGate({ isPremium, feature = 'this feature', children }) {
   if (isPremium) return <>{children}</>
+
+  const [teaserIdx, setTeaserIdx] = useState(0)
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTeaserIdx(prev => (prev + 1) % TEASERS.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <GateWrapper>
@@ -106,7 +141,9 @@ export default function PremiumGate({ isPremium, feature = 'this feature', child
         </LockIcon>
         <GateTitle>PREMIUM</GateTitle>
         <GateDescription>Unlock {feature} with Sonar Premium</GateDescription>
-        <UpgradeButton href="/subscribe">UPGRADE →</UpgradeButton>
+        <TeaserText>{TEASERS[teaserIdx]}</TeaserText>
+        <UpgradeButton href="/subscribe">UPGRADE — $7.99/mo →</UpgradeButton>
+        <PriceTag>Less than a coffee per day</PriceTag>
       </Overlay>
     </GateWrapper>
   )
