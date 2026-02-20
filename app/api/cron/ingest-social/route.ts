@@ -1,290 +1,171 @@
 /**
  * CRON: Social Feed Ingestion via LunarCrush
- * Schedule: Every 2 hours
+ * Schedule: Every 4 hours
  * 
- * Fetches:
- * 1. Top trending crypto creators (influencers) — ranked by interactions
- * 2. Top viral posts/tweets per major category
- * 3. Posts from specific tracked creators (Elon, Trump, CZ, Vitalik, etc.)
- * 4. AI-generated "what's up" summaries for top topics
- * 
- * Stores in: social_posts table
- * 
- * LunarCrush API budget: ~200-300 calls per run (well within 2,000/day limit)
- * Rate limit: 10 req/min on Individual plan → 1 request per 6 seconds
+ * Optimized for Vercel 120s timeout:
+ * - Step 1: Trending creators list (1 call)
+ * - Step 2: Top posts per topic for 8 key topics (8 calls)
+ * - Step 3: Top 15 tracked creator posts (15 calls)
+ * - Step 4: AI summaries for 3 topics (3 calls)
+ * Total: ~27 calls × 3.5s delay = ~95s (under 120s limit)
  */
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 120 // 2 min timeout for large ingestion
+export const maxDuration = 120
 
-const LUNARCRUSH_BASE = 'https://lunarcrush.com/api4/public'
+const LC = 'https://lunarcrush.com/api4/public'
 
-// ─── TRACKED CREATORS (X/Twitter handles) ────────────────────────────
-// High-profile individuals whose crypto tweets move markets
-const TRACKED_CREATORS = [
-  // Politicians & World Leaders
-  'realDonaldTrump', 'POTUS', 'RobertKennedyJr',
-  
-  // Tech Billionaires
-  'elonmusk', 'naval', 'balaboris', 'chaaboris',
-  
-  // Crypto Founders & CEOs
-  'VitalikButerin', 'caboris', 'SBF_FTX', 'justinsuntron', 'CZ_Binance',
-  'brian_armstrong', 'cdixon', 'aaboris',
-  
-  // Crypto VCs & Investors
-  'TimDraper', 'APompliano', 'RaoulGMI', 'MarkCuban',
-  'ChrisBurniske', 'AriannaSimpson', 'haaboris',
-  
-  // Top Crypto Traders & Analysts
-  'CryptoCapo_', 'HsakaTrades', 'CryptoCred', 'SmartContracter',
-  'GiganticRebirth', 'lightcrypto', 'inversebrah', 'Pentosh1',
-  'CryptoKaleo', 'AltcoinSherpa', 'CryptoWendyO', 'TheCryptoLark',
-  'MMCrypto', 'DataDash', 'scottmelker', 'CryptoGodJohn',
-  'CryptoYoda1338', 'GCRClassic', 'cobie', 'DegenSpartan',
-  'Trader_XO', 'DaanCrypto', 'raboris',
-  
-  // Crypto Media & Journalists
-  'WuBlockchain', 'tier10k', 'BitcoinMagazine', 'CoinDesk',
-  'Cointelegraph', 'TheBlock__', 'WatcherGuru', 'zaboris',
-  
-  // Protocol Founders
-  'haaboris', 'staboris', 'SolanaLegend', 'anatoly_sol',
-  'rajgokal', 'haboris',
-  
-  // DeFi Influencers
-  'DeFi_Dad', 'DefiIgnas', 'route2fi', 'Dynamo_Patrick',
-  
-  // Meme/Culture Crypto
-  'MustStopMurad', 'AnsemX', 'GiganticRebirth', 'blknoiz06',
+// Top 15 highest-impact creators only (must fit in timeout)
+const TRACKED = [
+  'elonmusk', 'realDonaldTrump', 'VitalikButerin', 'CZ_Binance',
+  'brian_armstrong', 'justinsuntron', 'APompliano', 'scottmelker',
+  'WuBlockchain', 'CryptoCapo_', 'AltcoinSherpa', 'cobie',
+  'tier10k', 'WatcherGuru', 'RaoulGMI'
 ]
 
-// Categories to pull posts from
-const CATEGORIES = ['cryptocurrencies', 'defi', 'nfts', 'memecoins', 'layer-1']
-
-// Topics to get AI summaries for
-const AI_SUMMARY_TOPICS = ['bitcoin', 'ethereum', 'solana', 'xrp', 'memecoins', 'defi']
-
-// ─── MAIN HANDLER ────────────────────────────────────────────────────
+const TOPICS = ['bitcoin', 'ethereum', 'solana', 'xrp', 'dogecoin', 'defi', 'arbitrum', 'pepe']
+const AI_TOPICS = ['bitcoin', 'ethereum', 'solana']
 
 export async function GET(request: Request) {
-  const start = Date.now()
-  
-  // Auth
+  const t0 = Date.now()
+
   const authHeader = request.headers.get('authorization')
   const { searchParams } = new URL(request.url)
   const secret = searchParams.get('secret') || authHeader?.replace('Bearer ', '')
-  
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const apiKey = process.env.LUNARCRUSH_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: 'LUNARCRUSH_API_KEY not set' }, { status: 500 })
-  }
+  if (!apiKey) return NextResponse.json({ error: 'LUNARCRUSH_API_KEY not set' }, { status: 500 })
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fwbwfvqzomipoftgodof.supabase.co'
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  
-  if (!supabaseKey) {
-    return NextResponse.json({ error: 'Supabase service role not set' }, { status: 500 })
-  }
+  const sb = createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fwbwfvqzomipoftgodof.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  )
 
-  const supabase = createClient(supabaseUrl, supabaseKey)
+  const stats = { creators: 0, posts: 0, tracked: 0, summaries: 0, errors: 0 }
+  const hdr = { Authorization: `Bearer ${apiKey}` }
+  const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 
-  const stats = { creators: 0, posts: 0, categoryPosts: 0, aiSummaries: 0, errors: 0 }
-  const errors: string[] = []
-
+  // ─── STEP 1: Trending creators (1 call) ───────────────────────
   try {
-    // ─── STEP 1: Fetch top trending creators globally ───────────────
-    console.log('[Social] Fetching trending creators...')
+    const r = await fetch(`${LC}/creators/list/v1?sort=interactions_24h&limit=50`, { headers: hdr, signal: AbortSignal.timeout(12000) })
+    if (r.ok) {
+      const j = await r.json()
+      for (const c of (j.data || []).slice(0, 50)) {
+        const { error } = await sb.from('social_creators').upsert({
+          creator_id: String(c.id || c.twitter_screen_name || c.screen_name || Math.random()),
+          network: c.network || 'twitter',
+          screen_name: c.twitter_screen_name || c.screen_name || '',
+          display_name: c.display_name || c.twitter_screen_name || '',
+          followers: c.followers || c.twitter_followers || 0,
+          interactions_24h: c.interactions_24h || 0,
+          posts_24h: c.num_posts_24h || 0,
+          rank: c.rank || null,
+          profile_image: c.profile_image || c.twitter_profile_image || null,
+          galaxy_score: c.galaxy_score || null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'creator_id,network' })
+        if (!error) stats.creators++
+      }
+    } else { console.log('[Social] creators list:', r.status) }
+  } catch (e: any) { stats.errors++; console.log('[Social] creators err:', e.message) }
+  await wait(3500)
+
+  // ─── STEP 2: Top posts per topic (8 calls) ────────────────────
+  for (const topic of TOPICS) {
+    if (Date.now() - t0 > 100000) break // safety: stop if approaching timeout
     try {
-      const creatorsData = await lcFetch(apiKey, '/creators/list/v1?sort=interactions_24h&limit=100')
-      if (creatorsData?.data) {
-        const creators = creatorsData.data.slice(0, 100)
-        for (const creator of creators) {
-          await upsertCreator(supabase, creator)
-          stats.creators++
+      const r = await fetch(`${LC}/topic/${topic}/posts/v1?limit=15`, { headers: hdr, signal: AbortSignal.timeout(10000) })
+      if (r.ok) {
+        const j = await r.json()
+        for (const p of (j.data || [])) {
+          const body = p.body || p.text || p.content || ''
+          if (body.length < 10) continue
+          const { error } = await sb.from('social_posts').upsert({
+            post_id: String(p.id || p.post_id || Math.random()),
+            post_type: p.post_type || 'tweet',
+            network: p.network || 'twitter',
+            creator_id: String(p.creator_id || ''),
+            creator_name: p.creator_display_name || p.twitter_screen_name || null,
+            creator_screen_name: p.twitter_screen_name || null,
+            creator_followers: p.creator_followers || p.twitter_followers || 0,
+            creator_image: p.creator_profile_image || p.twitter_profile_image || null,
+            body, title: p.title || null,
+            url: p.url || p.post_url || null,
+            sentiment: p.sentiment || null,
+            interactions: p.interactions_24h || p.interactions_total || 0,
+            likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
+            category: ['dogecoin', 'pepe'].includes(topic) ? 'memecoins' : topic === 'defi' ? 'defi' : 'cryptocurrencies',
+            tickers_mentioned: p.coins_mentioned || null,
+            published_at: p.time ? new Date(p.time * 1000).toISOString() : new Date().toISOString(),
+            ingested_at: new Date().toISOString(),
+          }, { onConflict: 'post_id,network' })
+          if (!error) stats.posts++
         }
-        console.log(`[Social] Ingested ${stats.creators} trending creators`)
       }
-    } catch (err: any) {
-      errors.push(`Trending creators: ${err.message}`)
-      stats.errors++
-    }
-    await delay(6500) // Rate limit: 10 req/min
+    } catch (e: any) { stats.errors++ }
+    await wait(3500)
+  }
 
-    // ─── STEP 2: Fetch top posts per category ───────────────────────
-    console.log('[Social] Fetching category posts...')
-    for (const cat of CATEGORIES) {
-      try {
-        const postsData = await lcFetch(apiKey, `/category/${cat}/posts/v1?limit=20`)
-        if (postsData?.data) {
-          for (const post of postsData.data) {
-            await upsertPost(supabase, post, cat)
-            stats.categoryPosts++
-          }
+  // ─── STEP 3: Tracked creator posts (15 calls) ─────────────────
+  for (const handle of TRACKED) {
+    if (Date.now() - t0 > 100000) break
+    try {
+      const r = await fetch(`${LC}/creator/twitter/${handle}/posts/v1?limit=5`, { headers: hdr, signal: AbortSignal.timeout(8000) })
+      if (r.ok) {
+        const j = await r.json()
+        for (const p of (j.data || [])) {
+          const body = p.body || p.text || ''
+          if (body.length < 10) continue
+          const { error } = await sb.from('social_posts').upsert({
+            post_id: String(p.id || Math.random()),
+            post_type: p.post_type || 'tweet',
+            network: p.network || 'twitter',
+            creator_id: String(p.creator_id || handle),
+            creator_name: p.creator_display_name || handle,
+            creator_screen_name: p.twitter_screen_name || handle,
+            creator_followers: p.creator_followers || 0,
+            creator_image: p.creator_profile_image || null,
+            body, title: p.title || null,
+            url: p.url || null,
+            sentiment: p.sentiment || null,
+            interactions: p.interactions_24h || 0,
+            likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
+            category: 'tracked_creator',
+            published_at: p.time ? new Date(p.time * 1000).toISOString() : new Date().toISOString(),
+            ingested_at: new Date().toISOString(),
+          }, { onConflict: 'post_id,network' })
+          if (!error) stats.tracked++
         }
-      } catch (err: any) {
-        errors.push(`Category ${cat} posts: ${err.message}`)
-        stats.errors++
       }
-      await delay(6500)
-    }
-    console.log(`[Social] Ingested ${stats.categoryPosts} category posts`)
+    } catch { stats.errors++ }
+    await wait(3500)
+  }
 
-    // ─── STEP 3: Fetch posts from tracked creators ──────────────────
-    console.log('[Social] Fetching tracked creator posts...')
-    for (const handle of TRACKED_CREATORS) {
-      try {
-        const postsData = await lcFetch(apiKey, `/creator/twitter/${handle}/posts/v1?limit=5`)
-        if (postsData?.data) {
-          for (const post of postsData.data) {
-            post._tracked_creator = handle
-            await upsertPost(supabase, post, 'tracked_creator')
-            stats.posts++
-          }
+  // ─── STEP 4: AI Summaries (3 calls) ───────────────────────────
+  for (const topic of AI_TOPICS) {
+    if (Date.now() - t0 > 110000) break
+    try {
+      const r = await fetch(`${LC}/topic/${topic}/whatsup/v1`, { headers: hdr, signal: AbortSignal.timeout(10000) })
+      if (r.ok) {
+        const j = await r.json()
+        const summary = j.data?.summary || j.data?.text || (typeof j.data === 'string' ? j.data : null)
+        if (summary) {
+          await sb.from('social_ai_summaries').insert({ topic, summary, generated_at: new Date().toISOString() })
+          stats.summaries++
         }
-      } catch (err: any) {
-        // Don't log 404s — creator may not exist in LC
-        if (!err.message?.includes('404')) {
-          errors.push(`Creator ${handle}: ${err.message}`)
-        }
-        stats.errors++
       }
-      await delay(6500)
-    }
-    console.log(`[Social] Ingested ${stats.posts} tracked creator posts`)
-
-    // ─── STEP 4: AI summaries for top topics ────────────────────────
-    console.log('[Social] Fetching AI summaries...')
-    for (const topic of AI_SUMMARY_TOPICS) {
-      try {
-        const summaryData = await lcFetch(apiKey, `/topic/${topic}/whatsup/v1`)
-        if (summaryData?.data) {
-          await upsertAISummary(supabase, topic, summaryData.data)
-          stats.aiSummaries++
-        }
-      } catch (err: any) {
-        errors.push(`AI summary ${topic}: ${err.message}`)
-        stats.errors++
-      }
-      await delay(6500)
-    }
-    console.log(`[Social] Generated ${stats.aiSummaries} AI summaries`)
-
-  } catch (err: any) {
-    console.error('[Social] Fatal error:', err)
-    errors.push(`Fatal: ${err.message}`)
+    } catch { stats.errors++ }
+    await wait(3500)
   }
 
-  const elapsed = Date.now() - start
-  console.log(`[Social] Complete in ${elapsed}ms:`, stats)
+  const elapsed = Date.now() - t0
+  console.log(`[Social] Done in ${elapsed}ms:`, stats)
 
-  return NextResponse.json({
-    success: true,
-    elapsed_ms: elapsed,
-    ...stats,
-    errors: errors.length > 0 ? errors.slice(0, 20) : undefined,
-  })
-}
-
-// ─── LUNARCRUSH API HELPER ───────────────────────────────────────────
-
-async function lcFetch(apiKey: string, path: string): Promise<any> {
-  const url = `${LUNARCRUSH_BASE}${path}`
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(15000),
-  })
-  if (!res.ok) {
-    throw new Error(`LC API ${res.status}: ${path}`)
-  }
-  return res.json()
-}
-
-// ─── DATABASE HELPERS ────────────────────────────────────────────────
-
-async function upsertCreator(supabase: any, creator: any) {
-  const row = {
-    creator_id: creator.id || creator.twitter_screen_name || creator.screen_name,
-    network: creator.network || 'twitter',
-    screen_name: creator.twitter_screen_name || creator.screen_name || creator.display_name,
-    display_name: creator.display_name || creator.twitter_screen_name || '',
-    followers: creator.followers || creator.twitter_followers || 0,
-    interactions_24h: creator.interactions_24h || 0,
-    posts_24h: creator.num_posts_24h || creator.posts_24h || 0,
-    rank: creator.rank || null,
-    profile_image: creator.profile_image || creator.twitter_profile_image || null,
-    galaxy_score: creator.galaxy_score || null,
-    updated_at: new Date().toISOString(),
-  }
-
-  const { error } = await supabase
-    .from('social_creators')
-    .upsert(row, { onConflict: 'creator_id,network' })
-
-  if (error && !error.message?.includes('duplicate')) {
-    console.error(`[Social] Creator upsert error:`, error.message)
-  }
-}
-
-async function upsertPost(supabase: any, post: any, category: string) {
-  const row = {
-    post_id: String(post.id || post.post_id || ''),
-    post_type: post.post_type || post.type || 'tweet',
-    network: post.network || 'twitter',
-    creator_id: post.creator_id || post._tracked_creator || null,
-    creator_name: post.creator_display_name || post.creator_name || post.twitter_screen_name || post._tracked_creator || null,
-    creator_screen_name: post.twitter_screen_name || post.creator_screen_name || post._tracked_creator || null,
-    creator_followers: post.creator_followers || post.twitter_followers || 0,
-    creator_image: post.creator_profile_image || post.twitter_profile_image || null,
-    title: post.title || null,
-    body: post.body || post.text || post.content || null,
-    url: post.url || post.post_url || null,
-    image: post.thumbnail || post.image || null,
-    sentiment: post.sentiment || null,
-    interactions: post.interactions_24h || post.interactions_total || 0,
-    likes: post.likes || 0,
-    retweets: post.retweets || post.retweet_count || 0,
-    replies: post.replies || post.reply_count || 0,
-    category: category,
-    tickers_mentioned: post.coins_mentioned || post.tickers || null,
-    published_at: post.time ? new Date(post.time * 1000).toISOString() : (post.published_at || new Date().toISOString()),
-    ingested_at: new Date().toISOString(),
-  }
-
-  if (!row.post_id) return
-
-  const { error } = await supabase
-    .from('social_posts')
-    .upsert(row, { onConflict: 'post_id,network' })
-
-  if (error && !error.message?.includes('duplicate')) {
-    console.error(`[Social] Post upsert error:`, error.message)
-  }
-}
-
-async function upsertAISummary(supabase: any, topic: string, data: any) {
-  const row = {
-    topic: topic,
-    summary: data.summary || data.text || JSON.stringify(data),
-    generated_at: new Date().toISOString(),
-  }
-
-  const { error } = await supabase
-    .from('social_ai_summaries')
-    .insert(row)
-
-  if (error && !error.message?.includes('duplicate')) {
-    console.error(`[Social] AI summary insert error:`, error.message)
-  }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return NextResponse.json({ success: true, elapsed_ms: elapsed, ...stats })
 }
