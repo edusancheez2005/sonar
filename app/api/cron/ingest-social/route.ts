@@ -87,10 +87,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'LUNARCRUSH_API_KEY not set' }, { status: 500 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fwbwfvqzomipoftgodof.supabase.co'
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  
+  if (!supabaseKey) {
+    return NextResponse.json({ error: 'Supabase service role not set' }, { status: 500 })
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
 
   const stats = { creators: 0, posts: 0, categoryPosts: 0, aiSummaries: 0, errors: 0 }
   const errors: string[] = []
