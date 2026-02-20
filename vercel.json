@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/ingest-social",
-      "schedule": "30 */2 * * *"
+      "schedule": "30 */4 * * *"
     },
     {
       "path": "/api/cron/analyze-sentiment",
