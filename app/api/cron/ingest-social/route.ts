@@ -102,26 +102,27 @@ export async function GET(request: Request) {
         let topicSkipped = 0
         let topicErrors: string[] = []
         for (const p of items.slice(0, 20)) {
-          const body = p.body || p.text || p.content || ''
+          const body = p.post_title || p.post_description || p.body || p.text || p.title || ''
           if (body.length < 10) { topicSkipped++; continue }
           try {
             const row = {
-              post_id: String(p.id || p.post_id || Date.now() + Math.random()),
+              post_id: String(p.id || Date.now() + Math.random()),
               post_type: p.post_type || 'tweet',
               network: p.network || 'twitter',
               creator_id: String(p.creator_id || ''),
-              creator_name: p.creator_display_name || p.twitter_screen_name || null,
-              creator_screen_name: p.twitter_screen_name || null,
-              creator_followers: p.creator_followers || p.twitter_followers || 0,
-              creator_image: p.creator_profile_image || p.twitter_profile_image || null,
-              body, title: p.title || null,
-              url: p.url || p.post_url || null,
-              sentiment: p.sentiment || null,
+              creator_name: p.creator_display_name || p.creator_name || null,
+              creator_screen_name: p.creator_name || null,
+              creator_followers: p.creator_followers || 0,
+              creator_image: p.creator_avatar || null,
+              body, title: p.post_title || null,
+              url: p.post_link || null,
+              image: p.post_image || null,
+              sentiment: p.post_sentiment || null,
               interactions: p.interactions_24h || p.interactions_total || 0,
               likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
               category: ['dogecoin', 'pepe'].includes(topic) ? 'memecoins' : topic === 'defi' ? 'defi' : 'cryptocurrencies',
               tickers_mentioned: p.coins_mentioned || null,
-              published_at: p.time ? new Date(p.time * 1000).toISOString() : new Date().toISOString(),
+              published_at: p.post_created || (p.time ? new Date(p.time * 1000).toISOString() : new Date().toISOString()),
               ingested_at: new Date().toISOString(),
             }
             const { error } = await sb.from('social_posts').upsert(row, { onConflict: 'post_id,network' })
@@ -145,24 +146,24 @@ export async function GET(request: Request) {
       if (r.ok) {
         const j = await r.json()
         for (const p of (j.data || [])) {
-          const body = p.body || p.text || ''
+          const body = p.post_title || p.post_description || p.body || p.text || ''
           if (body.length < 10) continue
           const { error } = await sb.from('social_posts').upsert({
-            post_id: String(p.id || Math.random()),
+            post_id: String(p.id || Date.now() + Math.random()),
             post_type: p.post_type || 'tweet',
             network: p.network || 'twitter',
             creator_id: String(p.creator_id || handle),
             creator_name: p.creator_display_name || handle,
-            creator_screen_name: p.twitter_screen_name || handle,
+            creator_screen_name: p.creator_name || handle,
             creator_followers: p.creator_followers || 0,
-            creator_image: p.creator_profile_image || null,
-            body, title: p.title || null,
-            url: p.url || null,
-            sentiment: p.sentiment || null,
+            creator_image: p.creator_avatar || null,
+            body, title: p.post_title || null,
+            url: p.post_link || null,
+            sentiment: p.post_sentiment || null,
             interactions: p.interactions_24h || 0,
             likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
             category: 'tracked_creator',
-            published_at: p.time ? new Date(p.time * 1000).toISOString() : new Date().toISOString(),
+            published_at: p.post_created || new Date().toISOString(),
             ingested_at: new Date().toISOString(),
           }, { onConflict: 'post_id,network' })
           if (!error) stats.tracked++
