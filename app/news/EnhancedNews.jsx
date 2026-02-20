@@ -380,10 +380,10 @@ export default function EnhancedNews({ ticker = null }) {
       {!ticker && (
         <FilterRow style={{ marginBottom: '1rem' }}>
           <Chip $active={activeTab === 'news'} onClick={() => { setActiveTab('news'); setShowCount(30) }}>
-            📰 News Articles<span className="count">({allArticles.length})</span>
+            News Articles<span className="count">({allArticles.length})</span>
           </Chip>
           <Chip $active={activeTab === 'social'} onClick={() => { setActiveTab('social'); setShowCount(30) }}>
-            🐦 Social Buzz<span className="count">({socialPosts.length})</span>
+            Social Buzz<span className="count">({socialPosts.length})</span>
           </Chip>
         </FilterRow>
       )}
@@ -537,7 +537,7 @@ export default function EnhancedNews({ ticker = null }) {
                   <CardTitle>{post.body || post.title || ''}</CardTitle>
 
                   <CardMeta>
-                    <span>❤️ {post.likes || 0} · 🔁 {post.retweets || 0} · 💬 {post.replies || 0}</span>
+                    <span>{post.likes || 0} likes · {post.retweets || 0} rt · {post.replies || 0} replies</span>
                     <span>{formatTimeAgo(post.published_at)}</span>
                   </CardMeta>
                 </Card>
