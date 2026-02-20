@@ -1084,6 +1084,9 @@ const Dashboard = ({ isPremium = false }) => {
         </DashboardContainer>
       </DashboardShell>
 
+      {/* Social Intelligence Pulse */}
+      <SocialPulse />
+
       {/* Orca Onboarding Tutorial */}
       <OrcaTutorial
         isOpen={showTutorial}
@@ -1270,9 +1273,6 @@ const TopWhalesSection = () => {
         )}
       </Panel>
     </SectionGap>
-
-    {/* Social Intelligence Pulse */}
-    <SocialPulse />
   )
 }
 
