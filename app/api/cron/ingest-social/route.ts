@@ -104,6 +104,10 @@ export async function GET(request: Request) {
         for (const p of items.slice(0, 20)) {
           const body = p.post_title || p.post_description || p.body || p.text || p.title || ''
           if (body.length < 10) { topicSkipped++; continue }
+          // Basic relevance filter: skip non-Latin-script-dominant posts
+          const latinChars = (body.match(/[a-zA-Z]/g) || []).length
+          const totalChars = body.length
+          if (latinChars / totalChars < 0.3) { topicSkipped++; continue }
           try {
             const row = {
               post_id: String(p.id || Date.now() + Math.random()),
