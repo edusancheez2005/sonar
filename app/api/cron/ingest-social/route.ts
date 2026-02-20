@@ -92,32 +92,42 @@ export async function GET(request: Request) {
         const j = JSON.parse(txt)
         const items = j.data || j.results || (Array.isArray(j) ? j : [])
         debug.push(`${topic} items: ${items.length}`)
-        for (const p of items) {
+        let topicInserted = 0
+        let topicSkipped = 0
+        let topicErrors: string[] = []
+        for (const p of items.slice(0, 20)) {
           const body = p.body || p.text || p.content || ''
-          if (body.length < 10) continue
-          const { error } = await sb.from('social_posts').upsert({
-            post_id: String(p.id || p.post_id || Math.random()),
-            post_type: p.post_type || 'tweet',
-            network: p.network || 'twitter',
-            creator_id: String(p.creator_id || ''),
-            creator_name: p.creator_display_name || p.twitter_screen_name || null,
-            creator_screen_name: p.twitter_screen_name || null,
-            creator_followers: p.creator_followers || p.twitter_followers || 0,
-            creator_image: p.creator_profile_image || p.twitter_profile_image || null,
-            body, title: p.title || null,
-            url: p.url || p.post_url || null,
-            sentiment: p.sentiment || null,
-            interactions: p.interactions_24h || p.interactions_total || 0,
-            likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
-            category: ['dogecoin', 'pepe'].includes(topic) ? 'memecoins' : topic === 'defi' ? 'defi' : 'cryptocurrencies',
-            tickers_mentioned: p.coins_mentioned || null,
-            published_at: p.time ? new Date(p.time * 1000).toISOString() : new Date().toISOString(),
-            ingested_at: new Date().toISOString(),
-          }, { onConflict: 'post_id,network' })
-          if (!error) stats.posts++
+          if (body.length < 10) { topicSkipped++; continue }
+          try {
+            const row = {
+              post_id: String(p.id || p.post_id || Date.now() + Math.random()),
+              post_type: p.post_type || 'tweet',
+              network: p.network || 'twitter',
+              creator_id: String(p.creator_id || ''),
+              creator_name: p.creator_display_name || p.twitter_screen_name || null,
+              creator_screen_name: p.twitter_screen_name || null,
+              creator_followers: p.creator_followers || p.twitter_followers || 0,
+              creator_image: p.creator_profile_image || p.twitter_profile_image || null,
+              body, title: p.title || null,
+              url: p.url || p.post_url || null,
+              sentiment: p.sentiment || null,
+              interactions: p.interactions_24h || p.interactions_total || 0,
+              likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
+              category: ['dogecoin', 'pepe'].includes(topic) ? 'memecoins' : topic === 'defi' ? 'defi' : 'cryptocurrencies',
+              tickers_mentioned: p.coins_mentioned || null,
+              published_at: p.time ? new Date(p.time * 1000).toISOString() : new Date().toISOString(),
+              ingested_at: new Date().toISOString(),
+            }
+            const { error } = await sb.from('social_posts').upsert(row, { onConflict: 'post_id,network' })
+            if (error) { topicErrors.push(error.message); }
+            else topicInserted++
+          } catch (ie: any) { topicErrors.push(ie.message) }
         }
+        debug.push(`${topic}: inserted=${topicInserted} skipped=${topicSkipped} errs=${topicErrors.length}`)
+        if (topicErrors.length > 0) debug.push(`${topic} err sample: ${topicErrors[0].slice(0, 100)}`)
+        stats.posts += topicInserted
       }
-    } catch (e: any) { stats.errors++ }
+    } catch (e: any) { stats.errors++; debug.push(`${topic} fetch err: ${e.message}`) }
     await wait(3500)
   }
 
