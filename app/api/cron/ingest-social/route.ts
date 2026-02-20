@@ -122,7 +122,7 @@ export async function GET(request: Request) {
               likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
               category: ['dogecoin', 'pepe'].includes(topic) ? 'memecoins' : topic === 'defi' ? 'defi' : 'cryptocurrencies',
               tickers_mentioned: p.coins_mentioned || null,
-              published_at: p.post_created || (p.time ? new Date(p.time * 1000).toISOString() : new Date().toISOString()),
+              published_at: p.post_created ? (typeof p.post_created === 'number' ? new Date(p.post_created * 1000).toISOString() : (String(p.post_created).match(/^\d{10,}$/) ? new Date(Number(p.post_created) * 1000).toISOString() : p.post_created)) : new Date().toISOString(),
               ingested_at: new Date().toISOString(),
             }
             const { error } = await sb.from('social_posts').upsert(row, { onConflict: 'post_id,network' })
@@ -163,7 +163,7 @@ export async function GET(request: Request) {
             interactions: p.interactions_24h || 0,
             likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
             category: 'tracked_creator',
-            published_at: p.post_created || new Date().toISOString(),
+            published_at: p.post_created ? (typeof p.post_created === 'number' ? new Date(p.post_created * 1000).toISOString() : (String(p.post_created).match(/^\d{10,}$/) ? new Date(Number(p.post_created) * 1000).toISOString() : p.post_created)) : new Date().toISOString(),
             ingested_at: new Date().toISOString(),
           }, { onConflict: 'post_id,network' })
           if (!error) stats.tracked++
