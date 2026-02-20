@@ -1,7 +1,10 @@
 /**
  * PHASE 1 - CRON JOB 1: News Ingestion
- * Schedule: Every 12 hours
+ * Schedule: Every 3 hours (was 12h)
  * Purpose: Fetch news from LunarCrush (primary) and CryptoPanic (secondary)
+ * 
+ * Optimized: Uses category-level endpoints first (1 call for all crypto news),
+ * then per-ticker for top 20 most active tokens only.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -107,25 +110,31 @@ export async function GET(request: Request) {
     let totalFetched = 0
     const errors: string[] = []
 
-    // Fetch news for each ticker
-    for (const ticker of TOP_TICKERS) {
+    // STEP 1: Fetch ALL crypto news in ONE call via category endpoint (saves ~100 API calls)
+    console.log('[News] Fetching category-level crypto news...')
+    try {
+      const categoryNews = await fetchLunarCrushCategoryNews(supabase)
+      totalInserted += categoryNews
+      totalFetched += categoryNews
+      console.log(`[News] Category news: ${categoryNews} articles`)
+    } catch (err) {
+      errors.push(`Category news error: ${err instanceof Error ? err.message : 'Unknown'}`)
+    }
+    await delay(6500) // Rate limit
+
+    // STEP 2: Fetch per-ticker for TOP 20 tickers only (not all 100+)
+    const TOP_PRIORITY = TOP_TICKERS.slice(0, 20)
+    for (const ticker of TOP_PRIORITY) {
       try {
-        // 1. Fetch from LunarCrush (primary source)
         const lunarCrushInserted = await fetchLunarCrushNews(ticker, supabase)
         totalInserted += lunarCrushInserted
         totalFetched += lunarCrushInserted
+        await delay(6500) // 10 req/min = 1 req per 6s
 
-        // Small delay to respect rate limits
-        await delay(500)
-
-        // 2. Fetch from CryptoPanic (secondary source)
         const cryptoPanicInserted = await fetchCryptoPanicNews(ticker, supabase)
         totalInserted += cryptoPanicInserted
         totalFetched += cryptoPanicInserted
-
-        // Small delay to respect rate limits
-        await delay(500)
-
+        await delay(3000) // CryptoPanic has separate rate limit
       } catch (error) {
         const errorMsg = `Error fetching news for ${ticker}: ${error instanceof Error ? error.message : 'Unknown error'}`
         console.error(errorMsg)
@@ -156,6 +165,57 @@ export async function GET(request: Request) {
       },
       { status: 500 }
     )
+  }
+}
+
+/**
+ * Fetch ALL crypto news via category endpoint (1 API call instead of 100+)
+ */
+async function fetchLunarCrushCategoryNews(supabase: any): Promise<number> {
+  const apiKey = process.env.LUNARCRUSH_API_KEY
+  if (!apiKey) return 0
+
+  try {
+    const url = `https://lunarcrush.com/api4/public/category/cryptocurrencies/news/v1?limit=50`
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(15000),
+    })
+
+    if (!response.ok) return 0
+    const data = await response.json()
+    if (!data.data || !Array.isArray(data.data)) return 0
+
+    let inserted = 0
+    for (const item of data.data) {
+      try {
+        // Try to extract ticker from the topic/coin mentioned
+        const ticker = item.topic?.toUpperCase() || item.coin_symbol?.toUpperCase() || 'CRYPTO'
+        
+        const { error } = await supabase.from('news_items').insert({
+          source: item.post_type === 'tweet' ? item.twitter_screen_name || 'lunarcrush' : item.source_name || 'lunarcrush',
+          external_id: String(item.id || item.url || Math.random()),
+          ticker: ticker,
+          title: item.title || item.body?.slice(0, 200) || 'Untitled',
+          url: item.url || item.post_url,
+          published_at: item.time ? new Date(item.time * 1000).toISOString() : new Date().toISOString(),
+          content: item.body || item.content,
+          author: item.creator_display_name || item.twitter_screen_name || item.source_name,
+          sentiment_raw: item.sentiment || null,
+          metadata: {
+            source_type: 'lunarcrush_category',
+            interactions: item.interactions_24h || item.interactions_total,
+            creator: item.twitter_screen_name,
+            post_type: item.post_type,
+          }
+        })
+        if (!error) inserted++
+      } catch {}
+    }
+    return inserted
+  } catch (err) {
+    console.error('[News] Category fetch error:', err)
+    return 0
   }
 }
 
