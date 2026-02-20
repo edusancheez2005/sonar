@@ -92,6 +92,12 @@ export async function GET(request: Request) {
         const j = JSON.parse(txt)
         const items = j.data || j.results || (Array.isArray(j) ? j : [])
         debug.push(`${topic} items: ${items.length}`)
+        // Log first item keys to understand structure
+        if (items.length > 0) {
+          const first = items[0]
+          debug.push(`${topic} keys: ${Object.keys(first).join(',')}`)
+          debug.push(`${topic} sample: title=${String(first.title||'').slice(0,50)} body=${String(first.body||'').slice(0,50)} text=${String(first.text||'').slice(0,50)} post_title=${String(first.post_title||'').slice(0,50)}`)
+        }
         let topicInserted = 0
         let topicSkipped = 0
         let topicErrors: string[] = []
