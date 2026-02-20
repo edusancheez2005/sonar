@@ -10,17 +10,22 @@ export async function generateMetadata({ params }) {
   // Check if this is an exchange address
   const { data: addressInfo } = await supabaseAdmin
     .from('addresses')
-    .select('address_name, address_type')
+    .select('address_name, address_type, entity_name, label, analysis_tags')
     .eq('address', addr.toLowerCase())
     .maybeSingle()
   
-  const isExchange = addressInfo && ['CEX Wallet', 'exchange', 'Exchange Wallet'].includes(addressInfo.address_type)
-  const title = isExchange 
-    ? `${addressInfo.address_name || 'Exchange'} Wallet — Verified Exchange Address`
-    : `Whale ${short} — Net Flow, Top Tokens & Trades`
-  const description = isExchange
-    ? `Verified ${addressInfo.address_type}: ${addressInfo.address_name || addr}. View trading activity and transaction history.`
-    : `Profile of whale ${short}: 24h net flow, top tokens by net USD, and recent large transactions.`
+  const isExchange = addressInfo && ['CEX Wallet', 'exchange', 'Exchange Wallet', 'CEX'].includes(addressInfo.address_type)
+  const entityName = addressInfo?.entity_name || addressInfo?.address_name || null
+  const title = entityName
+    ? `${entityName} — Whale Activity & Trades | Sonar`
+    : isExchange
+      ? `${addressInfo.address_name || 'Exchange'} Wallet — Verified Exchange Address`
+      : `Whale ${short} — Net Flow, Top Tokens & Trades`
+  const description = entityName
+    ? `Track ${entityName}'s crypto whale activity: net flow, top tokens, and recent large transactions on Sonar.`
+    : isExchange
+      ? `Verified ${addressInfo.address_type}: ${addressInfo.address_name || addr}. View trading activity and transaction history.`
+      : `Profile of whale ${short}: 24h net flow, top tokens by net USD, and recent large transactions.`
   const url = `https://www.sonartracker.io/whale/${encodeURIComponent(addr)}`
   return { title, description, alternates: { canonical: url }, openGraph: { title, description, url }, twitter: { title, description } }
 }
@@ -44,17 +49,27 @@ export default async function WhaleProfile({ params }) {
   const addr = decodeURIComponent(params.address)
   let since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   
-  // Check if this is an exchange address
+  // Check if this is an exchange address AND get entity info
   const { data: addressInfo } = await supabaseAdmin
     .from('addresses')
-    .select('address_name, address_type')
+    .select('address_name, address_type, entity_name, label, analysis_tags, signal_potential')
     .eq('address', addr.toLowerCase())
     .maybeSingle()
   
-  const isExchange = addressInfo && ['CEX Wallet', 'exchange', 'Exchange Wallet'].includes(addressInfo.address_type)
+  const isExchange = addressInfo && ['CEX Wallet', 'exchange', 'Exchange Wallet', 'CEX'].includes(addressInfo.address_type)
   const exchangeInfo = isExchange ? {
-    name: addressInfo.address_name || 'Exchange',
+    name: addressInfo.address_name || addressInfo.entity_name || 'Exchange',
     type: addressInfo.address_type
+  } : null
+
+  const entityInfo = addressInfo ? {
+    entity_name: addressInfo.entity_name || null,
+    label: addressInfo.label || addressInfo.address_name || null,
+    address_type: addressInfo.address_type || null,
+    category: addressInfo.analysis_tags?.category || null,
+    subcategory: addressInfo.analysis_tags?.subcategory || null,
+    is_famous: addressInfo.analysis_tags?.is_famous || false,
+    signal_potential: addressInfo.signal_potential || null,
   } : null
   
   // First try 24h, if no data, try 7 days
@@ -194,6 +209,7 @@ export default async function WhaleProfile({ params }) {
         totalTransactions={allTransactions.length}
         isExchange={isExchange}
         exchangeInfo={exchangeInfo}
+        entityInfo={entityInfo}
         timeWindow={allTransactions.length === 0 ? 'No data' : (data && data.length > 0 && new Date(data[0].timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000) ? '24h' : '7d')}
       />
     </AuthGuard>

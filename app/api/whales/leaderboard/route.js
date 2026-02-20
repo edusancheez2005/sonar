@@ -19,11 +19,11 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Get CEX addresses to exclude
+  // Get CEX addresses to exclude + all named addresses for display
   const { data: cexAddresses } = await supabaseAdmin
     .from('addresses')
     .select('address')
-    .in('address_type', ['CEX Wallet', 'exchange', 'Exchange Wallet'])
+    .in('address_type', ['CEX Wallet', 'exchange', 'Exchange Wallet', 'CEX'])
   
   const cexSet = new Set((cexAddresses || []).map(a => a.address?.toLowerCase()))
 
@@ -93,6 +93,40 @@ export async function GET() {
 
   // Sort by total volume DESC
   rows.sort((a, b) => b.totalVolume - a.totalVolume)
+  const topRows = rows.slice(0, 100)
 
-  return NextResponse.json({ data: rows.slice(0, 100) })
+  // Batch-resolve entity names for top whales
+  const whaleAddresses = topRows.map(r => r.address.toLowerCase()).filter(Boolean)
+  let nameMap = {}
+  if (whaleAddresses.length > 0) {
+    const { data: nameData } = await supabaseAdmin
+      .from('addresses')
+      .select('address, entity_name, label, address_type, analysis_tags')
+      .in('address', whaleAddresses)
+      .not('entity_name', 'is', null)
+    
+    for (const row of nameData || []) {
+      const tags = row.analysis_tags || {}
+      nameMap[row.address] = {
+        entity_name: row.entity_name,
+        label: row.label,
+        category: tags.category || null,
+        is_famous: tags.is_famous || false,
+      }
+    }
+  }
+
+  // Attach entity names to results
+  const enrichedRows = topRows.map(r => {
+    const info = nameMap[r.address.toLowerCase()]
+    return {
+      ...r,
+      entity_name: info?.entity_name || null,
+      entity_label: info?.label || null,
+      entity_category: info?.category || null,
+      is_famous: info?.is_famous || false,
+    }
+  })
+
+  return NextResponse.json({ data: enrichedRows })
 } 

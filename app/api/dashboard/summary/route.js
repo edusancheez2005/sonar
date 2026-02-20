@@ -40,17 +40,52 @@ export async function GET() {
     
     // Keep all data for recent transactions table (including stablecoins)
     const recent24h = recentData || []
-    const recent = recent24h.slice(0, 10).map((t) => ({
-      transaction_hash: t.transaction_hash,
-      time: t.timestamp,
-      coin: t.token_symbol,
-      action: (t.classification || '').toUpperCase(),
-      blockchain: t.blockchain,
-      usd_value: Number(t.usd_value || 0),
-      from_address: t.from_address || null,
-      to_address: t.to_address || null,
-      whale_score: Number(t.whale_score || 0),
-    }))
+
+    // Batch-resolve entity names for recent transactions
+    const recentAddresses = new Set()
+    for (const t of recent24h.slice(0, 50)) {
+      if (t.whale_address) recentAddresses.add(t.whale_address.toLowerCase())
+      if (t.from_address) recentAddresses.add(t.from_address.toLowerCase())
+      if (t.to_address) recentAddresses.add(t.to_address.toLowerCase())
+    }
+    let entityNameMap = {}
+    if (recentAddresses.size > 0) {
+      const { data: nameData } = await supabaseAdmin
+        .from('addresses')
+        .select('address, entity_name, label, address_type, analysis_tags')
+        .in('address', Array.from(recentAddresses))
+      for (const row of nameData || []) {
+        const tags = row.analysis_tags || {}
+        entityNameMap[row.address] = {
+          entity_name: row.entity_name,
+          label: row.label,
+          address_type: row.address_type,
+          is_famous: tags.is_famous || false,
+        }
+      }
+    }
+
+    const recent = recent24h.slice(0, 10).map((t) => {
+      const fromInfo = entityNameMap[t.from_address?.toLowerCase()] || {}
+      const toInfo = entityNameMap[t.to_address?.toLowerCase()] || {}
+      const whaleInfo = entityNameMap[t.whale_address?.toLowerCase()] || {}
+      return {
+        transaction_hash: t.transaction_hash,
+        time: t.timestamp,
+        coin: t.token_symbol,
+        action: (t.classification || '').toUpperCase(),
+        blockchain: t.blockchain,
+        usd_value: Number(t.usd_value || 0),
+        from_address: t.from_address || null,
+        to_address: t.to_address || null,
+        whale_score: Number(t.whale_score || 0),
+        whale_address: t.whale_address || null,
+        from_entity: fromInfo.entity_name || fromInfo.label || null,
+        to_entity: toInfo.entity_name || toInfo.label || null,
+        whale_entity: whaleInfo.entity_name || whaleInfo.label || null,
+        whale_is_famous: whaleInfo.is_famous || false,
+      }
+    })
     
     console.log(`Dashboard API: ${recentData?.length || 0} total transactions, ${analyticsData.length} after filtering stablecoins`)
 
@@ -337,15 +372,23 @@ export async function GET() {
       .slice()
       .sort((a, b) => Number(b.usd_value || 0) - Number(a.usd_value || 0))
       .slice(0, 10)
-      .map(t => ({
-        time: t.timestamp,
-        coin: String(t.token_symbol || '—').trim().toUpperCase(),
-        side: String(t.classification || '').trim().toUpperCase(),
-        usd: Math.round(Number(t.usd_value || 0)),
-        chain: t.blockchain || '—',
-        hash: t.transaction_hash || null,
-        whale_score: Number(t.whale_score || 0)
-      }))
+      .map(t => {
+        const whaleInfo = entityNameMap[t.whale_address?.toLowerCase()] || {}
+        const fromInfo = entityNameMap[t.from_address?.toLowerCase()] || {}
+        const toInfo = entityNameMap[t.to_address?.toLowerCase()] || {}
+        return {
+          time: t.timestamp,
+          coin: String(t.token_symbol || '—').trim().toUpperCase(),
+          side: String(t.classification || '').trim().toUpperCase(),
+          usd: Math.round(Number(t.usd_value || 0)),
+          chain: t.blockchain || '—',
+          hash: t.transaction_hash || null,
+          whale_score: Number(t.whale_score || 0),
+          whale_entity: whaleInfo.entity_name || whaleInfo.label || null,
+          from_entity: fromInfo.entity_name || fromInfo.label || null,
+          to_entity: toInfo.entity_name || toInfo.label || null,
+        }
+      })
 
     // Robust net flow per token: remove extreme outliers via IQR fence, then 5% trimmed sum
     function quantile(sorted, q) {

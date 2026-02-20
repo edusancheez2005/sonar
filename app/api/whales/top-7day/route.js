@@ -71,10 +71,32 @@ export async function GET() {
     const topWhales = Array.from(whaleMap.values())
       .sort((a, b) => Math.abs(b.netUsd) - Math.abs(a.netUsd))
       .slice(0, 10)
-      .map(whale => {
+
+    // Batch-resolve entity names
+    const whaleAddresses = topWhales.map(w => w.address.toLowerCase()).filter(Boolean)
+    let nameMap = {}
+    if (whaleAddresses.length > 0) {
+      const { data: nameData } = await supabaseAdmin
+        .from('addresses')
+        .select('address, entity_name, label, analysis_tags')
+        .in('address', whaleAddresses)
+        .not('entity_name', 'is', null)
+      
+      for (const row of nameData || []) {
+        const tags = row.analysis_tags || {}
+        nameMap[row.address] = {
+          entity_name: row.entity_name,
+          label: row.label,
+          is_famous: tags.is_famous || false,
+        }
+      }
+    }
+
+    const enrichedWhales = topWhales.map(whale => {
         const totalVolume = whale.buyVolume + whale.sellVolume
         const buyPct = totalVolume > 0 ? Math.round((whale.buyVolume / totalVolume) * 100) : 50
         const sellPct = 100 - buyPct
+        const info = nameMap[whale.address.toLowerCase()]
         
         return {
           address: whale.address,
@@ -83,11 +105,14 @@ export async function GET() {
           tokens: Array.from(whale.tokens).slice(0, 5),
           whaleScore: whale.whaleScore,
           lastSeen: whale.lastSeen,
-          txCount: whale.txCount
+          txCount: whale.txCount,
+          entity_name: info?.entity_name || null,
+          entity_label: info?.label || null,
+          is_famous: info?.is_famous || false,
         }
       })
     
-    return NextResponse.json({ whales: topWhales })
+    return NextResponse.json({ whales: enrichedWhales })
   } catch (error) {
     console.error('Error in top-7day API:', error)
     return NextResponse.json({ whales: [] }, { status: 200 })

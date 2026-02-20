@@ -32,6 +32,36 @@ const Header = styled.div`
   }
 `
 
+const EntityBadge = styled(motion.div)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, rgba(54, 166, 186, 0.2) 0%, rgba(41, 128, 185, 0.15) 100%);
+  border: 2px solid rgba(54, 166, 186, 0.4);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+`
+
+const EntityName = styled.div`
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+`
+
+const EntityCategory = styled.div`
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`
+
+const FamousStar = styled.span`
+  color: #f1c40f;
+  font-size: 1.2rem;
+`
+
 const ExchangeBadge = styled(motion.div)`
   display: inline-flex;
   align-items: center;
@@ -274,13 +304,36 @@ export default function WhaleDetailClient({
   totalTransactions = trades?.length || 0,
   isExchange,
   exchangeInfo,
+  entityInfo,
   timeWindow = '24h'
 }) {
   const short = `${address.slice(0, 6)}…${address.slice(-4)}`
+  const displayName = entityInfo?.entity_name || entityInfo?.label || null
   
   return (
     <Container>
       <Header>
+        {displayName && !isExchange && (
+          <EntityBadge
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div>
+              <EntityName>
+                {entityInfo?.is_famous && <FamousStar>★ </FamousStar>}
+                {displayName}
+              </EntityName>
+              {entityInfo?.category && (
+                <EntityCategory>
+                  {entityInfo.subcategory ? `${entityInfo.category} · ${entityInfo.subcategory}` : entityInfo.category}
+                  {entityInfo.signal_potential && ` · ${entityInfo.signal_potential} signal`}
+                </EntityCategory>
+              )}
+            </div>
+          </EntityBadge>
+        )}
+
         {isExchange && exchangeInfo && (
           <ExchangeBadge
             initial={{ opacity: 0, y: -20 }}
