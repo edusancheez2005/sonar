@@ -48,15 +48,20 @@ export async function GET(request: Request) {
   )
 
   const stats = { creators: 0, posts: 0, tracked: 0, summaries: 0, errors: 0 }
+  const debug: string[] = []
   const hdr = { Authorization: `Bearer ${apiKey}` }
   const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 
   // ─── STEP 1: Trending creators (1 call) ───────────────────────
   try {
     const r = await fetch(`${LC}/creators/list/v1?sort=interactions_24h&limit=50`, { headers: hdr, signal: AbortSignal.timeout(12000) })
-    if (r.ok) {
-      const j = await r.json()
-      for (const c of (j.data || []).slice(0, 50)) {
+    const txt = await r.text()
+    debug.push(`creators: status=${r.status} len=${txt.length}`)
+    if (r.ok && txt.length > 10) {
+      const j = JSON.parse(txt)
+      const items = j.data || j.results || (Array.isArray(j) ? j : [])
+      debug.push(`creators items: ${items.length}`)
+      for (const c of items.slice(0, 50)) {
         const { error } = await sb.from('social_creators').upsert({
           creator_id: String(c.id || c.twitter_screen_name || c.screen_name || Math.random()),
           network: c.network || 'twitter',
@@ -72,18 +77,22 @@ export async function GET(request: Request) {
         }, { onConflict: 'creator_id,network' })
         if (!error) stats.creators++
       }
-    } else { console.log('[Social] creators list:', r.status) }
-  } catch (e: any) { stats.errors++; console.log('[Social] creators err:', e.message) }
+    } else { debug.push(`creators: status=${r.status}`) }
+  } catch (e: any) { stats.errors++; debug.push(`creators err: ${e.message}`) }
   await wait(3500)
 
   // ─── STEP 2: Top posts per topic (8 calls) ────────────────────
   for (const topic of TOPICS) {
-    if (Date.now() - t0 > 100000) break // safety: stop if approaching timeout
+    if (Date.now() - t0 > 100000) break
     try {
       const r = await fetch(`${LC}/topic/${topic}/posts/v1?limit=15`, { headers: hdr, signal: AbortSignal.timeout(10000) })
-      if (r.ok) {
-        const j = await r.json()
-        for (const p of (j.data || [])) {
+      const txt = await r.text()
+      debug.push(`${topic}: status=${r.status} len=${txt.length}`)
+      if (r.ok && txt.length > 10) {
+        const j = JSON.parse(txt)
+        const items = j.data || j.results || (Array.isArray(j) ? j : [])
+        debug.push(`${topic} items: ${items.length}`)
+        for (const p of items) {
           const body = p.body || p.text || p.content || ''
           if (body.length < 10) continue
           const { error } = await sb.from('social_posts').upsert({
@@ -167,5 +176,5 @@ export async function GET(request: Request) {
   const elapsed = Date.now() - t0
   console.log(`[Social] Done in ${elapsed}ms:`, stats)
 
-  return NextResponse.json({ success: true, elapsed_ms: elapsed, ...stats })
+  return NextResponse.json({ success: true, elapsed_ms: elapsed, ...stats, debug: debug.slice(0, 30) })
 }
