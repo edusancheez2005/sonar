@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import OrcaTutorial from '@/components/onboarding/OrcaTutorial'
+import SocialPulse from '@/components/SocialPulse'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -1269,6 +1270,9 @@ const TopWhalesSection = () => {
         )}
       </Panel>
     </SectionGap>
+
+    {/* Social Intelligence Pulse */}
+    <SocialPulse />
   )
 }
 

@@ -267,11 +267,13 @@ const ShowMoreBtn = styled.button`
 
 export default function EnhancedNews({ ticker = null }) {
   const [allArticles, setAllArticles] = useState([])
+  const [socialPosts, setSocialPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [sentimentFilter, setSentimentFilter] = useState('all')
   const [ecosystemFilter, setEcosystemFilter] = useState('all')
   const [tokenSearch, setTokenSearch] = useState('')
   const [showCount, setShowCount] = useState(30)
+  const [activeTab, setActiveTab] = useState('news') // 'news' | 'social'
 
   useEffect(() => {
     async function fetchData() {
@@ -299,6 +301,13 @@ export default function EnhancedNews({ ticker = null }) {
         })
         
         setAllArticles(valid)
+
+        // Also fetch social posts
+        try {
+          const socialRes = await fetch('/api/social/feed?limit=100&sort=interactions')
+          const socialJson = await socialRes.json()
+          setSocialPosts((socialJson.posts || []).filter(p => p.body && p.body.length > 20))
+        } catch {}
       } catch (err) {
         console.error('Error fetching news:', err)
       } finally {
@@ -367,6 +376,18 @@ export default function EnhancedNews({ ticker = null }) {
         </Header>
       )}
 
+      {/* Tab switcher */}
+      {!ticker && (
+        <FilterRow style={{ marginBottom: '1rem' }}>
+          <Chip $active={activeTab === 'news'} onClick={() => { setActiveTab('news'); setShowCount(30) }}>
+            📰 News Articles<span className="count">({allArticles.length})</span>
+          </Chip>
+          <Chip $active={activeTab === 'social'} onClick={() => { setActiveTab('social'); setShowCount(30) }}>
+            🐦 Social Buzz<span className="count">({socialPosts.length})</span>
+          </Chip>
+        </FilterRow>
+      )}
+
       <FiltersSection>
         <FilterRow>
           <FilterLabel>Ecosystem</FilterLabel>
@@ -403,69 +424,133 @@ export default function EnhancedNews({ ticker = null }) {
         </FilterRow>
       </FiltersSection>
 
-      <StatsRow>
-        <StatBadge><span>{stats.total}</span> articles</StatBadge>
-        <StatBadge><span>{stats.tickers}</span> tokens</StatBadge>
-        <StatBadge style={{ color: colors.sentimentBull }}><span>{stats.bullish}</span> bullish</StatBadge>
-        <StatBadge style={{ color: colors.sentimentBear }}><span>{stats.bearish}</span> bearish</StatBadge>
-      </StatsRow>
+      {activeTab === 'news' && (
+        <>
+          <StatsRow>
+            <StatBadge><span>{stats.total}</span> articles</StatBadge>
+            <StatBadge><span>{stats.tickers}</span> tokens</StatBadge>
+            <StatBadge style={{ color: colors.sentimentBull }}><span>{stats.bullish}</span> bullish</StatBadge>
+            <StatBadge style={{ color: colors.sentimentBear }}><span>{stats.bearish}</span> bearish</StatBadge>
+          </StatsRow>
 
-      <Grid>
-        <AnimatePresence mode="popLayout">
-          {filtered.length === 0 && (
-            <EmptyState>No news found matching your filters.</EmptyState>
+          <Grid>
+            <AnimatePresence mode="popLayout">
+              {filtered.length === 0 && (
+                <EmptyState>No news found matching your filters.</EmptyState>
+              )}
+              {filtered.slice(0, showCount).map((article, i) => {
+                const sentiment = article.sentiment_llm || article.sentiment_raw || 0
+                const isBullish = sentiment > 0.2
+                const isBearish = sentiment < -0.2
+                const isNeutral = !isBullish && !isBearish
+                const confidence = Math.abs(sentiment * 100)
+
+                return (
+                  <Card
+                    key={article.id}
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    $bullish={isBullish}
+                    $neutral={isNeutral}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, delay: Math.min(i * 0.02, 0.5) }}
+                    layout
+                  >
+                    <CardHeader>
+                      {article.ticker && (
+                        <TokenBadge>
+                          <TokenIcon symbol={article.ticker} size={14} />
+                          {article.ticker}
+                        </TokenBadge>
+                      )}
+                      <SentimentBadge $bullish={isBullish} $neutral={isNeutral}>
+                        {isBullish ? 'Bullish' : isBearish ? 'Bearish' : 'Neutral'}
+                      </SentimentBadge>
+                    </CardHeader>
+                    
+                    <CardTitle>{article.title}</CardTitle>
+
+                    <CardMeta>
+                      <span>{article.source ? article.source.replace(/_/g, ' ') : 'News'} · {formatTimeAgo(article.published_at)}</span>
+                      <ConfidenceBar $bullish={isBullish} $bearish={isBearish}>
+                        <div style={{ width: `${Math.min(100, confidence)}%` }} />
+                      </ConfidenceBar>
+                    </CardMeta>
+                  </Card>
+                )
+              })}
+            </AnimatePresence>
+            {filtered.length > showCount && (
+              <ShowMoreBtn onClick={() => setShowCount(c => c + 30)}>
+                Show more ({filtered.length - showCount} remaining)
+              </ShowMoreBtn>
+            )}
+          </Grid>
+        </>
+      )}
+
+      {activeTab === 'social' && (
+        <Grid>
+          <AnimatePresence mode="popLayout">
+            {socialPosts.length === 0 && (
+              <EmptyState>Social buzz data populates every 4 hours from LunarCrush. Check back soon!</EmptyState>
+            )}
+            {socialPosts.slice(0, showCount).map((post, i) => {
+              const sent = post.sentiment || 0
+              const isBullish = sent > 0
+              const isNeutral = sent === 0
+              const isVip = post.category === 'tracked_creator'
+
+              return (
+                <Card
+                  key={post.id || post.post_id}
+                  href={post.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  $bullish={isBullish}
+                  $neutral={isNeutral}
+                  style={isVip ? { borderColor: 'rgba(241,196,15,0.3)' } : {}}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2, delay: Math.min(i * 0.02, 0.5) }}
+                  layout
+                >
+                  <CardHeader>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {post.creator_image && (
+                        <img src={post.creator_image} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none' }} />
+                      )}
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff' }}>
+                        {post.creator_name || post.creator_screen_name || 'Crypto'}
+                      </span>
+                      {isVip && <span style={{ fontSize: '0.55rem', fontWeight: 700, color: '#f1c40f', background: 'rgba(241,196,15,0.15)', padding: '0.05rem 0.3rem', borderRadius: 3 }}>★ VIP</span>}
+                    </div>
+                    <SentimentBadge $bullish={isBullish} $neutral={isNeutral}>
+                      {isBullish ? 'Bullish' : sent < 0 ? 'Bearish' : 'Neutral'}
+                    </SentimentBadge>
+                  </CardHeader>
+                  
+                  <CardTitle>{post.body || post.title || ''}</CardTitle>
+
+                  <CardMeta>
+                    <span>❤️ {post.likes || 0} · 🔁 {post.retweets || 0} · 💬 {post.replies || 0}</span>
+                    <span>{formatTimeAgo(post.published_at)}</span>
+                  </CardMeta>
+                </Card>
+              )
+            })}
+          </AnimatePresence>
+          {socialPosts.length > showCount && (
+            <ShowMoreBtn onClick={() => setShowCount(c => c + 30)}>
+              Show more ({socialPosts.length - showCount} remaining)
+            </ShowMoreBtn>
           )}
-          {filtered.slice(0, showCount).map((article, i) => {
-            const sentiment = article.sentiment_llm || article.sentiment_raw || 0
-            const isBullish = sentiment > 0.2
-            const isBearish = sentiment < -0.2
-            const isNeutral = !isBullish && !isBearish
-            const confidence = Math.abs(sentiment * 100)
-
-            return (
-              <Card
-                key={article.id}
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                $bullish={isBullish}
-                $neutral={isNeutral}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, delay: Math.min(i * 0.02, 0.5) }}
-                layout
-              >
-                <CardHeader>
-                  {article.ticker && (
-                    <TokenBadge>
-                      <TokenIcon symbol={article.ticker} size={14} />
-                      {article.ticker}
-                    </TokenBadge>
-                  )}
-                  <SentimentBadge $bullish={isBullish} $neutral={isNeutral}>
-                    {isBullish ? 'Bullish' : isBearish ? 'Bearish' : 'Neutral'}
-                  </SentimentBadge>
-                </CardHeader>
-                
-                <CardTitle>{article.title}</CardTitle>
-
-                <CardMeta>
-                  <span>{article.source ? article.source.replace(/_/g, ' ') : 'News'} · {formatTimeAgo(article.published_at)}</span>
-                  <ConfidenceBar $bullish={isBullish} $bearish={isBearish}>
-                    <div style={{ width: `${Math.min(100, confidence)}%` }} />
-                  </ConfidenceBar>
-                </CardMeta>
-              </Card>
-            )
-          })}
-        </AnimatePresence>
-        {filtered.length > showCount && (
-          <ShowMoreBtn onClick={() => setShowCount(c => c + 30)}>
-            Show more ({filtered.length - showCount} remaining)
-          </ShowMoreBtn>
-        )}
-      </Grid>
+        </Grid>
+      )}
     </Container>
   )
 }
