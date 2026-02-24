@@ -58,25 +58,25 @@ export function parseLunarCrushAI(html: string): LunarCrushData {
     : null
   
   // Extract supportive themes
-  const supportiveSection = html.match(/Most Supportive Themes:(.*?)(?:Most Critical Themes:|###|$)/is)
+  const supportiveSection = html.match(/Most Supportive Themes:([\s\S]*?)(?:Most Critical Themes:|###|$)/i)
   const supportive_themes = supportiveSection 
     ? extractThemes(supportiveSection[1]) 
     : []
   
   // Extract critical themes
-  const criticalSection = html.match(/Most Critical Themes:(.*?)(?:###|$)/is)
+  const criticalSection = html.match(/Most Critical Themes:([\s\S]*?)(?:###|$)/i)
   const critical_themes = criticalSection 
     ? extractThemes(criticalSection[1]) 
     : []
   
   // Extract top news
-  const newsSection = html.match(/###\s*Top.*?News.*?\n(.*?)(?:###|$)/is)
+  const newsSection = html.match(/###\s*Top[\s\S]*?News[\s\S]*?\n([\s\S]*?)(?:###|$)/i)
   const top_news = newsSection 
     ? extractTopNews(newsSection[1]) 
     : []
   
   // Extract top creators
-  const creatorsSection = html.match(/The most influential creators.*?\n(.*?)(?:\[View More\]|###|$)/is)
+  const creatorsSection = html.match(/The most influential creators[\s\S]*?\n([\s\S]*?)(?:\[View More\]|###|$)/i)
   const top_creators = creatorsSection 
     ? extractTopCreators(creatorsSection[1]) 
     : []
@@ -100,7 +100,7 @@ function extractThemes(text: string): string[] {
   const themes: string[] = []
   
   // Match pattern: "- Theme Name: (XX%) Description"
-  const matches = Array.from(text.matchAll(/-\s*(.*?):\s*\((\d+)%\)\s*(.*?)(?=\n-|\n\n|$)/gs))
+  const matches = Array.from(text.matchAll(/-\s*([\s\S]*?):\s*\((\d+)%\)\s*([\s\S]*?)(?=\n-|\n\n|$)/g))
   
   for (const match of matches) {
     const themeName = match[1].trim()
@@ -125,7 +125,7 @@ function extractTopNews(text: string): NewsItem[] {
   // Match pattern across lines:
   // Line 1: "Title"
   // Line 2: [News Link](url) ... timestamp
-  const matches = Array.from(text.matchAll(/"([^"]+)"\s+\[News Link\]\(([^)]+)\)[^\n]*?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z?)/gs))
+  const matches = Array.from(text.matchAll(/"([^"]+)"\s+\[News Link\]\(([^)]+)\)[^\n]*?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z?)/g))
   
   for (const match of matches) {
     const title = match[1].trim()
@@ -152,7 +152,7 @@ function extractTopCreators(text: string): Creator[] {
   const creators: Creator[] = []
   
   // Match pattern: | [@name]... | rank | followers | posts | engagements |
-  const matches = Array.from(text.matchAll(/\|\s*\[@(\w+)\].*?\|\s*(\d+)\s*\|\s*([\d,]+)\s*\|\s*(\d+)\s*\|\s*([\d,]+)\s*\|/gs))
+  const matches = Array.from(text.matchAll(/\|\s*\[@(\w+)\][\s\S]*?\|\s*(\d+)\s*\|\s*([\d,]+)\s*\|\s*(\d+)\s*\|\s*([\d,]+)\s*\|/g))
   
   for (const match of matches) {
     creators.push({
