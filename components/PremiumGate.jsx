@@ -119,16 +119,17 @@ const PriceTag = styled.span`
 `
 
 export default function PremiumGate({ isPremium, feature = 'this feature', children }) {
-  if (isPremium) return <>{children}</>
-
   const [teaserIdx, setTeaserIdx] = useState(0)
   
   useEffect(() => {
+    if (isPremium) return
     const interval = setInterval(() => {
       setTeaserIdx(prev => (prev + 1) % TEASERS.length)
     }, 3000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isPremium])
+
+  if (isPremium) return <>{children}</>
 
   return (
     <GateWrapper>

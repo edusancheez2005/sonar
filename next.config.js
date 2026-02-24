@@ -44,6 +44,13 @@ const nextConfig = {
       { source: '/(.*)', headers: securityHeaders },
     ]
   },
+  turbopack: {
+    root: path.resolve(__dirname),
+    resolveAlias: {
+      '@': path.resolve(__dirname),
+      'react-router-dom': path.resolve(__dirname, 'app/lib/rrd-adapter.js'),
+    },
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),

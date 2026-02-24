@@ -284,10 +284,10 @@ async function fetchSocialData(tokenSymbol) {
 
 async function fetchCommunityVotes(tokenSymbol) {
   const { data, error } = await supabaseAdmin
-    .from('sentiment_votes')
+    .from('token_sentiment_votes')
     .select('vote')
     .eq('token_symbol', tokenSymbol)
-    .gte('voted_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+    .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
 
   if (error || !data) return null
 

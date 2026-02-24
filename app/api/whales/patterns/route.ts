@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE!
     )
 
     const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()

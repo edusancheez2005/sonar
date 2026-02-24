@@ -14,6 +14,8 @@ interface NewsAggregation {
   provider_sentiment_avg: number | null
   llm_sentiment_avg: number | null
   news_count: number
+  provider_sentiment_count: number
+  llm_sentiment_count: number
   positive_count: number
   negative_count: number
   neutral_count: number
@@ -42,7 +44,7 @@ export async function GET(request: Request) {
     // Initialize Supabase client
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE!
     )
 
     // Get news items from last 24 hours
@@ -161,6 +163,8 @@ function aggregateByTicker(newsItems: any[]): NewsAggregation[] {
         provider_sentiment_avg: null,
         llm_sentiment_avg: null,
         news_count: 0,
+        provider_sentiment_count: 0,
+        llm_sentiment_count: 0,
         positive_count: 0,
         negative_count: 0,
         neutral_count: 0
@@ -174,23 +178,25 @@ function aggregateByTicker(newsItems: any[]): NewsAggregation[] {
 
     // Aggregate provider sentiment
     if (item.sentiment_raw !== null && typeof item.sentiment_raw === 'number') {
+      agg.provider_sentiment_count++
       if (agg.provider_sentiment_avg === null) {
         agg.provider_sentiment_avg = item.sentiment_raw
       } else {
-        // Running average
+        // Running average using provider-specific count
         agg.provider_sentiment_avg = 
-          (agg.provider_sentiment_avg * (agg.news_count - 1) + item.sentiment_raw) / agg.news_count
+          (agg.provider_sentiment_avg * (agg.provider_sentiment_count - 1) + item.sentiment_raw) / agg.provider_sentiment_count
       }
     }
 
     // Aggregate LLM sentiment
     if (item.sentiment_llm !== null && typeof item.sentiment_llm === 'number') {
+      agg.llm_sentiment_count++
       if (agg.llm_sentiment_avg === null) {
         agg.llm_sentiment_avg = item.sentiment_llm
       } else {
-        // Running average
+        // Running average using llm-specific count
         agg.llm_sentiment_avg = 
-          (agg.llm_sentiment_avg * (agg.news_count - 1) + item.sentiment_llm) / agg.news_count
+          (agg.llm_sentiment_avg * (agg.llm_sentiment_count - 1) + item.sentiment_llm) / agg.llm_sentiment_count
       }
 
       // Categorize sentiment

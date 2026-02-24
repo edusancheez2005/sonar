@@ -1,6 +1,30 @@
-'use client'
-import React, { useState } from 'react'
-import Landing from '@/src/views/Landing'
+import React from 'react'
+import HomeClient from './HomeClient'
+
+export const metadata = {
+  title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
+  description: 'Track crypto whale transactions in real-time across 10+ blockchains. AI-powered signals from ORCA 2.0. Institutional-grade analytics for $7.99/month. 500+ traders trust Sonar.',
+  keywords: [
+    'crypto tracker', 'whale wallet tracker', 'crypto whale tracker', 'crypto predictor algorithm',
+    'whale transaction tracker', 'real time whale alerts', 'crypto intelligence platform',
+    'ai crypto signals', 'on chain analytics', 'sonar tracker', 'orca ai crypto',
+    'best whale tracking tool', 'crypto trading signals', 'blockchain analytics tool', 'whale movement tracker'
+  ],
+  alternates: { canonical: 'https://www.sonartracker.io' },
+  openGraph: {
+    title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
+    description: 'Track crypto whale transactions in real-time. AI-powered signals, institutional-grade analytics. 500+ traders trust Sonar.',
+    url: 'https://www.sonartracker.io',
+    type: 'website',
+    images: [{ url: '/screenshots/stats-dashboard.png', width: 1200, height: 630, alt: 'Sonar Tracker Dashboard' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
+    description: 'Track whale transactions in real-time. AI signals from ORCA 2.0. $7.99/month.',
+    images: ['/screenshots/stats-dashboard.png'],
+  },
+}
 
 function FaqJsonLd() {
   const json = {
@@ -131,24 +155,9 @@ function FaqJsonLd() {
 }
 
 export default function HomePage() {
-  const [email, setEmail] = useState('')
-  const [message, setMessage] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
-  async function handleSubscribe(e) {
-    e.preventDefault()
-    try {
-      setSubmitting(true)
-      const res = await fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
-      const json = await res.json()
-      setMessage(res.ok ? 'Thanks! You are subscribed.' : (json.error || 'Error'))
-    } catch (err) { setMessage('Error') } finally { setSubmitting(false) }
-  }
-
   return (
     <>
-      <Landing />
-
+      <HomeClient />
       <FaqJsonLd />
     </>
   )

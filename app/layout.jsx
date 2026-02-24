@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import ClientRoot from './components/ClientRoot'
 import StyledComponentsRegistry from './components/StyledComponentsRegistry'
+import Breadcrumbs from './components/Breadcrumbs'
 import Script from 'next/script'
 
 const siteUrl = 'https://www.sonartracker.io'
@@ -371,6 +372,7 @@ export default function RootLayout({ children }) {
         <Analytics />
         <SpeedInsights />
         <JsonLd />
+        <Breadcrumbs />
       </body>
     </html>
   )

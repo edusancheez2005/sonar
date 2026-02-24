@@ -20,7 +20,6 @@ Crawl-delay: 1
 # Host and sitemaps
 Host: https://www.sonartracker.io
 Sitemap: https://www.sonartracker.io/sitemap.xml
-Sitemap: https://www.sonartracker.io/sitemap-main.xml
 
 # Google Site Verification
 # google-site-verification=kUMRrdT4lX2VHZbCenjhRbxFfOQVd_gUzMtqpxaaa_A
