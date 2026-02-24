@@ -190,7 +190,7 @@ export default function LineChart({
         displayColors: false,
         callbacks: {
           label: (context) => {
-            const value = context.parsed.y
+            const value = context.parsed.y ?? 0
             return `$${value.toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: value < 1 ? 6 : 2,
