@@ -347,6 +347,166 @@ const SubscribeButton = styled.button`
 `
 
 const posts = [
+  {
+    slug: 'nansen-vs-sonar-tracker',
+    title: 'Nansen vs Sonar Tracker: Full Comparison for 2026',
+    summary: 'Feature-by-feature breakdown of Nansen ($150+/mo) vs Sonar Tracker ($7.99/mo). Same institutional data, fraction of the cost.',
+    readTime: '10 min read',
+    category: 'Comparison',
+    date: 'Feb 24, 2026'
+  },
+  {
+    slug: 'best-crypto-whale-tracking-tools-2026',
+    title: 'Best Crypto Whale Tracking Tools Compared: 2026 Rankings',
+    summary: 'We tested every major whale tracking platform — Nansen, Arkham, Whale Alert, DeBank, Santiment, and more. Here are the results.',
+    readTime: '12 min read',
+    category: 'Comparison',
+    date: 'Feb 22, 2026'
+  },
+  {
+    slug: 'how-to-track-whale-wallets',
+    title: 'How to Track Whale Wallets: Step-by-Step for Beginners',
+    summary: 'A complete tutorial on finding, following, and interpreting crypto whale wallet activity using free and paid tools.',
+    readTime: '8 min read',
+    category: 'Tutorial',
+    date: 'Feb 20, 2026'
+  },
+  {
+    slug: 'whale-tracking-predicted-crashes',
+    title: '5 Times Whale Tracking Predicted Major Crypto Crashes',
+    summary: 'Historical examples where on-chain whale data signaled crashes days before they happened. Real data, real trades, real outcomes.',
+    readTime: '9 min read',
+    category: 'Market Analysis',
+    date: 'Feb 18, 2026'
+  },
+  {
+    slug: 'how-ai-changing-crypto-trading',
+    title: 'How AI Is Revolutionizing Crypto Trading in 2026',
+    summary: 'From whale pattern recognition to sentiment analysis — how AI tools like ORCA are giving traders an unprecedented edge.',
+    readTime: '8 min read',
+    category: 'AI & Technology',
+    date: 'Feb 16, 2026'
+  },
+  {
+    slug: 'on-chain-analysis-beginners',
+    title: 'On-Chain Analysis for Beginners: Reading the Blockchain',
+    summary: 'Everything you need to know about on-chain metrics: whale flows, exchange balances, net inflows, and how to use them for trading.',
+    readTime: '10 min read',
+    category: 'Basics',
+    date: 'Feb 14, 2026'
+  },
+  {
+    slug: 'arkham-vs-sonar-tracker',
+    title: 'Arkham Intelligence vs Sonar Tracker: Which Is Better?',
+    summary: 'Detailed comparison of two popular on-chain analytics platforms. Features, pricing, AI capabilities, and user experience.',
+    readTime: '9 min read',
+    category: 'Comparison',
+    date: 'Feb 12, 2026'
+  },
+  {
+    slug: 'free-crypto-analytics-tools-2026',
+    title: 'Free Crypto Analytics Tools That Actually Work in 2026',
+    summary: 'The best free tools for whale tracking, on-chain analysis, and market intelligence. No subscription required for these.',
+    readTime: '7 min read',
+    category: 'Tools',
+    date: 'Feb 10, 2026'
+  },
+  {
+    slug: 'eth-whale-activity-analysis',
+    title: 'ETH Whale Activity: What Smart Money Is Doing Right Now',
+    summary: 'Deep dive into current Ethereum whale movements. Accumulation vs distribution patterns and what they signal for ETH price.',
+    readTime: '8 min read',
+    category: 'Market Analysis',
+    date: 'Feb 8, 2026'
+  },
+  {
+    slug: 'bitcoin-whale-accumulation-patterns',
+    title: 'Bitcoin Whale Accumulation Patterns: How to Read Them',
+    summary: 'Learn to identify when Bitcoin whales are quietly accumulating before major price moves. On-chain metrics that matter most.',
+    readTime: '9 min read',
+    category: 'Market Analysis',
+    date: 'Feb 6, 2026'
+  },
+  {
+    slug: 'whale-accumulation-vs-distribution',
+    title: 'Whale Accumulation vs Distribution: The Only Guide You Need',
+    summary: 'The difference between whales buying and selling — and exactly how to tell which is happening right now using on-chain data.',
+    readTime: '8 min read',
+    category: 'Strategy',
+    date: 'Feb 4, 2026'
+  },
+  {
+    slug: 'crypto-market-manipulation-detection',
+    title: 'Crypto Market Manipulation: How to Detect It in Real-Time',
+    summary: 'Pump-and-dumps, wash trading, stop hunts, and whale manipulation tactics. How to spot them before you become the victim.',
+    readTime: '10 min read',
+    category: 'Strategy',
+    date: 'Feb 2, 2026'
+  },
+  {
+    slug: 'day-traders-whale-signals',
+    title: 'How Day Traders Use Whale Signals to Time Entries',
+    summary: 'Practical strategies for incorporating whale transaction data into your day trading workflow. Real examples with entries and exits.',
+    readTime: '9 min read',
+    category: 'Strategy',
+    date: 'Jan 30, 2026'
+  },
+  {
+    slug: 'cost-of-missing-whale-signals',
+    title: 'The Real Cost of Missing Whale Signals (With Examples)',
+    summary: 'Three real scenarios where ignoring whale data cost traders 15-40% in missed gains or preventable losses. The math is brutal.',
+    readTime: '7 min read',
+    category: 'Market Analysis',
+    date: 'Jan 28, 2026'
+  },
+  {
+    slug: 'institutional-traders-on-chain-data',
+    title: 'How Institutional Traders Use On-Chain Data',
+    summary: 'What hedge funds and prop desks actually look at on the blockchain. The metrics, strategies, and tools they rely on daily.',
+    readTime: '9 min read',
+    category: 'Strategy',
+    date: 'Jan 26, 2026'
+  },
+  {
+    slug: 'sol-whale-tracker',
+    title: 'SOL Whale Tracker: Real-Time Solana Whale Movements',
+    summary: 'Track the biggest Solana whale wallets. Current accumulation trends, top holders, and what SOL whale activity means for price.',
+    readTime: '7 min read',
+    category: 'Market Analysis',
+    date: 'Jan 24, 2026'
+  },
+  {
+    slug: 'building-trading-strategy-whale-intelligence',
+    title: 'Building a Trading Strategy Around Whale Intelligence',
+    summary: 'A complete framework for using whale data as your primary trading signal. Entry rules, exit rules, risk management, and position sizing.',
+    readTime: '11 min read',
+    category: 'Strategy',
+    date: 'Jan 22, 2026'
+  },
+  {
+    slug: 'glassnode-vs-sonar',
+    title: 'Glassnode vs Sonar: On-Chain Analytics Compared',
+    summary: 'Glassnode focuses on Bitcoin metrics. Sonar covers multi-chain whale tracking with AI. Which is right for your trading style?',
+    readTime: '8 min read',
+    category: 'Comparison',
+    date: 'Jan 20, 2026'
+  },
+  {
+    slug: 'custom-whale-alerts-setup',
+    title: 'How to Set Up Custom Whale Alerts (5 Configs That Work)',
+    summary: 'Five proven whale alert configurations for different trading styles: day trading, swing trading, DeFi farming, and more.',
+    readTime: '7 min read',
+    category: 'Tutorial',
+    date: 'Jan 18, 2026'
+  },
+  {
+    slug: 'why-crypto-keeps-getting-dumped',
+    title: 'Why Your Crypto Keeps Getting Dumped On (And How to See It Coming)',
+    summary: 'The whale distribution patterns that precede every major dump. Learn to read the signs before you become exit liquidity.',
+    readTime: '8 min read',
+    category: 'Strategy',
+    date: 'Jan 16, 2026'
+  },
   { 
     slug: 'bullish-bearish-sentiment-trading', 
     title: 'Using Community Sentiment to Trade: Bullish vs Bearish Signals', 
