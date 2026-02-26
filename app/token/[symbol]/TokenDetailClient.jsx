@@ -1525,11 +1525,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
         {/* ─── NEWS ARTICLES ─────────────────────────────────────── */}
         {!newsLoading && newsArticles.length > 0 && (
-          <PremiumGate isPremium={isPremium} feature="News & Analysis">
           <Panel style={{ marginBottom: '1.5rem' }}>
             <TerminalPrompt style={{ marginBottom: '1.25rem' }}>LATEST_NEWS</TerminalPrompt>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {newsArticles.slice(0, 8).map((article, idx) => (
+              {newsArticles.slice(0, isPremium ? 8 : 4).map((article, idx) => (
                 <a
                   key={idx}
                   href={article.url}
@@ -1575,13 +1574,20 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                 </a>
               ))}
             </div>
+            {!isPremium && newsArticles.length > 4 && (
+              <div style={{
+                textAlign: 'center', padding: '0.6rem', marginTop: '0.5rem',
+                fontSize: '0.75rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif"
+              }}>
+                Showing 4 of {newsArticles.length} articles.{' '}
+                <a href="/subscribe" style={{ color: '#00e5ff', fontWeight: 600, textDecoration: 'underline' }}>See all with Premium</a>
+              </div>
+            )}
           </Panel>
-          </PremiumGate>
         )}
 
         {/* ─── TOP SOCIAL POSTS (LunarCrush) ─────────────────────── */}
         {socialData?.top_posts && socialData.top_posts.length > 0 && (
-          <PremiumGate isPremium={isPremium} feature="Social Buzz">
           <Panel style={{ marginBottom: '1.5rem' }}>
             <TerminalPrompt style={{ marginBottom: '1.25rem' }}>SOCIAL_BUZZ</TerminalPrompt>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1622,12 +1628,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               ))}
             </div>
           </Panel>
-          </PremiumGate>
         )}
 
         {/* ─── COMMUNITY DATA (CoinGecko) ────────────────────────── */}
         {priceData && (priceData.sentimentVotesUpPercentage > 0 || priceData.redditSubscribers > 0 || priceData.telegramUsers > 0 || priceData.description) && (
-          <PremiumGate isPremium={isPremium} feature="Community Data">
           <Panel style={{ marginBottom: '1.5rem' }}>
             <TerminalPrompt style={{ marginBottom: '1.25rem' }}>COMMUNITY_DATA</TerminalPrompt>
             <MetricsGrid>
@@ -1686,7 +1690,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               </div>
             )}
           </Panel>
-          </PremiumGate>
         )}
 
         {/* ─── DEVELOPER ACTIVITY (GitHub) ────────────────────────── */}

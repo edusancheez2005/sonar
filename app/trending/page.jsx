@@ -249,7 +249,7 @@ export default function TrendingPage() {
                 <TerminalPrompt>TRENDING_NOW</TerminalPrompt>
                 <Grid>
                   {trendingData.trending?.map((coin, idx) => (
-                    <Link key={coin.id} href={isPremium || idx < 5 ? `/token/${coin.symbol}` : '/subscribe'} style={{ textDecoration: 'none', filter: !isPremium && idx >= 5 ? 'blur(5px)' : 'none', pointerEvents: !isPremium && idx >= 5 ? 'none' : 'auto', userSelect: !isPremium && idx >= 5 ? 'none' : 'auto' }}>
+                    <Link key={coin.id} href={isPremium || idx < 10 ? `/token/${coin.symbol}` : '/subscribe'} style={{ textDecoration: 'none', filter: !isPremium && idx >= 10 ? 'blur(5px)' : 'none', pointerEvents: !isPremium && idx >= 10 ? 'none' : 'auto', userSelect: !isPremium && idx >= 10 ? 'none' : 'auto' }}>
                       <CoinCard variants={fadeUp} initial="hidden" animate="visible">
                         <CoinHeader>
                           <TokenIcon symbol={coin.symbol} coingeckoId={coin.id} imageUrl={coin.large} size={36} />
@@ -277,7 +277,7 @@ export default function TrendingPage() {
                   <TerminalPrompt style={{ color: COLORS.green }}>TOP_GAINERS</TerminalPrompt>
                   <Grid>
                     {trendingData.top_gainers.slice(0, isPremium ? 12 : 10).map((coin, idx) => (
-                      <Link key={coin.id} href={isPremium || idx < 5 ? `/token/${coin.symbol}` : '/subscribe'} style={{ textDecoration: 'none', filter: !isPremium && idx >= 5 ? 'blur(5px)' : 'none', pointerEvents: !isPremium && idx >= 5 ? 'none' : 'auto', userSelect: !isPremium && idx >= 5 ? 'none' : 'auto' }}>
+                      <Link key={coin.id} href={isPremium || idx < 10 ? `/token/${coin.symbol}` : '/subscribe'} style={{ textDecoration: 'none', filter: !isPremium && idx >= 10 ? 'blur(5px)' : 'none', pointerEvents: !isPremium && idx >= 10 ? 'none' : 'auto', userSelect: !isPremium && idx >= 10 ? 'none' : 'auto' }}>
                         <CoinCard variants={fadeUp} initial="hidden" animate="visible">
                           <CoinHeader>
                             <TokenIcon symbol={coin.symbol} coingeckoId={coin.id} imageUrl={coin.image} size={36} />
@@ -318,7 +318,7 @@ export default function TrendingPage() {
                   <TerminalPrompt style={{ color: COLORS.red }}>TOP_LOSERS</TerminalPrompt>
                   <Grid>
                     {trendingData.top_losers.slice(0, isPremium ? 12 : 10).map((coin, idx) => (
-                      <Link key={coin.id} href={isPremium || idx < 5 ? `/token/${coin.symbol}` : '/subscribe'} style={{ textDecoration: 'none', filter: !isPremium && idx >= 5 ? 'blur(5px)' : 'none', pointerEvents: !isPremium && idx >= 5 ? 'none' : 'auto', userSelect: !isPremium && idx >= 5 ? 'none' : 'auto' }}>
+                      <Link key={coin.id} href={isPremium || idx < 10 ? `/token/${coin.symbol}` : '/subscribe'} style={{ textDecoration: 'none', filter: !isPremium && idx >= 10 ? 'blur(5px)' : 'none', pointerEvents: !isPremium && idx >= 10 ? 'none' : 'auto', userSelect: !isPremium && idx >= 10 ? 'none' : 'auto' }}>
                         <CoinCard variants={fadeUp} initial="hidden" animate="visible">
                           <CoinHeader>
                             <TokenIcon symbol={coin.symbol} coingeckoId={coin.id} imageUrl={coin.image} size={36} />
@@ -360,7 +360,7 @@ export default function TrendingPage() {
                   borderRadius: '8px', fontFamily: SANS_FONT,
                 }}>
                   <div style={{ fontSize: '0.8rem', color: COLORS.textMuted, marginBottom: '0.5rem' }}>
-                    Showing top 5 per section. Premium shows all 12+ coins with full data.
+                    Showing top 10 per section. Premium shows all 12+ coins with full data.
                   </div>
                   <a href="/subscribe" style={{
                     display: 'inline-block', padding: '0.4rem 1rem', borderRadius: '4px',

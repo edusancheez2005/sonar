@@ -23,7 +23,9 @@ import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend)
+import { Filler } from 'chart.js'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler)
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
@@ -44,6 +46,11 @@ const COLORS = {
 const pulseGlow = keyframes`
   0%, 100% { opacity: 1; box-shadow: 0 0 4px #00e676; }
   50% { opacity: 0.4; box-shadow: 0 0 8px #00e676, 0 0 16px rgba(0, 230, 118, 0.3); }
+`
+
+const scrollTicker = keyframes`
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 `
 
 // ─── STYLED COMPONENTS ────────────────────────────────────────────────────────
@@ -391,6 +398,122 @@ const EmptyState = styled.div`
   font-family: ${SANS_FONT}; font-size: 0.9rem;
 `
 
+// ─── LIVE WHALE FEED (Scrolling Ticker) ─────────────────────────────────────
+const TickerStrip = styled.div`
+  overflow: hidden; white-space: nowrap; position: relative;
+  background: rgba(0, 229, 255, 0.02); border-bottom: 1px solid ${COLORS.borderSubtle};
+  padding: 0.5rem 0; margin-bottom: 1.5rem; border-radius: 6px;
+  &::before, &::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 60px; z-index: 2; pointer-events: none;
+  }
+  &::before { left: 0; background: linear-gradient(to right, #0a0e17, transparent); }
+  &::after { right: 0; background: linear-gradient(to left, #0a0e17, transparent); }
+`
+
+const TickerTrack = styled.div`
+  display: inline-flex; gap: 2.5rem; animation: ${scrollTicker} ${props => props.$duration || 30}s linear infinite;
+  &:hover { animation-play-state: paused; }
+`
+
+const TickerItem = styled.a`
+  display: inline-flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
+  font-family: ${MONO_FONT}; font-size: 0.75rem; color: ${COLORS.textPrimary};
+  text-decoration: none; cursor: pointer; transition: color 0.15s ease;
+  &:hover { color: ${COLORS.cyan}; }
+`
+
+const TickerDot = styled.span`
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: ${props => props.$color || COLORS.cyan};
+`
+
+// ─── SMART MONEY CONSENSUS GAUGE ────────────────────────────────────────────
+const ConsensusPanel = styled.div`
+  background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.5rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 260px;
+`
+
+const GaugeContainer = styled.div`
+  position: relative; width: 200px; height: 110px; margin-bottom: 1rem;
+`
+
+const GaugeArc = styled.svg`
+  width: 200px; height: 110px; overflow: visible;
+`
+
+const ConsensusLabel = styled.div`
+  font-family: ${MONO_FONT}; font-size: 1rem; font-weight: 800;
+  color: ${props => props.$color || COLORS.cyan}; letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+`
+
+const ConsensusStats = styled.div`
+  display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center;
+`
+
+const ConsensusStat = styled.div`
+  text-align: center;
+  .label { font-family: ${SANS_FONT}; font-size: 0.65rem; color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.5px; }
+  .value { font-family: ${MONO_FONT}; font-size: 0.9rem; font-weight: 700; color: ${props => props.$color || COLORS.textPrimary}; }
+`
+
+// ─── MARKET PULSE CHART ─────────────────────────────────────────────────────
+const ChartWrapper = styled.div`
+  height: 220px; position: relative;
+  @media (max-width: 768px) { height: 180px; }
+`
+
+// ─── TROPHY TRANSACTIONS ────────────────────────────────────────────────────
+const TrophyRow = styled.div`
+  display: grid; grid-template-columns: 30px 90px 60px 1fr 90px 70px; gap: 0.75rem;
+  align-items: center; padding: 0.65rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.02);
+  transition: background 0.15s ease; cursor: pointer;
+  &:hover { background: rgba(0, 229, 255, 0.04); }
+  &:last-child { border-bottom: none; }
+  @media (max-width: 768px) { grid-template-columns: 30px 70px 50px 1fr 70px; }
+`
+
+const TrophyRank = styled.span`
+  font-family: ${MONO_FONT}; font-weight: 800; font-size: 0.8rem;
+  color: ${props => props.$rank === 1 ? '#FFD700' : props.$rank === 2 ? '#C0C0C0' : props.$rank === 3 ? '#CD7F32' : COLORS.textMuted};
+`
+
+// ─── NEWS ITEM ──────────────────────────────────────────────────────────────
+const NewsItem = styled.a`
+  display: flex; flex-direction: column; gap: 0.25rem; padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.02); text-decoration: none;
+  transition: background 0.15s ease;
+  &:hover { background: rgba(0, 229, 255, 0.03); }
+  &:last-child { border-bottom: none; }
+`
+
+const NewsHeadline = styled.div`
+  font-family: ${SANS_FONT}; font-size: 0.8rem; font-weight: 600;
+  color: ${COLORS.textPrimary}; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+`
+
+const NewsMeta = styled.div`
+  display: flex; align-items: center; gap: 0.5rem; font-size: 0.65rem; font-family: ${MONO_FONT};
+`
+
+const SentimentBadge = styled.span`
+  padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.6rem; font-weight: 700;
+  font-family: ${MONO_FONT}; letter-spacing: 0.5px;
+  color: ${props => props.$sentiment === 'bullish' ? COLORS.green : props.$sentiment === 'bearish' ? COLORS.red : COLORS.amber};
+  background: ${props => props.$sentiment === 'bullish' ? 'rgba(0,230,118,0.08)' : props.$sentiment === 'bearish' ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)'};
+  border: 1px solid ${props => props.$sentiment === 'bullish' ? 'rgba(0,230,118,0.15)' : props.$sentiment === 'bearish' ? 'rgba(255,23,68,0.15)' : 'rgba(255,171,0,0.15)'};
+`
+
+const BreakingTag = styled.span`
+  padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.55rem; font-weight: 800;
+  font-family: ${MONO_FONT}; letter-spacing: 1px; color: #ff1744;
+  background: rgba(255,23,68,0.1); border: 1px solid rgba(255,23,68,0.2);
+`
+
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const formatCompact = (n) => {
@@ -492,6 +615,10 @@ const Dashboard = ({ isPremium = false }) => {
   const [tokenInflows, setTokenInflows] = useState([])
   const [tokenOutflows, setTokenOutflows] = useState([])
   const [overall, setOverall] = useState({ totalCount: 0, totalVolume: 0, buyCount: 0, sellCount: 0, buyVolume: 0, sellVolume: 0 })
+
+  // News + signals state for dashboard V2
+  const [newsArticles, setNewsArticles] = useState([])
+  const [signals, setSignals] = useState([])
 
   // Fetch user info and check tutorial state
   useEffect(() => {
@@ -658,6 +785,27 @@ const Dashboard = ({ isPremium = false }) => {
     
                      // All enhanced insights data is now fetched from the enhanced /api/dashboard/summary endpoint
     
+    const fetchNews = async () => {
+      try {
+        const res = await fetch('/api/social/feed?limit=8&sort=recent', { cache: 'no-store' })
+        if (res.ok) {
+          const json = await res.json()
+          setNewsArticles((json.posts || json.data || []).slice(0, 8))
+        }
+      } catch {}
+    }
+
+    const fetchSignals = async () => {
+      try {
+        const res = await fetch('/api/signals', { cache: 'no-store' })
+        if (res.ok) {
+          const json = await res.json()
+          const sigs = (json.signals || json.data || json || [])
+          setSignals(Array.isArray(sigs) ? sigs.slice(0, 4) : [])
+        }
+      } catch {}
+    }
+
     const pollAlgo = async () => {
       try {
         const res = await fetch('/api/health/algorithm', { cache: 'no-store' })
@@ -667,9 +815,12 @@ const Dashboard = ({ isPremium = false }) => {
     }
     
          fetchSummary(); 
+     fetchNews();
+     fetchSignals();
      pollAlgo()
      timer = setInterval(() => { 
        fetchSummary(); 
+       fetchNews();
        pollAlgo() 
      }, 15000)
     return () => clearInterval(timer)
@@ -734,6 +885,40 @@ const Dashboard = ({ isPremium = false }) => {
             </TutorialBtn>
           </CommandBarRight>
         </CommandBar>
+
+        {/* ─── LIVE WHALE FEED (Scrolling Ticker) ──────────────────── */}
+        {transactions.length > 0 && (
+          <TickerStrip>
+            <TickerTrack $duration={transactions.length > 5 ? 40 : 25}>
+              {[...transactions, ...transactions].map((tx, i) => {
+                const side = (tx.action || '').toUpperCase()
+                const color = side === 'BUY' ? COLORS.green : side === 'SELL' ? COLORS.red : COLORS.amber
+                const icon = side === 'BUY' ? '▲' : side === 'SELL' ? '▼' : '↔'
+                const timeAgo = (() => {
+                  try {
+                    const diff = Date.now() - new Date(tx.time).getTime()
+                    const mins = Math.floor(diff / 60000)
+                    if (mins < 1) return 'just now'
+                    if (mins < 60) return `${mins}m ago`
+                    return `${Math.floor(mins / 60)}h ago`
+                  } catch { return '' }
+                })()
+                const addr = tx.from_address || ''
+                const label = tx.whale_entity || (addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '')
+                return (
+                  <TickerItem key={`${tx.id}-${i}`} href={`/token/${encodeURIComponent(tx.coin)}`}>
+                    <TickerDot $color={color} />
+                    <span style={{ color, fontWeight: 700 }}>{icon} {side}</span>
+                    <span style={{ fontWeight: 700 }}>{tx.coin}</span>
+                    <span style={{ color: COLORS.cyan, fontWeight: 700 }}>${tx.usdValue}</span>
+                    {label && <span style={{ color: COLORS.textMuted, fontSize: '0.7rem' }}>· {label}</span>}
+                    {timeAgo && <span style={{ color: COLORS.textMuted, fontSize: '0.65rem' }}>· {timeAgo}</span>}
+                  </TickerItem>
+                )
+              })}
+            </TickerTrack>
+          </TickerStrip>
+        )}
 
         <DashboardContainer>
             <motion.div
@@ -800,6 +985,331 @@ const Dashboard = ({ isPremium = false }) => {
                     </a>
                   </span>
                 </div>
+              )}
+
+              {/* ─── SMART MONEY CONSENSUS ────────────────────────────── */}
+              {!loading && (
+                <motion.div variants={fadeUp}>
+                  <SectionGap>
+                    <GridContainer>
+                      <ConsensusPanel>
+                        <TerminalPrompt style={{ marginBottom: '1rem', alignSelf: 'flex-start' }}>SMART_MONEY_CONSENSUS</TerminalPrompt>
+                        {(() => {
+                          const ratio = marketSentiment.ratio || (overall.buyCount + overall.sellCount > 0 ? overall.buyCount / (overall.buyCount + overall.sellCount) : 0.5)
+                          const pct = Math.round(ratio * 100)
+                          const angle = -90 + (ratio * 180) // -90 = far left, 90 = far right
+                          const label = pct >= 75 ? 'EXTREME GREED' : pct >= 60 ? 'GREED' : pct >= 45 ? 'NEUTRAL' : pct >= 30 ? 'FEAR' : 'EXTREME FEAR'
+                          const color = pct >= 65 ? COLORS.green : pct >= 45 ? COLORS.amber : COLORS.red
+                          // Arc path
+                          const r = 80
+                          const cx = 100, cy = 95
+                          return (
+                            <>
+                              <GaugeContainer>
+                                <GaugeArc viewBox="0 0 200 120">
+                                  {/* Background arc */}
+                                  <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="12" strokeLinecap="round" />
+                                  {/* Colored segments */}
+                                  <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx - r * 0.5} ${cy - r * 0.866}`} fill="none" stroke="rgba(255,23,68,0.4)" strokeWidth="12" strokeLinecap="round" />
+                                  <path d={`M ${cx - r * 0.5} ${cy - r * 0.866} A ${r} ${r} 0 0 1 ${cx} ${cy - r}`} fill="none" stroke="rgba(255,171,0,0.4)" strokeWidth="12" strokeLinecap="round" />
+                                  <path d={`M ${cx} ${cy - r} A ${r} ${r} 0 0 1 ${cx + r * 0.5} ${cy - r * 0.866}`} fill="none" stroke="rgba(255,171,0,0.4)" strokeWidth="12" strokeLinecap="round" />
+                                  <path d={`M ${cx + r * 0.5} ${cy - r * 0.866} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`} fill="none" stroke="rgba(0,230,118,0.4)" strokeWidth="12" strokeLinecap="round" />
+                                  {/* Needle */}
+                                  {(() => {
+                                    const rad = (angle * Math.PI) / 180
+                                    const nx = cx + Math.cos(rad) * (r - 20)
+                                    const ny = cy + Math.sin(rad) * (r - 20)
+                                    return <line x1={cx} y1={cy} x2={nx} y2={ny} stroke={color} strokeWidth="3" strokeLinecap="round" />
+                                  })()}
+                                  <circle cx={cx} cy={cy} r="5" fill={color} />
+                                  {/* Score */}
+                                  <text x={cx} y={cy - 20} textAnchor="middle" fill={color} fontSize="28" fontWeight="800" fontFamily="JetBrains Mono, monospace">{pct}</text>
+                                </GaugeArc>
+                              </GaugeContainer>
+                              <ConsensusLabel $color={color}>{label}</ConsensusLabel>
+                              <ConsensusStats>
+                                <ConsensusStat $color={COLORS.green}>
+                                  <div className="label">Buy Vol</div>
+                                  <div className="value">${formatCompact(overall.buyVolume || 0)}</div>
+                                </ConsensusStat>
+                                <ConsensusStat $color={COLORS.red}>
+                                  <div className="label">Sell Vol</div>
+                                  <div className="value">${formatCompact(overall.sellVolume || 0)}</div>
+                                </ConsensusStat>
+                                <ConsensusStat $color={COLORS.cyan}>
+                                  <div className="label">Momentum</div>
+                                  <div className="value" style={{ color: (marketMomentum.volumeChange || 0) >= 0 ? COLORS.green : COLORS.red }}>
+                                    {(marketMomentum.volumeChange || 0) >= 0 ? '+' : ''}{(marketMomentum.volumeChange || 0).toFixed(1)}%
+                                  </div>
+                                </ConsensusStat>
+                              </ConsensusStats>
+                            </>
+                          )
+                        })()}
+                      </ConsensusPanel>
+
+                      {/* ─── BLOCKCHAIN DISTRIBUTION ───────────────────── */}
+                      <Panel>
+                        <PanelHeader>
+                          <TerminalPrompt>CHAIN_DISTRIBUTION</TerminalPrompt>
+                          <PanelBadge>24H</PanelBadge>
+                        </PanelHeader>
+                        {blockchainData.labels.length > 0 ? (
+                          <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Doughnut
+                              data={{
+                                labels: blockchainData.labels,
+                                datasets: [{
+                                  data: blockchainData.data,
+                                  backgroundColor: [
+                                    'rgba(0, 229, 255, 0.7)', 'rgba(0, 230, 118, 0.7)', 'rgba(255, 171, 0, 0.7)',
+                                    'rgba(255, 23, 68, 0.7)', 'rgba(156, 39, 176, 0.7)', 'rgba(33, 150, 243, 0.7)',
+                                    'rgba(76, 175, 80, 0.7)', 'rgba(255, 152, 0, 0.7)',
+                                  ],
+                                  borderColor: 'rgba(10, 14, 23, 0.9)',
+                                  borderWidth: 2,
+                                }]
+                              }}
+                              options={{
+                                responsive: true, maintainAspectRatio: false,
+                                cutout: '60%',
+                                plugins: {
+                                  legend: { position: 'right', labels: { color: COLORS.textMuted, font: { family: MONO_FONT, size: 10 }, padding: 8, boxWidth: 12 } },
+                                  tooltip: { backgroundColor: 'rgba(10, 14, 23, 0.95)', titleFont: { family: MONO_FONT }, bodyFont: { family: MONO_FONT }, borderColor: COLORS.borderSubtle, borderWidth: 1 },
+                                },
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <EmptyState>No blockchain data available.</EmptyState>
+                        )}
+                      </Panel>
+                    </GridContainer>
+                  </SectionGap>
+                </motion.div>
+              )}
+
+              {/* ─── MARKET PULSE CHART (24H Volume Timeline) ─────────── */}
+              {!loading && timeSeries.labels.length > 0 && (
+                <motion.div variants={fadeUp}>
+                  <SectionGap>
+                    <Panel>
+                      <PanelHeader>
+                        <div>
+                          <TerminalPrompt>MARKET_PULSE</TerminalPrompt>
+                          <PanelSubtext>Hourly whale volume &amp; transaction count — 24H</PanelSubtext>
+                        </div>
+                        <PanelBadge>LIVE</PanelBadge>
+                      </PanelHeader>
+                      <ChartWrapper>
+                        <Bar
+                          data={{
+                            labels: timeSeries.labels.map(l => {
+                              try { return new Date(l).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) } catch { return l }
+                            }),
+                            datasets: [
+                              {
+                                type: 'bar',
+                                label: 'Volume ($)',
+                                data: timeSeries.volume,
+                                backgroundColor: timeSeries.volume.map((v, i, arr) =>
+                                  i > 0 && v > arr[i - 1] ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 23, 68, 0.25)'
+                                ),
+                                borderColor: timeSeries.volume.map((v, i, arr) =>
+                                  i > 0 && v > arr[i - 1] ? 'rgba(0, 230, 118, 0.6)' : 'rgba(255, 23, 68, 0.4)'
+                                ),
+                                borderWidth: 1, borderRadius: 2, yAxisID: 'y',
+                              },
+                              {
+                                type: 'line',
+                                label: 'Transactions',
+                                data: timeSeries.count,
+                                borderColor: COLORS.cyan, backgroundColor: 'rgba(0, 229, 255, 0.05)',
+                                borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true, yAxisID: 'y1',
+                              },
+                            ],
+                          }}
+                          options={{
+                            responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                              legend: { display: true, position: 'top', align: 'end', labels: { color: COLORS.textMuted, font: { family: MONO_FONT, size: 10 }, boxWidth: 12, padding: 12 } },
+                              tooltip: { backgroundColor: 'rgba(10, 14, 23, 0.95)', titleFont: { family: MONO_FONT, size: 11 }, bodyFont: { family: MONO_FONT, size: 11 }, borderColor: COLORS.borderSubtle, borderWidth: 1, padding: 10,
+                                callbacks: { label: (ctx) => ctx.dataset.label === 'Volume ($)' ? `Vol: $${formatCompact(ctx.raw)}` : `Txns: ${ctx.raw}` },
+                              },
+                            },
+                            scales: {
+                              x: { grid: { color: COLORS.gridLine }, ticks: { color: COLORS.textMuted, font: { family: MONO_FONT, size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+                              y: { position: 'left', grid: { color: COLORS.gridLine }, ticks: { color: COLORS.textMuted, font: { family: MONO_FONT, size: 9 }, callback: v => '$' + formatCompact(v) } },
+                              y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: COLORS.cyan, font: { family: MONO_FONT, size: 9 } } },
+                            },
+                          }}
+                        />
+                      </ChartWrapper>
+                    </Panel>
+                  </SectionGap>
+                </motion.div>
+              )}
+
+              {/* ─── WHALE HEAT MAP + BREAKING NEWS ────────────────────── */}
+              {!loading && (
+                <motion.div variants={fadeUp}>
+                  <SectionGap>
+                    <GridContainer>
+                      {/* Whale Heat Map (Token Flow) */}
+                      <Panel>
+                        <PanelHeader>
+                          <TerminalPrompt>WHALE_FLOW_MAP</TerminalPrompt>
+                          <PanelBadge>24H</PanelBadge>
+                        </PanelHeader>
+                        {tokenLeaders.length > 0 ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {tokenLeaders.slice(0, 10).map((t, idx) => {
+                              const maxVol = Math.abs(tokenLeaders[0]?.volume || 1)
+                              const sizePct = Math.max(15, Math.min(100, (Math.abs(t.volume || 0) / maxVol) * 100))
+                              const isPositive = (t.netUsdRobust || t.netUsd || 0) >= 0
+                              const intensity = Math.min(1, Math.abs(t.netUsdRobust || t.netUsd || 0) / (maxVol * 0.5))
+                              return (
+                                <Link key={t.token} href={`/token/${encodeURIComponent(t.token)}`} style={{ textDecoration: 'none' }}>
+                                  <motion.div
+                                    whileHover={{ scale: 1.05 }}
+                                    style={{
+                                      width: `${Math.max(80, sizePct * 1.4)}px`, height: `${Math.max(60, sizePct * 1.1)}px`,
+                                      borderRadius: '6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                      background: isPositive
+                                        ? `rgba(0, 230, 118, ${0.06 + intensity * 0.2})`
+                                        : `rgba(255, 23, 68, ${0.06 + intensity * 0.2})`,
+                                      border: `1px solid ${isPositive ? `rgba(0, 230, 118, ${0.15 + intensity * 0.2})` : `rgba(255, 23, 68, ${0.15 + intensity * 0.2})`}`,
+                                      cursor: 'pointer', transition: 'all 0.15s ease',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
+                                      <TokenIcon symbol={t.token} size={14} />
+                                      <span style={{ fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.75rem', color: COLORS.textPrimary }}>{t.token}</span>
+                                    </div>
+                                    <span style={{
+                                      fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.7rem',
+                                      color: isPositive ? COLORS.green : COLORS.red,
+                                    }}>
+                                      {isPositive ? '+' : ''}${formatCompact(t.netUsdRobust || t.netUsd || 0)}
+                                    </span>
+                                    <span style={{ fontFamily: MONO_FONT, fontSize: '0.55rem', color: COLORS.textMuted }}>
+                                      {t.txCount || 0} txns
+                                    </span>
+                                  </motion.div>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <EmptyState>No whale flow data available.</EmptyState>
+                        )}
+                      </Panel>
+
+                      {/* Breaking News */}
+                      <Panel>
+                        <PanelHeader>
+                          <TerminalPrompt>BREAKING_NEWS</TerminalPrompt>
+                          <PanelBadge>LIVE</PanelBadge>
+                        </PanelHeader>
+                        {newsArticles.length > 0 ? (
+                          <div>
+                            {newsArticles.slice(0, isPremium ? 8 : 3).map((article, idx) => {
+                              const published = article.published_at || article.publishedAt || article.created_at
+                              const isBreaking = published && (Date.now() - new Date(published).getTime()) < 3600000
+                              const sentimentVal = article.sentiment || 0
+                              const sentimentLabel = sentimentVal > 0.1 ? 'bullish' : sentimentVal < -0.1 ? 'bearish' : 'neutral'
+                              return (
+                                <NewsItem key={idx} href={article.url} target="_blank" rel="noopener noreferrer">
+                                  <NewsHeadline>{article.title || article.body?.slice(0, 100)}</NewsHeadline>
+                                  <NewsMeta>
+                                    {isBreaking && <BreakingTag>BREAKING</BreakingTag>}
+                                    <SentimentBadge $sentiment={sentimentLabel}>{sentimentLabel.toUpperCase()}</SentimentBadge>
+                                    <span style={{ color: COLORS.textMuted }}>{article.creator_name || article.creator_screen_name || article.source || ''}</span>
+                                    {published && (
+                                      <span style={{ color: COLORS.textMuted }}>
+                                        {(() => {
+                                          const diff = Date.now() - new Date(published).getTime()
+                                          const mins = Math.floor(diff / 60000)
+                                          if (mins < 60) return `${mins}m ago`
+                                          if (mins < 1440) return `${Math.floor(mins / 60)}h ago`
+                                          return `${Math.floor(mins / 1440)}d ago`
+                                        })()}
+                                      </span>
+                                    )}
+                                  </NewsMeta>
+                                </NewsItem>
+                              )
+                            })}
+                            {!isPremium && newsArticles.length > 3 && (
+                              <div style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.7rem', fontFamily: SANS_FONT, color: COLORS.textMuted }}>
+                                <a href="/subscribe" style={{ color: COLORS.cyan, fontWeight: 600, textDecoration: 'underline' }}>
+                                  Upgrade for {newsArticles.length - 3} more articles
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <EmptyState>Loading news feed...</EmptyState>
+                        )}
+                      </Panel>
+                    </GridContainer>
+                  </SectionGap>
+                </motion.div>
+              )}
+
+              {/* ─── TOP HIGH-VALUE TRANSACTIONS (Trophy Trades) ────────── */}
+              {!loading && topHighValueTxs.length > 0 && (
+                <motion.div variants={fadeUp}>
+                  <SectionGap>
+                    <Panel>
+                      <PanelHeader>
+                        <div>
+                          <TerminalPrompt>TROPHY_TRADES</TerminalPrompt>
+                          <PanelSubtext>Largest whale transactions in the last 24 hours</PanelSubtext>
+                        </div>
+                        <PanelBadge>{topHighValueTxs.length} TRADES</PanelBadge>
+                      </PanelHeader>
+                      <div>
+                        {(isPremium ? topHighValueTxs : topHighValueTxs.slice(0, 3)).map((tx, idx) => {
+                          const side = (tx.side || '').toUpperCase()
+                          const sideColor = side === 'BUY' ? COLORS.green : side === 'SELL' ? COLORS.red : COLORS.amber
+                          const entity = tx.whale_entity || tx.from_entity || ''
+                          return (
+                            <TrophyRow key={tx.hash || idx} onClick={() => window.location.href = `/token/${encodeURIComponent(tx.coin)}`}>
+                              <TrophyRank $rank={idx + 1}>#{idx + 1}</TrophyRank>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <TokenIcon symbol={tx.coin} size={18} />
+                                <span style={{ fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.85rem', color: COLORS.textPrimary }}>{tx.coin}</span>
+                              </div>
+                              <span style={{
+                                fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.7rem', padding: '0.15rem 0.4rem',
+                                borderRadius: '3px', color: sideColor,
+                                background: side === 'BUY' ? 'rgba(0,230,118,0.08)' : side === 'SELL' ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)',
+                              }}>
+                                {side}
+                              </span>
+                              <span style={{ fontFamily: MONO_FONT, fontWeight: 800, fontSize: '0.9rem', color: sideColor }}>
+                                ${formatCompact(tx.usd || 0)}
+                              </span>
+                              <span style={{ fontFamily: MONO_FONT, fontSize: '0.7rem', color: COLORS.textMuted }}>{tx.chain || ''}</span>
+                              <span style={{ fontFamily: MONO_FONT, fontSize: '0.65rem', color: COLORS.cyan, textAlign: 'right' }}>
+                                {isPremium && entity ? entity : (tx.whale_score ? `Score: ${tx.whale_score}` : '')}
+                              </span>
+                            </TrophyRow>
+                          )
+                        })}
+                        {!isPremium && topHighValueTxs.length > 3 && (
+                          <div style={{ textAlign: 'center', padding: '0.6rem', fontSize: '0.7rem', fontFamily: SANS_FONT, color: COLORS.textMuted }}>
+                            Showing 3 of {topHighValueTxs.length} trophy trades.{' '}
+                            <a href="/subscribe" style={{ color: COLORS.cyan, fontWeight: 600, textDecoration: 'underline' }}>
+                              Upgrade for all + whale identity
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </Panel>
+                  </SectionGap>
+                </motion.div>
               )}
 
               {/* ─── MY WATCHLIST ─────────────────────────────────────── */}
@@ -987,7 +1497,6 @@ const Dashboard = ({ isPremium = false }) => {
                   </PremiumGate>
 
                   {/* ─── MOST TRADED TOKENS — DATA TABLE ───────────────── */}
-                  <PremiumGate isPremium={isPremium} feature="Most Traded Tokens">
                   <motion.div variants={fadeUp} ref={tradedTokensRef} data-tutorial="traded-tokens">
                     <SectionGap>
                       <Panel>
@@ -1015,7 +1524,7 @@ const Dashboard = ({ isPremium = false }) => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {tokenLeaders.slice(0, 12).map((t, idx) => {
+                                {tokenLeaders.slice(0, isPremium ? 12 : 5).map((t, idx) => {
                                   const totalTrades = (t.buys || 0) + (t.sells || 0)
                                   const buyRatio = totalTrades > 0 ? ((t.buys || 0) / totalTrades) * 100 : 50
                                   const isBuyHeavy = buyRatio > 60
@@ -1059,10 +1568,21 @@ const Dashboard = ({ isPremium = false }) => {
                             </table>
                           </DataTable>
                         )}
+                        {!isPremium && tokenLeaders.length > 5 && (
+                          <div style={{
+                            textAlign: 'center', padding: '0.75rem', marginTop: '0.5rem',
+                            background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${COLORS.borderSubtle}`,
+                            borderRadius: '4px', fontFamily: SANS_FONT, fontSize: '0.8rem', color: COLORS.textMuted
+                          }}>
+                            Showing top 5 of {tokenLeaders.length} tokens.{' '}
+                            <a href="/subscribe" style={{ color: COLORS.cyan, fontWeight: 600, textDecoration: 'underline' }}>
+                              Upgrade for full table + Buy/Sell Pressure
+                            </a>
+                          </div>
+                        )}
                       </Panel>
                     </SectionGap>
                   </motion.div>
-                  </PremiumGate>
 
                   {/* ─── TOP 10 WHALES ──────────────────────────────────── */}
                   <PremiumGate isPremium={isPremium} feature="Top Whale Wallets">

@@ -508,7 +508,7 @@ export default function Statistics() {
                 </tr>
               </thead>
               <tbody>
-                  {(isPremium ? rows : rows.slice(0, 25)).map((t, idx) => (
+                  {(isPremium ? rows : rows.slice(0, 50)).map((t, idx) => (
                     <motion.tr key={t.transaction_hash} custom={idx} variants={rowVariant} initial="hidden" animate="visible">
                       <td className="muted" style={{ fontSize: '0.75rem' }}>{new Date(t.timestamp).toLocaleString()}</td>
                       <td>
@@ -529,13 +529,13 @@ export default function Statistics() {
               </tbody>
               </table>
               </DataTable>
-              {!isPremium && rows.length > 25 && (
+              {!isPremium && rows.length > 50 && (
                 <div style={{
                   textAlign: 'center', padding: '1rem', marginTop: '0.5rem',
                   background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${COLORS.borderSubtle}`,
                   borderRadius: '4px', fontFamily: SANS_FONT, fontSize: '0.8rem', color: COLORS.textMuted
                 }}>
-                  Showing 25 of {total.toLocaleString()} transactions.
+                  Showing 50 of {total.toLocaleString()} transactions.
                   <a href="/subscribe" style={{ color: COLORS.cyan, marginLeft: '0.4rem', fontWeight: 600, textDecoration: 'underline' }}>
                     Upgrade for full data + CSV export
                   </a>
