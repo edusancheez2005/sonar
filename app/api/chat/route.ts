@@ -13,10 +13,13 @@ import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 export const dynamic = 'force-dynamic'
 
 // Use Grok (xAI) as primary AI, fallback to OpenAI if no xAI key
+// v2 — force cache invalidation
 const getAIClient = () => {
-  if (process.env.XAI_API_KEY) {
+  const xaiKey = process.env.XAI_API_KEY
+  console.log(`🤖 AI Provider: ${xaiKey ? 'Grok (xAI)' : 'OpenAI (fallback)'}`)
+  if (xaiKey) {
     return {
-      client: new OpenAI({ apiKey: process.env.XAI_API_KEY, baseURL: 'https://api.x.ai/v1' }),
+      client: new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' }),
       model: 'grok-4-1-fast-reasoning',
       miniModel: 'grok-4-1-fast-non-reasoning',
       provider: 'grok'
