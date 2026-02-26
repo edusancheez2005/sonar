@@ -282,6 +282,19 @@ const GridContainer = styled.div`
   @media (max-width: 768px) { grid-template-columns: 1fr; }
 `;
 
+const DashboardWithSidebar = styled.div`
+  display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem;
+  @media (max-width: 1024px) { grid-template-columns: 1fr; }
+`
+
+const SidebarColumn = styled.div`
+  @media (max-width: 1024px) { display: none; }
+`
+
+const StickyWatchlist = styled.div`
+  position: sticky; top: 60px;
+`
+
 const SectionGap = styled.div`margin-bottom: 1.5rem;`
 
 // ─── DATA TABLE ─────────────────────────────────────────────────────────────
@@ -896,7 +909,14 @@ const Dashboard = ({ isPremium = false }) => {
                 const icon = side === 'BUY' ? '▲' : side === 'SELL' ? '▼' : '↔'
                 const timeAgo = (() => {
                   try {
-                    const diff = Date.now() - new Date(tx.time).getTime()
+                    const t = tx.time
+                    if (!t) return ''
+                    const parsed = typeof t === 'string' && t.includes(':') ? new Date(`1970-01-01T${t}`) : new Date(t)
+                    if (isNaN(parsed.getTime())) return ''
+                    // If time-only string, just show the time
+                    if (typeof t === 'string' && !t.includes('-') && !t.includes('/') && !t.includes('T')) return t
+                    const diff = Date.now() - parsed.getTime()
+                    if (diff < 0 || diff > 86400000 * 7) return ''
                     const mins = Math.floor(diff / 60000)
                     if (mins < 1) return 'just now'
                     if (mins < 60) return `${mins}m ago`
@@ -1150,211 +1170,9 @@ const Dashboard = ({ isPremium = false }) => {
                 </motion.div>
               )}
 
-              {/* ─── WHALE HEAT MAP + BREAKING NEWS ────────────────────── */}
-              {!loading && (
-                <motion.div variants={fadeUp}>
-                  <SectionGap>
-                    <GridContainer>
-                      {/* Whale Heat Map (Token Flow) */}
-                      <Panel>
-                        <PanelHeader>
-                          <TerminalPrompt>WHALE_FLOW_MAP</TerminalPrompt>
-                          <PanelBadge>24H</PanelBadge>
-                        </PanelHeader>
-                        {tokenLeaders.length > 0 ? (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                            {tokenLeaders.slice(0, 10).map((t, idx) => {
-                              const maxVol = Math.abs(tokenLeaders[0]?.volume || 1)
-                              const sizePct = Math.max(15, Math.min(100, (Math.abs(t.volume || 0) / maxVol) * 100))
-                              const isPositive = (t.netUsdRobust || t.netUsd || 0) >= 0
-                              const intensity = Math.min(1, Math.abs(t.netUsdRobust || t.netUsd || 0) / (maxVol * 0.5))
-                              return (
-                                <Link key={t.token} href={`/token/${encodeURIComponent(t.token)}`} style={{ textDecoration: 'none' }}>
-                                  <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    style={{
-                                      width: `${Math.max(80, sizePct * 1.4)}px`, height: `${Math.max(60, sizePct * 1.1)}px`,
-                                      borderRadius: '6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                      background: isPositive
-                                        ? `rgba(0, 230, 118, ${0.06 + intensity * 0.2})`
-                                        : `rgba(255, 23, 68, ${0.06 + intensity * 0.2})`,
-                                      border: `1px solid ${isPositive ? `rgba(0, 230, 118, ${0.15 + intensity * 0.2})` : `rgba(255, 23, 68, ${0.15 + intensity * 0.2})`}`,
-                                      cursor: 'pointer', transition: 'all 0.15s ease',
-                                    }}
-                                  >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.2rem' }}>
-                                      <TokenIcon symbol={t.token} size={14} />
-                                      <span style={{ fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.75rem', color: COLORS.textPrimary }}>{t.token}</span>
-                                    </div>
-                                    <span style={{
-                                      fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.7rem',
-                                      color: isPositive ? COLORS.green : COLORS.red,
-                                    }}>
-                                      {isPositive ? '+' : ''}${formatCompact(t.netUsdRobust || t.netUsd || 0)}
-                                    </span>
-                                    <span style={{ fontFamily: MONO_FONT, fontSize: '0.55rem', color: COLORS.textMuted }}>
-                                      {t.txCount || 0} txns
-                                    </span>
-                                  </motion.div>
-                                </Link>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          <EmptyState>No whale flow data available.</EmptyState>
-                        )}
-                      </Panel>
-
-                      {/* Breaking News */}
-                      <Panel>
-                        <PanelHeader>
-                          <TerminalPrompt>BREAKING_NEWS</TerminalPrompt>
-                          <PanelBadge>LIVE</PanelBadge>
-                        </PanelHeader>
-                        {newsArticles.length > 0 ? (
-                          <div>
-                            {newsArticles.slice(0, isPremium ? 8 : 3).map((article, idx) => {
-                              const published = article.published_at || article.publishedAt || article.created_at
-                              const isBreaking = published && (Date.now() - new Date(published).getTime()) < 3600000
-                              const sentimentVal = article.sentiment || 0
-                              const sentimentLabel = sentimentVal > 0.1 ? 'bullish' : sentimentVal < -0.1 ? 'bearish' : 'neutral'
-                              return (
-                                <NewsItem key={idx} href={article.url} target="_blank" rel="noopener noreferrer">
-                                  <NewsHeadline>{article.title || article.body?.slice(0, 100)}</NewsHeadline>
-                                  <NewsMeta>
-                                    {isBreaking && <BreakingTag>BREAKING</BreakingTag>}
-                                    <SentimentBadge $sentiment={sentimentLabel}>{sentimentLabel.toUpperCase()}</SentimentBadge>
-                                    <span style={{ color: COLORS.textMuted }}>{article.creator_name || article.creator_screen_name || article.source || ''}</span>
-                                    {published && (
-                                      <span style={{ color: COLORS.textMuted }}>
-                                        {(() => {
-                                          const diff = Date.now() - new Date(published).getTime()
-                                          const mins = Math.floor(diff / 60000)
-                                          if (mins < 60) return `${mins}m ago`
-                                          if (mins < 1440) return `${Math.floor(mins / 60)}h ago`
-                                          return `${Math.floor(mins / 1440)}d ago`
-                                        })()}
-                                      </span>
-                                    )}
-                                  </NewsMeta>
-                                </NewsItem>
-                              )
-                            })}
-                            {!isPremium && newsArticles.length > 3 && (
-                              <div style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.7rem', fontFamily: SANS_FONT, color: COLORS.textMuted }}>
-                                <a href="/subscribe" style={{ color: COLORS.cyan, fontWeight: 600, textDecoration: 'underline' }}>
-                                  Upgrade for {newsArticles.length - 3} more articles
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <EmptyState>Loading news feed...</EmptyState>
-                        )}
-                      </Panel>
-                    </GridContainer>
-                  </SectionGap>
-                </motion.div>
-              )}
-
-              {/* ─── TOP HIGH-VALUE TRANSACTIONS (Trophy Trades) ────────── */}
-              {!loading && topHighValueTxs.length > 0 && (
-                <motion.div variants={fadeUp}>
-                  <SectionGap>
-                    <Panel>
-                      <PanelHeader>
-                        <div>
-                          <TerminalPrompt>TROPHY_TRADES</TerminalPrompt>
-                          <PanelSubtext>Largest whale transactions in the last 24 hours</PanelSubtext>
-                        </div>
-                        <PanelBadge>{topHighValueTxs.length} TRADES</PanelBadge>
-                      </PanelHeader>
-                      <div>
-                        {(isPremium ? topHighValueTxs : topHighValueTxs.slice(0, 3)).map((tx, idx) => {
-                          const side = (tx.side || '').toUpperCase()
-                          const sideColor = side === 'BUY' ? COLORS.green : side === 'SELL' ? COLORS.red : COLORS.amber
-                          const entity = tx.whale_entity || tx.from_entity || ''
-                          return (
-                            <TrophyRow key={tx.hash || idx} onClick={() => window.location.href = `/token/${encodeURIComponent(tx.coin)}`}>
-                              <TrophyRank $rank={idx + 1}>#{idx + 1}</TrophyRank>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <TokenIcon symbol={tx.coin} size={18} />
-                                <span style={{ fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.85rem', color: COLORS.textPrimary }}>{tx.coin}</span>
-                              </div>
-                              <span style={{
-                                fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.7rem', padding: '0.15rem 0.4rem',
-                                borderRadius: '3px', color: sideColor,
-                                background: side === 'BUY' ? 'rgba(0,230,118,0.08)' : side === 'SELL' ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)',
-                              }}>
-                                {side}
-                              </span>
-                              <span style={{ fontFamily: MONO_FONT, fontWeight: 800, fontSize: '0.9rem', color: sideColor }}>
-                                ${formatCompact(tx.usd || 0)}
-                              </span>
-                              <span style={{ fontFamily: MONO_FONT, fontSize: '0.7rem', color: COLORS.textMuted }}>{tx.chain || ''}</span>
-                              <span style={{ fontFamily: MONO_FONT, fontSize: '0.65rem', color: COLORS.cyan, textAlign: 'right' }}>
-                                {isPremium && entity ? entity : (tx.whale_score ? `Score: ${tx.whale_score}` : '')}
-                              </span>
-                            </TrophyRow>
-                          )
-                        })}
-                        {!isPremium && topHighValueTxs.length > 3 && (
-                          <div style={{ textAlign: 'center', padding: '0.6rem', fontSize: '0.7rem', fontFamily: SANS_FONT, color: COLORS.textMuted }}>
-                            Showing 3 of {topHighValueTxs.length} trophy trades.{' '}
-                            <a href="/subscribe" style={{ color: COLORS.cyan, fontWeight: 600, textDecoration: 'underline' }}>
-                              Upgrade for all + whale identity
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </Panel>
-                  </SectionGap>
-                </motion.div>
-              )}
-
-              {/* ─── MY WATCHLIST ─────────────────────────────────────── */}
-              {!watchlistLoading && watchlist.length > 0 && (
-                <motion.div variants={fadeUp}>
-                  <SectionGap>
-                    <Panel>
-                      <PanelHeader>
-                        <TerminalPrompt>MY_WATCHLIST</TerminalPrompt>
-                        <PanelBadge>{watchlist.length} TOKEN{watchlist.length !== 1 ? 'S' : ''}</PanelBadge>
-                      </PanelHeader>
-                      <div>
-                        {watchlist.map((item) => (
-                          <Link key={item.symbol} href={`/token/${encodeURIComponent(item.symbol)}?sinceHours=24`} style={{ textDecoration: 'none' }}>
-                            <HBarRow>
-                              <HBarLabel>
-                                <TokenIcon symbol={item.symbol} size={18} />
-                                {item.symbol}
-                              </HBarLabel>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'flex-end', flex: 1 }}>
-                                {item.price != null && (
-                                  <span style={{ fontFamily: MONO_FONT, fontSize: '0.85rem', fontWeight: 700, color: COLORS.textPrimary }}>
-                                    ${item.price >= 1 ? item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : item.price.toFixed(6)}
-                                  </span>
-                                )}
-                                {item.change24h != null && (
-                                  <span style={{
-                                    fontFamily: MONO_FONT, fontSize: '0.75rem', fontWeight: 700,
-                                    color: item.change24h >= 0 ? COLORS.green : COLORS.red,
-                                    padding: '0.1rem 0.35rem', borderRadius: '3px',
-                                    background: item.change24h >= 0 ? 'rgba(0,230,118,0.08)' : 'rgba(255,23,68,0.08)',
-                                  }}>
-                                    {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(2)}%
-                                  </span>
-                                )}
-                              </div>
-                            </HBarRow>
-                          </Link>
-                        ))}
-                      </div>
-                    </Panel>
-                  </SectionGap>
-                </motion.div>
-              )}
-
+              {/* ─── MAIN CONTENT + WATCHLIST SIDEBAR ────────────────── */}
+              <DashboardWithSidebar>
+                <div>
               {/* ─── NET INFLOWS / OUTFLOWS ───────────────────────────── */}
               <motion.div variants={fadeUp} ref={inflowsRef} data-tutorial="inflows-outflows">
                 <SectionGap>
@@ -1441,6 +1259,164 @@ const Dashboard = ({ isPremium = false }) => {
                   </GridContainer>
                 </SectionGap>
               </motion.div>
+
+              {/* ─── BREAKING NEWS + TROPHY TRADES ─────────────────────── */}
+              {!loading && (
+                <motion.div variants={fadeUp}>
+                  <SectionGap>
+                    <GridContainer>
+                      {/* Breaking News */}
+                      <Panel>
+                        <PanelHeader>
+                          <TerminalPrompt>BREAKING_NEWS</TerminalPrompt>
+                          <PanelBadge>LIVE</PanelBadge>
+                        </PanelHeader>
+                        {newsArticles.length > 0 ? (
+                          <div>
+                            {newsArticles.slice(0, isPremium ? 8 : 3).map((article, idx) => {
+                              const published = article.published_at || article.publishedAt || article.created_at
+                              const isBreaking = published && (Date.now() - new Date(published).getTime()) < 3600000
+                              const sentimentVal = article.sentiment || 0
+                              const sentimentLabel = sentimentVal > 0.1 ? 'bullish' : sentimentVal < -0.1 ? 'bearish' : 'neutral'
+                              return (
+                                <NewsItem key={idx} href={article.url} target="_blank" rel="noopener noreferrer">
+                                  <NewsHeadline>{article.title || article.body?.slice(0, 100)}</NewsHeadline>
+                                  <NewsMeta>
+                                    {isBreaking && <BreakingTag>BREAKING</BreakingTag>}
+                                    <SentimentBadge $sentiment={sentimentLabel}>{sentimentLabel.toUpperCase()}</SentimentBadge>
+                                    <span style={{ color: COLORS.textMuted }}>{article.creator_name || article.creator_screen_name || article.source || ''}</span>
+                                    {published && (
+                                      <span style={{ color: COLORS.textMuted }}>
+                                        {(() => {
+                                          const diff = Date.now() - new Date(published).getTime()
+                                          const mins = Math.floor(diff / 60000)
+                                          if (mins < 60) return `${mins}m ago`
+                                          if (mins < 1440) return `${Math.floor(mins / 60)}h ago`
+                                          return `${Math.floor(mins / 1440)}d ago`
+                                        })()}
+                                      </span>
+                                    )}
+                                  </NewsMeta>
+                                </NewsItem>
+                              )
+                            })}
+                            {!isPremium && newsArticles.length > 3 && (
+                              <div style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.7rem', fontFamily: SANS_FONT, color: COLORS.textMuted }}>
+                                <a href="/subscribe" style={{ color: COLORS.cyan, fontWeight: 600, textDecoration: 'underline' }}>
+                                  Upgrade for {newsArticles.length - 3} more articles
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <EmptyState>Loading news feed...</EmptyState>
+                        )}
+                      </Panel>
+
+                      {/* Trophy Trades */}
+                      <Panel>
+                        <PanelHeader>
+                          <div>
+                            <TerminalPrompt>TROPHY_TRADES</TerminalPrompt>
+                            <PanelSubtext>Largest whale transactions — 24H</PanelSubtext>
+                          </div>
+                          <PanelBadge>{topHighValueTxs.length} TRADES</PanelBadge>
+                        </PanelHeader>
+                        {topHighValueTxs.length > 0 ? (
+                          <div>
+                            {(isPremium ? topHighValueTxs : topHighValueTxs.slice(0, 3)).map((tx, idx) => {
+                              const side = (tx.side || '').toUpperCase()
+                              const sideColor = side === 'BUY' ? COLORS.green : side === 'SELL' ? COLORS.red : COLORS.amber
+                              const entity = tx.whale_entity || tx.from_entity || ''
+                              return (
+                                <TrophyRow key={tx.hash || idx} onClick={() => window.location.href = `/token/${encodeURIComponent(tx.coin)}`}>
+                                  <TrophyRank $rank={idx + 1}>#{idx + 1}</TrophyRank>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <TokenIcon symbol={tx.coin} size={18} />
+                                    <span style={{ fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.85rem', color: COLORS.textPrimary }}>{tx.coin}</span>
+                                  </div>
+                                  <span style={{
+                                    fontFamily: MONO_FONT, fontWeight: 700, fontSize: '0.7rem', padding: '0.15rem 0.4rem',
+                                    borderRadius: '3px', color: sideColor,
+                                    background: side === 'BUY' ? 'rgba(0,230,118,0.08)' : side === 'SELL' ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)',
+                                  }}>
+                                    {side}
+                                  </span>
+                                  <span style={{ fontFamily: MONO_FONT, fontWeight: 800, fontSize: '0.9rem', color: sideColor }}>
+                                    ${formatCompact(tx.usd || 0)}
+                                  </span>
+                                  <span style={{ fontFamily: MONO_FONT, fontSize: '0.7rem', color: COLORS.textMuted }}>{tx.chain || ''}</span>
+                                  <span style={{ fontFamily: MONO_FONT, fontSize: '0.65rem', color: COLORS.cyan, textAlign: 'right' }}>
+                                    {isPremium && entity ? entity : (tx.whale_score ? `Score: ${tx.whale_score}` : '')}
+                                  </span>
+                                </TrophyRow>
+                              )
+                            })}
+                            {!isPremium && topHighValueTxs.length > 3 && (
+                              <div style={{ textAlign: 'center', padding: '0.6rem', fontSize: '0.7rem', fontFamily: SANS_FONT, color: COLORS.textMuted }}>
+                                Showing 3 of {topHighValueTxs.length} trophy trades.{' '}
+                                <a href="/subscribe" style={{ color: COLORS.cyan, fontWeight: 600, textDecoration: 'underline' }}>
+                                  Upgrade for all + whale identity
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <EmptyState>No high-value transactions today.</EmptyState>
+                        )}
+                      </Panel>
+                    </GridContainer>
+                  </SectionGap>
+                </motion.div>
+              )}
+
+                </div>{/* end main column */}
+
+                {/* ─── WATCHLIST SIDEBAR ──────────────────────────────── */}
+                <SidebarColumn>
+                  <StickyWatchlist>
+                    {!watchlistLoading && watchlist.length > 0 && (
+                      <Panel>
+                        <PanelHeader>
+                          <TerminalPrompt>MY_WATCHLIST</TerminalPrompt>
+                          <PanelBadge>{watchlist.length}</PanelBadge>
+                        </PanelHeader>
+                        <div>
+                          {watchlist.map((item) => (
+                            <Link key={item.symbol} href={`/token/${encodeURIComponent(item.symbol)}?sinceHours=24`} style={{ textDecoration: 'none' }}>
+                              <div style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)',
+                                transition: 'background 0.15s ease',
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <TokenIcon symbol={item.symbol} size={16} />
+                                  <span style={{ fontFamily: MONO_FONT, fontWeight: 600, fontSize: '0.8rem', color: COLORS.textPrimary }}>{item.symbol}</span>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                  {item.price != null && (
+                                    <div style={{ fontFamily: MONO_FONT, fontSize: '0.75rem', fontWeight: 700, color: COLORS.textPrimary }}>
+                                      ${item.price >= 1 ? item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : item.price.toFixed(6)}
+                                    </div>
+                                  )}
+                                  {item.change24h != null && (
+                                    <div style={{
+                                      fontFamily: MONO_FONT, fontSize: '0.65rem', fontWeight: 700,
+                                      color: item.change24h >= 0 ? COLORS.green : COLORS.red,
+                                    }}>
+                                      {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(2)}%
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </Panel>
+                    )}
+                  </StickyWatchlist>
+                </SidebarColumn>
+              </DashboardWithSidebar>
 
               {/* ─── PREMIUM SECTIONS (gated with PremiumGate) ──────── */}
                   {/* ─── BUY / SELL PRESSURE ───────────────────────────── */}
