@@ -10,6 +10,15 @@ import OpenAI from 'openai'
 
 export const dynamic = 'force-dynamic'
 
+// Use Grok (xAI) as primary, fallback to OpenAI
+const getAIClient = () => {
+  if (process.env.XAI_API_KEY) {
+    return new OpenAI({ apiKey: process.env.XAI_API_KEY, baseURL: 'https://api.x.ai/v1' })
+  }
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
+const AI_MODEL = process.env.XAI_API_KEY ? 'grok-4-1-fast-non-reasoning' : 'gpt-4o-mini'
+
 const BATCH_SIZE = 20 // Process 20 articles at a time
 
 interface NewsItem {
@@ -50,9 +59,7 @@ export async function GET(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE!
     )
 
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    })
+    const openai = getAIClient()
 
     // Fetch news items without LLM sentiment from last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -176,7 +183,7 @@ Headlines:
 ${headlinesList}`
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: AI_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }

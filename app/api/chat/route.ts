@@ -12,6 +12,24 @@ import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 
 export const dynamic = 'force-dynamic'
 
+// Use Grok (xAI) as primary AI, fallback to OpenAI if no xAI key
+const getAIClient = () => {
+  if (process.env.XAI_API_KEY) {
+    return {
+      client: new OpenAI({ apiKey: process.env.XAI_API_KEY, baseURL: 'https://api.x.ai/v1' }),
+      model: 'grok-4-1-fast-reasoning',
+      miniModel: 'grok-4-1-fast-non-reasoning',
+      provider: 'grok'
+    }
+  }
+  return {
+    client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+    model: 'gpt-4o',
+    miniModel: 'gpt-4o',
+    provider: 'openai'
+  }
+}
+
 /**
  * Dynamically determine if whale data exists for a token
  * This checks the actual fetched data instead of relying on a hardcoded list
@@ -224,10 +242,10 @@ export async function POST(request: Request) {
     
     if (!tickerResult.ticker) {
       // Handle non-crypto queries with a conversational response
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      const { client: ai, miniModel } = getAIClient()
       
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
+      const completion = await ai.chat.completions.create({
+        model: miniModel,
         messages: [
           {
             role: 'system',
@@ -297,11 +315,11 @@ Previous context (for reference only, do not repeat):
 ${gptContext}`
     }
     
-    // Call GPT-4.0
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    // Call Grok/GPT AI
+    const { client: ai, model: aiModel, provider } = getAIClient()
     
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    const completion = await ai.chat.completions.create({
+      model: aiModel,
       messages: [
         {
           role: 'system',
@@ -327,7 +345,7 @@ ${gptContext}`
       user_message: message,
       orca_response: orcaResponse,
       tokens_used: completion.usage?.total_tokens || 0,
-      model: 'gpt-4o',
+      model: aiModel,
       tickers_mentioned: [ticker],
       data_sources_used: {
         whale: isERC20 && context.whales.transaction_count > 0,

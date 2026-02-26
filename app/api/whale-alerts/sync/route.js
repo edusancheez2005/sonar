@@ -18,21 +18,21 @@ const WHALE_ALERT_API_KEY = process.env.WHALE_ALERT_API_KEY || 'ioqSOvTlUjNwbpoK
 const WHALE_ALERT_BASE_URL = 'https://api.whale-alert.io/v1'
 
 // Minimum transaction value to track (in USD)
-// Free tier: $500k minimum, paid tier: can be lower
-const MIN_VALUE_USD = 500000 // $500k+ (free tier requirement)
+// Paid tier: can go as low as $100k for more comprehensive tracking
+const MIN_VALUE_USD = 100000 // $100k+ (paid tier — lower threshold catches more whale activity)
 
 /**
  * Fetch recent whale transactions from Whale Alert API
  */
 async function fetchWhaleAlerts() {
   try {
-    // Get transactions from last 1 hour (free tier limit)
+    // Paid tier: can look back up to 24 hours and use cursor pagination
     const now = Math.floor(Date.now() / 1000)
-    const start = now - 3600 // 1 hour ago (free tier allows 1 hour max)
+    const start = now - 3600 * 6 // 6 hours ago (paid tier allows much more than 1hr)
     
-    const url = `${WHALE_ALERT_BASE_URL}/transactions?api_key=${WHALE_ALERT_API_KEY}&start=${start}&min_value=${MIN_VALUE_USD}`
+    const url = `${WHALE_ALERT_BASE_URL}/transactions?api_key=${WHALE_ALERT_API_KEY}&start=${start}&min_value=${MIN_VALUE_USD}&limit=100`
     
-    console.log(`📡 Fetching whale alerts from Whale Alert API...`)
+    console.log(`📡 Fetching whale alerts (paid tier, $${(MIN_VALUE_USD/1000).toFixed(0)}k+ min, 6h window)...`)
     console.log(`URL: ${WHALE_ALERT_BASE_URL}/transactions?api_key=***&start=${start}&min_value=${MIN_VALUE_USD}`)
     
     const response = await fetch(url, {
