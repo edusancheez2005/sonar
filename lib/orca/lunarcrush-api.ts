@@ -8,6 +8,21 @@
 const LUNARCRUSH_API_KEY = process.env.LUNARCRUSH_API_KEY || 'unxdj7pa1xdr5248gjygdp7rskmjwsn9xonvw1su'
 const LUNARCRUSH_BASE_URL = 'https://lunarcrush.com/api4'
 
+// In-memory cache to avoid 429 rate limits (5-minute TTL)
+const cache = new Map<string, { data: any; expiry: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+function getCached<T>(key: string): T | null {
+  const entry = cache.get(key)
+  if (entry && Date.now() < entry.expiry) return entry.data as T
+  cache.delete(key)
+  return null
+}
+
+function setCache(key: string, data: any) {
+  cache.set(key, { data, expiry: Date.now() + CACHE_TTL })
+}
+
 export interface LunarCrushCoinData {
   id: number
   name: string
@@ -54,6 +69,12 @@ export interface LunarCrushEnhancedData {
  * Includes Galaxy Score, Alt Rank, WoW/MoM changes
  */
 export async function fetchLunarCrushCoin(symbol: string): Promise<LunarCrushCoinData | null> {
+  const cacheKey = `coin:${symbol.toLowerCase()}`
+  const cached = getCached<LunarCrushCoinData>(cacheKey)
+  if (cached) {
+    console.log(`✅ LunarCrush coin data (cached) for ${symbol}`)
+    return cached
+  }
   try {
     console.log(`📡 Fetching LunarCrush coin data for ${symbol}...`)
     
@@ -68,7 +89,7 @@ export async function fetchLunarCrushCoin(symbol: string): Promise<LunarCrushCoi
     )
     
     if (!response.ok) {
-      console.error(`LunarCrush coin API error: ${response.status}`)
+      console.error(`LunarCrush coin API error: ${response.status}${response.status === 429 ? ' (rate limited — using cache fallback)' : ''}`)
       return null
     }
     
@@ -81,7 +102,7 @@ export async function fetchLunarCrushCoin(symbol: string): Promise<LunarCrushCoi
     
     console.log(`✅ LunarCrush coin data: Galaxy Score ${json.data.galaxy_score}, Alt Rank ${json.data.alt_rank}`)
     
-    return {
+    const result: LunarCrushCoinData = {
       id: json.data.id,
       name: json.data.name,
       symbol: json.data.symbol,
@@ -99,6 +120,8 @@ export async function fetchLunarCrushCoin(symbol: string): Promise<LunarCrushCoi
       volatility: json.data.volatility || 0,
       market_cap_rank: json.data.market_cap_rank || 0
     }
+    setCache(cacheKey, result)
+    return result
   } catch (error) {
     console.error(`Error fetching LunarCrush coin data for ${symbol}:`, error)
     return null
@@ -110,6 +133,12 @@ export async function fetchLunarCrushCoin(symbol: string): Promise<LunarCrushCoi
  * Includes sentiment, social metrics, themes
  */
 export async function fetchLunarCrushTopic(symbol: string): Promise<LunarCrushTopicData | null> {
+  const cacheKey = `topic:${symbol.toLowerCase()}`
+  const cached = getCached<LunarCrushTopicData>(cacheKey)
+  if (cached) {
+    console.log(`✅ LunarCrush topic data (cached) for ${symbol}`)
+    return cached
+  }
   try {
     console.log(`📡 Fetching LunarCrush topic data for ${symbol}...`)
     
@@ -124,7 +153,7 @@ export async function fetchLunarCrushTopic(symbol: string): Promise<LunarCrushTo
     )
     
     if (!response.ok) {
-      console.error(`LunarCrush topic API error: ${response.status}`)
+      console.error(`LunarCrush topic API error: ${response.status}${response.status === 429 ? ' (rate limited)' : ''}`)
       return null
     }
     
@@ -139,7 +168,7 @@ export async function fetchLunarCrushTopic(symbol: string): Promise<LunarCrushTo
     
     console.log(`✅ LunarCrush topic data: Sentiment ${data.sentiment}%, Interactions ${data.interactions_24h}`)
     
-    return {
+    const result: LunarCrushTopicData = {
       topic: data.topic || symbol.toLowerCase(),
       title: data.title || symbol,
       sentiment: data.sentiment || 0,
@@ -153,6 +182,8 @@ export async function fetchLunarCrushTopic(symbol: string): Promise<LunarCrushTo
       interactions_change_7d: data.interactions_change_7d,
       sentiment_change_24h: data.sentiment_change_24h
     }
+    setCache(cacheKey, result)
+    return result
   } catch (error) {
     console.error(`Error fetching LunarCrush topic data for ${symbol}:`, error)
     return null

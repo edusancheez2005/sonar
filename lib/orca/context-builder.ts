@@ -587,7 +587,7 @@ async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<void
     }
 
     const currencyCode = tickerMap[ticker.toUpperCase()] || ticker.toUpperCase()
-    const url = `https://cryptopanic.com/api/v1/posts/?auth_token=${CRYPTOPANIC_TOKEN}&currencies=${currencyCode}&kind=news&filter=rising`
+    const url = `https://cryptopanic.com/api/developer/v2/posts/?auth_token=${CRYPTOPANIC_TOKEN}&currencies=${currencyCode}&kind=news&public=true`
 
     console.log(`📰 Fetching CryptoPanic news for ${ticker}...`)
     
