@@ -1,7 +1,9 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
+import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import TokenIcon from '@/components/TokenIcon'
 
 const PageWrapper = styled.div`
   min-height: 100vh;
@@ -346,6 +348,38 @@ export default function ClientProfile({ email: initialEmail }) {
   const [subscription, setSubscription] = useState(null)
   const [loadingSub, setLoadingSub] = useState(true)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [watchlist, setWatchlist] = useState([])
+  const [watchlistLoading, setWatchlistLoading] = useState(true)
+
+  // Fetch watchlist
+  useEffect(() => {
+    async function fetchWatchlist() {
+      try {
+        const sb = supabaseBrowser()
+        const { data: { session } } = await sb.auth.getSession()
+        if (!session) { setWatchlistLoading(false); return }
+        const res = await fetch('/api/watchlist', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
+        if (res.ok) {
+          const { watchlist: wl } = await res.json()
+          if (wl && wl.length > 0) {
+            const enriched = await Promise.all(wl.map(async (item) => {
+              try {
+                const priceRes = await fetch(`/api/token/price?symbol=${item.symbol}`)
+                if (priceRes.ok) {
+                  const p = await priceRes.json()
+                  return { ...item, price: p.price, change24h: p.change24h }
+                }
+              } catch {}
+              return { ...item, price: null, change24h: null }
+            }))
+            setWatchlist(enriched)
+          }
+        }
+      } catch {}
+      finally { setWatchlistLoading(false) }
+    }
+    fetchWatchlist()
+  }, [])
 
   useEffect(() => {
     if (initialEmail) return
@@ -586,6 +620,61 @@ export default function ClientProfile({ email: initialEmail }) {
                   </Primary>
                 </Actions>
               </>
+            )}
+          </Card>
+
+          {/* Watchlist */}
+          <Card>
+            <SectionHeader>
+              <div className="icon">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </div>
+              <div className="header-content">
+                <h2>My Watchlist</h2>
+                <p>{watchlist.length} token{watchlist.length !== 1 ? 's' : ''} tracked</p>
+              </div>
+            </SectionHeader>
+            {watchlistLoading ? (
+              <Muted>Loading watchlist...</Muted>
+            ) : watchlist.length === 0 ? (
+              <Muted style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                No tokens in your watchlist yet. Add tokens from any token page!
+              </Muted>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {watchlist.map((item) => (
+                  <Link key={item.symbol} href={`/token/${encodeURIComponent(item.symbol)}?sinceHours=24`} style={{ textDecoration: 'none' }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.75rem 1rem', borderRadius: '8px',
+                      background: 'rgba(54, 166, 186, 0.04)', border: '1px solid rgba(54, 166, 186, 0.1)',
+                      transition: 'all 0.15s ease', cursor: 'pointer',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <TokenIcon symbol={item.symbol} size={24} />
+                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary, #fff)' }}>{item.symbol}</span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        {item.price != null && (
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary, #fff)' }}>
+                            ${item.price >= 1 ? item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : item.price.toFixed(6)}
+                          </div>
+                        )}
+                        {item.change24h != null && (
+                          <div style={{
+                            fontSize: '0.8rem', fontWeight: 700,
+                            color: item.change24h >= 0 ? '#16c784' : '#ed4c5c',
+                          }}>
+                            {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(2)}%
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             )}
           </Card>
 

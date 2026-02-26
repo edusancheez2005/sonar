@@ -273,7 +273,7 @@ export default function EnhancedNews({ ticker = null }) {
   const [ecosystemFilter, setEcosystemFilter] = useState('all')
   const [tokenSearch, setTokenSearch] = useState('')
   const [showCount, setShowCount] = useState(30)
-  const [activeTab, setActiveTab] = useState('news') // 'news' | 'social'
+  const [activeTab, setActiveTab] = useState('breaking') // 'breaking' | 'news' | 'social'
 
   useEffect(() => {
     async function fetchData() {
@@ -379,6 +379,9 @@ export default function EnhancedNews({ ticker = null }) {
       {/* Tab switcher */}
       {!ticker && (
         <FilterRow style={{ marginBottom: '1rem' }}>
+          <Chip $active={activeTab === 'breaking'} $color={colors.sentimentBear} onClick={() => { setActiveTab('breaking'); setShowCount(30) }}>
+            Breaking News
+          </Chip>
           <Chip $active={activeTab === 'news'} onClick={() => { setActiveTab('news'); setShowCount(30) }}>
             News Articles<span className="count">({allArticles.length})</span>
           </Chip>
@@ -423,6 +426,69 @@ export default function EnhancedNews({ ticker = null }) {
           />
         </FilterRow>
       </FiltersSection>
+
+      {/* Breaking News Tab — live social feed sorted by most recent */}
+      {activeTab === 'breaking' && (
+        <Grid>
+          <AnimatePresence mode="popLayout">
+            {socialPosts.length === 0 && (
+              <EmptyState>Loading breaking news from crypto community...</EmptyState>
+            )}
+            {[...socialPosts].sort((a, b) => new Date(b.published_at) - new Date(a.published_at)).slice(0, showCount).map((post, i) => {
+              const sent = post.sentiment || 0
+              const isBullish = sent > 0
+              const isNeutral = sent === 0
+              const publishedAt = post.published_at
+              const isBreaking = publishedAt && (Date.now() - new Date(publishedAt).getTime()) < 3600000
+
+              return (
+                <Card
+                  key={`breaking-${post.id || post.post_id}`}
+                  href={post.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  $bullish={isBullish}
+                  $neutral={isNeutral}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2, delay: Math.min(i * 0.02, 0.5) }}
+                  layout
+                >
+                  <CardHeader>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {post.creator_image && (
+                        <img src={post.creator_image} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none' }} />
+                      )}
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff' }}>
+                        {post.creator_name || post.creator_screen_name || 'Crypto'}
+                      </span>
+                      {isBreaking && (
+                        <span style={{ fontSize: '0.55rem', fontWeight: 800, color: colors.sentimentBear, background: 'rgba(237,76,92,0.15)', padding: '0.1rem 0.35rem', borderRadius: 3, letterSpacing: '0.5px' }}>BREAKING</span>
+                      )}
+                    </div>
+                    <SentimentBadge $bullish={isBullish} $neutral={isNeutral}>
+                      {isBullish ? 'Bullish' : sent < 0 ? 'Bearish' : 'Neutral'}
+                    </SentimentBadge>
+                  </CardHeader>
+                  
+                  <CardTitle>{post.body || post.title || ''}</CardTitle>
+
+                  <CardMeta>
+                    <span>{post.interactions ? `${post.interactions.toLocaleString()} interactions` : ''}</span>
+                    <span>{formatTimeAgo(post.published_at)}</span>
+                  </CardMeta>
+                </Card>
+              )
+            })}
+          </AnimatePresence>
+          {socialPosts.length > showCount && (
+            <ShowMoreBtn onClick={() => setShowCount(c => c + 30)}>
+              Show more ({socialPosts.length - showCount} remaining)
+            </ShowMoreBtn>
+          )}
+        </Grid>
+      )}
 
       {activeTab === 'news' && (
         <>

@@ -275,18 +275,18 @@ const TUTORIAL_STEPS = [
     position: 'below'
   },
   {
-    id: 'traded-tokens',
-    title: 'Most Traded Tokens',
-    content: "These are the hottest tokens by whale transaction count. Click any card to dive deeper into that token's analytics and see the full picture.",
-    target: 'tradedTokens',
-    position: 'above'
+    id: 'live-ticker',
+    title: 'Live Whale Feed',
+    content: "The scrolling ticker at the top shows real-time whale transactions as they happen. Green for buys, red for sells. Click any transaction to explore that token!",
+    target: null,
+    position: 'center'
   },
   {
-    id: 'top-whales',
-    title: 'Top 10 Whales',
-    content: "Track the biggest players in the market! See their net positions, favorite tokens, and when they were last active. These are the wallets moving millions.",
-    target: 'topWhales',
-    position: 'above'
+    id: 'news-page',
+    title: 'Breaking News & Social',
+    content: "Head to the News page for breaking crypto news, social buzz, and AI-analyzed sentiment. It's your window into what the market is talking about right now!",
+    target: null,
+    position: 'center'
   },
   {
     id: 'orca-ai',
