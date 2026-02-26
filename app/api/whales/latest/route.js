@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
+const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+
 export async function GET(req) {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
     return NextResponse.json(
@@ -19,6 +21,7 @@ export async function GET(req) {
   const { data, error } = await supabaseAdmin
     .from('whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score')
+    .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
     .order('timestamp', { ascending: false })
     .range(from, to)
 
