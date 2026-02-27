@@ -19,10 +19,13 @@ export async function GET() {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const today = new Date().toISOString().split('T')[0]
 
+    const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+
     // Get 24h transactions
     const { data: txns, error } = await supabase
       .from('whale_transactions')
       .select('token_symbol, usd_value, classification, whale_address, from_address, timestamp')
+      .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
       .gte('timestamp', since)
       .order('timestamp', { ascending: false })
       .limit(2000)

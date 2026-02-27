@@ -8,6 +8,8 @@ export async function GET() {
   try {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     
+    const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+
     // Fetch whale transactions from past 7 days
     const { data, error } = await supabaseAdmin
       .from('whale_transactions')
@@ -16,6 +18,7 @@ export async function GET() {
       .in('counterparty_type', ['CEX', 'DEX'])
       .in('classification', ['BUY', 'SELL'])
       .not('whale_address', 'is', null)
+      .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
       .order('timestamp', { ascending: false })
     
     if (error) {
