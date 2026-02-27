@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@emotion/is-prop-valid": "^1.2.1",
+    "@next/swc-linux-x64-gnu": "^16.1.6",
     "@stripe/stripe-js": "^8.0.0",
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/supabase-js": "^2.54.0",
