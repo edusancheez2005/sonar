@@ -615,6 +615,7 @@ const Dashboard = ({ isPremium = false }) => {
   const tradedTokensRef = useRef(null);
   const topWhalesRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnce = useRef(false);
   const [algoActive, setAlgoActive] = useState(true);
   
      // New state for enhanced insights
@@ -693,7 +694,7 @@ const Dashboard = ({ isPremium = false }) => {
     let timer
     const fetchSummary = async () => {
       try {
-        setLoading(true)
+        if (!hasLoadedOnce.current) setLoading(true)
         const res = await fetch('/api/dashboard/summary', { cache: 'no-store' })
         const json = await res.json()
         if (res.ok) {
@@ -793,7 +794,7 @@ const Dashboard = ({ isPremium = false }) => {
           setLastUpdate('just now')
         }
       } catch {}
-      finally { setLoading(false) }
+      finally { setLoading(false); hasLoadedOnce.current = true }
     }
     
                      // All enhanced insights data is now fetched from the enhanced /api/dashboard/summary endpoint
