@@ -8,12 +8,15 @@ export async function GET() {
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   
+  const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+
   // NEW: Use whale_address column and exclude CEX addresses
   const { data, error } = await supabaseAdmin
     .from('whale_transactions')
     .select('whale_address, token_symbol, classification, usd_value, timestamp, whale_score, counterparty_type')
     .gte('timestamp', since)
     .not('whale_address', 'is', null)
+    .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
     .in('counterparty_type', ['CEX', 'DEX'])
     .in('classification', ['BUY', 'SELL'])
 

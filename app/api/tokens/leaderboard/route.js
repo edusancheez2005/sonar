@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
+const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+
 export async function GET() {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
     return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
@@ -10,6 +12,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from('whale_transactions')
     .select('token_symbol, classification, usd_value, timestamp, from_address')
+    .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
     .gte('timestamp', since)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

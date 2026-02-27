@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
+const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+
 export async function GET(req) {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
     return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
@@ -23,6 +25,7 @@ export async function GET(req) {
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,to_address,whale_address,counterparty_type,whale_score', { count: 'estimated' })
     .not('token_symbol', 'is', null)
     .not('token_symbol', 'ilike', 'unknown%')
+    .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
 
   if (!Number.isNaN(sinceHours) && sinceHours > 0) {
     const sinceIso = new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString()

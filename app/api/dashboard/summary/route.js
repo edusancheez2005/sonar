@@ -38,8 +38,8 @@ export async function GET() {
     // Filter out stablecoins from analytics (but keep in raw transaction list)
     const analyticsData = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()))
     
-    // Keep all data for recent transactions table (including stablecoins)
-    const recent24h = recentData || []
+    // Filter stablecoins from recent transactions too
+    const recent24h = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()))
 
     // Batch-resolve entity names for recent transactions
     const recentAddresses = new Set()

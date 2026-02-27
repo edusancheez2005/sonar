@@ -103,7 +103,7 @@ async function getActiveTokens() {
   }
 
   // Sort by count, take top 30
-  const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD']
+  const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
   return Object.entries(counts)
     .filter(([sym]) => !STABLECOINS.includes(sym))
     .sort((a, b) => b[1] - a[1])
@@ -215,6 +215,8 @@ async function fetchPriceData(tokenSymbol) {
     PEPE: 'pepe', WIF: 'dogwifcoin', STRK: 'starknet', FET: 'fetch-ai',
     RENDER: 'render-token', INJ: 'injective-protocol', SEI: 'sei-network',
     SUI: 'sui', TIA: 'celestia', JUP: 'jupiter-exchange-solana',
+    TRX: 'tron', BONK: 'bonk', JTO: 'jito-governance-token',
+    PYTH: 'pyth-network', RAY: 'raydium', ORCA: 'orca',
   }
 
   const coinId = SYMBOL_TO_ID[tokenSymbol]
