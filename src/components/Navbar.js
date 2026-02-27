@@ -18,7 +18,9 @@ const NavContainer = styled.nav`
 const Logo = styled.div`
   display: flex;
   align-items: center;
-  img { height: 80px; width: auto; object-fit: contain; object-position: center; margin-right: 1rem; }
+  cursor: pointer;
+  img { height: 120px; width: auto; object-fit: contain; object-position: center; margin-right: 1rem; }
+  @media (max-width: 768px) { img { height: 90px; } }
 `;
 
 const MenuItems = styled.div`
@@ -244,8 +246,15 @@ const Navbar = ({ onLogout }) => {
 
   return (
     <NavContainer>
-      <Logo>
-        <NextLink href="/"><img src="/logo2.png" alt="Sonar Logo" /></NextLink>
+      <Logo onClick={(e) => {
+        e.preventDefault();
+        if (pathname === '/' || pathname === '/dashboard') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          router.push('/');
+        }
+      }}>
+        <img src="/logo2.png" alt="Sonar Logo" />
       </Logo>
       <MobileMenuButton onClick={toggleMenu}>☰</MobileMenuButton>
       <MenuItems isOpen={isOpen}>
