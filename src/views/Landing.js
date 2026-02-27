@@ -77,8 +77,9 @@ const NavBar = styled.nav`
 `;
 
 const Logo = styled.div`
-  display: flex; align-items: center;
-  img { height: 80px; width: auto; object-fit: contain; object-position: center; transition: height 0.3s ease; }
+  display: flex; align-items: center; cursor: pointer;
+  img { height: 48px; width: auto; object-fit: contain; transition: opacity 0.2s ease; }
+  &:hover img { opacity: 0.85; }
 `;
 
 const NavLinks = styled.div`
@@ -851,8 +852,8 @@ const Landing = () => {
     <LandingContainer>
       {/* ─── NAV ─── */}
       <NavBar>
-        <Logo>
-          <img src={`${process.env.PUBLIC_URL}/assets/logo2.png`} alt="Sonar Tracker" />
+        <Logo onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <img src="/logo.svg" alt="Sonar Tracker" />
         </Logo>
         <NavLinks>
           <NavLink onClick={() => { const el = document.getElementById('features'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Features</NavLink>
