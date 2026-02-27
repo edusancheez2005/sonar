@@ -34,8 +34,8 @@ const Column = styled.div`
 
 const BrandColumn = styled(Column)`
   .brand { display: flex; align-items: center; margin-bottom: 1rem; }
-  .brand img { height: 40px; margin-right: 1rem; }
-  .brand h2 { color: var(--primary); font-size: 1.8rem; margin: 0; }
+  .brand img { height: 64px; margin-right: 1rem; }
+  .brand h2 { color: var(--primary); font-size: 2.2rem; margin: 0; }
   p { color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem; }
 `;
 
