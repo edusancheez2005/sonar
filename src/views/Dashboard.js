@@ -694,7 +694,6 @@ const Dashboard = ({ isPremium = false }) => {
     let timer
     const fetchSummary = async () => {
       try {
-        if (!hasLoadedOnce.current) setLoading(true)
         const res = await fetch('/api/dashboard/summary', { cache: 'no-store' })
         const json = await res.json()
         if (res.ok) {
@@ -951,8 +950,8 @@ const Dashboard = ({ isPremium = false }) => {
 
               {/* ─── KPI TICKER STRIP (MARKET PULSE) ─────────────────── */}
               <motion.div variants={fadeUp} ref={marketPulseRef} data-tutorial="market-pulse">
-                {loading ? <SkeletonKPIStrip /> : (
-                <KPIStrip>
+                {loading && !hasLoadedOnce.current && <SkeletonKPIStrip />}
+                <KPIStrip style={{ display: loading && !hasLoadedOnce.current ? 'none' : undefined }}>
                   <KPICell>
                     <KPILabel>Strong Accumulation</KPILabel>
                     <KPIValue $color={COLORS.green}>
@@ -987,7 +986,6 @@ const Dashboard = ({ isPremium = false }) => {
                     </KPISub>
                   </KPICell>
                 </KPIStrip>
-                )}
               </motion.div>
 
               {/* Free user conversion banner */}
