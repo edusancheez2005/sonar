@@ -262,13 +262,13 @@ const tokenColors = {
   DEFAULT: 'linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%)'
 }
 
-export default function WhaleAlertsCard({ isPremium = false }) {
+export default function WhaleAlertsCard({ isPremium = true }) {
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   
   useEffect(() => {
-    if (!isPremium) {
+    if (false) { // All features now free
       setLoading(false)
       return
     }
@@ -355,7 +355,7 @@ export default function WhaleAlertsCard({ isPremium = false }) {
     return true
   })
   
-  if (!isPremium) {
+  if (false) { // All features now free
     return (
       <Card
         initial={{ opacity: 0, y: 20 }}

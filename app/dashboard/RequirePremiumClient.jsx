@@ -34,7 +34,8 @@ export default function RequirePremiumClient({ children }) {
             isPremium: profile?.plan === 'premium' || profile?.plan === 'pro'
           })
           
-          setIsPremium(profile?.plan === 'premium' || profile?.plan === 'pro')
+          // All features are now free — everyone gets full access
+        setIsPremium(true)
         } catch (err) {
           console.error('Premium check failed:', err)
           setIsPremium(false)

@@ -1290,7 +1290,7 @@ const Landing = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
             {[
-              { value: '$0.26/day', title: 'Premium Access', desc: 'Institutional-grade whale intelligence for less than a coffee per day' },
+              { value: '$0', title: 'Full Platform Access', desc: 'Whale tracking, signals, sentiment, news, and analytics. All free, forever.' },
               { value: '10/day', title: 'Orca AI Prompts', desc: 'Deep analysis on any token with live whale data, sentiment, and price charts' },
               { value: '24/7', title: 'Whale Tracking', desc: 'Real-time alerts across Ethereum, Bitcoin, Tron, and major blockchains' },
             ].map((item, i) => (
@@ -1309,7 +1309,7 @@ const Landing = () => {
             <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
             <span>Powered by <strong style={{ color: '#e0e6ed' }}>CoinGecko</strong> + <strong style={{ color: '#e0e6ed' }}>LunarCrush</strong></span>
             <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
-            <span><strong style={{ color: '#e0e6ed' }}>$7.99</strong>/month premium</span>
+            <span><strong style={{ color: '#e0e6ed' }}>Free</strong> for all traders</span>
           </motion.div>
 
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
@@ -1486,7 +1486,7 @@ const Landing = () => {
             { before: 'Manually checking dozens of wallets', after: 'Automated tracking of every whale in real-time' },
             { before: 'Reading generic news 6 hours late', after: 'AI-curated signals the moment they happen' },
             { before: 'Guessing if a move is accumulation or dump', after: 'Clear BUY/SELL signals with confidence scores' },
-            { before: 'Paying $500+/mo for institutional tools', after: 'Same-grade intelligence for $7.99/month' },
+            { before: 'Paying $500+/mo for institutional tools', after: 'Same intelligence, completely free' },
           ].map((item, i) => (
             <CompareRow key={i}
               initial={{ opacity: 0, x: -30 }}
@@ -1803,9 +1803,9 @@ const Landing = () => {
       {/* ─── PRICING ─── */}
       <PricingSection id="pricing">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true, amount: 0.2 }} style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <SectionHeading>Institutional intelligence. Indie price.</SectionHeading>
+          <SectionHeading>Everything free. Pay only for more AI.</SectionHeading>
           <p style={{ fontSize: '1.3rem', color: 'var(--text-secondary)', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
-            Start free. Upgrade when you need more. Cancel anytime.
+            All whale data, signals, sentiment, and analytics are free. Upgrade for unlimited AI conversations and enhanced analytics.
           </p>
         </motion.div>
 
@@ -1815,10 +1815,10 @@ const Landing = () => {
             whileHover={{ transform: 'translateY(-8px)' }}
             style={{ background: 'rgba(26, 40, 56, 0.8)', border: '1px solid rgba(54, 166, 186, 0.2)', borderRadius: '20px', padding: '2.5rem', backdropFilter: 'blur(10px)', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)', transition: 'all 0.3s ease' }}>
             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Free</h3>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>For getting started</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Full access for everyone</div>
             <div><span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>$0</span><span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>/forever</span></div>
             <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0' }}>
-              {['News & market updates', 'Basic statistics', 'Limited transaction history', 'Community support'].map((f, i) => (
+              {['Real-time whale tracking 24/7', 'AI buy/sell signals', 'Sentiment analysis', 'Token analytics & heatmaps', 'Full transaction history', 'Whale leaderboard', 'News with AI sentiment', '2 ORCA AI conversations/day'].map((f, i) => (
                 <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {f}
@@ -1836,11 +1836,11 @@ const Landing = () => {
             style={{ background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.15) 0%, rgba(26, 40, 56, 0.95) 100%)', border: '2px solid var(--primary)', borderRadius: '20px', padding: '2.5rem', position: 'relative', backdropFilter: 'blur(10px)', boxShadow: '0 20px 60px rgba(54, 166, 186, 0.25)', transition: 'all 0.3s ease' }}>
             <div style={{ position: 'absolute', top: '-12px', right: '20px', background: 'linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%)', color: '#fff', padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700', letterSpacing: '0.5px', boxShadow: '0 4px 12px rgba(54, 166, 186, 0.4)' }}>MOST POPULAR</div>
             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem', marginTop: '0.5rem' }}>Pro</h3>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>For serious traders</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>For power users</div>
             <div><span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#2ecc71' }}>$7.99</span><span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>/month</span></div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Cancel anytime.</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: '1rem 0' }}>
-              {['Real-time whale tracking 24/7', 'ORCA AI analysis & signals', 'Custom alerts & notifications', 'Full transaction history', 'Token heatmaps & analytics', 'Sentiment analysis', 'CSV export', 'Priority support'].map((f, i) => (
+              {['Everything in Free', 'Unlimited ORCA AI conversations', 'Enhanced analytics & deep dives', 'CSV export', 'Priority support', 'Early access to new features'].map((f, i) => (
                 <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#2ecc71" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {f}

@@ -304,7 +304,7 @@ export default function Statistics() {
 
   async function exportToCSV() {
     // Check if user is premium
-    if (!isPremium) {
+    if (false) { // All features now free
       alert('CSV Export is a premium feature. Please upgrade to Pro to export data.')
       window.location.href = '/subscribe'
       return
@@ -392,7 +392,7 @@ export default function Statistics() {
             .select('plan')
             .eq('id', session.user.id)
             .single()
-          setIsPremium(profile?.plan === 'premium')
+          setIsPremium(true) // All features now free
         }
       } catch (err) {
         console.error('Error checking premium status:', err)

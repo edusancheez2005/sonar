@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
       .single()
 
-    const isPremium = profile?.plan === 'premium' || profile?.plan === 'pro'
-    const limit = isPremium ? 25 : 5
+    const isPremium = true // All features now free
+    const limit = 25
 
     if ((count || 0) >= limit) {
       return NextResponse.json({ 

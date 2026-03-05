@@ -643,7 +643,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         const { data: { session } } = await sb.auth.getSession()
         if (session?.user) {
           const { data: profile } = await sb.from('profiles').select('plan').eq('id', session.user.id).single()
-          setIsPremium(profile?.plan === 'premium' || profile?.plan === 'pro')
+          setIsPremium(true) // All features now free
         }
       } catch {}
     }
@@ -1574,15 +1574,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                 </a>
               ))}
             </div>
-            {!isPremium && newsArticles.length > 4 && (
-              <div style={{
-                textAlign: 'center', padding: '0.6rem', marginTop: '0.5rem',
-                fontSize: '0.75rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif"
-              }}>
-                Showing 4 of {newsArticles.length} articles.{' '}
-                <a href="/subscribe" style={{ color: '#00e5ff', fontWeight: 600, textDecoration: 'underline' }}>See all with Premium</a>
-              </div>
-            )}
+
           </Panel>
         )}
 
