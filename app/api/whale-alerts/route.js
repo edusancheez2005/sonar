@@ -54,10 +54,14 @@ export async function GET(req) {
     const minUsd = parseFloat(searchParams.get('minUsd') || '0')
     const hours = parseInt(searchParams.get('hours') || '24')
     
+    // Stablecoins to exclude — high-volume noise
+    const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FDUSD']
+
     // Build query
     let query = supabaseAdmin
       .from('whale_alerts')
       .select('*')
+      .not('symbol', 'in', `(${STABLECOINS.join(',')})`)
       .gte('timestamp', new Date(Date.now() - hours * 60 * 60 * 1000).toISOString())
       .order('timestamp', { ascending: false })
       .limit(limit)
