@@ -100,7 +100,6 @@ export async function GET() {
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
           .not('whale_address', 'is', null)
-          .in('counterparty_type', ['CEX', 'DEX'])
           .in('classification', ['BUY', 'SELL'])
           .gte('timestamp', sinceIso),
         supabaseAdmin.from('whale_transactions')
@@ -108,7 +107,6 @@ export async function GET() {
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
           .not('whale_address', 'is', null)
-          .in('counterparty_type', ['CEX', 'DEX'])
           .eq('classification', 'BUY')
           .gte('timestamp', sinceIso),
         supabaseAdmin.from('whale_transactions')
@@ -116,7 +114,6 @@ export async function GET() {
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
           .not('whale_address', 'is', null)
-          .in('counterparty_type', ['CEX', 'DEX'])
           .eq('classification', 'SELL')
           .gte('timestamp', sinceIso)
       ])
