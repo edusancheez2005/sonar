@@ -20,8 +20,6 @@ export async function GET() {
       .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type', { count: 'estimated' })
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')
-      .not('whale_address', 'is', null)
-      .in('counterparty_type', ['CEX', 'DEX'])
       .in('classification', ['BUY', 'SELL'])
 
     q = q.gte('timestamp', sinceIso)
