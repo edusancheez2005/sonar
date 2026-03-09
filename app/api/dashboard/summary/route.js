@@ -20,7 +20,7 @@ export async function GET() {
       .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type', { count: 'estimated' })
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')
-      .in('classification', ['BUY', 'SELL'])
+      .in('classification', ['BUY', 'SELL', 'TRANSFER'])
 
     q = q.gte('timestamp', sinceIso)
 
@@ -100,7 +100,7 @@ export async function GET() {
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
           .not('whale_address', 'is', null)
-          .in('classification', ['BUY', 'SELL'])
+          .in('classification', ['BUY', 'SELL', 'TRANSFER'])
           .gte('timestamp', sinceIso),
         supabaseAdmin.from('whale_transactions')
           .select('classification', { count: 'exact', head: true })

@@ -15,7 +15,7 @@ export async function GET() {
       .from('whale_transactions')
       .select('whale_address,classification,usd_value,token_symbol,whale_score,timestamp')
       .gte('timestamp', since)
-      .in('classification', ['BUY', 'SELL'])
+      .in('classification', ['BUY', 'SELL', 'TRANSFER'])
       .not('whale_address', 'is', null)
       .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
       .order('timestamp', { ascending: false })
