@@ -107,13 +107,6 @@ export async function GET() {
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
           .not('whale_address', 'is', null)
-          .eq('classification', 'BUY')
-          .gte('timestamp', sinceIso),
-        supabaseAdmin.from('all_whale_transactions')
-          .select('classification', { count: 'exact', head: true })
-          .not('token_symbol', 'is', null)
-          .not('token_symbol', 'ilike', 'unknown%')
-          .not('whale_address', 'is', null)
           .eq('classification', 'SELL')
           .gte('timestamp', sinceIso)
       ])
