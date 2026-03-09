@@ -7,7 +7,7 @@ export async function GET(req) {
   }
   const { searchParams } = new URL(req.url)
   const sinceHours = Math.max(0, parseInt(searchParams.get('sinceHours') || '168', 10)) // default 7d
-  let q = supabaseAdmin.from('whale_transactions').select('blockchain')
+  let q = supabaseAdmin.from('all_whale_transactions').select('blockchain')
   if (sinceHours > 0) {
     const sinceIso = new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString()
     q = q.gte('timestamp', sinceIso)

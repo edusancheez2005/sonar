@@ -12,7 +12,7 @@ export async function GET() {
 
   // NEW: Use whale_address column and exclude CEX addresses
   const { data, error } = await supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('whale_address, token_symbol, classification, usd_value, timestamp, whale_score, counterparty_type')
     .gte('timestamp', since)
     .not('whale_address', 'is', null)

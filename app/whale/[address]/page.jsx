@@ -74,7 +74,7 @@ export default async function WhaleProfile({ params }) {
   
   // First try 24h, if no data, try 7 days
   let { data, error } = await supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address,reasoning,confidence,from_label,to_label')
     .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
     .gte('timestamp', since)
@@ -85,7 +85,7 @@ export default async function WhaleProfile({ params }) {
   if (!data || data.length === 0) {
     since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const result = await supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address,reasoning,confidence,from_label,to_label')
       .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
       .gte('timestamp', since)

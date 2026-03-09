@@ -21,7 +21,7 @@ export async function GET(req) {
   const to = from + limit - 1
 
   let q = supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,to_address,whale_address,counterparty_type,whale_score', { count: 'estimated' })
     .not('token_symbol', 'is', null)
     .not('token_symbol', 'ilike', 'unknown%')

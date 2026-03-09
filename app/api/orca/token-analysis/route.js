@@ -18,7 +18,7 @@ export async function POST(req) {
 
     // Fetch all 24h transactions for this token
     const { data: txs24h, error } = await supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('*')
       .eq('token_symbol', tokenSymbol)
       .gte('timestamp', since24h)

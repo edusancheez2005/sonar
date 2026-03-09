@@ -13,31 +13,31 @@ export async function GET() {
 
     // Get total count of all transactions
     const { count: totalCount } = await supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('*', { count: 'exact', head: true })
 
     // Get count from last 7 days
     const { count: count7d } = await supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('*', { count: 'exact', head: true })
       .gte('timestamp', since7d)
 
     // Get count from last 24 hours
     const { count: count24h } = await supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('*', { count: 'exact', head: true })
       .gte('timestamp', since24h)
 
     // Get sample of recent data
     const { data: sampleData } = await supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('transaction_hash, timestamp, token_symbol, classification, blockchain, usd_value')
       .order('timestamp', { ascending: false })
       .limit(5)
 
     // Get sample with filters applied (like dashboard)
     const { data: filteredSample } = await supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('transaction_hash, timestamp, token_symbol, classification, blockchain, usd_value')
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')

@@ -12,7 +12,7 @@ export async function GET() {
 
     // Fetch whale transactions from past 7 days
     const { data, error } = await supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('whale_address,classification,usd_value,token_symbol,whale_score,timestamp')
       .gte('timestamp', since)
       .in('classification', ['BUY', 'SELL', 'TRANSFER'])

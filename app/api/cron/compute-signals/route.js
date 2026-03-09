@@ -82,7 +82,7 @@ async function getActiveTokens() {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const { data, error } = await supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('token_symbol')
     .gte('timestamp', since)
     .in('classification', ['BUY', 'SELL'])
@@ -172,7 +172,7 @@ async function fetchWhaleTransactions(tokenSymbol) {
   const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString() // 48h for prev period comparison
 
   const { data, error } = await supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('transaction_hash,timestamp,classification,usd_value,whale_address,from_address,to_address,counterparty_type,whale_score,confidence')
     .eq('token_symbol', tokenSymbol)
     .gte('timestamp', since)

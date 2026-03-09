@@ -63,7 +63,7 @@ export default async function TokenDetail({ params, searchParams }) {
 
   const sinceIso = new Date(Date.now() - (sinceHours > 0 ? sinceHours : 24) * 60 * 60 * 1000).toISOString()
   let q = supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,to_address,whale_score,confidence,whale_address,counterparty_address,counterparty_type,from_label,to_label,reasoning')
     .eq('token_symbol', symbol)
     .gte('timestamp', sinceIso)
