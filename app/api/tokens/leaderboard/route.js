@@ -10,7 +10,7 @@ export async function GET() {
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('token_symbol, classification, usd_value, timestamp, from_address')
     .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
     .gte('timestamp', since)

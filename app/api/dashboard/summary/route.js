@@ -16,11 +16,11 @@ export async function GET() {
     const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
     let q = supabaseAdmin
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type', { count: 'estimated' })
       .not('token_symbol', 'is', null)
       .not('token_symbol', 'ilike', 'unknown%')
-      .in('classification', ['BUY', 'SELL'])
+      .in('classification', ['BUY', 'SELL', 'TRANSFER'])
 
     q = q.gte('timestamp', sinceIso)
 
@@ -95,22 +95,18 @@ export async function GET() {
     let totalSellCount24h = null
     try {
       const [tot, buys, sells] = await Promise.all([
-        supabaseAdmin.from('whale_transactions')
+        supabaseAdmin.from('all_whale_transactions')
           .select('transaction_hash', { count: 'exact', head: true })
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
-          .in('classification', ['BUY', 'SELL'])
+          .not('whale_address', 'is', null)
+          .in('classification', ['BUY', 'SELL', 'TRANSFER'])
           .gte('timestamp', sinceIso),
-        supabaseAdmin.from('whale_transactions')
+        supabaseAdmin.from('all_whale_transactions')
           .select('classification', { count: 'exact', head: true })
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
-          .eq('classification', 'BUY')
-          .gte('timestamp', sinceIso),
-        supabaseAdmin.from('whale_transactions')
-          .select('classification', { count: 'exact', head: true })
-          .not('token_symbol', 'is', null)
-          .not('token_symbol', 'ilike', 'unknown%')
+          .not('whale_address', 'is', null)
           .eq('classification', 'SELL')
           .gte('timestamp', sinceIso)
       ])
@@ -201,12 +197,12 @@ export async function GET() {
       const tokensForAccuracy = Array.from(byCoin.keys()).filter(t => t !== '—' && t !== 'UNKNOWN')
       const counts = await Promise.all(tokensForAccuracy.map(async (token) => {
         const [buys, sells] = await Promise.all([
-          supabaseAdmin.from('whale_transactions')
+          supabaseAdmin.from('all_whale_transactions')
             .select('transaction_hash', { count: 'exact', head: true })
             .eq('token_symbol', token)
             .gte('timestamp', sinceIso)
             .in('classification', ['BUY', 'buy']),
-          supabaseAdmin.from('whale_transactions')
+          supabaseAdmin.from('all_whale_transactions')
             .select('transaction_hash', { count: 'exact', head: true })
             .eq('token_symbol', token)
             .gte('timestamp', sinceIso)

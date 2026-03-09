@@ -264,7 +264,7 @@ export async function GET(req) {
       const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       
       const { data: whaleTxs, error: whaleError } = await supabaseAdmin
-        .from('whale_transactions')
+        .from('all_whale_transactions')
         .select('*')
         .eq('token_symbol', symbol)
         .gte('timestamp', since24h)

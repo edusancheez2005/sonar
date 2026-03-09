@@ -6,7 +6,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
   }
   const { data, error } = await supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('timestamp')
     .order('timestamp', { ascending: false })
     .limit(1)

@@ -19,7 +19,7 @@ export async function GET(req) {
   const to = from + limit - 1
 
   const { data, error } = await supabaseAdmin
-    .from('whale_transactions')
+    .from('all_whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score')
     .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
     .order('timestamp', { ascending: false })

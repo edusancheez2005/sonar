@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // Get all transactions for this token in the period
     const { data: txns, error } = await supabase
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('whale_address, from_address, classification, usd_value, timestamp')
       .eq('token_symbol', symbol)
       .gte('timestamp', sinceDate)

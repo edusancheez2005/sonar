@@ -85,7 +85,7 @@ export async function POST(req) {
     let targetCoins = coins
     if (!targetCoins) {
       const { data: topCoins } = await supabaseAdmin
-        .from('whale_transactions')
+        .from('all_whale_transactions')
         .select('token_symbol')
         .gte('timestamp', startTime.toISOString())
         .lte('timestamp', endTime.toISOString())
@@ -194,7 +194,7 @@ async function generateHourlySignals(coins, startTime, endTime) {
       
       // Fetch whale transactions for this coin in this hour
       const { data: txs } = await supabaseAdmin
-        .from('whale_transactions')
+        .from('all_whale_transactions')
         .select('classification,usd_value')
         .eq('token_symbol', coin)
         .gte('timestamp', hourStart.toISOString())

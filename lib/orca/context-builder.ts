@@ -358,7 +358,7 @@ async function fetchWhaleActivity(ticker: string, supabase: any): Promise<any[]>
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     
     const { data, error } = await supabase
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select(`
         id,
         transaction_hash,

@@ -23,7 +23,7 @@ export async function GET() {
 
     // Get 24h transactions
     const { data: txns, error } = await supabase
-      .from('whale_transactions')
+      .from('all_whale_transactions')
       .select('token_symbol, usd_value, classification, whale_address, from_address, timestamp')
       .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
       .gte('timestamp', since)
