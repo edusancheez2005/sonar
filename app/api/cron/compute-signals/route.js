@@ -85,7 +85,6 @@ async function getActiveTokens() {
     .from('whale_transactions')
     .select('token_symbol')
     .gte('timestamp', since)
-    .in('counterparty_type', ['CEX', 'DEX'])
     .in('classification', ['BUY', 'SELL'])
     .not('token_symbol', 'is', null)
 

@@ -15,7 +15,6 @@ export async function GET() {
       .from('whale_transactions')
       .select('whale_address,classification,usd_value,token_symbol,whale_score,timestamp')
       .gte('timestamp', since)
-      .in('counterparty_type', ['CEX', 'DEX'])
       .in('classification', ['BUY', 'SELL'])
       .not('whale_address', 'is', null)
       .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
