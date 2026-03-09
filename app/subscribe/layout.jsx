@@ -2,7 +2,8 @@ const productSchema = {
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: 'Sonar Tracker Pro',
-  description: 'Real-time crypto whale tracking with AI-powered signals, custom alerts, full transaction history, heatmaps, sentiment analysis, and CSV export.',
+  description: 'Unlimited AI conversations, enhanced analytics, CSV export, and priority support for crypto whale intelligence.',
+  image: 'https://www.sonartracker.io/assets/logo.png',
   brand: { '@type': 'Brand', name: 'Sonar Tracker' },
   offers: {
     '@type': 'Offer',
@@ -21,7 +22,7 @@ const productSchema = {
 
 export const metadata = {
   title: 'Pricing — Whale Tracking Plans',
-  description: 'Sonar Tracker pricing: Free tier for news and basic stats, Pro at $7.99/month for real-time whale tracking, AI signals, alerts, and CSV export.',
+  description: 'Sonar Tracker: free whale tracking, signals, and analytics. Pro at $7.99/month for unlimited AI conversations and enhanced analytics.',
   keywords: 'sonar tracker pricing, crypto whale tracker price, whale tracking subscription, cheap whale tracker, crypto analytics pricing',
   alternates: { canonical: 'https://www.sonartracker.io/subscribe' },
   openGraph: {
