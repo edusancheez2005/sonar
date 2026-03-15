@@ -78,7 +78,7 @@ const NavBar = styled.nav`
 
 const Logo = styled.div`
   display: flex; align-items: center;
-  img { height: 80px; width: auto; object-fit: contain; object-position: center; transition: height 0.3s ease; }
+  img { height: 45px; width: auto; object-fit: contain; object-position: center; transition: height 0.3s ease; }
 `;
 
 const NavLinks = styled.div`

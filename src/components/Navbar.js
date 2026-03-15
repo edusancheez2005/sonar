@@ -18,7 +18,7 @@ const NavContainer = styled.nav`
 const Logo = styled.div`
   display: flex;
   align-items: center;
-  img { height: 120px; width: auto; object-fit: contain; object-position: center; margin-right: 1rem; }
+  img { height: 45px; width: auto; object-fit: contain; object-position: center; margin-right: 1rem; }
 `;
 
 const MenuItems = styled.div`

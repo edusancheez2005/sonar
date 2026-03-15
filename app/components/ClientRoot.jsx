@@ -11,6 +11,7 @@ import FeedbackWidget from '@/src/components/FeedbackWidget'
 export default function ClientRoot({ children }) {
   const pathname = usePathname()
   const hideFeedback = pathname === '/ai-advisor'
+  const isLandingPage = pathname === '/'
 
   return (
     <StyleSheetManager shouldForwardProp={(propName, target) => {
@@ -20,7 +21,7 @@ export default function ClientRoot({ children }) {
       return true
     }}>
       <GlobalStyles />
-      <Navbar />
+      {!isLandingPage && <Navbar />}
       <main>{children}</main>
       <Footer />
       {!hideFeedback && <FeedbackWidget />}
