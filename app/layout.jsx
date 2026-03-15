@@ -156,10 +156,11 @@ export const metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/logo2.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
     ],
     apple: [
-      { url: '/logo2.png', sizes: '180x180' },
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
     ],
   },
   // Additional meta tags for better SEO
