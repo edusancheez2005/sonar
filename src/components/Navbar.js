@@ -18,7 +18,7 @@ const NavContainer = styled.nav`
 const Logo = styled.div`
   display: flex;
   align-items: center;
-  img { height: 80px; width: auto; object-fit: contain; object-position: center; margin-right: 1rem; }
+  img { height: 120px; width: auto; object-fit: contain; object-position: center; margin-right: 1rem; }
 `;
 
 const MenuItems = styled.div`
@@ -345,6 +345,13 @@ const Navbar = ({ onLogout }) => {
         )}
         {isAuthenticated && (
           <>
+            {isOnLandingPage && (
+              <motion.div variants={menuVariants} initial="hidden" animate="visible">
+                <MenuItem $active={false} variants={itemVariants}>
+                  <NextLink href="/dashboard" style={{ color: 'var(--primary)', fontWeight: 600 }}>Dashboard</NextLink>
+                </MenuItem>
+              </motion.div>
+            )}
             <ProfileButton href="/profile" aria-label="Profile"><UserIcon /></ProfileButton>
             <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
           </>

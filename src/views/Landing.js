@@ -677,6 +677,8 @@ const Landing = () => {
   const [signupInfo, setSignupInfo] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [staySignedIn, setStaySignedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
@@ -755,6 +757,8 @@ const Landing = () => {
       const sb = supabaseBrowser();
       const { data, error } = await sb.auth.signInWithPassword({ email: formData.email, password: formData.password });
       if (error) throw error;
+      try { localStorage.setItem('sonar_stay_signed_in', staySignedIn ? '1' : '0'); } catch {}
+      setIsLoggedIn(true);
       showToast('Welcome back!', 'success');
       setShowLoginModal(false);
       navigate('/dashboard');
@@ -836,6 +840,30 @@ const Landing = () => {
     { size: 180, x: '25%', y: '55%', delay: 0.7 },
   ];
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const sb = supabaseBrowser();
+      // If user opted out of "stay signed in", clear session on fresh visit
+      try {
+        const stay = localStorage.getItem('sonar_stay_signed_in');
+        const visited = sessionStorage.getItem('sonar_session_active');
+        if (stay === '0' && !visited) {
+          await sb.auth.signOut();
+          localStorage.removeItem('sonar_stay_signed_in');
+          return;
+        }
+        sessionStorage.setItem('sonar_session_active', '1');
+      } catch {}
+      const { data } = await sb.auth.getSession();
+      if (data?.session) setIsLoggedIn(true);
+      try {
+        if (typeof window !== 'undefined' && localStorage.getItem('isAdminBypass') === 'true') setIsLoggedIn(true);
+      } catch {}
+    };
+    checkAuth();
+  }, []);
+
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -860,7 +888,11 @@ const Landing = () => {
           <NavLink onClick={() => { const el = document.getElementById('pricing'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Pricing</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('advisor'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }} title="AI-powered crypto trading insights">AI Advisor</NavLink>
           <NavLink onClick={() => navigate('/blog')} title="Crypto analytics guides">Blog</NavLink>
-          <LoginButton onClick={() => setShowLoginModal(true)} title="Sign in to access premium features">Login</LoginButton>
+          {isLoggedIn ? (
+            <LoginButton onClick={() => navigate('/dashboard')} title="Go to your dashboard" style={{ background: 'var(--primary)', color: '#fff' }}>Dashboard</LoginButton>
+          ) : (
+            <LoginButton onClick={() => setShowLoginModal(true)} title="Sign in to access premium features">Login</LoginButton>
+          )}
         </NavLinks>
       </NavBar>
 
@@ -1946,6 +1978,10 @@ const Landing = () => {
             <Form onSubmit={handleLogin}>
               <FormGroup><label htmlFor="email">Email</label><input type="email" id="email" name="email" value={formData.email} onChange={handleFormChange} required /></FormGroup>
               <FormGroup><label htmlFor="password">Password</label><input type="password" id="password" name="password" value={formData.password} onChange={handleFormChange} required /></FormGroup>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                <input type="checkbox" checked={staySignedIn} onChange={(e) => setStaySignedIn(e.target.checked)} style={{ accentColor: 'var(--primary)', width: '16px', height: '16px', cursor: 'pointer' }} />
+                Stay signed in
+              </label>
               {loginError && <p style={{ color: 'tomato', margin: 0 }}>{loginError}</p>}
               <ButtonContainer>
                 <PillButton type="button" onClick={() => setShowLoginModal(false)}>Cancel</PillButton>
