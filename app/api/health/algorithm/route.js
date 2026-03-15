@@ -11,7 +11,10 @@ export async function GET() {
     .order('timestamp', { ascending: false })
     .limit(1)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[health/algorithm] Supabase error:', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   const lastTs = data && data[0]?.timestamp ? new Date(data[0].timestamp).getTime() : 0
   const now = Date.now()
