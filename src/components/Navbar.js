@@ -102,7 +102,7 @@ const Suggestions = styled.ul`
   list-style: none;
   padding: 0.25rem;
   margin: 0.3rem 0 0;
-  z-index: 20;
+  z-index: 200;
   max-height: 240px;
   overflow: auto;
   li { padding: 0.5rem 0.6rem; cursor: pointer; display: flex; justify-content: space-between; }
