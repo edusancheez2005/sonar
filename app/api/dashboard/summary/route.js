@@ -12,8 +12,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
     }
 
-    // Use EXACT same pattern as /api/trades (which works!)
-    const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    // Round "now" down to the nearest 5 minutes so the 24h window is stable
+    // across refreshes, preventing boundary flickering in inflow/outflow panels
+    const FIVE_MIN = 5 * 60 * 1000
+    const roundedNow = Math.floor(Date.now() / FIVE_MIN) * FIVE_MIN
+    const sinceIso = new Date(roundedNow - 24 * 60 * 60 * 1000).toISOString()
 
     let q = supabaseAdmin
       .from('all_whale_transactions')
@@ -284,7 +287,7 @@ export async function GET() {
     // Calculate market momentum as last hour vs previous hour, with sane bounds
     let volumeChange = 0
     if (allTransactions.length > 0) {
-      const nowMs = Date.now()
+      const nowMs = roundedNow
       const oneHourMs = 60 * 60 * 1000
       const lastHourStart = nowMs - oneHourMs
       const prevHourStart = nowMs - 2 * oneHourMs
@@ -308,7 +311,7 @@ export async function GET() {
     }
 
     // Build 24h time series (per hour) for volume and count
-    const now = Date.now()
+    const now = roundedNow
     const hourMs = 60 * 60 * 1000
     const seriesBuckets = Array.from({ length: 24 }, (_, i) => ({
       start: now - (23 - i) * hourMs,
@@ -423,12 +426,15 @@ export async function GET() {
       .filter(t => t.txCount >= MIN_TX)
       .slice().sort((a, b) => b.netUsdRobust - a.netUsdRobust)
       .slice(0, 10)
+    // Minimum threshold: at least 2 transactions OR net value above $10K
+    // Prevents single low-value boundary transactions from causing flickering
+    const MIN_FLOW_USD = 10000
     let tokenInflows = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX && t.netUsdRobust > 0)
+      .filter(t => t.txCount >= MIN_TX && t.netUsdRobust > 0 && (t.txCount >= 2 || Math.abs(t.netUsdRobust) >= MIN_FLOW_USD))
       .sort((a, b) => b.netUsdRobust - a.netUsdRobust)
       .slice(0, 10)
     const tokenOutflows = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX && t.netUsdRobust < 0)
+      .filter(t => t.txCount >= MIN_TX && t.netUsdRobust < 0 && (t.txCount >= 2 || Math.abs(t.netUsdRobust) >= MIN_FLOW_USD))
       .sort((a, b) => a.netUsdRobust - b.netUsdRobust)
       .slice(0, 10)
 

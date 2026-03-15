@@ -827,14 +827,19 @@ const Dashboard = ({ isPremium = false }) => {
       } catch {}
     }
     
-         fetchSummary(); 
+         fetchSummary();
      fetchNews();
      fetchSignals();
      pollAlgo()
-     timer = setInterval(() => { 
-       fetchSummary(); 
-       fetchNews();
-       pollAlgo() 
+     // Poll summary every 60s to avoid flickering from boundary transactions
+     // Health check and news can poll faster at 15s
+     let fastTick = 0
+     timer = setInterval(() => {
+       fastTick++
+       pollAlgo()
+       fetchNews()
+       // Only refresh summary data every 4th tick (60s) to keep panels stable
+       if (fastTick % 4 === 0) fetchSummary()
      }, 15000)
     return () => clearInterval(timer)
   }, [])
