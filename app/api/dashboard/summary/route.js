@@ -27,7 +27,7 @@ export async function GET() {
 
     q = q.gte('timestamp', sinceIso)
 
-    const { data: recentData, error: recentError } = await q.order('timestamp', { ascending: false }).limit(5000)
+    const { data: recentData, error: recentError } = await q.order('timestamp', { ascending: false }).limit(10000)
 
     console.log(`Dashboard API: Fetched ${recentData?.length || 0} transactions, error:`, recentError)
 
@@ -421,22 +421,22 @@ export async function GET() {
         txCount: signed.length,
       }
     })
-    const MIN_TX = 3
+    const MIN_TX = 1
     const tokenLeaders = tokenAggregate
       .filter(t => t.txCount >= MIN_TX)
       .slice().sort((a, b) => b.netUsdRobust - a.netUsdRobust)
       .slice(0, 10)
     // Minimum threshold: at least 2 transactions OR net value above $10K
     // Prevents single low-value boundary transactions from causing flickering
-    const MIN_FLOW_USD = 10000
+    const MIN_FLOW_USD = 1000
     let tokenInflows = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX && t.netUsd > 0 && (t.txCount >= 2 || Math.abs(t.netUsd) >= MIN_FLOW_USD))
+      .filter(t => t.txCount >= MIN_TX && t.netUsd > 0 && Math.abs(t.netUsd) >= MIN_FLOW_USD)
       .sort((a, b) => b.netUsd - a.netUsd)
-      .slice(0, 10)
+      .slice(0, 15)
     const tokenOutflows = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX && t.netUsd < 0 && (t.txCount >= 2 || Math.abs(t.netUsd) >= MIN_FLOW_USD))
+      .filter(t => t.txCount >= MIN_TX && t.netUsd < 0 && Math.abs(t.netUsd) >= MIN_FLOW_USD)
       .sort((a, b) => a.netUsd - b.netUsd)
-      .slice(0, 10)
+      .slice(0, 15)
 
     // Prepare whale activity data safely
     const whaleActivity = Array.from(byTokenWhales.entries()).map(([token, data]) => ({
