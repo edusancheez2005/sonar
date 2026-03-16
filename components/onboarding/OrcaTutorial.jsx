@@ -43,11 +43,13 @@ const Overlay = styled.svg`
   width: 100%;
   height: 100%;
   z-index: 10000;
+  pointer-events: none;
 `
 
 const Tip = styled(motion.div)`
   position: fixed;
   z-index: 10001;
+  pointer-events: auto;
   background: rgba(13, 20, 33, 0.97);
   border: 1px solid rgba(0, 229, 255, 0.15);
   border-radius: 12px;
