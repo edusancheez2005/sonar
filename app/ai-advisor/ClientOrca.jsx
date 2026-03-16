@@ -507,8 +507,9 @@ export default function ClientOrca() {
     }
   }
 
-  // Start new chat
+  // Start new chat — refresh sidebar first so current chat stays visible
   const startNewChat = () => {
+    loadSessions() // Ensure current session appears in sidebar before clearing
     setCurrentSessionId(crypto.randomUUID())
     setMessages([])
     setAgentSteps([])
