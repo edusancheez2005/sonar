@@ -55,11 +55,16 @@ export async function GET(req) {
     }
 
     // Filter to English-only and crypto-relevant posts
+    const nonLatinBlock = /[\u0400-\u04FF\u0600-\u06FF\u0980-\u09FF\u0A00-\u0A7F\u0B80-\u0BFF\u0C00-\u0C7F\u0D00-\u0D7F\u1100-\u11FF\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/
     const isEnglish = (text) => {
       if (!text) return false
-      // Reject if >20% non-ASCII characters (catches CJK, Cyrillic, Arabic, Korean, etc.)
-      const nonAscii = text.replace(/[\x00-\x7F]/g, '').length
-      return nonAscii / text.length < 0.2
+      // Reject if contains Cyrillic, Arabic, Korean, Japanese, Chinese, etc.
+      if (nonLatinBlock.test(text)) return false
+      // Also reject if text stripped of URLs, @mentions, #hashtags has >15% non-ASCII
+      const stripped = text.replace(/https?:\/\/\S+/g, '').replace(/@\w+/g, '').replace(/#\w+/g, '').trim()
+      if (!stripped) return false
+      const nonAscii = stripped.replace(/[\x00-\x7F]/g, '').length
+      return nonAscii / stripped.length < 0.15
     }
 
     const cryptoKeywords = /bitcoin|btc|ethereum|eth|solana|sol|crypto|blockchain|defi|nft|token|altcoin|whale|trading|market cap|binance|coinbase|bull|bear|pump|dump|hodl|airdrop|staking|yield|liquidity|dex|cex|memecoin|shib|doge|pepe|xrp|cardano|ada|avax|polygon|arbitrum|optimism|chain|wallet|exchange|futures|options|leverage|short|long|rally|correction|ath|fomo|fud|saylor|blackrock|etf|sec|fed|tariff|inflation|rate cut|macro/i

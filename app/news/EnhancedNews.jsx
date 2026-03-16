@@ -294,26 +294,30 @@ export default function EnhancedNews({ ticker = null }) {
         if (error) throw error
         
         // Filter out untitled, junk, and non-English articles
-        const isEnglish = (text) => {
-          if (!text) return false
-          const nonAscii = text.replace(/[\x00-\x7F]/g, '').length
-          return nonAscii / text.length < 0.2
-        }
+        const nonLatinBlock = /[\u0400-\u04FF\u0600-\u06FF\u0980-\u09FF\u0A00-\u0A7F\u0B80-\u0BFF\u0C00-\u0C7F\u0D00-\u0D7F\u1100-\u11FF\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/
         
         const valid = (data || []).filter(a => {
           const title = a.title?.trim()
           if (!title || title.toLowerCase() === 'untitled' || title.length < 15) return false
-          if (!isEnglish(title)) return false
+          if (nonLatinBlock.test(title)) return false
           return true
         })
         
         setAllArticles(valid)
 
-        // Also fetch social posts
+        // Also fetch social posts (English + crypto only)
         try {
           const socialRes = await fetch('/api/social/feed?limit=100&sort=interactions')
           const socialJson = await socialRes.json()
-          setSocialPosts((socialJson.posts || []).filter(p => p.body && p.body.length > 20))
+          const cryptoKeywords = /bitcoin|btc|ethereum|eth|solana|sol|crypto|blockchain|defi|nft|token|whale|trading|binance|coinbase|bull|bear|pump|dump|hodl|airdrop|staking|dex|cex|memecoin|shib|doge|pepe|xrp|cardano|ada|avax|polygon|arbitrum|chain|wallet|exchange|futures|short|long|etf|sec|fed|saylor|blackrock|market cap|altcoin/i
+          const nonLatinBlock = /[\u0400-\u04FF\u0600-\u06FF\u0980-\u09FF\u0A00-\u0A7F\u0B80-\u0BFF\u0C00-\u0C7F\u0D00-\u0D7F\u1100-\u11FF\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/
+          setSocialPosts((socialJson.posts || []).filter(p => {
+            const body = p.body || ''
+            if (body.length < 20) return false
+            if (nonLatinBlock.test(body)) return false
+            if (!cryptoKeywords.test(body) && !(p.tickers_mentioned?.length > 0)) return false
+            return true
+          }))
         } catch {}
       } catch (err) {
         console.error('Error fetching news:', err)
