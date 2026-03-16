@@ -475,7 +475,8 @@ export default function ClientOrca() {
     if (!session?.access_token) return
     setCurrentSessionId(sessionId)
     setMessages([])
-    setLoading(true)
+    // Don't set loading=true here — that shows the agent step tracker
+    // Instead we just swap the messages
     try {
       const res = await fetch(`/api/chat/sessions/${encodeURIComponent(sessionId)}`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -483,27 +484,29 @@ export default function ClientOrca() {
       if (res.ok) {
         const data = await res.json()
         const loaded = []
-        for (const msg of data.messages) {
-          loaded.push({
-            id: `${msg.id}-user`,
-            role: 'user',
-            content: msg.user_message,
-            timestamp: new Date(msg.timestamp)
-          })
-          loaded.push({
-            id: `${msg.id}-orca`,
-            role: 'assistant',
-            content: msg.orca_response,
-            ticker: msg.tickers_mentioned?.[0] || null,
-            timestamp: new Date(msg.timestamp)
-          })
+        for (const msg of (data.messages || [])) {
+          if (msg.user_message) {
+            loaded.push({
+              id: `${msg.id}-user`,
+              role: 'user',
+              content: msg.user_message,
+              timestamp: new Date(msg.timestamp)
+            })
+          }
+          if (msg.orca_response) {
+            loaded.push({
+              id: `${msg.id}-orca`,
+              role: 'assistant',
+              content: msg.orca_response,
+              ticker: msg.tickers_mentioned?.[0] || null,
+              timestamp: new Date(msg.timestamp)
+            })
+          }
         }
         setMessages(loaded)
       }
     } catch (err) {
       console.error('Failed to load session:', err)
-    } finally {
-      setLoading(false)
     }
   }
 

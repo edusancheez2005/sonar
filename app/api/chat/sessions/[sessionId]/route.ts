@@ -31,13 +31,29 @@ export async function GET(
 
     const sessionId = params.sessionId
 
-    const { data: messages, error } = await supabase
+    // Try loading by session_id first
+    let { data: messages, error } = await supabase
       .from('chat_history')
       .select('id, user_message, orca_response, tickers_mentioned, timestamp, data_sources_used')
       .eq('user_id', user.id)
       .eq('session_id', sessionId)
       .order('timestamp', { ascending: true })
       .limit(50)
+
+    // If no results, this might be a legacy message without session_id (fallback to id lookup)
+    if ((!messages || messages.length === 0) && /^\d+$/.test(sessionId)) {
+      const fallback = await supabase
+        .from('chat_history')
+        .select('id, user_message, orca_response, tickers_mentioned, timestamp, data_sources_used')
+        .eq('user_id', user.id)
+        .eq('id', parseInt(sessionId, 10))
+        .limit(1)
+      
+      if (!fallback.error && fallback.data && fallback.data.length > 0) {
+        messages = fallback.data
+        error = null
+      }
+    }
 
     if (error) {
       console.error('Error fetching session messages:', error)
