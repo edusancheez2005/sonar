@@ -307,7 +307,7 @@ export default function ClientOrca() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [loadingStep, setLoadingStep] = useState('')
+  const [agentSteps, setAgentSteps] = useState([]) // Real-time SSE progress steps
   const [quota, setQuota] = useState(null)
   const [session, setSession] = useState(null)
   const [isPremium, setIsPremium] = useState(false)
@@ -317,14 +317,18 @@ export default function ClientOrca() {
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
-  // Loading steps for animation (clean, no emojis)
-  const loadingSteps = [
-    'Fetching latest market data...',
-    'Analyzing breaking news & headlines...',
-    'Checking whale activity patterns...',
-    'Processing social sentiment data...',
-    'Gathering macro-economic indicators...',
-    'ORCA is forming insights...'
+  // Ordered list of agent steps with labels
+  const AGENT_STEP_ORDER = [
+    { key: 'start', label: 'Connecting to Sonar' },
+    { key: 'whale_data', label: 'Scanning whale transactions' },
+    { key: 'price', label: 'Pulling live price data' },
+    { key: 'sentiment', label: 'Loading sentiment scores' },
+    { key: 'social', label: 'Gathering social intelligence' },
+    { key: 'news', label: 'Fetching news from 3 sources' },
+    { key: 'whale_alerts', label: 'Checking large whale alerts' },
+    { key: 'lunarcrush', label: 'Querying LunarCrush metrics' },
+    { key: 'charts', label: 'Loading chart data' },
+    { key: 'ai_thinking', label: 'ORCA analyzing all signals' },
   ]
 
   // Auto-scroll to bottom
@@ -391,22 +395,11 @@ export default function ClientOrca() {
     getSession()
   }, [])
 
-  // Animate loading steps
+  // Reset agent steps when loading ends
   useEffect(() => {
     if (!loading) {
-      setLoadingStep('')
-      return
+      setAgentSteps([])
     }
-    
-    let stepIndex = 0
-    setLoadingStep(loadingSteps[0])
-    
-    const interval = setInterval(() => {
-      stepIndex = (stepIndex + 1) % loadingSteps.length
-      setLoadingStep(loadingSteps[stepIndex])
-    }, 2000) // Change step every 2 seconds
-    
-    return () => clearInterval(interval)
   }, [loading])
 
   const handleSubmit = async (e, exampleQuery = null) => {
@@ -459,6 +452,68 @@ export default function ClientOrca() {
         body: JSON.stringify({ message: question })
       })
 
+      const contentType = response.headers.get('content-type') || ''
+
+      // SSE streaming response (ticker analysis)
+      if (contentType.includes('text/event-stream')) {
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const parts = buffer.split('\n\n')
+          buffer = parts.pop() // Keep incomplete event in buffer
+
+          for (const part of parts) {
+            const line = part.trim()
+            if (!line.startsWith('data: ')) continue
+
+            try {
+              const event = JSON.parse(line.slice(6))
+
+              if (event.type === 'status') {
+                setAgentSteps(prev => {
+                  // Avoid duplicates
+                  if (prev.some(s => s.step === event.step)) return prev
+                  return [...prev, { step: event.step, message: event.message, detail: event.detail || '' }]
+                })
+              } else if (event.type === 'complete') {
+                const orcaMessage = {
+                  id: (Date.now() + 1).toString(),
+                  role: 'assistant',
+                  content: event.response,
+                  ticker: event.ticker,
+                  data: event.data,
+                  timestamp: new Date()
+                }
+                setMessages(prev => [...prev, orcaMessage])
+                setQuota(event.quota)
+              } else if (event.type === 'error') {
+                throw new Error(event.message)
+              }
+            } catch (parseError) {
+              // Ignore malformed SSE events
+              if (parseError instanceof SyntaxError) continue
+              throw parseError
+            }
+          }
+        }
+
+        // Track free prompt usage for non-premium users
+        if (!isPremium && session?.user) {
+          const newCount = freePromptsUsed + 1
+          setFreePromptsUsed(newCount)
+          const today = new Date().toDateString()
+          localStorage.setItem(`orca_free_prompts_${session.user.id}`, JSON.stringify({ date: today, count: newCount }))
+        }
+        return
+      }
+
+      // Regular JSON response (conversational, errors)
       const data = await response.json()
 
       if (!response.ok) {
@@ -479,7 +534,7 @@ export default function ClientOrca() {
         throw new Error(data.error || 'Failed to get response')
       }
 
-      // Add ORCA response
+      // Add ORCA response (conversational)
       const orcaMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -829,7 +884,7 @@ export default function ClientOrca() {
           </>
         )}
 
-        {/* Loading indicator with step-by-step animation */}
+        {/* Loading indicator — real-time agent step tracker */}
         {loading && (
           <MessageBubble
             $isUser={false}
@@ -844,24 +899,67 @@ export default function ClientOrca() {
                 border: `1px solid ${colors.borderLight}`,
                 borderRadius: '8px',
                 padding: '0.85rem 1rem',
-                marginBottom: '0.4rem'
+                marginBottom: '0.4rem',
+                minWidth: '320px'
               }}>
-                <motion.div
-                  key={loadingStep}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  style={{
-                    color: colors.textMuted,
-                    fontFamily: MONO_FONT,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem'
-                  }}
-                >
-                  {loadingStep}
-                </motion.div>
-              <TypingIndicator>
-                {loadingStep}
-              </TypingIndicator>
+                {/* Completed + in-progress steps from SSE */}
+                {agentSteps.map((s, i) => (
+                  <motion.div
+                    key={s.step}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25 }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.6rem',
+                      padding: '0.3rem 0',
+                      fontFamily: MONO_FONT,
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    {/* Checkmark for completed, spinner for last (in-progress) */}
+                    {i < agentSteps.length - 1 ? (
+                      <span style={{ color: colors.sentimentBull, fontWeight: 700, fontSize: '0.8rem' }}>&#10003;</span>
+                    ) : (
+                      <motion.span
+                        animate={{ opacity: [1, 0.3, 1] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                        style={{ color: colors.primary, fontWeight: 700, fontSize: '0.8rem' }}
+                      >&#9679;</motion.span>
+                    )}
+                    <span style={{ color: i < agentSteps.length - 1 ? colors.textSecondary : colors.textPrimary }}>
+                      {s.message}
+                    </span>
+                    {s.detail && (
+                      <span style={{ color: colors.textMuted, marginLeft: 'auto', fontSize: '0.7rem' }}>
+                        {s.detail}
+                      </span>
+                    )}
+                  </motion.div>
+                ))}
+                {/* Upcoming steps (dimmed) */}
+                {AGENT_STEP_ORDER
+                  .filter(s => !agentSteps.some(a => a.step === s.key))
+                  .slice(0, 3) // Show next 3 upcoming
+                  .map(s => (
+                    <div
+                      key={s.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        padding: '0.3rem 0',
+                        fontFamily: MONO_FONT,
+                        fontSize: '0.75rem',
+                        opacity: 0.3,
+                      }}
+                    >
+                      <span style={{ color: colors.textMuted, fontWeight: 700, fontSize: '0.8rem' }}>&#9675;</span>
+                      <span style={{ color: colors.textMuted }}>{s.label}</span>
+                    </div>
+                  ))
+                }
               </div>
               <MessageTime>Deep analysis in progress...</MessageTime>
             </MessageContent>

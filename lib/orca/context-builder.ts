@@ -287,16 +287,28 @@ function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
 
 /**
  * Main function: Build complete ORCA context for a ticker
+ * onProgress callback reports each data source as it completes (for SSE streaming)
  */
 export async function buildOrcaContext(
   ticker: string,
-  userId: string
+  userId: string,
+  onProgress?: (step: string, detail?: string) => void
 ): Promise<OrcaContext> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
   const supabase = createClient(supabaseUrl, supabaseKey)
   
-  // Fetch data from all sources (parallel for speed)
+  // Wrapper that reports progress when each parallel fetch completes
+  const tracked = <T>(promise: Promise<T>, step: string, summarize?: (data: T) => string): Promise<T> =>
+    promise.then(result => {
+      onProgress?.(step, summarize?.(result) ?? undefined)
+      return result
+    }).catch(err => {
+      onProgress?.(step, 'failed')
+      throw err
+    })
+
+  // Fetch data from all sources (parallel for speed, with progress tracking)
   const [
     whaleData,
     sentimentData,
@@ -307,14 +319,14 @@ export async function buildOrcaContext(
     lunarcrushData,
     coingeckoData
   ] = await Promise.all([
-    fetchWhaleActivity(ticker, supabase),
-    fetchSentiment(ticker, supabase),
-    fetchNews(ticker, supabase),
-    fetchPriceData(ticker, supabase),
-    fetchLunarCrushAI(ticker),
-    fetchWhaleAlerts(ticker, supabase),
-    fetchLunarCrushEnhanced(ticker),
-    fetchCoinGeckoChartData(ticker)
+    tracked(fetchWhaleActivity(ticker, supabase), 'whale_data', (d: any[]) => `${d.length} transactions in 24h`),
+    tracked(fetchSentiment(ticker, supabase), 'sentiment', (d: any[]) => d.length > 0 ? `${d.length} data points loaded` : 'No sentiment data'),
+    tracked(fetchNews(ticker, supabase), 'news', (d: any[]) => `${d.length} articles found`),
+    tracked(fetchPriceData(ticker, supabase), 'price', (d: any) => d?.current?.price_usd ? `$${Number(d.current.price_usd).toLocaleString()}` : 'Price loaded'),
+    tracked(fetchLunarCrushAI(ticker), 'social', (d: any) => d?.sentiment_pct != null ? `${d.sentiment_pct}% bullish` : 'Social data loaded'),
+    tracked(fetchWhaleAlerts(ticker, supabase), 'whale_alerts', (d: any[]) => `${d?.length || 0} large alerts`),
+    tracked(fetchLunarCrushEnhanced(ticker), 'lunarcrush', (d: any) => d?.coin?.galaxy_score ? `Galaxy Score ${d.coin.galaxy_score}` : 'Loaded'),
+    tracked(fetchCoinGeckoChartData(ticker), 'charts', (d: any) => d ? '7d/30d charts loaded' : 'No chart data'),
   ])
   
   return {

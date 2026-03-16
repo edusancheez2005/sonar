@@ -20,7 +20,7 @@ const getAIClient = () => {
   if (xaiKey) {
     return {
       client: new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' }),
-      model: 'grok-4-1-fast-reasoning',
+      model: 'grok-4-1-reasoning',
       miniModel: 'grok-4-1-fast-non-reasoning',
       provider: 'grok'
     }
@@ -293,146 +293,165 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
       console.log(`📊 Analyzing ${ticker} for user ${userId}...`)
     }
     
-    // Build ORCA context (fetch all data)
-    console.log(`🔍 Fetching all data sources for ${ticker}...`)
-    const context = await buildOrcaContext(ticker, userId)
-    
-    // Dynamically check if whale data exists for this token
-    const isERC20 = hasWhaleData(context)
-    console.log(`${isERC20 ? '🐋' : '📊'} Whale data ${isERC20 ? 'found' : 'not available'} for ${ticker}`)
-    
-    // Build GPT-4.0 context string
-    let gptContext = buildGPTContext(context, message, isERC20)
-    
-    // Add follow-up context if applicable
-    if (isFollowUp) {
-      gptContext = `**THIS IS A FOLLOW-UP QUESTION**
-
-The user is continuing their conversation about ${ticker}. They already received the full data analysis.
-
-RESPOND CONVERSATIONALLY in 1-2 paragraphs:
-- Answer their specific question directly
-- Reference relevant data briefly if needed
-- Do NOT repeat all the data sections
-- Keep it natural and engaging
-- Ask a follow-up question
-
-User's follow-up: "${message}"
-
-Previous context (for reference only, do not repeat):
-${gptContext}`
+    // Step labels shown to the user during SSE streaming
+    const stepLabels: Record<string, string> = {
+      whale_data: 'Scanning whale transactions',
+      sentiment: 'Loading sentiment scores',
+      news: 'Fetching news from 3 sources',
+      price: 'Pulling live price data',
+      social: 'Gathering social intelligence',
+      whale_alerts: 'Checking large whale alerts',
+      lunarcrush: 'Querying LunarCrush metrics',
+      charts: 'Loading chart data',
     }
-    
-    // Call Grok/GPT AI
-    const { client: ai, model: aiModel, provider } = getAIClient()
-    
-    // Build request options — enable live search for Grok
-    const requestBody: any = {
-      model: aiModel,
-      messages: [
-        {
-          role: 'system',
-          content: ORCA_SYSTEM_PROMPT
-        },
-        {
-          role: 'user',
-          content: gptContext
+
+    // SSE streaming response — sends real-time progress as each data source loads
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (payload: Record<string, any>) => {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
         }
-      ],
-      temperature: 0.7,
-      max_tokens: isFollowUp ? 600 : 1200
-    }
-    
-    // Enable Grok's native web search (xAI-specific feature)
-    if (provider === 'grok') {
-      requestBody.search = { mode: 'auto', max_search_results: 5 }
-      console.log('🔍 Grok live web search enabled')
-    }
-    
-    const completion = await ai.chat.completions.create(requestBody)
-    
-    const orcaResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.'
-    
-    // Increment quota
-    await incrementQuota(userId, supabaseUrl, supabaseKey)
-    
-    // Log chat history
-    await supabase.from('chat_history').insert({
-      user_id: userId,
-      user_message: message,
-      orca_response: orcaResponse,
-      tokens_used: completion.usage?.total_tokens || 0,
-      model: aiModel,
-      tickers_mentioned: [ticker],
-      data_sources_used: {
-        whale: isERC20 && context.whales.transaction_count > 0,
-        sentiment: context.sentiment.current !== 0,
-        news: context.news.total_count > 0,
-        social: context.social.sentiment_pct !== null,
-        price: context.price.current > 0
-      },
-      response_time_ms: Date.now() - startTime
+
+        try {
+          send({ type: 'status', step: 'start', message: `Analyzing ${ticker}...` })
+
+          // Build ORCA context with progress reporting
+          const context = await buildOrcaContext(ticker, userId, (step, detail) => {
+            send({ type: 'status', step, message: stepLabels[step] || step, detail: detail || '' })
+          })
+
+          // Dynamically check if whale data exists for this token
+          const isERC20 = hasWhaleData(context)
+
+          // Build GPT context string
+          let gptContext = buildGPTContext(context, message, isERC20)
+
+          if (isFollowUp) {
+            gptContext = `**THIS IS A FOLLOW-UP QUESTION**\n\nThe user is continuing their conversation about ${ticker}. They already received the full data analysis.\n\nRESPOND CONVERSATIONALLY in 1-2 paragraphs:\n- Answer their specific question directly\n- Reference relevant data briefly if needed\n- Do NOT repeat all the data sections\n- Keep it natural and engaging\n- Ask a follow-up question\n\nUser's follow-up: "${message}"\n\nPrevious context (for reference only, do not repeat):\n${gptContext}`
+          }
+
+          // Send AI thinking status
+          send({ type: 'status', step: 'ai_thinking', message: 'ORCA analyzing all signals...' })
+
+          // Call Grok/GPT AI
+          const { client: ai, model: aiModel, provider } = getAIClient()
+
+          const requestBody: any = {
+            model: aiModel,
+            messages: [
+              { role: 'system', content: ORCA_SYSTEM_PROMPT },
+              { role: 'user', content: gptContext }
+            ],
+            temperature: 0.7,
+            max_tokens: isFollowUp ? 600 : 1200
+          }
+
+          if (provider === 'grok') {
+            requestBody.search = { mode: 'auto', max_search_results: 8 }
+          }
+
+          const completion = await ai.chat.completions.create(requestBody)
+          const orcaResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.'
+
+          // Increment quota + log in parallel (non-blocking for the user)
+          await Promise.all([
+            incrementQuota(userId, supabaseUrl, supabaseKey),
+            supabase.from('chat_history').insert({
+              user_id: userId,
+              user_message: message,
+              orca_response: orcaResponse,
+              tokens_used: completion.usage?.total_tokens || 0,
+              model: aiModel,
+              tickers_mentioned: [ticker],
+              data_sources_used: {
+                whale: isERC20 && context.whales.transaction_count > 0,
+                sentiment: context.sentiment.current !== 0,
+                news: context.news.total_count > 0,
+                social: context.social.sentiment_pct !== null,
+                price: context.price.current > 0
+              },
+              response_time_ms: Date.now() - startTime
+            })
+          ])
+
+          console.log(`✅ Response generated for ${ticker} in ${Date.now() - startTime}ms`)
+
+          // Send complete response with all data
+          send({
+            type: 'complete',
+            success: true,
+            response: orcaResponse,
+            ticker,
+            data: {
+              price: {
+                current: context.price.current,
+                change_24h: context.price.change_24h,
+                trend: context.price.trend,
+                market_cap: context.price.market_cap,
+                volume_24h: context.price.volume_24h,
+                ath: context.price.ath,
+                ath_distance: context.price.ath_distance,
+              },
+              whale_summary: isERC20 ? {
+                net_flow: context.whales.net_flow_24h,
+                transactions: context.whales.transaction_count,
+                buy_count: context.whales.buy_count,
+                sell_count: context.whales.sell_count,
+                buy_volume: context.whales.buy_volume,
+                sell_volume: context.whales.sell_volume,
+                unique_whales: context.whales.unique_whales,
+                buy_sell_ratio: context.whales.buy_sell_ratio
+              } : null,
+              sentiment: {
+                score: context.sentiment.current,
+                trend: context.sentiment.trend,
+                news_count: context.sentiment.news_count
+              },
+              social: {
+                sentiment_pct: context.social.sentiment_pct,
+                engagement: context.social.engagement,
+                supportive_themes: context.social.supportive_themes.slice(0, 2),
+                critical_themes: context.social.critical_themes.slice(0, 2)
+              },
+              lunarcrush: context.lunarcrush ? {
+                galaxy_score: context.lunarcrush.galaxy_score,
+                alt_rank: context.lunarcrush.alt_rank,
+              } : null,
+              sparkline_7d: context.coingecko?.sparkline_7d || null,
+              news_headlines: context.news.headlines.slice(0, 5).map((n: any) => ({
+                title: n.title || 'Untitled Article',
+                url: n.url || '',
+                source: n.source || 'unknown',
+                sentiment: n.sentiment_llm || 0
+              }))
+            },
+            quota: {
+              used: quotaStatus.used + 1,
+              limit: quotaStatus.limit,
+              remaining: quotaStatus.remaining - 1,
+              plan: quotaStatus.plan
+            },
+            metadata: {
+              response_time_ms: Date.now() - startTime,
+              tokens_used: completion.usage?.total_tokens || 0
+            }
+          })
+
+        } catch (err) {
+          console.error('Error during SSE stream:', err)
+          send({ type: 'error', message: err instanceof Error ? err.message : 'Unknown error' })
+        }
+
+        controller.close()
+      }
     })
-    
-    console.log(`✅ Response generated for ${ticker} in ${Date.now() - startTime}ms`)
-    
-    // Return response
-    return NextResponse.json({
-      success: true,
-      response: orcaResponse,
-      ticker,
-      data: {
-        price: {
-          current: context.price.current,
-          change_24h: context.price.change_24h,
-          trend: context.price.trend,
-          market_cap: context.price.market_cap,
-          volume_24h: context.price.volume_24h,
-          ath: context.price.ath,
-          ath_distance: context.price.ath_distance,
-        },
-        whale_summary: isERC20 ? {
-          net_flow: context.whales.net_flow_24h,
-          transactions: context.whales.transaction_count,
-          buy_count: context.whales.buy_count,
-          sell_count: context.whales.sell_count,
-          buy_volume: context.whales.buy_volume,
-          sell_volume: context.whales.sell_volume,
-          unique_whales: context.whales.unique_whales,
-          buy_sell_ratio: context.whales.buy_sell_ratio
-        } : null,
-        sentiment: {
-          score: context.sentiment.current,
-          trend: context.sentiment.trend,
-          news_count: context.sentiment.news_count
-        },
-        social: {
-          sentiment_pct: context.social.sentiment_pct,
-          engagement: context.social.engagement,
-          supportive_themes: context.social.supportive_themes.slice(0, 2),
-          critical_themes: context.social.critical_themes.slice(0, 2)
-        },
-        lunarcrush: context.lunarcrush ? {
-          galaxy_score: context.lunarcrush.galaxy_score,
-          alt_rank: context.lunarcrush.alt_rank,
-        } : null,
-        sparkline_7d: context.coingecko?.sparkline_7d || null,
-        news_headlines: context.news.headlines.slice(0, 5).map(n => ({
-          title: n.title || 'Untitled Article',
-          url: n.url || '',
-          source: n.source || 'unknown',
-          sentiment: n.sentiment_llm || 0
-        }))
-      },
-      quota: {
-        used: quotaStatus.used + 1,
-        limit: quotaStatus.limit,
-        remaining: quotaStatus.remaining - 1,
-        plan: quotaStatus.plan
-      },
-      metadata: {
-        response_time_ms: Date.now() - startTime,
-        tokens_used: completion.usage?.total_tokens || 0
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       }
     })
     
