@@ -113,7 +113,7 @@ One engaging follow-up question.
 (Not financial advice. Data-driven analysis only. DYOR.)
 
 ## RESPONSE FORMAT (Follow-Up Questions)
-1-2 paragraphs. Answer directly. Search the web if needed for current context. Be conversational.
+2-3 paragraphs. Answer directly and thoroughly. Search the web if needed for current context. Be conversational but still data-rich. Include relevant numbers.
 
 ## RULES
 - NO emojis
@@ -121,7 +121,7 @@ One engaging follow-up question.
 - Bold section headers
 - Wrap ALL numbers, prices, percentages, scores in \`backticks\` for visual emphasis
 - Cite specific live search results when referencing news
-- MAX 500 words for first response, 200 for follow-ups
+- MAX 800 words for first response, 400 for follow-ups
 - Always distinguish "Sonar data shows..." from "Current news indicates..."
 - The best insight is always: what whales are doing vs what the market thinks
 - Always give a directional opinion (bullish/bearish) — do not sit on the fence unless signals are truly 50/50`
@@ -272,7 +272,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           }
         ],
         temperature: 0.8,
-        max_tokens: 200
+        max_tokens: 300
       })
       
       const aiResponse = completion.choices[0]?.message?.content || 
@@ -344,7 +344,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
               { role: 'user', content: gptContext }
             ],
             temperature: 0.7,
-            max_tokens: isFollowUp ? 600 : 1200
+            max_tokens: isFollowUp ? 1000 : 2400
           }
 
           if (provider === 'grok') {
