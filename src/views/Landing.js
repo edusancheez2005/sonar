@@ -1758,40 +1758,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS CAROUSEL ─── */}
-      <TrustSection>
-        <motion.h2 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
-          500+ traders. $2B+ volume tracked.
-        </motion.h2>
-        <p className="subtitle">Don't take our word for it.</p>
-
-        <CarouselOuter>
-          <CarouselTrack>
-            {/* Duplicate array for infinite scroll effect */}
-            {[...Array(2)].flatMap((_, dupeIdx) => [
-              { name: 'James Martinez', role: 'Crypto Day Trader', quote: 'Caught a $500K WETH whale move 15 minutes early. Made 23% in 2 hours. This tool pays for itself every single day.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150301.png` },
-              { name: 'Sarah Kim', role: 'Portfolio Manager', quote: "I used to wonder why prices suddenly spiked. Sonar's real-time alerts completely changed my trading strategy. Night and day.", img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150309.png` },
-              { name: 'David Chen', role: 'Institutional Trader', quote: 'The AI analysis tools are genuinely impressive. Spotted large SOL movements before a major price shift. Essential for serious traders.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150324.png` },
-              { name: 'Emily Rodriguez', role: 'DeFi Analyst', quote: 'Switched from Nansen to Sonar. Better signal-to-noise ratio, cleaner interface, and faster whale alerts. At a fraction of the cost.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150336.png` },
-              { name: 'Raj Patel', role: 'Swing Trader', quote: 'The sentiment analysis paired with whale tracking gives me an edge nobody else in my trading group has. Worth every penny.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150343.png` },
-              { name: "Claire O'Brien", role: 'Hedge Fund Manager', quote: 'Our fund uses Sonar daily. The institutional-grade data quality and sub-second latency are exactly what we needed.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150348.png` },
-            ].map((t, i) => (
-              <CarouselCard key={`${dupeIdx}-${i}`}>
-                <div className="rating">★★★★★</div>
-                <p className="quote">"{t.quote}"</p>
-                <div className="author">
-                  <div className="avatar"><img src={t.img} alt={t.name} /></div>
-                  <div className="info">
-                    <div className="name">{t.name}</div>
-                    <div className="title">{t.role}</div>
-                  </div>
-                </div>
-              </CarouselCard>
-            )))}
-          </CarouselTrack>
-        </CarouselOuter>
-      </TrustSection>
-
       {/* ─── ORCA AI CTA ─── */}
       <section id="orca-cta" style={{ padding: '5rem 2rem', background: 'linear-gradient(180deg, rgba(10, 22, 33, 0.95) 0%, rgba(0, 229, 255, 0.03) 50%, rgba(10, 22, 33, 0.95) 100%)' }}>
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true, amount: 0.2 }} style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -1845,7 +1811,7 @@ const Landing = () => {
               <motion.button
                 whileHover={{ scale: 1.03, boxShadow: '0 10px 40px rgba(0, 229, 255, 0.3)' }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/ai-advisor')}
+                onClick={() => isLoggedIn ? navigate('/ai-advisor') : setShowSignupModal(true)}
                 style={{ marginTop: '1rem', padding: '1rem 2.5rem', background: 'linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%)', color: '#0a0e17', border: 'none', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', letterSpacing: '0.5px', boxShadow: '0 4px 20px rgba(0, 229, 255, 0.25)' }}>
                 Try ORCA Free →
               </motion.button>
@@ -1856,6 +1822,40 @@ const Landing = () => {
           </div>
         </motion.div>
       </section>
+
+      {/* ─── TESTIMONIALS CAROUSEL ─── */}
+      <TrustSection>
+        <motion.h2 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
+          500+ traders. $2B+ volume tracked.
+        </motion.h2>
+        <p className="subtitle">Don't take our word for it.</p>
+
+        <CarouselOuter>
+          <CarouselTrack>
+            {/* Duplicate array for infinite scroll effect */}
+            {[...Array(2)].flatMap((_, dupeIdx) => [
+              { name: 'James Martinez', role: 'Crypto Day Trader', quote: 'Caught a $500K WETH whale move 15 minutes early. Made 23% in 2 hours. This tool pays for itself every single day.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150301.png` },
+              { name: 'Sarah Kim', role: 'Portfolio Manager', quote: "I used to wonder why prices suddenly spiked. Sonar's real-time alerts completely changed my trading strategy. Night and day.", img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150309.png` },
+              { name: 'David Chen', role: 'Institutional Trader', quote: 'The AI analysis tools are genuinely impressive. Spotted large SOL movements before a major price shift. Essential for serious traders.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150324.png` },
+              { name: 'Emily Rodriguez', role: 'DeFi Analyst', quote: 'Switched from Nansen to Sonar. Better signal-to-noise ratio, cleaner interface, and faster whale alerts. At a fraction of the cost.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150336.png` },
+              { name: 'Raj Patel', role: 'Swing Trader', quote: 'The sentiment analysis paired with whale tracking gives me an edge nobody else in my trading group has. Worth every penny.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150343.png` },
+              { name: "Claire O'Brien", role: 'Hedge Fund Manager', quote: 'Our fund uses Sonar daily. The institutional-grade data quality and sub-second latency are exactly what we needed.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150348.png` },
+            ].map((t, i) => (
+              <CarouselCard key={`${dupeIdx}-${i}`}>
+                <div className="rating">★★★★★</div>
+                <p className="quote">"{t.quote}"</p>
+                <div className="author">
+                  <div className="avatar"><img src={t.img} alt={t.name} /></div>
+                  <div className="info">
+                    <div className="name">{t.name}</div>
+                    <div className="title">{t.role}</div>
+                  </div>
+                </div>
+              </CarouselCard>
+            )))}
+          </CarouselTrack>
+        </CarouselOuter>
+      </TrustSection>
 
       {/* ─── ABOUT — WHO I AM ─── */}
       <TeamSection id="about">
