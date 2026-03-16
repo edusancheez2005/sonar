@@ -430,12 +430,12 @@ export async function GET() {
     // Prevents single low-value boundary transactions from causing flickering
     const MIN_FLOW_USD = 10000
     let tokenInflows = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX && t.netUsdRobust > 0 && (t.txCount >= 2 || Math.abs(t.netUsdRobust) >= MIN_FLOW_USD))
-      .sort((a, b) => b.netUsdRobust - a.netUsdRobust)
+      .filter(t => t.txCount >= MIN_TX && t.netUsd > 0 && (t.txCount >= 2 || Math.abs(t.netUsd) >= MIN_FLOW_USD))
+      .sort((a, b) => b.netUsd - a.netUsd)
       .slice(0, 10)
     const tokenOutflows = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX && t.netUsdRobust < 0 && (t.txCount >= 2 || Math.abs(t.netUsdRobust) >= MIN_FLOW_USD))
-      .sort((a, b) => a.netUsdRobust - b.netUsdRobust)
+      .filter(t => t.txCount >= MIN_TX && t.netUsd < 0 && (t.txCount >= 2 || Math.abs(t.netUsd) >= MIN_FLOW_USD))
+      .sort((a, b) => a.netUsd - b.netUsd)
       .slice(0, 10)
 
     // Prepare whale activity data safely

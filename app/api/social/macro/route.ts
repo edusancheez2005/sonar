@@ -13,14 +13,14 @@ export const dynamic = 'force-dynamic'
 
 let cachedResult = null
 let cachedAt = 0
-const CACHE_TTL = 15 * 60 * 1000 // 15 minutes
+const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
 
 export async function GET() {
   try {
     // Return cached if fresh
     if (cachedResult && (Date.now() - cachedAt) < CACHE_TTL) {
       return NextResponse.json(cachedResult, {
-        headers: { 'Cache-Control': 's-maxage=900, stale-while-revalidate=1800' }
+        headers: { 'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400' }
       })
     }
 
@@ -93,7 +93,7 @@ Keep summaries under 30 words each. Return ONLY valid JSON, no markdown.`
     cachedAt = Date.now()
 
     return NextResponse.json(parsed, {
-      headers: { 'Cache-Control': 's-maxage=900, stale-while-revalidate=1800' }
+      headers: { 'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400' }
     })
   } catch (error) {
     console.error('Macro factors error:', error)

@@ -1014,7 +1014,7 @@ const Dashboard = ({ isPremium = false }) => {
                   <KPICell>
                     <KPILabel>Strong Accumulation</KPILabel>
                     <KPIValue $color={COLORS.green}>
-                      <AnimatedNumber value={tokenInflows.filter(t => (t.netUsdRobust || 0) > 1000000).length} />
+                      <AnimatedNumber value={tokenInflows.filter(t => (t.netUsd || 0) > 1000000).length} />
                     </KPIValue>
                     <KPISub $color={COLORS.green}>&gt; $1M Net Inflow</KPISub>
                   </KPICell>
@@ -1022,7 +1022,7 @@ const Dashboard = ({ isPremium = false }) => {
                   <KPICell>
                     <KPILabel>Heavy Distribution</KPILabel>
                     <KPIValue $color={COLORS.red}>
-                      <AnimatedNumber value={tokenOutflows.filter(t => Math.abs(t.netUsdRobust || 0) > 1000000).length} />
+                      <AnimatedNumber value={tokenOutflows.filter(t => Math.abs(t.netUsd || 0) > 1000000).length} />
                     </KPIValue>
                     <KPISub $color={COLORS.red}>&gt; $1M Net Outflow</KPISub>
                   </KPICell>
@@ -1066,8 +1066,8 @@ const Dashboard = ({ isPremium = false }) => {
                       ) : (
                         <div>
                           {tokenInflows.map((t, idx) => {
-                            const maxVal = Math.abs(tokenInflows[0]?.netUsdRobust || 1)
-                            const pct = Math.min(100, (Math.abs(t.netUsdRobust || 0) / maxVal) * 100)
+                            const maxVal = Math.abs(tokenInflows[0]?.netUsd || 1)
+                            const pct = Math.min(100, (Math.abs(t.netUsd || 0) / maxVal) * 100)
                             return (
                               <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
                                 <HBarRow>
@@ -1084,7 +1084,7 @@ const Dashboard = ({ isPremium = false }) => {
                                     />
                                   </HBarTrack>
                                   <HBarValue $color={COLORS.green}>
-                                    +${formatCompact(t.netUsdRobust || 0)}
+                                    +${formatCompact(t.netUsd || 0)}
                                   </HBarValue>
                                 </HBarRow>
                               </Link>
@@ -1106,8 +1106,8 @@ const Dashboard = ({ isPremium = false }) => {
                       ) : (
                         <div>
                           {tokenOutflows.map((t, idx) => {
-                            const maxVal = Math.abs(tokenOutflows[0]?.netUsdRobust || 1)
-                            const pct = Math.min(100, (Math.abs(t.netUsdRobust || 0) / maxVal) * 100)
+                            const maxVal = Math.abs(tokenOutflows[0]?.netUsd || 1)
+                            const pct = Math.min(100, (Math.abs(t.netUsd || 0) / maxVal) * 100)
                             return (
                               <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
                                 <HBarRow>
@@ -1124,7 +1124,7 @@ const Dashboard = ({ isPremium = false }) => {
                                     />
                                   </HBarTrack>
                                   <HBarValue $color={COLORS.red}>
-                                    -${formatCompact(Math.abs(t.netUsdRobust || 0))}
+                                    -${formatCompact(Math.abs(t.netUsd || 0))}
                                   </HBarValue>
                                 </HBarRow>
                               </Link>
