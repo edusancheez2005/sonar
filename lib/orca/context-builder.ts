@@ -76,6 +76,7 @@ interface CoinGeckoChartData {
     total_volume: number | null
     volume_to_mcap: number | null
   } | null
+  sparkline_24h: number[] | null
   sparkline_7d: number[] | null
 }
 
@@ -165,8 +166,9 @@ async function fetchCoinGeckoChartData(ticker: string) {
       return null
     }
 
-    // Fetch 7-day and 30-day chart data + enriched coin details
-    const [chart7d, chart30d, coinDetails] = await Promise.all([
+    // Fetch 1-day (granular), 7-day and 30-day chart data + enriched coin details
+    const [chart1d, chart7d, chart30d, coinDetails] = await Promise.all([
+      getMarketChart(metadata.id, 1, 'hourly').catch(() => null),
       getMarketChart(metadata.id, 7, 'daily').catch(() => null),
       getMarketChart(metadata.id, 30, 'daily').catch(() => null),
       getCoinById(metadata.id, { market_data: true, community_data: true, developer_data: true }).catch(() => null),
@@ -176,6 +178,7 @@ async function fetchCoinGeckoChartData(ticker: string) {
       id: metadata.id,
       name: metadata.name,
       image_url: metadata.image_url,
+      chart_1d: chart1d,
       chart_7d: chart7d,
       chart_30d: chart30d,
       details: coinDetails,
@@ -193,6 +196,7 @@ function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
   if (!data || !data.chart_7d) return undefined
 
   try {
+    const prices1d = data.chart_1d?.prices || []
     const prices7d = data.chart_7d.prices || []
     const prices30d = data.chart_30d?.prices || []
     const volumes7d = data.chart_7d.total_volumes || []
@@ -274,6 +278,10 @@ function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
         volume_to_mcap: data.details.market_data.total_volume?.usd && data.details.market_data.market_cap?.usd
           ? (data.details.market_data.total_volume.usd / data.details.market_data.market_cap.usd) : null,
       } : null,
+      // 24-hour sparkline: hourly data points
+      sparkline_24h: prices1d.length > 0
+        ? prices1d.map((p: [number, number]) => p[1])
+        : null,
       // 7-day sparkline: sample every 4th point to get ~42 data points
       sparkline_7d: prices7d.length > 0 
         ? prices7d.filter((_: any, i: number) => i % 4 === 0).map((p: [number, number]) => p[1])

@@ -88,13 +88,66 @@ const PremiumButton = styled(motion.a)`
   box-shadow: 0 4px 20px rgba(0, 229, 255, 0.25); font-family: ${SANS_FONT};
 `
 
+// Outer wrapper for sidebar + chat
+const PageWrapper = styled.div`
+  display: flex; height: calc(100vh - 100px); max-width: 1300px; margin: 0 auto;
+  gap: 0;
+  @media (max-width: 768px) { flex-direction: column; }
+`
+
+// Sidebar
+const Sidebar = styled.div`
+  width: 280px; min-width: 280px; background: rgba(8, 12, 20, 0.95);
+  border: 1px solid ${colors.borderLight}; border-radius: 8px 0 0 8px;
+  display: flex; flex-direction: column; overflow: hidden;
+  @media (max-width: 768px) { display: none; }
+`
+
+const SidebarHeader = styled.div`
+  padding: 0.75rem 1rem; border-bottom: 1px solid ${colors.borderLight};
+  display: flex; align-items: center; justify-content: space-between;
+`
+
+const NewChatButton = styled.button`
+  background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2);
+  color: ${colors.primary}; padding: 0.5rem 1rem; border-radius: 6px;
+  font-family: ${MONO_FONT}; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; width: 100%; transition: all 0.2s ease;
+  &:hover { background: rgba(0, 229, 255, 0.2); }
+`
+
+const SessionList = styled.div`
+  flex: 1; overflow-y: auto; padding: 0.5rem;
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.1); border-radius: 2px; }
+`
+
+const SessionItem = styled.div`
+  padding: 0.6rem 0.75rem; border-radius: 6px; cursor: pointer;
+  margin-bottom: 0.25rem; transition: all 0.15s ease;
+  background: ${props => props.$active ? 'rgba(0, 229, 255, 0.1)' : 'transparent'};
+  border: 1px solid ${props => props.$active ? 'rgba(0, 229, 255, 0.15)' : 'transparent'};
+  &:hover { background: rgba(0, 229, 255, 0.06); }
+`
+
+const SessionTitle = styled.div`
+  font-family: ${SANS_FONT}; font-size: 0.8rem; font-weight: 600;
+  color: ${colors.textPrimary}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+`
+
+const SessionMeta = styled.div`
+  font-family: ${MONO_FONT}; font-size: 0.6rem; color: ${colors.textMuted};
+  margin-top: 0.2rem; display: flex; gap: 0.5rem; align-items: center;
+`
+
 // Main Container
 const ChatContainer = styled.div`
-  display: flex; flex-direction: column;
-  height: calc(100vh - 100px); max-width: 1000px; margin: 0 auto;
-  background: ${colors.bgDark}; border-radius: 8px; overflow: hidden;
-  border: 1px solid ${colors.borderLight};
+  display: flex; flex-direction: column; flex: 1;
+  height: calc(100vh - 100px);
+  background: ${colors.bgDark}; border-radius: 0 8px 8px 0; overflow: hidden;
+  border: 1px solid ${colors.borderLight}; border-left: none;
   position: relative;
+  @media (max-width: 768px) { border-radius: 8px; border-left: 1px solid ${colors.borderLight}; }
   
   &::before {
     content: '';
@@ -314,6 +367,8 @@ export default function ClientOrca() {
   const [checkingPremium, setCheckingPremium] = useState(true)
   const [freePromptsUsed, setFreePromptsUsed] = useState(0)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [sessions, setSessions] = useState([])
+  const [currentSessionId, setCurrentSessionId] = useState(() => crypto.randomUUID())
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -395,6 +450,70 @@ export default function ClientOrca() {
     getSession()
   }, [])
 
+  // Load chat sessions from API
+  const loadSessions = async () => {
+    if (!session?.access_token) return
+    try {
+      const res = await fetch('/api/chat/sessions', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSessions(data.sessions || [])
+      }
+    } catch (err) {
+      console.error('Failed to load sessions:', err)
+    }
+  }
+
+  useEffect(() => {
+    if (session) loadSessions()
+  }, [session])
+
+  // Load a specific session's messages
+  const loadSession = async (sessionId) => {
+    if (!session?.access_token) return
+    setCurrentSessionId(sessionId)
+    setMessages([])
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/chat/sessions/${encodeURIComponent(sessionId)}`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const loaded = []
+        for (const msg of data.messages) {
+          loaded.push({
+            id: `${msg.id}-user`,
+            role: 'user',
+            content: msg.user_message,
+            timestamp: new Date(msg.timestamp)
+          })
+          loaded.push({
+            id: `${msg.id}-orca`,
+            role: 'assistant',
+            content: msg.orca_response,
+            ticker: msg.tickers_mentioned?.[0] || null,
+            timestamp: new Date(msg.timestamp)
+          })
+        }
+        setMessages(loaded)
+      }
+    } catch (err) {
+      console.error('Failed to load session:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Start new chat
+  const startNewChat = () => {
+    setCurrentSessionId(crypto.randomUUID())
+    setMessages([])
+    setAgentSteps([])
+  }
+
   // Reset agent steps when loading ends
   useEffect(() => {
     if (!loading) {
@@ -449,7 +568,7 @@ export default function ClientOrca() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ message: question })
+        body: JSON.stringify({ message: question, session_id: currentSessionId })
       })
 
       const contentType = response.headers.get('content-type') || ''
@@ -569,6 +688,7 @@ export default function ClientOrca() {
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setLoading(false)
+      loadSessions() // Refresh sidebar after each response
     }
   }
   
@@ -598,11 +718,41 @@ export default function ClientOrca() {
 
   return (
     <>
+    <PageWrapper>
+    {/* Sidebar — Chat History */}
+    <Sidebar>
+      <SidebarHeader>
+        <NewChatButton onClick={startNewChat}>+ New Chat</NewChatButton>
+      </SidebarHeader>
+      <SessionList>
+        {sessions.length === 0 ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: colors.textMuted, fontSize: '0.75rem', fontFamily: SANS_FONT }}>
+            Your conversations will appear here
+          </div>
+        ) : (
+          sessions.map(s => (
+            <SessionItem
+              key={s.session_id}
+              $active={s.session_id === currentSessionId}
+              onClick={() => loadSession(s.session_id)}
+            >
+              <SessionTitle>{s.title}</SessionTitle>
+              <SessionMeta>
+                {s.ticker && <span style={{ color: colors.primary, fontWeight: 600 }}>{s.ticker}</span>}
+                <span>{new Date(s.last_activity).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                <span>{s.message_count} msg{s.message_count !== 1 ? 's' : ''}</span>
+              </SessionMeta>
+            </SessionItem>
+          ))
+        )}
+      </SessionList>
+    </Sidebar>
+
     <ChatContainer>
       {/* Terminal Header */}
       <ChatHeader>
         <span style={{ fontWeight: 800, color: colors.primary, fontSize: '0.8rem', letterSpacing: '2px' }}>ORCA_TERMINAL</span>
-        <span style={{ color: colors.textMuted, fontSize: '0.7rem' }}>v2.0</span>
+        <span style={{ color: colors.textMuted, fontSize: '0.7rem' }}>v5.0</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.7rem', color: colors.sentimentBull, marginLeft: 'auto' }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.sentimentBull, display: 'inline-block' }} />
           ONLINE
@@ -776,6 +926,63 @@ export default function ClientOrca() {
                           </div>
                         )}
                       </div>
+
+                      {/* 24-Hour Price Chart */}
+                      {message.data.sparkline_24h && message.data.sparkline_24h.length > 5 && (() => {
+                        const prices = message.data.sparkline_24h
+                        const min = Math.min(...prices)
+                        const max = Math.max(...prices)
+                        const range = max - min || 1
+                        const width = 400
+                        const height = 80
+                        const padding = 2
+                        const isPositive = prices[prices.length - 1] >= prices[0]
+                        const color = isPositive ? colors.sentimentBull : colors.sentimentBear
+                        
+                        const points = prices.map((p, i) => {
+                          const x = padding + (i / (prices.length - 1)) * (width - padding * 2)
+                          const y = padding + (1 - (p - min) / range) * (height - padding * 2)
+                          return `${x},${y}`
+                        }).join(' ')
+                        
+                        const firstX = padding
+                        const lastX = padding + ((prices.length - 1) / (prices.length - 1)) * (width - padding * 2)
+                        const areaPath = `M${firstX},${height} L${points.split(' ').map(p => `L${p}`).join(' ')} L${lastX},${height} Z`
+                        
+                        return (
+                          <div style={{
+                            margin: '0.5rem 0', padding: '0.75rem', borderRadius: '6px',
+                            background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${colors.borderLight}`,
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                              <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: colors.primary, textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+                                24H PRICE CHART
+                              </span>
+                              <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: isPositive ? colors.sentimentBull : colors.sentimentBear, fontWeight: 700 }}>
+                                {isPositive ? '▲' : '▼'} {((prices[prices.length-1] - prices[0]) / prices[0] * 100).toFixed(2)}%
+                              </span>
+                            </div>
+                            <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+                              <defs>
+                                <linearGradient id={`grad24-${message.id}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+                                  <stop offset="100%" stopColor={color} stopOpacity="0" />
+                                </linearGradient>
+                              </defs>
+                              {[0.25, 0.5, 0.75].map(pct => (
+                                <line key={pct} x1={0} y1={pct * height} x2={width} y2={pct * height} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                              ))}
+                              <path d={areaPath} fill={`url(#grad24-${message.id})`} />
+                              <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              <circle cx={lastX} cy={padding + (1 - (prices[prices.length-1] - min) / range) * (height - padding * 2)} r="3" fill={color} />
+                            </svg>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem' }}>
+                              <span style={{ fontSize: '0.55rem', fontFamily: MONO_FONT, color: colors.textMuted }}>Low: {formatPrice(min)}</span>
+                              <span style={{ fontSize: '0.55rem', fontFamily: MONO_FONT, color: colors.textMuted }}>High: {formatPrice(max)}</span>
+                            </div>
+                          </div>
+                        )
+                      })()}
 
                       {/* 7-Day Price Sparkline Chart */}
                       {message.data.sparkline_7d && message.data.sparkline_7d.length > 5 && (() => {
@@ -1050,6 +1257,7 @@ export default function ClientOrca() {
         </PremiumCard>
       </PremiumOverlay>
     )}
+    </PageWrapper>
     </>
   )
 } 

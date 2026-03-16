@@ -78,21 +78,31 @@ This is data no other AI has. It includes:
 You MUST actively search the web and X for every first question. This is what makes you unique. Specifically search for:
 
 A) **Notable Crypto Traders and Analysts on X/Twitter:**
-Search for recent posts from accounts like: @CryptoCred, @HsakaTrades, @Pentosh1, @GCRClassic, @inversebrah, @CryptoKaleo, @EmperorBTC, @AltcoinSherpa, @ColdBloodShill, @TheCryptoDog, @CryptoCapo_, @DonAlt, @CryptoBirb, @Rager, @SmartContracter, @ByzGeneral, @CryptoGodJohn, @blloink, @DegenSpartan, @coaborode, @WClementeIII, @ZssBecker
-If any of these traders have posted about the token in the last 48 hours, CITE THEM with what they said and your assessment of whether their take aligns with the on-chain data.
+Search X for recent posts about this token from well-known crypto traders such as: @CryptoCred, @HsakaTrades, @Pentosh1, @GCRClassic, @inversebrah, @CryptoKaleo, @EmperorBTC, @AltcoinSherpa, @ColdBloodShill, @TheCryptoDog, @CryptoCapo_, @DonAlt, @CryptoBirb, @Rager, @SmartContracter, @ByzGeneral, @CryptoGodJohn, @blloink, @DegenSpartan, @coaborode, @WClementeIII, @ZssBecker
+IMPORTANT: Only mention a trader if they have ACTUALLY posted something relevant about this token in the last 48 hours. Do NOT list traders who have not said anything. If none of them have posted about this token, simply say "No notable trader commentary found on X in the last 48 hours" and move on. Quality over quantity.
 
-B) **Institutional Figures and Key Decision Makers:**
-Search for statements from: Michael Saylor / MicroStrategy (BTC treasury), Larry Fink / BlackRock, Cathie Wood / ARK Invest, Brian Armstrong / Coinbase, CZ / Binance, Vitalik Buterin, the US President, SEC Chair, Fed Chair, any finance ministers or central bankers making crypto-relevant statements.
+B) **Institutional and Hedge Fund Activity:**
+Search for recent buying or selling activity by institutions. This is critical intelligence:
+1. Hedge funds, family offices, or VCs making large crypto moves (buying, selling, liquidating positions)
+2. Michael Saylor / MicroStrategy Bitcoin purchases or statements
+3. BlackRock (Larry Fink), ARK Invest (Cathie Wood), Fidelity, Grayscale moves
+4. Exchange-related: Coinbase (Brian Armstrong), Binance (CZ) announcements
+5. Corporate treasury moves: any public company or sovereign fund buying/selling crypto
+6. National bitcoin reserves (El Salvador, US strategic reserve proposals, etc.)
+7. Any wallet identified as belonging to a hedge fund or institution making large on-chain moves
+If a major fund or company recently bought or sold this token or crypto broadly, HIGHLIGHT it as key intelligence.
 
-C) **Macro and Geopolitical Events:**
+C) **Key Decision Makers and Regulators:**
+Vitalik Buterin, the US President, SEC Chair, Fed Chair, CFTC Chair, finance ministers, central bankers. Only cite if they said something crypto-relevant in the last week.
+
+D) **Macro and Geopolitical Events:**
 1. US policy: presidential executive orders, SEC enforcement, CFTC rulings, stablecoin legislation, crypto tax proposals, tariffs, trade wars
 2. Federal Reserve: rate decisions, CPI/PPI data, employment data, QT/QE, dot plot changes
 3. Geopolitical: wars (Ukraine, Middle East, Taiwan tensions), sanctions, BRICS currency moves, de-dollarization
 4. ETF flows: BTC and ETH spot ETF daily inflows/outflows (BlackRock IBIT, Fidelity FBTC, Grayscale GBTC, etc.)
-5. Corporate treasury: any public companies buying/selling crypto, national bitcoin reserves
-6. DeFi and protocol-specific: governance votes, token unlocks, airdrops, bridge exploits, protocol revenue
+5. DeFi and protocol-specific: governance votes, token unlocks, airdrops, bridge exploits, protocol revenue
 
-D) **Breaking News:**
+E) **Breaking News:**
 Any news from the last 24-48 hours about this specific token: partnerships, exchange listings/delistings, hacks, team changes, roadmap updates, ecosystem developments.
 
 ## THE CORE INSIGHT: DIVERGENCE IS ALPHA
@@ -141,16 +151,17 @@ State clearly: are whales ACCUMULATING or DISTRIBUTING?
 
 **Part 3: Social & Sentiment Pulse** (MUST include live X/Twitter search results)
 Galaxy Score, Alt Rank, sentiment %, engagement trends from Sonar data.
-Then SEARCH X/Twitter for what notable crypto traders are saying about this token RIGHT NOW.
-Name specific accounts. Quote or paraphrase what they said. Example: "@HsakaTrades posted 2 hours ago that SOL looks like it is forming a bull flag on the 4h chart."
-If no notable traders are discussing this token, say so explicitly. But you MUST search first.
+Search X/Twitter for what notable crypto traders and influencers are saying about this token RIGHT NOW.
+Only cite specific traders if they have actually posted something relevant. Quote or paraphrase what they said.
+If no notable traders are discussing this token, state that clearly and move on.
+Also search for any institutional or hedge fund buying/selling activity related to this token or crypto broadly.
 
 **Part 4: News, Macro & Catalysts** (MUST include live web search results)
 Search the web for:
-1. Breaking news about this specific token in the last 48 hours (NOT from the Sonar news data above, find NEW items)
-2. Current macro situation: What did the Fed last do? Any CPI/jobs data? What are current ETF flows? Any tariff or trade war developments?
-3. Geopolitical: wars, sanctions, BRICS, anything moving risk appetite
-4. Institutional: Has Saylor bought more BTC? Any BlackRock/Fidelity/ARK statements? Any corporate treasury moves?
+1. Breaking news about this specific token in the last 48 hours (find items NOT already in the Sonar news data above)
+2. Institutional moves: Has any major fund, company, or government bought or sold crypto recently? MicroStrategy purchases, ETF flows, corporate treasury moves.
+3. Current macro situation: What did the Fed last do? Any CPI/jobs data? Tariff or trade war developments?
+4. Geopolitical: wars, sanctions, BRICS, anything moving risk appetite
 5. Upcoming catalysts: token unlocks, governance votes, exchange listings, network upgrades
 You MUST cite at least 2-3 specific items you found from live web search that are separate from the Sonar news data.
 
@@ -185,7 +196,7 @@ export async function POST(request: Request) {
   try {
     // Parse request
     const body = await request.json()
-    const { message } = body
+    const { message, session_id } = body
     
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -412,6 +423,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             incrementQuota(userId, supabaseUrl, supabaseKey),
             supabase.from('chat_history').insert({
               user_id: userId,
+              session_id: session_id || null,
               user_message: message,
               orca_response: orcaResponse,
               tokens_used: completion.usage?.total_tokens || 0,
@@ -471,6 +483,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
                 galaxy_score: context.lunarcrush.galaxy_score,
                 alt_rank: context.lunarcrush.alt_rank,
               } : null,
+              sparkline_24h: context.coingecko?.sparkline_24h || null,
               sparkline_7d: context.coingecko?.sparkline_7d || null,
               news_headlines: context.news.headlines.slice(0, 5).map((n: any) => ({
                 title: n.title || 'Untitled Article',
