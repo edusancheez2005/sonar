@@ -31,40 +31,46 @@ export async function GET() {
 
     const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
 
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+
     const completion = await ai.chat.completions.create({
       model: 'grok-4-1-fast-non-reasoning',
       messages: [
         {
           role: 'system',
-          content: `You are a concise crypto macro analyst. Return a JSON object with exactly this structure:
+          content: `You are a concise crypto macro analyst. TODAY'S DATE IS ${today}. 
+
+CRITICAL: ALL data must be from the LAST 7 DAYS. Do NOT include any events from 2024 or earlier. Every date you mention must be within the last week. If you cannot find recent data for a factor, say "no recent update" instead of citing old data.
+
+Return a JSON object with exactly this structure:
 {
   "factors": [
-    { "title": "short title", "impact": "bullish" or "bearish" or "neutral", "summary": "1-2 sentence explanation" }
+    { "title": "short title", "impact": "bullish" or "bearish" or "neutral", "summary": "1-2 sentence explanation with specific dates from this week" }
   ],
   "overall_sentiment": "bullish" or "bearish" or "neutral",
-  "last_updated": "human readable time"
+  "last_updated": "${today}"
 }
 
-Include exactly 5-7 factors covering:
-1. Federal Reserve / interest rates / inflation
-2. Geopolitical events (wars, sanctions, trade)
-3. US crypto regulation / policy
-4. ETF flows (BTC/ETH)
-5. Major institutional moves (Saylor, BlackRock, etc.)
-6. Market structure (BTC dominance, total market cap)
-7. Any other major factor right now
+Include exactly 5-7 factors. Search the web for data from THIS WEEK ONLY about:
+1. Federal Reserve: latest rate decision, CPI/PPI data, Fed commentary from this week
+2. Geopolitical: current wars, sanctions, trade tensions as of today
+3. US crypto regulation: any SEC/CFTC actions, legislation, executive orders this week
+4. ETF flows: BTC/ETH ETF inflows/outflows from the last 7 days
+5. Institutional moves: MicroStrategy, BlackRock, corporate buys THIS WEEK
+6. Market structure: current BTC dominance, total crypto market cap as of today
+7. Any breaking macro event from the last 48 hours
 
-Search the web and X for the LATEST information. Be specific with numbers and dates. Keep summaries under 30 words each. Return ONLY valid JSON, no markdown.`
+Keep summaries under 30 words each. Return ONLY valid JSON, no markdown.`
         },
         {
           role: 'user',
-          content: 'What are the key macro factors affecting the crypto market RIGHT NOW? Search for the latest data.'
+          content: `Today is ${today}. What are the key macro factors affecting the crypto market THIS WEEK? Only include events and data from the last 7 days. Search the web for the most recent information.`
         }
       ],
       temperature: 0.3,
       max_tokens: 800,
       // @ts-ignore - xAI specific
-      search: { mode: 'on', max_search_results: 8 }
+      search: { mode: 'on', max_search_results: 10 }
     })
 
     const raw = completion.choices[0]?.message?.content || ''
