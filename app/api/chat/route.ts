@@ -20,8 +20,8 @@ const getAIClient = () => {
   if (xaiKey) {
     return {
       client: new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' }),
-      model: 'grok-4-1-reasoning',
-      miniModel: 'grok-4-1-fast-non-reasoning',
+      model: 'grok-4.20-beta-0309-reasoning',
+      miniModel: 'grok-4.20-beta-0309-non-reasoning',
       provider: 'grok'
     }
   }
