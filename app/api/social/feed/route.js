@@ -54,9 +54,29 @@ export async function GET(req) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Filter to English-only and crypto-relevant posts
+    const isEnglish = (text) => {
+      if (!text) return false
+      // Reject if >20% non-ASCII characters (catches CJK, Cyrillic, Arabic, Korean, etc.)
+      const nonAscii = text.replace(/[\x00-\x7F]/g, '').length
+      return nonAscii / text.length < 0.2
+    }
+
+    const cryptoKeywords = /bitcoin|btc|ethereum|eth|solana|sol|crypto|blockchain|defi|nft|token|altcoin|whale|trading|market cap|binance|coinbase|bull|bear|pump|dump|hodl|airdrop|staking|yield|liquidity|dex|cex|memecoin|shib|doge|pepe|xrp|cardano|ada|avax|polygon|arbitrum|optimism|chain|wallet|exchange|futures|options|leverage|short|long|rally|correction|ath|fomo|fud|saylor|blackrock|etf|sec|fed|tariff|inflation|rate cut|macro/i
+
+    const filtered = (data || []).filter(post => {
+      const body = post.body || ''
+      if (!isEnglish(body)) return false
+      // Must be crypto-related: check body, category, or tickers
+      if (post.tickers_mentioned?.length > 0) return true
+      if (post.category && ['cryptocurrencies', 'defi', 'nfts', 'memecoins'].includes(post.category)) return true
+      if (cryptoKeywords.test(body)) return true
+      return false
+    })
+
     return NextResponse.json({
-      posts: data || [],
-      count: data?.length || 0,
+      posts: filtered,
+      count: filtered.length,
     }, {
       headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=300' }
     })

@@ -884,7 +884,7 @@ const Landing = () => {
         </Logo>
         <NavLinks>
           <NavLink onClick={() => { const el = document.getElementById('features'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Features</NavLink>
-          <NavLink onClick={() => { const el = document.getElementById('about'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>About</NavLink>
+          <NavLink onClick={() => { const el = document.getElementById('about'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Team</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('pricing'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Pricing</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('orca-cta'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }} title="AI-powered crypto trading insights">AI Advisor</NavLink>
           <NavLink onClick={() => navigate('/blog')} title="Crypto analytics guides">Blog</NavLink>
@@ -1857,10 +1857,10 @@ const Landing = () => {
         </CarouselOuter>
       </TrustSection>
 
-      {/* ─── ABOUT — WHO I AM ─── */}
+      {/* ─── TEAM ─── */}
       <TeamSection id="about">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true, amount: 0.2 }} style={{ textAlign: 'center', marginBottom: '4rem' }}>
-          <SectionHeading>Who I Am</SectionHeading>
+          <SectionHeading>Team</SectionHeading>
           <p style={{ fontSize: '1.4rem', color: 'var(--text-secondary)', maxWidth: '800px', margin: '0 auto', lineHeight: '1.8' }}>
             I've been in crypto for years and saw the same pattern again and again: retail traders react late because the real signals are scattered across explorers, paid groups, and noisy social feeds.
           </p>

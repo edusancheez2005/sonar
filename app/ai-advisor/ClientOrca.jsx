@@ -474,9 +474,6 @@ export default function ClientOrca() {
   const loadSession = async (sessionId) => {
     if (!session?.access_token) return
     setCurrentSessionId(sessionId)
-    setMessages([])
-    // Don't set loading=true here — that shows the agent step tracker
-    // Instead we just swap the messages
     try {
       const res = await fetch(`/api/chat/sessions/${encodeURIComponent(sessionId)}`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -503,7 +500,8 @@ export default function ClientOrca() {
             })
           }
         }
-        setMessages(loaded)
+        // Set messages atomically — don't clear first
+        setMessages(loaded.length > 0 ? loaded : [])
       }
     } catch (err) {
       console.error('Failed to load session:', err)

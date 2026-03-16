@@ -134,6 +134,7 @@ export default function CommunityClient() {
   const [sort, setSort] = useState('interactions')
   const [show, setShow] = useState(40)
   const [openSum, setOpenSum] = useState(null)
+  const [macroFactors, setMacroFactors] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -146,6 +147,8 @@ export default function CommunityClient() {
         setPosts((await pRes.json()).posts || [])
         setCreators((await cRes.json()).creators || [])
         setSummaries(sRes)
+        // Fetch macro factors separately (non-blocking)
+        fetch('/api/social/macro').then(r => r.json()).then(d => setMacroFactors(d)).catch(() => {})
       } catch (e) { console.error(e) }
       finally { setLoading(false) }
     }
@@ -235,6 +238,32 @@ export default function CommunityClient() {
         </Main>
 
         <Side>
+          {/* Macro Factors Panel */}
+          {macroFactors?.factors && (
+            <div style={{ background: c.panel, border: `1px solid ${c.border}`, borderTop: `2px solid ${c.gold}`, borderRadius: 6, padding: '1rem', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: c.gold, fontFamily: MONO, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                KEY MACRO FACTORS
+                {macroFactors.overall_sentiment && (
+                  <span style={{ fontSize: '0.6rem', color: macroFactors.overall_sentiment === 'bullish' ? c.bull : macroFactors.overall_sentiment === 'bearish' ? c.bear : c.textMuted, fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: 4, background: macroFactors.overall_sentiment === 'bullish' ? 'rgba(46,204,113,0.1)' : macroFactors.overall_sentiment === 'bearish' ? 'rgba(231,76,60,0.1)' : 'rgba(138,155,181,0.1)' }}>
+                    {macroFactors.overall_sentiment.toUpperCase()}
+                  </span>
+                )}
+              </div>
+              {macroFactors.factors.map((f, i) => (
+                <div key={i} style={{ padding: '0.4rem 0', borderBottom: i < macroFactors.factors.length - 1 ? `1px solid ${c.border}` : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: f.impact === 'bullish' ? c.bull : f.impact === 'bearish' ? c.bear : c.textMuted, flexShrink: 0 }}/>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: c.text }}>{f.title}</span>
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: c.textSec, lineHeight: 1.4, marginLeft: '1rem' }}>{f.summary}</div>
+                </div>
+              ))}
+              {macroFactors.last_updated && (
+                <div style={{ fontSize: '0.55rem', color: c.textMuted, fontFamily: MONO, marginTop: '0.5rem', textAlign: 'right' }}>Updated: {macroFactors.last_updated}</div>
+              )}
+            </div>
+          )}
+
           <SideHeader>TOP INFLUENCERS // 24H</SideHeader>
           {creators.length === 0 && <EmptyMsg>POPULATING...</EmptyMsg>}
           {creators.slice(0, 20).map((cr, i) => (

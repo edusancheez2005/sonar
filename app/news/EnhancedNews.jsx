@@ -293,10 +293,17 @@ export default function EnhancedNews({ ticker = null }) {
         const { data, error } = await query
         if (error) throw error
         
-        // Filter out untitled and junk
+        // Filter out untitled, junk, and non-English articles
+        const isEnglish = (text) => {
+          if (!text) return false
+          const nonAscii = text.replace(/[\x00-\x7F]/g, '').length
+          return nonAscii / text.length < 0.2
+        }
+        
         const valid = (data || []).filter(a => {
           const title = a.title?.trim()
           if (!title || title.toLowerCase() === 'untitled' || title.length < 15) return false
+          if (!isEnglish(title)) return false
           return true
         })
         
