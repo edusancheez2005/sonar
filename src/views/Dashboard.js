@@ -156,6 +156,15 @@ const TutorialBtn = styled.button`
   &:hover { background: rgba(0, 229, 255, 0.15); border-color: rgba(0, 229, 255, 0.3); }
 `
 
+const OrcaNavBtn = styled(Link)`
+  background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 4px; padding: 0.25rem 0.65rem; color: ${COLORS.cyan};
+  font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: ${MONO_FONT};
+  transition: all 0.15s ease; display: flex; align-items: center; gap: 0.35rem;
+  text-decoration: none;
+  &:hover { background: rgba(0, 229, 255, 0.15); border-color: rgba(0, 229, 255, 0.3); }
+`
+
 const CmdDivider = styled.span`color: rgba(0, 229, 255, 0.15); font-size: 0.9rem;`
 
 // ─── PREMIUM OVERLAY ────────────────────────────────────────────────────────
@@ -614,6 +623,7 @@ const Dashboard = ({ isPremium = false }) => {
   const outflowsRef = useRef(null);
   const tradedTokensRef = useRef(null);
   const topWhalesRef = useRef(null);
+  const orcaRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const hasLoadedOnce = useRef(false);
   const [algoActive, setAlgoActive] = useState(true);
@@ -886,6 +896,9 @@ const Dashboard = ({ isPremium = false }) => {
               </UserChip>
             )}
 
+            <OrcaNavBtn href="/ai-advisor" ref={orcaRef}>
+              🐋 Ask ORCA
+            </OrcaNavBtn>
             <TutorialBtn onClick={() => {
               localStorage.removeItem('sonar_tutorial_completed')
               setShowTutorial(true)
@@ -1234,9 +1247,9 @@ const Dashboard = ({ isPremium = false }) => {
         onClose={() => setShowTutorial(false)}
         refs={{
           marketPulse: marketPulseRef,
-          inflowsOutflows: inflowsRef,
-          tradedTokens: tradedTokensRef,
-          topWhales: topWhalesRef
+          whaleData: inflowsRef,
+          tokenTable: tradedTokensRef,
+          orcaAI: orcaRef,
         }}
       />
     </>
