@@ -785,7 +785,7 @@ const Landing = () => {
       if (loginErr) throw loginErr;
       showToast('Account created. Welcome!', 'success');
       setShowSignupModal(false);
-      navigate('/dashboard');
+      navigate('/ai-advisor');
     } catch (err) {
       const raw = (err && typeof err.message === 'string') ? err.message : (typeof err === 'string' ? err : (() => { try { return JSON.stringify(err); } catch { return ''; } })());
       const lower = (raw || '').toLowerCase();
@@ -886,7 +886,7 @@ const Landing = () => {
           <NavLink onClick={() => { const el = document.getElementById('features'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Features</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('about'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>About</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('pricing'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Pricing</NavLink>
-          <NavLink onClick={() => { const el = document.getElementById('advisor'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }} title="AI-powered crypto trading insights">AI Advisor</NavLink>
+          <NavLink onClick={() => { const el = document.getElementById('orca-cta'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }} title="AI-powered crypto trading insights">AI Advisor</NavLink>
           <NavLink onClick={() => navigate('/blog')} title="Crypto analytics guides">Blog</NavLink>
           {isLoggedIn ? (
             <LoginButton onClick={() => navigate('/dashboard')} title="Go to your dashboard" style={{ background: 'var(--primary)', color: '#fff' }}>Dashboard</LoginButton>
@@ -1792,6 +1792,71 @@ const Landing = () => {
         </CarouselOuter>
       </TrustSection>
 
+      {/* ─── ORCA AI CTA ─── */}
+      <section id="orca-cta" style={{ padding: '5rem 2rem', background: 'linear-gradient(180deg, rgba(10, 22, 33, 0.95) 0%, rgba(0, 229, 255, 0.03) 50%, rgba(10, 22, 33, 0.95) 100%)' }}>
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true, amount: 0.2 }} style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <SectionHeading>Meet ORCA: Your AI Crypto Analyst</SectionHeading>
+            <p style={{ fontSize: '1.3rem', color: 'var(--text-secondary)', maxWidth: '750px', margin: '0 auto', lineHeight: '1.8' }}>
+              Ask any question about any cryptocurrency. ORCA combines real-time whale data, social sentiment, live news, and X/Twitter intelligence into one institutional-grade analysis.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start', maxWidth: '1050px', margin: '0 auto' }}>
+            {/* Sample ORCA Response */}
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.1 }} viewport={{ once: true }}
+              style={{ background: 'rgba(13, 17, 28, 0.9)', border: '1px solid rgba(0, 229, 255, 0.15)', borderRadius: '16px', padding: '1.5rem', fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(0, 229, 255, 0.08)' }}>
+                <span style={{ fontSize: '0.7rem', color: '#00e5ff', fontWeight: 700, letterSpacing: '2px' }}>ORCA_TERMINAL</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: '#00e676', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00e676', display: 'inline-block' }}/>ONLINE
+                </span>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(0, 229, 255, 0.7)', marginBottom: '0.75rem' }}>You: "Should I buy Bitcoin right now?"</div>
+              <div style={{ fontSize: '0.75rem', color: '#e0e6ed', lineHeight: '1.7' }}>
+                <span style={{ fontWeight: 700, color: '#00e5ff' }}>Price & Technical:</span> BTC at <span style={{ color: '#00e676' }}>`$71,000`</span> with +8.9% 7d momentum. Bullish trend confirmed by rising volume.
+                <br/><br/>
+                <span style={{ fontWeight: 700, color: '#00e5ff' }}>Whale Intelligence:</span> <span style={{ color: '#00e676' }}>`$190M`</span> net inflow. 42 buy txns vs 46 sells but buy volume 4x higher. Multiple <span style={{ color: '#00e676' }}>`$50M+`</span> Coinbase to cold storage moves. <span style={{ fontWeight: 700, color: '#00e676' }}>Strong accumulation.</span>
+                <br/><br/>
+                <span style={{ fontWeight: 700, color: '#00e5ff' }}>Live X/Twitter:</span> @lookonchain reports BlackRock IBIT saw <span style={{ color: '#00e676' }}>`$380M`</span> inflows this week. @WClementeIII flagging bull flag formation on the daily.
+                <br/><br/>
+                <span style={{ fontWeight: 700, color: '#00e5ff' }}>Verdict:</span> <span style={{ fontWeight: 700, color: '#00e676' }}>HIGH CONVICTION BULLISH</span>. Whale accumulation + ETF inflows + macro tailwinds all align.
+              </div>
+            </motion.div>
+
+            {/* Feature list + CTA */}
+            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} viewport={{ once: true }}
+              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1.5rem' }}>
+              {[
+                { title: 'Real-Time Whale Data', desc: 'Every answer is grounded in live on-chain whale flows, not generic AI' },
+                { title: 'Live X/Twitter Search', desc: 'Pulls tweets from top crypto traders and institutional figures in real-time' },
+                { title: 'Macro Intelligence', desc: 'Fed decisions, ETF flows, geopolitical events, all connected to your token' },
+                { title: 'Institutional Tracking', desc: 'MicroStrategy purchases, BlackRock moves, hedge fund activity, all in one answer' },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00e5ff', marginTop: '0.5rem', flexShrink: 0 }}/>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#00e5ff', fontSize: '1.05rem', marginBottom: '0.25rem' }}>{item.title}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5' }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+
+              <motion.button
+                whileHover={{ scale: 1.03, boxShadow: '0 10px 40px rgba(0, 229, 255, 0.3)' }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/ai-advisor')}
+                style={{ marginTop: '1rem', padding: '1rem 2.5rem', background: 'linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%)', color: '#0a0e17', border: 'none', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', letterSpacing: '0.5px', boxShadow: '0 4px 20px rgba(0, 229, 255, 0.25)' }}>
+                Try ORCA Free →
+              </motion.button>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', opacity: 0.7, margin: 0 }}>
+                1 free analysis per day. No credit card required.
+              </p>
+            </motion.div>
+          </div>
+        </motion.div>
+      </section>
+
       {/* ─── ABOUT — WHO I AM ─── */}
       <TeamSection id="about">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true, amount: 0.2 }} style={{ textAlign: 'center', marginBottom: '4rem' }}>
@@ -2001,7 +2066,7 @@ const Landing = () => {
         <Modal initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <FormContainer initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}>
             <h3>Create an Account</h3>
-            <button type="button" onClick={async () => { try { const sb = supabaseBrowser(); const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/dashboard` } }); if (error) setSignupError('Google sign-up failed.'); } catch { setSignupError('An error occurred.'); } }}
+            <button type="button" onClick={async () => { try { const sb = supabaseBrowser(); const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/ai-advisor` } }); if (error) setSignupError('Google sign-up failed.'); } catch { setSignupError('An error occurred.'); } }}
               style={{ width: '100%', padding: '0.75rem 1rem', marginBottom: '1.5rem', backgroundColor: '#fff', color: '#1f1f1f', border: '1px solid #dadce0', borderRadius: '8px', fontSize: '1rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s ease' }}
               onMouseOver={e => { e.currentTarget.style.backgroundColor = '#f8f9fa'; }} onMouseOut={e => { e.currentTarget.style.backgroundColor = '#fff'; }}>
               <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
