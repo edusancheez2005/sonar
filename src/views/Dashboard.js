@@ -643,6 +643,7 @@ const Dashboard = ({ isPremium = false }) => {
   // News + signals state for dashboard V2
   const [newsArticles, setNewsArticles] = useState([])
   const [signals, setSignals] = useState([])
+  const [macroFactors, setMacroFactors] = useState(null)
 
   // Fetch user info and check tutorial state
   useEffect(() => {
@@ -698,6 +699,13 @@ const Dashboard = ({ isPremium = false }) => {
       finally { setWatchlistLoading(false) }
     }
     fetchWatchlist()
+  }, [])
+
+  // Fetch macro factors for dashboard panel
+  useEffect(() => {
+    fetch('/api/social/macro').then(r => r.json()).then(d => {
+      if (d?.factors) setMacroFactors(d)
+    }).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -1237,6 +1245,45 @@ const Dashboard = ({ isPremium = false }) => {
             </motion.div>
         </DashboardContainer>
       </DashboardShell>
+
+      {/* Macro Factors Panel */}
+      {macroFactors?.factors && (
+        <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 2rem 1rem' }}>
+          <div style={{
+            background: COLORS.panelBg, border: `1px solid ${COLORS.borderSubtle}`,
+            borderTop: '2px solid #f0b90b', borderRadius: 8, padding: '1rem 1.25rem',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f0b90b', fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                KEY MACRO FACTORS
+              </span>
+              {macroFactors.overall_sentiment && (
+                <span style={{
+                  fontSize: '0.6rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: 4, letterSpacing: '0.5px',
+                  color: macroFactors.overall_sentiment === 'bullish' ? COLORS.green : macroFactors.overall_sentiment === 'bearish' ? COLORS.red : COLORS.textMuted,
+                  background: macroFactors.overall_sentiment === 'bullish' ? 'rgba(0,230,118,0.1)' : macroFactors.overall_sentiment === 'bearish' ? 'rgba(255,23,68,0.1)' : 'rgba(90,106,122,0.1)',
+                }}>
+                  {macroFactors.overall_sentiment.toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.5rem' }}>
+              {macroFactors.factors.map((f, i) => (
+                <div key={i} style={{ padding: '0.5rem 0.75rem', background: 'rgba(0,229,255,0.02)', borderRadius: 6, border: `1px solid ${COLORS.borderSubtle}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                    <span style={{
+                      width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                      background: f.impact === 'bullish' ? COLORS.green : f.impact === 'bearish' ? COLORS.red : COLORS.textMuted,
+                    }}/>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: COLORS.textPrimary }}>{f.title}</span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: COLORS.textMuted, lineHeight: 1.45, marginLeft: '1.1rem' }}>{f.summary}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Social Intelligence Pulse */}
       <SocialPulse />
