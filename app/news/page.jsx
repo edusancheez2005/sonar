@@ -1,10 +1,10 @@
 import React from 'react'
-import EnhancedNews from './EnhancedNews'
+import NewsTerminal from './NewsTerminal'
 import AuthGuard from '@/app/components/AuthGuard'
 
 export const metadata = {
-  title: 'Crypto News — AI-Powered Sentiment Analysis',
-  description: 'Stay updated with crypto news analyzed by ORCA\'s trained LLM. See sentiment scores, whale impact, and market trends in real-time.',
+  title: 'News Terminal — Real-Time Crypto Intelligence',
+  description: 'Real-time crypto news, social sentiment, macro analysis, and key voices from world leaders and crypto influencers — all in one terminal.',
   alternates: { canonical: 'https://www.sonartracker.io/news' },
 }
 
@@ -194,7 +194,7 @@ export default async function NewsPage() {
 
   return (
     <AuthGuard>
-      <EnhancedNews />
+      <NewsTerminal initialNews={initialNews} />
     </AuthGuard>
   )
 }

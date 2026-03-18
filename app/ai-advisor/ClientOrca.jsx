@@ -13,6 +13,7 @@ import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import OrcaWelcome from './OrcaWelcome'
+import { useSearchParams } from 'next/navigation'
 import TokenIcon from '@/components/TokenIcon'
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
@@ -357,6 +358,7 @@ function generateSparkline(change) {
 }
 
 export default function ClientOrca() {
+  const searchParams = useSearchParams()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -385,6 +387,19 @@ export default function ClientOrca() {
     { key: 'charts', label: 'Loading chart data' },
     { key: 'ai_thinking', label: 'ORCA analyzing all signals' },
   ]
+
+  // Pre-fill from URL params (e.g. from "Ask ORCA" buttons)
+  const prefillDone = useRef(false)
+  useEffect(() => {
+    if (prefillDone.current) return
+    const q = searchParams.get('q')
+    if (q) {
+      prefillDone.current = true
+      setInput(q)
+      // Focus the input so user can review and send
+      setTimeout(() => inputRef.current?.focus(), 300)
+    }
+  }, [searchParams])
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {

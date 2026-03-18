@@ -1,14 +1,11 @@
 'use client'
 
-import React from 'react'
-import AuthGuard from '@/app/components/AuthGuard'
-import CommunityClient from './CommunityClient'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function CommunityPage() {
-  return (
-    <AuthGuard>
-      <CommunityClient />
-    </AuthGuard>
-  )
+  const router = useRouter()
+  useEffect(() => { router.replace('/news') }, [router])
+  return null
 }
 

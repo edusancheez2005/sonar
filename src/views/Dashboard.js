@@ -963,10 +963,10 @@ const Dashboard = ({ isPremium = false }) => {
               <div style={{ marginBottom: '1rem', paddingTop: '1rem' }}>
                 <div style={{
                   background: COLORS.panelBg, border: `1px solid ${COLORS.borderSubtle}`,
-                  borderLeft: '3px solid #f0b90b', borderRadius: 6, padding: '0.75rem 1rem',
+                  borderLeft: '3px solid #f0b90b', borderRadius: 6, padding: '0.85rem 1.1rem',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#f0b90b', fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#f0b90b', fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '1px' }}>
                       MACRO FACTORS
                     </span>
                     {macroFactors.overall_sentiment && (
@@ -978,21 +978,35 @@ const Dashboard = ({ isPremium = false }) => {
                         {macroFactors.overall_sentiment.toUpperCase()}
                       </span>
                     )}
+                    <Link
+                      href={`/ai-advisor?q=${encodeURIComponent('Explain the current macro factors affecting crypto and what they mean for my portfolio: ' + macroFactors.factors.map(f => f.title + ' (' + f.impact + '): ' + f.summary).join('. '))}`}
+                      style={{
+                        marginLeft: 'auto', fontSize: '0.6rem', fontWeight: 700, fontFamily: MONO_FONT,
+                        color: COLORS.cyan, background: 'rgba(0,229,255,0.06)', border: `1px solid rgba(0,229,255,0.15)`,
+                        borderRadius: 4, padding: '0.2rem 0.55rem', textDecoration: 'none', letterSpacing: '0.3px',
+                        display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap',
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,229,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,229,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.15)' }}
+                    >
+                      🐋 Ask ORCA
+                    </Link>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
                     {macroFactors.factors.map((f, i) => (
                       <div key={i} style={{
-                        minWidth: 200, flex: '0 0 auto', padding: '0.5rem 0.65rem',
+                        minWidth: 260, flex: '0 0 auto', padding: '0.6rem 0.75rem',
                         background: 'rgba(0,229,255,0.02)', borderRadius: 5, border: `1px solid ${COLORS.borderSubtle}`,
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.15rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
                           <span style={{
-                            width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                            width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
                             background: f.impact === 'bullish' ? COLORS.green : f.impact === 'bearish' ? COLORS.red : COLORS.textMuted,
                           }}/>
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: COLORS.textPrimary, whiteSpace: 'nowrap' }}>{f.title}</span>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: COLORS.textPrimary, whiteSpace: 'nowrap' }}>{f.title}</span>
                         </div>
-                        <div style={{ fontSize: '0.62rem', color: COLORS.textMuted, lineHeight: 1.4 }}>{f.summary}</div>
+                        <div style={{ fontSize: '0.68rem', color: COLORS.textMuted, lineHeight: 1.45 }}>{f.summary}</div>
                       </div>
                     ))}
                   </div>

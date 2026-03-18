@@ -125,7 +125,7 @@ const Footer = () => {
             <li><a href="/careers" title="Careers at Sonar Tracker">Careers</a></li>
             <li><a href="/press" title="Sonar press kit and media resources">Press Kit</a></li>
             <li><a href="/contact" title="Contact Sonar Tracker">Contact</a></li>
-            <li><a href="/community" title="Join the Sonar community">Community</a></li>
+            
           </ul>
         </Column>
         <Column>
