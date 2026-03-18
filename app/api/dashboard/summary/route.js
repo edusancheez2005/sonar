@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic'
 
 // Stablecoins to exclude from dashboard analytics
 const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+// Tokens with broken/spammy data excluded from analytics
+const EXCLUDED_TOKENS = ['XRP']
 
 export async function GET() {
   try {
@@ -20,7 +22,7 @@ export async function GET() {
 
     // Query per-chain tables in parallel to avoid XRP flooding the 10K limit.
     // Each chain gets its own fair share of rows.
-    const CHAIN_TABLES = ['ethereum_transactions', 'bitcoin_transactions', 'solana_transactions', 'polygon_transactions', 'xrp_transactions']
+    const CHAIN_TABLES = ['ethereum_transactions', 'bitcoin_transactions', 'solana_transactions', 'polygon_transactions']
     const PER_CHAIN_LIMIT = 3000
     const SELECT_COLS = 'transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type'
 
@@ -44,11 +46,11 @@ export async function GET() {
 
     console.log(`Dashboard API: Fetched ${recentData.length} transactions across ${CHAIN_TABLES.length} chains (${chainResults.map((d,i) => `${CHAIN_TABLES[i].split('_')[0]}:${d.length}`).join(', ')})`)
 
-    // Filter out stablecoins from analytics (but keep in raw transaction list)
-    const analyticsData = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()))
+    // Filter out stablecoins and excluded tokens from analytics
+    const analyticsData = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
     
-    // Filter stablecoins from recent transactions too
-    const recent24h = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()))
+    // Filter stablecoins and excluded tokens from recent transactions too
+    const recent24h = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
 
     // Batch-resolve entity names for recent transactions
     const recentAddresses = new Set()
@@ -447,11 +449,11 @@ export async function GET() {
     let tokenInflows = tokenAggregate
       .filter(t => t.txCount >= MIN_TX && t.netUsd > 0 && Math.abs(t.netUsd) >= MIN_FLOW_USD)
       .sort((a, b) => b.netUsd - a.netUsd)
-      .slice(0, 15)
+      .slice(0, 5)
     const tokenOutflows = tokenAggregate
       .filter(t => t.txCount >= MIN_TX && t.netUsd < 0 && Math.abs(t.netUsd) >= MIN_FLOW_USD)
       .sort((a, b) => a.netUsd - b.netUsd)
-      .slice(0, 15)
+      .slice(0, 5)
 
     // Prepare whale activity data safely
     const whaleActivity = Array.from(byTokenWhales.entries()).map(([token, data]) => ({
