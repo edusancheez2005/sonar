@@ -45,6 +45,16 @@ export async function GET() {
       .order('timestamp', { ascending: false })
       .limit(5)
 
+    // Per-chain breakdown
+    const CHAIN_TABLES = ['ethereum_transactions', 'bitcoin_transactions', 'solana_transactions', 'polygon_transactions', 'xrp_transactions']
+    const chainCounts = {}
+    for (const table of CHAIN_TABLES) {
+      const { count: total } = await supabaseAdmin.from(table).select('*', { count: 'exact', head: true })
+      const { count: recent } = await supabaseAdmin.from(table).select('*', { count: 'exact', head: true }).gte('timestamp', since24h)
+      const { data: sample } = await supabaseAdmin.from(table).select('token_symbol, classification, usd_value').order('timestamp', { ascending: false }).limit(3)
+      chainCounts[table] = { total, recent24h: recent, latestSample: sample }
+    }
+
     return NextResponse.json({
       debug: {
         now: now.toISOString(),
@@ -53,6 +63,7 @@ export async function GET() {
         totalCount,
         count7d,
         count24h,
+        chainCounts,
         sampleData,
         filteredSample,
         hasData: totalCount > 0,
