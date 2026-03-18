@@ -979,7 +979,7 @@ const Dashboard = ({ isPremium = false }) => {
                       </span>
                     )}
                     <Link
-                      href={`/ai-advisor?q=${encodeURIComponent('Explain the current macro factors affecting crypto and what they mean for my portfolio: ' + macroFactors.factors.map(f => f.title + ' (' + f.impact + '): ' + f.summary).join('. '))}`}
+                      href={`/ai-advisor?q=${encodeURIComponent('Explain each of these macro factors in simple terms. What does each one mean and how could it affect the overall crypto market? Do NOT analyze any specific coin or pull price data — just explain the macro picture in plain English:\n\n' + macroFactors.factors.map(f => '• ' + f.title + ' (' + f.impact + '): ' + f.summary).join('\n'))}`}
                       style={{
                         marginLeft: 'auto', fontSize: '0.6rem', fontWeight: 700, fontFamily: MONO_FONT,
                         color: COLORS.cyan, background: 'rgba(0,229,255,0.06)', border: `1px solid rgba(0,229,255,0.15)`,
