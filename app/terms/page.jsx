@@ -310,7 +310,32 @@ export default function TermsOfService() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.0, duration: 0.5 }}
         >
-          <h2>10. Changes to Terms</h2>
+          <h2>10. Communications and Marketing</h2>
+          <h3>10.1 Consent to Receive Communications</h3>
+          <p>
+            By creating an account on Sonar Tracker, you agree to receive electronic communications from us, including but not limited to:
+          </p>
+          <ul>
+            <li><strong>Service-related emails</strong> — account confirmations, security alerts, billing updates, and important notices about changes to the Service or these Terms.</li>
+            <li><strong>Marketing and promotional emails</strong> — product updates, new features, educational content, newsletters, special offers, and other information we think may be of interest to you.</li>
+            <li><strong>Whale alerts and market notifications</strong> — real-time or periodic updates about whale activity, market movements, and AI-generated insights (where enabled).</li>
+          </ul>
+          <h3>10.2 Opting Out</h3>
+          <p>
+            You may opt out of marketing and promotional emails at any time by clicking the "unsubscribe" link included in every marketing email, or by contacting us at <a href="mailto:eduardo@sonartracker.io" style={{ color: 'var(--primary)' }}>eduardo@sonartracker.io</a>. Please note that even if you opt out of marketing communications, we may still send you essential service-related messages that are necessary for the operation of your account.
+          </p>
+          <h3>10.3 Communication Preferences</h3>
+          <p>
+            We process your personal data for marketing purposes based on the consent you provide when creating your account, in accordance with the UK General Data Protection Regulation (UK GDPR) and the Privacy and Electronic Communications Regulations (PECR). For more details on how we handle your data, please refer to our <a href="/privacy" style={{ color: 'var(--primary)' }}>Privacy Policy</a>.
+          </p>
+        </Section>
+
+        <Section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1, duration: 0.5 }}
+        >
+          <h2>11. Changes to Terms</h2>
           <p>
             We reserve the right to modify or replace these Terms at any time at our sole discretion. If a revision is material, we will provide at least 30 days' notice prior to any new terms taking effect.
           </p>
@@ -322,9 +347,9 @@ export default function TermsOfService() {
         <Section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1, duration: 0.5 }}
+          transition={{ delay: 1.2, duration: 0.5 }}
         >
-          <h2>11. Governing Law</h2>
+          <h2>12. Governing Law</h2>
           <p>
             These Terms shall be governed and construed in accordance with the laws of England and Wales, without regard to its conflict of law provisions.
           </p>
@@ -336,9 +361,9 @@ export default function TermsOfService() {
         <Section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.5 }}
+          transition={{ delay: 1.3, duration: 0.5 }}
         >
-          <h2>12. Contact Information</h2>
+          <h2>13. Contact Information</h2>
           <p>
             If you have any questions about these Terms of Service, please contact us at:
           </p>
@@ -347,7 +372,7 @@ export default function TermsOfService() {
           </p>
         </Section>
 
-        <LastUpdated>Last Updated: October 18, 2025</LastUpdated>
+        <LastUpdated>Last Updated: March 19, 2026</LastUpdated>
       </Content>
     </PageContainer>
   )
