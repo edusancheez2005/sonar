@@ -1,12 +1,12 @@
 /**
- * CRON: Weekly Whale Pulse — Saturday Insights Generation
+ * CRON: Weekly Whale Pulse — Saturday Insights + Email Send
  * Schedule: Every Saturday at 14:00 UTC
  * 
  * 1. Pulls last 7 days: news, whale moves, sentiment, prices, key voices
  * 2. Claude analyzes with full context (fallback: Grok)
  * 3. Generates branded email HTML
  * 4. Stores in weekly_insights table in Supabase
- * 5. Brevo automation picks up the new row and sends the email
+ * 5. Sends email campaign via Brevo API to List #3
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -22,6 +22,9 @@ export async function GET(request: Request) {
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const brevoKey = process.env.BREVO_API_KEY
+  if (!brevoKey) return NextResponse.json({ error: 'BREVO_API_KEY not set' }, { status: 500 })
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY
   const xaiKey = process.env.XAI_API_KEY
@@ -268,14 +271,56 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
     return NextResponse.json({ error: 'DB insert failed', details: insertErr.message }, { status: 500 })
   }
 
-  // Brevo automation will detect the new row and send the email
-  console.log(`[Whale Pulse] Generated for ${weekLabel}, stored as id=${inserted?.id}`)
+  // ─── STEP 5: Send via Brevo Campaign (List #3) ───────────────
+
+  let emailsSent = 0
+  try {
+    const subject = insights.subject || `Whale Pulse: Week of ${weekLabel}`
+
+    // Create campaign targeting List #3
+    const campaignRes = await fetch('https://api.brevo.com/v3/emailCampaigns', {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: `Whale Pulse ${weekLabel}`,
+        subject,
+        sender: { name: 'Sonar Tracker', email: 'sonartracker@gmail.com' },
+        htmlContent: htmlBody,
+        recipients: { listIds: [3] },
+        inlineImageActivation: false,
+      })
+    })
+
+    if (campaignRes.ok) {
+      const campaign = await campaignRes.json()
+      // Send immediately
+      const sendRes = await fetch(`https://api.brevo.com/v3/emailCampaigns/${campaign.id}/sendNow`, {
+        method: 'POST',
+        headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+      })
+      if (sendRes.ok) {
+        emailsSent = 1
+        console.log(`[Whale Pulse] Campaign ${campaign.id} sent to List #3`)
+      } else {
+        console.error(`[Whale Pulse] Send failed:`, await sendRes.text())
+      }
+    } else {
+      console.error(`[Whale Pulse] Campaign creation failed:`, await campaignRes.text())
+    }
+
+    if (inserted?.id) {
+      await sb.from('weekly_insights').update({ emails_sent: emailsSent }).eq('id', inserted.id)
+    }
+  } catch (e: any) {
+    console.error('Brevo campaign error:', e.message)
+  }
 
   return NextResponse.json({
     success: true,
     id: inserted?.id,
     week: weekLabel,
     subject: insights.subject,
+    emails_sent: emailsSent,
   })
 }
 
