@@ -3,15 +3,14 @@
  * Schedule: Every Friday at 14:00 UTC (2 PM UTC / 2 PM GMT)
  * 
  * 1. Pulls last 7 days: news, whale moves, sentiment, prices, key voices
- * 2. Grok AI analyzes and summarizes the week
+ * 2. Claude Opus 4 analyzes with full context (fallback: Grok)
  * 3. Generates branded email HTML
  * 4. Stores in weekly_insights table
- * 5. Sends to all Brevo contacts via campaign API
+ * 5. Sends to all Brevo contacts via transactional API
  */
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
@@ -27,14 +26,14 @@ export async function GET(request: Request) {
   const brevoKey = process.env.BREVO_API_KEY
   if (!brevoKey) return NextResponse.json({ error: 'BREVO_API_KEY not set' }, { status: 500 })
 
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
   const xaiKey = process.env.XAI_API_KEY
-  if (!xaiKey) return NextResponse.json({ error: 'XAI_API_KEY not set' }, { status: 500 })
+  if (!anthropicKey && !xaiKey) return NextResponse.json({ error: 'No AI provider configured (need ANTHROPIC_API_KEY or XAI_API_KEY)' }, { status: 500 })
 
   const sb = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   )
-  const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
 
   const now = new Date()
   const weekEnd = new Date(now)
@@ -55,17 +54,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Already generated for this week', id: existing.id })
   }
 
-  // ─── STEP 1: Gather raw data ──────────────────────────────────
+  // ─── STEP 1: Gather raw data (max context for Claude) ─────────
 
-  // Top news articles (by sentiment strength)
+  // ALL news articles from the week
   const { data: newsItems } = await sb
     .from('news_items')
     .select('title, source, sentiment_llm, tokens_mentioned, published_at')
     .gte('published_at', weekStart.toISOString())
     .order('published_at', { ascending: false })
-    .limit(100)
+    .limit(500)
 
-  // Whale transactions summary (aggregate from all chains)
+  // Whale transactions summary (aggregate from all chains, $1M+)
   const chains = ['ethereum', 'bitcoin', 'solana', 'polygon']
   const whaleData: any[] = []
   for (const chain of chains) {
@@ -75,62 +74,66 @@ export async function GET(request: Request) {
       .gte('timestamp', weekStart.toISOString())
       .gte('value_usd', 1000000)
       .order('value_usd', { ascending: false })
-      .limit(20)
+      .limit(50)
     if (data) whaleData.push(...data.map(d => ({ ...d, chain })))
   }
 
-  // Sentiment aggregates
+  // ALL sentiment scores for the week
   const { data: sentimentData } = await sb
     .from('news_items')
     .select('sentiment_llm, tokens_mentioned, published_at')
     .gte('published_at', weekStart.toISOString())
     .not('sentiment_llm', 'is', null)
 
-  // Social highlights
+  // Top social posts by engagement
   const { data: topSocial } = await sb
     .from('social_posts')
     .select('creator_name, creator_screen_name, body, interactions, published_at')
     .gte('published_at', weekStart.toISOString())
     .order('interactions', { ascending: false })
-    .limit(20)
+    .limit(50)
 
-  // ─── STEP 2: AI Analysis ──────────────────────────────────────
+  // ─── STEP 2: AI Analysis (Claude primary, Grok fallback) ───────
 
-  const newsDigest = (newsItems || []).slice(0, 30).map(n =>
-    `[${n.sentiment_llm?.toFixed(2) || '?'}] ${n.title} (${n.source})`
+  // Feed ALL the data — Claude Opus has huge context
+  const newsDigest = (newsItems || []).map(n =>
+    `[sent:${n.sentiment_llm?.toFixed(2) || '?'}] ${n.title} | ${n.source} | tokens: ${(n.tokens_mentioned || []).join(',')} | ${n.published_at}`
   ).join('\n')
 
-  const whaleDigest = whaleData.slice(0, 20).map(w =>
-    `${w.chain}: ${w.symbol || 'unknown'} ${w.transaction_type || 'transfer'} $${(w.value_usd / 1e6).toFixed(1)}M`
+  const whaleDigest = whaleData.map(w =>
+    `${w.chain} | ${w.symbol || '?'} | ${w.transaction_type || 'transfer'} | $${(w.value_usd / 1e6).toFixed(1)}M | from: ${w.from_label || '?'} → to: ${w.to_label || '?'} | ${w.timestamp}`
   ).join('\n')
 
-  const sentAvg = sentimentData && sentimentData.length > 0
-    ? (sentimentData.reduce((s, n) => s + (n.sentiment_llm || 0), 0) / sentimentData.length).toFixed(2)
-    : '0'
+  const sentStats = (() => {
+    if (!sentimentData || sentimentData.length === 0) return 'No sentiment data'
+    const avg = sentimentData.reduce((s, n) => s + (n.sentiment_llm || 0), 0) / sentimentData.length
+    const bullish = sentimentData.filter(n => (n.sentiment_llm || 0) > 0.15).length
+    const bearish = sentimentData.filter(n => (n.sentiment_llm || 0) < -0.15).length
+    const neutral = sentimentData.length - bullish - bearish
+    return `Total: ${sentimentData.length} articles | Avg score: ${avg.toFixed(3)} | Bullish: ${bullish} | Bearish: ${bearish} | Neutral: ${neutral}`
+  })()
 
-  const socialDigest = (topSocial || []).slice(0, 10).map(p =>
-    `@${p.creator_screen_name}: "${(p.body || '').slice(0, 100)}" (${p.interactions} interactions)`
+  const socialDigest = (topSocial || []).map(p =>
+    `@${p.creator_screen_name} (${p.interactions} interactions): "${(p.body || '').slice(0, 200)}" | ${p.published_at}`
   ).join('\n')
 
   const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 
-  const completion = await ai.chat.completions.create({
-    model: 'grok-3-fast',
-    messages: [
-      {
-        role: 'system',
-        content: `You are a crypto market analyst writing a weekly insights email for Sonar Tracker users.
-Today is Friday. Analyze the past week's data and produce a structured JSON summary.
+  const systemPrompt = `You are a senior crypto market analyst writing the "Whale Pulse" weekly insights email for Sonar Tracker, a crypto whale intelligence platform.
 
-Return ONLY valid JSON with this structure:
+Today is Friday. You have access to a FULL WEEK of real data from our platform: every news article, every whale transaction over $1M, sentiment scores, and top social posts.
+
+Analyze ALL of this data carefully and produce a comprehensive, data-driven weekly summary.
+
+Return ONLY valid JSON with this exact structure:
 {
-  "subject": "Whale Pulse: [catchy 5-8 word summary of the week]",
-  "summary": "2-3 sentence overview of the week in crypto markets",
+  "subject": "Whale Pulse: [catchy 5-8 word summary of the week's biggest story]",
+  "summary": "3-4 sentence overview tying together the week's biggest themes. Reference specific numbers, tokens, and events.",
   "top_news": [
-    {"title": "headline", "source": "source", "impact": "1 sentence on market impact", "sentiment": "bullish/bearish/neutral"}
+    {"title": "Full headline", "source": "source name", "impact": "2-3 sentences on WHY this matters for crypto markets and what it signals", "sentiment": "bullish/bearish/neutral"}
   ],
   "whale_moves": [
-    {"token": "BTC", "direction": "accumulation/distribution/transfer", "volume_usd": 50000000, "narrative": "1 sentence context"}
+    {"token": "BTC", "direction": "accumulation/distribution/transfer", "volume_usd": 50000000, "narrative": "2 sentences: what happened and what it likely signals"}
   ],
   "sentiment_shift": {
     "overall": "bullish/bearish/neutral",
@@ -138,46 +141,102 @@ Return ONLY valid JSON with this structure:
     "trend": "improving/declining/stable",
     "btc": "bullish/neutral/bearish",
     "eth": "bullish/neutral/bearish",
-    "narrative": "1-2 sentences on sentiment drivers"
+    "narrative": "3-4 sentences on what drove sentiment this week, citing specific events and data points"
   },
   "price_movers": [
-    {"token": "TOKEN", "change_pct": 15.2, "narrative": "why it moved"}
+    {"token": "TOKEN", "change_pct": 15.2, "narrative": "2 sentences: what caused the move and what to watch next"}
   ],
   "key_voices": [
-    {"name": "Person", "quote": "what they said", "sentiment": "bullish/bearish/neutral"}
+    {"name": "Full Name", "quote": "Their actual or paraphrased statement", "sentiment": "bullish/bearish/neutral"}
   ]
 }
 
-Include 5 top_news, 4-5 whale_moves, 4-5 price_movers, 3-4 key_voices.
-Use real data from the inputs. Be specific with numbers and names.
-Return ONLY valid JSON.`
-      },
-      {
-        role: 'user',
-        content: `Week: ${weekLabel}
+RULES:
+- Include 5-7 top_news (the most market-moving stories)
+- Include 5-6 whale_moves (biggest and most significant)
+- Include 5-6 price_movers (top gainers AND losers)
+- Include 4-5 key_voices (most influential statements)
+- Use REAL data from the inputs — never fabricate numbers or events
+- Cross-reference: if whale accumulation happened before a price move, connect them
+- Be specific: use exact dollar amounts, percentages, dates
+- Write for sophisticated crypto traders who want alpha, not fluff
+Return ONLY valid JSON. No markdown, no code blocks.`
 
-TOP NEWS (sentiment score, headline, source):
+  const userPrompt = `WEEK: ${weekLabel}
+
+═══════════════════════════════════════════
+NEWS ARTICLES (${(newsItems || []).length} total, with sentiment scores -1 to +1):
+═══════════════════════════════════════════
 ${newsDigest || 'No news data available'}
 
-WHALE ACTIVITY (chain, token, type, value):
+═══════════════════════════════════════════
+WHALE TRANSACTIONS >$1M (${whaleData.length} total):
+═══════════════════════════════════════════
 ${whaleDigest || 'No whale data available'}
 
-OVERALL SENTIMENT SCORE (avg of all articles): ${sentAvg}
-Total articles analyzed: ${sentimentData?.length || 0}
+═══════════════════════════════════════════
+SENTIMENT ANALYSIS:
+═══════════════════════════════════════════
+${sentStats}
 
-TOP SOCIAL POSTS:
+═══════════════════════════════════════════
+TOP SOCIAL POSTS BY ENGAGEMENT (${(topSocial || []).length} total):
+═══════════════════════════════════════════
 ${socialDigest || 'No social data available'}
 
-Generate the weekly insights JSON.`
-      }
-    ],
-    temperature: 0.4,
-    max_tokens: 2000,
-    // @ts-ignore
-    search: { mode: 'on', max_search_results: 10 }
-  })
+Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cross-reference whale moves with news events. Identify patterns.`
 
-  const raw = completion.choices[0]?.message?.content || ''
+  let raw = ''
+
+  // Try Claude first (better for large context analysis)
+  if (anthropicKey) {
+    try {
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          messages: [
+            { role: 'user', content: `${systemPrompt}\n\n${userPrompt}` }
+          ],
+        }),
+        signal: AbortSignal.timeout(90000),
+      })
+      if (claudeRes.ok) {
+        const claudeData = await claudeRes.json()
+        raw = claudeData.content?.[0]?.text || ''
+      }
+    } catch (e: any) {
+      console.error('Claude failed, falling back to Grok:', e.message)
+    }
+  }
+
+  // Fallback to Grok if Claude failed or unavailable
+  if (!raw && xaiKey) {
+    const OpenAI = (await import('openai')).default
+    const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
+    const completion = await ai.chat.completions.create({
+      model: 'grok-3-fast',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.4,
+      max_tokens: 3000,
+      // @ts-ignore
+      search: { mode: 'on', max_search_results: 10 }
+    })
+    raw = completion.choices[0]?.message?.content || ''
+  }
+
+  if (!raw) {
+    return NextResponse.json({ error: 'Both AI providers failed' }, { status: 500 })
+  }
   let insights: any
   try {
     insights = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
