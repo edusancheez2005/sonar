@@ -718,7 +718,7 @@ export default function SubscribePage() {
           </TrustBadge>
         </TrustBadges>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.6, marginTop: '0.75rem', textAlign: 'center' }}>
-          All sales are final. No refunds.
+          14-day cooling-off period applies under UK Consumer Contracts Regulations 2013. See our <a href="/terms" style={{ color: 'var(--primary)' }}>Terms of Service</a> for details.
         </p>
 
         {/* Features Section */}
@@ -1042,7 +1042,7 @@ export default function SubscribePage() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                   >
-                    <p>All subscriptions are non-refundable. You can cancel your subscription at any time and continue to access Premium features until the end of your current billing period. For any questions, contact us at eduardo@sonartracker.io.</p>
+                    <p>Under UK Consumer Contracts Regulations 2013, you have a 14-day cooling-off period from the date of purchase to request a full refund, provided you have not used premium features beyond initial sign-up. After this period, you can cancel your subscription at any time and continue to access Premium features until the end of your current billing period. No partial-month refunds apply after the cooling-off period. For any questions, contact us at eduardo@sonartracker.io.</p>
                   </FAQAnswer>
                 )}
               </AnimatePresence>

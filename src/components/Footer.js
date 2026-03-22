@@ -140,7 +140,10 @@ const Footer = () => {
         </Column>
       </FooterContent>
       <BottomBar>
-        <p>&copy; 2025 Sonar. All rights reserved.</p>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', opacity: 0.7, textAlign: 'center', marginBottom: '0.75rem', lineHeight: 1.5, maxWidth: '700px', marginLeft: 'auto', marginRight: 'auto' }}>
+          Sonar Tracker provides data and analytics for informational purposes only. Nothing on this site constitutes financial, investment, or trading advice. Cryptocurrency trading involves significant risk — past performance does not guarantee future results.
+        </p>
+        <p>&copy; 2026 Sonar. All rights reserved.</p>
         <nav>
           <a href="/privacy">Privacy Policy</a>
           <a href="/terms">Terms of Service</a>

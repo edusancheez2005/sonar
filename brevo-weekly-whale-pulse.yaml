@@ -1,0 +1,1033 @@
+author: ""
+brandUpdateTime: ""
+campaignType: automation_template
+fields: []
+fieldsHistory: []
+firstLoadSocialIcons: false
+font-fallback:
+  default: Arial
+  headings: Arial
+fonts:
+  - 'https://fonts.googleapis.com/css2?family=IBM Plex Serif&family=Open Sans&family=Roboto&family=Inter&family=Inter Tight'
+hideSwapBanner: false
+id: wp-weekly-insights-v1
+name: ""
+subject: "Whale Pulse: Your Weekly Crypto Intelligence Briefing"
+preheader: "This week's biggest whale moves, news, sentiment shifts, and what to watch next."
+ui:
+  showDeleteOption: false
+  showMoreOption: false
+user-hash: bf7c27768e30af784791df2a68f0c652
+version: 3.0.1
+body:
+  id: wp-body
+  type: body
+  layout:
+    320px:
+      width: 320px
+    default:
+      direction: ltr
+      wrapper-width: 600px
+  content:
+    -
+      content-type: wrapper
+      customBlockId: null
+      id: wp-wrapper
+      isCustomBlock: null
+      moduleName: null
+      sidebarSection: null
+      sync-module-id: null
+      thumbnail: null
+      title: Wrapper
+      type: rows
+      layout:
+        320px:
+          width: 320px
+        default:
+          align: center
+          valign: top
+      content:
+        # ── View in browser ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 0px
+          id: wp-view-browser-row
+          isCustomBlock: null
+          moduleName: viewInBrowser
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              width: 100%
+            default:
+              align: center
+              background-color: '#060c14'
+              display: none
+              full-width: true
+              padding-bottom: 5px
+              padding-top: 5px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-view-browser-col
+              imagelabel: 'Select a content type'
+              isCustomBlock: null
+              isEmpty: false
+              label: 'Drop content here'
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-view-browser-text
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  title: 'View in browser'
+                  type: text
+                  layout:
+                    320px:
+                      padding-left: 10px
+                      padding-right: 10px
+                      width: 100%
+                    default:
+                      align: center
+                      padding-left: 30px
+                      padding-right: 30px
+                      text-align: center
+                      width: 100%
+                  content: "<p><a href=\"{{ mirror }}\">\n                      <span style=\"font-family: arial,helvetica,sans-serif;color:#5a6a7a;font-size: 12px; text-decoration: underline;\">\n                      View in browser</span></a></p>"
+        # ── Logo + Terminal Header ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-header-row
+          isCustomBlock: null
+          moduleName: header
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          title: Header
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 10px
+              padding-top: 30px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-header-col
+              isCustomBlock: null
+              isEmpty: false
+              label: 'Drop content here'
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: grid-column
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-logo
+                  isCustomBlock: null
+                  label: Replace
+                  moduleName: brand-logo
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element-logo.png
+                  title: Logo
+                  type: image
+                  layout:
+                    320px:
+                      max-width: 320px
+                      width: 100%
+                    default:
+                      align: center
+                      canvas-height: 76px
+                      dynamic: false
+                      embed: false
+                      img-border-radius: 0px
+                      imgSize: '7142'
+                      valign: top
+                      width: 140px
+                  content:
+                    src: 'https://creative-assets.mailinblue.com/editor/templates/logo-placeholder.png'
+        # ── Terminal title bar ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-terminal-title-row
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          title: Terminal_Title
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 8px
+              padding-top: 12px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-terminal-title-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-terminal-title-text
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: center
+                      text-align: center
+                      width: 100%
+                  content: '<p style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:2px;text-transform:uppercase;">WHALE PULSE // WEEKLY INSIGHTS</p><p style="font-size:12px;color:#5a6a7a;margin-top:4px;">Week of Mar 15 – Mar 22, 2026</p>'
+        # ── Divider ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-divider1-row
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          title: Divider
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 10px
+              padding-top: 10px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-divider1-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-divider1
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_divider.svg
+                  title: Divider
+                  type: divider
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: center
+                      border-color: '#1a2d3d'
+                      border-style: solid
+                      border-width: 1px
+                      width: 100%
+        # ── Summary + Sentiment Badge ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-summary-row
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 10px
+              padding-top: 10px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-summary-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-summary-heading
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<h2 style="color:#36a6ba;font-size:20px;margin-bottom:10px;">This Week in Crypto</h2><p style="color:#c5ced6;font-size:14px;line-height:1.6;">[AI-generated 3-4 sentence summary will be inserted here by the cron job. This template shows the layout structure.]</p>'
+                -
+                  customBlockId: null
+                  id: wp-sentiment-badge
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      padding-top: 10px
+                      width: 100%
+                  content: '<div style="padding:12px 16px;border-radius:6px;background:rgba(0,230,118,0.08);"><span style="font-size:13px;font-weight:700;color:#00e676;">MARKET SENTIMENT: BULLISH</span><span style="font-size:12px;color:#8a9bb5;margin-left:8px;">improving week-over-week</span><div style="font-size:12px;color:#8a9bb5;margin-top:4px;">[Sentiment narrative inserted by cron]</div></div>'
+        # ── TOP NEWS ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-news-row
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 10px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-news-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-news-label
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<p style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:12px;">TOP NEWS</p>'
+                -
+                  customBlockId: null
+                  id: wp-news-items
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<div style="padding:10px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:14px;font-weight:700;color:#e0e6ed;margin-bottom:4px;">Bitcoin collapses below $68K after Trump threatens Iran</div><div style="font-size:12px;color:#8a9bb5;">@KobeissiLetter · <span style="color:#ff1744;font-weight:600;">BEARISH</span></div><div style="font-size:12px;color:#6a7a8a;margin-top:2px;">Geopolitical escalation triggered risk-off across crypto markets</div></div><div style="padding:10px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:14px;font-weight:700;color:#e0e6ed;margin-bottom:4px;">ETH whales return to profitable state — 25% rally eyed</div><div style="font-size:12px;color:#8a9bb5;">Cointelegraph · <span style="color:#00e676;font-weight:600;">BULLISH</span></div><div style="font-size:12px;color:#6a7a8a;margin-top:2px;">Whale profitability signals potential medium-term uptrend</div></div><div style="padding:10px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:14px;font-weight:700;color:#e0e6ed;margin-bottom:4px;">BTC spot ETFs saw $1.2B net inflows this week</div><div style="font-size:12px;color:#8a9bb5;">Bitcoinist · <span style="color:#00e676;font-weight:600;">BULLISH</span></div><div style="font-size:12px;color:#6a7a8a;margin-top:2px;">BlackRock IBIT led with $450M on March 21 alone</div></div>'
+        # ── WHALE MOVES ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-whales-row
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 10px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-whales-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-whales-label
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<p style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:12px;">🐋 BIGGEST WHALE MOVES</p>'
+                -
+                  customBlockId: null
+                  id: wp-whales-items
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:13px;color:#e0e6ed;"><span style="color:#36a6ba;font-weight:700;">BTC</span> — accumulation · $142.5M</div><div style="font-size:12px;color:#6a7a8a;">MicroStrategy purchased 5,000 BTC — largest single buy since October</div></div><div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:13px;color:#e0e6ed;"><span style="color:#36a6ba;font-weight:700;">ETH</span> — distribution · $89.3M</div><div style="font-size:12px;color:#6a7a8a;">Three wallets moved 45,000 ETH to Binance — possible sell pressure incoming</div></div><div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:13px;color:#e0e6ed;"><span style="color:#36a6ba;font-weight:700;">SOL</span> — accumulation · $34.7M</div><div style="font-size:12px;color:#6a7a8a;">Institutional wallet accumulated steadily across 4 days</div></div>'
+        # ── PRICE MOVERS ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-price-row
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 10px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-price-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-price-label
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<p style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:12px;">📊 PRICE MOVERS</p>'
+                -
+                  customBlockId: null
+                  id: wp-price-items
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><span style="font-weight:700;color:#e0e6ed;">PEPE</span><span style="color:#00e676;font-weight:600;margin-left:8px;">+22.4%</span><div style="font-size:12px;color:#6a7a8a;margin-top:2px;">Meme coin rally driven by renewed social buzz and whale accumulation</div></div><div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><span style="font-weight:700;color:#e0e6ed;">SOL</span><span style="color:#00e676;font-weight:600;margin-left:8px;">+8.1%</span><div style="font-size:12px;color:#6a7a8a;margin-top:2px;">DEX volume surge on Solana ecosystem with Jupiter leading</div></div><div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><span style="font-weight:700;color:#e0e6ed;">XRP</span><span style="color:#ff1744;font-weight:600;margin-left:8px;">-4.2%</span><div style="font-size:12px;color:#6a7a8a;margin-top:2px;">Profit-taking after multi-year trendline rejection</div></div>'
+        # ── KEY VOICES ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-voices-row
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 10px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-voices-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-voices-label
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<p style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:12px;">🎙 KEY VOICES</p>'
+                -
+                  customBlockId: null
+                  id: wp-voices-items
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      width: 100%
+                  content: '<div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:13px;font-weight:700;color:#e0e6ed;">Donald Trump</div><div style="font-size:12px;color:#8a9bb5;font-style:italic;margin-top:2px;">"We will impose new tariffs on China to protect American jobs."</div></div><div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:13px;font-weight:700;color:#e0e6ed;">Michael Saylor</div><div style="font-size:12px;color:#8a9bb5;font-style:italic;margin-top:2px;">"Bitcoin is digital gold. MicroStrategy will keep stacking."</div></div><div style="padding:8px 0;border-bottom:1px solid #1a2d3d;"><div style="font-size:13px;font-weight:700;color:#e0e6ed;">Cathie Wood</div><div style="font-size:12px;color:#8a9bb5;font-style:italic;margin-top:2px;">"Bitcoin could reach $1M by 2030 with institutional adoption accelerating."</div></div>'
+        # ── CTA Button ──
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-cta-row
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 24px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-cta-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-cta-btn
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#ffffff;">Open Your Dashboard →</span></p>'
+                  thumbnail: /assets/img/editor/element_button.svg
+                  title: Button
+                  type: text-button
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: center
+                      background-color: '#36a6ba'
+                      border-radius: 8px
+                      data-placeholder-href: 'https://sonartracker.io/dashboard'
+                      item-height: 48px
+                      margin-bottom: 0px
+                      margin-top: 0px
+                      padding-bottom: 14px
+                      padding-top: 14px
+                      removeMargin: false
+                      text-align: center
+                      text-valign: top
+                      type: absoluteLink
+                      valign: top
+                      width: 55%
+                  content:
+                    href: 'https://sonartracker.io/dashboard'
+                    text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#ffffff;font-size:16px;font-weight:bold;">Open Your Dashboard →</span></p>'
+                    title: 'Open Dashboard'
+                -
+                  customBlockId: null
+                  id: wp-cta-subtext
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: center
+                      text-align: center
+                      padding-top: 12px
+                      width: 100%
+                  content: '<p style="font-size:12px;color:#5a6a7a;">See the full data behind these insights on Sonar</p>'
+        # ── Footer ──
+        -
+          align: top
+          brandable: true
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: wp-footer-row
+          isCustomBlock: null
+          moduleName: grid-row12
+          sectionGroup: 'Footer & signatures'
+          sidebarSection: section
+          sync-module-id: null
+          thumbnail: null
+          thumbnailUrl: 'https://creative-assets.mailinblue.com/editor/block-thumbs/footers_02.png'
+          title: Footer
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#060c14'
+              full-width: false
+              padding-bottom: 20px
+              padding-top: 24px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: wp-footer-col
+              imagelabel: 'Select a content type'
+              isCustomBlock: null
+              isEmpty: false
+              label: 'Drop content here'
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: wp-footer-brand
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 10px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 0px
+                      removePadding: true
+                      text-align: left
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p style="color:#36a6ba;font-size:14px;"><strong>Sonar Tracker</strong></p>'
+                -
+                  customBlockId: null
+                  id: wp-footer-tagline
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 10px
+                      removePadding: true
+                      text-align: left
+                      width: 100%
+                  content: '<p><span style="color:#5a6a7a;font-size:14px;">AI-Powered Whale Intelligence · sonartracker.io</span></p>'
+                -
+                  customBlockId: null
+                  id: wp-footer-disclaimer
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-top: 10px
+                      removePadding: true
+                      text-align: left
+                      width: 100%
+                  content: '<p><span style="color:#3a4a5a;font-size:10px;">This is not financial advice. Cryptocurrency trading involves significant risk. Past performance does not guarantee future results.</span></p>'
+                -
+                  customBlockId: null
+                  id: wp-footer-sent-to
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-top: 10px
+                      removePadding: true
+                      text-align: left
+                      width: 100%
+                  content: '<p><span style="color:#5a6a7a;font-size:14px;">This email was sent to {{ contact.EMAIL }}.</span></p><p><span style="color:#5a6a7a;font-size:14px;">You''re receiving this because you signed up at sonartracker.io.</span></p>'
+                -
+                  customBlockId: null
+                  id: wp-footer-unsub
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-top: 10px
+                      removePadding: true
+                      text-align: left
+                      width: 100%
+                  content: '<p><span condition="{{ update_profile }}" style="display:none"><a href="{{ update_profile }}" style="color:#5a6a7a;">Update your preferences</a> | </span><a href="{{ unsubscribe }}" target="_blank"><span style="color:#5a6a7a;font-size:14px;"><u>Unsubscribe</u></span></a></p>'
+media:
+  320px:
+    max-width: 600
+    min-width: 0
+styles:
+  default:
+    properties:
+      color: '#c5ced6'
+      font-family: Inter, Arial
+      font-size: 14px
+      line-height: '1.6'
+    title: Paragraph
+  default-button:
+    properties:
+      background-color: '#36a6ba'
+      border-radius: 8px
+      border-width: 0px
+      color: '#fff'
+      font-family: Inter, Arial
+      font-size: 16px
+      remove-vml-button: optional
+      width: 200px
+    title: Button
+  default-heading1:
+    properties:
+      color: '#e0e6ed'
+      font-family: Inter, Arial
+      font-size: 36px
+    title: 'Heading 1'
+  default-heading2:
+    properties:
+      color: '#e0e6ed'
+      font-family: Inter, Arial
+      font-size: 28px
+    title: 'Heading 2'
+  default-heading3:
+    properties:
+      color: '#e0e6ed'
+      font-family: Inter, Arial
+      font-size: 20px
+    title: 'Heading 3'
+  default-heading4:
+    properties:
+      color: '#e0e6ed'
+      font-family: Inter, Arial
+      font-size: 16px
+    title: 'Heading 4'
+  default-link:
+    properties:
+      color: '#36a6ba'
+      text-decoration: underline
+    title: Link

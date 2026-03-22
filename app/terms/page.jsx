@@ -260,13 +260,17 @@ export default function TermsOfService() {
           <h2>7. Payment and Refunds</h2>
           <h3>7.1 Billing</h3>
           <p>
-            All fees are quoted in GBP (£) and are non-refundable except as required by law or as explicitly stated in these terms. Payment processing is handled securely by Stripe.
+            All fees are quoted in GBP (£). Payment processing is handled securely by Stripe.
           </p>
-          <h3>7.2 Cancellation</h3>
+          <h3>7.2 Cooling-Off Period</h3>
           <p>
-            You may cancel your subscription at any time. Upon cancellation, you will continue to have access to premium features until the end of your current billing period. No refunds will be provided for partial months.
+            In accordance with the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, you have the right to cancel your subscription within 14 days of purchase for a full refund, provided you have not consumed the digital content (i.e. you have not used premium features beyond the initial sign-up). To exercise this right, contact us at <a href="mailto:eduardo@sonartracker.io" style={{ color: 'var(--primary)' }}>eduardo@sonartracker.io</a> within the 14-day period.
           </p>
-          <h3>7.3 Price Changes</h3>
+          <h3>7.3 Cancellation</h3>
+          <p>
+            You may cancel your subscription at any time. Upon cancellation, you will continue to have access to premium features until the end of your current billing period. After the 14-day cooling-off period, no refunds will be provided for partial months.
+          </p>
+          <h3>7.4 Price Changes</h3>
           <p>
             We reserve the right to change our subscription fees at any time. We will provide reasonable notice of any fee changes, and such changes will take effect at the start of your next billing cycle.
           </p>

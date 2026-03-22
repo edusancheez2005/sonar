@@ -1374,7 +1374,7 @@ INSTRUCTIONS:
 6. Analyze short-term (days/weeks) and long-term (months/years) impact
 7. CONNECT to macro events and geopolitical factors when relevant
 8. Be conversational and ask a follow-up question
-9. End with disclaimer
+9. End with disclaimer: "This is educational analysis based on on-chain data — not financial advice. Always DYOR and consult a qualified financial advisor."
 
 User's question: "${userMessage}"`
 }
