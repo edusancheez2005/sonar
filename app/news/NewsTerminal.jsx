@@ -275,14 +275,18 @@ function timeAgo(dateStr) {
 }
 
 function guessSentiment(item) {
-  if (item.sentiment_llm) {
-    if (item.sentiment_llm > 0.3) return 'bullish'
-    if (item.sentiment_llm < -0.3) return 'bearish'
+  if (item.sentiment_llm != null && item.sentiment_llm !== 0) {
+    if (item.sentiment_llm > 0.15) return 'bullish'
+    if (item.sentiment_llm < -0.15) return 'bearish'
     return 'neutral'
   }
   const text = `${item.title || ''} ${item.description || ''} ${item.body || ''}`.toLowerCase()
-  const bull = ['surge','rally','soar','bullish','pump','record high','all-time high','adoption','approval','etf inflow','accumulation']
-  const bear = ['crash','plunge','bearish','dump','sell-off','SEC charges','hack','exploit','fraud','ban','outflow']
+  const bull = ['surge','rally','soar','bullish','pump','record high','all-time high','adoption','approval',
+    'etf inflow','accumulation','inflows','buying','breakout','rise','gain','profitable','bottom is in',
+    'set to rise','eyes','recovery','rebound','momentum','upgrade','growth','outperform','targets','milestone']
+  const bear = ['crash','plunge','bearish','dump','sell-off','sec charges','hack','exploit','fraud','ban',
+    'outflow','drop','decline','collapse','threat','warn','risk','lawsuit','investigation','crackdown',
+    'liquidat','panic','fear','plummet','obliterate','sanction','tariff','war','attack','slash']
   const bs = bull.filter(w => text.includes(w)).length
   const brs = bear.filter(w => text.includes(w)).length
   if (bs > brs) return 'bullish'
