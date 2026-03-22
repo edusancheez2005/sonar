@@ -73,7 +73,7 @@ const PageHeader = ({ title, accentWord, children, pulseEffect = true }) => {
   return (
     <HeaderWrapper>
       <Title>
-        <img src="/logo.png" alt="Sonar Logo" />
+        <img src="/logo2.png" alt="Sonar Logo" />
         {titleStart}
         <span className="accent">{titleAccent}</span>
         {pulseEffect && (

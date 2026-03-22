@@ -87,7 +87,7 @@ const Footer = () => {
       <FooterContent>
         <BrandColumn>
           <div className="brand">
-            <img src="/logo.png" alt="Sonar Logo" />
+            <img src="/logo2.png" alt="Sonar Logo" />
             <h2>Sonar</h2>
           </div>
           <p>
