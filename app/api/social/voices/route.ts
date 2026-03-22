@@ -12,11 +12,20 @@ export const dynamic = 'force-dynamic'
 
 let cachedResult: any = null
 let cachedAt = 0
-const CACHE_TTL = 4 * 60 * 60 * 1000 // 4 hours
+const CACHE_TTL = 1 * 60 * 60 * 1000 // 1 hour — aggressive refresh for breaking geopolitical news
 
-const INFLUENCERS = [
-  'Michael Saylor (MicroStrategy CEO, @saylor)',
+// Priority accounts: search ALL tweets (geopolitical, economic, anything) — these people move markets
+const PRIORITY_ACCOUNTS = [
+  'Donald Trump (US President, @realDonaldTrump)',
+  'Jerome Powell (Federal Reserve Chair)',
+  'Gary Gensler or current SEC Chair',
   'Elon Musk (@elonmusk)',
+  'Scott Bessent (US Treasury Secretary)',
+]
+
+// Standard crypto influencers: search for crypto/market-specific statements
+const CRYPTO_INFLUENCERS = [
+  'Michael Saylor (MicroStrategy CEO, @saylor)',
   'Vitalik Buterin (Ethereum co-founder, @VitalikButerin)',
   'CZ / Changpeng Zhao (Binance founder, @caborrowz)',
   'Cathie Wood (ARK Invest CEO, @CathieDWood)',
@@ -24,16 +33,15 @@ const INFLUENCERS = [
   'Brian Armstrong (Coinbase CEO, @brian_armstrong)',
   'Raoul Pal (macro investor, @RaoulGMI)',
   'Arthur Hayes (BitMEX co-founder, @CryptoHayes)',
-  'Donald Trump (US President, @realDonaldTrump)',
-  'Jerome Powell (Federal Reserve Chair)',
-  'Gary Gensler or current SEC Chair',
 ]
+
+const ALL_INFLUENCERS = [...PRIORITY_ACCOUNTS, ...CRYPTO_INFLUENCERS]
 
 export async function GET() {
   try {
     if (cachedResult && (Date.now() - cachedAt) < CACHE_TTL) {
       return NextResponse.json(cachedResult, {
-        headers: { 'Cache-Control': 's-maxage=14400, stale-while-revalidate=28800' }
+        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' }
       })
     }
 
@@ -52,18 +60,28 @@ export async function GET() {
           role: 'system',
           content: `You are a crypto intelligence analyst. TODAY IS ${today}.
 
-Search X (Twitter), news, and the web for the most recent public statements about crypto, Bitcoin, blockchain, or related financial markets from these people:
+Search X (Twitter), news, and the web for the most recent public statements from these people.
 
-${INFLUENCERS.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+=== PRIORITY ACCOUNTS (search for ALL recent tweets/statements, not just crypto) ===
+These people move crypto markets with ANY statement — geopolitics, trade wars, tariffs,
+military action, sanctions, economic policy, energy, interest rates, AND crypto.
+Always include their LATEST tweet or public statement regardless of topic.
+
+${PRIORITY_ACCOUNTS.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+=== CRYPTO INFLUENCERS (search for crypto/market-specific statements) ===
+${CRYPTO_INFLUENCERS.map((p, i) => `${i + 1 + PRIORITY_ACCOUNTS.length}. ${p}`).join('\n')}
 
 RULES:
 - ONLY include statements from the LAST 14 DAYS. Nothing older.
-- Prioritize: US President, Fed Chair, SEC Chair, then billionaires/CEOs, then crypto founders
-- If someone has NOT made a crypto-relevant statement in the last 14 days, SKIP them
-- Return 6-10 entries maximum (only people who actually said something recently)
-- Each quote should be their ACTUAL words or a very close paraphrase, not your interpretation
-- Include the approximate date of the statement
-- Classify sentiment as bullish, bearish, or neutral for crypto markets
+- For PRIORITY ACCOUNTS: include their most recent tweet/statement EVEN IF it is not about crypto.
+  Geopolitical events (wars, sanctions, trade policy, Strait of Hormuz, tariffs, oil) directly move BTC and crypto.
+  Label the sentiment based on likely crypto market impact (e.g. military escalation = bearish).
+- For CRYPTO INFLUENCERS: only include crypto/market-relevant statements.
+- Return 6-12 entries maximum.
+- Each quote should be their ACTUAL words or a very close paraphrase, not your interpretation.
+- Include the approximate date of the statement.
+- Classify sentiment as bullish, bearish, or neutral for crypto markets.
 
 Return ONLY valid JSON with this structure:
 {
@@ -75,7 +93,7 @@ Return ONLY valid JSON with this structure:
       "quote": "Their actual statement or close paraphrase, max 2 sentences",
       "date": "Mar 15, 2026",
       "sentiment": "bullish" or "bearish" or "neutral",
-      "context": "Brief 5-word context like 'On Bitcoin ETF inflows' or 'On Fed rate decision'"
+      "context": "Brief 5-word context like 'On Bitcoin ETF inflows' or 'On Strait of Hormuz tensions'"
     }
   ],
   "last_updated": "${today}"
@@ -85,13 +103,24 @@ Return ONLY valid JSON. No markdown, no code blocks.`
         },
         {
           role: 'user',
-          content: `Today is ${today}. Search X/Twitter and the web for the latest crypto-related public statements from major world leaders, billionaires, and crypto influencers in the last 14 days. Only include people who actually said something recently about crypto, Bitcoin, blockchain, or financial markets that affect crypto.`
+          content: `Today is ${today}. Search X/Twitter and the web for the LATEST tweets and public statements from these people in the last 14 days:
+
+PRIORITY (find their MOST RECENT tweet, any topic — geopolitics, trade, military, crypto, economy):
+- Donald Trump (@realDonaldTrump)
+- Jerome Powell
+- SEC Chair
+- Elon Musk (@elonmusk)
+
+CRYPTO INFLUENCERS (crypto/market statements only):
+- Michael Saylor, Vitalik Buterin, CZ, Cathie Wood, Larry Fink, Brian Armstrong, Raoul Pal, Arthur Hayes
+
+Include geopolitical statements from world leaders that would impact crypto markets (tariffs, sanctions, military action, energy policy, trade wars).`
         }
       ],
       temperature: 0.3,
-      max_tokens: 1200,
+      max_tokens: 1800,
       // @ts-ignore - xAI specific
-      search: { mode: 'on', max_search_results: 15 }
+      search: { mode: 'on', max_search_results: 25 }
     })
 
     const raw = completion.choices[0]?.message?.content || ''
@@ -111,7 +140,7 @@ Return ONLY valid JSON. No markdown, no code blocks.`
     cachedAt = Date.now()
 
     return NextResponse.json(parsed, {
-      headers: { 'Cache-Control': 's-maxage=14400, stale-while-revalidate=28800' }
+      headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' }
     })
   } catch (error) {
     console.error('Key voices error:', error)

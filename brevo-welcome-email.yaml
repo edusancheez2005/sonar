@@ -1,0 +1,904 @@
+author: ""
+brandUpdateTime: ""
+campaignType: automation_template
+fields: []
+fieldsHistory: []
+firstLoadSocialIcons: false
+font-fallback:
+  default: Arial
+  headings: Arial
+fonts:
+  - 'https://fonts.googleapis.com/css2?family=IBM Plex Serif&family=Open Sans&family=Roboto&family=Inter&family=Inter Tight'
+hideSwapBanner: false
+id: 2b3543d9-82f1-481f-9f82-d706a652db91
+name: ""
+subject: 'You''re in. Here''s how to track your first whale 🐋'
+ui:
+  showDeleteOption: false
+  showMoreOption: false
+user-hash: bf7c27768e30af784791df2a68f0c652
+version: 3.0.1
+body:
+  id: 186b28f6-da81-4793-9ebc-1279e9ef12d1
+  type: body
+  layout:
+    320px:
+      width: 320px
+    default:
+      direction: ltr
+      wrapper-width: 600px
+  content:
+    -
+      content-type: wrapper
+      customBlockId: null
+      id: 061f2130-bc01-4cbe-b87d-765b0f28f18f
+      isCustomBlock: null
+      moduleName: null
+      sidebarSection: null
+      sync-module-id: null
+      thumbnail: null
+      title: Wrapper
+      type: rows
+      layout:
+        320px:
+          width: 320px
+        default:
+          align: center
+          valign: top
+      content:
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 0px
+          id: f729c479-544a-4a0b-8ffc-3acf9f75042a
+          isCustomBlock: null
+          moduleName: viewInBrowser
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              display: none
+              full-width: true
+              padding-bottom: 5px
+              padding-top: 5px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: 511dde4c-3009-4ca2-abbe-9b89595c46c8
+              imagelabel: 'Select a content type'
+              isCustomBlock: null
+              isEmpty: false
+              label: 'Drop content here'
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: 2786f947-2a32-4115-917f-a63a3a81b391
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  title: 'View in browser'
+                  type: text
+                  layout:
+                    320px:
+                      padding-left: 10px
+                      padding-right: 10px
+                      width: 100%
+                    default:
+                      align: center
+                      padding-left: 30px
+                      padding-right: 30px
+                      text-align: center
+                      width: 100%
+                  content: "<p><a href=\"{{ mirror }}\">\n                      <span style=\"font-family: arial,helvetica,sans-serif;color:#7a8a99;font-size: 12px; text-decoration: underline;\">\n                      View in browser</span></a></p>"
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: 2a531b5c-b0a5-4a89-be88-fd7c4fa6bbee
+          isCustomBlock: null
+          moduleName: header
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          title: Header
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 80px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: c0654f77-67e2-4789-bbc6-8bdf505d7a9b
+              isCustomBlock: null
+              isEmpty: false
+              label: 'Drop content here'
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: grid-column
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: 96afc291-56a0-4eca-9368-61a525530829
+                  isCustomBlock: null
+                  label: Replace
+                  moduleName: brand-logo
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element-logo.png
+                  title: Logo
+                  type: image
+                  layout:
+                    320px:
+                      max-width: 320px
+                      width: 100%
+                    default:
+                      align: center
+                      canvas-height: 76px
+                      dynamic: false
+                      embed: false
+                      img-border-radius: 0px
+                      imgSize: '7142'
+                      valign: top
+                      width: 200px
+                  content:
+                    src: 'https://creative-assets.mailinblue.com/editor/templates/logo-placeholder.png'
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: fcc75a0b-4899-4546-bbd0-9eb04c4bdb19
+          isCustomBlock: null
+          moduleName: null
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: null
+          title: 1_Title_section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 40px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: 9eb5c0f4-44c8-4833-a673-8e83ac0f8a0c
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: cd53e6c0-bfbb-4abe-99b2-32d7c7ca75d5
+                  isCustomBlock: null
+                  moduleName: text-title
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element-title.svg
+                  title: Titre
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      line-height: '1'
+                      padding-bottom: 0px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 0px
+                      removePadding: false
+                      text-align: center
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<h2 class="default-heading2" style="color:#e0e6ed;">Hey&nbsp;{{ contact.FIRSTNAME | default: "there" }},</h2><h2 class="default-heading2"><strong style="color:#36a6ba;">Welcome to Sonar Tracker 🐋</strong></h2>'
+                -
+                  customBlockId: null
+                  id: 58354b9a-6482-43b1-9279-1d1832ec160a
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_image.svg
+                  title: Image
+                  type: image
+                  layout:
+                    320px:
+                      max-width: 320px
+                      width: 100%
+                    default:
+                      align: center
+                      background-position: center
+                      background-repeat: no-repeat
+                      background-size: auto
+                      border-radius: 8px
+                      canvas-height: 209px
+                      color: '#3b3f44'
+                      dynamic: false
+                      embed: false
+                      font-family: Arial
+                      font-size: 16px
+                      img-border-radius: 8px
+                      imgSize: '19757'
+                      padding-bottom: 0px
+                      padding-top: 20px
+                      valign: top
+                      width: 100%
+                  content:
+                    src: 'https://creative-assets.mailinblue.com/editor/templates/image-placeholder-3x-2.png'
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: e16d8ab7-55f1-4011-9b67-21c25d1435ee
+          isCustomBlock: null
+          moduleName: grid-row12
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 20px
+              padding-left: 0px
+              padding-right: 0px
+              padding-top: 20px
+              removePadding: true
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: 41a2ed0f-d84a-419a-b6dc-e1ed7d80e8ce
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: 0f3c7c3e-926a-4d67-a2eb-c5a35ab47f80
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Texte
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 0px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 0px
+                      removePadding: false
+                      text-align: left
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p style="color:#c5ced6;">You now have access to <strong style="color:#36a6ba;">AI-driven market intelligence</strong> built for crypto traders who want an edge — not noise.</p><p style="color:#c5ced6;">Here''s what''s waiting for you inside:</p><ul><li style="color:#c5ced6;"><strong style="color:#e0e6ed;">🐋 Real-time whale tracking</strong> — See exactly when large wallets move millions across Ethereum, Bitcoin, Solana and more.</li><li style="color:#c5ced6;"><strong style="color:#e0e6ed;">📊 Blockchain inflows &amp; outflows</strong> — Monitor exchange deposits and withdrawals to spot accumulation or sell-off signals before the crowd.</li><li style="color:#c5ced6;"><strong style="color:#e0e6ed;">🤖 Orca AI analyst</strong> — Our AI assistant analyses whale patterns, market sentiment, and breaking news to give you actionable insights in seconds.</li><li style="color:#c5ced6;"><strong style="color:#e0e6ed;">📰 Aggregated crypto news</strong> — Every headline that matters, filtered and ranked by market impact so you never miss a catalyst.</li><li style="color:#c5ced6;"><strong style="color:#e0e6ed;">📈 AI-powered signals</strong> — Data-driven trade signals combining on-chain activity, sentiment, and technical analysis.</li></ul>'
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: 0dd4ae9d-4e27-454b-9123-c09b3a5570a9
+          isCustomBlock: null
+          moduleName: grid-row12
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 20px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: 1d7f4d53-bf41-40c5-b9d9-f71193eea73b
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: b2adcc9a-e30d-4d3f-b23c-4c456434ff01
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#ffffff;">Launch Your Dashboard</span></p>'
+                  thumbnail: /assets/img/editor/element_button.svg
+                  title: Bouton
+                  type: text-button
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: center
+                      background-color: '#36a6ba'
+                      border-radius: 8px
+                      data-placeholder-href: 'https://sonartracker.io/dashboard'
+                      item-height: 48px
+                      margin-bottom: 0px
+                      margin-top: 0px
+                      padding-bottom: 14px
+                      padding-top: 14px
+                      removeMargin: false
+                      text-align: center
+                      text-valign: top
+                      type: absoluteLink
+                      valign: top
+                      width: 55%
+                  content:
+                    href: 'https://sonartracker.io/dashboard'
+                    text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#ffffff;font-size:16px;font-weight:bold;">Launch Your Dashboard</span></p>'
+                    title: 'Go to Sonar Dashboard'
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: cta-orca-section
+          isCustomBlock: null
+          moduleName: grid-row12
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 10px
+              padding-top: 10px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: cta-orca-col
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: cta-orca-btn
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#36a6ba;">Ask Orca AI Anything →</span></p>'
+                  thumbnail: /assets/img/editor/element_button.svg
+                  title: Bouton
+                  type: text-button
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: center
+                      background-color: transparent
+                      border-color: '#36a6ba'
+                      border-radius: 8px
+                      border-width: 2px
+                      data-placeholder-href: 'https://sonartracker.io/ai-advisor'
+                      item-height: 48px
+                      margin-bottom: 0px
+                      margin-top: 0px
+                      padding-bottom: 14px
+                      padding-top: 14px
+                      removeMargin: false
+                      text-align: center
+                      text-valign: top
+                      type: absoluteLink
+                      valign: top
+                      width: 55%
+                  content:
+                    href: 'https://sonartracker.io/ai-advisor'
+                    text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#36a6ba;font-size:16px;font-weight:bold;">Ask Orca AI Anything →</span></p>'
+                    title: 'Try Orca AI'
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: 8ba75291-0f30-482c-9a79-20a2020ba859
+          isCustomBlock: null
+          moduleName: grid-row12
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 20px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: 4b993a69-4b66-4e97-bee8-026c679ccf7a
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: d573c684-4538-48fe-bff2-efd05ef81a1c
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_divider.svg
+                  title: Diviseur
+                  type: divider
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: center
+                      border-color: '#1a2d3d'
+                      border-style: solid
+                      border-width: 1px
+                      display: auto
+                      padding-bottom: 20px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 20px
+                      removePadding: true
+                      width: 100%
+        -
+          align: top
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: 9344bccf-0514-4509-bf0f-697be8d578c4
+          isCustomBlock: null
+          moduleName: grid-row12
+          sidebarSection: null
+          sync-module-id: null
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#080f18'
+              padding-bottom: 20px
+              padding-left: 0px
+              padding-right: 0px
+              padding-top: 20px
+              removePadding: true
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: 9529f875-cfb4-4b46-916b-c498f51b8170
+              isCustomBlock: null
+              isEmpty: false
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: 618b2e93-a9ea-4446-bf14-1d90541fb390
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Texte
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 0px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 0px
+                      removePadding: false
+                      text-align: left
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p style="color:#c5ced6;">We built Sonar because we were tired of being late to every move. Now you have the same whale intelligence that used to be reserved for institutional desks.</p><p style="color:#c5ced6;">Got questions? Just reply to this email — we read every one.</p><p style="color:#c5ced6;">See you on-chain,<br/><strong style="color:#36a6ba;">The Sonar Tracker Team</strong></p>'
+        -
+          align: top
+          brandable: true
+          customBlockId: null
+          dist: '12'
+          gutter: 30px
+          id: 59cf6936-2562-415c-9b67-f1d9476bda2d
+          isCustomBlock: null
+          moduleName: grid-row12
+          sectionGroup: 'Footer & signatures'
+          sidebarSection: section
+          sync-module-id: null
+          thumbnail: null
+          thumbnailUrl: 'https://creative-assets.mailinblue.com/editor/block-thumbs/footers_02.png'
+          title: 1_Footer_V2
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#060c14'
+              full-width: false
+              padding-bottom: 20px
+              padding-top: 80px
+              valign: top
+              width: 100%
+          content:
+            -
+              customBlockId: null
+              id: 8c55aa2f-fc7c-423f-8224-2410e5a7b873
+              imagelabel: 'Select a content type'
+              isCustomBlock: null
+              isEmpty: false
+              label: 'Drop content here'
+              moduleName: null
+              sidebarSection: null
+              sync-module-id: null
+              thumbnail: null
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  customBlockId: null
+                  id: 18385f76-4a6f-442b-bb0f-43393431afb0
+                  isCustomBlock: null
+                  moduleName: brand-logo
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: null
+                  title: Logo
+                  type: image
+                  layout:
+                    320px:
+                      max-width: 320px
+                      width: 100%
+                    default:
+                      align: left
+                      canvas-height: 43px
+                      dynamic: false
+                      embed: false
+                      img-border-radius: 0px
+                      imgSize: '7142'
+                      padding-bottom: 10px
+                      removePadding: true
+                      valign: top
+                      width: 20%
+                  content:
+                    src: 'https://creative-assets.mailinblue.com/editor/templates/logo-placeholder.png'
+                -
+                  customBlockId: null
+                  id: 98e3b924-6d5c-4ab0-9fe9-5733258fdbab
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 10px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 0px
+                      removePadding: true
+                      text-align: left
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p style="color:#36a6ba;font-size:14px;"><strong>Sonar Tracker</strong></p>'
+                -
+                  customBlockId: null
+                  id: f235f1f3-1f44-4050-ac4e-f28bd95a2084
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 10px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 0px
+                      removePadding: true
+                      text-align: left
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p><span style="color:#5a6a7a;font-size:14px;">AI-Powered Whale Intelligence · sonartracker.io</span></p>'
+                -
+                  customBlockId: null
+                  id: 0f9974e2-d6d9-4245-a93c-5753d61aed99
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 0px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 10px
+                      removePadding: true
+                      text-align: left
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p><span style="color:#5a6a7a;font-size:14px;">This email was sent to {{ contact.EMAIL }}.</span></p><p><span style="color:#5a6a7a;font-size:14px;">You''re receiving this because you signed up at sonartracker.io.</span></p>'
+                -
+                  customBlockId: null
+                  id: e9e5311c-9eb0-4130-b3d7-eecf1c6ac962
+                  isCustomBlock: null
+                  moduleName: null
+                  sidebarSection: null
+                  sync-module-id: null
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      text-align: center
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 0px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 10px
+                      removePadding: true
+                      text-align: left
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p><span condition="{{ update_profile }}" style="display:none"><a href="{{ update_profile }}" style="color:#5a6a7a;">Update your preferences</a> | </span><a href="{{ unsubscribe }}" target="_blank"><span style="color:#5a6a7a;font-size:14px;"><u>Unsubscribe</u></span></a></p>'
+media:
+  320px:
+    max-width: 600
+    min-width: 0
+styles:
+  default:
+    properties:
+      color: '#c5ced6'
+      font-family: Inter, Arial
+      font-size: 16px
+      line-height: '1.6'
+    title: Paragraph
+  default-button:
+    properties:
+      background-color: '#36a6ba'
+      border-radius: 8px
+      border-width: 0px
+      color: '#fff'
+      font-family: Inter, Arial
+      font-size: 16px
+      remove-vml-button: optional
+      width: 200px
+    title: Button
+  default-heading1:
+    properties:
+      color: '#e0e6ed'
+      font-family: Inter, Arial
+      font-size: 36px
+    title: 'Heading 1'
+  default-heading2:
+    properties:
+      color: '#e0e6ed'
+      font-family: Inter, Arial
+      font-size: 32px
+    title: 'Heading 2'
+  default-heading3:
+    properties:
+      color: '#e0e6ed'
+      font-family: Inter, Arial
+      font-size: 24px
+    title: 'Heading 3'
+  default-heading4:
+    properties:
+      color: '#e0e6ed'
+      font-family: Inter, Arial
+      font-size: 18px
+    title: 'Heading 4'
+  default-link:
+    properties:
+      color: '#36a6ba'
+      text-decoration: underline
+    title: Link

@@ -138,10 +138,11 @@ const VoiceCard = styled.div`
 `
 const VoiceName = styled.div`
   font-size:.68rem;font-weight:700;color:${C.text};
-  span{font-weight:400;color:${C.textMuted};margin-left:.3rem;font-size:.58rem;}
+  span{font-weight:400;color:${C.textMuted};margin-left:.4rem;font-size:.58rem;}
 `
 const VoiceQuote = styled.div`
   font-size:.62rem;color:${C.textSec};line-height:1.45;margin-top:.15rem;font-style:italic;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
 `
 const VoiceContext = styled.div`
   font-size:.55rem;color:${C.textMuted};font-family:${MONO};margin-top:.15rem;
@@ -358,9 +359,36 @@ export default function NewsTerminal({ initialNews = [] }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/social/feed?limit=100&sort=interactions')
+        const res = await fetch('/api/social/feed?limit=200&sort=interactions')
         const data = await res.json()
-        if (data?.posts) setSocialPosts(data.posts)
+        if (data?.posts) {
+          setSocialPosts(data.posts)
+          // Merge high-engagement X posts into articles feed (tracked creators + viral posts)
+          const topXPosts = data.posts
+            .filter(p => p.interactions > 500 || p.category === 'tracked_creator')
+            .slice(0, 30)
+            .map(p => ({
+              id: `x-${p.post_id || p.id}`,
+              title: `${p.creator_name || p.creator_screen_name || 'X'}: ${(p.body || '').slice(0, 120)}${(p.body || '').length > 120 ? '…' : ''}`,
+              description: p.body || '',
+              published_at: p.published_at,
+              source: `@${p.creator_screen_name || 'X'}`,
+              url: p.url || '',
+              image: '',
+              instruments: (p.tickers_mentioned || []).map(t => ({ code: t })),
+              sentiment_llm: p.sentiment || null,
+              kind: 'x-post',
+            }))
+          if (topXPosts.length > 0) {
+            setArticles(prev => {
+              const existing = new Set(prev.map(a => a.url || a.id))
+              const newXPosts = topXPosts.filter(x => !existing.has(x.url || x.id))
+              const merged = [...prev, ...newXPosts]
+              merged.sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
+              return merged.slice(0, 200)
+            })
+          }
+        }
       } catch {}
     }
     load()
@@ -377,7 +405,7 @@ export default function NewsTerminal({ initialNews = [] }) {
           .from('news_items')
           .select('id,title,description,published_at,source,url,image,tokens_mentioned,sentiment_llm')
           .order('published_at', { ascending: false })
-          .limit(80)
+          .limit(200)
         if (data && data.length > 0) {
           const mapped = data.map(n => ({
             id: n.id,
@@ -396,14 +424,14 @@ export default function NewsTerminal({ initialNews = [] }) {
             const newItems = mapped.filter(m => !existing.has(m.url || m.id))
             const merged = [...prev, ...newItems]
             merged.sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
-            return merged.slice(0, 120)
+            return merged.slice(0, 200)
           })
         }
       } catch {}
       setLastRefresh(new Date())
     }
     load()
-    const interval = setInterval(load, 15 * 60 * 1000) // refresh every 15 min
+    const interval = setInterval(load, 10 * 60 * 1000) // refresh every 10 min
     return () => clearInterval(interval)
   }, [])
 
@@ -580,7 +608,7 @@ export default function NewsTerminal({ initialNews = [] }) {
                 <AnimatePresence initial={false}>
                   {filteredArticles.length === 0 ? (
                     <EmptyState>No articles match current filters.</EmptyState>
-                  ) : filteredArticles.slice(0, 50).map((a, i) => {
+                  ) : filteredArticles.slice(0, 100).map((a, i) => {
                     const s = guessSentiment(a)
                     return (
                       <ArticleCard
@@ -648,7 +676,7 @@ export default function NewsTerminal({ initialNews = [] }) {
             )}
 
             <RefreshNote>
-              Data refreshes automatically · Social: 5min · Articles: 15min · Macro: 12h · Voices: 4h
+              Data refreshes automatically · Social: 5min · Articles: 10min · Macro: 12h · Voices: 1h
             </RefreshNote>
           </Feed>
         </Content>

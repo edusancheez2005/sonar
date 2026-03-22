@@ -18,12 +18,18 @@ export const maxDuration = 120
 
 const LC = 'https://lunarcrush.com/api4/public'
 
-// Top 15 highest-impact creators only (must fit in timeout)
+// VIP accounts: fetch 10 posts each (these move markets with ANY tweet — geopolitical, economic, crypto)
+const PRIORITY_TRACKED = [
+  'realDonaldTrump', 'elonmusk', 'saylor', 'VitalikButerin',
+  'CathieDWood', 'RaoulGMI', 'CryptoHayes', 'brian_armstrong'
+]
+
+// All tracked creators (priority + secondary). Must fit in 120s Vercel timeout.
 const TRACKED = [
   'elonmusk', 'realDonaldTrump', 'VitalikButerin', 'CZ_Binance',
   'brian_armstrong', 'justinsuntron', 'APompliano', 'scottmelker',
   'WuBlockchain', 'CryptoCapo_', 'AltcoinSherpa', 'cobie',
-  'tier10k', 'WatcherGuru', 'RaoulGMI'
+  'tier10k', 'WatcherGuru', 'RaoulGMI', 'CryptoHayes', 'CathieDWood'
 ]
 
 const TOPICS = ['bitcoin', 'ethereum', 'solana', 'xrp', 'dogecoin', 'defi', 'arbitrum', 'pepe']
@@ -145,8 +151,10 @@ export async function GET(request: Request) {
   // ─── STEP 3: Tracked creator posts (15 calls) ─────────────────
   for (const handle of TRACKED) {
     if (Date.now() - t0 > 100000) break
+    const isPriority = PRIORITY_TRACKED.includes(handle)
+    const postLimit = isPriority ? 10 : 5
     try {
-      const r = await fetch(`${LC}/creator/twitter/${handle}/posts/v1?limit=5`, { headers: hdr, signal: AbortSignal.timeout(8000) })
+      const r = await fetch(`${LC}/creator/twitter/${handle}/posts/v1?limit=${postLimit}`, { headers: hdr, signal: AbortSignal.timeout(8000) })
       if (r.ok) {
         const j = await r.json()
         for (const p of (j.data || [])) {

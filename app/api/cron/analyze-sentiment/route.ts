@@ -61,16 +61,16 @@ export async function GET(request: Request) {
 
     const openai = getAIClient()
 
-    // Fetch news items without LLM sentiment from last 24 hours
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    // Fetch news items without LLM sentiment from last 48 hours
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
     
     const { data: newsItems, error: fetchError } = await supabase
       .from('news_items')
       .select('id, title, content, ticker')
       .is('sentiment_llm', null)
-      .gte('fetched_at', oneDayAgo)
+      .gte('fetched_at', twoDaysAgo)
       .order('fetched_at', { ascending: false })
-      .limit(200) // Max 200 items per run
+      .limit(400) // Max 400 items per run
 
     if (fetchError) {
       throw new Error(`Failed to fetch news items: ${fetchError.message}`)
