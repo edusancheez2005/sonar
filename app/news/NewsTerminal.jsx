@@ -94,7 +94,9 @@ const Content = styled.div`
 const Sidebar = styled.aside`
   border-right:1px solid ${C.border};padding:1rem;overflow-y:auto;
   height:calc(100vh - 44px);position:sticky;top:44px;
-  display:flex;flex-direction:column;gap:1rem;
+  display:flex;flex-direction:column;gap:.75rem;
+  &::-webkit-scrollbar{width:4px;}
+  &::-webkit-scrollbar-thumb{background:rgba(0,229,255,0.12);border-radius:2px;}
   @media(max-width:1080px){display:none;}
 `
 
@@ -114,7 +116,10 @@ const SideBadge = styled.span`
   color:${p => p.$color || C.textMuted};
   background:${p => p.$bg || 'rgba(0,229,255,0.06)'};
 `
-const SideBody = styled.div`padding:.5rem .75rem;`
+const SideBody = styled.div`padding:.5rem .75rem;max-height:${p => p.$maxH || 'none'};overflow-y:${p => p.$maxH ? 'auto' : 'visible'};
+  &::-webkit-scrollbar{width:3px;}
+  &::-webkit-scrollbar-thumb{background:rgba(0,229,255,0.15);border-radius:2px;}
+`
 
 // Macro factor card
 const MacroCard = styled.div`
@@ -518,7 +523,7 @@ export default function NewsTerminal({ initialNews = [] }) {
                   </SideBadge>
                 )}
               </SideHeader>
-              <SideBody>
+              <SideBody $maxH="32vh">
                 {macroFactors?.factors ? macroFactors.factors.map((f, i) => (
                   <MacroCard key={i}>
                     <MacroTitle><ImpactDot $s={f.impact} />{f.title}</MacroTitle>
@@ -536,7 +541,7 @@ export default function NewsTerminal({ initialNews = [] }) {
                 <SideLabel>KEY_VOICES</SideLabel>
                 <SideBadge>LIVE</SideBadge>
               </SideHeader>
-              <SideBody>
+              <SideBody $maxH="35vh">
                 {voices?.voices ? voices.voices.slice(0, 8).map((v, i) => (
                   <VoiceCard key={i}>
                     <VoiceName>
@@ -557,7 +562,7 @@ export default function NewsTerminal({ initialNews = [] }) {
             </SideSection>
 
             {/* ASK ORCA */}
-            <SideSection>
+            <SideSection style={{ marginTop: 'auto', flexShrink: 0 }}>
               <SideHeader>
                 <SideLabel $color={C.primary}>ASK_ORCA</SideLabel>
               </SideHeader>
