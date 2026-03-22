@@ -1,12 +1,12 @@
 /**
- * CRON: Weekly Whale Pulse — Friday Insights Email
- * Schedule: Every Friday at 14:00 UTC (2 PM UTC / 2 PM GMT)
+ * CRON: Weekly Whale Pulse — Saturday Insights Email
+ * Schedule: Every Saturday at 14:00 UTC (2 PM UTC / 2 PM GMT)
  * 
  * 1. Pulls last 7 days: news, whale moves, sentiment, prices, key voices
  * 2. Claude Opus 4 analyzes with full context (fallback: Grok)
  * 3. Generates branded email HTML
  * 4. Stores in weekly_insights table
- * 5. Sends to all Brevo contacts via transactional API
+ * 5. Creates Brevo campaign targeting List #3, sends immediately
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -271,43 +271,55 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
     return NextResponse.json({ error: 'DB insert failed', details: insertErr.message }, { status: 500 })
   }
 
-  // ─── STEP 5: Send via Brevo ───────────────────────────────────
+  // ─── STEP 5: Send via Brevo Campaign (List #3) ───────────────
 
   let emailsSent = 0
   try {
-    // Get all contacts from Brevo
-    const contactsRes = await fetch('https://api.brevo.com/v3/contacts?limit=500&offset=0', {
-      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' }
+    const subject = insights.subject || `Whale Pulse: Week of ${weekLabel}`
+
+    // Create an email campaign targeting List #3
+    const campaignRes = await fetch('https://api.brevo.com/v3/emailCampaigns', {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: `Whale Pulse ${weekLabel}`,
+        subject: subject,
+        sender: { name: 'Sonar Tracker', email: 'sonartracker@gmail.com' },
+        htmlContent: htmlBody,
+        recipients: { listIds: [3] },
+        inlineImageActivation: false,
+      })
     })
-    const contactsData = await contactsRes.json()
-    const contacts = contactsData.contacts || []
 
-    if (contacts.length > 0) {
-      // Send transactional email to each contact
-      for (const contact of contacts) {
-        try {
-          const sendRes = await fetch('https://api.brevo.com/v3/smtp/email', {
-            method: 'POST',
-            headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sender: { name: 'Sonar Tracker', email: 'whale-pulse@sonartracker.io' },
-              to: [{ email: contact.email }],
-              subject: insights.subject || `Whale Pulse: Week of ${weekLabel}`,
-              htmlContent: htmlBody,
-              tags: ['weekly-insights', 'whale-pulse'],
-            })
-          })
-          if (sendRes.ok) emailsSent++
-        } catch {}
-      }
+    if (campaignRes.ok) {
+      const campaign = await campaignRes.json()
+      const campaignId = campaign.id
 
-      // Update email count
-      if (inserted?.id) {
-        await sb.from('weekly_insights').update({ emails_sent: emailsSent }).eq('id', inserted.id)
+      // Send the campaign immediately
+      const sendRes = await fetch(`https://api.brevo.com/v3/emailCampaigns/${campaignId}/sendNow`, {
+        method: 'POST',
+        headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+      })
+
+      if (sendRes.ok) {
+        // Get campaign stats for email count
+        emailsSent = -1 // will be updated by Brevo async
+        console.log(`[Whale Pulse] Campaign ${campaignId} sent to List #3`)
+      } else {
+        const errText = await sendRes.text()
+        console.error(`[Whale Pulse] Campaign send failed:`, errText)
       }
+    } else {
+      const errText = await campaignRes.text()
+      console.error(`[Whale Pulse] Campaign creation failed:`, errText)
+    }
+
+    // Update DB with sent status
+    if (inserted?.id) {
+      await sb.from('weekly_insights').update({ emails_sent: emailsSent === -1 ? 1 : emailsSent }).eq('id', inserted.id)
     }
   } catch (e: any) {
-    console.error('Brevo send error:', e.message)
+    console.error('Brevo campaign error:', e.message)
   }
 
   return NextResponse.json({

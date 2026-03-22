@@ -325,3 +325,36 @@ Partially. Grant-funded work (Ethereum data indexing pipeline, whale tracking in
 | **Competitors** | Nansen ($2,500+/yr), Arkham, Whale Alert, Dune, Glassnode — all show the past. We predict the future |
 | **Differentiator** | Proprietary LLM trained on on-chain data for price prediction. Nobody else is doing this |
 | **Saif bio** | Saif Aldhaheri, Co-founder & CTO. AI/ML at King's College London, graduating 2026. From Abu Dhabi. Leads LLM development |
+
+---
+
+## ROUND 2 — Apply in ~1 month (after marketing push)
+
+### Priority: UK Funding & Tax
+| # | Name | Amount | Type | URL | Notes |
+|---|------|--------|------|-----|-------|
+| 7 | **Eagle Labs Funding Readiness** | Free | Barclays accelerator, UK | barclays.co.uk/business/eagle-labs | Free mentorship + investor intros |
+| 8 | **HMRC SEIS/EIS Advance Assurance** | Tax relief for investors | HMRC | gov.uk/guidance/seis-and-eis | Critical — makes you 3x more attractive to UK angels |
+| 9 | **British Business Bank Start Up Loan** | Up to £25K at 6% | Loan | startuploans.co.uk | Low-risk debt, no equity |
+
+### Priority: Top-Tier Accelerators
+| # | Name | Amount | Type | URL | Deadline |
+|---|------|--------|------|-----|----------|
+| 10 | **Binance Labs** | Up to $500K | Accelerator | binancelabs.com | Rolling |
+| 11 | **Seedcamp** | €100K–€475K | Pre-seed VC | seedcamp.com | Rolling |
+| 12 | **Techstars** | $120K, 6% equity | Accelerator | techstars.com/apply | Check next cohort |
+
+### Priority: Grants (no equity)
+| # | Name | Amount | Type | URL | Notes |
+|---|------|--------|------|-----|-------|
+| 13 | **Innovate UK Smart Grant** | £25K–£500K | UK gov grant | apply-for-innovation-funding.service.gov.uk | Check if reopened |
+| 14 | **Entrepreneur First** | £80K | Talent investor, London | joinef.com | Pre-team stage but worth it for network |
+| 15 | **Polygon Village Grants** | $5K–$20K | Ecosystem grant | polygon.technology/village | We already track Polygon |
+| 16 | **Arbitrum Foundation Grants** | $10K–$50K | Ecosystem grant | arbitrum.foundation/grants | We already track Arbitrum |
+| 17 | **Gitcoin Grants** | Community-funded | Public goods | gitcoin.co | Next round TBD |
+| 18 | **Chainlink BUILD Program** | Integration grant | Partnership | chain.link/economics/build | Oracle integration angle |
+
+### Also follow up on:
+- **Solana Foundation** — already submitted, chase them
+- **Base Builder** — self-nomination (no formal app)
+- **Optimism RetroPGF** — register for next round

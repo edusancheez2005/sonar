@@ -13,7 +13,7 @@ hideSwapBanner: false
 id: e4-full-potential-d7
 name: ""
 subject: "You\u2019re not using Sonar to its full potential"
-preheader: "Most users miss these features. Here\u2019s the 60-second setup that changes everything."
+preheader: "3 pro features that separate casual traders from whale-level analysts."
 ui:
   showDeleteOption: false
   showMoreOption: false
@@ -261,7 +261,7 @@ body:
                       text-valign: top
                       valign: top
                       width: 100%
-                  content: '<h2 class="default-heading2"><strong style="color:#36a6ba;">Unlock the full power of Sonar ⚡</strong></h2>'
+                  content: '<h2 class="default-heading2"><strong style="color:#36a6ba;">You\u2019re Not Using Sonar to Its Full Potential</strong></h2>'
         # ── Body intro ──
         -
           align: top
@@ -335,7 +335,7 @@ body:
                       text-valign: top
                       valign: top
                       width: 100%
-                  content: '<p style="color:#c5ced6;">You''ve been with us for a week now. Here are <strong style="color:#e0e6ed;">3 things most users haven''t tried yet</strong>:</p>'
+                  content: '<p style="color:#c5ced6;">Most users only scratch the surface. Here are <strong style="color:#e0e6ed;">3 pro features</strong> that separate casual traders from whale-level analysts.</p>'
         # ── Tip 1: Whale alerts ──
         -
           align: top
@@ -409,7 +409,7 @@ body:
                       text-valign: top
                       valign: top
                       width: 100%
-                  content: '<h3 style="color:#36a6ba;font-size:20px;margin-bottom:8px;">🔔 Set up whale alerts</h3><p style="color:#c5ced6;">Get notified the second a large wallet moves. Go to <strong style="color:#e0e6ed;">Dashboard → Alerts</strong> → pick your tokens and threshold. Takes 30 seconds.</p>'
+                  content: '<p style="color:#6c5ce7;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">FEATURE 01</p><h3 style="color:#ffffff;font-size:20px;margin-bottom:8px;">Multi-Chain Whale Tracking</h3><p style="color:#a0a0b8;font-size:14px;line-height:1.6;">Don\u2019t just watch Ethereum. Sonar tracks whale movements across <strong style="color:#ffffff;">Ethereum, Bitcoin, Solana, Polygon, and Arbitrum</strong> simultaneously. See whales rotating capital between ecosystems before the market reacts.</p>'
         # ── Tip 2: News Intelligence ──
         -
           align: top
@@ -483,7 +483,7 @@ body:
                       text-valign: top
                       valign: top
                       width: 100%
-                  content: '<h3 style="color:#36a6ba;font-size:20px;margin-bottom:8px;">📰 Check News Intelligence daily</h3><p style="color:#c5ced6;">Our AI scores every crypto news story by market impact. <strong style="color:#e0e6ed;">Skip the noise</strong> — only read what actually moves prices.</p>'
+                  content: '<p style="color:#00d2d3;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">FEATURE 02</p><h3 style="color:#ffffff;font-size:20px;margin-bottom:8px;">ORCA AI Analysis</h3><p style="color:#a0a0b8;font-size:14px;line-height:1.6;">Our AI engine doesn\u2019t just show you transactions \u2014 it identifies <strong style="color:#ffffff;">accumulation patterns, distribution phases, and coordinated whale activity</strong> in real time. Ask ORCA anything: <em style="color:#00d2d3;">\u201CWhat are whales doing with ETH today?\u201D</em></p>'
         # ── Tip 3: Ask ORCA ──
         -
           align: top
@@ -557,7 +557,7 @@ body:
                       text-valign: top
                       valign: top
                       width: 100%
-                  content: '<h3 style="color:#36a6ba;font-size:20px;margin-bottom:8px;">🤖 Ask ORCA before every trade</h3><p style="color:#c5ced6;">Before you buy or sell, ask ORCA: <em style="color:#36a6ba;">"Should I buy [token] right now?"</em> You''ll get whale data, sentiment, and a confidence score in one answer.</p>'
+                  content: '<p style="color:#fdcb6e;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">FEATURE 03</p><h3 style="color:#ffffff;font-size:20px;margin-bottom:8px;">News Intelligence + AI Sentiment</h3><p style="color:#a0a0b8;font-size:14px;line-height:1.6;">Every crypto article scored <strong style="color:#ffffff;">bullish, bearish, or neutral</strong> by our AI. Filter by token, ecosystem, or sentiment. Plus real-time social intelligence from X/Twitter \u2014 see what influencers and world leaders are saying.</p>'
         # ── Social proof ──
         -
           align: top
@@ -631,7 +631,7 @@ body:
                       text-valign: top
                       valign: top
                       width: 100%
-                  content: '<p style="color:#7a8a99;font-size:15px;font-style:italic;">500+ traders use Sonar daily. The ones who set up alerts and use ORCA consistently see the best results.</p>'
+                  content: '<p style="color:#a0a0b8;font-size:15px;font-style:italic;">These aren\u2019t hidden features \u2014 they\u2019re right inside your dashboard. Try them today and trade with the whales, not against them.</p>'
         # ── CTA button ──
         -
           align: top
@@ -685,7 +685,7 @@ body:
                   moduleName: null
                   sidebarSection: null
                   sync-module-id: null
-                  text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#ffffff;">Set Up Alerts Now →</span></p>'
+                  text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#ffffff;">Explore Your Dashboard →</span></p>'
                   thumbnail: /assets/img/editor/element_button.svg
                   title: Bouton
                   type: text-button
@@ -694,7 +694,7 @@ body:
                       width: 100%
                     default:
                       align: center
-                      background-color: '#36a6ba'
+                      background-color: '#6c5ce7'
                       border-radius: 8px
                       data-placeholder-href: 'https://sonartracker.io/dashboard'
                       item-height: 48px
@@ -710,8 +710,8 @@ body:
                       width: 55%
                   content:
                     href: 'https://sonartracker.io/dashboard'
-                    text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#ffffff;font-size:16px;font-weight:bold;">Set Up Alerts Now →</span></p>'
-                    title: 'Set Up Alerts'
+                    text: '<p><span style="font-family:Inter, Arial, helvetica, sans-serif;color:#ffffff;font-size:16px;font-weight:bold;">Explore Your Dashboard →</span></p>'
+                    title: 'Explore Dashboard'
         # ── Divider ──
         -
           align: top
