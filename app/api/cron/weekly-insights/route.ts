@@ -1,0 +1,396 @@
+/**
+ * CRON: Weekly Whale Pulse — Friday Insights Email
+ * Schedule: Every Friday at 14:00 UTC (2 PM UTC / 2 PM GMT)
+ * 
+ * 1. Pulls last 7 days: news, whale moves, sentiment, prices, key voices
+ * 2. Grok AI analyzes and summarizes the week
+ * 3. Generates branded email HTML
+ * 4. Stores in weekly_insights table
+ * 5. Sends to all Brevo contacts via campaign API
+ */
+
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
+import OpenAI from 'openai'
+
+export const dynamic = 'force-dynamic'
+export const maxDuration = 120
+
+export async function GET(request: Request) {
+  const authHeader = request.headers.get('authorization')
+  const { searchParams } = new URL(request.url)
+  const secret = searchParams.get('secret') || authHeader?.replace('Bearer ', '')
+  if (secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const brevoKey = process.env.BREVO_API_KEY
+  if (!brevoKey) return NextResponse.json({ error: 'BREVO_API_KEY not set' }, { status: 500 })
+
+  const xaiKey = process.env.XAI_API_KEY
+  if (!xaiKey) return NextResponse.json({ error: 'XAI_API_KEY not set' }, { status: 500 })
+
+  const sb = createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  )
+  const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
+
+  const now = new Date()
+  const weekEnd = new Date(now)
+  weekEnd.setHours(0, 0, 0, 0)
+  const weekStart = new Date(weekEnd)
+  weekStart.setDate(weekStart.getDate() - 7)
+
+  const weekStartStr = weekStart.toISOString().split('T')[0]
+  const weekEndStr = weekEnd.toISOString().split('T')[0]
+
+  // Check if already generated this week
+  const { data: existing } = await sb
+    .from('weekly_insights')
+    .select('id')
+    .eq('week_start', weekStartStr)
+    .single()
+  if (existing) {
+    return NextResponse.json({ message: 'Already generated for this week', id: existing.id })
+  }
+
+  // ─── STEP 1: Gather raw data ──────────────────────────────────
+
+  // Top news articles (by sentiment strength)
+  const { data: newsItems } = await sb
+    .from('news_items')
+    .select('title, source, sentiment_llm, tokens_mentioned, published_at')
+    .gte('published_at', weekStart.toISOString())
+    .order('published_at', { ascending: false })
+    .limit(100)
+
+  // Whale transactions summary (aggregate from all chains)
+  const chains = ['ethereum', 'bitcoin', 'solana', 'polygon']
+  const whaleData: any[] = []
+  for (const chain of chains) {
+    const { data } = await sb
+      .from(`${chain}_transactions`)
+      .select('symbol, transaction_type, value_usd, from_label, to_label, timestamp')
+      .gte('timestamp', weekStart.toISOString())
+      .gte('value_usd', 1000000)
+      .order('value_usd', { ascending: false })
+      .limit(20)
+    if (data) whaleData.push(...data.map(d => ({ ...d, chain })))
+  }
+
+  // Sentiment aggregates
+  const { data: sentimentData } = await sb
+    .from('news_items')
+    .select('sentiment_llm, tokens_mentioned, published_at')
+    .gte('published_at', weekStart.toISOString())
+    .not('sentiment_llm', 'is', null)
+
+  // Social highlights
+  const { data: topSocial } = await sb
+    .from('social_posts')
+    .select('creator_name, creator_screen_name, body, interactions, published_at')
+    .gte('published_at', weekStart.toISOString())
+    .order('interactions', { ascending: false })
+    .limit(20)
+
+  // ─── STEP 2: AI Analysis ──────────────────────────────────────
+
+  const newsDigest = (newsItems || []).slice(0, 30).map(n =>
+    `[${n.sentiment_llm?.toFixed(2) || '?'}] ${n.title} (${n.source})`
+  ).join('\n')
+
+  const whaleDigest = whaleData.slice(0, 20).map(w =>
+    `${w.chain}: ${w.symbol || 'unknown'} ${w.transaction_type || 'transfer'} $${(w.value_usd / 1e6).toFixed(1)}M`
+  ).join('\n')
+
+  const sentAvg = sentimentData && sentimentData.length > 0
+    ? (sentimentData.reduce((s, n) => s + (n.sentiment_llm || 0), 0) / sentimentData.length).toFixed(2)
+    : '0'
+
+  const socialDigest = (topSocial || []).slice(0, 10).map(p =>
+    `@${p.creator_screen_name}: "${(p.body || '').slice(0, 100)}" (${p.interactions} interactions)`
+  ).join('\n')
+
+  const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+
+  const completion = await ai.chat.completions.create({
+    model: 'grok-3-fast',
+    messages: [
+      {
+        role: 'system',
+        content: `You are a crypto market analyst writing a weekly insights email for Sonar Tracker users.
+Today is Friday. Analyze the past week's data and produce a structured JSON summary.
+
+Return ONLY valid JSON with this structure:
+{
+  "subject": "Whale Pulse: [catchy 5-8 word summary of the week]",
+  "summary": "2-3 sentence overview of the week in crypto markets",
+  "top_news": [
+    {"title": "headline", "source": "source", "impact": "1 sentence on market impact", "sentiment": "bullish/bearish/neutral"}
+  ],
+  "whale_moves": [
+    {"token": "BTC", "direction": "accumulation/distribution/transfer", "volume_usd": 50000000, "narrative": "1 sentence context"}
+  ],
+  "sentiment_shift": {
+    "overall": "bullish/bearish/neutral",
+    "score": 0.35,
+    "trend": "improving/declining/stable",
+    "btc": "bullish/neutral/bearish",
+    "eth": "bullish/neutral/bearish",
+    "narrative": "1-2 sentences on sentiment drivers"
+  },
+  "price_movers": [
+    {"token": "TOKEN", "change_pct": 15.2, "narrative": "why it moved"}
+  ],
+  "key_voices": [
+    {"name": "Person", "quote": "what they said", "sentiment": "bullish/bearish/neutral"}
+  ]
+}
+
+Include 5 top_news, 4-5 whale_moves, 4-5 price_movers, 3-4 key_voices.
+Use real data from the inputs. Be specific with numbers and names.
+Return ONLY valid JSON.`
+      },
+      {
+        role: 'user',
+        content: `Week: ${weekLabel}
+
+TOP NEWS (sentiment score, headline, source):
+${newsDigest || 'No news data available'}
+
+WHALE ACTIVITY (chain, token, type, value):
+${whaleDigest || 'No whale data available'}
+
+OVERALL SENTIMENT SCORE (avg of all articles): ${sentAvg}
+Total articles analyzed: ${sentimentData?.length || 0}
+
+TOP SOCIAL POSTS:
+${socialDigest || 'No social data available'}
+
+Generate the weekly insights JSON.`
+      }
+    ],
+    temperature: 0.4,
+    max_tokens: 2000,
+    // @ts-ignore
+    search: { mode: 'on', max_search_results: 10 }
+  })
+
+  const raw = completion.choices[0]?.message?.content || ''
+  let insights: any
+  try {
+    insights = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+  } catch {
+    return NextResponse.json({ error: 'Failed to parse AI response', raw: raw.slice(0, 500) }, { status: 500 })
+  }
+
+  // ─── STEP 3: Generate Email HTML ──────────────────────────────
+
+  const htmlBody = generateEmailHTML(insights, weekLabel)
+
+  // ─── STEP 4: Store in Supabase ────────────────────────────────
+
+  const { data: inserted, error: insertErr } = await sb
+    .from('weekly_insights')
+    .insert({
+      week_start: weekStartStr,
+      week_end: weekEndStr,
+      subject: insights.subject || `Whale Pulse: Week of ${weekLabel}`,
+      summary: insights.summary || '',
+      top_news: insights.top_news || [],
+      whale_moves: insights.whale_moves || [],
+      sentiment_shift: insights.sentiment_shift || {},
+      price_movers: insights.price_movers || [],
+      key_voices: insights.key_voices || [],
+      html_body: htmlBody,
+    })
+    .select('id')
+    .single()
+
+  if (insertErr) {
+    return NextResponse.json({ error: 'DB insert failed', details: insertErr.message }, { status: 500 })
+  }
+
+  // ─── STEP 5: Send via Brevo ───────────────────────────────────
+
+  let emailsSent = 0
+  try {
+    // Get all contacts from Brevo
+    const contactsRes = await fetch('https://api.brevo.com/v3/contacts?limit=500&offset=0', {
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' }
+    })
+    const contactsData = await contactsRes.json()
+    const contacts = contactsData.contacts || []
+
+    if (contacts.length > 0) {
+      // Send transactional email to each contact
+      for (const contact of contacts) {
+        try {
+          const sendRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sender: { name: 'Sonar Tracker', email: 'whale-pulse@sonartracker.io' },
+              to: [{ email: contact.email }],
+              subject: insights.subject || `Whale Pulse: Week of ${weekLabel}`,
+              htmlContent: htmlBody,
+              tags: ['weekly-insights', 'whale-pulse'],
+            })
+          })
+          if (sendRes.ok) emailsSent++
+        } catch {}
+      }
+
+      // Update email count
+      if (inserted?.id) {
+        await sb.from('weekly_insights').update({ emails_sent: emailsSent }).eq('id', inserted.id)
+      }
+    }
+  } catch (e: any) {
+    console.error('Brevo send error:', e.message)
+  }
+
+  return NextResponse.json({
+    success: true,
+    id: inserted?.id,
+    week: weekLabel,
+    subject: insights.subject,
+    emails_sent: emailsSent,
+  })
+}
+
+// ─── EMAIL HTML GENERATOR ─────────────────────────────────────────
+
+function generateEmailHTML(insights: any, weekLabel: string): string {
+  const sentColor = (s: string) =>
+    s === 'bullish' ? '#00e676' : s === 'bearish' ? '#ff1744' : '#8a9bb5'
+  const sentBg = (s: string) =>
+    s === 'bullish' ? 'rgba(0,230,118,0.1)' : s === 'bearish' ? 'rgba(255,23,68,0.1)' : 'rgba(138,155,181,0.1)'
+
+  const topNewsHTML = (insights.top_news || []).map((n: any) => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #1a2d3d;">
+        <div style="font-size:14px;font-weight:700;color:#e0e6ed;margin-bottom:4px;">${escapeHtml(n.title)}</div>
+        <div style="font-size:12px;color:#8a9bb5;">${escapeHtml(n.source)} · <span style="color:${sentColor(n.sentiment)};font-weight:600;">${(n.sentiment || 'neutral').toUpperCase()}</span></div>
+        <div style="font-size:12px;color:#6a7a8a;margin-top:2px;">${escapeHtml(n.impact)}</div>
+      </td>
+    </tr>`).join('')
+
+  const whaleMoveHTML = (insights.whale_moves || []).map((w: any) => `
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #1a2d3d;">
+        <div style="font-size:13px;color:#e0e6ed;">
+          <span style="color:#36a6ba;font-weight:700;">${escapeHtml(w.token)}</span> — 
+          ${escapeHtml(w.direction)} · $${(w.volume_usd / 1e6).toFixed(1)}M
+        </div>
+        <div style="font-size:12px;color:#6a7a8a;">${escapeHtml(w.narrative)}</div>
+      </td>
+    </tr>`).join('')
+
+  const priceMoverHTML = (insights.price_movers || []).map((p: any) => `
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #1a2d3d;">
+        <span style="font-weight:700;color:#e0e6ed;">${escapeHtml(p.token)}</span>
+        <span style="color:${p.change_pct >= 0 ? '#00e676' : '#ff1744'};font-weight:600;margin-left:8px;">
+          ${p.change_pct >= 0 ? '+' : ''}${p.change_pct}%
+        </span>
+        <div style="font-size:12px;color:#6a7a8a;margin-top:2px;">${escapeHtml(p.narrative)}</div>
+      </td>
+    </tr>`).join('')
+
+  const voicesHTML = (insights.key_voices || []).map((v: any) => `
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #1a2d3d;">
+        <div style="font-size:13px;font-weight:700;color:#e0e6ed;">${escapeHtml(v.name)}</div>
+        <div style="font-size:12px;color:#8a9bb5;font-style:italic;margin-top:2px;">"${escapeHtml(v.quote)}"</div>
+      </td>
+    </tr>`).join('')
+
+  const sentShift = insights.sentiment_shift || {}
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#060c14;font-family:Inter,Arial,sans-serif;">
+<table cellpadding="0" cellspacing="0" width="100%" style="background:#060c14;">
+<tr><td align="center" style="padding:20px;">
+<table cellpadding="0" cellspacing="0" width="600" style="max-width:600px;background:#080f18;border-radius:8px;overflow:hidden;">
+
+  <!-- Header -->
+  <tr><td style="padding:30px;text-align:center;border-bottom:1px solid #1a2d3d;">
+    <img src="https://sonartracker.io/assets/logo2.png" alt="Sonar" width="140" style="display:block;margin:0 auto 12px;">
+    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:2px;text-transform:uppercase;">WHALE PULSE // WEEKLY INSIGHTS</div>
+    <div style="font-size:12px;color:#6a7a8a;margin-top:6px;">${escapeHtml(weekLabel)}</div>
+  </td></tr>
+
+  <!-- Summary -->
+  <tr><td style="padding:24px 30px;">
+    <div style="font-size:18px;font-weight:700;color:#36a6ba;margin-bottom:10px;">This Week in Crypto</div>
+    <div style="font-size:14px;color:#c5ced6;line-height:1.6;">${escapeHtml(insights.summary || '')}</div>
+    <div style="margin-top:14px;padding:12px 16px;border-radius:6px;background:${sentBg(sentShift.overall || 'neutral')};">
+      <span style="font-size:13px;font-weight:700;color:${sentColor(sentShift.overall || 'neutral')};">
+        MARKET SENTIMENT: ${(sentShift.overall || 'neutral').toUpperCase()}
+      </span>
+      <span style="font-size:12px;color:#8a9bb5;margin-left:8px;">${sentShift.trend || ''} week-over-week</span>
+      ${sentShift.narrative ? `<div style="font-size:12px;color:#8a9bb5;margin-top:4px;">${escapeHtml(sentShift.narrative)}</div>` : ''}
+    </div>
+  </td></tr>
+
+  <!-- Top News -->
+  <tr><td style="padding:0 30px 20px;">
+    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:10px;">TOP NEWS</div>
+    <table cellpadding="0" cellspacing="0" width="100%">${topNewsHTML}</table>
+  </td></tr>
+
+  <!-- Whale Moves -->
+  <tr><td style="padding:0 30px 20px;">
+    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:10px;">🐋 BIGGEST WHALE MOVES</div>
+    <table cellpadding="0" cellspacing="0" width="100%">${whaleMoveHTML}</table>
+  </td></tr>
+
+  <!-- Price Movers -->
+  <tr><td style="padding:0 30px 20px;">
+    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:10px;">📊 PRICE MOVERS</div>
+    <table cellpadding="0" cellspacing="0" width="100%">${priceMoverHTML}</table>
+  </td></tr>
+
+  <!-- Key Voices -->
+  <tr><td style="padding:0 30px 20px;">
+    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:10px;">🎙 KEY VOICES</div>
+    <table cellpadding="0" cellspacing="0" width="100%">${voicesHTML}</table>
+  </td></tr>
+
+  <!-- CTA -->
+  <tr><td style="padding:20px 30px;text-align:center;">
+    <a href="https://sonartracker.io/dashboard" style="display:inline-block;background:#36a6ba;color:#fff;padding:14px 32px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">
+      Open Your Dashboard →
+    </a>
+    <div style="font-size:12px;color:#6a7a8a;margin-top:12px;">See the full data behind these insights on Sonar</div>
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="padding:24px 30px;background:#060c14;border-top:1px solid #1a2d3d;">
+    <div style="font-size:13px;color:#36a6ba;font-weight:700;">Sonar Tracker</div>
+    <div style="font-size:12px;color:#5a6a7a;margin-top:4px;">AI-Powered Whale Intelligence · sonartracker.io</div>
+    <div style="font-size:11px;color:#5a6a7a;margin-top:10px;">
+      You're receiving this because you signed up at sonartracker.io.<br>
+      <a href="{{ unsubscribe }}" style="color:#5a6a7a;text-decoration:underline;">Unsubscribe</a>
+    </div>
+    <div style="font-size:10px;color:#3a4a5a;margin-top:8px;">
+      This is not financial advice. Cryptocurrency trading involves significant risk. Past performance does not guarantee future results.
+    </div>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>`
+}
+
+function escapeHtml(str: string): string {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
