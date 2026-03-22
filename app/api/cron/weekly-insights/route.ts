@@ -309,7 +309,7 @@ async function sendBrevoEmail(brevoKey: string, subject: string, htmlBody: strin
       body: JSON.stringify({
         name: `Whale Pulse ${weekLabel}`,
         subject,
-        sender: { name: 'Sonar Tracker', email: 'sonartracker@gmail.com' },
+        sender: { name: 'Sonar', email: 'eduardo@sonartracker.io' },
         htmlContent: htmlBody,
         recipients: { listIds: [3] },
         inlineImageActivation: false,
