@@ -43,15 +43,27 @@ export async function GET(request: Request) {
 
   const weekStartStr = weekStart.toISOString().split('T')[0]
   const weekEndStr = weekEnd.toISOString().split('T')[0]
+  const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 
   // Check if already generated this week
   const { data: existing } = await sb
     .from('weekly_insights')
-    .select('id')
+    .select('id, emails_sent, html_body, subject')
     .eq('week_start', weekStartStr)
     .single()
-  if (existing) {
-    return NextResponse.json({ message: 'Already generated for this week', id: existing.id })
+  
+  // If already generated AND already sent, skip
+  if (existing && existing.emails_sent > 0) {
+    return NextResponse.json({ message: 'Already generated and sent for this week', id: existing.id })
+  }
+
+  // If generated but NOT sent, retry just the Brevo send
+  if (existing && existing.emails_sent === 0 && existing.html_body) {
+    const retryResult = await sendBrevoEmail(brevoKey, existing.subject, existing.html_body, weekLabel)
+    if (retryResult.sent) {
+      await sb.from('weekly_insights').update({ emails_sent: 1 }).eq('id', existing.id)
+    }
+    return NextResponse.json({ message: 'Retried Brevo send for existing row', id: existing.id, ...retryResult })
   }
 
   // ─── STEP 1: Gather raw data (max context for Claude) ─────────
@@ -116,8 +128,6 @@ export async function GET(request: Request) {
   const socialDigest = (topSocial || []).map(p =>
     `@${p.creator_screen_name} (${p.interactions} interactions): "${(p.body || '').slice(0, 200)}" | ${p.published_at}`
   ).join('\n')
-
-  const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 
   const systemPrompt = `You are a senior crypto market analyst writing the "Whale Pulse" weekly insights email for Sonar Tracker, a crypto whale intelligence platform.
 
@@ -273,10 +283,25 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
 
   // ─── STEP 5: Send via Brevo Campaign (List #3) ───────────────
 
-  let emailsSent = 0
-  try {
-    const subject = insights.subject || `Whale Pulse: Week of ${weekLabel}`
+  const brevoResult = await sendBrevoEmail(brevoKey, insights.subject || `Whale Pulse: Week of ${weekLabel}`, htmlBody, weekLabel)
 
+  if (inserted?.id) {
+    await sb.from('weekly_insights').update({ emails_sent: brevoResult.sent ? 1 : 0 }).eq('id', inserted.id)
+  }
+
+  return NextResponse.json({
+    success: true,
+    id: inserted?.id,
+    week: weekLabel,
+    subject: insights.subject,
+    ...brevoResult,
+  })
+}
+
+// ─── BREVO CAMPAIGN SENDER ────────────────────────────────────
+
+async function sendBrevoEmail(brevoKey: string, subject: string, htmlBody: string, weekLabel: string) {
+  try {
     // Create campaign targeting List #3
     const campaignRes = await fetch('https://api.brevo.com/v3/emailCampaigns', {
       method: 'POST',
@@ -291,37 +316,28 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
       })
     })
 
-    if (campaignRes.ok) {
-      const campaign = await campaignRes.json()
-      // Send immediately
-      const sendRes = await fetch(`https://api.brevo.com/v3/emailCampaigns/${campaign.id}/sendNow`, {
-        method: 'POST',
-        headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
-      })
-      if (sendRes.ok) {
-        emailsSent = 1
-        console.log(`[Whale Pulse] Campaign ${campaign.id} sent to List #3`)
-      } else {
-        console.error(`[Whale Pulse] Send failed:`, await sendRes.text())
-      }
-    } else {
-      console.error(`[Whale Pulse] Campaign creation failed:`, await campaignRes.text())
+    if (!campaignRes.ok) {
+      const errText = await campaignRes.text()
+      return { sent: false, brevo_error: `Campaign creation failed (${campaignRes.status}): ${errText}` }
     }
 
-    if (inserted?.id) {
-      await sb.from('weekly_insights').update({ emails_sent: emailsSent }).eq('id', inserted.id)
+    const campaign = await campaignRes.json()
+
+    // Send immediately
+    const sendRes = await fetch(`https://api.brevo.com/v3/emailCampaigns/${campaign.id}/sendNow`, {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+    })
+
+    if (!sendRes.ok) {
+      const errText = await sendRes.text()
+      return { sent: false, campaignId: campaign.id, brevo_error: `Send failed (${sendRes.status}): ${errText}` }
     }
+
+    return { sent: true, campaignId: campaign.id, emails_sent: 1 }
   } catch (e: any) {
-    console.error('Brevo campaign error:', e.message)
+    return { sent: false, brevo_error: e.message }
   }
-
-  return NextResponse.json({
-    success: true,
-    id: inserted?.id,
-    week: weekLabel,
-    subject: insights.subject,
-    emails_sent: emailsSent,
-  })
 }
 
 // ─── EMAIL HTML GENERATOR ─────────────────────────────────────────
