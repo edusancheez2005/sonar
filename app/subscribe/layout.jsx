@@ -3,7 +3,7 @@ const productSchema = {
   '@type': 'Product',
   name: 'Sonar Tracker Pro',
   description: 'Unlimited AI conversations, enhanced analytics, CSV export, and priority support for crypto whale intelligence.',
-  image: 'https://www.sonartracker.io/assets/logo.png',
+  image: 'https://www.sonartracker.io/assets/logo2.png',
   brand: { '@type': 'Brand', name: 'Sonar Tracker' },
   offers: {
     '@type': 'Offer',
