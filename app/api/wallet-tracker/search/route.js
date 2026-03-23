@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export async function GET(req) {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+  if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }

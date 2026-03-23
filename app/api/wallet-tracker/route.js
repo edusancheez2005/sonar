@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 const VALID_SORT = ['smart_money_score', 'total_volume_usd_30d', 'portfolio_value_usd', 'pnl_estimated_usd']
 
 export async function GET(req) {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+  if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
