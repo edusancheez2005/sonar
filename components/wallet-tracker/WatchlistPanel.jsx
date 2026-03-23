@@ -129,8 +129,9 @@ export default function WatchlistPanel() {
       const res = await fetch('/api/watchlist')
       const json = await res.json()
       setWatchlists(json.data || [])
-    } catch {
-      // ignore
+      if (json.error) console.error('Watchlist fetch error:', json.error)
+    } catch (err) {
+      console.error('Watchlist fetch failed:', err)
     } finally {
       setLoading(false)
     }
@@ -144,15 +145,20 @@ export default function WatchlistPanel() {
     const name = newName.trim()
     if (!name) return
     try {
-      await fetch('/api/watchlist', {
+      const res = await fetch('/api/watchlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
       })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(`Failed to create watchlist: ${err.error || res.statusText}`)
+        return
+      }
       setNewName('')
       fetchWatchlists()
-    } catch {
-      // ignore
+    } catch (err) {
+      alert(`Failed to create watchlist: ${err.message}`)
     }
   }
 
