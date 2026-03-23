@@ -5,7 +5,7 @@
  * API Key: Set in LUNARCRUSH_API_KEY environment variable
  */
 
-const LUNARCRUSH_API_KEY = process.env.LUNARCRUSH_API_KEY || 'unxdj7pa1xdr5248gjygdp7rskmjwsn9xonvw1su'
+const LUNARCRUSH_API_KEY = process.env.LUNARCRUSH_API_KEY || ''
 const LUNARCRUSH_BASE_URL = 'https://lunarcrush.com/api4'
 
 // In-memory cache to avoid 429 rate limits (5-minute TTL)

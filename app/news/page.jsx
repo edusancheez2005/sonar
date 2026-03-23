@@ -11,8 +11,8 @@ export const metadata = {
 export default async function NewsPage() {
   // Server-side fetch: Prefer existing News API (NewsAPI.org) if available; fallback to CryptoPanic
   const CP_BASE = 'https://cryptopanic.com/api/developer/v2/posts/'
-  const AUTH = 'd79612ea75e8182db7ec32803e4ec0be87dca5ed'
-  const NEWS_KEY = process.env.NEWS_API_KEY || 'b7c1fdbffb8842f18a495bf8d32df7cf'
+  const AUTH = process.env.CRYPTOPANIC_API_KEY || ''
+  const NEWS_KEY = process.env.NEWS_API_KEY || ''
   let initialNews = []
   const TOKEN_ALLOW = ['BTC','ETH','XRP','USDT','USDC','BNB','SOL','ADA','DOGE','TRX','TON','MATIC','LINK','AVAX','DOT','LTC','ETC','SHIB','APT','ARB','OP','IMX','INJ','FET','PEPE','SUI','NEAR','ATOM','AAVE','UNI','CRV','SUSHI','DAI']
   const BLOCKED_DOMAINS = new Set(['pypi.org','ambcrypto.com'])

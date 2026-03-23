@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 // Use environment variable or fallback
-const WHALE_ALERT_API_KEY = process.env.WHALE_ALERT_API_KEY || 'ioqSOvTlUjNwbpoK2MFXUxg7LuS1nJaL'
+const WHALE_ALERT_API_KEY = process.env.WHALE_ALERT_API_KEY || ''
 const WHALE_ALERT_BASE_URL = 'https://api.whale-alert.io/v1'
 
 // Minimum transaction value to track (in USD)

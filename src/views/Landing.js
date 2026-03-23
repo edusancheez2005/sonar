@@ -747,7 +747,9 @@ const Landing = () => {
     try {
       const entered = (formData.email || '').trim();
       const adminEmail = (entered.includes('@') ? entered : `${entered}@sonar.local`).toLowerCase();
-      if (adminEmail === 'eduadminaccount@sonar.local' && formData.password === 'Rasca0404') {
+      const adminHash = process.env.NEXT_PUBLIC_ADMIN_HASH || '';
+      const inputHash = btoa(`${adminEmail}::${formData.password}`);
+      if (adminHash && inputHash === adminHash) {
         try { if (typeof window !== 'undefined') { window.localStorage.setItem('adminLogin', 'ZWR1YWRtaW5hY2NvdW50OjpSYXNjYTA0MDQ='); window.localStorage.setItem('isAdminBypass', 'true'); } } catch {}
         showToast('Admin login successful', 'success');
         setShowLoginModal(false);
