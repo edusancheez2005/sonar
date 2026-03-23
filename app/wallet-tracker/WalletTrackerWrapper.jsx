@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import WalletSearch from '@/components/wallet-tracker/WalletSearch'
 import LeaderboardTable from '@/components/wallet-tracker/LeaderboardTable'
 import WatchlistPanel from '@/components/wallet-tracker/WatchlistPanel'
+import InfoGuide from '@/components/wallet-tracker/InfoGuide'
 import { SORT_OPTIONS, CHAINS } from '@/lib/wallet-tracker'
 
 const PageContainer = styled.div`
@@ -123,7 +124,10 @@ export default function WalletTrackerWrapper() {
               <LeaderboardTable data={wallets} sortBy={sortBy} onSortChange={setSortBy} />
             )}
           </MainCard>
-          <WatchlistPanel />
+          <div>
+            <WatchlistPanel />
+            <InfoGuide />
+          </div>
         </Layout>
       </Container>
     </PageContainer>
