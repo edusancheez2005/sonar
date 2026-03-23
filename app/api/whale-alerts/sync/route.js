@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 /**
  * Whale Alert API Integration
  * Syncs real-time whale transactions from Whale Alert API
- * API Key: ioqSOvTlUjNwbpoK2MFXUxg7LuS1nJaL
+ * API Key: Set via WHALE_ALERT_API_KEY env var
  * 
  * NOTE: Whale Alert tracks major blockchains and ERC-20 tokens only
  * Supported: Ethereum, Bitcoin, Tron, Ripple, BSC, etc.
