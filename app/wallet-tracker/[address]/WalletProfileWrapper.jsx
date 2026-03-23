@@ -4,6 +4,8 @@ import styled from 'styled-components'
 import WalletProfileHeader from '@/components/wallet-tracker/WalletProfileHeader'
 import TransactionHistoryTable from '@/components/wallet-tracker/TransactionHistoryTable'
 import CounterpartiesTable from '@/components/wallet-tracker/CounterpartiesTable'
+import HoldingsTable from '@/components/wallet-tracker/HoldingsTable'
+import WalletFlowGraph from '@/components/wallet-tracker/WalletFlowGraph'
 import WatchlistModal from '@/components/wallet-tracker/WatchlistModal'
 import AlertModal from '@/components/wallet-tracker/AlertModal'
 import { formatUsd } from '@/lib/wallet-tracker'
@@ -213,6 +215,10 @@ export default function WalletProfileWrapper({ address }) {
                 </TokenGrid>
               </TopTokensCard>
             )}
+
+            <HoldingsTable address={address} />
+
+            <WalletFlowGraph address={address} counterparties={counterparties} />
 
             <TwoCol>
               <TransactionHistoryTable address={address} chain={profile.chain} />

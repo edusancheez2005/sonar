@@ -28,15 +28,23 @@ export async function GET(req, { params }) {
   // Aggregate counterparties client-side
   const counterpartyMap = new Map()
   for (const tx of txData || []) {
-    const counterparty = tx.from_address === address ? tx.to_address : tx.from_address
+    const isSend = tx.from_address === address
+    const counterparty = isSend ? tx.to_address : tx.from_address
     if (!counterparty || counterparty === address) continue
-    const entry = counterpartyMap.get(counterparty) || { address: counterparty, tx_count: 0, total_volume: 0 }
+    const entry = counterpartyMap.get(counterparty) || { address: counterparty, tx_count: 0, total_volume: 0, inflow: 0, outflow: 0 }
+    const val = Number(tx.usd_value) || 0
     entry.tx_count += 1
-    entry.total_volume += Number(tx.usd_value) || 0
+    entry.total_volume += val
+    if (isSend) {
+      entry.outflow += val
+    } else {
+      entry.inflow += val
+    }
     counterpartyMap.set(counterparty, entry)
   }
 
   const data = Array.from(counterpartyMap.values())
+    .map(c => ({ ...c, net_flow: c.inflow - c.outflow }))
     .sort((a, b) => b.total_volume - a.total_volume)
     .slice(0, limit)
 

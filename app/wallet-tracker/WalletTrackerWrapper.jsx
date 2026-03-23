@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import WalletSearch from '@/components/wallet-tracker/WalletSearch'
 import LeaderboardTable from '@/components/wallet-tracker/LeaderboardTable'
 import WatchlistPanel from '@/components/wallet-tracker/WatchlistPanel'
+import CopyTradesFeed from '@/components/wallet-tracker/CopyTradesFeed'
 import InfoGuide from '@/components/wallet-tracker/InfoGuide'
 import { SORT_OPTIONS, CHAINS } from '@/lib/wallet-tracker'
 
@@ -82,7 +83,7 @@ const Select = styled.select`
 
 const Layout = styled.div`
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr 340px;
   gap: 1.5rem;
 
   @media (max-width: 900px) {
@@ -189,7 +190,8 @@ export default function WalletTrackerWrapper() {
             )}
           </MainCard>
           <div>
-            <WatchlistPanel />
+            <CopyTradesFeed />
+            <div style={{ marginTop: '1rem' }}><WatchlistPanel /></div>
             <InfoGuide />
           </div>
         </Layout>
