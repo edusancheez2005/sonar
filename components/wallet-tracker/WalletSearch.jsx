@@ -120,10 +120,18 @@ export default function WalletSearch() {
     router.push(`/wallet-tracker/${encodeURIComponent(address)}`)
   }
 
+  const looksLikeAddress = (q) => {
+    if (q.startsWith('0x') && q.length >= 10) return true   // EVM
+    if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(q)) return true // Solana/base58
+    if (q.startsWith('r') && q.length >= 25) return true     // XRP
+    if (q.startsWith('bc1') || q.startsWith('1') || q.startsWith('3')) return q.length >= 26 // BTC
+    return false
+  }
+
   const onSubmit = (e) => {
     e.preventDefault()
     const q = query.trim()
-    if (q.length >= 20) {
+    if (looksLikeAddress(q)) {
       onSelect(q)
     }
   }
@@ -163,9 +171,18 @@ export default function WalletSearch() {
       )}
       {showDropdown && !loading && results.length === 0 && query.length >= 2 && (
         <Dropdown>
-          <li style={{ padding: '0.6rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            No results found
-          </li>
+          {looksLikeAddress(query.trim()) ? (
+            <DropdownItem onClick={() => onSelect(query.trim())}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <AddrText>{shortenAddress(query.trim(), 8)}</AddrText>
+                <EntityText>View this wallet</EntityText>
+              </div>
+            </DropdownItem>
+          ) : (
+            <li style={{ padding: '0.6rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              No results found
+            </li>
+          )}
         </Dropdown>
       )}
     </SearchContainer>

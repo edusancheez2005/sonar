@@ -29,6 +29,19 @@ export async function GET(req, { params }) {
   }
 
   if (data) {
+    // Enrich with entity label if missing
+    if (!data.entity_name) {
+      const { data: labels } = await supabaseAdmin
+        .from('addresses')
+        .select('entity_name')
+        .eq('address', address)
+        .not('entity_name', 'is', null)
+        .not('entity_name', 'eq', '')
+        .limit(1)
+      if (labels && labels.length > 0) {
+        data.entity_name = labels[0].entity_name
+      }
+    }
     return NextResponse.json(
       { data },
       { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }

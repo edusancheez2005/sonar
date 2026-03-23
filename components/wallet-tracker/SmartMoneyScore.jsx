@@ -34,31 +34,21 @@ const ScoreText = styled.span`
 `
 
 const Tooltip = styled.div`
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
   background: #1a2d42;
   border: 1px solid var(--secondary);
   border-radius: 8px;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
   line-height: 1.5;
-  width: 250px;
-  z-index: 100;
+  width: max-content;
+  max-width: 300px;
+  z-index: 9999;
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #1a2d42;
-  }
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  white-space: normal;
+  word-wrap: break-word;
 `
 
 const ScoreLabel = styled.span`
@@ -80,14 +70,25 @@ function getLabel(score) {
 
 export default function SmartMoneyScore({ score }) {
   const [show, setShow] = useState(false)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const ref = React.useRef(null)
 
   if (score == null) return <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>—</span>
   const pct = Math.round(Math.min(1, Math.max(0, score)) * 100)
   const color = getColor(score)
 
+  const handleEnter = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setPos({ x: rect.left + rect.width / 2, y: rect.top })
+    }
+    setShow(true)
+  }
+
   return (
     <Wrapper
-      onMouseEnter={() => setShow(true)}
+      ref={ref}
+      onMouseEnter={handleEnter}
       onMouseLeave={() => setShow(false)}
     >
       <BarOuter>
@@ -95,7 +96,7 @@ export default function SmartMoneyScore({ score }) {
       </BarOuter>
       <ScoreText $color={color}>{pct}</ScoreText>
       {show && (
-        <Tooltip>
+        <Tooltip style={{ top: pos.y - 8, left: pos.x, transform: 'translate(-50%, -100%)' }}>
           <div style={{ marginBottom: '0.3rem' }}>
             <ScoreLabel $color={color}>{getLabel(score)}</ScoreLabel> — {pct}/100
           </div>

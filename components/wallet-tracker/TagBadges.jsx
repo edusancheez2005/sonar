@@ -37,47 +37,52 @@ const Badge = styled.span`
 `
 
 const Tooltip = styled.div`
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
   background: #1a2d42;
   border: 1px solid var(--secondary);
   border-radius: 8px;
-  padding: 0.5rem 0.7rem;
-  font-size: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
-  line-height: 1.4;
-  width: 220px;
-  z-index: 100;
+  line-height: 1.45;
+  width: max-content;
+  max-width: 300px;
+  z-index: 9999;
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #1a2d42;
-  }
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  white-space: normal;
+  word-wrap: break-word;
 `
 
 function TagBadge({ tag }) {
   const [show, setShow] = useState(false)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const ref = React.useRef(null)
   const style = TAG_COLORS[tag] || { bg: 'rgba(255,255,255,0.1)', color: '#fff' }
   const description = TAG_DESCRIPTIONS[tag]
 
+  const handleEnter = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setPos({ x: rect.left + rect.width / 2, y: rect.top })
+    }
+    setShow(true)
+  }
+
   return (
     <BadgeWrapper
-      onMouseEnter={() => setShow(true)}
+      ref={ref}
+      onMouseEnter={handleEnter}
       onMouseLeave={() => setShow(false)}
     >
       <Badge $bg={style.bg} $color={style.color}>
         {tag.replace(/_/g, ' ')}
       </Badge>
-      {show && description && <Tooltip>{description}</Tooltip>}
+      {show && description && (
+        <Tooltip style={{ top: pos.y - 8, left: pos.x, transform: 'translate(-50%, -100%)' }}>
+          {description}
+        </Tooltip>
+      )}
     </BadgeWrapper>
   )
 }
