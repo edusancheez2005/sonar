@@ -262,6 +262,11 @@ const Navbar = ({ onLogout }) => {
               </MenuItem>
             </motion.div>
             <motion.div variants={menuVariants} initial="hidden" animate="visible">
+              <MenuItem $active={isActive('/wallet-tracker')} variants={itemVariants}>
+                <NextLink href="/wallet-tracker">Wallet Tracker</NextLink>
+              </MenuItem>
+            </motion.div>
+            <motion.div variants={menuVariants} initial="hidden" animate="visible">
               <MenuItem $active={isActive('/trending')} variants={itemVariants}>
                 <NextLink href="/trending">Trending</NextLink>
               </MenuItem>
