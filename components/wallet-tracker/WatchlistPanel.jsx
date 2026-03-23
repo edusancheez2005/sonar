@@ -126,7 +126,7 @@ export default function WatchlistPanel() {
 
   const fetchWatchlists = useCallback(async () => {
     try {
-      const res = await fetch('/api/watchlist')
+      const res = await fetch('/api/wallet-watchlist')
       const json = await res.json()
       setWatchlists(json.data || [])
       if (json.error) console.error('Watchlist fetch error:', json.error)
@@ -145,7 +145,7 @@ export default function WatchlistPanel() {
     const name = newName.trim()
     if (!name) return
     try {
-      const res = await fetch('/api/watchlist', {
+      const res = await fetch('/api/wallet-watchlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
@@ -164,7 +164,7 @@ export default function WatchlistPanel() {
 
   const deleteWatchlist = async (id) => {
     try {
-      await fetch(`/api/watchlist/${id}`, { method: 'DELETE' })
+      await fetch(`/api/wallet-watchlist/${id}`, { method: 'DELETE' })
       fetchWatchlists()
     } catch {
       // ignore
@@ -179,7 +179,7 @@ export default function WatchlistPanel() {
     setExpanded(id)
     if (!addresses[id]) {
       try {
-        const res = await fetch(`/api/watchlist/${id}/addresses`)
+        const res = await fetch(`/api/wallet-watchlist/${id}/addresses`)
         const json = await res.json()
         setAddresses(prev => ({ ...prev, [id]: json.data || [] }))
       } catch {
@@ -190,7 +190,7 @@ export default function WatchlistPanel() {
 
   const removeAddress = async (watchlistId, address) => {
     try {
-      await fetch(`/api/watchlist/${watchlistId}/addresses/${encodeURIComponent(address)}`, { method: 'DELETE' })
+      await fetch(`/api/wallet-watchlist/${watchlistId}/addresses/${encodeURIComponent(address)}`, { method: 'DELETE' })
       setAddresses(prev => ({
         ...prev,
         [watchlistId]: (prev[watchlistId] || []).filter(a => a.address !== address),

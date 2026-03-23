@@ -127,7 +127,7 @@ export default function WatchlistModal({ address, chain, onClose }) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch('/api/watchlist')
+    fetch('/api/wallet-watchlist')
       .then(r => r.json())
       .then(json => {
         setWatchlists(json.data || [])
@@ -140,7 +140,7 @@ export default function WatchlistModal({ address, chain, onClose }) {
     if (!selectedId) return
     setSaving(true)
     try {
-      await fetch(`/api/watchlist/${selectedId}/addresses`, {
+      await fetch(`/api/wallet-watchlist/${selectedId}/addresses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
