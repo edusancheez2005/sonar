@@ -1,6 +1,15 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+
+async function getAuthHeaders() {
+  const sb = supabaseBrowser()
+  const { data } = await sb.auth.getSession()
+  const token = data?.session?.access_token
+  if (!token) return {}
+  return { Authorization: `Bearer ${token}` }
+}
 
 const Overlay = styled.div`
   position: fixed;
@@ -127,22 +136,25 @@ export default function WatchlistModal({ address, chain, onClose }) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch('/api/wallet-watchlist')
-      .then(r => r.json())
-      .then(json => {
-        setWatchlists(json.data || [])
-        if (json.data?.length > 0) setSelectedId(json.data[0].id)
-      })
-      .catch(() => {})
+    getAuthHeaders().then(auth =>
+      fetch('/api/wallet-watchlist', { headers: auth })
+        .then(r => r.json())
+        .then(json => {
+          setWatchlists(json.data || [])
+          if (json.data?.length > 0) setSelectedId(json.data[0].id)
+        })
+        .catch(() => {})
+    )
   }, [])
 
   const handleSave = async () => {
     if (!selectedId) return
     setSaving(true)
     try {
+      const auth = await getAuthHeaders()
       await fetch(`/api/wallet-watchlist/${selectedId}/addresses`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({
           address,
           chain: chain || null,

@@ -3,6 +3,15 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import { shortenAddress } from '@/lib/wallet-tracker'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+
+async function getAuthHeaders() {
+  const sb = supabaseBrowser()
+  const { data } = await sb.auth.getSession()
+  const token = data?.session?.access_token
+  if (!token) return {}
+  return { Authorization: `Bearer ${token}` }
+}
 
 const Panel = styled.div`
   background: var(--background-card);
@@ -126,7 +135,8 @@ export default function WatchlistPanel() {
 
   const fetchWatchlists = useCallback(async () => {
     try {
-      const res = await fetch('/api/wallet-watchlist')
+      const auth = await getAuthHeaders()
+      const res = await fetch('/api/wallet-watchlist', { headers: auth })
       const json = await res.json()
       setWatchlists(json.data || [])
       if (json.error) console.error('Watchlist fetch error:', json.error)
@@ -145,9 +155,10 @@ export default function WatchlistPanel() {
     const name = newName.trim()
     if (!name) return
     try {
+      const auth = await getAuthHeaders()
       const res = await fetch('/api/wallet-watchlist', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ name }),
       })
       if (!res.ok) {
@@ -164,7 +175,8 @@ export default function WatchlistPanel() {
 
   const deleteWatchlist = async (id) => {
     try {
-      await fetch(`/api/wallet-watchlist/${id}`, { method: 'DELETE' })
+      const auth = await getAuthHeaders()
+      await fetch(`/api/wallet-watchlist/${id}`, { method: 'DELETE', headers: auth })
       fetchWatchlists()
     } catch {
       // ignore
@@ -179,7 +191,8 @@ export default function WatchlistPanel() {
     setExpanded(id)
     if (!addresses[id]) {
       try {
-        const res = await fetch(`/api/wallet-watchlist/${id}/addresses`)
+        const auth = await getAuthHeaders()
+        const res = await fetch(`/api/wallet-watchlist/${id}/addresses`, { headers: auth })
         const json = await res.json()
         setAddresses(prev => ({ ...prev, [id]: json.data || [] }))
       } catch {
@@ -190,7 +203,8 @@ export default function WatchlistPanel() {
 
   const removeAddress = async (watchlistId, address) => {
     try {
-      await fetch(`/api/wallet-watchlist/${watchlistId}/addresses/${encodeURIComponent(address)}`, { method: 'DELETE' })
+      const auth = await getAuthHeaders()
+      await fetch(`/api/wallet-watchlist/${watchlistId}/addresses/${encodeURIComponent(address)}`, { method: 'DELETE', headers: auth })
       setAddresses(prev => ({
         ...prev,
         [watchlistId]: (prev[watchlistId] || []).filter(a => a.address !== address),

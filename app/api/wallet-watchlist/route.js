@@ -1,7 +1,21 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { ADMIN_EMAILS } from '@/app/lib/adminConfig'
 
-export async function GET() {
+async function getUserFromRequest(req) {
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader) return null
+  const token = authHeader.replace('Bearer ', '')
+  if (!token) return null
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
+  return user || null
+}
+
+function isAdminUser(user) {
+  return user && ADMIN_EMAILS.includes(user.email?.toLowerCase())
+}
+
+export async function GET(req) {
   if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
@@ -9,10 +23,22 @@ export async function GET() {
     )
   }
 
-  const { data, error } = await supabaseAdmin
+  const user = await getUserFromRequest(req)
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  let query = supabaseAdmin
     .from('watchlists')
     .select('*, watchlist_addresses(count)')
     .order('created_at', { ascending: false })
+
+  // Admins see all, regular users see only their own
+  if (!isAdminUser(user)) {
+    query = query.eq('user_id', user.id)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -35,6 +61,11 @@ export async function POST(req) {
     )
   }
 
+  const user = await getUserFromRequest(req)
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   let body
   try {
     body = await req.json()
@@ -49,15 +80,12 @@ export async function POST(req) {
 
   const { data, error } = await supabaseAdmin
     .from('watchlists')
-    .insert({ name: name.trim() })
+    .insert({ name: name.trim(), user_id: user.id })
     .select()
     .single()
 
   if (error) {
-    return NextResponse.json(
-      { error: error.message, code: error.code, hint: error.hint },
-      { status: error.code === '42501' || error.message?.includes('permission') ? 403 : 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   return NextResponse.json({ data }, { status: 201 })
