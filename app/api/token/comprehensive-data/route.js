@@ -98,7 +98,29 @@ const SYMBOL_TO_COINGECKO_ID = {
   'PENDLE': 'pendle',
   'RNDR': 'render-token',
   'WLD': 'worldcoin-wld',
-  'MASK': 'mask-network'
+  'MASK': 'mask-network',
+  'PYTH': 'pyth-network',
+  'SUI': 'sui',
+  'SEI': 'sei-network',
+  'TIA': 'celestia',
+  'JUP': 'jupiter-exchange-solana',
+  'WIF': 'dogwifcoin',
+  'BONK': 'bonk',
+  'FLOKI': 'floki',
+  'TAO': 'bittensor',
+  'STX': 'blockstack',
+  'MINA': 'mina-protocol',
+  'KAS': 'kaspa',
+  'RAY': 'raydium',
+  'JTO': 'jito-governance-token',
+  'W': 'wormhole',
+  'STRK': 'starknet',
+  'ENA': 'ethena',
+  'ORDI': 'ordinals',
+  'TRB': 'tellor',
+  'SUPER': 'superfarm',
+  'PRIME': 'echelon-prime',
+  'AGIX': 'singularitynet'
 }
 
 const getPct = (value, fallback = 0) => {

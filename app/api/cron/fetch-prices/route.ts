@@ -60,7 +60,25 @@ const TICKER_MAP = [
   { symbol: 'YFI', id: 'yearn-finance' },
   { symbol: 'BAT', id: 'basic-attention-token' },
   { symbol: 'ZRX', id: '0x' },
-  { symbol: 'SUSHI', id: 'sushi' }
+  { symbol: 'SUSHI', id: 'sushi' },
+  { symbol: 'PYTH', id: 'pyth-network' },
+  { symbol: 'SUI', id: 'sui' },
+  { symbol: 'SEI', id: 'sei-network' },
+  { symbol: 'TIA', id: 'celestia' },
+  { symbol: 'JUP', id: 'jupiter-exchange-solana' },
+  { symbol: 'WIF', id: 'dogwifcoin' },
+  { symbol: 'BONK', id: 'bonk' },
+  { symbol: 'FLOKI', id: 'floki' },
+  { symbol: 'TAO', id: 'bittensor' },
+  { symbol: 'RNDR', id: 'render-token' },
+  { symbol: 'PEPE', id: 'pepe' },
+  { symbol: 'WLD', id: 'worldcoin-wld' },
+  { symbol: 'MINA', id: 'mina-protocol' },
+  { symbol: 'KAS', id: 'kaspa' },
+  { symbol: 'PENDLE', id: 'pendle' },
+  { symbol: 'BLUR', id: 'blur' },
+  { symbol: 'DYDX', id: 'dydx' },
+  { symbol: 'GMX', id: 'gmx' }
 ]
 
 const BATCH_SIZE = 50 // CoinGecko allows up to 250 IDs per request, we'll use 50

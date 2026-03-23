@@ -5,7 +5,7 @@
 - 600+ users, 100 in the last week, zero marketing spend
 - Building proprietary AI models for crypto price prediction
 - Live at sonartracker.io
-- 2 cofounders: Eduardo Sanchez (full-stack, CEO) + Saif Aldhaheri (AI/ML)
+- 2 cofounders: Eduardo Sanchez (full-stack, CEO) + Saif Aldhaheri (AI/ML, Co-Founder)
 
 ---
 
@@ -56,15 +56,15 @@ Yes. NYC is where crypto finance lives — the trading desks, the hedge funds, t
 - Name: Eduardo Sanchez
 - LinkedIn: ⚠️ Add URL
 - Role: Co-Founder & CEO
-- Technical? Yes — I'm a full-stack developer. Built the entire Sonar platform from scratch: frontend, backend, Supabase infrastructure, ORCA AI engine, email automation, data pipelines, everything. CS student at King's College London.
-- Bio: I've been in crypto for 4+ years. I kept watching whale wallets load up tokens hours before pumps and thinking "why can't I see this in real time?" So I built it. Sonar started as a side project at KCL and turned into a live product with 600+ users in a few months — no funding, no marketing, just building. I handle product, engineering, and growth. Now I'm focused on our prediction LLM with Saif.
+- Technical? Yes. I'm a full-stack developer and Cloud Solutions Architect at Microsoft, where I work on AI automation and cybersecurity for enterprise clients in the UK. Built the entire Sonar platform from scratch: frontend, backend, Supabase infrastructure, ORCA AI engine, email automation, data pipelines, everything. CS student at King's College London.
+- Bio: I've been in crypto for 4+ years. I kept watching whale wallets load up tokens hours before pumps and thinking "why can't I see this in real time?" So I built it. Sonar started as a side project at KCL and turned into a live product with 600+ users in a few months. No funding, no marketing, just building. By day I'm a Cloud Solutions Architect at Microsoft, working on AI automation and cybersecurity for enterprise clients across the UK. I handle product, engineering, and growth at Sonar. Now I'm focused on our prediction LLM with Saif.
 
 **Founder 2:**
 - Name: Saif Aldhaheri
 - LinkedIn: ⚠️ Add URL
 - Role: Co-Founder & CTO (AI/ML)
-- Technical? Yes — Saif specialises in artificial intelligence and machine learning. He's leading the development of our proprietary LLM for on-chain price prediction.
-- Bio: Saif is graduating from King's College London in 2026 with a focus on AI. Originally from Abu Dhabi, he brings deep expertise in ML model architecture and training pipelines. He's the one building the core prediction models — taking raw blockchain transaction data and training transformers to spot patterns that precede price moves. His AI background is the technical backbone of our LLM thesis.
+- Technical? Yes. Saif is an AI engineer and cloud computing specialist. Previously at Core42 in Abu Dhabi, where he implemented Sovereign AI solutions for enterprise clients. He's leading the development of our proprietary LLM for on-chain price prediction.
+- Bio: Saif is graduating from King's College London in 2026 with a focus on AI. Originally from Abu Dhabi, he previously worked at Core42 implementing Sovereign AI and cloud computing solutions for enterprise clients. 6+ years in crypto. He's building the core prediction models at Sonar, training transformers on blockchain transaction data to spot patterns that precede price moves. His combination of enterprise AI deployment experience and deep crypto knowledge is the technical backbone of our LLM thesis.
 
 ### Step 3: Product & Traction
 
@@ -89,7 +89,7 @@ Crypto analytics market is projected at $8.5B by 2028. There are 420M+ active cr
 Nansen ($75M raised, charges $2,500+/yr, enterprise-only), Arkham (focused on doxxing wallets, not prediction), Whale Alert (basic notifications, zero context), Dune (need to write SQL, not for normal people), Glassnode (backward-looking metrics). Here's what they all miss: every single one of them is a dashboard showing you what already happened. We're building AI that tells you what's about to happen. The shift from analytics to prediction is the opportunity, and nobody else is building a purpose-trained LLM on on-chain flow data.
 
 **Why are you the right team?**
-Two technical cofounders, both at KCL, both shipping. I built the entire platform in 3 months while studying full-time — frontend, backend, AI engine, infrastructure, marketing automation. Saif is purpose-built for the AI side — his entire degree focus is ML and he's leading our LLM development. 600 users with zero marketing as two student founders? That's execution speed. Give us capital and a team and we'll move fast.
+Two technical cofounders, both at KCL, both shipping. I built the entire platform in 3 months while studying full-time and working as a Cloud Solutions Architect at Microsoft on AI automation and cybersecurity for enterprise clients. Saif is an AI engineer who implemented Sovereign AI at Core42 in Abu Dhabi, 6+ years in crypto, and his entire degree focus is ML. He's leading our LLM development. 600 users with zero marketing as two founders with Microsoft and Core42 enterprise AI experience? That's execution speed. Give us capital and a team and we'll move fast.
 
 ### Steps 5-8
 
@@ -194,12 +194,12 @@ Our LLM trained on on-chain flow data. Nobody is training predictive models on w
 $0 raised. Bootstrapped while at university. Seeking $500K–$1M pre-seed for ML engineers, LLM compute, and first marketing push.
 
 **Founders:**
-Eduardo Sanchez — Co-founder & CEO. Full-stack developer, CS at King's College London. Built the entire Sonar platform. 4+ years trading crypto. Handles product, engineering, growth.
+Eduardo Sanchez — Co-founder & CEO. Full-stack developer and Cloud Solutions Architect at Microsoft (AI automation + cybersecurity). CS at King's College London. Built the entire Sonar platform. 4+ years trading crypto. Handles product, engineering, growth.
 
-Saif Aldhaheri — Co-founder & CTO. AI/ML specialist at King's College London, graduating 2026. From Abu Dhabi. Leading the proprietary LLM development. His focus is training transformer models on on-chain transaction data for price prediction.
+Saif Aldhaheri — Co-founder & CTO. AI engineer, previously at Core42 Abu Dhabi (Sovereign AI + cloud computing). AI/ML at King's College London, graduating 2026. 6+ years in crypto. Leading the proprietary LLM development. Training transformer models on on-chain transaction data for price prediction.
 
 **Why the right team?**
-We're the builders and the users. I trade crypto and built the platform because I needed it. Saif's entire academic focus is AI and he's applying it to a genuinely novel problem — on-chain price prediction. 600 users with no marketing, no funding, while both studying full-time. That's raw execution speed. a16z's crypto network would let us land institutional clients that take our LLM from research to revenue.
+We're the builders and the users. I trade crypto and built the platform because I needed it, while working on AI automation at Microsoft. Saif implemented Sovereign AI at Core42 in Abu Dhabi and has 6+ years in crypto, he's applying enterprise AI experience to a genuinely novel problem: on-chain price prediction. 600 users with no marketing, no funding, while both studying full-time. That's raw execution speed. a16z's crypto network would let us land institutional clients that take our LLM from research to revenue.
 
 ---
 
@@ -221,7 +221,7 @@ Live product, pre-revenue. 600+ users gained purely organically. Full platform d
 Crypto traders lose money because they hear about whale moves too late. Whale wallets — holding millions — consistently buy or sell before big price swings. By the time it hits Twitter, you've already missed it. Current tools are either stupidly expensive (Nansen at $2,500+/yr), give you raw data with no context (Whale Alert), or need you to code (Dune Analytics). We give every trader — from someone with £500 to a hedge fund — real-time, AI-powered whale intelligence for $7.99/mo or free. Information asymmetry in crypto is the problem. We're fixing it.
 
 **Why are you the right person?**
-I trade crypto. I've been on the wrong end of whale moves. So I built the tool I needed. Full platform, AI engine, data infrastructure, email automation — built from scratch in months while studying CS at King's. My cofounder Saif is an AI specialist at KCL, graduating 2026, from Abu Dhabi — he's leading the LLM work. Together we're two technical cofounders under 25, both at KCL, who shipped a live product to 600+ users with zero funding and zero marketing. We don't talk about building — we build.
+I trade crypto. I've been on the wrong end of whale moves. So I built the tool I needed. Full platform, AI engine, data infrastructure, email automation, built from scratch in months while studying CS at King's and working as a Cloud Solutions Architect at Microsoft on AI automation and cybersecurity. My cofounder Saif is an AI engineer from Core42 Abu Dhabi where he implemented Sovereign AI, now at KCL graduating 2026, 6+ years in crypto, he's leading the LLM work. Together we're two technical cofounders under 25, both at KCL, who shipped a live product to 600+ users with zero funding and zero marketing. We don't talk about building, we build.
 
 **Long-term vision?**
 Sonar becomes the default intelligence layer for crypto markets. Short-term: best whale tracking platform. Medium-term: our LLM becomes the most accurate crypto prediction engine, licensed to institutions. Long-term: the Bloomberg Terminal of crypto. Every serious crypto participant — from a 20-year-old day trader to a $10B fund — uses Sonar for market intelligence. We're building from London with global ambition. Crypto is borderless and so are we.
@@ -300,9 +300,9 @@ Month 5-6: Beta of LLM prediction engine. Open-source our Ethereum data indexing
 - $3,000 — Research & publication (whale behaviour analysis methodology)
 
 **Team:**
-Eduardo Sanchez — Co-founder & CEO. Full-stack developer, CS at King's College London. Built the entire Sonar platform solo. 4+ years Ethereum trading and on-chain analysis.
+Eduardo Sanchez — Co-founder & CEO. Full-stack developer, CS at King's College London. Cloud Solutions Architect at Microsoft (AI automation + cybersecurity). Built the entire Sonar platform solo. 4+ years Ethereum trading and on-chain analysis.
 
-Saif Aldhaheri — Co-founder & CTO. AI/ML specialist at King's College London, graduating 2026. From Abu Dhabi. Leading the proprietary LLM development, training transformer models on Ethereum on-chain data.
+Saif Aldhaheri — Co-founder & CTO. AI engineer, previously at Core42 Abu Dhabi (Sovereign AI + cloud computing). AI/ML at King's College London, graduating 2026. 6+ years in crypto. Leading the proprietary LLM development, training transformer models on Ethereum on-chain data.
 
 **Previous Work:**
 Sonar Tracker (sonartracker.io) — live platform, 600+ users, zero marketing. Full-stack: React frontend, Supabase backend, real-time data pipelines, ORCA AI engine, Brevo email automation, multi-chain indexing. Plus news intelligence terminal, social intelligence dashboard, weekly AI market briefings. Built while studying full-time at KCL.
@@ -321,10 +321,10 @@ Partially. Grant-funded work (Ethereum data indexing pipeline, whale tracking in
 | **Traction** | 600+ users, 100 last week, zero marketing spend. Live at sonartracker.io |
 | **Fundraise** | $500K–$1M pre-seed for ML engineers, LLM compute, first marketing push |
 | **Revenue model** | Freemium SaaS: Free → Premium ($7.99/mo) → Enterprise (API + LLM). Plus institutional licensing |
-| **Team** | 2 technical cofounders, both KCL. Eduardo (full-stack, product) + Saif (AI/ML, LLM). Built entire platform while studying |
+| **Team** | 2 technical cofounders, both KCL. Eduardo (full-stack, Microsoft Cloud Solutions Architect) + Saif (AI/ML, LLM). Built entire platform while studying + working |
 | **Competitors** | Nansen ($2,500+/yr), Arkham, Whale Alert, Dune, Glassnode — all show the past. We predict the future |
 | **Differentiator** | Proprietary LLM trained on on-chain data for price prediction. Nobody else is doing this |
-| **Saif bio** | Saif Aldhaheri, Co-founder & CTO. AI/ML at King's College London, graduating 2026. From Abu Dhabi. Leads LLM development |
+| **Saif bio** | Saif Aldhaheri, Co-founder & CTO. AI engineer, ex-Core42 Abu Dhabi (Sovereign AI). AI/ML at KCL, graduating 2026. 6+ years crypto. Leads LLM development |
 
 ---
 
