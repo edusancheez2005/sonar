@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export async function GET() {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+  if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
@@ -28,7 +28,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+  if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
@@ -54,7 +54,10 @@ export async function POST(req) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message, code: error.code, hint: error.hint },
+      { status: error.code === '42501' || error.message?.includes('permission') ? 403 : 500 }
+    )
   }
 
   return NextResponse.json({ data }, { status: 201 })
