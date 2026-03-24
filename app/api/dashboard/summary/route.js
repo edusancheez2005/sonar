@@ -21,7 +21,7 @@ export async function GET() {
     const sinceIso = new Date(roundedNow - 24 * 60 * 60 * 1000).toISOString()
 
     // Query per-chain with equal limits to avoid BTC dominating results
-    const CHAINS = ['ethereum', 'bitcoin', 'solana', 'polygon']
+    const CHAINS = ['ethereum', 'bitcoin', 'solana', 'polygon', 'arbitrum', 'base']
     const PER_CHAIN_LIMIT = 2500
     const SELECT_COLS = 'transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type'
 
