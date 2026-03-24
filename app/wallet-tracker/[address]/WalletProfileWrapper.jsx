@@ -4,6 +4,8 @@ import styled from 'styled-components'
 import WalletProfileHeader from '@/components/wallet-tracker/WalletProfileHeader'
 import TransactionHistoryTable from '@/components/wallet-tracker/TransactionHistoryTable'
 import CounterpartiesTable from '@/components/wallet-tracker/CounterpartiesTable'
+import HoldingsTable from '@/components/wallet-tracker/HoldingsTable'
+import WalletFlowGraph from '@/components/wallet-tracker/WalletFlowGraph'
 import WatchlistModal from '@/components/wallet-tracker/WatchlistModal'
 import AlertModal from '@/components/wallet-tracker/AlertModal'
 import { formatUsd } from '@/lib/wallet-tracker'
@@ -101,9 +103,14 @@ export default function WalletProfileWrapper({ address }) {
     try {
       const res = await fetch(`/api/wallet-tracker/${encodeURIComponent(address)}`)
       const json = await res.json()
-      setProfile(json.data || null)
+      if (json.data) {
+        setProfile(json.data)
+      } else {
+        // Unknown wallet — create a stub profile so the page still renders
+        setProfile({ address, unknown: true })
+      }
     } catch {
-      setProfile(null)
+      setProfile({ address, unknown: true })
     } finally {
       setLoading(false)
     }
@@ -139,12 +146,13 @@ export default function WalletProfileWrapper({ address }) {
       <PageContainer>
         <Container>
           <BackLink href="/wallet-tracker">&larr; Back to Tracker</BackLink>
-          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '4rem' }}>Wallet not found</p>
+          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '4rem' }}>Loading...</p>
         </Container>
       </PageContainer>
     )
   }
 
+  const isUnknown = profile.unknown
   const topTokens = profile.top_tokens || []
   const pnlColor = profile.pnl_estimated_usd > 0 ? '#00d4aa' : profile.pnl_estimated_usd < 0 ? '#ff6b6b' : 'var(--text-primary)'
 
@@ -159,42 +167,65 @@ export default function WalletProfileWrapper({ address }) {
           onSetAlert={() => setShowAlertModal(true)}
         />
 
-        <StatsGrid>
-          <StatCard>
-            <StatLabel>Portfolio Value</StatLabel>
-            <StatValue>{formatUsd(profile.portfolio_value_usd)}</StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>Estimated PnL</StatLabel>
-            <StatValue $color={pnlColor}>{formatUsd(profile.pnl_estimated_usd)}</StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>30d Volume</StatLabel>
-            <StatValue>{formatUsd(profile.total_volume_usd_30d)}</StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>Transactions</StatLabel>
-            <StatValue>{profile.tx_count ?? '—'}</StatValue>
-          </StatCard>
-        </StatsGrid>
+        {isUnknown ? (
+          <div style={{
+            background: 'var(--background-card)',
+            borderRadius: '12px',
+            padding: '2.5rem',
+            textAlign: 'center',
+            marginBottom: '1.5rem',
+          }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '0.75rem' }}>
+              No tracked data for this wallet yet.
+            </p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              Add it to a watchlist or set an alert to start tracking.
+            </p>
+          </div>
+        ) : (
+          <>
+            <StatsGrid>
+              <StatCard>
+                <StatLabel>Portfolio Value</StatLabel>
+                <StatValue>{formatUsd(profile.portfolio_value_usd)}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Estimated PnL</StatLabel>
+                <StatValue $color={pnlColor}>{formatUsd(profile.pnl_estimated_usd)}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>30d Volume</StatLabel>
+                <StatValue>{formatUsd(profile.total_volume_usd_30d)}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Transactions</StatLabel>
+                <StatValue>{profile.tx_count ?? profile.tx_count_30d ?? '—'}</StatValue>
+              </StatCard>
+            </StatsGrid>
 
-        {topTokens.length > 0 && (
-          <TopTokensCard>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Top Tokens</h3>
-            <TokenGrid>
-              {topTokens.map((t, i) => (
-                <TokenChip key={typeof t === 'string' ? t : t.symbol || i}>
-                  {typeof t === 'string' ? t : `${t.symbol || '?'} ${t.usd_value ? formatUsd(t.usd_value) : ''}`}
-                </TokenChip>
-              ))}
-            </TokenGrid>
-          </TopTokensCard>
+            {topTokens.length > 0 && (
+              <TopTokensCard>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Top Tokens</h3>
+                <TokenGrid>
+                  {topTokens.map((t, i) => (
+                    <TokenChip key={typeof t === 'string' ? t : t.symbol || i}>
+                      {typeof t === 'string' ? t : `${t.symbol || '?'} ${t.usd_value ? formatUsd(t.usd_value) : ''}`}
+                    </TokenChip>
+                  ))}
+                </TokenGrid>
+              </TopTokensCard>
+            )}
+
+            <HoldingsTable address={address} />
+
+            <WalletFlowGraph address={address} counterparties={counterparties} />
+
+            <TwoCol>
+              <TransactionHistoryTable address={address} chain={profile.chain} />
+              <CounterpartiesTable data={counterparties} />
+            </TwoCol>
+          </>
         )}
-
-        <TwoCol>
-          <TransactionHistoryTable address={address} chain={profile.chain} />
-          <CounterpartiesTable data={counterparties} />
-        </TwoCol>
 
         {showWatchlistModal && (
           <WatchlistModal
