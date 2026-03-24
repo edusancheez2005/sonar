@@ -1084,35 +1084,61 @@ const Dashboard = ({ isPremium = false }) => {
                       {tokenInflows.length === 0 ? (
                         loading ? <SkeletonBarRows count={5} /> :
                         <EmptyState>No inflow data in the past 24 hours.</EmptyState>
-                      ) : (
-                        <div>
-                          {tokenInflows.map((t, idx) => {
-                            const maxVal = Math.abs(tokenInflows[0]?.netUsd || 1)
-                            const pct = Math.min(100, (Math.abs(t.netUsd || 0) / maxVal) * 100)
-                            return (
-                              <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
+                      ) : (() => {
+                        const btc = tokenInflows.find(t => t.token === 'BTC')
+                        const altcoins = tokenInflows.filter(t => t.token !== 'BTC')
+                        const altMax = Math.abs(altcoins[0]?.netUsd || 1)
+                        return (
+                          <div>
+                            {btc && (
+                              <Link href={`/statistics?token=BTC&sinceHours=24`} style={{ textDecoration: 'none' }}>
                                 <HBarRow>
                                   <HBarLabel>
-                                    <TokenIcon symbol={t.token} size={18} />
-                                    {t.token}
+                                    <TokenIcon symbol="BTC" size={18} />
+                                    BTC
                                   </HBarLabel>
                                   <HBarTrack>
                                     <HBarFill
                                       $color={COLORS.green}
                                       initial={{ width: 0 }}
-                                      animate={{ width: `${pct}%` }}
-                                      transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                      animate={{ width: '100%' }}
+                                      transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
                                     />
                                   </HBarTrack>
                                   <HBarValue $color={COLORS.green}>
-                                    +${formatCompact(t.netUsd || 0)}
+                                    +${formatCompact(btc.netUsd || 0)}
                                   </HBarValue>
                                 </HBarRow>
                               </Link>
-                            )
-                          })}
-                        </div>
-                      )}
+                            )}
+                            {btc && <div style={{ borderBottom: `1px solid ${COLORS.borderSubtle}`, margin: '0.25rem 0' }} />}
+                            {altcoins.map((t, idx) => {
+                              const pct = Math.min(100, (Math.abs(t.netUsd || 0) / altMax) * 100)
+                              return (
+                                <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
+                                  <HBarRow>
+                                    <HBarLabel>
+                                      <TokenIcon symbol={t.token} size={18} />
+                                      {t.token}
+                                    </HBarLabel>
+                                    <HBarTrack>
+                                      <HBarFill
+                                        $color={COLORS.green}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${pct}%` }}
+                                        transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                      />
+                                    </HBarTrack>
+                                    <HBarValue $color={COLORS.green}>
+                                      +${formatCompact(t.netUsd || 0)}
+                                    </HBarValue>
+                                  </HBarRow>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()}
                     </Panel>
 
                     {/* Outflows Panel */}
@@ -1124,35 +1150,61 @@ const Dashboard = ({ isPremium = false }) => {
                       {tokenOutflows.length === 0 ? (
                         loading ? <SkeletonBarRows count={5} /> :
                         <EmptyState>No outflow data in the past 24 hours.</EmptyState>
-                      ) : (
-                        <div>
-                          {tokenOutflows.map((t, idx) => {
-                            const maxVal = Math.abs(tokenOutflows[0]?.netUsd || 1)
-                            const pct = Math.min(100, (Math.abs(t.netUsd || 0) / maxVal) * 100)
-                            return (
-                              <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
+                      ) : (() => {
+                        const altcoins = tokenOutflows.filter(t => t.token !== 'BTC')
+                        const btc = tokenOutflows.find(t => t.token === 'BTC')
+                        const altMax = Math.abs(altcoins[0]?.netUsd || 1)
+                        return (
+                          <div>
+                            {btc && (
+                              <Link href={`/statistics?token=BTC&sinceHours=24`} style={{ textDecoration: 'none' }}>
                                 <HBarRow>
                                   <HBarLabel>
-                                    <TokenIcon symbol={t.token} size={18} />
-                                    {t.token}
+                                    <TokenIcon symbol="BTC" size={18} />
+                                    BTC
                                   </HBarLabel>
                                   <HBarTrack>
                                     <HBarFill
                                       $color={COLORS.red}
                                       initial={{ width: 0 }}
-                                      animate={{ width: `${pct}%` }}
-                                      transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                      animate={{ width: '100%' }}
+                                      transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
                                     />
                                   </HBarTrack>
                                   <HBarValue $color={COLORS.red}>
-                                    -${formatCompact(Math.abs(t.netUsd || 0))}
+                                    -${formatCompact(Math.abs(btc.netUsd || 0))}
                                   </HBarValue>
                                 </HBarRow>
                               </Link>
-                            )
-                          })}
-                        </div>
-                      )}
+                            )}
+                            {btc && <div style={{ borderBottom: `1px solid ${COLORS.borderSubtle}`, margin: '0.25rem 0' }} />}
+                            {altcoins.map((t, idx) => {
+                              const pct = Math.min(100, (Math.abs(t.netUsd || 0) / altMax) * 100)
+                              return (
+                                <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
+                                  <HBarRow>
+                                    <HBarLabel>
+                                      <TokenIcon symbol={t.token} size={18} />
+                                      {t.token}
+                                    </HBarLabel>
+                                    <HBarTrack>
+                                      <HBarFill
+                                        $color={COLORS.red}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${pct}%` }}
+                                        transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                      />
+                                    </HBarTrack>
+                                    <HBarValue $color={COLORS.red}>
+                                      -${formatCompact(Math.abs(t.netUsd || 0))}
+                                    </HBarValue>
+                                  </HBarRow>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()}
                     </Panel>
                   </GridContainer>
                 </SectionGap>
