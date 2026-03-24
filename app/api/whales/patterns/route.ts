@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       .from('all_whale_transactions')
       .select('whale_address, from_address, classification, usd_value, timestamp')
       .eq('token_symbol', symbol)
+      .in('classification', ['BUY', 'SELL'])
       .gte('timestamp', sinceDate)
       .order('timestamp', { ascending: false })
       .limit(500)

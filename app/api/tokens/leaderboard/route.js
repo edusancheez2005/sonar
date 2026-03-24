@@ -13,6 +13,7 @@ export async function GET() {
     .from('all_whale_transactions')
     .select('token_symbol, classification, usd_value, timestamp, from_address')
     .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
+    .in('classification', ['BUY', 'SELL'])
     .gte('timestamp', since)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

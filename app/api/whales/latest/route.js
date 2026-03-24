@@ -22,6 +22,7 @@ export async function GET(req) {
     .from('all_whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score')
     .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
+    .in('classification', ['BUY', 'SELL'])
     .order('timestamp', { ascending: false })
     .range(from, to)
 

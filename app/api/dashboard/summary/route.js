@@ -20,31 +20,22 @@ export async function GET() {
     const roundedNow = Math.floor(Date.now() / FIVE_MIN) * FIVE_MIN
     const sinceIso = new Date(roundedNow - 24 * 60 * 60 * 1000).toISOString()
 
-    // Query per-chain tables in parallel to avoid XRP flooding the 10K limit.
-    // Each chain gets its own fair share of rows.
-    const CHAIN_TABLES = ['ethereum_transactions', 'bitcoin_transactions', 'solana_transactions', 'polygon_transactions']
-    const PER_CHAIN_LIMIT = 3000
+    // Query the unified view (already filtered to BUY/SELL at view level)
     const SELECT_COLS = 'transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type'
 
-    const chainResults = await Promise.all(CHAIN_TABLES.map(async (table) => {
-      const { data, error } = await supabaseAdmin
-        .from(table)
-        .select(SELECT_COLS)
-        .not('token_symbol', 'is', null)
-        .not('token_symbol', 'ilike', 'unknown%')
-        .in('classification', ['BUY', 'SELL', 'TRANSFER'])
-        .gte('timestamp', sinceIso)
-        .order('usd_value', { ascending: false }) // prioritize large transactions
-        .limit(PER_CHAIN_LIMIT)
-      if (error) console.error(`Dashboard: ${table} error:`, error)
-      return data || []
-    }))
+    const { data: recentData, error: recentError } = await supabaseAdmin
+      .from('all_whale_transactions')
+      .select(SELECT_COLS)
+      .not('token_symbol', 'is', null)
+      .not('token_symbol', 'ilike', 'unknown%')
+      .in('classification', ['BUY', 'SELL'])
+      .gte('timestamp', sinceIso)
+      .order('usd_value', { ascending: false })
+      .limit(10000)
 
-    const recentData = chainResults.flat()
-    // Sort combined by timestamp descending
-    recentData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    if (recentError) console.error('Dashboard: query error:', recentError)
 
-    console.log(`Dashboard API: Fetched ${recentData.length} transactions across ${CHAIN_TABLES.length} chains (${chainResults.map((d,i) => `${CHAIN_TABLES[i].split('_')[0]}:${d.length}`).join(', ')})`)
+    console.log(`Dashboard API: Fetched ${recentData?.length || 0} transactions from all_whale_transactions`)
 
     // Filter out stablecoins and excluded tokens from analytics
     const analyticsData = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
@@ -113,7 +104,7 @@ export async function GET() {
           .not('token_symbol', 'is', null)
           .not('token_symbol', 'ilike', 'unknown%')
           .not('whale_address', 'is', null)
-          .in('classification', ['BUY', 'SELL', 'TRANSFER'])
+          .in('classification', ['BUY', 'SELL'])
           .gte('timestamp', sinceIso),
         supabaseAdmin.from('all_whale_transactions')
           .select('classification', { count: 'exact', head: true })
