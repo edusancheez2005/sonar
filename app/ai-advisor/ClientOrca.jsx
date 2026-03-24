@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm'
 import OrcaWelcome from './OrcaWelcome'
 import { useSearchParams } from 'next/navigation'
 import TokenIcon from '@/components/TokenIcon'
+import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
 const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
@@ -96,12 +97,104 @@ const PageWrapper = styled.div`
   @media (max-width: 768px) { flex-direction: column; }
 `
 
-// Sidebar
+// Sidebar (desktop: static, mobile: overlay drawer)
 const Sidebar = styled.div`
   width: 280px; min-width: 280px; background: rgba(8, 12, 20, 0.95);
   border: 1px solid ${colors.borderLight}; border-radius: 8px 0 0 8px;
   display: flex; flex-direction: column; overflow: hidden;
   @media (max-width: 768px) { display: none; }
+`
+
+const MobileSidebarOverlay = styled(motion.div)`
+  display: none;
+  @media (max-width: 768px) {
+    display: block; position: fixed; inset: 0; z-index: 999;
+    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+  }
+`
+
+const MobileSidebarDrawer = styled(motion.div)`
+  display: none;
+  @media (max-width: 768px) {
+    display: flex; flex-direction: column; position: fixed;
+    top: 0; left: 0; bottom: 0; width: 300px; max-width: 85vw;
+    z-index: 1000; background: rgba(8, 12, 20, 0.98);
+    border-right: 1px solid ${colors.borderLight}; overflow: hidden;
+  }
+`
+
+const MobileHistoryButton = styled.button`
+  display: none;
+  @media (max-width: 768px) {
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: 1px solid ${colors.borderLight};
+    color: ${colors.primary}; width: 32px; height: 32px; border-radius: 6px;
+    cursor: pointer; font-size: 1rem; flex-shrink: 0;
+  }
+`
+
+const SessionPreview = styled.div`
+  font-family: ${SANS_FONT}; font-size: 0.68rem; color: ${colors.textMuted};
+  margin-top: 0.15rem; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+`
+
+const DeleteSessionButton = styled.button`
+  background: none; border: none; color: ${colors.textMuted};
+  cursor: pointer; padding: 0.2rem; border-radius: 4px; font-size: 0.7rem;
+  opacity: 0; transition: all 0.15s ease; flex-shrink: 0; line-height: 1;
+  &:hover { color: ${colors.sentimentBear}; background: rgba(255, 23, 68, 0.1); }
+`
+
+const SessionItemRow = styled.div`
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  &:hover ${DeleteSessionButton} { opacity: 1; }
+`
+
+const ConfirmOverlay = styled(motion.div)`
+  position: fixed; inset: 0;
+  background: rgba(10, 14, 23, 0.85); backdrop-filter: blur(8px);
+  z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 2rem;
+`
+
+const ConfirmCard = styled(motion.div)`
+  background: rgba(13, 17, 28, 0.95);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 10px; padding: 2rem; max-width: 400px; width: 100%;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.06); text-align: center;
+`
+
+const ConfirmTitle = styled.h3`
+  font-family: ${MONO_FONT}; font-size: 0.9rem; font-weight: 700;
+  color: ${colors.primary}; margin-bottom: 0.75rem; letter-spacing: 1px;
+`
+
+const ConfirmText = styled.p`
+  font-family: ${SANS_FONT}; font-size: 0.85rem; color: ${colors.textSecondary};
+  margin-bottom: 1.5rem; line-height: 1.5;
+`
+
+const ConfirmButtons = styled.div`
+  display: flex; gap: 0.75rem; justify-content: center;
+`
+
+const ConfirmBtn = styled(motion.button)`
+  font-family: ${MONO_FONT}; font-size: 0.75rem; font-weight: 600;
+  padding: 0.6rem 1.25rem; border-radius: 6px; cursor: pointer; border: none;
+  transition: all 0.15s ease;
+`
+
+const ConfirmDeleteBtn = styled(ConfirmBtn)`
+  background: rgba(255, 23, 68, 0.15); color: ${colors.sentimentBear};
+  border: 1px solid rgba(255, 23, 68, 0.3);
+  &:hover { background: rgba(255, 23, 68, 0.25); }
+`
+
+const ConfirmCancelBtn = styled(ConfirmBtn)`
+  background: rgba(0, 229, 255, 0.08); color: ${colors.textSecondary};
+  border: 1px solid ${colors.borderLight};
+  &:hover { background: rgba(0, 229, 255, 0.15); color: ${colors.textPrimary}; }
 `
 
 const SidebarHeader = styled.div`
@@ -367,10 +460,14 @@ export default function ClientOrca() {
   const [session, setSession] = useState(null)
   const [isPremium, setIsPremium] = useState(false)
   const [checkingPremium, setCheckingPremium] = useState(true)
-  const [freePromptsUsed, setFreePromptsUsed] = useState(0)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [sessions, setSessions] = useState([])
   const [currentSessionId, setCurrentSessionId] = useState(() => crypto.randomUUID())
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [sessionLoading, setSessionLoading] = useState(false)
+  const [serverQuota, setServerQuota] = useState(null) // { canAsk, remaining, limit, used, plan, resetsAt }
+  const [resetCountdown, setResetCountdown] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // session_id to confirm delete
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -401,69 +498,63 @@ export default function ClientOrca() {
     }
   }, [searchParams])
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom (block: 'nearest' prevents page-level scroll)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
   useEffect(() => {
     scrollToBottom()
   }, [messages, loading])
 
-  // Get session and check premium status
+  // Fetch server-side quota status
+  const fetchQuota = async (accessToken) => {
+    if (!accessToken) return
+    try {
+      const res = await fetch('/api/chat/quota', {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setServerQuota(data)
+        setIsPremium(data.plan === 'premium' || data.plan === 'pro' || data.plan === 'unlimited')
+      }
+    } catch (err) {
+      console.error('Failed to fetch quota:', err)
+    }
+  }
+
+  // Get session and check premium status via server quota
   useEffect(() => {
     const getSession = async () => {
       const sb = supabaseBrowser()
       const { data } = await sb.auth.getSession()
       setSession(data.session)
-      
-      // Check premium status
-      if (data.session?.user) {
-        try {
-          const { data: profile, error: profileError } = await sb
-            .from('profiles')
-            .select('plan')
-            .eq('id', data.session.user.id)
-            .single()
-          
-          console.log('🔍 ORCA Premium Check:', { 
-            userId: data.session.user.id,
-            email: data.session.user.email,
-            plan: profile?.plan,
-            error: profileError?.message
-          })
-          
-          const userIsPremium = profile?.plan === 'premium' || profile?.plan === 'pro'
-          setIsPremium(userIsPremium)
-          console.log('✅ isPremium set to:', userIsPremium)
-          
-          // Only track free prompts for NON-premium users
-          if (!userIsPremium) {
-            const today = new Date().toDateString()
-            const stored = localStorage.getItem(`orca_free_prompts_${data.session.user.id}`)
-            if (stored) {
-              const { date, count } = JSON.parse(stored)
-              if (date === today) {
-                setFreePromptsUsed(count)
-              } else {
-                // Reset for new day
-                localStorage.setItem(`orca_free_prompts_${data.session.user.id}`, JSON.stringify({ date: today, count: 0 }))
-                setFreePromptsUsed(0)
-              }
-            }
-          } else {
-            // Premium users: reset free prompts counter (not used)
-            setFreePromptsUsed(0)
-          }
-        } catch (err) {
-          console.error('Error checking premium status:', err)
-          setIsPremium(false)
-        }
+
+      if (data.session?.access_token) {
+        await fetchQuota(data.session.access_token)
       }
       setCheckingPremium(false)
     }
     getSession()
   }, [])
+
+  // Reset countdown timer — updates every minute
+  useEffect(() => {
+    if (!serverQuota?.resetsAt) return
+    const update = () => {
+      const now = new Date().getTime()
+      const reset = new Date(serverQuota.resetsAt).getTime()
+      const diff = reset - now
+      if (diff <= 0) { setResetCountdown(''); return }
+      const hours = Math.floor(diff / 3600000)
+      const mins = Math.floor((diff % 3600000) / 60000)
+      setResetCountdown(`${hours}h ${mins}m`)
+    }
+    update()
+    const interval = setInterval(update, 60000)
+    return () => clearInterval(interval)
+  }, [serverQuota?.resetsAt])
 
   // Load chat sessions from API
   const loadSessions = async () => {
@@ -485,10 +576,12 @@ export default function ClientOrca() {
     if (session) loadSessions()
   }, [session])
 
-  // Load a specific session's messages
+  // Load a specific session's messages (Fix 6: loading state)
   const loadSession = async (sessionId) => {
     if (!session?.access_token) return
     setCurrentSessionId(sessionId)
+    setSessionLoading(true)
+    setMobileSidebarOpen(false)
     try {
       const res = await fetch(`/api/chat/sessions/${encodeURIComponent(sessionId)}`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -515,20 +608,43 @@ export default function ClientOrca() {
             })
           }
         }
-        // Set messages atomically — don't clear first
         setMessages(loaded.length > 0 ? loaded : [])
       }
     } catch (err) {
       console.error('Failed to load session:', err)
+    } finally {
+      setSessionLoading(false)
     }
   }
 
-  // Start new chat — refresh sidebar first so current chat stays visible
+  // Start new chat — refresh sidebar so current chat stays visible
   const startNewChat = () => {
-    loadSessions() // Ensure current session appears in sidebar before clearing
+    loadSessions()
     setCurrentSessionId(crypto.randomUUID())
     setMessages([])
     setAgentSteps([])
+    setMobileSidebarOpen(false)
+  }
+
+  // Delete a chat session
+  const deleteSession = async (sessionId) => {
+    if (!session?.access_token) return
+    try {
+      const res = await fetch(`/api/chat/sessions/${encodeURIComponent(sessionId)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+      if (res.ok) {
+        setSessions(prev => prev.filter(s => s.session_id !== sessionId))
+        if (currentSessionId === sessionId) {
+          setCurrentSessionId(crypto.randomUUID())
+          setMessages([])
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err)
+    }
+    setDeleteConfirm(null)
   }
 
   // Reset agent steps when loading ends
@@ -551,18 +667,12 @@ export default function ClientOrca() {
       return
     }
 
-    // Check free user quota (1 free prompt, then need premium)
-    const FREE_PROMPT_LIMIT = 1
-    const PREMIUM_DAILY_LIMIT = 10
-    
-    if (!isPremium && freePromptsUsed >= FREE_PROMPT_LIMIT) {
-      setShowUpgradeModal(true)
-      return
-    }
-    
-    // Check premium daily limit
-    if (isPremium && quota?.used >= PREMIUM_DAILY_LIMIT) {
-      alert(`You've reached your daily limit of ${PREMIUM_DAILY_LIMIT} prompts. Try again tomorrow!`)
+    // Check quota from server state
+    if (serverQuota && !serverQuota.canAsk) {
+      if (!isPremium) {
+        setShowUpgradeModal(true)
+      }
+      // Rate limited message will come from server if we try anyway
       return
     }
 
@@ -639,13 +749,6 @@ export default function ClientOrca() {
           }
         }
 
-        // Track free prompt usage for non-premium users
-        if (!isPremium && session?.user) {
-          const newCount = freePromptsUsed + 1
-          setFreePromptsUsed(newCount)
-          const today = new Date().toDateString()
-          localStorage.setItem(`orca_free_prompts_${session.user.id}`, JSON.stringify({ date: today, count: newCount }))
-        }
         return
       }
 
@@ -682,14 +785,6 @@ export default function ClientOrca() {
 
       setMessages(prev => [...prev, orcaMessage])
       setQuota(data.quota)
-      
-      // Track free prompt usage for non-premium users
-      if (!isPremium && session?.user) {
-        const newCount = freePromptsUsed + 1
-        setFreePromptsUsed(newCount)
-        const today = new Date().toDateString()
-        localStorage.setItem(`orca_free_prompts_${session.user.id}`, JSON.stringify({ date: today, count: newCount }))
-      }
 
     } catch (error) {
       console.error('Error:', error)
@@ -705,7 +800,27 @@ export default function ClientOrca() {
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setLoading(false)
-      loadSessions() // Refresh sidebar after each response
+      // Optimistic sidebar update instead of fetching all sessions (Fix 4)
+      setSessions(prev => {
+        const existing = prev.find(s => s.session_id === currentSessionId)
+        if (existing) {
+          return prev.map(s => s.session_id === currentSessionId
+            ? { ...s, message_count: s.message_count + 1, last_activity: new Date().toISOString() }
+            : s
+          )
+        }
+        // New session — prepend it
+        return [{
+          session_id: currentSessionId,
+          title: question.substring(0, 50) || 'Chat',
+          preview: null,
+          ticker: null,
+          last_activity: new Date().toISOString(),
+          message_count: 1
+        }, ...prev]
+      })
+      // Refresh server quota after each message
+      fetchQuota(session?.access_token)
     }
   }
   
@@ -733,11 +848,9 @@ export default function ClientOrca() {
     )
   }
 
-  return (
+  // Shared session list renderer (used in desktop sidebar and mobile drawer)
+  const renderSessionList = () => (
     <>
-    <PageWrapper>
-    {/* Sidebar — Chat History */}
-    <Sidebar>
       <SidebarHeader>
         <NewChatButton onClick={startNewChat}>+ New Chat</NewChatButton>
       </SidebarHeader>
@@ -748,28 +861,74 @@ export default function ClientOrca() {
           </div>
         ) : (
           sessions.map(s => (
-            <SessionItem
-              key={s.session_id}
-              $active={s.session_id === currentSessionId}
-              onClick={() => loadSession(s.session_id)}
-            >
-              <SessionTitle>{s.title}</SessionTitle>
-              <SessionMeta>
-                {s.ticker && <span style={{ color: colors.primary, fontWeight: 600 }}>{s.ticker}</span>}
-                <span>{new Date(s.last_activity).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                <span>{s.message_count} msg{s.message_count !== 1 ? 's' : ''}</span>
-              </SessionMeta>
-            </SessionItem>
+            <SessionItemRow key={s.session_id}>
+              <SessionItem
+                style={{ flex: 1 }}
+                $active={s.session_id === currentSessionId}
+                onClick={() => loadSession(s.session_id)}
+              >
+                <SessionTitle>{s.title}</SessionTitle>
+                {s.preview && <SessionPreview>{s.preview}</SessionPreview>}
+                <SessionMeta>
+                  {s.ticker && <span style={{ color: colors.primary, fontWeight: 600 }}>{s.ticker}</span>}
+                  <span>{new Date(s.last_activity).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                  <span>{s.message_count} msg{s.message_count !== 1 ? 's' : ''}</span>
+                </SessionMeta>
+              </SessionItem>
+              <DeleteSessionButton
+                onClick={(e) => { e.stopPropagation(); setDeleteConfirm(s.session_id) }}
+                title="Delete chat"
+              >
+                &#10005;
+              </DeleteSessionButton>
+            </SessionItemRow>
           ))
         )}
       </SessionList>
-    </Sidebar>
+    </>
+  )
+
+  return (
+    <>
+    <PageWrapper>
+    {/* Desktop Sidebar */}
+    <Sidebar>{renderSessionList()}</Sidebar>
+
+    {/* Mobile Sidebar Drawer (Fix 3) */}
+    <AnimatePresence>
+      {mobileSidebarOpen && (
+        <>
+          <MobileSidebarOverlay
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <MobileSidebarDrawer
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'tween', duration: 0.25 }}
+          >
+            {renderSessionList()}
+          </MobileSidebarDrawer>
+        </>
+      )}
+    </AnimatePresence>
 
     <ChatContainer>
       {/* Terminal Header */}
       <ChatHeader>
+        <MobileHistoryButton onClick={() => setMobileSidebarOpen(true)} aria-label="Chat history">
+          &#9776;
+        </MobileHistoryButton>
         <span style={{ fontWeight: 800, color: colors.primary, fontSize: '0.8rem', letterSpacing: '2px' }}>ORCA_TERMINAL</span>
         <span style={{ color: colors.textMuted, fontSize: '0.7rem' }}>v5.0</span>
+        {serverQuota && isPremium && (
+          <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: colors.textMuted, marginLeft: '0.5rem' }}>
+            {serverQuota.remaining}/{serverQuota.limit} left
+          </span>
+        )}
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.7rem', color: colors.sentimentBull, marginLeft: 'auto' }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.sentimentBull, display: 'inline-block' }} />
           ONLINE
@@ -778,7 +937,9 @@ export default function ClientOrca() {
 
       {/* Messages Area */}
       <MessagesArea>
-        {messages.length === 0 ? (
+        {sessionLoading ? (
+          <SonarLoader text="Loading conversation..." size={60} compact />
+        ) : messages.length === 0 ? (
           <OrcaWelcome onExampleClick={(example) => handleSubmit(null, example)} />
         ) : (
           <>
@@ -1196,10 +1357,18 @@ export default function ClientOrca() {
       {/* Input Area */}
       <InputArea>
         <Disclaimer>
-          {!isPremium && freePromptsUsed === 0 ? (
-            <span style={{ color: colors.primary }}>You have 1 free ORCA prompt — try it now!</span>
-          ) : !isPremium && freePromptsUsed >= 1 ? (
-            <span style={{ color: colors.sentimentNeutral }}>Free prompt used. <a href="/subscribe" style={{ color: colors.primary, textDecoration: 'underline' }}>Upgrade to Premium</a> for 5 prompts/day.</span>
+          {serverQuota && !serverQuota.canAsk && !isPremium ? (
+            <span style={{ color: colors.sentimentNeutral }}>
+              Free prompts used. <a href="/subscribe" style={{ color: colors.primary, textDecoration: 'underline' }}>Upgrade to Premium</a> for {serverQuota.limit > 2 ? serverQuota.limit : 5} prompts/day.
+              {resetCountdown && <span style={{ marginLeft: '0.5rem', color: colors.textMuted }}>Resets in {resetCountdown}</span>}
+            </span>
+          ) : serverQuota && !serverQuota.canAsk && isPremium ? (
+            <span style={{ color: colors.sentimentNeutral }}>
+              Daily limit reached ({serverQuota.limit} prompts).
+              {resetCountdown && <span style={{ marginLeft: '0.5rem', color: colors.primary }}> Resets in {resetCountdown}</span>}
+            </span>
+          ) : serverQuota && serverQuota.canAsk && !isPremium && serverQuota.remaining > 0 ? (
+            <span style={{ color: colors.primary }}>You have {serverQuota.remaining} free ORCA prompt{serverQuota.remaining !== 1 ? 's' : ''} — try it now!</span>
           ) : (
             'ORCA provides educational analysis only. Not financial advice.'
           )}
@@ -1210,16 +1379,16 @@ export default function ClientOrca() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={!isPremium && freePromptsUsed >= 1 ? "Upgrade to continue chatting..." : "Ask about any cryptocurrency..."}
-            disabled={loading || (!isPremium && freePromptsUsed >= 1)}
+            placeholder={serverQuota && !serverQuota.canAsk ? "Daily limit reached..." : "Ask about any cryptocurrency..."}
+            disabled={loading || (serverQuota && !serverQuota.canAsk)}
           />
-          <SendButton type="submit" disabled={loading || !input.trim() || (!isPremium && freePromptsUsed >= 1)}>
-            {loading ? 'Analyzing' : !isPremium && freePromptsUsed >= 1 ? (
+          <SendButton type="submit" disabled={loading || !input.trim() || (serverQuota && !serverQuota.canAsk)}>
+            {loading ? 'Analyzing' : serverQuota && !serverQuota.canAsk ? (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.7 }}>
                 <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
               </svg>
             ) : 'Send'}
-            {loading || (!isPremium && freePromptsUsed >= 1) ? null : <span className="arrow">→</span>}
+            {loading || (serverQuota && !serverQuota.canAsk) ? null : <span className="arrow">→</span>}
           </SendButton>
         </InputForm>
       </InputArea>
@@ -1274,6 +1443,46 @@ export default function ClientOrca() {
         </PremiumCard>
       </PremiumOverlay>
     )}
+    {/* Delete Confirmation Dialog */}
+    <AnimatePresence>
+      {deleteConfirm && (
+        <ConfirmOverlay
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <ConfirmCard
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            transition={{ duration: 0.2 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ConfirmTitle>DELETE_CHAT</ConfirmTitle>
+            <ConfirmText>
+              This will permanently remove this conversation and all its messages. This action cannot be undone.
+            </ConfirmText>
+            <ConfirmButtons>
+              <ConfirmCancelBtn
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setDeleteConfirm(null)}
+              >
+                Cancel
+              </ConfirmCancelBtn>
+              <ConfirmDeleteBtn
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => deleteSession(deleteConfirm)}
+              >
+                Delete
+              </ConfirmDeleteBtn>
+            </ConfirmButtons>
+          </ConfirmCard>
+        </ConfirmOverlay>
+      )}
+    </AnimatePresence>
     </PageWrapper>
     </>
   )

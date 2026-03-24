@@ -303,7 +303,7 @@ export async function buildOrcaContext(
   onProgress?: (step: string, detail?: string) => void
 ): Promise<OrcaContext> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE!
   const supabase = createClient(supabaseUrl, supabaseKey)
   
   // Wrapper that reports progress when each parallel fetch completes
