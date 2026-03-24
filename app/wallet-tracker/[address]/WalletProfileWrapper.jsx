@@ -14,6 +14,10 @@ const PageContainer = styled.div`
   min-height: 100vh;
   background: var(--background-dark);
   padding: 2rem;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `
 
 const Container = styled.div`
@@ -38,6 +42,11 @@ const StatsGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
 `
 
 const StatCard = styled.div`

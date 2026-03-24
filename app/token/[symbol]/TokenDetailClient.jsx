@@ -2019,7 +2019,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                           {tx.from_label || (tx.whale_address || tx.from_address || 'Unknown').slice(0, 10)}
                         </div>
                         <div className="secondary">
-                          <Link href={`/whale/${encodeURIComponent(tx.whale_address || tx.from_address || '-')}`}>
+                          <Link href={`/wallet-tracker/${encodeURIComponent(tx.whale_address || tx.from_address || '-')}`}>
                             {(tx.whale_address || tx.from_address || '-').slice(0, 6)}...{(tx.whale_address || tx.from_address || '-').slice(-4)}
                           </Link>
                         </div>

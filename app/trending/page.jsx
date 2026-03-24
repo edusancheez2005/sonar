@@ -155,6 +155,16 @@ const LoadingState = styled.div`
 
 const ErrorState = styled(LoadingState)`color: ${COLORS.red};`
 
+const WhaleBadge = styled.div`
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.65rem; font-weight: 700; font-family: ${MONO_FONT};
+  padding: 0.2rem 0.5rem; border-radius: 4px; margin-top: 0.6rem;
+  color: ${props => props.$bullish ? COLORS.green : COLORS.red};
+  background: ${props => props.$bullish ? 'rgba(0, 230, 118, 0.08)' : 'rgba(255, 23, 68, 0.08)'};
+  border: 1px solid ${props => props.$bullish ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255, 23, 68, 0.15)'};
+  letter-spacing: 0.3px;
+`
+
 const fadeUp = {
   hidden: { opacity: 0, y: 8 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
@@ -166,6 +176,7 @@ export default function TrendingPage() {
   const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState('24h')
   const [isPremium, setIsPremium] = useState(false)
+  const [whaleData, setWhaleData] = useState({}) // symbol -> whale stats
 
   useEffect(() => {
     async function checkPremium() {
@@ -204,6 +215,43 @@ export default function TrendingPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Fetch whale activity for trending tokens after trending data loads
+  useEffect(() => {
+    if (!trendingData) return
+    const allCoins = [
+      ...(trendingData.trending || []),
+      ...(trendingData.top_gainers || []),
+      ...(trendingData.top_losers || []),
+    ]
+    const symbols = [...new Set(allCoins.map(c => c.symbol?.toUpperCase()).filter(Boolean))]
+    if (symbols.length === 0) return
+
+    async function fetchWhaleActivity() {
+      try {
+        const res = await fetch(`/api/wallet-tracker/trending-whales?tokens=${symbols.join(',')}`)
+        if (!res.ok) return
+        const json = await res.json()
+        const map = {}
+        for (const item of json.data || []) {
+          map[item.token] = item
+        }
+        setWhaleData(map)
+      } catch {}
+    }
+    fetchWhaleActivity()
+  }, [trendingData])
+
+  const getWhaleBadge = (symbol) => {
+    const stats = whaleData[(symbol || '').toUpperCase()]
+    if (!stats) return null
+    const total = stats.buy_count + stats.sell_count
+    if (total === 0) return null
+    const bullish = stats.buy_count >= stats.sell_count
+    const count = bullish ? stats.buy_count : stats.sell_count
+    const label = bullish ? `${count} whale${count !== 1 ? 's' : ''} buying` : `${count} whale${count !== 1 ? 's' : ''} selling`
+    return <WhaleBadge $bullish={bullish}>{'\uD83D\uDC0B'} {label}</WhaleBadge>
   }
 
   const formatPrice = (price) => {
@@ -265,6 +313,7 @@ export default function TrendingPage() {
                             <MetricValue>{coin.score != null ? coin.score : 'N/A'}</MetricValue>
                           </Metric>
                         </CoinMetrics>
+                        {getWhaleBadge(coin.symbol)}
                       </CoinCard>
                     </Link>
                   ))}
@@ -305,6 +354,7 @@ export default function TrendingPage() {
                               <MetricValue>{formatMarketCap(coin.total_volume)}</MetricValue>
                             </Metric>
                           </CoinMetrics>
+                          {getWhaleBadge(coin.symbol)}
                         </CoinCard>
                       </Link>
                     ))}
@@ -346,6 +396,7 @@ export default function TrendingPage() {
                               <MetricValue>{formatMarketCap(coin.total_volume)}</MetricValue>
                             </Metric>
                           </CoinMetrics>
+                          {getWhaleBadge(coin.symbol)}
                         </CoinCard>
                       </Link>
                     ))}

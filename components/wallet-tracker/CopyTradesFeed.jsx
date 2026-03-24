@@ -113,10 +113,15 @@ const EntityLabel = styled.span`
   color: var(--text-secondary);
 `
 
-const TokenName = styled.span`
+const TokenName = styled(Link)`
   font-weight: 700;
   font-size: 0.85rem;
   color: var(--text-primary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--primary);
+  }
 `
 
 const Value = styled.span`
@@ -211,7 +216,7 @@ export default function CopyTradesFeed() {
                     <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                       {type === 'BUY' ? 'bought' : 'sold'}
                     </span>
-                    <TokenName>{s.token_symbol}</TokenName>
+                    <TokenName href={`/token/${encodeURIComponent(s.token_symbol)}?sinceHours=24`}>{s.token_symbol}</TokenName>
                     <Value $type={type}>{formatUsd(s.usd_value)}</Value>
                   </FeedTop>
                   <FeedMeta>
