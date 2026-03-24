@@ -10,6 +10,8 @@ import EarlyMoverRadar from '@/components/wallet-tracker/EarlyMoverRadar'
 import FollowingView from '@/components/wallet-tracker/FollowingView'
 import SonarPulse from '@/components/wallet-tracker/SonarPulse'
 import InfoGuide from '@/components/wallet-tracker/InfoGuide'
+import WhaleConsensus from '@/components/wallet-tracker/WhaleConsensus'
+import WalletComparison from '@/components/wallet-tracker/WalletComparison'
 import { SORT_OPTIONS, CHAINS } from '@/lib/wallet-tracker'
 
 const PageContainer = styled.div`
@@ -147,6 +149,7 @@ const Tab = styled.button`
   }
 `
 
+
 export default function WalletTrackerWrapper() {
   const [activeTab, setActiveTab] = useState('leaderboard')
   const [wallets, setWallets] = useState([])
@@ -155,7 +158,7 @@ export default function WalletTrackerWrapper() {
   const [chain, setChain] = useState('')
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(50)
+  const [limit, setLimit] = useState(25)
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [exporting, setExporting] = useState(false)
@@ -264,10 +267,14 @@ export default function WalletTrackerWrapper() {
   return (
     <PageContainer>
       <Container>
-        <PageTitle><WhaleIcon />Whale Wallet Tracker <SonarPulse active={!loading} /></PageTitle>
+        <PageTitle><WhaleIcon />Whale Wallet Tracker <SonarPulse active /></PageTitle>
         <Tabs>
           <Tab $active={activeTab === 'leaderboard'} onClick={() => setActiveTab('leaderboard')}>Leaderboard</Tab>
           <Tab $active={activeTab === 'following'} onClick={() => setActiveTab('following')}>Following</Tab>
+          <Tab $active={activeTab === 'pods'} onClick={() => setActiveTab('pods')}>Pod Detection</Tab>
+          <Tab $active={activeTab === 'early-movers'} onClick={() => setActiveTab('early-movers')}>Early Movers</Tab>
+          <Tab $active={activeTab === 'compare'} onClick={() => setActiveTab('compare')}>Compare</Tab>
+          <Tab $active={activeTab === 'consensus'} onClick={() => setActiveTab('consensus')}>Whale Consensus</Tab>
         </Tabs>
 
         {activeTab === 'leaderboard' && (
@@ -316,15 +323,27 @@ export default function WalletTrackerWrapper() {
                 <InfoGuide />
               </div>
             </Layout>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
-              <PodDetection />
-              <EarlyMoverRadar />
-            </div>
           </>
         )}
 
         {activeTab === 'following' && (
           <FollowingView />
+        )}
+
+        {activeTab === 'pods' && (
+          <PodDetection />
+        )}
+
+        {activeTab === 'early-movers' && (
+          <EarlyMoverRadar />
+        )}
+
+        {activeTab === 'compare' && (
+          <WalletComparison />
+        )}
+
+        {activeTab === 'consensus' && (
+          <WhaleConsensus />
         )}
       </Container>
     </PageContainer>
