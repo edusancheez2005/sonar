@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     // Fetch all chat history for this user, ordered by timestamp
     const { data: chats, error } = await supabase
       .from('chat_history')
-      .select('id, session_id, user_message, tickers_mentioned, timestamp')
+      .select('id, session_id, user_message, orca_response, tickers_mentioned, timestamp')
       .eq('user_id', user.id)
       .order('timestamp', { ascending: false })
       .limit(200)
@@ -46,11 +46,14 @@ export async function GET(request: Request) {
     for (const chat of (chats || [])) {
       const sid = chat.session_id || chat.id?.toString() || 'unknown'
       if (!sessionMap.has(sid)) {
+        // Extract first 80 chars of orca response as preview, strip markdown
+        const rawPreview = (chat.orca_response || '').replace(/[#*_`>\[\]()]/g, '').trim()
         sessionMap.set(sid, {
           session_id: sid,
           title: chat.tickers_mentioned?.[0]
             ? `${chat.tickers_mentioned[0]} Analysis`
             : chat.user_message?.substring(0, 50) || 'Chat',
+          preview: rawPreview.substring(0, 80) || null,
           first_message: chat.user_message,
           ticker: chat.tickers_mentioned?.[0] || null,
           last_activity: chat.timestamp,
