@@ -21,6 +21,7 @@ import {
 import TokenIcon from '@/components/TokenIcon'
 import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import AlertBanner from '@/components/wallet-tracker/AlertBanner'
+import TokenHeatmap from '@/components/wallet-tracker/TokenHeatmap'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
 
@@ -1301,6 +1302,22 @@ const Dashboard = ({ isPremium = false }) => {
                 <WhaleAlertsCard isPremium={isPremium} />
               </motion.div>
               </PremiumGate>
+
+              {/* ─── WHALE TOKEN HEATMAP ─────────────────────────────── */}
+              <motion.div variants={fadeUp}>
+                <SectionGap>
+                  <Panel>
+                    <PanelHeader>
+                      <div>
+                        <TerminalPrompt>WHALE_TOKEN_HEATMAP</TerminalPrompt>
+                        <PanelSubtext>Token activity heatmap sized by volume, colored by whale sentiment</PanelSubtext>
+                      </div>
+                      <PanelBadge>LIVE</PanelBadge>
+                    </PanelHeader>
+                    <TokenHeatmap />
+                  </Panel>
+                </SectionGap>
+              </motion.div>
 
             </motion.div>
         </DashboardContainer>

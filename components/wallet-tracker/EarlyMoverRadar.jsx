@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import { shortenAddress, formatUsd } from '@/lib/wallet-tracker'
+import SonarLoader from './SonarLoader'
 
 const Card = styled.div`
   background: var(--background-card);
@@ -175,9 +176,15 @@ export default function EarlyMoverRadar() {
       </Description>
 
       {loading ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Scanning for early movers...</p>
+        <SonarLoader text="Scanning for early movers..." size={50} compact />
       ) : movers.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No early movers detected this week</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.5rem' }}>No early movers detected this week</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.7, marginTop: '0.25rem' }}>Wallets accumulating before whale surges will appear here</p>
+        </div>
       ) : (
         <MoverList>
           {movers.map((m, i) => (

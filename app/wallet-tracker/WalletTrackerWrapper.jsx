@@ -12,7 +12,22 @@ import SonarPulse from '@/components/wallet-tracker/SonarPulse'
 import InfoGuide from '@/components/wallet-tracker/InfoGuide'
 import WhaleConsensus from '@/components/wallet-tracker/WhaleConsensus'
 import WalletComparison from '@/components/wallet-tracker/WalletComparison'
+import BacktestTool from '@/components/wallet-tracker/BacktestTool'
+import SonarLoader from '@/components/wallet-tracker/SonarLoader'
+import ErrorBoundary from '@/components/wallet-tracker/ErrorBoundary'
+import BackToTop from '@/components/BackToTop'
+import { ToastProvider } from '@/components/wallet-tracker/Toast'
 import { SORT_OPTIONS, CHAINS } from '@/lib/wallet-tracker'
+
+const TAB_TITLES = {
+  leaderboard: 'Leaderboard | Wallet Tracker | Sonar',
+  following: 'Following | Wallet Tracker | Sonar',
+  pods: 'Pod Detection | Wallet Tracker | Sonar',
+  'early-movers': 'Early Movers | Wallet Tracker | Sonar',
+  compare: 'Compare | Wallet Tracker | Sonar',
+  backtest: 'Backtest | Wallet Tracker | Sonar',
+  consensus: 'Whale Consensus | Wallet Tracker | Sonar',
+}
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -201,6 +216,10 @@ export default function WalletTrackerWrapper() {
     fetchLeaderboard()
   }, [fetchLeaderboard])
 
+  useEffect(() => {
+    document.title = TAB_TITLES[activeTab] || 'Wallet Tracker | Sonar'
+  }, [activeTab])
+
   const handleSortChange = (newSort) => {
     if (newSort === sortBy) {
       setSortAsc(!sortAsc)
@@ -282,6 +301,7 @@ export default function WalletTrackerWrapper() {
   }
 
   return (
+    <ToastProvider>
     <PageContainer>
       <Container>
         <PageTitle><WhaleIcon />Whale Wallet Tracker <SonarPulse active /></PageTitle>
@@ -291,6 +311,7 @@ export default function WalletTrackerWrapper() {
           <Tab $active={activeTab === 'pods'} onClick={() => setActiveTab('pods')}>Pod Detection</Tab>
           <Tab $active={activeTab === 'early-movers'} onClick={() => setActiveTab('early-movers')}>Early Movers</Tab>
           <Tab $active={activeTab === 'compare'} onClick={() => setActiveTab('compare')}>Compare</Tab>
+          <Tab $active={activeTab === 'backtest'} onClick={() => setActiveTab('backtest')}>Backtest</Tab>
           <Tab $active={activeTab === 'consensus'} onClick={() => setActiveTab('consensus')}>Whale Consensus</Tab>
         </Tabs>
 
@@ -318,7 +339,7 @@ export default function WalletTrackerWrapper() {
             <Layout>
               <MainCard>
                 {loading ? (
-                  <p style={{ color: 'var(--text-secondary)', padding: '2rem', textAlign: 'center' }}>Loading leaderboard...</p>
+                  <SonarLoader text="Scanning wallets..." compact />
                 ) : (
                   <LeaderboardTable
                     data={wallets}
@@ -335,8 +356,14 @@ export default function WalletTrackerWrapper() {
                 )}
               </MainCard>
               <div>
-                <CopyTradesFeed />
-                <div style={{ marginTop: '1rem' }}><WatchlistPanel /></div>
+                <ErrorBoundary fallbackMessage="Failed to load copy trades feed">
+                  <CopyTradesFeed />
+                </ErrorBoundary>
+                <div style={{ marginTop: '1rem' }}>
+                  <ErrorBoundary fallbackMessage="Failed to load watchlists">
+                    <WatchlistPanel />
+                  </ErrorBoundary>
+                </div>
                 <InfoGuide />
               </div>
             </Layout>
@@ -348,21 +375,33 @@ export default function WalletTrackerWrapper() {
         )}
 
         {activeTab === 'pods' && (
-          <PodDetection />
+          <ErrorBoundary fallbackMessage="Failed to load pod detection">
+            <PodDetection />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'early-movers' && (
-          <EarlyMoverRadar />
+          <ErrorBoundary fallbackMessage="Failed to load early mover radar">
+            <EarlyMoverRadar />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'compare' && (
           <WalletComparison />
         )}
 
-        {activeTab === 'consensus' && (
-          <WhaleConsensus />
+        {activeTab === 'backtest' && (
+          <BacktestTool />
         )}
+
+        {activeTab === 'consensus' && (
+          <ErrorBoundary fallbackMessage="Failed to load whale consensus">
+            <WhaleConsensus />
+          </ErrorBoundary>
+        )}
+        <BackToTop />
       </Container>
     </PageContainer>
+    </ToastProvider>
   )
 }

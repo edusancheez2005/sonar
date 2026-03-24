@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import { shortenAddress, formatUsd, timeAgo } from '@/lib/wallet-tracker'
+import SonarLoader from './SonarLoader'
 
 const Card = styled.div`
   background: var(--background-card);
@@ -198,7 +199,7 @@ export default function CopyTradesFeed() {
         </Title>
       </Header>
       {loading ? (
-        <EmptyState>Loading signals...</EmptyState>
+        <SonarLoader text="Scanning signals..." size={40} compact />
       ) : signals.length === 0 ? (
         <EmptyState>No recent smart money activity</EmptyState>
       ) : (

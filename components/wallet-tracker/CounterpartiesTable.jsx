@@ -44,7 +44,13 @@ export default function CounterpartiesTable({ data }) {
     return (
       <Card>
         <Title>Top Counterparties</Title>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No counterparty data available</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.5rem' }}>No counterparty data available</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.7, marginTop: '0.25rem' }}>Transaction counterparties will appear here once detected</p>
+        </div>
       </Card>
     )
   }

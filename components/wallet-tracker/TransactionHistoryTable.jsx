@@ -193,8 +193,14 @@ export default function TransactionHistoryTable({ address, chain }) {
             })}
             {transactions.length === 0 && !loading && (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
-                  No transactions found
+                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.5rem' }}>No transactions found</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.7, marginTop: '0.25rem' }}>Transactions will appear here as they are indexed</p>
+                  </div>
                 </td>
               </tr>
             )}
