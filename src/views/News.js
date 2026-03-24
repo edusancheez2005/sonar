@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '../components/PageHeader';
+import SonarLoader from '@/components/wallet-tracker/SonarLoader';
 
 const NewsContainer = styled.div`
   padding: 2rem;
@@ -612,7 +613,7 @@ const News = ({ initialNews = [] }) => {
         </SearchFilterBar>
         
         {loading ? (
-          <LoadingAnimation />
+          <SonarLoader text="Fetching latest news..." size={60} />
         ) : (
           <>
             {tokensTrending.length > 0 && (

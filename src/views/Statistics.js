@@ -7,6 +7,7 @@ import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import dynamic from 'next/dynamic'
 
 const TokenIcon = dynamic(() => import('@/components/TokenIcon'), { ssr: false })
+import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
 const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
@@ -485,13 +486,7 @@ export default function Statistics() {
 
         <div>
           {loading ? (
-            <motion.p
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              style={{ color: COLORS.textMuted, fontFamily: MONO_FONT, fontSize: '0.85rem', padding: '2rem', textAlign: 'center' }}
-            >
-              Loading transactions...
-            </motion.p>
+            <SonarLoader text="Scanning transactions..." size={60} compact />
           ) : (
             <>
               <DataTable>

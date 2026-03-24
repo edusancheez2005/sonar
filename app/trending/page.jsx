@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import TokenIcon from '@/components/TokenIcon'
 import AuthGuard from '@/app/components/AuthGuard'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
 const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
@@ -287,7 +288,7 @@ export default function TrendingPage() {
             <FilterButton $active={activeFilter === '30d'} onClick={() => setActiveFilter('30d')}>30D</FilterButton>
           </FiltersBar>
 
-          {loading && <LoadingState>Loading trending coins...</LoadingState>}
+          {loading && <SonarLoader text="Loading trending tokens..." size={60} />}
           {error && <ErrorState>{error}</ErrorState>}
 
           {!loading && !error && trendingData && (

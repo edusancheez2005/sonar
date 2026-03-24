@@ -24,6 +24,7 @@ import AlertBanner from '@/components/wallet-tracker/AlertBanner'
 import TokenHeatmap from '@/components/wallet-tracker/TokenHeatmap'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
+import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 
 import { Filler } from 'chart.js'
 
@@ -1395,13 +1396,7 @@ const TopWhalesSection = () => {
 
         {loading ? (
           <EmptyState>
-            <motion.div
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              style={{ fontFamily: MONO_FONT }}
-            >
-              Loading top whales...
-            </motion.div>
+            <SonarLoader text="Loading top whales..." size={50} compact />
           </EmptyState>
         ) : whales.length === 0 ? (
           <EmptyState>
