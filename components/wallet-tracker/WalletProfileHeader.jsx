@@ -78,6 +78,11 @@ const MetaRow = styled.div`
 const Actions = styled.div`
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `
 
 const ActionBtn = styled.button`

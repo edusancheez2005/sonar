@@ -20,6 +20,7 @@ import {
 } from 'chart.js'
 import TokenIcon from '@/components/TokenIcon'
 import WhaleAlertsCard from '../components/WhaleAlertsCard';
+import AlertBanner from '@/components/wallet-tracker/AlertBanner'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
 
@@ -915,6 +916,9 @@ const Dashboard = ({ isPremium = false }) => {
             </TutorialBtn>
           </CommandBarRight>
         </CommandBar>
+
+        {/* ─── SMART MONEY ALERT BANNER ────────────────────────────── */}
+        <AlertBanner />
 
         {/* ─── LIVE WHALE FEED (Scrolling Ticker) ──────────────────── */}
         {transactions.length > 0 && (

@@ -20,6 +20,19 @@ const Table = styled.table`
     text-align: left;
     border-bottom: 1px solid var(--secondary);
     white-space: nowrap;
+
+    @media (max-width: 768px) {
+      padding: 0.5rem 0.5rem;
+      font-size: 0.8rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    th:nth-child(6), td:nth-child(6),
+    th:nth-child(8), td:nth-child(8),
+    th:nth-child(9), td:nth-child(9) {
+      display: none;
+    }
   }
 
   th {

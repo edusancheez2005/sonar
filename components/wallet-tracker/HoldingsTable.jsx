@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import styled from 'styled-components'
 import { formatUsd } from '@/lib/wallet-tracker'
 
@@ -38,9 +39,14 @@ const Table = styled.table`
   }
 `
 
-const TokenSymbol = styled.span`
+const TokenSymbol = styled(Link)`
   font-weight: 700;
   color: var(--text-primary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--primary);
+  }
 `
 
 const ChainBadge = styled.span`
@@ -140,7 +146,7 @@ export default function HoldingsTable({ address }) {
             return (
               <tr key={h.symbol}>
                 <td>
-                  <TokenSymbol>{h.symbol}</TokenSymbol>
+                  <TokenSymbol href={`/token/${encodeURIComponent(h.symbol)}?sinceHours=24`}>{h.symbol}</TokenSymbol>
                   {h.chain && <ChainBadge>{h.chain}</ChainBadge>}
                 </td>
                 <td>

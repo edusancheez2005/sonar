@@ -352,6 +352,10 @@ export default function WhaleDetailClient({
         
         <WhaleAddress>
           <ShortAddress>{short}</ShortAddress>
+          <Link href={`/wallet-tracker/${encodeURIComponent(address)}`}
+            style={{ fontSize: '0.8rem', color: '#36a6ba', marginLeft: '0.75rem', textDecoration: 'none' }}>
+            View in Wallet Tracker →
+          </Link>
         </WhaleAddress>
         
         <MetricsRow>

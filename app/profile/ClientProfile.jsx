@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import TokenIcon from '@/components/TokenIcon'
+import WalletTrackerProfile from '@/components/profile/WalletTrackerProfile'
 
 const PageWrapper = styled.div`
   min-height: 100vh;
@@ -770,6 +771,8 @@ export default function ClientProfile({ email: initialEmail }) {
               </Primary>
         </Actions>
       </Card>
+          {/* ---- Wallet Tracker sections ---- */}
+          <WalletTrackerProfile />
         </Grid>
     </Wrapper>
     </PageWrapper>

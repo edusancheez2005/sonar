@@ -18,6 +18,10 @@ const PageContainer = styled.div`
   min-height: 100vh;
   background: var(--background-dark);
   padding: 2rem;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `
 
 const Container = styled.div`
@@ -130,6 +134,12 @@ const Tabs = styled.div`
   gap: 0;
   margin-bottom: 1.5rem;
   border-bottom: 2px solid var(--secondary);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar { display: none; }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `
 
 const Tab = styled.button`
@@ -143,9 +153,16 @@ const Tab = styled.button`
   font-weight: ${({ $active }) => $active ? '600' : '400'};
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   &:hover {
     color: var(--primary);
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
   }
 `
 
