@@ -1296,12 +1296,21 @@ const Dashboard = ({ isPremium = false }) => {
                   </motion.div>
                   </PremiumGate>
 
-              {/* Whale Alerts */}
-              <PremiumGate isPremium={isPremium} feature="Real-Time Whale Alerts">
+              {/* ─── WHALE TOKEN HEATMAP ─────────────────────────────── */}
               <motion.div variants={fadeUp}>
-                <WhaleAlertsCard isPremium={isPremium} />
+                <SectionGap>
+                  <Panel>
+                    <PanelHeader>
+                      <div>
+                        <TerminalPrompt>WHALE_TOKEN_HEATMAP</TerminalPrompt>
+                        <PanelSubtext>Token activity heatmap sized by volume, colored by whale sentiment</PanelSubtext>
+                      </div>
+                      <PanelBadge>LIVE</PanelBadge>
+                    </PanelHeader>
+                    <TokenHeatmap />
+                  </Panel>
+                </SectionGap>
               </motion.div>
-              </PremiumGate>
 
               {/* ─── WHALE TOKEN HEATMAP ─────────────────────────────── */}
               <motion.div variants={fadeUp}>
