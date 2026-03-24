@@ -64,6 +64,8 @@ const HeroSection = styled.section`
     0%, 100% { opacity: 0.3; transform: translateY(0); }
     50% { opacity: 0.6; transform: translateY(-20px); }
   }
+
+  @media (max-width: 768px) { padding-top: 120px; padding-bottom: 4rem; }
 `;
 
 const NavBar = styled.nav`
@@ -104,7 +106,8 @@ const HeroTitle = styled(motion.h1)`
   background-clip: text;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  @media (max-width: 768px) { font-size: 3rem; }
+  @media (max-width: 768px) { font-size: 2.5rem; }
+  @media (max-width: 480px) { font-size: 1.8rem; }
 `;
 
 const HeroSubtitle = styled(motion.p)`

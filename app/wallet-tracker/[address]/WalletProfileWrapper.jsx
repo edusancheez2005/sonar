@@ -81,6 +81,8 @@ const StatValue = styled.div`
   font-size: 1.25rem;
   font-weight: 700;
   color: ${({ $color }) => $color || 'var(--text-primary)'};
+
+  @media (max-width: 768px) { font-size: 1.1rem; }
 `
 
 const TopTokensCard = styled.div`
@@ -104,6 +106,10 @@ const TokenChip = styled.div`
   color: var(--primary);
   font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 `
 
 const TwoCol = styled.div`

@@ -15,6 +15,13 @@ const GlobalStyles = createGlobalStyle`
     --chart-dark-blue: #1e3951;
     --chart-green: #2ecc71;
     --chart-purple: #9b59b6;
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   html { scroll-behavior: smooth; }
@@ -42,6 +49,12 @@ const GlobalStyles = createGlobalStyle`
   .slide-in { transform: translateY(20px); opacity: 0; animation: slideIn 0.5s forwards; }
   @keyframes fadeIn { to { opacity: 1; } }
   @keyframes slideIn { to { transform: translateY(0); opacity: 1; } }
+
+  @media (max-width: 768px) {
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.1rem; }
+  }
 `;
 
 export default GlobalStyles; 

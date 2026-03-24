@@ -268,6 +268,7 @@ const KPICell = styled.div`
   @media (max-width: 768px) {
     &:nth-child(2)::after { display: none; }
     &:nth-child(1), &:nth-child(2) { border-bottom: 1px solid ${COLORS.borderSubtle}; }
+    &::after { display: none; }
   }
 `
 

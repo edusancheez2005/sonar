@@ -88,8 +88,8 @@ const Card = styled.section`
   background: rgba(13, 33, 52, 0.6);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(54, 166, 186, 0.2);
-  border-radius: 16px;
-  padding: 2rem;
+  border-radius: 12px;
+  padding: 1.5rem;
   display: grid;
   gap: 1.5rem;
   transition: all 0.3s ease;

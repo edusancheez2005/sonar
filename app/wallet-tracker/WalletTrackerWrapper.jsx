@@ -151,10 +151,26 @@ const Tabs = styled.div`
   border-bottom: 2px solid var(--secondary);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  position: relative;
 
   &::-webkit-scrollbar { display: none; }
   -ms-overflow-style: none;
   scrollbar-width: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 2px;
+    width: 30px;
+    background: linear-gradient(to right, transparent, var(--background-dark));
+    pointer-events: none;
+    display: none;
+  }
+  @media (max-width: 768px) {
+    &::after { display: block; }
+  }
 `
 
 const Tab = styled.button`

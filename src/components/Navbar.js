@@ -247,7 +247,7 @@ const Navbar = ({ onLogout }) => {
       <Logo>
         <NextLink href="/"><img src="/logo2.png" alt="Sonar Logo" /></NextLink>
       </Logo>
-      <MobileMenuButton onClick={toggleMenu}>☰</MobileMenuButton>
+      <MobileMenuButton onClick={toggleMenu} aria-label="Toggle menu">☰</MobileMenuButton>
       <MenuItems isOpen={isOpen}>
         {!isOnLandingPage && (
           <>
