@@ -250,13 +250,20 @@ export default function WatchlistPanel() {
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>No addresses yet</p>
               ) : (
                 (addresses[wl.id] || []).map(a => (
-                  <AddressItem key={a.address}>
-                    <Link href={`/wallet-tracker/${encodeURIComponent(a.address)}`}
-                      style={{ fontFamily: 'monospace', color: 'var(--primary)', fontSize: '0.8rem' }}>
-                      {a.custom_label || shortenAddress(a.address)}
-                    </Link>
-                    <DeleteBtn onClick={() => removeAddress(wl.id, a.address)}>×</DeleteBtn>
-                  </AddressItem>
+                  <div key={a.address} style={{ marginBottom: '0.4rem' }}>
+                    <AddressItem>
+                      <Link href={`/wallet-tracker/${encodeURIComponent(a.address)}`}
+                        style={{ fontFamily: 'monospace', color: 'var(--primary)', fontSize: '0.8rem' }}>
+                        {a.custom_label || shortenAddress(a.address)}
+                      </Link>
+                      <DeleteBtn onClick={() => removeAddress(wl.id, a.address)}>×</DeleteBtn>
+                    </AddressItem>
+                    {a.notes && (
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', paddingLeft: '0.2rem', marginTop: '0.15rem', lineHeight: 1.3 }}>
+                        {a.notes}
+                      </p>
+                    )}
+                  </div>
                 ))
               )}
             </AddressList>

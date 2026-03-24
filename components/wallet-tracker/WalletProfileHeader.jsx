@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import TagBadges from './TagBadges'
 import SmartMoneyScore from './SmartMoneyScore'
+import FollowButton from './FollowButton'
 import { shortenAddress } from '@/lib/wallet-tracker'
 
 const Header = styled.div`
@@ -127,6 +128,7 @@ export default function WalletProfileHeader({ profile, onAddToWatchlist, onSetAl
           </MetaRow>
         </div>
         <Actions>
+          <FollowButton address={profile.address} />
           {onAddToWatchlist && (
             <ActionBtn onClick={onAddToWatchlist}>+ Watchlist</ActionBtn>
           )}

@@ -1,10 +1,11 @@
 'use client'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import { shortenAddress, formatUsd, timeAgo } from '@/lib/wallet-tracker'
 import TagBadges from './TagBadges'
 import SmartMoneyScore from './SmartMoneyScore'
+import Sparkline from './Sparkline'
 
 const TableWrapper = styled.div`
   overflow-x: auto;
@@ -161,6 +162,26 @@ function getPageNumbers(current, total) {
 }
 
 export default function LeaderboardTable({ data, sortBy, sortAsc, onSortChange, page, totalPages, total, limit, onPageChange, onLimitChange }) {
+  const [sparklines, setSparklines] = useState({})
+
+  useEffect(() => {
+    if (!data || data.length === 0) return
+    const addresses = data.map(w => w.address).filter(Boolean)
+    if (addresses.length === 0) return
+
+    let cancelled = false
+    fetch(`/api/wallet-tracker/sparklines?addresses=${encodeURIComponent(addresses.join(','))}`)
+      .then(res => res.json())
+      .then(result => {
+        if (!cancelled && result && !result.error) {
+          setSparklines(result)
+        }
+      })
+      .catch(() => {})
+
+    return () => { cancelled = true }
+  }, [data])
+
   const handleSort = (field) => {
     if (onSortChange) onSortChange(field)
   }
@@ -199,6 +220,7 @@ export default function LeaderboardTable({ data, sortBy, sortAsc, onSortChange, 
               </th>
               <th>Tags</th>
               <th>Last Active</th>
+              <th>7d Activity</th>
             </tr>
           </thead>
           <tbody>
@@ -218,6 +240,9 @@ export default function LeaderboardTable({ data, sortBy, sortAsc, onSortChange, 
                 <td><TagBadges tags={wallet.tags} /></td>
                 <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                   {timeAgo(wallet.last_active)}
+                </td>
+                <td>
+                  <Sparkline data={sparklines[wallet.address]} />
                 </td>
               </tr>
             ))}

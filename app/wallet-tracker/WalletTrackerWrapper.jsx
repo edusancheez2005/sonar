@@ -5,6 +5,10 @@ import WalletSearch from '@/components/wallet-tracker/WalletSearch'
 import LeaderboardTable from '@/components/wallet-tracker/LeaderboardTable'
 import WatchlistPanel from '@/components/wallet-tracker/WatchlistPanel'
 import CopyTradesFeed from '@/components/wallet-tracker/CopyTradesFeed'
+import PodDetection from '@/components/wallet-tracker/PodDetection'
+import EarlyMoverRadar from '@/components/wallet-tracker/EarlyMoverRadar'
+import FollowingView from '@/components/wallet-tracker/FollowingView'
+import SonarPulse from '@/components/wallet-tracker/SonarPulse'
 import InfoGuide from '@/components/wallet-tracker/InfoGuide'
 import { SORT_OPTIONS, CHAINS } from '@/lib/wallet-tracker'
 
@@ -81,6 +85,27 @@ const Select = styled.select`
   }
 `
 
+const ExportBtn = styled.button`
+  padding: 0.5rem 0.75rem;
+  background: var(--background-card);
+  border: 1px solid var(--secondary);
+  border-radius: 6px;
+  color: var(--primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
 const Layout = styled.div`
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -98,7 +123,32 @@ const MainCard = styled.div`
   overflow: hidden;
 `
 
+const Tabs = styled.div`
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--secondary);
+`
+
+const Tab = styled.button`
+  padding: 0.7rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid ${({ $active }) => $active ? 'var(--primary)' : 'transparent'};
+  margin-bottom: -2px;
+  color: ${({ $active }) => $active ? 'var(--primary)' : 'var(--text-secondary)'};
+  font-size: 0.95rem;
+  font-weight: ${({ $active }) => $active ? '600' : '400'};
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    color: var(--primary);
+  }
+`
+
 export default function WalletTrackerWrapper() {
+  const [activeTab, setActiveTab] = useState('leaderboard')
   const [wallets, setWallets] = useState([])
   const [sortBy, setSortBy] = useState('smart_money_score')
   const [sortAsc, setSortAsc] = useState(false)
@@ -108,6 +158,7 @@ export default function WalletTrackerWrapper() {
   const [limit, setLimit] = useState(50)
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
+  const [exporting, setExporting] = useState(false)
 
   const fetchLeaderboard = useCallback(async () => {
     setLoading(true)
@@ -150,51 +201,131 @@ export default function WalletTrackerWrapper() {
     setPage(1)
   }
 
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      const allWallets = []
+      const perPage = 100
+      const maxPages = 10 // up to 1000 wallets
+
+      for (let p = 1; p <= maxPages; p++) {
+        const params = new URLSearchParams({ sort_by: sortBy, sort_asc: sortAsc ? '1' : '0', limit: String(perPage), page: String(p) })
+        if (chain) params.set('chain', chain)
+        const res = await fetch(`/api/wallet-tracker?${params}`)
+        const json = await res.json()
+        const rows = json.data || []
+        allWallets.push(...rows)
+        if (rows.length < perPage || allWallets.length >= (json.total || 0)) break
+      }
+
+      const escapeCSV = (val) => {
+        const str = String(val ?? '')
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`
+        }
+        return str
+      }
+
+      const headers = ['Rank', 'Address', 'Entity Name', 'Chain', 'Score', '30d Volume', 'Portfolio Value', 'PnL', 'Tags', 'Last Active']
+      const csvRows = [headers.join(',')]
+
+      allWallets.forEach((w, i) => {
+        const tags = Array.isArray(w.tags) ? w.tags.join('; ') : (w.tags || '')
+        csvRows.push([
+          i + 1,
+          escapeCSV(w.address),
+          escapeCSV(w.entity_name || ''),
+          escapeCSV(w.chain || ''),
+          w.smart_money_score ?? '',
+          w.total_volume_usd_30d ?? '',
+          w.portfolio_value_usd ?? '',
+          w.pnl_estimated_usd ?? '',
+          escapeCSV(tags),
+          escapeCSV(w.last_active || '')
+        ].join(','))
+      })
+
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `whale-leaderboard-${new Date().toISOString().slice(0, 10)}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      // silently fail
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <PageContainer>
       <Container>
-        <PageTitle><WhaleIcon />Whale Wallet Tracker</PageTitle>
-        <TopBar>
-          <WalletSearch />
-          <Controls>
-            <Select value={sortBy} onChange={e => { setSortBy(e.target.value); setSortAsc(false); setPage(1) }}>
-              {SORT_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </Select>
-            <Select value={chain} onChange={e => handleChainChange(e.target.value)}>
-              <option value="">All Chains</option>
-              {CHAINS.map(c => (
-                <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-              ))}
-            </Select>
-          </Controls>
-        </TopBar>
-        <Layout>
-          <MainCard>
-            {loading ? (
-              <p style={{ color: 'var(--text-secondary)', padding: '2rem', textAlign: 'center' }}>Loading leaderboard...</p>
-            ) : (
-              <LeaderboardTable
-                data={wallets}
-                sortBy={sortBy}
-                sortAsc={sortAsc}
-                onSortChange={handleSortChange}
-                page={page}
-                totalPages={totalPages}
-                total={total}
-                limit={limit}
-                onPageChange={setPage}
-                onLimitChange={handleLimitChange}
-              />
-            )}
-          </MainCard>
-          <div>
-            <CopyTradesFeed />
-            <div style={{ marginTop: '1rem' }}><WatchlistPanel /></div>
-            <InfoGuide />
-          </div>
-        </Layout>
+        <PageTitle><WhaleIcon />Whale Wallet Tracker <SonarPulse active={!loading} /></PageTitle>
+        <Tabs>
+          <Tab $active={activeTab === 'leaderboard'} onClick={() => setActiveTab('leaderboard')}>Leaderboard</Tab>
+          <Tab $active={activeTab === 'following'} onClick={() => setActiveTab('following')}>Following</Tab>
+        </Tabs>
+
+        {activeTab === 'leaderboard' && (
+          <>
+            <TopBar>
+              <WalletSearch />
+              <Controls>
+                <Select value={sortBy} onChange={e => { setSortBy(e.target.value); setSortAsc(false); setPage(1) }}>
+                  {SORT_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Select>
+                <Select value={chain} onChange={e => handleChainChange(e.target.value)}>
+                  <option value="">All Chains</option>
+                  {CHAINS.map(c => (
+                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                  ))}
+                </Select>
+                <ExportBtn onClick={handleExportCSV} disabled={exporting}>
+                  {exporting ? 'Exporting...' : 'Export CSV'}
+                </ExportBtn>
+              </Controls>
+            </TopBar>
+            <Layout>
+              <MainCard>
+                {loading ? (
+                  <p style={{ color: 'var(--text-secondary)', padding: '2rem', textAlign: 'center' }}>Loading leaderboard...</p>
+                ) : (
+                  <LeaderboardTable
+                    data={wallets}
+                    sortBy={sortBy}
+                    sortAsc={sortAsc}
+                    onSortChange={handleSortChange}
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    limit={limit}
+                    onPageChange={setPage}
+                    onLimitChange={handleLimitChange}
+                  />
+                )}
+              </MainCard>
+              <div>
+                <CopyTradesFeed />
+                <div style={{ marginTop: '1rem' }}><WatchlistPanel /></div>
+                <InfoGuide />
+              </div>
+            </Layout>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+              <PodDetection />
+              <EarlyMoverRadar />
+            </div>
+          </>
+        )}
+
+        {activeTab === 'following' && (
+          <FollowingView />
+        )}
       </Container>
     </PageContainer>
   )
