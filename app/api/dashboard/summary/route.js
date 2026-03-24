@@ -20,22 +20,30 @@ export async function GET() {
     const roundedNow = Math.floor(Date.now() / FIVE_MIN) * FIVE_MIN
     const sinceIso = new Date(roundedNow - 24 * 60 * 60 * 1000).toISOString()
 
-    // Query the unified view (already filtered to BUY/SELL at view level)
+    // Query per-chain with equal limits to avoid BTC dominating results
+    const CHAINS = ['ethereum', 'bitcoin', 'solana', 'polygon']
+    const PER_CHAIN_LIMIT = 2500
     const SELECT_COLS = 'transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type'
 
-    const { data: recentData, error: recentError } = await supabaseAdmin
-      .from('all_whale_transactions')
-      .select(SELECT_COLS)
-      .not('token_symbol', 'is', null)
-      .not('token_symbol', 'ilike', 'unknown%')
-      .in('classification', ['BUY', 'SELL'])
-      .gte('timestamp', sinceIso)
-      .order('usd_value', { ascending: false })
-      .limit(10000)
+    const chainResults = await Promise.all(CHAINS.map(async (chain) => {
+      const { data, error } = await supabaseAdmin
+        .from('all_whale_transactions')
+        .select(SELECT_COLS)
+        .eq('blockchain', chain)
+        .not('token_symbol', 'is', null)
+        .not('token_symbol', 'ilike', 'unknown%')
+        .in('classification', ['BUY', 'SELL'])
+        .gte('timestamp', sinceIso)
+        .order('usd_value', { ascending: false })
+        .limit(PER_CHAIN_LIMIT)
+      if (error) console.error(`Dashboard: ${chain} error:`, error)
+      return data || []
+    }))
 
-    if (recentError) console.error('Dashboard: query error:', recentError)
+    const recentData = chainResults.flat()
+    recentData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
 
-    console.log(`Dashboard API: Fetched ${recentData?.length || 0} transactions from all_whale_transactions`)
+    console.log(`Dashboard API: Fetched ${recentData.length} txs (${CHAINS.map((c, i) => `${c}:${chainResults[i].length}`).join(', ')})`)
 
     // Filter out exchange entity names used as whale_address (e.g. "coinbase" instead of a real address)
     const isRealAddress = (addr) => {
