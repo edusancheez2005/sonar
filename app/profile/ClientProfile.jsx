@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import TokenIcon from '@/components/TokenIcon'
 import WalletTrackerProfile from '@/components/profile/WalletTrackerProfile'
+import NotificationSettings from '@/components/profile/NotificationSettings'
 
 const PageWrapper = styled.div`
   min-height: 100vh;
@@ -341,6 +342,9 @@ const FeatureList = styled.ul`
 
 export default function ClientProfile({ email: initialEmail }) {
   const [email, setEmail] = useState(initialEmail || '')
+  const [displayName, setDisplayName] = useState('')
+  const [nameLoading, setNameLoading] = useState(false)
+  const [nameSaved, setNameSaved] = useState(false)
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [loading, setLoading] = useState(false)
@@ -387,6 +391,7 @@ export default function ClientProfile({ email: initialEmail }) {
     const sb = supabaseBrowser()
     sb.auth.getUser().then(({ data }) => {
       if (data?.user?.email) setEmail(data.user.email)
+      if (data?.user?.user_metadata?.name) setDisplayName(data.user.user_metadata.name)
     })
   }, [initialEmail])
 
@@ -433,6 +438,22 @@ export default function ClientProfile({ email: initialEmail }) {
       setError(e.message || 'Failed to update password')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const saveName = async () => {
+    setNameLoading(true)
+    setNameSaved(false)
+    try {
+      const sb = supabaseBrowser()
+      const { error } = await sb.auth.updateUser({ data: { name: displayName.trim() } })
+      if (error) throw error
+      setNameSaved(true)
+      setTimeout(() => setNameSaved(false), 2000)
+    } catch {
+      // silent
+    } finally {
+      setNameLoading(false)
     }
   }
 
@@ -502,6 +523,41 @@ export default function ClientProfile({ email: initialEmail }) {
                 <p>Your personal account details</p>
               </div>
         </SectionHeader>
+        <Row>
+              <label>
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Display Name
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={e => setDisplayName(e.target.value)}
+                  placeholder="Enter your name"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  onClick={saveName}
+                  disabled={nameLoading}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px',
+                    border: '1px solid var(--primary)',
+                    background: nameSaved ? 'var(--primary)' : 'transparent',
+                    color: nameSaved ? '#0a1621' : 'var(--primary)',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {nameSaved ? 'Saved' : nameLoading ? '...' : 'Save'}
+                </button>
+              </div>
+        </Row>
         <Row>
               <label>
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -772,6 +828,7 @@ export default function ClientProfile({ email: initialEmail }) {
         </Actions>
       </Card>
           {/* ---- Wallet Tracker sections ---- */}
+          <NotificationSettings />
           <WalletTrackerProfile />
         </Grid>
     </Wrapper>

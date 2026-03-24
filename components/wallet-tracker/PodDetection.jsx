@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import { shortenAddress, formatUsd, timeAgo } from '@/lib/wallet-tracker'
+import SonarLoader from './SonarLoader'
 
 const Card = styled.div`
   background: var(--background-card);
@@ -159,9 +160,15 @@ export default function PodDetection() {
       </Description>
 
       {loading ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Scanning for pods...</p>
+        <SonarLoader text="Scanning for pods..." size={50} compact />
       ) : pods.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No coordinated activity detected this week</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.5rem' }}>No coordinated activity detected this week</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.7, marginTop: '0.25rem' }}>Pod patterns will show up when wallets trade in sync</p>
+        </div>
       ) : (
         <PodList>
           {pods.map((pod, i) => (

@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import styled from 'styled-components'
 import WalletProfileHeader from '@/components/wallet-tracker/WalletProfileHeader'
 import TransactionHistoryTable from '@/components/wallet-tracker/TransactionHistoryTable'
@@ -8,7 +9,10 @@ import HoldingsTable from '@/components/wallet-tracker/HoldingsTable'
 import WalletFlowGraph from '@/components/wallet-tracker/WalletFlowGraph'
 import WatchlistModal from '@/components/wallet-tracker/WatchlistModal'
 import AlertModal from '@/components/wallet-tracker/AlertModal'
-import { formatUsd } from '@/lib/wallet-tracker'
+import SonarLoader from '@/components/wallet-tracker/SonarLoader'
+import ErrorBoundary from '@/components/wallet-tracker/ErrorBoundary'
+import BackToTop from '@/components/BackToTop'
+import { formatUsd, shortenAddress } from '@/lib/wallet-tracker'
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -25,16 +29,28 @@ const Container = styled.div`
   margin: 0 auto;
 `
 
-const BackLink = styled.a`
-  display: inline-block;
-  color: var(--primary);
-  font-size: 0.9rem;
+const Breadcrumbs = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
-  cursor: pointer;
+`
+
+const BreadcrumbLink = styled(Link)`
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s;
 
   &:hover {
-    color: var(--text-primary);
+    color: var(--primary);
   }
+`
+
+const BreadcrumbCurrent = styled.span`
+  color: var(--text-secondary);
+  opacity: 0.7;
 `
 
 const StatsGrid = styled.div`
@@ -144,7 +160,7 @@ export default function WalletProfileWrapper({ address }) {
     return (
       <PageContainer>
         <Container>
-          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '4rem' }}>Loading wallet profile...</p>
+          <SonarLoader text="Scanning wallet..." />
         </Container>
       </PageContainer>
     )
@@ -154,8 +170,12 @@ export default function WalletProfileWrapper({ address }) {
     return (
       <PageContainer>
         <Container>
-          <BackLink href="/wallet-tracker">&larr; Back to Tracker</BackLink>
-          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '4rem' }}>Loading...</p>
+          <Breadcrumbs>
+            <BreadcrumbLink href="/wallet-tracker">Wallet Tracker</BreadcrumbLink>
+            <span>&gt;</span>
+            <BreadcrumbCurrent>{shortenAddress(address)}</BreadcrumbCurrent>
+          </Breadcrumbs>
+          <SonarLoader text="Loading..." compact />
         </Container>
       </PageContainer>
     )
@@ -164,11 +184,16 @@ export default function WalletProfileWrapper({ address }) {
   const isUnknown = profile.unknown
   const topTokens = profile.top_tokens || []
   const pnlColor = profile.pnl_estimated_usd > 0 ? '#00d4aa' : profile.pnl_estimated_usd < 0 ? '#ff6b6b' : 'var(--text-primary)'
+  const displayName = profile.entity_name || shortenAddress(address)
 
   return (
     <PageContainer>
       <Container>
-        <BackLink href="/wallet-tracker">&larr; Back to Tracker</BackLink>
+        <Breadcrumbs>
+          <BreadcrumbLink href="/wallet-tracker">Wallet Tracker</BreadcrumbLink>
+          <span>&gt;</span>
+          <BreadcrumbCurrent>{displayName}</BreadcrumbCurrent>
+        </Breadcrumbs>
 
         <WalletProfileHeader
           profile={profile}
@@ -225,13 +250,21 @@ export default function WalletProfileWrapper({ address }) {
               </TopTokensCard>
             )}
 
-            <HoldingsTable address={address} />
+            <ErrorBoundary fallbackMessage="Failed to load holdings">
+              <HoldingsTable address={address} />
+            </ErrorBoundary>
 
-            <WalletFlowGraph address={address} counterparties={counterparties} />
+            <ErrorBoundary fallbackMessage="Failed to load wallet flow graph">
+              <WalletFlowGraph address={address} counterparties={counterparties} />
+            </ErrorBoundary>
 
             <TwoCol>
-              <TransactionHistoryTable address={address} chain={profile.chain} />
-              <CounterpartiesTable data={counterparties} />
+              <ErrorBoundary fallbackMessage="Failed to load transaction history">
+                <TransactionHistoryTable address={address} chain={profile.chain} />
+              </ErrorBoundary>
+              <ErrorBoundary fallbackMessage="Failed to load counterparties">
+                <CounterpartiesTable data={counterparties} />
+              </ErrorBoundary>
             </TwoCol>
           </>
         )}
@@ -250,6 +283,7 @@ export default function WalletProfileWrapper({ address }) {
             onClose={() => setShowAlertModal(false)}
           />
         )}
+        <BackToTop />
       </Container>
     </PageContainer>
   )

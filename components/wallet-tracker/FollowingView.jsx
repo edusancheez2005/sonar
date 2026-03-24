@@ -4,6 +4,7 @@ import Link from 'next/link'
 import styled from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { shortenAddress, formatUsd, timeAgo } from '@/lib/wallet-tracker'
+import SonarLoader from './SonarLoader'
 import Sparkline from './Sparkline'
 import SmartMoneyScore from './SmartMoneyScore'
 import TagBadges from './TagBadges'
@@ -331,7 +332,7 @@ export default function FollowingView() {
   }
 
   if (loading) {
-    return <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>Loading...</p>
+    return <SonarLoader text="Loading following..." compact />
   }
 
   if (!authed) {

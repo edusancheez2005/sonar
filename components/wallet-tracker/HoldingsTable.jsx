@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
+import SonarLoader from './SonarLoader'
 import { formatUsd } from '@/lib/wallet-tracker'
 
 const Card = styled.div`
@@ -110,7 +111,7 @@ export default function HoldingsTable({ address }) {
     return (
       <Card>
         <Title>Token Holdings</Title>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Loading...</p>
+        <SonarLoader text="Scanning holdings..." size={50} compact />
       </Card>
     )
   }

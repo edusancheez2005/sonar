@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
 import { formatUsd } from '@/lib/wallet-tracker'
+import SonarLoader from './SonarLoader'
 
 const Card = styled.div`
   background: var(--background-card);
@@ -197,9 +198,15 @@ export default function WhaleConsensus() {
       </Description>
 
       {loading ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Analyzing consensus...</p>
+        <SonarLoader text="Analyzing consensus..." size={50} compact />
       ) : data.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No consensus data in this period</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.5rem' }}>No consensus data in this period</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.7, marginTop: '0.25rem' }}>Try selecting a wider time range above</p>
+        </div>
       ) : (
         <TokenList>
           {data.map(t => (

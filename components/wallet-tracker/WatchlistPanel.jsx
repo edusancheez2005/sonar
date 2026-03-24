@@ -4,6 +4,7 @@ import Link from 'next/link'
 import styled from 'styled-components'
 import { shortenAddress } from '@/lib/wallet-tracker'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import { useToast } from './Toast'
 
 async function getAuthHeaders() {
   const sb = supabaseBrowser()
@@ -126,7 +127,29 @@ const AddressItem = styled.div`
   font-size: 0.8rem;
 `
 
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 0;
+  color: var(--text-secondary);
+`
+
+const EmptyText = styled.p`
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+`
+
+const EmptySub = styled.p`
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-top: 0.25rem;
+`
+
 export default function WatchlistPanel() {
+  const toast = useToast()
   const [watchlists, setWatchlists] = useState([])
   const [expanded, setExpanded] = useState(null)
   const [addresses, setAddresses] = useState({})
@@ -163,17 +186,18 @@ export default function WatchlistPanel() {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        alert(`Failed to create watchlist: ${err.error || res.statusText}`)
+        toast.error(`Failed to create watchlist: ${err.error || res.statusText}`)
         return
       }
       setNewName('')
       fetchWatchlists()
     } catch (err) {
-      alert(`Failed to create watchlist: ${err.message}`)
+      toast.error(`Failed to create watchlist: ${err.message}`)
     }
   }
 
-  const deleteWatchlist = async (id) => {
+  const deleteWatchlist = async (id, name) => {
+    if (!window.confirm(`Delete watchlist "${name}"? This cannot be undone.`)) return
     try {
       const auth = await getAuthHeaders()
       await fetch(`/api/wallet-watchlist/${id}`, { method: 'DELETE', headers: auth })
@@ -202,6 +226,7 @@ export default function WatchlistPanel() {
   }
 
   const removeAddress = async (watchlistId, address) => {
+    if (!window.confirm('Remove this address from the watchlist?')) return
     try {
       const auth = await getAuthHeaders()
       await fetch(`/api/wallet-watchlist/${watchlistId}/addresses/${encodeURIComponent(address)}`, { method: 'DELETE', headers: auth })
@@ -239,7 +264,7 @@ export default function WatchlistPanel() {
               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 {expanded === wl.id ? '▲' : '▼'}
               </span>
-              <DeleteBtn onClick={(e) => { e.stopPropagation(); deleteWatchlist(wl.id); }}>
+              <DeleteBtn onClick={(e) => { e.stopPropagation(); deleteWatchlist(wl.id, wl.name); }}>
                 Remove
               </DeleteBtn>
             </div>
@@ -271,7 +296,14 @@ export default function WatchlistPanel() {
         </WatchlistItem>
       ))}
       {!loading && watchlists.length === 0 && (
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No watchlists yet. Create one above.</p>
+        <EmptyState>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+          <EmptyText>No watchlists yet</EmptyText>
+          <EmptySub>Type a name above and hit Create to get started</EmptySub>
+        </EmptyState>
       )}
     </Panel>
   )
