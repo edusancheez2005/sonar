@@ -18,17 +18,23 @@ export async function GET(req) {
   const from = (page - 1) * limit
   const to = from + limit - 1
 
-  const { data, error } = await supabaseAdmin
+  // Fetch extra rows to account for filtering out entity-name whale addresses
+  const { data: rawData, error } = await supabaseAdmin
     .from('all_whale_transactions')
-    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score')
+    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,whale_address')
     .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
     .in('classification', ['BUY', 'SELL'])
     .order('timestamp', { ascending: false })
-    .range(from, to)
+    .range(from, to + 50)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  // Filter out entity names used as whale_address (e.g. "coinbase")
+  const data = (rawData || [])
+    .filter(t => !t.whale_address || t.whale_address.length >= 20)
+    .slice(0, limit)
 
   return NextResponse.json(
     { data, page, limit },

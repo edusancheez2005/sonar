@@ -37,11 +37,23 @@ export async function GET() {
 
     console.log(`Dashboard API: Fetched ${recentData?.length || 0} transactions from all_whale_transactions`)
 
+    // Filter out exchange entity names used as whale_address (e.g. "coinbase" instead of a real address)
+    const isRealAddress = (addr) => {
+      if (!addr || addr.length < 20) return false
+      if (addr.startsWith('0x') && addr.length >= 42) return true  // EVM
+      if ((addr.startsWith('bc1') || addr.startsWith('1') || addr.startsWith('3')) && addr.length >= 26) return true  // BTC
+      if (addr.startsWith('r') && addr.length >= 25) return true  // XRP
+      if (addr.length >= 32 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(addr)) return true  // Solana
+      return false
+    }
+
+    const filteredData = (recentData || []).filter(t => isRealAddress(t.whale_address))
+
     // Filter out stablecoins and excluded tokens from analytics
-    const analyticsData = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
+    const analyticsData = filteredData.filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
     
     // Filter stablecoins and excluded tokens from recent transactions too
-    const recent24h = (recentData || []).filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
+    const recent24h = filteredData.filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
 
     // Batch-resolve entity names for recent transactions
     const recentAddresses = new Set()
