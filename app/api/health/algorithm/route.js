@@ -5,9 +5,12 @@ export async function GET() {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
     return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
   }
+  // Filter to last 3 hours to avoid full table scan timeout on large tables
+  const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabaseAdmin
     .from('all_whale_transactions')
     .select('timestamp')
+    .gte('timestamp', threeHoursAgo)
     .order('timestamp', { ascending: false })
     .limit(1)
 
