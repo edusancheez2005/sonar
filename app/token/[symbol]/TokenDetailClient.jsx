@@ -804,13 +804,15 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
   const formatUSD = (value) => {
     const num = Number(value)
-    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
-    if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
-    if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`
-    if (num >= 1) return `$${num.toFixed(4)}`
-    if (num >= 0.0001) return `$${num.toFixed(4)}`
-    if (num > 0) return `$${num.toFixed(8)}` // For very small prices
-    return `$${num.toFixed(4)}`
+    const abs = Math.abs(num)
+    const sign = num < 0 ? '-' : ''
+    if (abs >= 1000000000) return `${sign}$${(abs / 1000000000).toFixed(2)}B`
+    if (abs >= 1000000) return `${sign}$${(abs / 1000000).toFixed(2)}M`
+    if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(2)}K`
+    if (abs >= 1) return `${sign}$${abs.toFixed(4)}`
+    if (abs >= 0.0001) return `${sign}$${abs.toFixed(4)}`
+    if (abs > 0) return `${sign}$${abs.toFixed(8)}` // For very small prices
+    return `$${abs.toFixed(4)}`
   }
 
   const totalVotes = communityStats.total || 0
