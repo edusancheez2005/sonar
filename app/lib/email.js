@@ -63,7 +63,7 @@ function getWelcomeEmailHTML(email, name = '') {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://sonartracker.io/assets/logo2.png" alt="Sonar Logo" class="logo">
+            <img src="https://www.sonartracker.io/logo2.png" alt="Sonar Logo" class="logo">
             <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Sonar Tracker!</h1>
           </div>
 
@@ -122,7 +122,7 @@ function getWaitlistEmailHTML(email) {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://sonartracker.io/assets/logo2.png" alt="Sonar Logo" class="logo">
+            <img src="https://www.sonartracker.io/logo2.png" alt="Sonar Logo" class="logo">
             <h1 style="color: white; margin: 0; font-size: 28px;">You're on the Orca Waitlist! 🐋</h1>
           </div>
 
