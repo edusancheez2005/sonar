@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,7 +9,10 @@ const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USD
 // Tokens with broken/spammy data excluded from analytics
 const EXCLUDED_TOKENS = ['XRP']
 
-export async function GET() {
+export async function GET(req) {
+  const ip = getClientIp(req)
+  const rl = rateLimit(`dashboard-summary:${ip}`, 30, 60000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfter)
   try {
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
       return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })

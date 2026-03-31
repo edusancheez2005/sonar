@@ -19,27 +19,17 @@ export default function RequirePremiumClient({ children }) {
           return
         }
         
-        // Check actual premium status from profiles table
-        try {
+          // Check actual premium status from profiles table
           const { data: profile, error: profileError } = await sb
             .from('profiles')
             .select('plan')
             .eq('id', session.user.id)
             .single()
           
-          console.log('🔍 Dashboard premium check:', { 
-            userId: session.user.id, 
-            plan: profile?.plan, 
-            error: profileError?.message,
-            isPremium: profile?.plan === 'premium' || profile?.plan === 'pro'
-          })
+          const plan = profile?.plan
+          const premium = plan === 'premium' || plan === 'pro'
           
-          // All features are now free — everyone gets full access
-        setIsPremium(true)
-        } catch (err) {
-          console.error('Premium check failed:', err)
-          setIsPremium(false)
-        }
+          if (!cancelled) setIsPremium(premium)
       } finally {
         if (!cancelled) setChecked(true)
       }

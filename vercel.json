@@ -35,6 +35,10 @@
     {
       "path": "/api/cron/weekly-insights",
       "schedule": "0 14 * * 6"
+    },
+    {
+      "path": "/api/cron/telegram-alerts",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

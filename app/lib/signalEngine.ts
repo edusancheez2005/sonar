@@ -1,38 +1,133 @@
 /**
  * Sonar Unified Signal Engine v1.0
- * 
+ *
  * Produces a single actionable signal per token:
  *   STRONG BUY / BUY / NEUTRAL / SELL / STRONG SELL
- * 
+ *
  * Tiered signal architecture:
  *   Tier 1 (40%): CEX whale flow — exchange inflow/outflow only
  *   Tier 2 (30%): Price momentum + volume intensity
  *   Tier 3 (20%): News sentiment + social intelligence
  *   Tier 4 (10%): EOA activity + community votes + dev activity
- * 
- * Key design principle: ONLY trust CEX-classified transactions for
- * buy/sell direction. EOA-to-EOA transfers are treated as neutral
- * volume/activity indicators.
  */
+
+// ─── TYPES ────────────────────────────────────────────────────────────────
+
+export type SignalLabel = 'STRONG BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG SELL'
+
+export interface WhaleTransaction {
+  transaction_hash?: string
+  timestamp: string
+  blockchain?: string
+  token_symbol?: string
+  classification?: string
+  usd_value?: number | string
+  whale_score?: number
+  whale_address?: string
+  from_address?: string
+  counterparty_type?: string
+}
+
+export interface TierResult {
+  score: number
+  confidence: number
+  available: boolean
+  factors: Record<string, unknown>
+}
+
+export interface PriceChanges {
+  change_1h?: number | string
+  change_6h?: number | string
+  change_24h?: number | string
+  change_7d?: number | string
+  change_30d?: number | string
+}
+
+export interface VolumeData {
+  volume_24h?: number | string
+  avg_volume_7d?: number | string
+  market_cap?: number | string
+}
+
+export interface SentimentData {
+  score: number
+  count?: number
+}
+
+export interface SocialData {
+  galaxy_score?: number
+  alt_rank?: number
+  sentiment?: number
+  interactions_24h?: number
+}
+
+export interface CommunityVotes {
+  bullish?: number
+  bearish?: number
+  neutral?: number
+}
+
+export interface DevActivity {
+  commits?: number
+  contributors?: number
+}
+
+export interface Trap {
+  type: string
+  severity: 'HIGH' | 'MEDIUM' | 'LOW'
+  description: string
+  adjustment?: number
+  confidenceReduction?: number
+}
+
+export interface SignalFactor {
+  name: string
+  score: number
+  weight: number
+  contribution: number
+}
+
+export interface UnifiedSignal {
+  signal: SignalLabel
+  score: number
+  confidence: number
+  rawScore: number
+  factors: SignalFactor[]
+  traps: Trap[]
+  tiers: {
+    tier1: TierResult
+    tier2: TierResult
+    tier3: TierResult
+    tier4: TierResult
+  }
+  timestamp: string
+  token: string
+  timeframe: string
+}
+
+export interface ComputeSignalParams {
+  transactions?: WhaleTransaction[]
+  priceChanges?: PriceChanges
+  volumeData?: VolumeData
+  sentimentData?: SentimentData | null
+  socialData?: SocialData | null
+  communityVotes?: CommunityVotes | null
+  devActivity?: DevActivity | null
+  tokenSymbol?: string
+}
 
 // ─── TIER 1: CEX WHALE FLOW ──────────────────────────────────────────────
 
-/**
- * Analyze whale-exchange interactions for directional signals.
- * This is the highest-reliability signal source.
- * 
- * @param {Array} transactions - whale_transactions rows for this token
- * @param {number} lookbackMs - time window in ms (default 24h)
- * @returns {{ score: number, confidence: number, factors: object }}
- */
-export function computeTier1_CexWhaleFlow(transactions = [], lookbackMs = 24 * 60 * 60 * 1000) {
+export function computeTier1_CexWhaleFlow(
+  transactions: WhaleTransaction[] = [],
+  lookbackMs: number = 24 * 60 * 60 * 1000
+): TierResult {
   const now = Date.now()
   const cutoff = now - lookbackMs
-  const prevCutoff = now - 2 * lookbackMs // previous period for comparison
+  const prevCutoff = now - 2 * lookbackMs
 
-  // Split into CEX-only transactions
-  const cexTxs = transactions.filter(tx => 
-    tx.counterparty_type === 'CEX' && 
+  const cexTxs = transactions.filter(tx =>
+    tx.counterparty_type === 'CEX' &&
     ['BUY', 'SELL'].includes((tx.classification || '').toUpperCase()) &&
     new Date(tx.timestamp).getTime() >= cutoff
   )
@@ -48,9 +143,9 @@ export function computeTier1_CexWhaleFlow(transactions = [], lookbackMs = 24 * 6
     return { score: 0, confidence: 0, available: false, factors: {} }
   }
 
-  // Core metrics
   let cexBuys = 0, cexSells = 0, cexBuyVol = 0, cexSellVol = 0
-  const uniqueBuyAddrs = new Set(), uniqueSellAddrs = new Set()
+  const uniqueBuyAddrs = new Set<string>()
+  const uniqueSellAddrs = new Set<string>()
 
   for (const tx of cexTxs) {
     const usd = Number(tx.usd_value || 0)
@@ -68,45 +163,29 @@ export function computeTier1_CexWhaleFlow(transactions = [], lookbackMs = 24 * 6
     }
   }
 
-  // Previous period for volume change
   let prevCexVol = 0
   for (const tx of prevCexTxs) {
     prevCexVol += Number(tx.usd_value || 0)
   }
 
   const totalCexVol = cexBuyVol + cexSellVol
-  const netCexFlow = cexBuyVol - cexSellVol // positive = accumulation
+  const netCexFlow = cexBuyVol - cexSellVol
   const totalCexTxs = cexBuys + cexSells
   const cexBuyRatio = totalCexTxs > 0 ? cexBuys / totalCexTxs : 0.5
   const uniqueWhales = new Set([...uniqueBuyAddrs, ...uniqueSellAddrs]).size
   const volumeChange = prevCexVol > 0 ? (totalCexVol - prevCexVol) / prevCexVol : 0
 
-  // === Score Components ===
-
-  // 1. Buy/sell ratio signal [-1, +1]
-  //    0.5 = neutral, >0.5 = bullish, <0.5 = bearish
-  const ratioSignal = (cexBuyRatio - 0.5) * 2 // maps [0,1] to [-1,+1]
-
-  // 2. Net flow signal [-1, +1] using tanh for bounded output
-  //    Normalize by total volume to make scale-invariant
+  const ratioSignal = (cexBuyRatio - 0.5) * 2
   const flowSignal = totalCexVol > 0 ? Math.tanh(netCexFlow / (totalCexVol * 0.5)) : 0
-
-  // 3. Volume surge signal [0, +1]
-  //    Above-average CEX volume amplifies the signal
   const volumeSurge = Math.min(1, Math.max(0, volumeChange))
-
-  // 4. Whale breadth signal [0, +1]
-  //    More unique whales = more conviction
   const breadthSignal = Math.min(1, uniqueWhales / 10)
 
-  // Composite: weight ratio and flow equally, boost by volume and breadth
   const rawScore = (ratioSignal * 0.5 + flowSignal * 0.5)
   const amplifier = 1 + volumeSurge * 0.3 + breadthSignal * 0.2
   const score = clamp(rawScore * amplifier * 100, -100, 100)
 
-  // Confidence based on data quality
-  const txCountConf = Math.min(1, totalCexTxs / 10) // need ~10 txs for full confidence
-  const whaleCountConf = Math.min(1, uniqueWhales / 5) // need ~5 unique whales
+  const txCountConf = Math.min(1, totalCexTxs / 10)
+  const whaleCountConf = Math.min(1, uniqueWhales / 5)
   const confidence = Math.round((txCountConf * 0.6 + whaleCountConf * 0.4) * 100)
 
   return {
@@ -129,14 +208,10 @@ export function computeTier1_CexWhaleFlow(transactions = [], lookbackMs = 24 * 6
 
 // ─── TIER 2: PRICE MOMENTUM + VOLUME ──────────────────────────────────────
 
-/**
- * Multi-timeframe price momentum and volume analysis.
- * 
- * @param {{ change_1h, change_6h, change_24h, change_7d, change_30d }} priceChanges
- * @param {{ volume_24h, avg_volume_7d, market_cap }} volumeData
- * @returns {{ score: number, confidence: number, factors: object }}
- */
-export function computeTier2_PriceMomentum(priceChanges = {}, volumeData = {}) {
+export function computeTier2_PriceMomentum(
+  priceChanges: PriceChanges = {},
+  volumeData: VolumeData = {}
+): TierResult {
   const c1h = Number(priceChanges.change_1h) || 0
   const c6h = Number(priceChanges.change_6h) || 0
   const c24h = Number(priceChanges.change_24h) || 0
@@ -152,29 +227,23 @@ export function computeTier2_PriceMomentum(priceChanges = {}, volumeData = {}) {
     return { score: 0, confidence: 0, available: false, factors: {} }
   }
 
-  // Multi-timeframe momentum: weight shorter timeframes higher for signal timeliness
-  // but use longer timeframes for trend confirmation
-  const m1h = Math.tanh(c1h / 5) * 100    // ±5% move = strong signal
+  const m1h = Math.tanh(c1h / 5) * 100
   const m6h = Math.tanh(c6h / 8) * 100
   const m24h = Math.tanh(c24h / 10) * 100
   const m7d = Math.tanh(c7d / 20) * 100
   const m30d = Math.tanh(c30d / 30) * 100
 
-  // Weighted momentum: recent data matters more
   const momentumScore = m1h * 0.15 + m6h * 0.20 + m24h * 0.30 + m7d * 0.25 + m30d * 0.10
 
-  // Volume intensity: is volume confirming the price move?
   const volRatio = avgVol7d > 0 ? vol24h / avgVol7d : 1
-  const volSignal = Math.tanh((volRatio - 1) * 2) // >1 = above avg, boost
+  const volSignal = Math.tanh((volRatio - 1) * 2)
   const volMcapRatio = mcap > 0 ? vol24h / mcap : 0
 
-  // Volume confirms direction: if momentum and volume agree, boost score
   const sameDirection = (momentumScore > 0 && volSignal > 0) || (momentumScore < 0 && volSignal < 0)
   const volConfirmation = sameDirection ? 1.2 : 0.85
 
   const score = clamp(momentumScore * volConfirmation, -100, 100)
 
-  // Confidence: higher when we have multi-timeframe data
   const dataPoints = [c1h, c6h, c24h, c7d, c30d].filter(v => v !== 0).length
   const confidence = Math.round(Math.min(100, (dataPoints / 5) * 80 + (volRatio > 0 ? 20 : 0)))
 
@@ -198,53 +267,41 @@ export function computeTier2_PriceMomentum(priceChanges = {}, volumeData = {}) {
 
 // ─── TIER 3: NEWS SENTIMENT + SOCIAL INTELLIGENCE ─────────────────────────
 
-/**
- * Aggregated sentiment from news + social sources.
- * 
- * @param {{ score: number, count: number }} sentimentData - from sentiment_scores table
- * @param {{ galaxy_score, alt_rank, sentiment, interactions_24h }} socialData - LunarCrush
- * @returns {{ score: number, confidence: number, factors: object }}
- */
-export function computeTier3_SentimentSocial(sentimentData = null, socialData = null) {
+export function computeTier3_SentimentSocial(
+  sentimentData: SentimentData | null = null,
+  socialData: SocialData | null = null
+): TierResult {
   let sentimentScore = 0, sentimentConf = 0
   let socialScore = 0, socialConf = 0
 
-  // News sentiment: score is 0.0-1.0, map to [-100, +100]
   if (sentimentData && sentimentData.score != null) {
     const raw = Number(sentimentData.score)
     const count = Number(sentimentData.count || 0)
-    sentimentScore = (raw - 0.5) * 200 // 0.5 = neutral, map to [-100, +100]
-    sentimentConf = Math.min(100, count * 10) // ~10 articles for full confidence
+    sentimentScore = (raw - 0.5) * 200
+    sentimentConf = Math.min(100, count * 10)
   }
 
-  // Social intelligence
   if (socialData) {
     const galaxy = Number(socialData.galaxy_score || 0)
     const sentiment = Number(socialData.sentiment || 50)
     const interactions = Number(socialData.interactions_24h || 0)
 
-    // Galaxy score: 0-100, 50 = neutral
-    const galaxySignal = (galaxy - 50) * 2 // [-100, +100]
-
-    // Social sentiment: already a percentage (0-100)
+    const galaxySignal = (galaxy - 50) * 2
     const socialSentSignal = (sentiment - 50) * 2
-
-    // Interactions surge: more activity = more weight to social signals
     const interactionWeight = Math.min(1, interactions / 100000)
 
     socialScore = (galaxySignal * 0.5 + socialSentSignal * 0.5) * (0.5 + interactionWeight * 0.5)
     socialConf = Math.round(Math.min(100, interactionWeight * 70 + (galaxy > 0 ? 30 : 0)))
   }
 
-  const hasSentiment = sentimentData && sentimentData.score != null
-  const hasSocial = socialData && socialData.galaxy_score
+  const hasSentiment = sentimentData != null && sentimentData.score != null
+  const hasSocial = socialData != null && !!socialData.galaxy_score
 
   if (!hasSentiment && !hasSocial) {
     return { score: 0, confidence: 0, available: false, factors: {} }
   }
 
-  // Combine: if both available, weight sentiment 40% and social 60% (social is more real-time)
-  let combined, combinedConf
+  let combined: number, combinedConf: number
   if (hasSentiment && hasSocial) {
     combined = sentimentScore * 0.4 + socialScore * 0.6
     combinedConf = Math.round(sentimentConf * 0.4 + socialConf * 0.6)
@@ -261,7 +318,7 @@ export function computeTier3_SentimentSocial(sentimentData = null, socialData = 
     confidence: combinedConf,
     available: true,
     factors: {
-      newsSentiment: hasSentiment ? +(sentimentData.score).toFixed(3) : null,
+      newsSentiment: hasSentiment ? +sentimentData!.score.toFixed(3) : null,
       newsArticleCount: sentimentData?.count || 0,
       galaxyScore: socialData?.galaxy_score || null,
       altRank: socialData?.alt_rank || null,
@@ -274,20 +331,15 @@ export function computeTier3_SentimentSocial(sentimentData = null, socialData = 
 
 // ─── TIER 4: EOA ACTIVITY + COMMUNITY + DEV ───────────────────────────────
 
-/**
- * Weak/confirmation signals from EOA transfers, community votes, dev activity.
- * 
- * @param {Array} transactions - all whale_transactions (we extract EOA-only)
- * @param {{ bullish, bearish, neutral }} communityVotes
- * @param {{ commits, contributors }} devActivity
- * @returns {{ score: number, confidence: number, factors: object }}
- */
-export function computeTier4_WeakSignals(transactions = [], communityVotes = null, devActivity = null) {
+export function computeTier4_WeakSignals(
+  transactions: WhaleTransaction[] = [],
+  communityVotes: CommunityVotes | null = null,
+  devActivity: DevActivity | null = null
+): TierResult {
   const now = Date.now()
   const cutoff24h = now - 24 * 60 * 60 * 1000
   const prevCutoff = now - 48 * 60 * 60 * 1000
 
-  // EOA-to-EOA: volume only (NOT direction)
   const eoaTxs = transactions.filter(tx =>
     tx.counterparty_type === 'EOA' &&
     new Date(tx.timestamp).getTime() >= cutoff24h
@@ -302,25 +354,21 @@ export function computeTier4_WeakSignals(transactions = [], communityVotes = nul
   for (const tx of eoaTxs) eoaVol += Number(tx.usd_value || 0)
   for (const tx of prevEoaTxs) prevEoaVol += Number(tx.usd_value || 0)
 
-  // EOA volume change: surge in activity (not direction) is slightly bullish
-  // because it indicates interest/attention
   const eoaVolChange = prevEoaVol > 0 ? (eoaVol - prevEoaVol) / prevEoaVol : 0
-  const eoaActivitySignal = Math.tanh(eoaVolChange) * 30 // weak signal, capped
+  const eoaActivitySignal = Math.tanh(eoaVolChange) * 30
 
-  // Community votes
   let voteSignal = 0, voteConf = 0
   if (communityVotes) {
     const b = Number(communityVotes.bullish || 0)
     const br = Number(communityVotes.bearish || 0)
     const n = Number(communityVotes.neutral || 0)
     const total = b + br + n
-    if (total >= 3) { // minimum 3 votes for any signal
-      voteSignal = ((b - br) / total) * 50 // weak, max ±50
+    if (total >= 3) {
+      voteSignal = ((b - br) / total) * 50
       voteConf = Math.min(100, total * 5)
     }
   }
 
-  // Developer activity: positive is a health signal but not directional
   let devSignal = 0
   if (devActivity) {
     const commits = Number(devActivity.commits || 0)
@@ -330,7 +378,7 @@ export function computeTier4_WeakSignals(transactions = [], communityVotes = nul
   }
 
   const score = clamp(eoaActivitySignal + voteSignal + devSignal, -100, 100)
-  const available = eoaTxs.length > 0 || communityVotes || devActivity
+  const available = eoaTxs.length > 0 || communityVotes != null || devActivity != null
 
   return {
     score: Math.round(score),
@@ -351,28 +399,33 @@ export function computeTier4_WeakSignals(transactions = [], communityVotes = nul
 
 // ─── TRAP DETECTION ───────────────────────────────────────────────────────
 
-/**
- * Detect market traps that should override or reduce the signal.
- */
-export function detectTraps(tier1, tier2, tier3, volumeData = {}) {
-  const traps = []
+export function detectTraps(
+  tier1: TierResult,
+  tier2: TierResult,
+  tier3: TierResult,
+  volumeData: VolumeData = {}
+): Trap[] {
+  const traps: Trap[] = []
 
   const vol24h = Number(volumeData.volume_24h) || 0
   const mcap = Number(volumeData.market_cap) || 1
   const volMcapRatio = vol24h / mcap
 
-  // 1. Bullish Trap: Price up but whales distributing via CEX
   if (tier2.score > 20 && tier1.available && tier1.score < -20) {
     traps.push({
       type: 'BULLISH_TRAP',
       severity: 'HIGH',
       description: 'Price rising but whale CEX flow is net negative (distribution detected)',
-      adjustment: -30, // reduce bullish score significantly
+      adjustment: -30,
     })
   }
 
-  // 2. Dead Cat Bounce: Short-term spike in sustained decline, no volume confirmation
-  if (tier2.factors?.change_1h > 3 && tier2.factors?.change_7d < -15 && !tier2.factors?.volumeConfirms) {
+  const t2factors = tier2.factors as Record<string, unknown>
+  if (
+    Number(t2factors.change_1h || 0) > 3 &&
+    Number(t2factors.change_7d || 0) < -15 &&
+    !t2factors.volumeConfirms
+  ) {
     traps.push({
       type: 'DEAD_CAT_BOUNCE',
       severity: 'MEDIUM',
@@ -381,7 +434,6 @@ export function detectTraps(tier1, tier2, tier3, volumeData = {}) {
     })
   }
 
-  // 3. Social Pump Divergence: Social spiking but no whale CEX activity
   if (tier3.available && tier3.score > 40 && tier1.available && Math.abs(tier1.score) < 10) {
     traps.push({
       type: 'SOCIAL_PUMP_DIVERGENCE',
@@ -391,17 +443,15 @@ export function detectTraps(tier1, tier2, tier3, volumeData = {}) {
     })
   }
 
-  // 4. Bearish Trap: Price dropping but whales accumulating via CEX
   if (tier2.score < -20 && tier1.available && tier1.score > 20) {
     traps.push({
       type: 'BEARISH_TRAP',
       severity: 'HIGH',
       description: 'Price falling but whale CEX flow is net positive (accumulation detected)',
-      adjustment: 20, // reduce bearish score (make less bearish)
+      adjustment: 20,
     })
   }
 
-  // 5. Low Liquidity Warning
   if (volMcapRatio < 0.02 && mcap > 0) {
     traps.push({
       type: 'LOW_LIQUIDITY',
@@ -417,12 +467,6 @@ export function detectTraps(tier1, tier2, tier3, volumeData = {}) {
 
 // ─── UNIFIED SIGNAL COMPUTATION ───────────────────────────────────────────
 
-/**
- * Compute the final unified signal from all tiers.
- * 
- * @param {object} params - All data sources
- * @returns {object} Final signal with score, label, confidence, factors, traps
- */
 export function computeUnifiedSignal({
   transactions = [],
   priceChanges = {},
@@ -432,23 +476,20 @@ export function computeUnifiedSignal({
   communityVotes = null,
   devActivity = null,
   tokenSymbol = 'UNKNOWN',
-}) {
-  // Compute each tier
+}: ComputeSignalParams): UnifiedSignal {
   const tier1 = computeTier1_CexWhaleFlow(transactions)
   const tier2 = computeTier2_PriceMomentum(priceChanges, volumeData)
   const tier3 = computeTier3_SentimentSocial(sentimentData, socialData)
   const tier4 = computeTier4_WeakSignals(transactions, communityVotes, devActivity)
 
-  // Dynamic weight redistribution
   const baseWeights = { tier1: 0.40, tier2: 0.30, tier3: 0.20, tier4: 0.10 }
   const tiers = [
-    { key: 'tier1', data: tier1, weight: baseWeights.tier1 },
-    { key: 'tier2', data: tier2, weight: baseWeights.tier2 },
-    { key: 'tier3', data: tier3, weight: baseWeights.tier3 },
-    { key: 'tier4', data: tier4, weight: baseWeights.tier4 },
+    { key: 'tier1' as const, data: tier1, weight: baseWeights.tier1, effectiveWeight: 0 },
+    { key: 'tier2' as const, data: tier2, weight: baseWeights.tier2, effectiveWeight: 0 },
+    { key: 'tier3' as const, data: tier3, weight: baseWeights.tier3, effectiveWeight: 0 },
+    { key: 'tier4' as const, data: tier4, weight: baseWeights.tier4, effectiveWeight: 0 },
   ]
 
-  // Redistribute weight from unavailable tiers
   const availableTiers = tiers.filter(t => t.data.available)
   const unavailableWeight = tiers.filter(t => !t.data.available).reduce((s, t) => s + t.weight, 0)
 
@@ -472,13 +513,11 @@ export function computeUnifiedSignal({
     t.effectiveWeight = t.weight + (unavailableWeight * (t.weight / totalAvailableWeight))
   }
 
-  // Weighted composite score [-100, +100]
   let rawScore = 0
   for (const t of availableTiers) {
     rawScore += t.data.score * t.effectiveWeight
   }
 
-  // Detect traps and apply adjustments
   const traps = detectTraps(tier1, tier2, tier3, volumeData)
   let trapAdjustment = 0
   let confidenceReduction = 0
@@ -488,12 +527,10 @@ export function computeUnifiedSignal({
   }
   rawScore = clamp(rawScore + trapAdjustment, -100, 100)
 
-  // Confluence confidence: boost when tiers agree, penalize divergence
   const directions = availableTiers.map(t => Math.sign(t.data.score))
   const agreementCount = directions.filter(d => d === Math.sign(rawScore)).length
   const confluenceMultiplier = 0.6 + (agreementCount / availableTiers.length) * 0.4
 
-  // Weighted confidence
   let baseConfidence = 0
   for (const t of availableTiers) {
     baseConfidence += t.data.confidence * t.effectiveWeight
@@ -502,23 +539,20 @@ export function computeUnifiedSignal({
     Math.min(100, Math.max(0, baseConfidence * confluenceMultiplier - confidenceReduction))
   )
 
-  // Map [-100, +100] to [0, 100] score (50 = neutral)
   const score = Math.round(clamp((rawScore + 100) / 2, 0, 100))
-
-  // Signal label
   const signal = getSignalLabel(score, confidence)
 
-  // Top contributing factors
-  const factors = []
+  const tierNames: Record<string, string> = {
+    tier1: 'CEX Whale Flow',
+    tier2: 'Price Momentum',
+    tier3: 'Sentiment & Social',
+    tier4: 'Activity & Community',
+  }
+
+  const factors: SignalFactor[] = []
   for (const t of availableTiers) {
-    const tierName = {
-      tier1: 'CEX Whale Flow',
-      tier2: 'Price Momentum',
-      tier3: 'Sentiment & Social',
-      tier4: 'Activity & Community',
-    }[t.key]
     factors.push({
-      name: tierName,
+      name: tierNames[t.key],
       score: t.data.score,
       weight: +(t.effectiveWeight * 100).toFixed(0),
       contribution: Math.round(t.data.score * t.effectiveWeight),
@@ -526,7 +560,6 @@ export function computeUnifiedSignal({
   }
   factors.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
 
-  // Determine recommended timeframe
   const timeframe = determineTimeframe(tier1, tier2)
 
   return {
@@ -546,14 +579,12 @@ export function computeUnifiedSignal({
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 
-function clamp(val, min, max) {
+function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val))
 }
 
-function getSignalLabel(score, confidence) {
-  // With very low confidence, bias toward NEUTRAL
+function getSignalLabel(score: number, confidence: number): SignalLabel {
   if (confidence < 15) return 'NEUTRAL'
-
   if (score >= 75) return 'STRONG BUY'
   if (score >= 60) return 'BUY'
   if (score > 40 && score < 60) return 'NEUTRAL'
@@ -562,15 +593,13 @@ function getSignalLabel(score, confidence) {
   return 'NEUTRAL'
 }
 
-function determineTimeframe(tier1, tier2) {
-  // If whale flow is strong, signals tend to be medium-term (3-7d)
+function determineTimeframe(tier1: TierResult, tier2: TierResult): string {
   if (tier1.available && Math.abs(tier1.score) > 50) return '3d-7d'
-  // If price momentum is dominant, signals are shorter-term
   if (tier2.available && Math.abs(tier2.score) > 50) return '24h-3d'
   return '24h-7d'
 }
 
-export function getSignalColor(signal) {
+export function getSignalColor(signal: SignalLabel): string {
   switch (signal) {
     case 'STRONG BUY': return '#00e676'
     case 'BUY': return '#66bb6a'

@@ -393,7 +393,8 @@ export default function Statistics() {
             .select('plan')
             .eq('id', session.user.id)
             .single()
-          setIsPremium(true) // All features now free
+          const plan = profile?.plan
+          setIsPremium(plan === 'premium' || plan === 'pro')
         }
       } catch (err) {
         console.error('Error checking premium status:', err)

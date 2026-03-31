@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 
 const VALID_SORT = ['smart_money_score', 'total_volume_usd_30d', 'portfolio_value_usd', 'pnl_estimated_usd']
+const VALID_CHAINS = ['ethereum', 'bitcoin', 'solana', 'polygon', 'arbitrum', 'base']
 
 const BLACKLIST = [
   '0x0000000000000000000000000000000000000000',
@@ -9,6 +11,9 @@ const BLACKLIST = [
 ]
 
 export async function GET(req) {
+  const ip = getClientIp(req)
+  const rl = rateLimit(`wallet-tracker:${ip}`, 60, 60000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfter)
   if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
@@ -21,6 +26,9 @@ export async function GET(req) {
     ? searchParams.get('sort_by')
     : 'smart_money_score'
   const chain = searchParams.get('chain') || null
+  if (chain && !VALID_CHAINS.includes(chain)) {
+    return NextResponse.json({ error: 'Invalid chain' }, { status: 400 })
+  }
   const ascending = searchParams.get('sort_asc') === '1'
   const limitRaw = parseInt(searchParams.get('limit') || '50', 10)
   const limit = Math.min(Math.max(1, limitRaw), 100)

@@ -21,3 +21,13 @@ backtest-report-*.txt
 
 # local env
 .env.local
+
+# Sensitive / business documents
+*.docx
+*.xlsx
+*_DRAFT.md
+*_PREP.md
+VC_APPLICATIONS*
+MARKETING_PLAN*
+DASHBOARD_V2_PROMPT*
+brevo-*.yaml

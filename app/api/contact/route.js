@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 
 export async function POST(req) {
   try {
+    const ip = getClientIp(req)
+    const rl = rateLimit(`contact:${ip}`, 5, 60000)
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter)
+
     const { name, email, subject, category, message } = await req.json()
 
     // Validate input
     if (!name || !email || !subject || !message) {
       return NextResponse.json(
         { error: 'All fields are required' },
+        { status: 400 }
+      )
+    }
+
+    // Length limits
+    if (name.length > 200 || subject.length > 500 || message.length > 5000 || email.length > 320) {
+      return NextResponse.json(
+        { error: 'Input exceeds maximum length' },
         { status: 400 }
       )
     }

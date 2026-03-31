@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
+
+// EVM: 0x + 40 hex, Solana: base58 32-44 chars, Bitcoin: 26-62 alphanumeric
+const ADDRESS_RE = /^(0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44}|[13][a-km-zA-HJ-NP-Z1-9]{25,61}|bc1[a-zA-HJ-NP-Z0-9]{25,90})$/
 
 export async function GET(req, { params }) {
+  const ip = getClientIp(req)
+  const rl = rateLimit(`wallet-address:${ip}`, 60, 60000)
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfter)
+
   if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
@@ -10,6 +18,9 @@ export async function GET(req, { params }) {
   }
 
   const { address } = await params
+  if (!ADDRESS_RE.test(address)) {
+    return NextResponse.json({ error: 'Invalid wallet address format' }, { status: 400 })
+  }
   const { searchParams } = new URL(req.url)
   const chain = searchParams.get('chain') || null
 

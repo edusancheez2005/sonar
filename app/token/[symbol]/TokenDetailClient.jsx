@@ -643,7 +643,8 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         const { data: { session } } = await sb.auth.getSession()
         if (session?.user) {
           const { data: profile } = await sb.from('profiles').select('plan').eq('id', session.user.id).single()
-          setIsPremium(true) // All features now free
+          const plan = profile?.plan
+          setIsPremium(plan === 'premium' || plan === 'pro')
         }
       } catch {}
     }

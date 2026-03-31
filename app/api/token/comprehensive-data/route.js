@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
@@ -131,11 +132,15 @@ const getPct = (value, fallback = 0) => {
 
 export async function GET(req) {
   try {
+    const ip = getClientIp(req)
+    const rl = rateLimit(`token-data:${ip}`, 60, 60000)
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter)
+
     const { searchParams } = new URL(req.url)
     const symbol = searchParams.get('symbol')?.toUpperCase()
 
-    if (!symbol) {
-      return NextResponse.json({ error: 'Symbol required' }, { status: 400 })
+    if (!symbol || !/^[A-Z0-9]{1,10}$/.test(symbol)) {
+      return NextResponse.json({ error: 'Symbol must be 1-10 alphanumeric characters' }, { status: 400 })
     }
 
     const coinGeckoId = SYMBOL_TO_COINGECKO_ID[symbol]

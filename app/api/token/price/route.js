@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -176,11 +177,15 @@ const SYMBOL_TO_COINGECKO_ID = {
 
 export async function GET(req) {
   try {
+    const ip = getClientIp(req)
+    const rl = rateLimit(`token-price:${ip}`, 60, 60000)
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter)
+
     const { searchParams } = new URL(req.url)
     const symbol = searchParams.get('symbol')?.toUpperCase()
 
-    if (!symbol) {
-      return NextResponse.json({ error: 'Symbol required' }, { status: 400 })
+    if (!symbol || !/^[A-Z0-9]{1,10}$/.test(symbol)) {
+      return NextResponse.json({ error: 'Symbol must be 1-10 alphanumeric characters' }, { status: 400 })
     }
 
     // Get CoinGecko ID
