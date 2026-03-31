@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 let cachedResult: any = null
 let cachedAt = 0
-const CACHE_TTL = 1 * 60 * 60 * 1000 // 1 hour — aggressive refresh for breaking geopolitical news
+const CACHE_TTL = 30 * 60 * 1000 // 30 min — refresh frequently for breaking news
 
 // Priority accounts: search ALL tweets (geopolitical, economic, anything) — these people move markets
 const PRIORITY_ACCOUNTS = [
@@ -37,11 +37,14 @@ const CRYPTO_INFLUENCERS = [
 
 const ALL_INFLUENCERS = [...PRIORITY_ACCOUNTS, ...CRYPTO_INFLUENCERS]
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    if (cachedResult && (Date.now() - cachedAt) < CACHE_TTL) {
+    const url = new URL(request.url)
+    const forceRefresh = url.searchParams.get('refresh') === '1'
+
+    if (!forceRefresh && cachedResult && (Date.now() - cachedAt) < CACHE_TTL) {
       return NextResponse.json(cachedResult, {
-        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' }
+        headers: { 'Cache-Control': 's-maxage=1800, stale-while-revalidate=3600' }
       })
     }
 
@@ -58,14 +61,14 @@ export async function GET() {
       messages: [
         {
           role: 'system',
-          content: `You are a crypto intelligence analyst. TODAY IS ${today}.
+          content: `You are a crypto intelligence analyst with real-time access to X/Twitter. TODAY IS ${today}.
 
-Search X (Twitter), news, and the web for the most recent public statements from these people.
+Your job: find the ACTUAL, REAL, VERIFIED latest tweets and public statements from these people. Do NOT fabricate or guess quotes. Only return statements you can verify from X or news sources.
 
 === PRIORITY ACCOUNTS (search for ALL recent tweets/statements, not just crypto) ===
 These people move crypto markets with ANY statement — geopolitics, trade wars, tariffs,
 military action, sanctions, economic policy, energy, interest rates, AND crypto.
-Always include their LATEST tweet or public statement regardless of topic.
+Find their MOST RECENT tweet or public statement regardless of topic.
 
 ${PRIORITY_ACCOUNTS.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
@@ -73,14 +76,16 @@ ${PRIORITY_ACCOUNTS.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 ${CRYPTO_INFLUENCERS.map((p, i) => `${i + 1 + PRIORITY_ACCOUNTS.length}. ${p}`).join('\n')}
 
 RULES:
-- ONLY include statements from the LAST 14 DAYS. Nothing older.
+- ONLY include REAL statements from the LAST 7 DAYS. Nothing older. Nothing fabricated.
+- Prioritize the MOST RECENT statements first (today > yesterday > 2 days ago).
 - For PRIORITY ACCOUNTS: include their most recent tweet/statement EVEN IF it is not about crypto.
-  Geopolitical events (wars, sanctions, trade policy, Strait of Hormuz, tariffs, oil) directly move BTC and crypto.
-  Label the sentiment based on likely crypto market impact (e.g. military escalation = bearish).
+  Geopolitical events (wars, sanctions, trade policy, tariffs, oil, peace deals) directly move BTC and crypto.
+  Label the sentiment based on likely crypto market impact (e.g. military escalation = bearish, peace = bullish).
 - For CRYPTO INFLUENCERS: only include crypto/market-relevant statements.
-- Return 6-12 entries maximum.
-- Each quote should be their ACTUAL words or a very close paraphrase, not your interpretation.
-- Include the approximate date of the statement.
+- If you CANNOT verify a recent statement for someone, SKIP THEM. Do not make up quotes.
+- Return 6-12 entries maximum, sorted by date (most recent first).
+- Each quote should be their ACTUAL words verbatim, or a very close paraphrase. Not your interpretation.
+- Include the exact or approximate date of the statement.
 - Classify sentiment as bullish, bearish, or neutral for crypto markets.
 
 Return ONLY valid JSON with this structure:
@@ -93,7 +98,7 @@ Return ONLY valid JSON with this structure:
       "quote": "Their actual statement or close paraphrase, max 2 sentences",
       "date": "Mar 15, 2026",
       "sentiment": "bullish" or "bearish" or "neutral",
-      "context": "Brief 5-word context like 'On Bitcoin ETF inflows' or 'On Strait of Hormuz tensions'"
+      "context": "Brief 5-word context like 'On Bitcoin ETF inflows' or 'On ending Ukraine war'"
     }
   ],
   "last_updated": "${today}"
@@ -103,24 +108,27 @@ Return ONLY valid JSON. No markdown, no code blocks.`
         },
         {
           role: 'user',
-          content: `Today is ${today}. Search X/Twitter and the web for the LATEST tweets and public statements from these people in the last 14 days:
+          content: `Today is ${today}. Search X/Twitter and the web RIGHT NOW for the LATEST verified tweets and public statements from these people in the last 7 days:
 
-PRIORITY (find their MOST RECENT tweet, any topic — geopolitics, trade, military, crypto, economy):
-- Donald Trump (@realDonaldTrump)
-- Jerome Powell
-- SEC Chair
-- Elon Musk (@elonmusk)
+PRIORITY (find their MOST RECENT tweet/statement, any topic — geopolitics, trade, military, crypto, economy, peace deals):
+- Donald Trump (@realDonaldTrump) — check his latest Truth Social / X posts
+- Jerome Powell — check latest Fed statements or press conferences
+- SEC Chair — check latest SEC announcements
+- Elon Musk (@elonmusk) — check his latest X posts
+- Scott Bessent (Treasury Secretary) — check latest statements
 
 CRYPTO INFLUENCERS (crypto/market statements only):
-- Michael Saylor, Vitalik Buterin, CZ, Cathie Wood, Larry Fink, Brian Armstrong, Raoul Pal, Arthur Hayes
+- Michael Saylor (@saylor), Vitalik Buterin (@VitalikButerin), CZ (@caborrowz), Cathie Wood (@CathieDWood), Larry Fink, Brian Armstrong (@brian_armstrong), Raoul Pal (@RaoulGMI), Arthur Hayes (@CryptoHayes)
 
-Include geopolitical statements from world leaders that would impact crypto markets (tariffs, sanctions, military action, energy policy, trade wars).`
+Also include any breaking geopolitical statements from world leaders that would impact crypto (tariffs, sanctions, military action, energy policy, trade wars, peace negotiations).
+
+IMPORTANT: Only return REAL, VERIFIED quotes. Skip anyone you can't find recent statements for.`
         }
       ],
-      temperature: 0.3,
-      max_tokens: 1800,
+      temperature: 0.2,
+      max_tokens: 2000,
       // @ts-ignore - xAI specific
-      search: { mode: 'on', max_search_results: 25 }
+      search: { mode: 'on', max_search_results: 30 }
     })
 
     const raw = completion.choices[0]?.message?.content || ''
@@ -140,7 +148,7 @@ Include geopolitical statements from world leaders that would impact crypto mark
     cachedAt = Date.now()
 
     return NextResponse.json(parsed, {
-      headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' }
+      headers: { 'Cache-Control': 's-maxage=1800, stale-while-revalidate=3600' }
     })
   } catch (error) {
     console.error('Key voices error:', error)
