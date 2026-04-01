@@ -85,6 +85,11 @@ export default async function TokenDetail({ params, searchParams }) {
   const uniqueWhales = whales.size
   const chains = Array.from(chainMap.entries()).sort((a,b)=>b[1]-a[1])
 
+  // Sanity check: if avg tx exceeds $500M, the data is unreliable (e.g. BTC UTXO consolidations)
+  const txCount = buys + sells
+  const avgTx = txCount > 0 ? totalVolume / txCount : 0
+  const dataReliable = avgTx < 500_000_000
+
   function computeMedian(values) {
     if (!values || values.length === 0) return 0
     const arr = values.slice().sort((a,b)=>a-b)
@@ -142,12 +147,18 @@ export default async function TokenDetail({ params, searchParams }) {
 
   const sentiment = computeSentiment(data || [])
 
-  const whaleMetrics = {
+  const whaleMetrics = dataReliable ? {
     totalVolume,
     netFlow,
     buys,
     sells,
     uniqueWhales
+  } : {
+    totalVolume: 0,
+    netFlow: 0,
+    buys: 0,
+    sells: 0,
+    uniqueWhales: 0
   }
 
   return (
@@ -156,9 +167,9 @@ export default async function TokenDetail({ params, searchParams }) {
       <TokenDetailClient 
         symbol={symbol}
         sinceHours={sinceHours}
-        data={data || []}
+        data={dataReliable ? (data || []) : []}
         whaleMetrics={whaleMetrics}
-        sentiment={sentiment}
+        sentiment={dataReliable ? sentiment : { label: 'NEUTRAL', color: '#f39c12', score: 0, details: { buyPct: 50, sellPct: 50 } }}
       />
     </AuthGuard>
   )

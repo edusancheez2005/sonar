@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic'
 // Stablecoins to exclude from dashboard analytics
 const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
 // Tokens with broken/spammy data excluded from analytics
-const EXCLUDED_TOKENS = ['XRP']
+// BTC: Whale Alert BTC data includes exchange-internal transfers that inflate volumes ~1000x above altcoins
+const EXCLUDED_TOKENS = ['XRP', 'BTC']
 
 export async function GET(req) {
   const ip = getClientIp(req)

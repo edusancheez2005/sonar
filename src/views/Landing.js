@@ -885,7 +885,7 @@ const Landing = () => {
       {/* ─── NAV ─── */}
       <NavBar>
         <Logo>
-          <img src={`${process.env.PUBLIC_URL}/assets/logo2.png`} alt="Sonar Tracker" />
+          <img src="/logo2.png" alt="Sonar Tracker" />
         </Logo>
         <NavLinks>
           <NavLink onClick={() => { const el = document.getElementById('features'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Features</NavLink>
@@ -935,7 +935,7 @@ const Landing = () => {
 
             <HeroHighlight variants={itemVariants} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
               <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.2 }} whileHover={{ scale: 1.05 }}>
-                <div className="number"><CountUp target={500} suffix="+" /></div><div className="label">Happy Users</div>
+                <div className="number"><CountUp target={650} suffix="+" /></div><div className="label">Happy Users</div>
               </StatBadge>
               <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.4 }} whileHover={{ scale: 1.05 }}>
                 <div className="number"><CountUp target={2000} suffix="+" /></div><div className="label">Profitable Trades</div>
@@ -1831,7 +1831,7 @@ const Landing = () => {
       {/* ─── TESTIMONIALS CAROUSEL ─── */}
       <TrustSection>
         <motion.h2 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
-          500+ traders. $2B+ volume tracked.
+          650+ traders. $2B+ volume tracked.
         </motion.h2>
         <p className="subtitle">Don't take our word for it.</p>
 
@@ -1839,12 +1839,14 @@ const Landing = () => {
           <CarouselTrack>
             {/* Duplicate array for infinite scroll effect */}
             {[...Array(2)].flatMap((_, dupeIdx) => [
-              { name: 'James Martinez', role: 'Crypto Day Trader', quote: 'Caught a $500K WETH whale move 15 minutes early. Made 23% in 2 hours. This tool pays for itself every single day.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150301.png` },
-              { name: 'Sarah Kim', role: 'Portfolio Manager', quote: "I used to wonder why prices suddenly spiked. Sonar's real-time alerts completely changed my trading strategy. Night and day.", img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150309.png` },
-              { name: 'David Chen', role: 'Institutional Trader', quote: 'The AI analysis tools are genuinely impressive. Spotted large SOL movements before a major price shift. Essential for serious traders.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150324.png` },
-              { name: 'Emily Rodriguez', role: 'DeFi Analyst', quote: 'Switched from Nansen to Sonar. Better signal-to-noise ratio, cleaner interface, and faster whale alerts. At a fraction of the cost.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150336.png` },
-              { name: 'Raj Patel', role: 'Swing Trader', quote: 'The sentiment analysis paired with whale tracking gives me an edge nobody else in my trading group has. Worth every penny.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150343.png` },
-              { name: "Claire O'Brien", role: 'Hedge Fund Manager', quote: 'Our fund uses Sonar daily. The institutional-grade data quality and sub-second latency are exactly what we needed.', img: `${process.env.PUBLIC_URL}/assets/Screenshot%202026-02-24%20150348.png` },
+              { name: 'James Martinez', role: 'Crypto Day Trader', quote: 'Caught a $500K WETH whale move 15 minutes early. Made 23% in 2 hours. This tool pays for itself every single day.', img: '/assets/faces/face-1.png' },
+              { name: 'Sarah Kim', role: 'Portfolio Manager', quote: "I used to wonder why prices suddenly spiked. Sonar's real-time alerts completely changed my trading strategy. Night and day.", img: '/assets/faces/face-2.png' },
+              { name: 'David Chen', role: 'Institutional Trader', quote: 'The AI analysis tools are genuinely impressive. Spotted large SOL movements before a major price shift. Essential for serious traders.', img: '/assets/faces/face-3.png' },
+              { name: 'Emily Rodriguez', role: 'DeFi Analyst', quote: 'Switched from Nansen to Sonar. Better signal-to-noise ratio, cleaner interface, and faster whale alerts. At a fraction of the cost.', img: '/assets/faces/face-4.png' },
+              { name: 'Raj Patel', role: 'Swing Trader', quote: 'The sentiment analysis paired with whale tracking gives me an edge nobody else in my trading group has. Worth every penny.', img: '/assets/faces/face-6.png' },
+              { name: "Claire O'Brien", role: 'Hedge Fund Manager', quote: 'Our fund uses Sonar daily. The institutional-grade data quality and sub-second latency are exactly what we needed.', img: '/assets/faces/face-7.png' },
+              { name: 'Tom Wheeler', role: 'Quant Trader', quote: 'The whale flow data is cleaner than anything else I\'ve used. Sonar gives me the edge I need for my algo strategies.', img: '/assets/faces/face-5.png' },
+              { name: 'Richard Hayes', role: 'Venture Partner', quote: 'We use Sonar to track smart money movements before making investment decisions. It\'s become part of our due diligence stack.', img: '/assets/faces/face-8.png' },
             ].map((t, i) => (
               <CarouselCard key={`${dupeIdx}-${i}`}>
                 <div className="rating">★★★★★</div>

@@ -647,7 +647,6 @@ const Dashboard = ({ isPremium = false }) => {
   const [newsArticles, setNewsArticles] = useState([])
   const [signals, setSignals] = useState([])
   const [macroFactors, setMacroFactors] = useState(null)
-  const [accuracy, setAccuracy] = useState(null)
 
   // Fetch user info and check tutorial state
   useEffect(() => {
@@ -853,7 +852,6 @@ const Dashboard = ({ isPremium = false }) => {
      fetchNews();
      fetchSignals();
      pollAlgo()
-     fetch('/api/signals/accuracy').then(r => r.ok ? r.json() : null).then(d => { if (d) setAccuracy(d) }).catch(() => {})
      // Poll summary every 60s to avoid flickering from boundary transactions
      // Health check and news can poll faster at 15s
      let fastTick = 0
@@ -1085,33 +1083,10 @@ const Dashboard = ({ isPremium = false }) => {
                         loading ? <SkeletonBarRows count={5} /> :
                         <EmptyState>No inflow data in the past 24 hours.</EmptyState>
                       ) : (() => {
-                        const btc = tokenInflows.find(t => t.token === 'BTC')
                         const altcoins = tokenInflows.filter(t => t.token !== 'BTC')
                         const altMax = Math.abs(altcoins[0]?.netUsd || 1)
                         return (
                           <div>
-                            {btc && (
-                              <Link href={`/statistics?token=BTC&sinceHours=24`} style={{ textDecoration: 'none' }}>
-                                <HBarRow>
-                                  <HBarLabel>
-                                    <TokenIcon symbol="BTC" size={18} />
-                                    BTC
-                                  </HBarLabel>
-                                  <HBarTrack>
-                                    <HBarFill
-                                      $color={COLORS.green}
-                                      initial={{ width: 0 }}
-                                      animate={{ width: '100%' }}
-                                      transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                    />
-                                  </HBarTrack>
-                                  <HBarValue $color={COLORS.green}>
-                                    +${formatCompact(btc.netUsd || 0)}
-                                  </HBarValue>
-                                </HBarRow>
-                              </Link>
-                            )}
-                            {btc && <div style={{ borderBottom: `1px solid ${COLORS.borderSubtle}`, margin: '0.25rem 0' }} />}
                             {altcoins.map((t, idx) => {
                               const pct = Math.min(100, (Math.abs(t.netUsd || 0) / altMax) * 100)
                               return (
@@ -1152,32 +1127,9 @@ const Dashboard = ({ isPremium = false }) => {
                         <EmptyState>No outflow data in the past 24 hours.</EmptyState>
                       ) : (() => {
                         const altcoins = tokenOutflows.filter(t => t.token !== 'BTC')
-                        const btc = tokenOutflows.find(t => t.token === 'BTC')
                         const altMax = Math.abs(altcoins[0]?.netUsd || 1)
                         return (
                           <div>
-                            {btc && (
-                              <Link href={`/statistics?token=BTC&sinceHours=24`} style={{ textDecoration: 'none' }}>
-                                <HBarRow>
-                                  <HBarLabel>
-                                    <TokenIcon symbol="BTC" size={18} />
-                                    BTC
-                                  </HBarLabel>
-                                  <HBarTrack>
-                                    <HBarFill
-                                      $color={COLORS.red}
-                                      initial={{ width: 0 }}
-                                      animate={{ width: '100%' }}
-                                      transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                    />
-                                  </HBarTrack>
-                                  <HBarValue $color={COLORS.red}>
-                                    -${formatCompact(Math.abs(btc.netUsd || 0))}
-                                  </HBarValue>
-                                </HBarRow>
-                              </Link>
-                            )}
-                            {btc && <div style={{ borderBottom: `1px solid ${COLORS.borderSubtle}`, margin: '0.25rem 0' }} />}
                             {altcoins.map((t, idx) => {
                               const pct = Math.min(100, (Math.abs(t.netUsd || 0) / altMax) * 100)
                               return (
@@ -1209,47 +1161,6 @@ const Dashboard = ({ isPremium = false }) => {
                   </GridContainer>
                 </SectionGap>
               </motion.div>
-
-              {/* ─── SIGNAL ACCURACY CARD ────────────────────────── */}
-              {accuracy && (
-                <motion.div variants={fadeUp}>
-                  <SectionGap>
-                    <Panel style={{ textAlign: 'center', padding: '1.5rem' }}>
-                      <PanelHeader>
-                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', letterSpacing: 1, color: '#00e5ff', textTransform: 'uppercase' }}>
-                          Signal Accuracy
-                        </span>
-                      </PanelHeader>
-                      {accuracy.status === 'computing' || accuracy.overall_hit_rate == null ? (
-                        <div style={{ color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem', padding: '2rem 0' }}>
-                          Computing…
-                        </div>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: '2.5rem', fontWeight: 700, color: accuracy.overall_hit_rate >= 0.6 ? '#00e676' : accuracy.overall_hit_rate >= 0.45 ? '#ffab00' : '#ef5350', fontFamily: "'JetBrains Mono', monospace" }}>
-                            {Math.round(accuracy.overall_hit_rate * 100)}%
-                          </div>
-                          <div style={{ color: '#8a9ab0', fontSize: '0.7rem', fontFamily: "'Inter', sans-serif", marginBottom: '0.75rem' }}>
-                            of whale buy signals predicted 7d price increase
-                          </div>
-                          <div style={{ color: '#5a6a7a', fontSize: '0.65rem', fontFamily: "'JetBrains Mono', monospace" }}>
-                            {accuracy.total_signals_evaluated.toLocaleString()} signals evaluated
-                          </div>
-                          {accuracy.by_confidence?.length > 0 && (
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-                              {accuracy.by_confidence.map(c => (
-                                <div key={c.tier} style={{ fontSize: '0.6rem', fontFamily: "'JetBrains Mono', monospace", color: '#5a6a7a' }}>
-                                  <span style={{ color: '#8a9ab0' }}>{c.tier}</span>: {Math.round(c.hit_rate * 100)}% ({c.count})
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </Panel>
-                  </SectionGap>
-                </motion.div>
-              )}
 
               {/* ─── PREMIUM SECTIONS (gated with PremiumGate) ──────── */}
                   {/* ─── BUY / SELL PRESSURE ───────────────────────────── */}

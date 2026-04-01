@@ -39,8 +39,9 @@ const BrandColumn = styled(Column)`
 
 const BottomBar = styled.div`
   max-width: 1200px; margin: 3rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex; justify-content: space-between; align-items: center;
-  @media (max-width: 768px) { flex-direction: column; gap: 1rem; text-align: center; }
+  display: flex; flex-direction: column; gap: 1rem;
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  @media (max-width: 768px) { .row { flex-direction: column; gap: 1rem; text-align: center; } }
   p { color: var(--text-secondary); font-size: 0.9rem; margin: 0; }
   nav { display: flex; gap: 1.5rem; }
   nav a { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: color 0.2s ease; }
@@ -92,15 +93,17 @@ const Footer = () => {
         </Column>
       </FooterContent>
       <BottomBar>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', opacity: 0.7, textAlign: 'center', marginBottom: '0.75rem', lineHeight: 1.5, maxWidth: '700px', marginLeft: 'auto', marginRight: 'auto' }}>
+        <div className="row">
+          <p>&copy; 2026 Sonar. All rights reserved.</p>
+          <nav>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+            <a href="/faq">FAQ</a>
+          </nav>
+        </div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.5, textAlign: 'center', lineHeight: 1.5, maxWidth: '700px', marginLeft: 'auto', marginRight: 'auto', marginTop: '1rem' }}>
           Sonar Tracker provides data and analytics for informational purposes only. Nothing on this site constitutes financial, investment, or trading advice. Cryptocurrency trading involves significant risk — past performance does not guarantee future results.
         </p>
-        <p>&copy; 2026 Sonar. All rights reserved.</p>
-        <nav>
-          <a href="/privacy">Privacy Policy</a>
-          <a href="/terms">Terms of Service</a>
-          <a href="/faq">FAQ</a>
-        </nav>
       </BottomBar>
     </FooterContainer>
   );
