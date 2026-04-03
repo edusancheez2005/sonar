@@ -10,8 +10,7 @@ import PremiumGate from '@/components/PremiumGate'
 import { SkeletonMetrics } from '@/components/SkeletonLoader'
 import { calculateTokenScore, getScoreLabel } from '@/app/lib/tokenScore'
 
-const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false })
-const CandlestickChart = dynamic(() => import('@/components/charts/CandlestickChart'), { ssr: false })
+const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false })
 const SentimentChart = dynamic(() => import('@/components/charts/SentimentChart'), { ssr: false })
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
@@ -439,7 +438,6 @@ const getInsightIcon = (iconName) => {
 
 export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetrics, sentiment }) {
   const [priceData, setPriceData] = useState(null)
-  const [activeChartTab, setActiveChartTab] = useState('candlestick')
   const [orcaAnalysis, setOrcaAnalysis] = useState(null)
   const [showOrcaModal, setShowOrcaModal] = useState(false)
   const [loadingOrca, setLoadingOrca] = useState(false)
@@ -1334,45 +1332,13 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         <MainColumn>
 
         {/* ─── PRICE CHARTS (moved up — traders need this first) ──── */}
-        <ChartsSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          style={{ marginBottom: '1.5rem' }}
-        >
-          <SectionTitle>Price Charts</SectionTitle>
-          
-          <ChartTabs>
-            <ChartTab 
-              $active={activeChartTab === 'line'}
-              onClick={() => setActiveChartTab('line')}
-            >
-              Line Chart
-            </ChartTab>
-            <ChartTab 
-              $active={activeChartTab === 'candlestick'}
-              onClick={() => setActiveChartTab('candlestick')}
-            >
-              Candlestick Chart
-            </ChartTab>
-          </ChartTabs>
-
-          {activeChartTab === 'line' && (
-            <LineChart 
-              symbol={symbol} 
-              coingeckoId={priceData?.coingeckoId}
-              height={450}
-            />
-          )}
-
-          {activeChartTab === 'candlestick' && (
-            <CandlestickChart 
-              symbol={symbol}
-              coingeckoId={priceData?.coingeckoId}
-              height={450}
-            />
-          )}
-        </ChartsSection>
+        <Panel style={{ marginBottom: '1.5rem' }}>
+          <TradingViewChart
+            symbol={symbol}
+            coingeckoId={priceData?.coingeckoId}
+            height={500}
+          />
+        </Panel>
 
         </MainColumn>
         <SideColumn>
@@ -1454,44 +1420,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             <SentimentChart symbol={symbol} />
           </Panel>
           </PremiumGate>
-        )}
-
-        {/* ─── PROJECT LINKS (LunarCrush Meta) ───────────────────── */}
-        {coinMeta && (
-          <Panel style={{ marginBottom: '1.5rem' }}>
-            <TerminalPrompt style={{ marginBottom: '1rem' }}>PROJECT_LINKS</TerminalPrompt>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {[
-                { label: 'Website', url: coinMeta.website, icon: '🌐' },
-                { label: 'Twitter', url: coinMeta.twitter, icon: '𝕏' },
-                { label: 'Discord', url: coinMeta.discord, icon: '💬' },
-                { label: 'Telegram', url: coinMeta.telegram, icon: '📱' },
-                { label: 'Reddit', url: coinMeta.reddit, icon: '🔗' },
-                { label: 'GitHub', url: coinMeta.github, icon: '⚙️' },
-                { label: 'Whitepaper', url: coinMeta.whitepaper, icon: '📄' },
-                { label: 'Explorer', url: coinMeta.explorer, icon: '🔍' },
-              ].filter(l => l.url).map(link => (
-                <a
-                  key={link.label}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                    padding: '0.35rem 0.7rem', borderRadius: '4px', textDecoration: 'none',
-                    background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${COLORS.borderSubtle}`,
-                    transition: 'all 0.15s ease',
-                    fontSize: '0.7rem', fontFamily: MONO_FONT, fontWeight: 600,
-                    color: COLORS.cyan, letterSpacing: '0.3px',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.25)'; e.currentTarget.style.background = 'rgba(0, 229, 255, 0.08)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = COLORS.borderSubtle; e.currentTarget.style.background = 'rgba(0, 229, 255, 0.03)' }}
-                >
-                  <span>{link.icon}</span> {link.label}
-                </a>
-              ))}
-            </div>
-          </Panel>
         )}
 
         {/* ─── NEWS ARTICLES ─────────────────────────────────────── */}
