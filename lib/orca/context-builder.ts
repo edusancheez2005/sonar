@@ -20,6 +20,7 @@ import {
   getMarketChart,
 } from '@/lib/coingecko/client'
 import { coinRegistry } from '@/lib/coingecko/coin-registry'
+import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 import { 
   formatWhaleMovesDetailed,
   formatThemes,
@@ -477,21 +478,8 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<void>
 
     // Filter function to check if article is relevant to the crypto
     const isRelevantArticle = (article: any, ticker: string): boolean => {
-      const title = (article.post_title || '').toLowerCase()
-      const tickerLower = ticker.toLowerCase()
-      
-      // Common crypto-related keywords
-      const cryptoKeywords = ['crypto', 'blockchain', 'bitcoin', 'ethereum', 'defi', 'web3', 'nft', 'token', 'coin', 'trading', 'wallet', 'exchange', 'binance', 'coinbase']
-      
-      // Check if title contains ticker or crypto keywords
-      const hasTicker = title.includes(tickerLower) || title.includes(`$${tickerLower}`)
-      const hasCryptoKeyword = cryptoKeywords.some(keyword => title.includes(keyword))
-      
-      // Exclude obvious non-crypto topics
-      const excludeKeywords = ['ozempic', 'healthy returns', 'bridge', 'mail', 'proton', 'bomb', 'war', 'election', 'covid', 'vaccine', 'weather']
-      const hasExcludeKeyword = excludeKeywords.some(keyword => title.includes(keyword))
-      
-      return (hasTicker || hasCryptoKeyword) && !hasExcludeKeyword
+      const text = `${article.post_title || ''} ${article.post_description || ''}`
+      return isCryptoRelevant(text, ticker)
     }
 
     let savedCount = 0

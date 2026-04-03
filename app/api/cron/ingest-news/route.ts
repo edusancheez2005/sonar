@@ -6,6 +6,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 export const dynamic = 'force-dynamic'
 
@@ -190,9 +191,20 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
     }
 
     let inserted = 0
+    let skipped = 0
 
     for (const item of data.data.slice(0, 10)) { // Limit to 10 most recent
       try {
+        const articleTitle = item.title || 'Untitled'
+        const articleText = `${articleTitle} ${item.content || item.summary || ''}`
+        
+        // Filter out irrelevant content (e.g., Honda CR-V for CRV ticker)
+        if (!isCryptoRelevant(articleText, ticker)) {
+          skipped++
+          console.log(`  ⏭️  Skipping irrelevant for ${ticker}: "${articleTitle.substring(0, 60)}..."`) 
+          continue
+        }
+
         const { error } = await supabase
           .from('news_items')
           .insert({
@@ -222,6 +234,7 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
       }
     }
 
+    if (skipped > 0) console.log(`  ⏭️  Skipped ${skipped} irrelevant articles for ${ticker}`)
     return inserted
 
   } catch (error) {

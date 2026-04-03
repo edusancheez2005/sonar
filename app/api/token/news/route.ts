@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,14 +36,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ articles: [], total: 0 })
     }
 
-    const formatted = (articles || []).map(a => ({
-      title: a.title || 'Untitled',
-      url: a.url || '',
-      source: a.source || 'unknown',
-      published_at: a.published_at,
-      sentiment: a.sentiment_llm ?? a.sentiment_raw ?? null,
-      author: a.author || null,
-    }))
+    const formatted = (articles || [])
+      .filter(a => isCryptoRelevant(a.title || '', symbol))
+      .map(a => ({
+        title: a.title || 'Untitled',
+        url: a.url || '',
+        source: a.source || 'unknown',
+        published_at: a.published_at,
+        sentiment: a.sentiment_llm ?? a.sentiment_raw ?? null,
+        author: a.author || null,
+      }))
 
     return NextResponse.json({
       articles: formatted,

@@ -274,10 +274,24 @@ export default function CommunityClient() {
                 <InflName>{cr.display_name || cr.screen_name}</InflName>
                 <InflHandle>@{cr.screen_name}</InflHandle>
               </InflInfo>
-              <InflMetric>
-                <InflVal>{fmt(cr.interactions_24h)}</InflVal>
-                <InflLabel>INTERACTIONS</InflLabel>
-              </InflMetric>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                {cr.followers > 0 && (
+                  <InflMetric>
+                    <InflVal style={{ fontSize: '0.65rem', color: c.textSec }}>{fmt(cr.followers)}</InflVal>
+                    <InflLabel>FOLLOWERS</InflLabel>
+                  </InflMetric>
+                )}
+                <InflMetric>
+                  <InflVal>{fmt(cr.interactions_24h)}</InflVal>
+                  <InflLabel>INTERACTIONS</InflLabel>
+                </InflMetric>
+                {cr.galaxy_score > 0 && (
+                  <InflMetric>
+                    <InflVal style={{ color: cr.galaxy_score >= 60 ? c.bull : cr.galaxy_score >= 40 ? c.gold : c.bear, fontSize: '0.65rem' }}>{cr.galaxy_score}</InflVal>
+                    <InflLabel>GS</InflLabel>
+                  </InflMetric>
+                )}
+              </div>
             </InflRow>
           ))}
         </Side>

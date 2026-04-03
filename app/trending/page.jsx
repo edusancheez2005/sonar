@@ -178,6 +178,10 @@ export default function TrendingPage() {
   const [activeFilter, setActiveFilter] = useState('24h')
   const [isPremium, setIsPremium] = useState(false)
   const [whaleData, setWhaleData] = useState({}) // symbol -> whale stats
+  // Category social trending (LunarCrush)
+  const [activeCategory, setActiveCategory] = useState('defi')
+  const [categoryTopics, setCategoryTopics] = useState([])
+  const [categoryLoading, setCategoryLoading] = useState(false)
 
   useEffect(() => {
     async function checkPremium() {
@@ -216,6 +220,42 @@ export default function TrendingPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Fetch LunarCrush category topics
+  useEffect(() => {
+    async function fetchCategory() {
+      setCategoryLoading(true)
+      try {
+        const res = await fetch(`/api/social/category?category=${activeCategory}&limit=20`)
+        if (res.ok) {
+          const json = await res.json()
+          setCategoryTopics(json.topics || [])
+        }
+      } catch (err) {
+        console.error('Category fetch error:', err)
+      } finally {
+        setCategoryLoading(false)
+      }
+    }
+    fetchCategory()
+  }, [activeCategory])
+
+  const SOCIAL_CATEGORIES = [
+    { key: 'defi', label: 'DeFi' },
+    { key: 'memecoins', label: 'Memes' },
+    { key: 'layer-1', label: 'L1' },
+    { key: 'layer-2', label: 'L2' },
+    { key: 'nfts', label: 'NFTs' },
+    { key: 'gaming', label: 'Gaming' },
+    { key: 'ai', label: 'AI' },
+  ]
+
+  const formatInteractions = (n) => {
+    if (!n) return '0'
+    if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`
+    if (n >= 1e3) return `${(n / 1e3).toFixed(0)}K`
+    return String(n)
   }
 
   // Fetch whale activity for trending tokens after trending data loads
@@ -424,6 +464,75 @@ export default function TrendingPage() {
                   </a>
                 </div>
               )}
+
+              {/* Social Trending by Category (LunarCrush) */}
+              <Panel>
+                <TerminalPrompt>SOCIAL_TRENDING</TerminalPrompt>
+                <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                  {SOCIAL_CATEGORIES.map(cat => (
+                    <FilterButton
+                      key={cat.key}
+                      $active={activeCategory === cat.key}
+                      onClick={() => setActiveCategory(cat.key)}
+                    >
+                      {cat.label}
+                    </FilterButton>
+                  ))}
+                </div>
+                {categoryLoading && <div style={{ padding: '2rem', textAlign: 'center', fontFamily: MONO_FONT, fontSize: '0.7rem', color: COLORS.textMuted }}>Loading {activeCategory} data...</div>}
+                {!categoryLoading && categoryTopics.length > 0 && (
+                  <Grid>
+                    {categoryTopics.slice(0, isPremium ? 20 : 10).map((topic, idx) => (
+                      <Link key={topic.topic} href={`/token/${topic.symbol}`} style={{ textDecoration: 'none' }}>
+                        <CoinCard variants={fadeUp} initial="hidden" animate="visible">
+                          <CoinHeader>
+                            <TokenIcon symbol={topic.symbol} size={36} />
+                            <CoinInfo>
+                              <CoinName>{topic.title}</CoinName>
+                              <CoinSymbol>{topic.symbol}</CoinSymbol>
+                            </CoinInfo>
+                            {topic.galaxy_score != null && (
+                              <span style={{
+                                fontSize: '0.6rem', fontFamily: MONO_FONT, fontWeight: 700,
+                                color: topic.galaxy_score >= 60 ? COLORS.green : topic.galaxy_score >= 40 ? COLORS.amber : COLORS.red,
+                                padding: '0.15rem 0.4rem', borderRadius: '3px',
+                                background: 'rgba(0, 229, 255, 0.04)',
+                                border: `1px solid ${COLORS.borderSubtle}`,
+                              }}>
+                                GS: {topic.galaxy_score}
+                              </span>
+                            )}
+                          </CoinHeader>
+                          <CoinMetrics>
+                            {topic.sentiment != null && (
+                              <Metric>
+                                <MetricLabel>Sentiment</MetricLabel>
+                                <MetricValue style={{ color: topic.sentiment >= 60 ? COLORS.green : topic.sentiment >= 40 ? COLORS.amber : COLORS.red }}>
+                                  {topic.sentiment}%
+                                </MetricValue>
+                              </Metric>
+                            )}
+                            <Metric>
+                              <MetricLabel>24h Activity</MetricLabel>
+                              <MetricValue>{formatInteractions(topic.interactions_24h)}</MetricValue>
+                            </Metric>
+                            {topic.posts_24h > 0 && (
+                              <Metric>
+                                <MetricLabel>Posts</MetricLabel>
+                                <MetricValue>{formatInteractions(topic.posts_24h)}</MetricValue>
+                              </Metric>
+                            )}
+                          </CoinMetrics>
+                          {getWhaleBadge(topic.symbol)}
+                        </CoinCard>
+                      </Link>
+                    ))}
+                  </Grid>
+                )}
+                {!categoryLoading && categoryTopics.length === 0 && (
+                  <div style={{ padding: '2rem', textAlign: 'center', fontFamily: MONO_FONT, fontSize: '0.7rem', color: COLORS.textMuted }}>No data for {activeCategory}</div>
+                )}
+              </Panel>
             </>
           )}
         </Container>

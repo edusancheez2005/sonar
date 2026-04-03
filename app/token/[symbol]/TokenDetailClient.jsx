@@ -12,6 +12,7 @@ import { calculateTokenScore, getScoreLabel } from '@/app/lib/tokenScore'
 
 const LineChart = dynamic(() => import('@/components/charts/LineChart'), { ssr: false })
 const CandlestickChart = dynamic(() => import('@/components/charts/CandlestickChart'), { ssr: false })
+const SentimentChart = dynamic(() => import('@/components/charts/SentimentChart'), { ssr: false })
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
 const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
@@ -36,6 +37,20 @@ const PageWrapper = styled.div`
 `
 
 const Container = styled.div`max-width: 1440px; margin: 0 auto; position: relative; z-index: 1;`
+
+const TwoColumnGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 1.5rem;
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+`
+const MainColumn = styled.div`min-width: 0;`
+const SideColumn = styled.div`
+  min-width: 0;
+  @media (max-width: 1100px) { order: -1; }
+`
 
 const BackLink = styled(Link)`
   display: inline-flex; align-items: center; gap: 0.4rem; color: ${COLORS.cyan};
@@ -436,6 +451,8 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   // News articles
   const [newsArticles, setNewsArticles] = useState([])
   const [newsLoading, setNewsLoading] = useState(true)
+  // Coin meta (project links)
+  const [coinMeta, setCoinMeta] = useState(null)
   // Premium status
   const [isPremium, setIsPremium] = useState(false)
   // Watchlist
@@ -735,6 +752,22 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       }
     }
     fetchNews()
+  }, [symbol])
+
+  // Fetch coin meta (project links, social profiles)
+  useEffect(() => {
+    async function fetchMeta() {
+      try {
+        const res = await fetch(`/api/token/meta?symbol=${symbol}`)
+        if (res.ok) {
+          const json = await res.json()
+          if (json.available) setCoinMeta(json)
+        }
+      } catch (error) {
+        console.error('Failed to fetch coin meta:', error)
+      }
+    }
+    fetchMeta()
   }, [symbol])
 
   // Fetch Orca analysis
@@ -1211,158 +1244,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                   )}
                 </MetricsGrid>
               )}
-
-              {/* Links & Resources */}
-              {(priceData.homepage || priceData.blockchainSite || priceData.twitterHandle || priceData.subredditUrl) && (
-                <div style={{
-                  marginTop: '1.5rem',
-                  padding: '1.5rem',
-                  background: 'rgba(30, 57, 81, 0.3)',
-                  border: '1px solid rgba(54, 166, 186, 0.2)',
-                  borderRadius: '12px'
-                }}>
-                  <h3 style={{ 
-                    fontSize: '1.1rem', 
-                    fontWeight: 600, 
-                    marginBottom: '1rem',
-                    color: 'var(--primary)'
-                  }}>
-                    Resources & Links
-                  </h3>
-                  <div style={{ 
-                    display: 'flex', 
-                    flexWrap: 'wrap', 
-                    gap: '1rem',
-                    fontSize: '0.95rem'
-                  }}>
-                    {priceData.homepage && (
-                      <a 
-                        href={priceData.homepage} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ 
-                          color: 'var(--primary)', 
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.5rem 1rem',
-                          background: 'rgba(54, 166, 186, 0.1)',
-                          borderRadius: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
-                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                        </svg>
-                        Official Website
-                      </a>
-                    )}
-                    {priceData.blockchainSite && (
-                      <a 
-                        href={priceData.blockchainSite} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ 
-                          color: 'var(--primary)', 
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.5rem 1rem',
-                          background: 'rgba(54, 166, 186, 0.1)',
-                          borderRadius: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
-                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zm-7-6.74L16.71 6H6.29l5.21-2.74m0-2.26L2 6v2h19V6l-9.5-5z"/>
-                        </svg>
-                        Explorer
-                      </a>
-                    )}
-                    {priceData.twitterHandle && (
-                      <a 
-                        href={`https://twitter.com/${priceData.twitterHandle}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ 
-                          color: 'var(--primary)', 
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.5rem 1rem',
-                          background: 'rgba(54, 166, 186, 0.1)',
-                          borderRadius: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
-                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M22.46 6c-.85.38-1.78.64-2.75.76 1-.6 1.76-1.55 2.12-2.68-.93.55-1.96.95-3.06 1.17-.88-.94-2.13-1.53-3.52-1.53-2.67 0-4.84 2.17-4.84 4.84 0 .38.04.75.13 1.1-4.02-.2-7.58-2.13-9.97-5.06-.42.72-.66 1.55-.66 2.44 0 1.68.85 3.16 2.15 4.03-.79-.02-1.54-.24-2.19-.6v.06c0 2.34 1.67 4.3 3.88 4.74-.41.11-.84.17-1.28.17-.31 0-.62-.03-.92-.08.62 1.94 2.42 3.35 4.55 3.39-1.67 1.31-3.77 2.09-6.05 2.09-.39 0-.78-.02-1.17-.07 2.18 1.4 4.77 2.21 7.55 2.21 9.06 0 14-7.5 14-14 0-.21 0-.42-.02-.63.96-.69 1.8-1.56 2.46-2.55z"/>
-                        </svg>
-                        Twitter
-                      </a>
-                    )}
-                    {priceData.subredditUrl && (
-                      <a 
-                        href={priceData.subredditUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ 
-                          color: 'var(--primary)', 
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.5rem 1rem',
-                          background: 'rgba(54, 166, 186, 0.1)',
-                          borderRadius: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
-                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M14.238 15.348c.085.084.085.221 0 .306-.465.462-1.194.687-2.231.687l-.008-.002-.008.002c-1.036 0-1.766-.225-2.231-.688-.085-.084-.085-.221 0-.305.084-.084.222-.084.307 0 .379.377 1.008.561 1.924.561l.008.002.008-.002c.915 0 1.544-.184 1.924-.561.085-.084.223-.084.307 0zm-3.44-2.418c0-.507-.414-.919-.922-.919-.509 0-.923.412-.923.919 0 .506.414.918.923.918.508.001.922-.411.922-.918c0-.507-.413-.919-.922-.919z"/>
-                        </svg>
-                        Reddit
-                      </a>
-                    )}
-                    {priceData.githubRepo && (
-                      <a 
-                        href={priceData.githubRepo} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ 
-                          color: 'var(--primary)', 
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.5rem 1rem',
-                          background: 'rgba(54, 166, 186, 0.1)',
-                          borderRadius: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.2)'}
-                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(54, 166, 186, 0.1)'}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                        </svg>
-                        GitHub
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
             </>
           )}
 
@@ -1448,6 +1329,54 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </TimeFilters>
         </Header>
 
+        {/* ═══ TWO-COLUMN LAYOUT: CHART + TRADING LEFT, INTEL RIGHT ═══ */}
+        <TwoColumnGrid>
+        <MainColumn>
+
+        {/* ─── PRICE CHARTS (moved up — traders need this first) ──── */}
+        <ChartsSection
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          style={{ marginBottom: '1.5rem' }}
+        >
+          <SectionTitle>Price Charts</SectionTitle>
+          
+          <ChartTabs>
+            <ChartTab 
+              $active={activeChartTab === 'line'}
+              onClick={() => setActiveChartTab('line')}
+            >
+              Line Chart
+            </ChartTab>
+            <ChartTab 
+              $active={activeChartTab === 'candlestick'}
+              onClick={() => setActiveChartTab('candlestick')}
+            >
+              Candlestick Chart
+            </ChartTab>
+          </ChartTabs>
+
+          {activeChartTab === 'line' && (
+            <LineChart 
+              symbol={symbol} 
+              coingeckoId={priceData?.coingeckoId}
+              height={450}
+            />
+          )}
+
+          {activeChartTab === 'candlestick' && (
+            <CandlestickChart 
+              symbol={symbol}
+              coingeckoId={priceData?.coingeckoId}
+              height={450}
+            />
+          )}
+        </ChartsSection>
+
+        </MainColumn>
+        <SideColumn>
+
         {/* ─── SOCIAL INTELLIGENCE (LunarCrush) ──────────────────── */}
         {!socialLoading && socialData && (
           <PremiumGate isPremium={isPremium} feature="Social Intelligence">
@@ -1522,8 +1451,47 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                 ))}
               </div>
             )}
+            <SentimentChart symbol={symbol} />
           </Panel>
           </PremiumGate>
+        )}
+
+        {/* ─── PROJECT LINKS (LunarCrush Meta) ───────────────────── */}
+        {coinMeta && (
+          <Panel style={{ marginBottom: '1.5rem' }}>
+            <TerminalPrompt style={{ marginBottom: '1rem' }}>PROJECT_LINKS</TerminalPrompt>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {[
+                { label: 'Website', url: coinMeta.website, icon: '🌐' },
+                { label: 'Twitter', url: coinMeta.twitter, icon: '𝕏' },
+                { label: 'Discord', url: coinMeta.discord, icon: '💬' },
+                { label: 'Telegram', url: coinMeta.telegram, icon: '📱' },
+                { label: 'Reddit', url: coinMeta.reddit, icon: '🔗' },
+                { label: 'GitHub', url: coinMeta.github, icon: '⚙️' },
+                { label: 'Whitepaper', url: coinMeta.whitepaper, icon: '📄' },
+                { label: 'Explorer', url: coinMeta.explorer, icon: '🔍' },
+              ].filter(l => l.url).map(link => (
+                <a
+                  key={link.label}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                    padding: '0.35rem 0.7rem', borderRadius: '4px', textDecoration: 'none',
+                    background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${COLORS.borderSubtle}`,
+                    transition: 'all 0.15s ease',
+                    fontSize: '0.7rem', fontFamily: MONO_FONT, fontWeight: 600,
+                    color: COLORS.cyan, letterSpacing: '0.3px',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.25)'; e.currentTarget.style.background = 'rgba(0, 229, 255, 0.08)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = COLORS.borderSubtle; e.currentTarget.style.background = 'rgba(0, 229, 255, 0.03)' }}
+                >
+                  <span>{link.icon}</span> {link.label}
+                </a>
+              ))}
+            </div>
+          </Panel>
         )}
 
         {/* ─── NEWS ARTICLES ─────────────────────────────────────── */}
@@ -1625,67 +1593,8 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </Panel>
         )}
 
-        {/* ─── COMMUNITY DATA (CoinGecko) ────────────────────────── */}
-        {priceData && (priceData.sentimentVotesUpPercentage > 0 || priceData.redditSubscribers > 0 || priceData.telegramUsers > 0 || priceData.description) && (
-          <Panel style={{ marginBottom: '1.5rem' }}>
-            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>COMMUNITY_DATA</TerminalPrompt>
-            <MetricsGrid>
-              {priceData.sentimentVotesUpPercentage > 0 && (
-                <MetricCard>
-                  <MetricLabel>CoinGecko Sentiment</MetricLabel>
-                  <MetricValue style={{ color: priceData.sentimentVotesUpPercentage >= 60 ? COLORS.green : priceData.sentimentVotesUpPercentage >= 40 ? COLORS.amber : COLORS.red }}>
-                    {priceData.sentimentVotesUpPercentage.toFixed(1)}% bullish
-                  </MetricValue>
-                </MetricCard>
-              )}
-              {priceData.watchlistUsers > 0 && (
-                <MetricCard>
-                  <MetricLabel>Watchlist Users</MetricLabel>
-                  <MetricValue>{formatNumber(priceData.watchlistUsers)}</MetricValue>
-                </MetricCard>
-              )}
-              {priceData.redditSubscribers > 0 && (
-                <MetricCard>
-                  <MetricLabel>Reddit Subscribers</MetricLabel>
-                  <MetricValue>{formatNumber(priceData.redditSubscribers)}</MetricValue>
-                </MetricCard>
-              )}
-              {priceData.redditActive48h > 0 && (
-                <MetricCard>
-                  <MetricLabel>Reddit Active (48h)</MetricLabel>
-                  <MetricValue>{formatNumber(priceData.redditActive48h)}</MetricValue>
-                </MetricCard>
-              )}
-              {priceData.telegramUsers > 0 && (
-                <MetricCard>
-                  <MetricLabel>Telegram Users</MetricLabel>
-                  <MetricValue>{formatNumber(priceData.telegramUsers)}</MetricValue>
-                </MetricCard>
-              )}
-            </MetricsGrid>
-            {priceData.description && (
-              <div style={{
-                marginTop: '1rem', padding: '1rem', borderRadius: '6px',
-                background: 'rgba(0, 229, 255, 0.02)', border: `1px solid ${COLORS.borderSubtle}`,
-                fontSize: '0.85rem', color: COLORS.textMuted, lineHeight: '1.6', fontFamily: SANS_FONT
-              }}>
-                {priceData.description.replace(/<[^>]+>/g, '').slice(0, 300)}
-                {priceData.description.length > 300 ? '...' : ''}
-              </div>
-            )}
-            {priceData.categories && priceData.categories.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.75rem' }}>
-                {priceData.categories.filter(Boolean).slice(0, 8).map(cat => (
-                  <span key={cat} style={{
-                    padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem',
-                    fontFamily: MONO_FONT, fontWeight: 600, color: COLORS.textMuted,
-                    background: 'rgba(0, 229, 255, 0.04)', border: `1px solid ${COLORS.borderSubtle}`,
-                  }}>{cat}</span>
-                ))}
-              </div>
-            )}
-          </Panel>
-        )}
+        </SideColumn>
+        </TwoColumnGrid>
 
         {/* ─── DEVELOPER ACTIVITY (GitHub) ────────────────────────── */}
         {priceData && priceData.githubCommits4w > 0 && (
@@ -1768,46 +1677,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </Panel>
           </PremiumGate>
         )}
-
-        {/* Price Charts Section */}
-        <ChartsSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <SectionTitle>Price Charts</SectionTitle>
-          
-          <ChartTabs>
-            <ChartTab 
-              $active={activeChartTab === 'line'}
-              onClick={() => setActiveChartTab('line')}
-            >
-              Line Chart
-            </ChartTab>
-            <ChartTab 
-              $active={activeChartTab === 'candlestick'}
-              onClick={() => setActiveChartTab('candlestick')}
-            >
-              Candlestick Chart
-            </ChartTab>
-          </ChartTabs>
-
-          {activeChartTab === 'line' && (
-            <LineChart 
-              symbol={symbol} 
-              coingeckoId={priceData?.coingeckoId}
-              height={450}
-            />
-          )}
-
-          {activeChartTab === 'candlestick' && (
-            <CandlestickChart 
-              symbol={symbol}
-              coingeckoId={priceData?.coingeckoId}
-              height={450}
-            />
-          )}
-        </ChartsSection>
 
         {/* CMC-Style Deep Dive Analysis */}
         {deepDive && (

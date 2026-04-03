@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchLunarCrushEnhanced } from '@/lib/orca/lunarcrush-api'
+import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,16 +33,22 @@ async function fetchTopPosts(symbol: string): Promise<any[]> {
     if (!res.ok) return []
     const json = await res.json()
     const posts = json.data || []
-    // Return top 5 posts with key fields
-    return posts.slice(0, 5).map((p: any) => ({
-      title: p.post_title || p.post_text?.slice(0, 120) || '',
-      url: p.post_url || '',
-      source: p.post_type || 'social',
-      creator: p.creator_display_name || p.creator_name || 'Unknown',
-      interactions: p.interactions_24h || p.interactions_total || 0,
-      sentiment: p.post_sentiment || null,
-      created_at: p.post_created ? new Date(p.post_created * 1000).toISOString() : null,
-    }))
+    // Filter out non-crypto noise and return top 5 posts
+    return posts
+      .filter((p: any) => {
+        const text = `${p.post_title || ''} ${p.post_text || ''} ${p.body || ''}`
+        return isCryptoRelevant(text, symbol)
+      })
+      .slice(0, 5)
+      .map((p: any) => ({
+        title: p.post_title || p.post_text?.slice(0, 120) || '',
+        url: p.post_url || '',
+        source: p.post_type || 'social',
+        creator: p.creator_display_name || p.creator_name || 'Unknown',
+        interactions: p.interactions_24h || p.interactions_total || 0,
+        sentiment: p.post_sentiment || null,
+        created_at: p.post_created ? new Date(p.post_created * 1000).toISOString() : null,
+      }))
   } catch (error) {
     console.error(`Error fetching LunarCrush posts for ${symbol}:`, error)
     return []
