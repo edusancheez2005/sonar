@@ -1,3 +1,5 @@
+import ChainLandingClient from '../components/ChainLandingClient'
+
 export const metadata = {
   title: 'Bitcoin Whale Tracker — Real-Time BTC Whale Alerts | Sonar Tracker',
   description: 'Track Bitcoin whale transactions in real-time. Monitor exchange flows, miner activity, and dormant wallet movements. AI-powered BTC whale intelligence from $7.99/mo.',
@@ -34,75 +36,59 @@ export default function BitcoinWhaleTrackerPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <div style={{ minHeight: '100vh', background: '#0a1621', color: '#e8edf2', fontFamily: "'Inter', -apple-system, sans-serif" }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '8rem 2rem 4rem' }}>
-          {/* Hero */}
-          <p style={{ color: '#F7931A', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '1rem' }}>Bitcoin Whale Intelligence</p>
-          <h1 style={{ fontSize: '3.2rem', fontWeight: 800, lineHeight: 1.15, marginBottom: '1.5rem', background: 'linear-gradient(135deg, #F7931A, #FFD93D)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Track Bitcoin Whale Movements in Real Time
-          </h1>
-          <p style={{ fontSize: '1.25rem', color: '#8a9bb0', lineHeight: 1.7, marginBottom: '2rem', maxWidth: '700px' }}>
-            Monitor large BTC transactions, exchange flows, miner activity, and dormant wallet movements. ORCA AI explains what each whale move means for Bitcoin price.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '4rem', flexWrap: 'wrap' }}>
-            <a href="/subscribe" style={{ display: 'inline-block', padding: '0.9rem 2rem', borderRadius: '8px', background: 'linear-gradient(135deg, #F7931A, #FFD93D)', color: '#0a1621', fontWeight: 700, textDecoration: 'none', fontSize: '1rem' }}>Track BTC Whales — $7.99/mo</a>
-            <a href="/dashboard" style={{ display: 'inline-block', padding: '0.9rem 2rem', borderRadius: '8px', border: '1px solid rgba(247,147,26,0.3)', color: '#F7931A', fontWeight: 600, textDecoration: 'none', fontSize: '1rem' }}>View Live Dashboard</a>
-          </div>
-
-          {/* Features */}
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1.5rem' }}>Bitcoin Whale Tracking Features</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
-            {[
-              { title: 'Exchange Flow Monitoring', desc: 'Track BTC flowing in and out of all major exchanges. Net exchange outflows are the most reliable bullish signal in crypto. Inflow spikes signal imminent selling.' },
-              { title: 'Miner Activity Tracking', desc: 'Monitor miner wallet outflows to exchanges. Post-halving miner capitulation events historically mark local price bottoms — catch them in real time.' },
-              { title: 'Dormant Wallet Alerts', desc: 'Get notified when long-dormant Bitcoin wallets (5+ years inactive) suddenly move BTC. ORCA AI distinguishes between reorganization and sell-intent.' },
-              { title: 'ORCA AI for Bitcoin', desc: 'Ask ORCA about BTC-specific whale behavior: exchange reserves, miner selling rates, government wallet movements, and UTXO age distribution signals.' },
-            ].map((item, i) => (
-              <div key={i} style={{ background: 'rgba(13,33,52,0.6)', border: '1px solid rgba(247,147,26,0.15)', borderRadius: '12px', padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#F7931A', marginBottom: '0.5rem' }}>{item.title}</h3>
-                <p style={{ fontSize: '0.9rem', color: '#8a9bb0', lineHeight: 1.6, margin: 0 }}>{item.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Why BTC */}
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1.5rem' }}>Why Track Bitcoin Whales?</h2>
-          <div style={{ background: 'rgba(13,33,52,0.6)', border: '1px solid rgba(247,147,26,0.15)', borderRadius: '12px', padding: '2rem', marginBottom: '4rem', lineHeight: 1.8, color: '#8a9bb0' }}>
-            <p style={{ marginBottom: '1rem' }}>Bitcoin whale tracking has the longest proven track record of any on-chain signal:</p>
-            <ul style={{ paddingLeft: '1.5rem', margin: 0 }}>
-              <li style={{ marginBottom: '0.8rem' }}><strong style={{ color: '#e8edf2' }}>Most market-moving whale activity</strong> — a single large BTC transfer can move billions in market cap within hours. Government liquidations, institutional buys, and dormant wallet movements generate outsized price reactions.</li>
-              <li style={{ marginBottom: '0.8rem' }}><strong style={{ color: '#e8edf2' }}>Exchange reserves at historic lows</strong> — BTC continuously leaving exchanges signals a supply squeeze. This metric has preceded every major Bitcoin rally in the past 5 years.</li>
-              <li style={{ marginBottom: '0.8rem' }}><strong style={{ color: '#e8edf2' }}>Miner behavior as a cycle indicator</strong> — post-halving miner capitulation (high selling + hashrate drops) marks local bottoms. Miner accumulation signals the start of bull phases.</li>
-              <li style={{ marginBottom: '0.8rem' }}><strong style={{ color: '#e8edf2' }}>Coin age analysis</strong> — Bitcoin&apos;s UTXO model uniquely allows tracking how long coins have been dormant. Old coins moving is a high-conviction signal.</li>
-            </ul>
-          </div>
-
-          {/* Blog link */}
-          <div style={{ background: 'rgba(247,147,26,0.08)', border: '1px solid rgba(247,147,26,0.2)', borderRadius: '12px', padding: '2rem', marginBottom: '4rem', textAlign: 'center' }}>
-            <p style={{ color: '#e8edf2', fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Want to learn more?</p>
-            <p style={{ color: '#8a9bb0', fontSize: '0.95rem', marginBottom: '1rem' }}>Read our complete guide to Bitcoin whale tracking — UTXO analysis, exchange flows, and historical examples.</p>
-            <a href="/blog/bitcoin-whale-tracker" style={{ color: '#F7931A', fontWeight: 600, textDecoration: 'none', fontSize: '1rem' }}>Read the Full Bitcoin Whale Tracking Guide →</a>
-          </div>
-
-          {/* FAQ */}
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1.5rem' }}>Frequently Asked Questions</h2>
-          <div style={{ marginBottom: '4rem' }}>
-            {faqSchema.mainEntity.map((faq, i) => (
-              <div key={i} style={{ borderBottom: '1px solid rgba(247,147,26,0.1)', padding: '1.25rem 0' }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#e8edf2', marginBottom: '0.5rem' }}>{faq.name}</h3>
-                <p style={{ fontSize: '0.9rem', color: '#8a9bb0', lineHeight: 1.6, margin: 0 }}>{faq.acceptedAnswer.text}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA */}
-          <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1rem' }}>Start tracking Bitcoin whales today.</h2>
-            <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>See exchange flows, miner activity, and dormant wallet movements before prices react.</p>
-            <a href="/subscribe" style={{ display: 'inline-block', padding: '1rem 2.5rem', borderRadius: '8px', background: 'linear-gradient(135deg, #F7931A, #FFD93D)', color: '#0a1621', fontWeight: 700, textDecoration: 'none', fontSize: '1.1rem' }}>Start Tracking — Free</a>
-          </div>
-        </div>
-      </div>
+      <ChainLandingClient
+        chain="bitcoin"
+        chainName="Bitcoin"
+        ticker="BTC"
+        accentColor="#F7931A"
+        secondaryColor="#FFD93D"
+        heroTitle="Track Bitcoin Whale Movements in Real Time"
+        heroSubtitle="Monitor large BTC transactions, exchange flows, miner activity, and dormant wallet movements. ORCA AI explains what each whale move means for Bitcoin price."
+        stats={[
+          { value: '#1', label: 'most tracked chain' },
+          { value: 'UTXO', label: 'deep analysis' },
+          { value: '$7.99', label: '/month' },
+          { value: 'ORCA AI', label: 'built-in' },
+        ]}
+        features={[
+          { icon: '🏛️', title: 'Exchange Flow Monitoring', desc: 'Track BTC flowing in and out of all major exchanges. Net exchange outflows are the most reliable bullish signal in crypto. Inflow spikes signal imminent selling.' },
+          { icon: '⛏️', title: 'Miner Activity Tracking', desc: 'Monitor miner wallet outflows to exchanges. Post-halving miner capitulation events historically mark local price bottoms — catch them in real time.' },
+          { icon: '💤', title: 'Dormant Wallet Alerts', desc: 'Get flagged when long-dormant Bitcoin wallets (5+ years inactive) suddenly move BTC. ORCA AI distinguishes between reorganization and sell-intent.' },
+          { icon: '🤖', title: 'ORCA AI for Bitcoin', desc: 'Ask ORCA about BTC-specific whale behavior: exchange reserves, miner selling rates, government wallet movements, and UTXO age distribution signals.' },
+          { icon: '📊', title: 'UTXO Age Analysis', desc: 'Track Coin Days Destroyed and HODL Waves metrics. When old coins move, it signals conviction shifts among long-term holders — a high-confidence indicator.' },
+          { icon: '🔔', title: 'Custom BTC Alerts', desc: 'Set alerts for BTC transactions above any threshold. Get notified when government wallets, miners, or dormant whales make moves.' },
+        ]}
+        steps={[
+          { title: 'Sonar monitors every BTC transaction over $10K', desc: 'Our pipeline captures Bitcoin whale movements across the UTXO model, tracking address clusters rather than individual accounts for accurate entity mapping.' },
+          { title: 'AI classifies intent behind each transaction', desc: 'Machine learning determines if BTC is moving to an exchange (sell signal), cold wallet (accumulation), or between wallets (neutral) — context that raw explorers miss.' },
+          { title: 'ORCA analyses exchange flows and coin age', desc: 'ORCA tracks exchange reserve trends, miner behavior, dormant wallet reactivations, and cross-references with macro events for complete BTC intelligence.' },
+          { title: 'You get signals hedge funds pay $10K+/month for', desc: 'The same exchange flow and whale data that institutional desks monitor — with AI interpretation, for $7.99/month.' },
+        ]}
+        whyTrack={[
+          { title: 'Most Market-Moving Whale Activity', desc: 'A single large BTC transfer can move billions in market cap within hours. Government liquidations, institutional buys, and dormant wallet movements generate outsized price reactions.' },
+          { title: 'Exchange Reserves at Historic Lows', desc: 'BTC continuously leaving exchanges signals a supply squeeze. This metric has preceded every major Bitcoin rally in the past 5 years. Sonar tracks it in real time.' },
+          { title: 'Miner Behavior as a Cycle Indicator', desc: 'Post-halving miner capitulation (high selling + hashrate drops) marks local bottoms. Miner accumulation signals the start of bull phases. Sonar monitors both.' },
+          { title: 'Coin Age — Unique to Bitcoin', desc: 'Bitcoin\'s UTXO model uniquely allows tracking how long coins have been dormant. Old coins moving is a high-conviction signal no other chain can provide.' },
+        ]}
+        comparisons={[
+          { feature: 'Real-time BTC tracking', sonar: '✓', tool2: '✓', tool3: '✓' },
+          { feature: 'AI buy/sell classification', sonar: '✓', tool2: '✗', tool3: '✗' },
+          { feature: 'AI analyst (ORCA)', sonar: '✓', tool2: '✗', tool3: '✗' },
+          { feature: 'Exchange flow monitoring', sonar: '✓', tool2: '✓', tool3: 'Limited' },
+          { feature: 'Miner activity tracking', sonar: '✓', tool2: '✓', tool3: '✗' },
+          { feature: 'Multi-chain coverage', sonar: '10+ chains', tool2: 'BTC only', tool3: '✗' },
+          { feature: 'Price/month', sonar: '$7.99', tool2: '$29+', tool3: 'Free' },
+        ]}
+        compToolNames={['Glassnode', 'Mempool']}
+        faqs={[
+          { q: 'Why is Bitcoin whale tracking different from Ethereum?', a: 'Bitcoin\'s UTXO model means one entity can control hundreds of addresses. BTC lacks smart contracts, so whale behavior is buy/hold/sell rather than complex DeFi interactions. Exchange flow and coin age are the most reliable BTC-specific signals.' },
+          { q: 'What happens when a Satoshi-era wallet moves?', a: 'The market typically overreacts. Old-coin movements generate headlines and speculative selling even if the amount is small. ORCA AI helps distinguish between symbolic moves (50 BTC from 2009) and market-moving events (50,000 BTC government liquidation).' },
+          { q: 'How does the halving affect whale behavior?', a: 'Halvings reduce miner revenue by 50%, increasing sell pressure as less-efficient operations wind down. Post-halving periods typically see 3-6 months of miner capitulation followed by supply reduction and price appreciation.' },
+          { q: 'Can I track Bitcoin whale wallets for free?', a: 'Use blockchain.com or mempool.space for free individual address tracking. For aggregated whale intelligence with AI analysis, Sonar Pro at $7.99/month is the most cost-effective option.' },
+          { q: 'What is the most reliable Bitcoin whale signal?', a: 'Exchange flow direction — particularly sustained outflows (5+ days). When BTC consistently leaves exchanges, holders are moving to self-custody with no intent to sell. This has preceded every major BTC rally in the past 5 years.' },
+        ]}
+        blogSlug="bitcoin-whale-tracker"
+      />
     </>
   )
 }

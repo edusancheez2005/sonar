@@ -1251,6 +1251,12 @@ DEX Transactions: ${context.whales.dex_transactions}
 INTERPRETATION:
 ${context.whales.net_flow_24h > 0 ? `Positive net flow of ${formatCurrency(context.whales.net_flow_24h)} indicates whale ACCUMULATION (bullish)` : context.whales.net_flow_24h < 0 ? `Negative net flow of ${formatCurrency(Math.abs(context.whales.net_flow_24h))} indicates whale DISTRIBUTION (bearish)` : 'Net flow is neutral'}
 ${context.whales.buy_count > context.whales.sell_count * 1.5 ? 'Strong buy pressure detected - whales are accumulating!' : context.whales.sell_count > context.whales.buy_count * 1.5 ? 'Strong sell pressure detected - whales may be distributing!' : 'Buy/sell activity relatively balanced'}
+${context.price?.change_24h !== undefined && context.whales.net_flow_24h !== 0 ? `
+WHALE FLOW vs PRICE DIVERGENCE CHECK:
+Price 24h change: ${context.price.change_24h > 0 ? '+' : ''}${context.price.change_24h?.toFixed(2)}%
+Whale net flow: ${context.whales.net_flow_24h > 0 ? 'POSITIVE' : 'NEGATIVE'} (${formatCurrency(Math.abs(context.whales.net_flow_24h))})
+${(context.whales.net_flow_24h > 0 && context.price.change_24h < 0) ? '[DIVERGENCE DETECTED - ACCUMULATION INTO WEAKNESS] Whales are buying while price drops. This is a classic accumulation signal. Whales represent only a fraction of total volume — retail/CEX selling is driving the price down while smart money loads up. You MUST explain this divergence to the user.' : ''}${(context.whales.net_flow_24h < 0 && context.price.change_24h > 0) ? '[DIVERGENCE DETECTED - DISTRIBUTION INTO STRENGTH] Whales are selling while price rises. Smart money is using the retail-driven rally as exit liquidity. You MUST warn the user about this bearish divergence.' : ''}${((context.whales.net_flow_24h > 0 && context.price.change_24h > 0) || (context.whales.net_flow_24h < 0 && context.price.change_24h < 0)) ? '[SIGNALS ALIGNED] Whale flow and price direction agree — higher conviction signal.' : ''}
+Whale volume as % of total 24h volume: ${context.price.volume_24h ? (context.whales.total_volume_usd / context.price.volume_24h * 100).toFixed(1) + '%' : 'N/A'} (whales are NOT the entire market — explain this)` : ''}
 
 Top Whale Moves:
 ${formatWhaleMovesDetailed(context.whales.top_moves)}

@@ -1,3 +1,5 @@
+import ChainLandingClient from '../components/ChainLandingClient'
+
 export const metadata = {
   title: 'Ethereum Whale Tracker — Real-Time ETH Whale Alerts | Sonar Tracker',
   description: 'Track Ethereum whale transactions in real-time. Monitor staking flows, DeFi interactions, and exchange deposits. AI-powered ETH whale intelligence from $7.99/mo.',
@@ -34,75 +36,59 @@ export default function EthereumWhaleTrackerPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <div style={{ minHeight: '100vh', background: '#0a1621', color: '#e8edf2', fontFamily: "'Inter', -apple-system, sans-serif" }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '8rem 2rem 4rem' }}>
-          {/* Hero */}
-          <p style={{ color: '#627EEA', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '1rem' }}>Ethereum Whale Intelligence</p>
-          <h1 style={{ fontSize: '3.2rem', fontWeight: 800, lineHeight: 1.15, marginBottom: '1.5rem', background: 'linear-gradient(135deg, #627EEA, #36a6ba)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Track Ethereum Whale Movements in Real Time
-          </h1>
-          <p style={{ fontSize: '1.25rem', color: '#8a9bb0', lineHeight: 1.7, marginBottom: '2rem', maxWidth: '700px' }}>
-            Monitor large ETH transactions, staking flows, and DeFi whale interactions across the Ethereum ecosystem. ORCA AI interprets every major move so you don&apos;t have to read Etherscan.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '4rem', flexWrap: 'wrap' }}>
-            <a href="/subscribe" style={{ display: 'inline-block', padding: '0.9rem 2rem', borderRadius: '8px', background: 'linear-gradient(135deg, #627EEA, #36a6ba)', color: '#fff', fontWeight: 700, textDecoration: 'none', fontSize: '1rem' }}>Track ETH Whales — $7.99/mo</a>
-            <a href="/dashboard" style={{ display: 'inline-block', padding: '0.9rem 2rem', borderRadius: '8px', border: '1px solid rgba(98,126,234,0.3)', color: '#627EEA', fontWeight: 600, textDecoration: 'none', fontSize: '1rem' }}>View Live Dashboard</a>
-          </div>
-
-          {/* Features */}
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1.5rem' }}>Ethereum Whale Tracking Features</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
-            {[
-              { title: 'ETH & ERC-20 Tracking', desc: 'Every whale transaction over $10K for native ETH and all major ERC-20 tokens. Classified as BUY, SELL, TRANSFER, or DEFI using AI.' },
-              { title: 'Staking Flow Analysis', desc: 'Monitor the Ethereum staking withdrawal queue. See when large validators unstake — a leading indicator of potential selling days in advance.' },
-              { title: 'DeFi Whale Intelligence', desc: 'Track whale interactions with Aave, Uniswap, Lido, Eigenlayer, and more. Know when whales are leveraging up or deleveraging.' },
-              { title: 'ORCA AI for Ethereum', desc: 'Ask ORCA about ETH whale behavior. Get context on ICO wallets, foundation sells, institutional movements, and DeFi protocol flows.' },
-            ].map((item, i) => (
-              <div key={i} style={{ background: 'rgba(13,33,52,0.6)', border: '1px solid rgba(98,126,234,0.15)', borderRadius: '12px', padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#627EEA', marginBottom: '0.5rem' }}>{item.title}</h3>
-                <p style={{ fontSize: '0.9rem', color: '#8a9bb0', lineHeight: 1.6, margin: 0 }}>{item.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Why ETH */}
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1.5rem' }}>Why Track Ethereum Whales?</h2>
-          <div style={{ background: 'rgba(13,33,52,0.6)', border: '1px solid rgba(98,126,234,0.15)', borderRadius: '12px', padding: '2rem', marginBottom: '4rem', lineHeight: 1.8, color: '#8a9bb0' }}>
-            <p style={{ marginBottom: '1rem' }}>Ethereum has the most developed whale tracking ecosystem in crypto:</p>
-            <ul style={{ paddingLeft: '1.5rem', margin: 0 }}>
-              <li style={{ marginBottom: '0.8rem' }}><strong style={{ color: '#e8edf2' }}>Most labeled wallets</strong> — ETH has more identified whale wallets than any chain: ICO participants, foundations, institutional funds, and ETF issuers.</li>
-              <li style={{ marginBottom: '0.8rem' }}><strong style={{ color: '#e8edf2' }}>Staking as a leading indicator</strong> — unstaking queue data gives you 1-14 days advance warning of potential selling. No other chain offers this signal.</li>
-              <li style={{ marginBottom: '0.8rem' }}><strong style={{ color: '#e8edf2' }}>Deepest DeFi ecosystem</strong> — whale interactions with Aave, Uniswap, Lido, and Eigenlayer reveal leveraging, deleveraging, and strategic repositioning.</li>
-              <li style={{ marginBottom: '0.8rem' }}><strong style={{ color: '#e8edf2' }}>ETF flow transparency</strong> — spot ETH ETF custodial wallets (BlackRock, Fidelity) show institutional demand in real time on-chain.</li>
-            </ul>
-          </div>
-
-          {/* Blog link */}
-          <div style={{ background: 'rgba(98,126,234,0.08)', border: '1px solid rgba(98,126,234,0.2)', borderRadius: '12px', padding: '2rem', marginBottom: '4rem', textAlign: 'center' }}>
-            <p style={{ color: '#e8edf2', fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Want to learn more?</p>
-            <p style={{ color: '#8a9bb0', fontSize: '0.95rem', marginBottom: '1rem' }}>Read our complete guide to Ethereum whale tracking — staking flows, DeFi signals, and top wallets to watch.</p>
-            <a href="/blog/ethereum-whale-tracker" style={{ color: '#627EEA', fontWeight: 600, textDecoration: 'none', fontSize: '1rem' }}>Read the Full Ethereum Whale Tracking Guide →</a>
-          </div>
-
-          {/* FAQ */}
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1.5rem' }}>Frequently Asked Questions</h2>
-          <div style={{ marginBottom: '4rem' }}>
-            {faqSchema.mainEntity.map((faq, i) => (
-              <div key={i} style={{ borderBottom: '1px solid rgba(98,126,234,0.1)', padding: '1.25rem 0' }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#e8edf2', marginBottom: '0.5rem' }}>{faq.name}</h3>
-                <p style={{ fontSize: '0.9rem', color: '#8a9bb0', lineHeight: 1.6, margin: 0 }}>{faq.acceptedAnswer.text}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA */}
-          <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1rem' }}>Start tracking Ethereum whales today.</h2>
-            <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>See staking flows, DeFi interactions, and exchange deposits before prices react.</p>
-            <a href="/subscribe" style={{ display: 'inline-block', padding: '1rem 2.5rem', borderRadius: '8px', background: 'linear-gradient(135deg, #627EEA, #36a6ba)', color: '#fff', fontWeight: 700, textDecoration: 'none', fontSize: '1.1rem' }}>Start Tracking — Free</a>
-          </div>
-        </div>
-      </div>
+      <ChainLandingClient
+        chain="ethereum"
+        chainName="Ethereum"
+        ticker="ETH"
+        accentColor="#627EEA"
+        secondaryColor="#36a6ba"
+        heroTitle="Track Ethereum Whale Movements in Real Time"
+        heroSubtitle="Monitor large ETH transactions, staking flows, and DeFi whale interactions across the entire Ethereum ecosystem. ORCA AI interprets every major move so you don't have to read Etherscan."
+        stats={[
+          { value: '300M+', label: 'labeled wallets' },
+          { value: 'ERC-20', label: 'full coverage' },
+          { value: '$7.99', label: '/month' },
+          { value: 'ORCA AI', label: 'built-in' },
+        ]}
+        features={[
+          { icon: '💎', title: 'ETH & ERC-20 Tracking', desc: 'Every whale transaction over $10K for native ETH and all major ERC-20 tokens. AI classifies each as BUY, SELL, TRANSFER, or DEFI automatically.' },
+          { icon: '🔗', title: 'Staking Flow Analysis', desc: 'Monitor the Ethereum staking withdrawal queue. See when large validators unstake — a leading indicator of potential selling days in advance.' },
+          { icon: '🏦', title: 'DeFi Whale Intelligence', desc: 'Track whale interactions with Aave, Uniswap, Lido, and Eigenlayer. Know instantly when whales are leveraging up or deleveraging.' },
+          { icon: '🤖', title: 'ORCA AI for Ethereum', desc: 'Ask ORCA about ETH whale behavior. Get context on ICO wallets, foundation sells, institutional movements, and DeFi protocol flows.' },
+          { icon: '📈', title: 'Exchange Flow Tracking', desc: 'Monitor ETH flowing in and out of all major exchanges. Sustained outflows signal accumulation. Sudden inflow spikes signal imminent selling.' },
+          { icon: '🔔', title: 'Custom Alerts', desc: 'Set alerts for ETH and any ERC-20 token. Get notified when whale activity exceeds your threshold or when net flow direction changes.' },
+        ]}
+        steps={[
+          { title: 'Sonar monitors every ETH transaction over $10K', desc: 'Our pipeline captures whale movements across native ETH and all major ERC-20 tokens as they confirm on the Ethereum blockchain.' },
+          { title: 'AI classifies buy, sell, transfer, and DeFi', desc: 'Machine learning analyzes DEX interactions, exchange patterns, and wallet behavior to determine the intent behind each transaction.' },
+          { title: 'ORCA detects staking flows and divergences', desc: 'ORCA tracks the withdrawal queue, ICO wallet movements, foundation sells, and flags when whale behavior contradicts market sentiment.' },
+          { title: 'You get institutional-grade intelligence', desc: 'Dashboard views, on-demand AI analysis, custom alerts. The same on-chain data hedge funds use — for $7.99/month.' },
+        ]}
+        whyTrack={[
+          { title: 'Most Labeled Wallets', desc: 'Ethereum has more identified whale wallets than any chain: ICO participants, foundations, institutional funds, and ETF issuers. More labels mean more actionable intelligence.' },
+          { title: 'Staking as a Leading Indicator', desc: 'Unstaking queue data gives you 1-14 days advance warning of potential selling. No other chain offers this kind of predictive window built into the protocol.' },
+          { title: 'Deepest DeFi Ecosystem', desc: 'Whale interactions with Aave, Uniswap, Lido, and Eigenlayer reveal leveraging, deleveraging, and strategic repositioning before it shows in the price.' },
+          { title: 'ETF Flow Transparency', desc: 'Spot ETH ETF custodial wallets (BlackRock, Fidelity) show institutional demand in real time on-chain. Sonar tracks these flows alongside organic whale activity.' },
+        ]}
+        comparisons={[
+          { feature: 'Real-time ETH tracking', sonar: '✓', tool2: '✓', tool3: '✓' },
+          { feature: 'AI buy/sell classification', sonar: '✓', tool2: '✗', tool3: '✗' },
+          { feature: 'AI analyst (ORCA)', sonar: '✓', tool2: '✗', tool3: '✗' },
+          { feature: 'Staking flow monitoring', sonar: '✓', tool2: '✓', tool3: '✗' },
+          { feature: 'DeFi interaction tracking', sonar: '✓', tool2: '✓', tool3: 'Limited' },
+          { feature: 'Custom alerts', sonar: '✓', tool2: '✓', tool3: '✗' },
+          { feature: 'Price/month', sonar: '$7.99', tool2: '$150+', tool3: 'Free' },
+        ]}
+        compToolNames={['Nansen', 'Etherscan']}
+        faqs={[
+          { q: 'How do ETH staking withdrawals affect price?', a: 'Large unstaking events signal intent to sell. After the queue processes (1-14 days), ETH becomes liquid. If it moves to an exchange, selling is imminent. Sonar monitors both the withdrawal queue and post-withdrawal exchange deposits.' },
+          { q: 'What\'s the difference between ETH and ERC-20 tracking?', a: 'ETH tracking focuses on native Ether — staking flows, exchange deposits, and ETH-specific DeFi. ERC-20 tracking covers all tokens on Ethereum (UNI, LINK, AAVE, etc.). Sonar covers both comprehensively.' },
+          { q: 'How accurate is ETH whale buy/sell classification?', a: 'Sonar\'s AI achieves high accuracy by analyzing DEX interactions, exchange patterns, and historical wallet behavior. Edge cases like OTC deals may require additional context from ORCA.' },
+          { q: 'Can I track ETF custodial wallets?', a: 'Yes. Sonar monitors known custodial wallets for BlackRock, Fidelity, and other spot ETH ETF issuers. Inflows and outflows from these addresses reflect institutional demand.' },
+          { q: 'Which ETH signals are most reliable?', a: 'Exchange flow direction is the single most reliable signal. Sustained outflows (5+ days) are strongly bullish. Sudden inflow spikes are reliably bearish. Staking queue events also offer high-confidence signals.' },
+        ]}
+        blogSlug="ethereum-whale-tracker"
+      />
     </>
   )
 }
