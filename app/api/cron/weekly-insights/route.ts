@@ -76,18 +76,26 @@ export async function GET(request: Request) {
     .order('published_at', { ascending: false })
     .limit(500)
 
-  // Whale transactions summary (aggregate from all chains, $1M+)
-  const chains = ['ethereum', 'bitcoin', 'solana', 'polygon']
+  // Whale transactions summary from unified view ($1M+)
   const whaleData: any[] = []
-  for (const chain of chains) {
-    const { data } = await sb
-      .from(`${chain}_transactions`)
-      .select('symbol, transaction_type, value_usd, from_label, to_label, timestamp')
-      .gte('timestamp', weekStart.toISOString())
-      .gte('value_usd', 1000000)
-      .order('value_usd', { ascending: false })
-      .limit(50)
-    if (data) whaleData.push(...data.map(d => ({ ...d, chain })))
+  const { data: whaleTxs } = await sb
+    .from('all_whale_transactions')
+    .select('token_symbol, classification, usd_value, from_label, to_label, blockchain, timestamp')
+    .gte('timestamp', weekStart.toISOString())
+    .gte('usd_value', 1000000)
+    .order('usd_value', { ascending: false })
+    .limit(200)
+  
+  if (whaleTxs) {
+    whaleData.push(...whaleTxs.map(d => ({
+      symbol: d.token_symbol,
+      transaction_type: d.classification?.toLowerCase() || 'transfer',
+      value_usd: d.usd_value,
+      from_label: d.from_label,
+      to_label: d.to_label,
+      chain: d.blockchain,
+      timestamp: d.timestamp,
+    })))
   }
 
   // ALL sentiment scores for the week
@@ -108,7 +116,9 @@ export async function GET(request: Request) {
   // ─── STEP 2: AI Analysis (Claude primary, Grok fallback) ───────
 
   // Feed ALL the data — Claude Opus has huge context
-  const newsDigest = (newsItems || []).map(n =>
+  const newsDigest = (newsItems || [])
+    .filter(n => n.title && n.title.length > 10 && !n.title.toLowerCase().startsWith('untitled'))
+    .map(n =>
     `[sent:${n.sentiment_llm?.toFixed(2) || '?'}] ${n.title} | ${n.source} | tokens: ${(n.tokens_mentioned || []).join(',')} | ${n.published_at}`
   ).join('\n')
 
@@ -163,10 +173,11 @@ Return ONLY valid JSON with this exact structure:
 
 RULES:
 - Include 5-7 top_news (the most market-moving stories)
-- Include 5-6 whale_moves (biggest and most significant)
+- Include 5-6 whale_moves (biggest and most significant) — ONLY if whale data is provided. If no whale data, return an empty array []
 - Include 5-6 price_movers (top gainers AND losers)
 - Include 4-5 key_voices (most influential statements)
-- Use REAL data from the inputs — never fabricate numbers or events
+- Use REAL data from the inputs — NEVER fabricate numbers, volumes, or events
+- If a section has no data, use an empty array — do NOT invent placeholder entries
 - Cross-reference: if whale accumulation happened before a price move, connect them
 - Be specific: use exact dollar amounts, percentages, dates
 - Write for sophisticated crypto traders who want alpha, not fluff
