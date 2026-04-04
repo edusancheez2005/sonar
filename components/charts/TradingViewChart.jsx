@@ -1,26 +1,26 @@
 /**
- * TradingView Advanced Chart Widget + Whale Activity Companion
+ * TradingView Advanced Chart (iframe embed) + Whale Activity Companion
  * 
- * Main chart: Real TradingView embed (professional, real-time, all indicators/drawing tools)
- * Companion: Whale buy/sell histogram using Lightweight Charts (Sonar data)
+ * Uses TradingView's iframe URL — no external scripts, no React DOM conflicts,
+ * no CSP script-src needed. Just frame-src: *.tradingview.com
  */
 
 'use client'
 
-import { useEffect, useRef, useState, memo } from 'react'
+import { useEffect, useRef, useState, useMemo, memo } from 'react'
 import styled from 'styled-components'
 
 const MONO = "'JetBrains Mono', 'Fira Code', monospace"
 
 const Wrapper = styled.div`width: 100%; position: relative;`
 
-const TVChartBox = styled.div`
+const ChartFrame = styled.iframe`
   width: 100%;
   height: ${p => p.$height || 500}px;
+  border: none;
   border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #0a0e17;
+  background: #131722;
+  display: block;
 `
 
 const WhaleBar = styled.div`
@@ -61,15 +61,11 @@ const WhaleLabel = styled.div`
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 `
 
-const LoadingOverlay = styled.div`
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: #0a0e17; z-index: 2; font-family: ${MONO}; font-size: 0.75rem;
-  color: #5a6a7a; letter-spacing: 0.5px;
-`
-
 const ErrorMsg = styled.div`
   display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-  font-family: ${MONO}; font-size: 0.7rem; color: #5a6a7a; padding: 0.5rem;
+  font-family: ${MONO}; font-size: 0.7rem; color: #5a6a7a; padding: 2rem;
+  height: 500px; background: #0a0e17; border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 `
 
 // ── TradingView symbol mapping ──────────────────────────────────────
@@ -107,21 +103,43 @@ function getTVSymbol(symbol) {
   return TV_MAP[(symbol || '').toUpperCase()] || `BINANCE:${(symbol || '').toUpperCase()}USDT`
 }
 
+// Build the TradingView embed iframe URL with config in hash fragment
+function buildTVUrl(symbol) {
+  const config = {
+    symbol: getTVSymbol(symbol),
+    interval: 'D',
+    timezone: 'Etc/UTC',
+    theme: 'dark',
+    style: '1',
+    locale: 'en',
+    gridColor: 'rgba(255, 255, 255, 0.025)',
+    hide_top_toolbar: false,
+    hide_legend: false,
+    save_image: false,
+    hide_volume: false,
+    allow_symbol_change: false,
+    calendar: false,
+    backgroundColor: 'rgba(19, 23, 34, 1)',
+    studies: [],
+    support_host: 'https://www.tradingview.com',
+  }
+  return `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en#${encodeURIComponent(JSON.stringify(config))}`
+}
+
 // ── Component ───────────────────────────────────────────────────────
 function TradingViewChart({ symbol, height = 500 }) {
-  const tvRef = useRef(null)
   const whaleRef = useRef(null)
-  const wrapRef = useRef(null)
 
   const [showWhales, setShowWhales] = useState(false)
   const [whaleData, setWhaleData] = useState([])
   const [whaleSummary, setWhaleSummary] = useState(null)
   const [whaleDays, setWhaleDays] = useState(7)
   const [lwc, setLwc] = useState(null)
-  const [chartLoading, setChartLoading] = useState(true)
-  const [chartError, setChartError] = useState(false)
   const [whaleError, setWhaleError] = useState(false)
   const [whaleLoading, setWhaleLoading] = useState(false)
+
+  // Memoize the iframe URL so it doesn't recreate on every render
+  const iframeSrc = useMemo(() => symbol ? buildTVUrl(symbol) : null, [symbol])
 
   // Load lightweight-charts lazily (only when whale chart shown)
   useEffect(() => {
@@ -130,65 +148,6 @@ function TradingViewChart({ symbol, height = 500 }) {
       import('lightweight-charts').then(m => { setLwc(m); setWhaleLoading(false) }).catch(() => setWhaleLoading(false))
     }
   }, [showWhales, lwc])
-
-  // ── Embed TradingView Advanced Chart ──────────────────────────────
-  useEffect(() => {
-    const el = tvRef.current
-    if (!el || !symbol) return
-    setChartLoading(true)
-    setChartError(false)
-
-    // Remove previous widget safely
-    if (wrapRef.current && el.contains(wrapRef.current)) {
-      el.removeChild(wrapRef.current)
-    }
-    wrapRef.current = null
-
-    const wrap = document.createElement('div')
-    wrap.className = 'tradingview-widget-container'
-    wrap.style.cssText = 'height:100%;width:100%'
-    wrapRef.current = wrap
-
-    const inner = document.createElement('div')
-    inner.className = 'tradingview-widget-container__widget'
-    inner.style.cssText = 'height:calc(100% - 32px);width:100%'
-    wrap.appendChild(inner)
-
-    const script = document.createElement('script')
-    script.src = 'https://s.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
-    script.type = 'text/javascript'
-    script.async = true
-    script.onload = () => setChartLoading(false)
-    script.onerror = () => { setChartLoading(false); setChartError(true) }
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol: getTVSymbol(symbol),
-      interval: 'D',
-      timezone: 'Etc/UTC',
-      theme: 'dark',
-      style: '1',
-      locale: 'en',
-      backgroundColor: 'rgba(10, 14, 23, 1)',
-      gridColor: 'rgba(255, 255, 255, 0.025)',
-      allow_symbol_change: false,
-      calendar: false,
-      hide_top_toolbar: false,
-      hide_legend: false,
-      save_image: false,
-      hide_volume: false,
-      support_host: 'https://www.tradingview.com',
-    })
-    wrap.appendChild(script)
-    el.appendChild(wrap)
-
-    return () => {
-      // Safely remove the widget container without using innerHTML
-      if (wrapRef.current && el.contains(wrapRef.current)) {
-        try { el.removeChild(wrapRef.current) } catch {}
-      }
-      wrapRef.current = null
-    }
-  }, [symbol])
 
   // ── Fetch whale timeseries ────────────────────────────────────────
   useEffect(() => {
@@ -234,7 +193,6 @@ function TradingViewChart({ symbol, height = 500 }) {
       },
     })
 
-    // Buy histogram (green bars going up)
     const buySeries = chart.addHistogramSeries({
       priceFormat: { type: 'volume' },
       priceScaleId: 'whale',
@@ -246,7 +204,6 @@ function TradingViewChart({ symbol, height = 500 }) {
     )
     if (buyData.length) buySeries.setData(buyData)
 
-    // Sell histogram (red bars — negative values so bars go downward)
     const sellSeries = chart.addHistogramSeries({
       priceFormat: { type: 'volume' },
       priceScaleId: 'whale',
@@ -290,11 +247,20 @@ function TradingViewChart({ symbol, height = 500 }) {
 
   return (
     <Wrapper>
-      {/* ─── Real TradingView Chart ──────────────────────────────── */}
-      <TVChartBox ref={tvRef} $height={height}>
-        {chartLoading && <LoadingOverlay>Loading TradingView chart...</LoadingOverlay>}
-        {chartError && <LoadingOverlay>Chart unavailable — check back shortly</LoadingOverlay>}
-      </TVChartBox>
+      {/* ─── TradingView Chart via iframe (no scripts, no DOM conflicts) ── */}
+      {iframeSrc ? (
+        <ChartFrame
+          src={iframeSrc}
+          $height={height}
+          title={`${symbol} Chart`}
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          allowFullScreen
+        />
+      ) : (
+        <ErrorMsg>Unable to load chart</ErrorMsg>
+      )}
 
       {/* ─── Whale Activity Toggle + Mini Chart ──────────────────── */}
       <WhaleBar>
@@ -323,11 +289,11 @@ function TradingViewChart({ symbol, height = 500 }) {
       </WhaleBar>
 
       {showWhales && whaleLoading && (
-        <ErrorMsg>Loading whale chart engine...</ErrorMsg>
+        <ErrorMsg style={{ height: 'auto', padding: '1rem' }}>Loading whale chart engine...</ErrorMsg>
       )}
 
       {showWhales && whaleError && (
-        <ErrorMsg>⚠ Whale activity data unavailable for {symbol}</ErrorMsg>
+        <ErrorMsg style={{ height: 'auto', padding: '1rem' }}>⚠ Whale activity data unavailable for {symbol}</ErrorMsg>
       )}
 
       {showWhales && !whaleLoading && !whaleError && whaleData.length > 0 && (
