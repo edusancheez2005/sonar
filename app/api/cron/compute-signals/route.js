@@ -4,7 +4,7 @@ import { computeUnifiedSignal } from '@/app/lib/signalEngine'
 import { coinRegistry } from '@/lib/coingecko/coin-registry'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // allow up to 60s for batch processing
+export const maxDuration = 120 // allow up to 120s for batch processing (50 tokens)
 
 /**
  * GET /api/cron/compute-signals
@@ -77,21 +77,31 @@ export async function GET(req) {
 // ─── DATA GATHERING ──────────────────────────────────────────────────────
 
 /**
- * Get the most active tokens in the last 24h (by CEX transaction count).
+ * Get the most active tokens in the last 24h.
+ * Counts ALL whale transactions (not just BUY/SELL) to capture transfers too.
+ * Always includes top tokens even if they don't appear in whale_transactions
+ * (they may be tracked via whale_alerts or per-chain tables).
  */
 async function getActiveTokens() {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
+  // Query all transactions (not just BUY/SELL) to get full token activity
   const { data, error } = await supabaseAdmin
     .from('all_whale_transactions')
     .select('token_symbol')
     .gte('timestamp', since)
-    .in('classification', ['BUY', 'SELL'])
     .not('token_symbol', 'is', null)
+
+  // Always-include list: top tokens that must be tracked regardless of tx count
+  const ALWAYS_INCLUDE = [
+    'BTC', 'ETH', 'SOL', 'BNB', 'LINK', 'UNI', 'AAVE', 'DOGE',
+    'ADA', 'AVAX', 'DOT', 'MATIC', 'ARB', 'OP', 'SUI', 'NEAR',
+    'PEPE', 'SHIB', 'WBTC', 'WETH', 'INJ', 'FET', 'RENDER',
+  ]
 
   if (error) {
     console.error('[SignalEngine] Error fetching active tokens:', error.message)
-    return ['BTC', 'ETH', 'SOL', 'BNB']
+    return ALWAYS_INCLUDE.slice(0, 30)
   }
 
   // Count occurrences
@@ -102,13 +112,24 @@ async function getActiveTokens() {
     counts[sym] = (counts[sym] || 0) + 1
   }
 
-  // Sort by count, take top 30
+  // Sort by count, take top 40
   const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
-  return Object.entries(counts)
+  const active = Object.entries(counts)
     .filter(([sym]) => !STABLECOINS.includes(sym))
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 30)
+    .slice(0, 40)
     .map(([sym]) => sym)
+
+  // Merge always-include tokens that aren't already in the active list
+  const tokenSet = new Set(active)
+  for (const sym of ALWAYS_INCLUDE) {
+    if (!tokenSet.has(sym) && !STABLECOINS.includes(sym)) {
+      tokenSet.add(sym)
+    }
+  }
+
+  // Return up to 50 tokens (more coverage)
+  return [...tokenSet].slice(0, 50)
 }
 
 
