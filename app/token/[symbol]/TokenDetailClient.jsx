@@ -1343,7 +1343,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         <Panel style={{ marginBottom: '1.5rem' }}>
           <TradingViewChart
             symbol={symbol}
-            coingeckoId={priceData?.coingeckoId}
             height={500}
           />
         </Panel>

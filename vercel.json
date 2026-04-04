@@ -42,7 +42,7 @@
     },
     {
       "path": "/api/cron/refresh-wallets",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }

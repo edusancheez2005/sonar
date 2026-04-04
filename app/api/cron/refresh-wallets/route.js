@@ -110,26 +110,31 @@ export async function GET(request) {
           // Only count tokens where net flow is positive (whale is net long)
           let portfolioValue = 0
           let pnlEstimate = 0
+          const topTokens = []
 
           for (const [sym, flows] of tokenMap) {
             const netFlow = flows.buy - flows.sell
             const price = priceMap.get(sym)
 
-            if (netFlow > 0 && price) {
-              // Estimate: if they bought $X net and price is $P now,
-              // their position is worth approximately (netFlow / avgBuyPrice) * currentPrice
-              // But since we track USD values, net flow already IS in USD at time of transaction
-              // So portfolio value ≈ net flow (as a rough estimate of current holdings value)
-              // Better: scale by how much the token has moved since avg buy
+            // Track top tokens by total volume
+            topTokens.push({ symbol: sym, volume: flows.buy + flows.sell, netFlow })
+
+            if (netFlow > 0) {
+              // Net USD invested still held — use as portfolio estimate
               portfolioValue += netFlow
             }
 
-            // PnL estimate: for tokens they've net sold, that's realized profit
-            // For net long positions, it's unrealized (counted above)
+            // PnL: realized gains from net sales
+            // If net sold (sell > buy), the excess is realized profit/loss
             if (netFlow < 0) {
-              pnlEstimate += Math.abs(netFlow) * 0.1 // Conservative estimate: 10% profit on sells
+              // They sold more than they bought — the difference is realized proceeds
+              pnlEstimate += Math.abs(netFlow)
             }
           }
+
+          // Sort top tokens by volume descending, take top 5
+          topTokens.sort((a, b) => b.volume - a.volume)
+          const top5 = topTokens.slice(0, 5).map(t => t.symbol)
 
           // Upsert into wallet_profiles
           const { error: upErr } = await supabase
@@ -140,6 +145,7 @@ export async function GET(request) {
               total_volume_usd_30d: Math.round(totalVol30d * 100) / 100,
               tx_count_30d: txCount30d,
               last_active: lastActive,
+              top_tokens: top5,
             })
             .eq('address', wallet.address)
 

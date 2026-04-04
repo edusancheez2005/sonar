@@ -1,12 +1,12 @@
 /** @type {import('next').NextConfig} */
 const CONTENT_SECURITY_POLICY = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.com https://*.vercel-insights.com https://js.stripe.com https://www.googletagmanager.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.com https://*.vercel-insights.com https://js.stripe.com https://www.googletagmanager.com https://s.tradingview.com https://*.tradingview.com;
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://*.stripe.com https://coin-images.coingecko.com https://assets.coingecko.com;
-  connect-src 'self' https://fwbwfvqzomipoftgodof.supabase.co https://*.vercel-insights.com https://api.stripe.com https://r.stripe.com https://www.google-analytics.com https://www.googletagmanager.com;
+  img-src 'self' data: blob: https://*.stripe.com https://coin-images.coingecko.com https://assets.coingecko.com https://*.tradingview.com;
+  connect-src 'self' https://fwbwfvqzomipoftgodof.supabase.co https://*.vercel-insights.com https://api.stripe.com https://r.stripe.com https://www.google-analytics.com https://www.googletagmanager.com https://*.tradingview.com;
   font-src 'self';
-  frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com;
+  frame-src https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://s.tradingview.com https://*.tradingview.com;
   frame-ancestors 'none';
   base-uri 'self';
   form-action 'self' https://checkout.stripe.com;

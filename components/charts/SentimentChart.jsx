@@ -113,10 +113,17 @@ export default function SentimentChart({ symbol }) {
   }, [symbol, interval])
 
   if (loading) return <LoadingText>Loading sentiment data...</LoadingText>
-  if (!data || data.length === 0) return null
+  if (!data || data.length === 0) return (
+    <Wrapper>
+      <Label>Sentiment &amp; Interactions Over Time</Label>
+      <LoadingText style={{ height: 'auto', padding: '1rem 0' }}>Sentiment data not available for this token</LoadingText>
+    </Wrapper>
+  )
 
   const formatLabel = (ts) => {
+    if (!ts) return '—'
     const d = new Date(ts * 1000)
+    if (isNaN(d.getTime())) return '—'
     if (interval === '1d') return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     if (interval === '1w') return d.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit' })
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -126,8 +133,19 @@ export default function SentimentChart({ symbol }) {
   const sentimentValues = data.map(p => p.sentiment)
   const interactionValues = data.map(p => p.interactions)
 
-  const avgSentiment = sentimentValues.filter(Boolean).reduce((a, b) => a + b, 0) / sentimentValues.filter(Boolean).length
+  const validSentiments = sentimentValues.filter(v => v != null && v > 0)
+  const avgSentiment = validSentiments.length > 0
+    ? validSentiments.reduce((a, b) => a + b, 0) / validSentiments.length
+    : 50
   const sentimentColor = avgSentiment >= 60 ? '#00e676' : avgSentiment >= 40 ? '#ffab00' : '#ff1744'
+
+  // Convert hex to rgba for fill
+  const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
 
   const chartData = {
     labels,
@@ -136,7 +154,7 @@ export default function SentimentChart({ symbol }) {
         label: 'Sentiment',
         data: sentimentValues,
         borderColor: sentimentColor,
-        backgroundColor: sentimentColor.replace(')', ', 0.08)').replace('rgb', 'rgba'),
+        backgroundColor: hexToRgba(sentimentColor, 0.08),
         borderWidth: 2,
         fill: true,
         tension: 0.4,

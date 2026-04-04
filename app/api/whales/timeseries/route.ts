@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
         totalBuyCount,
         totalSellCount,
         netFlow: totalBuyVolume - totalSellVolume,
-        buySellRatio: totalSellCount > 0 ? (totalBuyCount / totalSellCount).toFixed(2) : 'N/A',
+        buySellRatio: totalSellCount > 0 ? Number((totalBuyCount / totalSellCount).toFixed(2)) : 0,
       },
     }, {
       headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=300' }

@@ -61,6 +61,17 @@ const WhaleLabel = styled.div`
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 `
 
+const LoadingOverlay = styled.div`
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: #0a0e17; z-index: 2; font-family: ${MONO}; font-size: 0.75rem;
+  color: #5a6a7a; letter-spacing: 0.5px;
+`
+
+const ErrorMsg = styled.div`
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-family: ${MONO}; font-size: 0.7rem; color: #5a6a7a; padding: 0.5rem;
+`
+
 // ── TradingView symbol mapping ──────────────────────────────────────
 const TV_MAP = {
   BTC: 'BINANCE:BTCUSDT', ETH: 'BINANCE:ETHUSDT', BNB: 'BINANCE:BNBUSDT',
@@ -97,7 +108,7 @@ function getTVSymbol(symbol) {
 }
 
 // ── Component ───────────────────────────────────────────────────────
-function TradingViewChart({ symbol, coingeckoId, height = 500 }) {
+function TradingViewChart({ symbol, height = 500 }) {
   const tvRef = useRef(null)
   const whaleRef = useRef(null)
 
@@ -106,10 +117,22 @@ function TradingViewChart({ symbol, coingeckoId, height = 500 }) {
   const [whaleSummary, setWhaleSummary] = useState(null)
   const [whaleDays, setWhaleDays] = useState(7)
   const [lwc, setLwc] = useState(null)
+  const [chartLoading, setChartLoading] = useState(true)
+  const [chartError, setChartError] = useState(false)
+  const [whaleError, setWhaleError] = useState(false)
+  const [whaleLoading, setWhaleLoading] = useState(false)
+
+  // Guard: no symbol
+  if (!symbol) {
+    return <ErrorMsg>No token symbol provided</ErrorMsg>
+  }
 
   // Load lightweight-charts lazily (only when whale chart shown)
   useEffect(() => {
-    if (showWhales && !lwc) import('lightweight-charts').then(setLwc)
+    if (showWhales && !lwc) {
+      setWhaleLoading(true)
+      import('lightweight-charts').then(m => { setLwc(m); setWhaleLoading(false) }).catch(() => setWhaleLoading(false))
+    }
   }, [showWhales, lwc])
 
   // ── Embed TradingView Advanced Chart ──────────────────────────────
@@ -117,6 +140,8 @@ function TradingViewChart({ symbol, coingeckoId, height = 500 }) {
     const el = tvRef.current
     if (!el) return
     el.innerHTML = ''
+    setChartLoading(true)
+    setChartError(false)
 
     const wrap = document.createElement('div')
     wrap.className = 'tradingview-widget-container'
@@ -131,6 +156,8 @@ function TradingViewChart({ symbol, coingeckoId, height = 500 }) {
     script.src = 'https://s.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
     script.type = 'text/javascript'
     script.async = true
+    script.onload = () => setChartLoading(false)
+    script.onerror = () => { setChartLoading(false); setChartError(true) }
     script.innerHTML = JSON.stringify({
       autosize: true,
       symbol: getTVSymbol(symbol),
@@ -158,10 +185,11 @@ function TradingViewChart({ symbol, coingeckoId, height = 500 }) {
   // ── Fetch whale timeseries ────────────────────────────────────────
   useEffect(() => {
     if (!symbol || !showWhales) return
+    setWhaleError(false)
     fetch(`/api/whales/timeseries?symbol=${symbol}&days=${whaleDays}`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(); return r.json() })
       .then(j => { setWhaleData(j.data || []); setWhaleSummary(j.summary || null) })
-      .catch(() => { setWhaleData([]); setWhaleSummary(null) })
+      .catch(() => { setWhaleData([]); setWhaleSummary(null); setWhaleError(true) })
   }, [symbol, whaleDays, showWhales])
 
   // ── Render whale activity chart ───────────────────────────────────
@@ -253,7 +281,10 @@ function TradingViewChart({ symbol, coingeckoId, height = 500 }) {
   return (
     <Wrapper>
       {/* ─── Real TradingView Chart ──────────────────────────────── */}
-      <TVChartBox ref={tvRef} $height={height} />
+      <TVChartBox ref={tvRef} $height={height}>
+        {chartLoading && <LoadingOverlay>Loading TradingView chart...</LoadingOverlay>}
+        {chartError && <LoadingOverlay>Chart unavailable — check back shortly</LoadingOverlay>}
+      </TVChartBox>
 
       {/* ─── Whale Activity Toggle + Mini Chart ──────────────────── */}
       <WhaleBar>
@@ -281,7 +312,15 @@ function TradingViewChart({ symbol, coingeckoId, height = 500 }) {
         )}
       </WhaleBar>
 
-      {showWhales && whaleData.length > 0 && (
+      {showWhales && whaleLoading && (
+        <ErrorMsg>Loading whale chart engine...</ErrorMsg>
+      )}
+
+      {showWhales && whaleError && (
+        <ErrorMsg>⚠ Whale activity data unavailable for {symbol}</ErrorMsg>
+      )}
+
+      {showWhales && !whaleLoading && !whaleError && whaleData.length > 0 && (
         <WhaleChartBox>
           <WhaleLabel>
             <span><span style={{ color: '#00e676' }}>■</span> WHALE BUYS</span>
