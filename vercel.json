@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/refresh-wallets",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/evaluate-signals",
+      "schedule": "30 * * * *"
     }
   ]
 }
