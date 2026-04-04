@@ -67,69 +67,116 @@ export async function GET(request) {
 
       const results = await Promise.allSettled(
         batch.map(async (wallet) => {
-          // Fetch all transactions for this wallet
-          const { data: txs, error: txErr } = await supabase
+          // ── Source 1: whale_alerts (has token quantities) ──────
+          // Use from_address/to_address to find this wallet's activity
+          const [{ data: alertsFrom }, { data: alertsTo }] = await Promise.all([
+            supabase
+              .from('whale_alerts')
+              .select('symbol, amount, amount_usd, transaction_type, from_owner_type, to_owner_type, timestamp')
+              .eq('from_address', wallet.address)
+              .limit(3000),
+            supabase
+              .from('whale_alerts')
+              .select('symbol, amount, amount_usd, transaction_type, from_owner_type, to_owner_type, timestamp')
+              .eq('to_address', wallet.address)
+              .limit(3000),
+          ])
+
+          // ── Source 2: all_whale_transactions (30d volume/count) ──
+          const { data: txs } = await supabase
             .from('all_whale_transactions')
             .select('token_symbol, classification, usd_value, timestamp')
             .eq('whale_address', wallet.address)
             .limit(5000)
 
-          if (txErr) throw new Error(`Tx fetch failed for ${wallet.address}: ${txErr.message}`)
-          if (!txs || txs.length === 0) return null
+          // ── Aggregate token holdings from whale_alerts ─────────
+          // tokenHoldings: { symbol -> { qty: net token amount, costBasis: net USD spent } }
+          const tokenHoldings = new Map()
 
-          // Aggregate net flow per token (all time) for portfolio value
-          const tokenMap = new Map()
-          let totalVol30d = 0
-          let txCount30d = 0
-          let lastActive = null
-
-          for (const tx of txs) {
-            const sym = tx.token_symbol
+          // Outgoing transfers = selling / sending (reduce holdings)
+          for (const alert of (alertsFrom || [])) {
+            const sym = alert.symbol
             if (!sym) continue
-            const val = Number(tx.usd_value) || 0
-            const cls = (tx.classification || '').toUpperCase()
-
-            // Track per-token net flow
-            if (!tokenMap.has(sym)) tokenMap.set(sym, { buy: 0, sell: 0 })
-            const entry = tokenMap.get(sym)
-            if (cls === 'BUY') entry.buy += val
-            else if (cls === 'SELL') entry.sell += val
-
-            // Track 30d metrics
-            if (tx.timestamp >= thirtyDaysAgo) {
-              totalVol30d += val
-              txCount30d++
-            }
-
-            // Track last active
-            if (!lastActive || tx.timestamp > lastActive) lastActive = tx.timestamp
+            const qty = Number(alert.amount) || 0
+            const usd = Number(alert.amount_usd) || 0
+            if (!tokenHoldings.has(sym)) tokenHoldings.set(sym, { qty: 0, costBasis: 0 })
+            const h = tokenHoldings.get(sym)
+            h.qty -= qty
+            h.costBasis -= usd
           }
 
-          // Portfolio value = sum of (positive net positions × current price)
-          // Net position = (buy_volume - sell_volume) for each token
-          // Only count tokens where net flow is positive (whale is net long)
+          // Incoming transfers = buying / receiving (increase holdings)
+          for (const alert of (alertsTo || [])) {
+            const sym = alert.symbol
+            if (!sym) continue
+            const qty = Number(alert.amount) || 0
+            const usd = Number(alert.amount_usd) || 0
+            if (!tokenHoldings.has(sym)) tokenHoldings.set(sym, { qty: 0, costBasis: 0 })
+            const h = tokenHoldings.get(sym)
+            h.qty += qty
+            h.costBasis += usd
+          }
+
+          // ── Calculate portfolio value (qty × current price) ───
           let portfolioValue = 0
           let pnlEstimate = 0
           const topTokens = []
 
-          for (const [sym, flows] of tokenMap) {
-            const netFlow = flows.buy - flows.sell
+          for (const [sym, h] of tokenHoldings) {
             const price = priceMap.get(sym)
+            topTokens.push({ symbol: sym, volume: Math.abs(h.costBasis), netQty: h.qty })
 
-            // Track top tokens by total volume
-            topTokens.push({ symbol: sym, volume: flows.buy + flows.sell, netFlow })
-
-            if (netFlow > 0) {
-              // Net USD invested still held — use as portfolio estimate
-              portfolioValue += netFlow
+            if (h.qty > 0 && price) {
+              // Whale still holds tokens — value at current price
+              portfolioValue += h.qty * price
             }
 
-            // PnL: realized gains from net sales
-            // If net sold (sell > buy), the excess is realized profit/loss
-            if (netFlow < 0) {
-              // They sold more than they bought — the difference is realized proceeds
-              pnlEstimate += Math.abs(netFlow)
+            if (h.costBasis < 0) {
+              // Net negative cost basis means they sold for more USD than they received
+              // i.e., realized profit = |costBasis| (the excess sell USD)
+              pnlEstimate += Math.abs(h.costBasis)
             }
+          }
+
+          // ── Fallback: if no whale_alerts data, use all_whale_transactions
+          if (tokenHoldings.size === 0 && txs && txs.length > 0) {
+            const flowMap = new Map()
+            for (const tx of txs) {
+              const sym = tx.token_symbol
+              if (!sym) continue
+              const val = Number(tx.usd_value) || 0
+              const cls = (tx.classification || '').toUpperCase()
+              if (!flowMap.has(sym)) flowMap.set(sym, { buy: 0, sell: 0 })
+              const e = flowMap.get(sym)
+              if (cls === 'BUY') e.buy += val
+              else if (cls === 'SELL') e.sell += val
+            }
+            for (const [sym, flows] of flowMap) {
+              const net = flows.buy - flows.sell
+              topTokens.push({ symbol: sym, volume: flows.buy + flows.sell, netQty: 0 })
+              if (net > 0) portfolioValue += net
+              if (net < 0) pnlEstimate += Math.abs(net)
+            }
+          }
+
+          // ── 30d metrics from all_whale_transactions ───────────
+          let totalVol30d = 0
+          let txCount30d = 0
+          let lastActive = null
+
+          for (const tx of (txs || [])) {
+            const val = Number(tx.usd_value) || 0
+            if (tx.timestamp >= thirtyDaysAgo) {
+              totalVol30d += val
+              txCount30d++
+            }
+            if (!lastActive || tx.timestamp > lastActive) lastActive = tx.timestamp
+          }
+
+          // Also check whale_alerts for last active
+          const allAlerts = [...(alertsFrom || []), ...(alertsTo || [])]
+          for (const a of allAlerts) {
+            if (a.timestamp && (!lastActive || a.timestamp > lastActive)) lastActive = a.timestamp
           }
 
           // Sort top tokens by volume descending, take top 5
