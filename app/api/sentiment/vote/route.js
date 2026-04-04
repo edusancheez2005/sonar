@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 
 const VALID_VOTES = ['bullish', 'bearish', 'neutral']
 
@@ -22,6 +23,11 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
+    // Rate limit: 10 votes per hour per IP
+    const ip = getClientIp(req)
+    const rl = rateLimit(`sentiment-vote:${ip}`, 10, 3600000)
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter)
+
     const { tokenSymbol, vote, email, comment, fingerprint, source } = await req.json()
     const symbol = tokenSymbol?.toUpperCase()
     const voteValue = vote?.toLowerCase()

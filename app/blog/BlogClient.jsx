@@ -688,6 +688,10 @@ export default function BlogClient() {
           <SubscribeButton type="submit" disabled={isSubscribing}>
             {isSubscribing ? 'Subscribing...' : 'Get Alerts'}
           </SubscribeButton>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.5rem', cursor: 'pointer' }}>
+            <input type="checkbox" required style={{ accentColor: '#00e5ff' }} />
+            I agree to receive whale alert emails. <a href="/privacy" style={{ color: '#00e5ff' }}>Privacy Policy</a>
+          </label>
         </NewsletterForm>
         
         {subscribeMessage && (

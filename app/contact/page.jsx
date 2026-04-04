@@ -412,6 +412,13 @@ export default function ContactPage() {
               />
             </FormGroup>
 
+            <FormGroup>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                <input type="checkbox" required style={{ marginTop: '0.2rem', accentColor: '#00e5ff' }} />
+                I consent to Sonar Tracker processing my email address to respond to this inquiry, in accordance with the <a href="/privacy" style={{ color: '#00e5ff' }}>Privacy Policy</a>.
+              </label>
+            </FormGroup>
+
             <SubmitButton
               type="submit"
               disabled={submitting}

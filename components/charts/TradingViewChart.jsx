@@ -68,6 +68,14 @@ const ErrorMsg = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.06);
 `
 
+const HoverBar = styled.div`
+  display: flex; gap: 0.6rem; font-family: ${MONO}; font-size: 0.6rem;
+  color: #5a6a7a; padding: 0.3rem 0.6rem; flex-wrap: wrap; min-height: 1.4em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  background: rgba(0, 229, 255, 0.02);
+`
+const HV = styled.span`color: ${p => p.$c || '#e0e6ed'}; font-weight: 600;`
+
 // ── TradingView symbol mapping ──────────────────────────────────────
 const TV_MAP = {
   BTC: 'BINANCE:BTCUSDT', ETH: 'BINANCE:ETHUSDT', BNB: 'BINANCE:BNBUSDT',
@@ -137,6 +145,7 @@ function TradingViewChart({ symbol, height = 500 }) {
   const [lwc, setLwc] = useState(null)
   const [whaleError, setWhaleError] = useState(false)
   const [whaleLoading, setWhaleLoading] = useState(false)
+  const [whaleHover, setWhaleHover] = useState(null)
 
   // Memoize the iframe URL so it doesn't recreate on every render
   const iframeSrc = useMemo(() => symbol ? buildTVUrl(symbol) : null, [symbol])
@@ -164,12 +173,18 @@ function TradingViewChart({ symbol, height = 500 }) {
     const el = whaleRef.current
     if (!showWhales || !lwc || !el || whaleData.length === 0) return
 
-    const { createChart, ColorType } = lwc
+    const { createChart, ColorType, CrosshairMode } = lwc
     el.innerHTML = ''
+
+    // Build a lookup map for tooltip data
+    const dataLookup = new Map()
+    for (const d of whaleData) {
+      dataLookup.set(d.timestamp, d)
+    }
 
     const chart = createChart(el, {
       width: el.clientWidth,
-      height: 200,
+      height: 220,
       layout: {
         background: { type: ColorType.Solid, color: '#0a0e17' },
         textColor: '#5a6a7a',
@@ -179,6 +194,11 @@ function TradingViewChart({ symbol, height = 500 }) {
       grid: {
         vertLines: { color: 'rgba(255, 255, 255, 0.02)' },
         horzLines: { color: 'rgba(255, 255, 255, 0.02)' },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: { color: 'rgba(0, 229, 255, 0.2)', width: 1, style: 2, labelBackgroundColor: '#0d1420' },
+        horzLine: { color: 'rgba(0, 229, 255, 0.2)', width: 1, style: 2, labelBackgroundColor: '#0d1420' },
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
@@ -215,6 +235,28 @@ function TradingViewChart({ symbol, height = 500 }) {
         .map(x => ({ time: x.timestamp, value: -x.sellVolume, color: 'rgba(255, 23, 68, 0.50)' }))
     )
     if (sellData.length) sellSeries.setData(sellData)
+
+    // ── Crosshair tooltip ─────────────────────────────────────────
+    chart.subscribeCrosshairMove(param => {
+      if (!param.time) { setWhaleHover(null); return }
+      const d = dataLookup.get(param.time)
+      if (!d) { setWhaleHover(null); return }
+      const total = (d.buyVolume || 0) + (d.sellVolume || 0)
+      const buyPct = total > 0 ? ((d.buyVolume || 0) / total * 100).toFixed(1) : '0'
+      const net = (d.buyVolume || 0) - (d.sellVolume || 0)
+      setWhaleHover({
+        time: new Date(param.time * 1000).toLocaleString('en-US', {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }),
+        buyVol: d.buyVolume || 0,
+        sellVol: d.sellVolume || 0,
+        buyCount: d.buyCount || 0,
+        sellCount: d.sellCount || 0,
+        buyPct,
+        net,
+        total,
+      })
+    })
 
     chart.timeScale().fitContent()
 
@@ -303,7 +345,17 @@ function TradingViewChart({ symbol, height = 500 }) {
             <span><span style={{ color: '#00e676' }}>■</span> WHALE BUYS</span>
             <span><span style={{ color: '#ff1744' }}>■</span> WHALE SELLS</span>
           </WhaleLabel>
-          <div ref={whaleRef} style={{ width: '100%', height: '200px' }} />
+          {whaleHover && (
+            <HoverBar>
+              <span>🕐 <HV>{whaleHover.time}</HV></span>
+              <span>Buy <HV $c="#00e676">{fV(whaleHover.buyVol)}</HV> <span style={{opacity:0.5}}>({whaleHover.buyCount} txs)</span></span>
+              <span>Sell <HV $c="#ff1744">{fV(whaleHover.sellVol)}</HV> <span style={{opacity:0.5}}>({whaleHover.sellCount} txs)</span></span>
+              <span>Net <HV $c={whaleHover.net >= 0 ? '#00e676' : '#ff1744'}>{whaleHover.net >= 0 ? '+' : ''}{fV(whaleHover.net)}</HV></span>
+              <span>Buy% <HV $c={whaleHover.buyPct >= 55 ? '#00e676' : whaleHover.buyPct <= 45 ? '#ff1744' : '#ffab00'}>{whaleHover.buyPct}%</HV></span>
+              <span>Total <HV>{fV(whaleHover.total)}</HV></span>
+            </HoverBar>
+          )}
+          <div ref={whaleRef} style={{ width: '100%', height: '220px' }} />
         </WhaleChartBox>
       )}
     </Wrapper>
