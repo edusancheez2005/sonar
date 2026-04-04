@@ -280,10 +280,11 @@ async function fetchHourlyPrices(coins, startTime, endTime, gbpusd) {
         const data = await res.json()
         const hourlyPrices = []
         
-        // CoinGecko returns prices at ~5min intervals, aggregate to hourly
+        // CoinGecko returns prices as [ms_timestamp, price]
+        // Aggregate to hourly buckets
         const pricesByHour = {}
         data.prices?.forEach(([ts, price]) => {
-          const hourBucket = Math.floor(ts / (60 * 60 * 1000))
+          const hourBucket = Math.floor(ts / (1000 * 60 * 60))
           if (!pricesByHour[hourBucket]) pricesByHour[hourBucket] = []
           pricesByHour[hourBucket].push(price / gbpusd) // Convert to GBP
         })
@@ -334,10 +335,22 @@ function runBacktest({ signalsByHour, priceData, targetCoins, hours, allocation_
       const signal = coinSignals[h]
       if (!signal || !signal.signal) continue // Skip NEUTRAL or NO_DATA
       
-      // Find entry and exit prices
-      const entryPrice = coinPrices.find(p => p.timestamp === signal.timestamp)?.close
+      // Find entry and exit prices by closest timestamp match
+      const findPrice = (ts) => {
+        if (!ts || coinPrices.length === 0) return null
+        const target = new Date(ts).getTime()
+        let best = coinPrices[0]
+        let bestDiff = Math.abs(new Date(coinPrices[0].timestamp).getTime() - target)
+        for (let i = 1; i < coinPrices.length; i++) {
+          const diff = Math.abs(new Date(coinPrices[i].timestamp).getTime() - target)
+          if (diff < bestDiff) { bestDiff = diff; best = coinPrices[i] }
+        }
+        // Only match if within 2 hours
+        return bestDiff <= 2 * 60 * 60 * 1000 ? best.close : null
+      }
+      const entryPrice = findPrice(signal.timestamp)
       const exitSignal = coinSignals[h + 1]
-      const exitPrice = coinPrices.find(p => p.timestamp === exitSignal?.timestamp)?.close
+      const exitPrice = findPrice(exitSignal?.timestamp)
       
       if (!entryPrice || !exitPrice) {
         trades.push({

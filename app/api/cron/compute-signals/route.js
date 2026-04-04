@@ -17,12 +17,12 @@ export const maxDuration = 60 // allow up to 60s for batch processing
 export async function GET(req) {
   const start = Date.now()
 
-  // Auth: require CRON_SECRET for scheduled runs
+  // Auth: require CRON_SECRET for all requests
   const { searchParams } = new URL(req.url)
   const singleToken = searchParams.get('token')?.toUpperCase()
   const secret = searchParams.get('secret') || req.headers.get('authorization')?.replace('Bearer ', '')
 
-  if (!singleToken && secret !== process.env.CRON_SECRET) {
+  if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -90,7 +90,7 @@ async function getActiveTokens() {
 
   if (error) {
     console.error('[SignalEngine] Error fetching active tokens:', error.message)
-    return ['BTC', 'ETH', 'SOL', 'XRP', 'BNB']
+    return ['BTC', 'ETH', 'SOL', 'BNB']
   }
 
   // Count occurrences
@@ -335,5 +335,6 @@ async function storeSignal(signal) {
 
   if (error) {
     console.error(`[SignalEngine] Error storing signal for ${signal.token}:`, error.message)
+    throw new Error(`Storage failed for ${signal.token}: ${error.message}`)
   }
 }
