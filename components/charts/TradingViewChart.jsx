@@ -55,8 +55,9 @@ const InfoBar = styled.div`
 const Val = styled.span`color: ${p => p.$c || '#e0e6ed'}; font-weight: 600;`
 
 const ChartBox = styled.div`
-  width: 100%; border-radius: 6px; overflow: hidden;
+  width: 100%; border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.06); background: #0a0e17;
+  padding-bottom: 8px;
 `
 
 const Loading = styled.div`
