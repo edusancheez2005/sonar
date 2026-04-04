@@ -28,6 +28,13 @@ const posts = {
   'glassnode-vs-sonar': { title: 'Glassnode vs Sonar: On-Chain Analytics Compared', description: 'Glassnode focuses on Bitcoin metrics. Sonar covers multi-chain whale tracking with AI.', date: '2026-01-20' },
   'custom-whale-alerts-setup': { title: 'How to Set Up Custom Whale Alerts (5 Configs That Work)', description: 'Five proven whale alert configurations for day trading, swing trading, and DeFi.', date: '2026-01-18' },
   'why-crypto-keeps-getting-dumped': { title: 'Why Your Crypto Keeps Getting Dumped On', description: 'The whale distribution patterns that precede every dump. Read the signs first.', date: '2026-01-16' },
+  'whale-alert-alternative': { title: 'Whale Alert Alternative 2026: Best Crypto Whale Tracking Tools Compared', description: 'Looking for a Whale Alert alternative? Compare 8 whale tracking tools by features, pricing, and AI capabilities. Sonar Tracker offers AI analysis from $7.99/mo.', date: '2026-04-04' },
+  'how-to-track-crypto-whales': { title: 'How to Track Crypto Whale Movements: Complete 2026 Guide', description: 'Step-by-step guide to tracking crypto whale wallets across all blockchains. Learn methods, tools, and strategies used by professional traders.', date: '2026-04-04' },
+  'best-crypto-whale-tracking-tools': { title: 'Top 10 Crypto Whale Tracking Tools Compared (2026)', description: 'Ranked comparison of the 10 best crypto whale tracking tools in 2026. Features, pricing, chains supported, and which tool fits your trading style.', date: '2026-04-04' },
+  'orca-ai-crypto-analyst': { title: 'What Is ORCA AI? How Sonar Tracker\'s AI Analyst Reads the Blockchain', description: 'Meet ORCA, the AI crypto analyst built into Sonar Tracker. See how it interprets whale movements and delivers plain-English market intelligence.', date: '2026-04-04' },
+  'solana-whale-tracker': { title: 'Solana Whale Tracker: How to Monitor Large SOL Transactions in Real Time', description: 'Track Solana whale wallets and large SOL transactions in real time. Covers top SOL whales, tools, and how AI interprets Solana whale movements.', date: '2026-04-04' },
+  'ethereum-whale-tracker': { title: 'Ethereum Whale Tracker: Complete Guide to Tracking ETH Whale Wallets', description: 'Monitor Ethereum whale wallets, staking flows, and DeFi interactions. Complete guide to tracking large ETH transactions with AI-powered analysis.', date: '2026-04-04' },
+  'bitcoin-whale-tracker': { title: 'Bitcoin Whale Tracker: How to Follow BTC Whale Movements', description: 'Track Bitcoin whale wallets, exchange flows, and miner activity. Learn how BTC whale movements affect price with historical examples.', date: '2026-04-04' },
 }
 
 export async function generateMetadata({ params }) {

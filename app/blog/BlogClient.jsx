@@ -348,6 +348,62 @@ const SubscribeButton = styled.button`
 
 const posts = [
   {
+    slug: 'whale-alert-alternative',
+    title: 'Whale Alert Alternative 2026: Best Crypto Whale Tracking Tools Compared',
+    summary: 'Looking for a Whale Alert alternative? We compare 8 whale tracking tools — Nansen, Arkham, Sonar Tracker, and more — by features, pricing, and AI capabilities.',
+    readTime: '12 min read',
+    category: 'Comparison',
+    date: 'Apr 4, 2026'
+  },
+  {
+    slug: 'how-to-track-crypto-whales',
+    title: 'How to Track Crypto Whale Movements: Complete 2026 Guide',
+    summary: 'The definitive guide to tracking crypto whales. Step-by-step methods, tools, real examples, and strategies used by professional traders.',
+    readTime: '15 min read',
+    category: 'Tutorial',
+    date: 'Apr 4, 2026'
+  },
+  {
+    slug: 'best-crypto-whale-tracking-tools',
+    title: 'Top 10 Crypto Whale Tracking Tools Compared (2026)',
+    summary: 'We tested and ranked the 10 best whale tracking platforms. Nansen, Arkham, Sonar Tracker, Glassnode, and more — with pricing, features, and verdicts.',
+    readTime: '12 min read',
+    category: 'Comparison',
+    date: 'Apr 4, 2026'
+  },
+  {
+    slug: 'orca-ai-crypto-analyst',
+    title: 'What Is ORCA AI? How Sonar Tracker\'s AI Analyst Reads the Blockchain',
+    summary: 'Meet ORCA, the AI crypto analyst built into Sonar Tracker. See how it interprets whale movements and delivers plain-English market intelligence.',
+    readTime: '8 min read',
+    category: 'AI & Technology',
+    date: 'Apr 4, 2026'
+  },
+  {
+    slug: 'solana-whale-tracker',
+    title: 'Solana Whale Tracker: How to Monitor Large SOL Transactions in Real Time',
+    summary: 'Track Solana whale wallets and large SOL transactions in real time. Top SOL whales to watch, tools, and AI-powered Solana analysis.',
+    readTime: '10 min read',
+    category: 'Market Analysis',
+    date: 'Apr 4, 2026'
+  },
+  {
+    slug: 'ethereum-whale-tracker',
+    title: 'Ethereum Whale Tracker: Complete Guide to Tracking ETH Whale Wallets',
+    summary: 'Monitor Ethereum whale wallets, staking flows, and DeFi interactions. Complete guide to tracking large ETH transactions with AI analysis.',
+    readTime: '10 min read',
+    category: 'Market Analysis',
+    date: 'Apr 4, 2026'
+  },
+  {
+    slug: 'bitcoin-whale-tracker',
+    title: 'Bitcoin Whale Tracker: How to Follow BTC Whale Movements',
+    summary: 'Track Bitcoin whale wallets, exchange flows, and miner activity. Learn how BTC whale movements affect price with historical examples.',
+    readTime: '10 min read',
+    category: 'Market Analysis',
+    date: 'Apr 4, 2026'
+  },
+  {
     slug: 'nansen-vs-sonar-tracker',
     title: 'Nansen vs Sonar Tracker: Full Comparison for 2026',
     summary: 'Feature-by-feature breakdown of Nansen ($150+/mo) vs Sonar Tracker ($7.99/mo). Same institutional data, fraction of the cost.',

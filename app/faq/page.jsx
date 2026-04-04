@@ -182,23 +182,27 @@ const NoResults = styled.div`
 
 const faqData = [
   {
-    category: 'Getting Started',
+    category: 'About Sonar Tracker',
     items: [
       {
         question: 'What is Sonar Tracker?',
-        answer: 'Sonar Tracker is a real-time cryptocurrency whale transaction monitoring and analytics platform. We track large transactions (over $10,000) across multiple blockchains and provide AI-powered insights to help traders make informed decisions. Our platform includes whale activity tracking, sentiment analysis, market statistics, and our AI advisor Orca 2.0.'
+        answer: 'Sonar Tracker is a real-time cryptocurrency whale transaction monitoring and analytics platform. We track large transactions (over $10,000) across 10+ blockchains including Ethereum, Bitcoin, Solana, Polygon, and BSC. Our AI analyst <a href="/ai-advisor">ORCA</a> provides plain-English interpretation of whale movements to help traders make data-driven decisions. Over 500 traders use Sonar for whale intelligence.'
       },
       {
-        question: 'How do I sign up?',
-        answer: 'Click the "Login" button in the top navigation bar, then click "Sign up" on the login page. Enter your email and create a secure password. You\'ll be instantly logged in and can start exploring whale activity data immediately.'
+        question: 'What is ORCA AI?',
+        answer: 'ORCA is Sonar Tracker\'s purpose-built AI analyst for on-chain whale intelligence. Unlike generic chatbots (ChatGPT, Claude), ORCA connects to real-time blockchain data and provides specific, timestamped analysis — including buy/sell classification, pattern recognition, whale clustering detection, and actionable market interpretation. <a href="/ai-advisor">Try ORCA here</a>.'
       },
       {
-        question: 'What is whale activity?',
-        answer: 'Whale activity refers to large cryptocurrency transactions made by individuals or entities holding significant amounts of crypto (known as "whales"). These transactions can indicate market sentiment and potential price movements. Sonar Tracker monitors transactions over $10,000 across multiple blockchains. Premium subscribers also get access to real-time whale alerts for transactions over $500k from exchanges and known whale addresses.'
+        question: 'What is a crypto whale?',
+        answer: 'A crypto whale is any wallet or entity holding enough cryptocurrency to significantly influence its price through a single transaction. Thresholds vary: typically 1,000+ BTC ($60M+), 10,000+ ETH ($25M+), or top 100 holders for altcoins. Whale categories include institutional investors (hedge funds, VCs), exchange cold wallets, protocol treasuries, early adopters, and government-seized assets.'
       },
       {
-        question: 'Do I need a subscription to use Sonar Tracker?',
-        answer: 'Free users can access news, market pulse, top net inflows/outflows, and basic dashboard views. A Premium subscription ($7.99/month) unlocks full access to advanced analytics, real-time whale alerts, Orca 2.0 AI advisor, detailed statistics, CSV exports, custom notifications, and priority support.'
+        question: 'How does whale tracking work?',
+        answer: 'Sonar continuously monitors blockchain networks for transactions above $10,000. Each transaction is classified as BUY, SELL, TRANSFER, or DEFI using AI. Data is aggregated into <a href="/dashboard">dashboards</a> showing net flow direction, <a href="/whales/leaderboard">whale leaderboards</a>, and buy/sell ratios — revealing whether whales are accumulating or distributing specific tokens.'
+      },
+      {
+        question: 'Do whale movements actually affect crypto prices?',
+        answer: 'Yes. Whale transactions affect prices through three mechanisms: direct market impact (large orders moving price), sentiment cascades (other traders front-running whale moves), and liquidity shifts (DeFi liquidity additions/removals). Real examples include Germany\'s 50,000 BTC liquidation causing a 24% drop in July 2024 and Jump Trading\'s ETH dump contributing to a 35% crash in August 2024.'
       }
     ]
   },
@@ -206,116 +210,95 @@ const faqData = [
     category: 'Features & Functionality',
     items: [
       {
-        question: 'What data does Sonar Tracker provide?',
-        answer: 'Sonar Tracker provides: Real-time whale transactions with transaction hashes and addresses; Buy/Sell classification powered by AI; Token-specific analytics including volume, net flow, and whale counts; Market sentiment analysis; Live price data from CoinGecko; Cryptocurrency news from CryptoPanic; Interactive charts and visualizations; CSV data export for Premium users.'
+        question: 'What blockchains does Sonar Tracker support?',
+        answer: 'Sonar monitors whale transactions across Ethereum, Bitcoin, Solana, Polygon, Binance Smart Chain, Tron, Arbitrum, Avalanche, Optimism, and other major blockchains. All chains are tracked in a unified <a href="/dashboard">dashboard</a> with AI-powered classification and analysis.'
+      },
+      {
+        question: 'How do I track a specific wallet?',
+        answer: 'Navigate to the <a href="/wallet-tracker">Wallet Tracker</a> page and paste any blockchain address. Sonar will display all transactions in real time, including historical activity, DeFi interactions, and token holdings. You can set alerts to be notified when that wallet makes any transaction above your threshold.'
       },
       {
         question: 'How accurate is the buy/sell classification?',
-        answer: 'Our AI-powered classification system analyzes transaction patterns, DEX interactions, and on-chain data to classify transactions as BUY, SELL, TRANSFER, or DEFI. The system has been trained on historical whale activity and achieves high accuracy. However, blockchain data can be complex, and some edge cases may require manual verification.'
-      },
-      {
-        question: 'What is Orca 2.0?',
-        answer: 'Orca 2.0 is our AI-powered market advisor that provides in-depth token analysis. It analyzes whale activity, price momentum, trading volume, and news sentiment to generate actionable insights. Premium users get access to advanced queries and personalized recommendations.'
+        answer: 'Sonar\'s AI classification achieves high accuracy by analyzing DEX interactions, exchange deposit/withdrawal patterns, and historical wallet behavior. Edge cases like OTC deals or complex multi-hop transactions may require additional context. ORCA AI can provide deeper interpretation when needed.'
       },
       {
         question: 'How often is data updated?',
-        answer: 'Whale transaction data is updated every 15 minutes to ensure near real-time accuracy. Premium whale alerts sync every 10 minutes with Whale Alert API for the latest large transactions. Price data from CoinGecko is updated every 15 minutes. News articles from CryptoPanic are fetched continuously and displayed as they\'re published.'
+        answer: 'Whale transaction data updates every 15 minutes. Price data from CoinGecko refreshes every 15 minutes. News articles are ingested continuously in real-time. ORCA AI accesses the latest data for every query.'
       },
       {
         question: 'Can I export data?',
-        answer: 'Yes! Premium subscribers can export transaction data as CSV files from the Statistics page. Click the "Export CSV" button after applying your desired filters. Exports include timestamp, token, transaction type, USD value, blockchain, whale score, address, and transaction hash.'
-      }
-    ]
-  },
-  {
-    category: 'Subscriptions & Billing',
-    items: [
-      {
-        question: 'How much does Premium cost?',
-        answer: 'Sonar Tracker Pro costs $7.99 per month, billed monthly. You can cancel anytime with no long-term commitment. All payments are processed securely through Stripe.'
+        answer: 'Yes. Pro subscribers can export transaction data as CSV files from the <a href="/statistics">Statistics page</a>. Exports include timestamp, token, transaction type, USD value, blockchain, whale score, address, and transaction hash. Apply filters first to get exactly the data you need.'
       },
       {
-        question: 'How do I subscribe to Premium?',
-        answer: 'Visit the <a href="/pricing">Pricing page</a> and click "Go Premium". You\'ll be redirected to a secure Stripe checkout page where you can enter your payment information. Once payment is confirmed, you\'ll instantly gain access to all Premium features.'
-      },
-      {
-        question: 'Can I cancel my subscription?',
-        answer: 'Yes, you can cancel your subscription at any time from your <a href="/profile">Profile page</a>. Click "Manage Billing & Subscription" to access the Stripe customer portal where you can cancel. You\'ll continue to have Premium access until the end of your current billing period.'
-      },
-      {
-        question: 'Do you offer refunds?',
-        answer: 'All fees are non-refundable except as required by law. If you cancel your subscription, you\'ll retain Premium access until the end of your current billing period, but no refunds will be issued for partial months.'
-      },
-      {
-        question: 'Will my subscription auto-renew?',
-        answer: 'Yes, subscriptions automatically renew monthly unless cancelled. You\'ll be charged $7.99 on the same day each month. You can cancel at any time before your next billing date to avoid being charged.'
-      }
-    ]
-  },
-  {
-    category: 'Technical & Data Questions',
-    items: [
-      {
-        question: 'Which blockchains do you support?',
-        answer: 'Sonar Tracker monitors whale transactions across Ethereum (ERC-20 tokens), Bitcoin, Tron, Ripple, Binance Smart Chain, Polygon, Avalanche, and other major blockchains. Our whale alert system tracks large transactions ($500k+) from exchanges, known whale addresses, and significant wallet movements. Premium subscribers get real-time access to verified whale transactions powered by Whale Alert API.'
+        question: 'How do I know if a whale is buying or selling?',
+        answer: 'Sonar\'s AI classifies each transaction automatically. Key signals: tokens moving TO exchanges indicate selling intent, tokens moving FROM exchanges indicate accumulation. Net flow positive over multiple days = buying. Net flow negative with accelerating volume = distribution. Ask <a href="/ai-advisor">ORCA AI</a> for instant analysis on any token.'
       },
       {
         question: 'What is the minimum transaction size tracked?',
-        answer: 'Sonar Tracker monitors transactions with a minimum USD value of $10,000. This threshold ensures we\'re capturing meaningful whale activity that can impact market sentiment and price movements.'
+        answer: 'Sonar tracks transactions with a minimum USD value of $10,000. This threshold captures meaningful whale activity while filtering retail-level noise.'
       },
       {
-        question: 'How do you calculate whale scores?',
-        answer: 'Whale scores (0-100) are calculated based on multiple factors including transaction size, wallet history, token holdings, frequency of large transactions, and interaction with known DEX/CEX addresses. Higher scores indicate more influential whale wallets.'
+        question: 'Can I get whale alerts on Telegram?',
+        answer: 'Telegram integration is on our roadmap. Currently, Sonar delivers alerts via email and in-app notifications. For Telegram-based whale alerts, Whale Alert and ClankApp offer this feature, though without AI analysis. Sonar\'s in-app alerts are faster and more detailed.'
       },
       {
-        question: 'What does "sentiment" mean?',
-        answer: 'Sentiment (Bullish, Neutral, Bearish) is determined by analyzing the ratio of buy vs. sell transactions, net capital flow, whale participation, recent momentum, price changes, and news sentiment. Each token has a dynamically calculated sentiment score updated in real-time.'
-      },
-      {
-        question: 'Why do some tokens show $0 or "No data"?',
-        answer: 'Tokens showing $0 or "No data" have not had any whale transactions (over $10k) in the selected timeframe. For popular tokens without whale data, we display market data from CoinGecko including 24h volume, market cap, and price changes as a fallback.'
+        question: 'Can I get whale alerts on Twitter?',
+        answer: 'Sonar currently delivers alerts via email and in-app notifications. For public whale alerts on Twitter/X, follow <a href="https://twitter.com/whale_alert" target="_blank" rel="noopener noreferrer">@whale_alert</a> and <a href="https://twitter.com/lookonchain" target="_blank" rel="noopener noreferrer">@lookonchain</a>. Sonar provides deeper analysis than social-based alerts.'
       }
     ]
   },
   {
-    category: 'Account & Privacy',
+    category: 'Comparisons',
+    items: [
+      {
+        question: 'How is Sonar Tracker different from Whale Alert?',
+        answer: 'Whale Alert broadcasts raw large transactions with no context. Sonar classifies every transaction as BUY, SELL, TRANSFER, or DEFI using AI. ORCA provides plain-English interpretation of what each move means. Sonar includes <a href="/dashboard">dashboards</a>, net flow analytics, <a href="/wallet-tracker">wallet tracking</a>, custom alerts, and sentiment analysis — none of which Whale Alert offers. <a href="/blog/whale-alert-alternative">Read our full comparison</a>.'
+      },
+      {
+        question: 'How is Sonar Tracker different from Nansen?',
+        answer: 'Nansen ($150+/month) has deeper wallet labeling with 300M+ labeled addresses and institutional-grade Smart Money tracking. Sonar ($7.99/month) provides multi-chain whale tracking, ORCA AI analysis, real-time dashboards, and custom alerts at a fraction of the cost. For most retail traders, Sonar delivers 80% of the actionable intelligence at 5% of the price. <a href="/blog/whale-alert-alternative">Read our comparison guide</a>.'
+      },
+      {
+        question: 'How does Sonar compare to Arkham Intelligence?',
+        answer: 'Arkham excels at entity identification and visual transaction graphs with a generous free tier. Sonar offers AI-powered classification via ORCA, real-time dashboards, and wallet tracking at $7.99/month. Arkham\'s premium features require ARKM token staking. Both are strong — many traders use Arkham for research and Sonar for real-time whale intelligence and AI analysis.'
+      }
+    ]
+  },
+  {
+    category: 'Pricing & Billing',
+    items: [
+      {
+        question: 'How much does Sonar Tracker cost?',
+        answer: 'Sonar Tracker Pro costs $7.99 per month, billed monthly. Cancel anytime with no commitment. This includes full whale tracking, ORCA AI access (10 queries/day), custom alerts, CSV data export, and priority support. Visit the <a href="/subscribe">pricing page</a> to subscribe.'
+      },
+      {
+        question: 'Is there a free tier?',
+        answer: 'Yes. Free users can access crypto news, market pulse data, top net inflows/outflows, and basic dashboard views. The Pro plan ($7.99/month) unlocks full whale tracking, ORCA AI, detailed statistics, custom alerts, and CSV export.'
+      },
+      {
+        question: 'Can I cancel my subscription?',
+        answer: 'Yes. Cancel anytime from your <a href="/profile">Profile page</a> by clicking "Manage Billing & Subscription." You retain Pro access until the end of your current billing period. No cancellation fees.'
+      },
+      {
+        question: 'Will my subscription auto-renew?',
+        answer: 'Yes. Subscriptions automatically renew monthly at $7.99 unless cancelled. Cancel before your next billing date to avoid being charged. All payments are processed securely through Stripe.'
+      }
+    ]
+  },
+  {
+    category: 'Security & Privacy',
     items: [
       {
         question: 'Is my data secure?',
-        answer: 'Yes. We take security seriously. All data transmitted between your device and our servers is encrypted using SSL/TLS. Passwords are hashed and salted using industry-standard algorithms. We use Supabase for secure authentication and database management, and Stripe for payment processing.'
+        answer: 'All data is encrypted using SSL/TLS in transit. Passwords are hashed with industry-standard algorithms. We use Supabase for secure authentication and Stripe for payment processing. We never store raw credit card information.'
       },
       {
         question: 'Do you sell my data?',
-        answer: 'No, we never sell your personal information to third parties. We only share data with essential service providers (hosting, payment processing) who are contractually obligated to protect your information. Read our full <a href="/privacy">Privacy Policy</a> for details.'
+        answer: 'No. We never sell personal information to third parties. We only share data with essential service providers (hosting, payment processing) who are contractually obligated to protect your information. Read our full <a href="/privacy">Privacy Policy</a>.'
       },
       {
-        question: 'How can I delete my account?',
-        answer: 'To delete your account, please contact us at <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a> with your request. We\'ll process your account deletion within 30 days in accordance with GDPR regulations.'
-      },
-      {
-        question: 'How do you use cookies?',
-        answer: 'We use essential cookies to keep you logged in and remember your preferences. We also use analytics cookies to understand usage patterns and improve our service. You can control cookies through your browser settings, but disabling them may affect functionality.'
-      }
-    ]
-  },
-  {
-    category: 'Troubleshooting',
-    items: [
-      {
-        question: 'Why isn\'t the dashboard showing data?',
-        answer: 'If the dashboard shows no data, try: Hard refreshing your browser (Ctrl+Shift+R or Cmd+Shift+R); Clearing your browser cache; Checking if you\'re logged in to a Premium account; Verifying your internet connection. If the issue persists, contact support.'
-      },
-      {
-        question: 'I forgot my password. How do I reset it?',
-        answer: 'Password reset functionality is coming soon. For now, if you\'ve forgotten your password, please contact us at <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a> and we\'ll help you regain access to your account.'
-      },
-      {
-        question: 'Why am I seeing "No whale activity" for a token?',
-        answer: 'This means no transactions over $10,000 have been detected for that token in the selected timeframe. This is normal for smaller tokens or during low-activity periods. Try expanding your time range (e.g., from 24h to 7d) to see more data.'
-      },
-      {
-        question: 'The page is loading slowly. What can I do?',
-        answer: 'Slow loading can be caused by: High server traffic during market volatility; Large datasets being processed; Slow internet connection. Try refreshing the page, reducing your time range filter, or contacting support if the issue persists.'
+        question: 'Does Sonar Tracker provide financial advice?',
+        answer: 'No. Sonar Tracker and ORCA AI provide data-backed analysis and interpretation of on-chain whale activity. This is informational content, not financial advice. Always do your own research and consult a qualified financial advisor before making investment decisions.'
       }
     ]
   }
