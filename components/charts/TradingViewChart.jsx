@@ -111,6 +111,7 @@ function getTVSymbol(symbol) {
 function TradingViewChart({ symbol, height = 500 }) {
   const tvRef = useRef(null)
   const whaleRef = useRef(null)
+  const wrapRef = useRef(null)
 
   const [showWhales, setShowWhales] = useState(false)
   const [whaleData, setWhaleData] = useState([])
@@ -121,11 +122,6 @@ function TradingViewChart({ symbol, height = 500 }) {
   const [chartError, setChartError] = useState(false)
   const [whaleError, setWhaleError] = useState(false)
   const [whaleLoading, setWhaleLoading] = useState(false)
-
-  // Guard: no symbol
-  if (!symbol) {
-    return <ErrorMsg>No token symbol provided</ErrorMsg>
-  }
 
   // Load lightweight-charts lazily (only when whale chart shown)
   useEffect(() => {
@@ -138,14 +134,20 @@ function TradingViewChart({ symbol, height = 500 }) {
   // ── Embed TradingView Advanced Chart ──────────────────────────────
   useEffect(() => {
     const el = tvRef.current
-    if (!el) return
-    el.innerHTML = ''
+    if (!el || !symbol) return
     setChartLoading(true)
     setChartError(false)
+
+    // Remove previous widget safely
+    if (wrapRef.current && el.contains(wrapRef.current)) {
+      el.removeChild(wrapRef.current)
+    }
+    wrapRef.current = null
 
     const wrap = document.createElement('div')
     wrap.className = 'tradingview-widget-container'
     wrap.style.cssText = 'height:100%;width:100%'
+    wrapRef.current = wrap
 
     const inner = document.createElement('div')
     inner.className = 'tradingview-widget-container__widget'
@@ -179,7 +181,13 @@ function TradingViewChart({ symbol, height = 500 }) {
     wrap.appendChild(script)
     el.appendChild(wrap)
 
-    return () => { el.innerHTML = '' }
+    return () => {
+      // Safely remove the widget container without using innerHTML
+      if (wrapRef.current && el.contains(wrapRef.current)) {
+        try { el.removeChild(wrapRef.current) } catch {}
+      }
+      wrapRef.current = null
+    }
   }, [symbol])
 
   // ── Fetch whale timeseries ────────────────────────────────────────
@@ -278,6 +286,8 @@ function TradingViewChart({ symbol, height = 500 }) {
   }
 
   // ── Render ────────────────────────────────────────────────────────
+  if (!symbol) return <ErrorMsg>No token symbol provided</ErrorMsg>
+
   return (
     <Wrapper>
       {/* ─── Real TradingView Chart ──────────────────────────────── */}
