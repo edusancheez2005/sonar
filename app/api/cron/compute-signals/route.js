@@ -196,71 +196,6 @@ async function fetchWhaleTransactions(tokenSymbol) {
 }
 
 
-/**
- * Fetch price from cached price_snapshots table (updated every 15 min by fetch-prices cron).
- * Also computes real 7-day average volume from historical snapshots.
- * This avoids hitting CoinGecko API directly for every signal computation.
- */
-async function fetchCachedPrice(tokenSymbol) {
-  try {
-    // Get latest snapshot
-    const { data: latest } = await supabaseAdmin
-      .from('price_snapshots')
-      .select('price_usd, volume_24h, market_cap, price_change_24h, timestamp')
-      .eq('ticker', tokenSymbol)
-      .order('timestamp', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (!latest || !latest.price_usd) return null
-
-    // Check freshness: only use if < 30 minutes old
-    const age = Date.now() - new Date(latest.timestamp).getTime()
-    if (age > 30 * 60 * 1000) return null
-
-    // Get 7-day volume average from snapshots (one per ~15 min = ~672 rows for 7 days)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    const { data: historicalSnapshots } = await supabaseAdmin
-      .from('price_snapshots')
-      .select('volume_24h')
-      .eq('ticker', tokenSymbol)
-      .gte('timestamp', sevenDaysAgo)
-      .not('volume_24h', 'is', null)
-      .limit(700)
-
-    let avgVolume7d = latest.volume_24h || 0
-    if (historicalSnapshots && historicalSnapshots.length > 10) {
-      // Take one snapshot per day (every ~96th row) for daily volume samples
-      const dailySamples = []
-      const step = Math.max(1, Math.floor(historicalSnapshots.length / 7))
-      for (let i = 0; i < historicalSnapshots.length; i += step) {
-        const v = Number(historicalSnapshots[i].volume_24h || 0)
-        if (v > 0) dailySamples.push(v)
-      }
-      if (dailySamples.length > 0) {
-        avgVolume7d = dailySamples.reduce((a, b) => a + b, 0) / dailySamples.length
-      }
-    }
-
-    return {
-      current_price: latest.price_usd,
-      price_change_percentage_1h_in_currency: 0, // Not stored in snapshots
-      price_change_percentage_24h: latest.price_change_24h || 0,
-      price_change_percentage_7d: 0, // Would need 7d ago snapshot to compute
-      price_change_percentage_30d: 0,
-      total_volume: latest.volume_24h || 0,
-      avg_volume_7d: avgVolume7d,
-      market_cap: latest.market_cap || 0,
-      developer_data: null,
-      community_data: null,
-    }
-  } catch (err) {
-    console.warn(`[SignalEngine] Cached price fetch failed for ${tokenSymbol}:`, err.message)
-    return null
-  }
-}
-
-
 async function fetchSentimentScore(tokenSymbol) {
   const { data, error } = await supabaseAdmin
     .from('sentiment_scores')
@@ -272,6 +207,91 @@ async function fetchSentimentScore(tokenSymbol) {
 
   if (error || !data) return null
   return data
+}
+
+
+/**
+ * Fetch price data from cached price_snapshots table (updated every 15min by fetch-prices cron).
+ * Returns data in the same shape as fetchPriceData() for seamless fallback.
+ * Also computes real 7d average volume and 1h price change from historical snapshots.
+ */
+async function fetchCachedPrice(tokenSymbol) {
+  try {
+    // Get the latest snapshot
+    const { data: latest, error: latestErr } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_usd, market_cap, volume_24h, price_change_24h, timestamp')
+      .eq('ticker', tokenSymbol)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (latestErr || !latest || !latest.price_usd) return null
+
+    // Get snapshot from ~1 hour ago for 1h price change
+    const oneHourAgo = new Date(Date.now() - 75 * 60 * 1000).toISOString() // 75min to allow for timing
+    const { data: hourAgoSnap } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_usd')
+      .eq('ticker', tokenSymbol)
+      .lte('timestamp', oneHourAgo)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const priceChange1h = hourAgoSnap?.price_usd
+      ? ((latest.price_usd - hourAgoSnap.price_usd) / hourAgoSnap.price_usd) * 100
+      : 0
+
+    // Get 7d average volume from snapshots (one snapshot per day approx)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: volumeSnaps } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('volume_24h')
+      .eq('ticker', tokenSymbol)
+      .gte('timestamp', sevenDaysAgo)
+      .not('volume_24h', 'is', null)
+      .order('timestamp', { ascending: false })
+      .limit(50) // ~50 snapshots in 7d at 15min intervals ≈ 672, but we just need a sample
+
+    let avgVolume7d = latest.volume_24h || 0
+    if (volumeSnaps && volumeSnaps.length > 1) {
+      const volumes = volumeSnaps.map(s => Number(s.volume_24h) || 0).filter(v => v > 0)
+      if (volumes.length > 0) {
+        avgVolume7d = volumes.reduce((sum, v) => sum + v, 0) / volumes.length
+      }
+    }
+
+    // Get snapshot from ~7 days ago for 7d price change
+    const { data: weekAgoSnap } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_usd')
+      .eq('ticker', tokenSymbol)
+      .lte('timestamp', sevenDaysAgo)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const priceChange7d = weekAgoSnap?.price_usd
+      ? ((latest.price_usd - weekAgoSnap.price_usd) / weekAgoSnap.price_usd) * 100
+      : 0
+
+    return {
+      current_price: latest.price_usd,
+      price_change_percentage_1h_in_currency: priceChange1h,
+      price_change_percentage_24h: latest.price_change_24h || 0,
+      price_change_percentage_7d: priceChange7d,
+      price_change_percentage_30d: 0, // Not available from snapshots
+      total_volume: latest.volume_24h || 0,
+      avg_volume_7d: avgVolume7d,
+      market_cap: latest.market_cap || 0,
+      developer_data: null, // Not in snapshots
+      community_data: null,
+    }
+  } catch (err) {
+    console.error(`[SignalEngine] Cached price fetch failed for ${tokenSymbol}:`, err.message)
+    return null
+  }
 }
 
 
