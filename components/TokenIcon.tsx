@@ -62,8 +62,10 @@ export default function TokenIcon({
       return
     }
 
-    // Otherwise, fetch from API
-    if (!imgSrc && (symbol || coingeckoId)) {
+    // Reset and fetch when symbol changes
+    setImgSrc(null)
+    setImgError(false)
+    if (symbol || coingeckoId) {
       fetchTokenImage()
     }
   }, [symbol, coingeckoId, imageUrl])

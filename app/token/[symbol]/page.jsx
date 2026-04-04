@@ -85,10 +85,12 @@ export default async function TokenDetail({ params, searchParams }) {
   const uniqueWhales = whales.size
   const chains = Array.from(chainMap.entries()).sort((a,b)=>b[1]-a[1])
 
-  // Sanity check: if avg tx exceeds $500M, the data is unreliable (e.g. BTC UTXO consolidations)
+  // Sanity check: if avg tx exceeds threshold, the data is unreliable (e.g. BTC UTXO consolidations)
+  // BTC has genuinely large transactions, so use a higher threshold
   const txCount = buys + sells
   const avgTx = txCount > 0 ? totalVolume / txCount : 0
-  const dataReliable = avgTx < 500_000_000
+  const reliabilityThreshold = symbol === 'BTC' ? 2_000_000_000 : 500_000_000
+  const dataReliable = avgTx < reliabilityThreshold
 
   function computeMedian(values) {
     if (!values || values.length === 0) return 0

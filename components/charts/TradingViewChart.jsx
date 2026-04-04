@@ -132,7 +132,7 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 500 }) 
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        scaleMargins: { top: 0.05, bottom: 0.25 },
+        scaleMargins: { top: 0.05, bottom: 0.28 },
       },
       timeScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',

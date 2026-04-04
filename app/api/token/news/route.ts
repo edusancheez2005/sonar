@@ -37,9 +37,14 @@ export async function GET(request: NextRequest) {
     }
 
     const formatted = (articles || [])
-      .filter(a => isCryptoRelevant(a.title || '', symbol))
+      .filter(a => {
+        const title = a.title || ''
+        // Skip Untitled or very short titles
+        if (!title || title === 'Untitled' || title.length < 10) return false
+        return isCryptoRelevant(title, symbol)
+      })
       .map(a => ({
-        title: a.title || 'Untitled',
+        title: a.title,
         url: a.url || '',
         source: a.source || 'unknown',
         published_at: a.published_at,

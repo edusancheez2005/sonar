@@ -6,12 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { calculateEnhancedSentiment } from '@/app/lib/sentimentAlgorithm'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
-import PremiumGate from '@/components/PremiumGate'
+import PremiumGate from '@/components/PremiumGate'\nimport TokenIcon from '@/components/TokenIcon'
 import { SkeletonMetrics } from '@/components/SkeletonLoader'
 import { calculateTokenScore, getScoreLabel } from '@/app/lib/tokenScore'
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false })
 const SentimentChart = dynamic(() => import('@/components/charts/SentimentChart'), { ssr: false })
+const WhaleTransactionFeed = dynamic(() => import('@/components/whales/WhaleTransactionFeed'), { ssr: false })
 
 const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
 const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
@@ -582,6 +583,32 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       `
     })
     
+    // Block 4: Social Intelligence (if available)
+    if (socialData) {
+      const gs = socialData.galaxy_score
+      const soc = socialData.sentiment
+      const interactions = socialData.interactions_24h
+      if (gs || soc) {
+        blocks.push({
+          title: 'Social Intelligence',
+          impact: gs >= 60 ? 'Strong Social Signal' : gs >= 40 ? 'Moderate Interest' : gs > 0 ? 'Low Social Activity' : 'Data Available',
+          content: `
+            <p><strong>Overview:</strong> ${gs ? `Galaxy Score <strong>${gs}/100</strong>` : ''}${gs && soc ? ' · ' : ''}${soc ? `Social sentiment <strong>${soc}% bullish</strong>` : ''}${interactions ? ` · <strong>${interactions > 1000000 ? (interactions/1000000).toFixed(1) + 'M' : interactions > 1000 ? (interactions/1000).toFixed(0) + 'K' : interactions}</strong> social interactions in 24h` : ''}</p>
+            
+            <p><strong>What this means:</strong> ${
+              gs >= 70 && soc >= 65
+                ? `Strong social momentum aligns with ${buyPct > 55 ? 'whale accumulation' : 'market activity'}. High Galaxy Score and bullish sentiment indicate growing community conviction. Social trends often lead price action by 24-48 hours.`
+                : gs >= 50
+                ? `Moderate social interest. The Galaxy Score suggests the market is watching ${symbol}. Combined with ${buyPct > 55 ? 'whale buying' : 'whale selling'}, this could signal a setup forming.`
+                : gs > 0
+                ? `Below-average social activity. Low social attention can mean under-the-radar accumulation or declining interest. Watch for social volume spikes as potential early signals.`
+                : `Social metrics are being tracked for ${symbol}.`
+            }</p>
+          `
+        })
+      }
+    }
+    
     // Conclusion
     let conclusion = ''
     if (buyPct > 65 && priceChange24h > 3) {
@@ -964,32 +991,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
         <Header>
           <TokenTitle>
-            {priceData?.image ? (
-              <TokenImage 
-                src={priceData.image} 
-                alt={symbol}
-                onError={(e) => {
-                  e.target.style.display = 'none'
-                }}
-              />
-            ) : (
-              <div style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                border: `1px solid ${COLORS.borderSubtle}`,
-                background: 'rgba(0, 229, 255, 0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1rem',
-                fontWeight: 800,
-                color: COLORS.cyan,
-                fontFamily: MONO_FONT
-              }}>
-                {symbol.slice(0, 2)}
-              </div>
-            )}
+            <TokenIcon 
+              symbol={symbol}
+              coingeckoId={priceData?.coingeckoId}
+              imageUrl={priceData?.image}
+              size={44}
+            />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
               <TokenName>{symbol}</TokenName>
               {priceData?.name && priceData.name !== symbol && (
@@ -1520,6 +1527,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             </div>
           </Panel>
         )}
+
+        {/* ─── LIVE WHALE FEED ───────────────────────────────────── */}
+        <Panel style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+          <TerminalPrompt style={{ marginBottom: '0.75rem' }}>LIVE_WHALE_FEED</TerminalPrompt>
+          <WhaleTransactionFeed symbol={symbol} limit={20} pollInterval={10000} />
+        </Panel>
 
         </SideColumn>
         </TwoColumnGrid>
