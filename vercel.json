@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/telegram-alerts",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-wallets",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

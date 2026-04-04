@@ -65,7 +65,7 @@ export async function GET(req, { params }) {
     .select('blockchain, token_symbol, usd_value, classification, timestamp')
     .eq('whale_address', address)
     .order('timestamp', { ascending: false })
-    .limit(200)
+    .limit(2000)
 
   if (txError) {
     return NextResponse.json({ error: txError.message }, { status: 500 })
@@ -75,16 +75,38 @@ export async function GET(req, { params }) {
     return NextResponse.json({ error: 'Wallet not found' }, { status: 404 })
   }
 
-  const totalVolume = txData.reduce((sum, tx) => sum + (Number(tx.usd_value) || 0), 0)
-  const chains = [...new Set(txData.map(tx => tx.blockchain).filter(Boolean))]
+  // Compute portfolio value from net flow per token
+  const tokenFlows = new Map()
+  let totalVolume = 0
+  const chains = new Set()
   const lastActive = txData[0]?.timestamp || null
+
+  for (const tx of txData) {
+    const val = Number(tx.usd_value) || 0
+    totalVolume += val
+    if (tx.blockchain) chains.add(tx.blockchain)
+    const sym = tx.token_symbol
+    if (!sym) continue
+    if (!tokenFlows.has(sym)) tokenFlows.set(sym, { buy: 0, sell: 0 })
+    const entry = tokenFlows.get(sym)
+    const cls = (tx.classification || '').toUpperCase()
+    if (cls === 'BUY') entry.buy += val
+    else if (cls === 'SELL') entry.sell += val
+  }
+
+  let portfolioValue = 0
+  for (const [, flows] of tokenFlows) {
+    const net = flows.buy - flows.sell
+    if (net > 0) portfolioValue += net
+  }
 
   return NextResponse.json(
     {
       data: {
         address,
-        chains,
+        chains: [...chains],
         total_volume_usd_30d: totalVolume,
+        portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
         tx_count: txData.length,
         last_active: lastActive,
         source: 'aggregated',
