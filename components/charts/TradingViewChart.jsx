@@ -1,19 +1,33 @@
 /**
- * TradingView-style Chart — Lightweight Charts v4
- * Recreates chart on every config change for clean rendering.
+ * TradingView-style Chart using Lightweight Charts
+ * Features:
+ *  - Candlestick / Line / Area price chart
+ *  - Market volume histogram
+ *  - Whale Buy/Sell volume overlay (Sonar data)
+ *  - Timeframes: 1H, 6H, 1D, 7D, 1M, 3M, 6M, 1Y
+ *  - View presets: Price, Whale Activity, Full
+ *  - OHLC crosshair tooltip with whale data
  */
 
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import styled from 'styled-components'
 
 const MONO = "'JetBrains Mono', 'Fira Code', monospace"
 
 const Wrapper = styled.div`width: 100%; position: relative;`
-const ToolBar = styled.div`display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;`
+
+const ToolBar = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;
+`
+
 const BarGroup = styled.div`display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap;`
-const Divider = styled.div`width: 1px; height: 18px; background: rgba(255,255,255,0.06); margin: 0 0.3rem;`
+
+const Divider = styled.div`
+  width: 1px; height: 18px; background: rgba(255,255,255,0.06); margin: 0 0.3rem;
+`
 
 const Btn = styled.button`
   padding: 0.25rem 0.55rem; border-radius: 4px;
@@ -21,7 +35,8 @@ const Btn = styled.button`
   background: ${p => p.$active ? 'rgba(0, 229, 255, 0.12)' : 'transparent'};
   color: ${p => p.$active ? '#00e5ff' : '#5a6a7a'};
   font-size: 0.65rem; font-weight: 600; font-family: ${MONO};
-  cursor: pointer; transition: all 0.12s ease; white-space: nowrap;
+  letter-spacing: 0.3px; cursor: pointer; transition: all 0.12s ease;
+  white-space: nowrap;
   &:hover { border-color: rgba(0, 229, 255, 0.3); color: #00e5ff; }
 `
 
@@ -36,16 +51,18 @@ const InfoBar = styled.div`
   display: flex; gap: 0.6rem; font-family: ${MONO}; font-size: 0.6rem;
   color: #5a6a7a; padding: 0.15rem 0; flex-wrap: wrap; min-height: 1.2em;
 `
+
 const Val = styled.span`color: ${p => p.$c || '#e0e6ed'}; font-weight: 600;`
 
 const ChartBox = styled.div`
   width: 100%; border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.06); background: #0a0e17;
+  padding-bottom: 8px;
 `
 
 const Loading = styled.div`
   display: flex; align-items: center; justify-content: center;
-  font-family: ${MONO}; font-size: 0.7rem; color: #5a6a7a; background: #0a0e17;
+  height: 500px; font-family: ${MONO}; font-size: 0.7rem; color: #5a6a7a; background: #0a0e17;
 `
 
 const SummaryBar = styled.div`
@@ -70,54 +87,35 @@ const PRICE_TYPES = [
   { label: 'Area', value: 'area' },
 ]
 
-// Height of the chart canvas (excluding toolbar/info bar)
-const CHART_HEIGHT = 480
-
-export default function TradingViewChart({ symbol, coingeckoId }) {
+export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) {
   const containerRef = useRef(null)
-  const chartInstanceRef = useRef(null)
+  const chartRef = useRef(null)
   const seriesRefs = useRef({})
 
   const [selectedDays, setSelectedDays] = useState(7)
   const [chartType, setChartType] = useState('candlestick')
-  const [overlays, setOverlays] = useState({ volume: true, whaleBuys: false, whaleSells: false })
+  const [activeOverlays, setActiveOverlays] = useState({ volume: true, whaleBuys: false, whaleSells: false })
   const [loading, setLoading] = useState(true)
   const [hoverInfo, setHoverInfo] = useState(null)
   const [lwc, setLwc] = useState(null)
   const [whaleData, setWhaleData] = useState([])
   const [whaleSummary, setWhaleSummary] = useState(null)
 
+  // Load lightweight-charts dynamically
   useEffect(() => { import('lightweight-charts').then(setLwc) }, [])
 
-  const toggleOverlay = (key) => setOverlays(prev => ({ ...prev, [key]: !prev[key] }))
+  const toggleOverlay = (key) => {
+    setActiveOverlays(prev => ({ ...prev, [key]: !prev[key] }))
+  }
 
-  // Fetch whale data
-  useEffect(() => {
-    if (!symbol) return
-    const d = Math.max(1, Math.ceil(selectedDays))
-    fetch(`/api/whales/timeseries?symbol=${symbol}&days=${d}`)
-      .then(r => r.json())
-      .then(j => { setWhaleData(j.data || []); setWhaleSummary(j.summary || null) })
-      .catch(() => { setWhaleData([]); setWhaleSummary(null) })
-  }, [symbol, selectedDays])
-
-  // ── MAIN EFFECT: destroy + rebuild chart on any config change ──
+  // Create chart instance once
   useEffect(() => {
     if (!lwc || !containerRef.current) return
-
-    // Destroy old chart
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.remove()
-      chartInstanceRef.current = null
-      seriesRefs.current = {}
-    }
-
-    const el = containerRef.current
     const { createChart, ColorType, CrosshairMode } = lwc
 
-    const chart = createChart(el, {
-      width: el.clientWidth,
-      height: CHART_HEIGHT,
+    const chart = createChart(containerRef.current, {
+      width: containerRef.current.clientWidth,
+      height,
       layout: {
         background: { type: ColorType.Solid, color: '#0a0e17' },
         textColor: '#5a6a7a',
@@ -135,27 +133,25 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        scaleMargins: { top: 0.05, bottom: 0.25 },
+        scaleMargins: { top: 0.05, bottom: 0.3 },
       },
       timeScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        timeVisible: selectedDays <= 7,
+        timeVisible: true,
         secondsVisible: false,
-        rightOffset: 5,
-        minBarSpacing: 2,
+        rightOffset: 3,
+        fixLeftEdge: true,
       },
       handleScroll: { vertTouchDrag: false },
     })
+    chartRef.current = chart
 
-    chartInstanceRef.current = chart
-
-    // Resize
     const ro = new ResizeObserver(entries => {
       for (const e of entries) chart.applyOptions({ width: e.contentRect.width })
     })
-    ro.observe(el)
+    ro.observe(containerRef.current)
 
-    // Crosshair
+    // Crosshair tooltip
     chart.subscribeCrosshairMove(param => {
       if (!param.time || !param.seriesData) { setHoverInfo(null); return }
       const info = {}
@@ -173,27 +169,44 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
       setHoverInfo(Object.keys(info).length > 0 ? info : null)
     })
 
-    // Fetch data and add series
-    loadData(chart)
+    return () => { ro.disconnect(); chart.remove(); chartRef.current = null; seriesRefs.current = {} }
+  }, [lwc, height])
 
-    return () => {
-      ro.disconnect()
-      chart.remove()
-      chartInstanceRef.current = null
-      seriesRefs.current = {}
-    }
-  }, [lwc, selectedDays, chartType, overlays, whaleData, symbol, coingeckoId])
+  // Fetch whale data
+  useEffect(() => {
+    if (!symbol) return
+    const d = Math.max(1, Math.ceil(selectedDays))
+    fetch(`/api/whales/timeseries?symbol=${symbol}&days=${d}`)
+      .then(r => r.json())
+      .then(j => { setWhaleData(j.data || []); setWhaleSummary(j.summary || null) })
+      .catch(() => { setWhaleData([]); setWhaleSummary(null) })
+  }, [symbol, selectedDays])
 
-  async function loadData(chart) {
+  // Render all series
+  useEffect(() => {
+    if (!chartRef.current || !lwc) return
+    renderChart()
+  }, [selectedDays, chartType, activeOverlays, lwc, whaleData])
+
+  const renderChart = useCallback(async () => {
+    const chart = chartRef.current
+    if (!chart || !lwc) return
     setLoading(true)
+
     try {
+      // Clear existing series
+      for (const s of Object.values(seriesRefs.current)) {
+        try { chart.removeSeries(s) } catch {}
+      }
+      seriesRefs.current = {}
+
       const apiDays = Math.max(1, Math.ceil(selectedDays))
-      // For sub-day views, always fetch 1 day of hourly data
       const interval = selectedDays <= 1 ? 'hourly' : 'daily'
 
-      const baseParams = coingeckoId ? { id: coingeckoId } : { symbol }
-      const ohlcParams = new URLSearchParams({ days: String(apiDays), ...baseParams })
-      const mcParams = new URLSearchParams({ days: String(apiDays), interval, ...baseParams })
+      const ohlcParams = new URLSearchParams({ days: String(apiDays) })
+      const mcParams = new URLSearchParams({ days: String(apiDays), interval })
+      if (coingeckoId) { ohlcParams.set('id', coingeckoId); mcParams.set('id', coingeckoId) }
+      else { ohlcParams.set('symbol', symbol); mcParams.set('symbol', symbol) }
 
       const [ohlcRes, mcRes] = await Promise.all([
         fetch(`/api/coingecko/ohlc?${ohlcParams}`),
@@ -203,34 +216,34 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
       const ohlcJson = ohlcRes.ok ? await ohlcRes.json() : null
       const mcJson = mcRes.ok ? await mcRes.json() : null
 
-      // Time cutoff for sub-day views (1H, 6H)
+      // Time cutoff for sub-day views
       const cutoffMs = selectedDays < 1 ? Date.now() - selectedDays * 24 * 60 * 60 * 1000 : 0
 
-      // ── VOLUME ────────────────────────────
-      if (overlays.volume && mcJson?.data?.total_volumes) {
+      // ── MARKET VOLUME ──────────────────────
+      if (activeOverlays.volume && mcJson?.data?.total_volumes) {
         const volSeries = chart.addHistogramSeries({
           priceFormat: { type: 'volume' },
           priceScaleId: 'marketVol',
         })
-        volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
+        volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } })
 
-        const ohlcMap = ohlcJson ? new Map(ohlcJson.data.map(d => [Math.floor(d.timestamp / 1000), d])) : new Map()
+        const ohlcLookup = ohlcJson ? new Map(ohlcJson.data.map(d => [Math.floor(d.timestamp / 1000), d])) : new Map()
         const volData = dedup(
           mcJson.data.total_volumes
             .filter(([ts]) => ts >= cutoffMs)
             .map(([ts, v]) => {
               const t = Math.floor(ts / 1000)
-              const c = ohlcMap.get(t)
+              const c = ohlcLookup.get(t)
               const up = c ? c.close >= c.open : true
-              return { time: t, value: v, color: up ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255, 23, 68, 0.15)' }
+              return { time: t, value: v, color: up ? 'rgba(0, 230, 118, 0.12)' : 'rgba(255, 23, 68, 0.12)' }
             })
         )
-        if (volData.length > 0) volSeries.setData(volData)
+        volSeries.setData(volData)
         seriesRefs.current.volume = volSeries
       }
 
-      // ── WHALE BUYS ────────────────────────
-      if (overlays.whaleBuys && whaleData.length > 0) {
+      // ── WHALE BUY VOLUME ──────────────────────
+      if (activeOverlays.whaleBuys && whaleData.length > 0) {
         const s = chart.addHistogramSeries({
           priceFormat: { type: 'volume' },
           priceScaleId: 'whaleVol',
@@ -243,8 +256,8 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
         seriesRefs.current.whaleBuys = s
       }
 
-      // ── WHALE SELLS ────────────────────────
-      if (overlays.whaleSells && whaleData.length > 0) {
+      // ── WHALE SELL VOLUME ──────────────────────
+      if (activeOverlays.whaleSells && whaleData.length > 0) {
         const s = chart.addHistogramSeries({
           priceFormat: { type: 'volume' },
           priceScaleId: 'whaleVol',
@@ -257,14 +270,15 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
         seriesRefs.current.whaleSells = s
       }
 
-      // ── PRICE ────────────────────────────
-      if (chartType === 'candlestick' && ohlcJson?.data) {
+      // ── PRICE SERIES ──────────────────────
+      if (ohlcJson?.data) {
         const ohlc = dedup(
           ohlcJson.data
             .filter(d => d.timestamp >= cutoffMs)
             .map(d => ({ time: Math.floor(d.timestamp / 1000), open: d.open, high: d.high, low: d.low, close: d.close }))
         )
-        if (ohlc.length > 0) {
+
+        if (chartType === 'candlestick') {
           const s = chart.addCandlestickSeries({
             upColor: '#00e676', downColor: '#ff1744',
             borderDownColor: '#ff1744', borderUpColor: '#00e676',
@@ -272,34 +286,28 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
           })
           s.setData(ohlc)
           seriesRefs.current.price = s
-        }
-      } else if (mcJson?.data?.prices) {
-        // Line or Area — use price time series (more granular than OHLC for sub-day)
-        const prices = dedup(
-          mcJson.data.prices
-            .filter(([ts]) => ts >= cutoffMs)
-            .map(([ts, v]) => ({ time: Math.floor(ts / 1000), value: v }))
-        )
-        if (prices.length > 0) {
-          if (chartType === 'line') {
-            const s = chart.addLineSeries({
-              color: '#00e5ff', lineWidth: 2,
-              crosshairMarkerVisible: true, crosshairMarkerRadius: 3,
-            })
-            s.setData(prices)
-            seriesRefs.current.price = s
-          } else {
-            const s = chart.addAreaSeries({
-              lineColor: '#00e5ff', topColor: 'rgba(0, 229, 255, 0.18)',
-              bottomColor: 'rgba(0, 229, 255, 0.01)', lineWidth: 2,
-              crosshairMarkerVisible: true, crosshairMarkerRadius: 3,
-            })
-            s.setData(prices)
-            seriesRefs.current.price = s
-          }
+        } else if (chartType === 'line') {
+          const s = chart.addLineSeries({
+            color: '#00e5ff', lineWidth: 2,
+            crosshairMarkerVisible: true, crosshairMarkerRadius: 3,
+          })
+          s.setData(ohlc.map(d => ({ time: d.time, value: d.close })))
+          seriesRefs.current.price = s
+        } else {
+          const s = chart.addAreaSeries({
+            lineColor: '#00e5ff', topColor: 'rgba(0, 229, 255, 0.18)',
+            bottomColor: 'rgba(0, 229, 255, 0.01)', lineWidth: 2,
+            crosshairMarkerVisible: true, crosshairMarkerRadius: 3,
+          })
+          s.setData(ohlc.map(d => ({ time: d.time, value: d.close })))
+          seriesRefs.current.price = s
         }
       }
 
+      chart.timeScale().applyOptions({
+        timeVisible: selectedDays <= 7,
+        barSpacing: selectedDays <= 0.25 ? 14 : selectedDays <= 1 ? 8 : selectedDays <= 7 ? 6 : 4,
+      })
       chart.timeScale().fitContent()
 
     } catch (err) {
@@ -307,7 +315,7 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedDays, chartType, activeOverlays, symbol, coingeckoId, lwc, whaleData])
 
   function dedup(arr) {
     const seen = new Set()
@@ -319,9 +327,9 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
   const fV = v => { if (v == null) return '—'; if (v >= 1e9) return `$${(v/1e9).toFixed(2)}B`; if (v >= 1e6) return `$${(v/1e6).toFixed(2)}M`; if (v >= 1e3) return `$${(v/1e3).toFixed(0)}K`; return `$${v.toFixed(0)}` }
 
   const setPreset = p => {
-    if (p === 'price') { setOverlays({ volume: true, whaleBuys: false, whaleSells: false }); setChartType('candlestick') }
-    else if (p === 'whales') { setOverlays({ volume: false, whaleBuys: true, whaleSells: true }); setChartType('line') }
-    else if (p === 'full') { setOverlays({ volume: true, whaleBuys: true, whaleSells: true }); setChartType('candlestick') }
+    if (p === 'price') { setActiveOverlays({ volume: true, whaleBuys: false, whaleSells: false }); setChartType('candlestick') }
+    else if (p === 'whales') { setActiveOverlays({ volume: false, whaleBuys: true, whaleSells: true }); setChartType('line') }
+    else if (p === 'full') { setActiveOverlays({ volume: true, whaleBuys: true, whaleSells: true }); setChartType('candlestick') }
   }
 
   return (
@@ -347,17 +355,17 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
             <Btn key={ct.value} $active={chartType === ct.value} onClick={() => setChartType(ct.value)}>{ct.label}</Btn>
           ))}
           <Divider />
-          <OverlayBtn $active={overlays.volume} $color="#00e5ff" onClick={() => toggleOverlay('volume')}>
-            {overlays.volume ? '✓ ' : ''}Volume
+          <OverlayBtn $active={activeOverlays.volume} $color="#00e5ff" onClick={() => toggleOverlay('volume')}>
+            {activeOverlays.volume ? '✓ ' : ''}Volume
           </OverlayBtn>
-          <OverlayBtn $active={overlays.whaleBuys} $color="#00e676" onClick={() => toggleOverlay('whaleBuys')}>
-            {overlays.whaleBuys ? '✓ ' : ''}Whale Buys
+          <OverlayBtn $active={activeOverlays.whaleBuys} $color="#00e676" onClick={() => toggleOverlay('whaleBuys')}>
+            {activeOverlays.whaleBuys ? '✓ ' : ''}Whale Buys
           </OverlayBtn>
-          <OverlayBtn $active={overlays.whaleSells} $color="#ff1744" onClick={() => toggleOverlay('whaleSells')}>
-            {overlays.whaleSells ? '✓ ' : ''}Whale Sells
+          <OverlayBtn $active={activeOverlays.whaleSells} $color="#ff1744" onClick={() => toggleOverlay('whaleSells')}>
+            {activeOverlays.whaleSells ? '✓ ' : ''}Whale Sells
           </OverlayBtn>
         </BarGroup>
-        {whaleSummary && (overlays.whaleBuys || overlays.whaleSells) && (
+        {whaleSummary && (activeOverlays.whaleBuys || activeOverlays.whaleSells) && (
           <SummaryBar>
             <span style={{ color: '#00e676' }}>Buys: {fV(whaleSummary.totalBuyVolume)} ({whaleSummary.totalBuyCount})</span>
             <span style={{ color: '#ff1744' }}>Sells: {fV(whaleSummary.totalSellVolume)} ({whaleSummary.totalSellCount})</span>
@@ -385,10 +393,11 @@ export default function TradingViewChart({ symbol, coingeckoId }) {
         {hoverInfo?.whaleSellVol != null && <span>🐋Sell <Val $c="#ff1744">{fV(hoverInfo.whaleSellVol)}</Val></span>}
       </InfoBar>
 
-      {/* Chart */}
+      {/* The chart */}
       <ChartBox>
-        {!lwc && <Loading style={{ height: CHART_HEIGHT }}>Loading chart engine...</Loading>}
-        <div ref={containerRef} style={{ width: '100%' }} />
+        {!lwc && <Loading>Loading chart engine...</Loading>}
+        {lwc && loading && !chartRef.current && <Loading>Loading data...</Loading>}
+        <div ref={containerRef} style={{ width: '100%', height: `${height}px` }} />
       </ChartBox>
     </Wrapper>
   )

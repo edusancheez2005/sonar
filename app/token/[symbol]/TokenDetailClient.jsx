@@ -1344,6 +1344,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           <TradingViewChart
             symbol={symbol}
             coingeckoId={priceData?.coingeckoId}
+            height={500}
           />
         </Panel>
 
