@@ -116,19 +116,27 @@ async function getActiveTokens() {
  * Gather all data sources for a single token and compute the signal.
  */
 async function computeSignalForToken(tokenSymbol) {
-  // Parallel data fetching
-  const [transactions, sentimentData, priceData, socialData, communityVotes] = await Promise.all([
+  // Parallel data fetching — use cached price snapshots first, CoinGecko as fallback
+  const [transactions, sentimentData, cachedPrice, socialData, communityVotes] = await Promise.all([
     fetchWhaleTransactions(tokenSymbol),
     fetchSentimentScore(tokenSymbol),
-    fetchPriceData(tokenSymbol),
+    fetchCachedPrice(tokenSymbol),
     fetchSocialData(tokenSymbol),
     fetchCommunityVotes(tokenSymbol),
   ])
 
+  // If cached price exists, use it. Otherwise fall back to CoinGecko API.
+  let priceData = null
+  if (cachedPrice) {
+    priceData = cachedPrice
+  } else {
+    priceData = await fetchPriceData(tokenSymbol)
+  }
+
   // Build price changes object
   const priceChanges = priceData ? {
     change_1h: priceData.price_change_percentage_1h_in_currency || 0,
-    change_6h: 0, // CoinGecko doesn't provide 6h natively; could interpolate
+    change_6h: 0, // CoinGecko doesn't provide 6h natively
     change_24h: priceData.price_change_percentage_24h || 0,
     change_7d: priceData.price_change_percentage_7d || 0,
     change_30d: priceData.price_change_percentage_30d || 0,
@@ -137,7 +145,7 @@ async function computeSignalForToken(tokenSymbol) {
   // Build volume data
   const volumeData = priceData ? {
     volume_24h: priceData.total_volume || 0,
-    avg_volume_7d: priceData.total_volume || 0, // approximate; ideally from stored snapshots
+    avg_volume_7d: priceData.avg_volume_7d || priceData.total_volume || 0,
     market_cap: priceData.market_cap || 0,
   } : {}
 
@@ -185,6 +193,71 @@ async function fetchWhaleTransactions(tokenSymbol) {
     return []
   }
   return data || []
+}
+
+
+/**
+ * Fetch price from cached price_snapshots table (updated every 15 min by fetch-prices cron).
+ * Also computes real 7-day average volume from historical snapshots.
+ * This avoids hitting CoinGecko API directly for every signal computation.
+ */
+async function fetchCachedPrice(tokenSymbol) {
+  try {
+    // Get latest snapshot
+    const { data: latest } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_usd, volume_24h, market_cap, price_change_24h, timestamp')
+      .eq('ticker', tokenSymbol)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!latest || !latest.price_usd) return null
+
+    // Check freshness: only use if < 30 minutes old
+    const age = Date.now() - new Date(latest.timestamp).getTime()
+    if (age > 30 * 60 * 1000) return null
+
+    // Get 7-day volume average from snapshots (one per ~15 min = ~672 rows for 7 days)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: historicalSnapshots } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('volume_24h')
+      .eq('ticker', tokenSymbol)
+      .gte('timestamp', sevenDaysAgo)
+      .not('volume_24h', 'is', null)
+      .limit(700)
+
+    let avgVolume7d = latest.volume_24h || 0
+    if (historicalSnapshots && historicalSnapshots.length > 10) {
+      // Take one snapshot per day (every ~96th row) for daily volume samples
+      const dailySamples = []
+      const step = Math.max(1, Math.floor(historicalSnapshots.length / 7))
+      for (let i = 0; i < historicalSnapshots.length; i += step) {
+        const v = Number(historicalSnapshots[i].volume_24h || 0)
+        if (v > 0) dailySamples.push(v)
+      }
+      if (dailySamples.length > 0) {
+        avgVolume7d = dailySamples.reduce((a, b) => a + b, 0) / dailySamples.length
+      }
+    }
+
+    return {
+      current_price: latest.price_usd,
+      price_change_percentage_1h_in_currency: 0, // Not stored in snapshots
+      price_change_percentage_24h: latest.price_change_24h || 0,
+      price_change_percentage_7d: 0, // Would need 7d ago snapshot to compute
+      price_change_percentage_30d: 0,
+      total_volume: latest.volume_24h || 0,
+      avg_volume_7d: avgVolume7d,
+      market_cap: latest.market_cap || 0,
+      developer_data: null,
+      community_data: null,
+    }
+  } catch (err) {
+    console.warn(`[SignalEngine] Cached price fetch failed for ${tokenSymbol}:`, err.message)
+    return null
+  }
 }
 
 
