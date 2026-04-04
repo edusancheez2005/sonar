@@ -143,23 +143,45 @@ export function computeTier1_CexWhaleFlow(
     return { score: 0, confidence: 0, available: false, factors: {} }
   }
 
-  let cexBuys = 0, cexSells = 0, cexBuyVol = 0, cexSellVol = 0
+  let cexBuyVol = 0, cexSellVol = 0, cexBuyVolWeighted = 0, cexSellVolWeighted = 0
+  let cexBuys = 0, cexSells = 0
   const uniqueBuyAddrs = new Set<string>()
   const uniqueSellAddrs = new Set<string>()
+  let largeTxBuyVol = 0, largeTxSellVol = 0 // Txs > $500K
+
+  // Track velocity: transactions in last 3 hours vs rest
+  const recentCutoff = now - 3 * 60 * 60 * 1000
+  let recentBuyVol = 0, recentSellVol = 0
 
   for (const tx of cexTxs) {
     const usd = Number(tx.usd_value || 0)
     const side = (tx.classification || '').toUpperCase()
     const whale = tx.whale_address || tx.from_address || ''
+    const txTime = new Date(tx.timestamp).getTime()
+
+    // Exponential time-decay: recent txs matter more (half-life = 6 hours)
+    const ageMs = now - txTime
+    const decay = Math.exp(-ageMs / (6 * 60 * 60 * 1000))
+
+    // Size emphasis: sqrt scaling so large txs matter more but don't dominate
+    const sizeWeight = Math.sqrt(Math.max(1, usd / 10000))
+
+    const weighted = usd * decay * sizeWeight
 
     if (side === 'BUY') {
       cexBuys++
       cexBuyVol += usd
+      cexBuyVolWeighted += weighted
       uniqueBuyAddrs.add(whale.toLowerCase())
+      if (usd > 500000) largeTxBuyVol += usd
+      if (txTime >= recentCutoff) recentBuyVol += usd
     } else if (side === 'SELL') {
       cexSells++
       cexSellVol += usd
+      cexSellVolWeighted += weighted
       uniqueSellAddrs.add(whale.toLowerCase())
+      if (usd > 500000) largeTxSellVol += usd
+      if (txTime >= recentCutoff) recentSellVol += usd
     }
   }
 
@@ -169,24 +191,44 @@ export function computeTier1_CexWhaleFlow(
   }
 
   const totalCexVol = cexBuyVol + cexSellVol
+  const totalWeighted = cexBuyVolWeighted + cexSellVolWeighted
   const netCexFlow = cexBuyVol - cexSellVol
   const totalCexTxs = cexBuys + cexSells
   const cexBuyRatio = totalCexTxs > 0 ? cexBuys / totalCexTxs : 0.5
   const uniqueWhales = new Set([...uniqueBuyAddrs, ...uniqueSellAddrs]).size
   const volumeChange = prevCexVol > 0 ? (totalCexVol - prevCexVol) / prevCexVol : 0
 
-  const ratioSignal = (cexBuyRatio - 0.5) * 2
-  const flowSignal = totalCexVol > 0 ? Math.tanh(netCexFlow / (totalCexVol * 0.5)) : 0
-  const volumeSurge = Math.min(1, Math.max(0, volumeChange))
-  const breadthSignal = Math.min(1, uniqueWhales / 10)
+  // Primary signal: time-decay + size-weighted flow (better than raw ratio)
+  const weightedFlowSignal = totalWeighted > 0
+    ? Math.tanh((cexBuyVolWeighted - cexSellVolWeighted) / (totalWeighted * 0.4))
+    : 0
 
-  const rawScore = (ratioSignal * 0.5 + flowSignal * 0.5)
-  const amplifier = 1 + volumeSurge * 0.3 + breadthSignal * 0.2
-  const score = clamp(rawScore * amplifier * 100, -100, 100)
+  // Large transaction signal (institutional conviction)
+  const largeTxNet = largeTxBuyVol - largeTxSellVol
+  const largeTxSignal = totalCexVol > 0
+    ? Math.tanh(largeTxNet / (totalCexVol * 0.3)) * 0.5
+    : 0
+
+  // Velocity signal: are whales accelerating activity in last 3h?
+  const recentNet = recentBuyVol - recentSellVol
+  const olderBuyVol = cexBuyVol - recentBuyVol
+  const olderSellVol = cexSellVol - recentSellVol
+  const olderNet = olderBuyVol - olderSellVol
+  const velocitySignal = (totalCexVol > 0 && (olderBuyVol + olderSellVol) > 0)
+    ? Math.tanh((recentNet - olderNet * (3 / (lookbackMs / (60*60*1000) - 3))) / (totalCexVol * 0.2)) * 0.3
+    : 0
+
+  // Breadth (more unique whales = higher conviction)
+  const breadthSignal = Math.min(1, uniqueWhales / 10) * 0.2
+  const volumeSurge = Math.min(1, Math.max(0, volumeChange)) * 0.3
+
+  const rawScore = weightedFlowSignal * 0.55 + largeTxSignal * 0.20 + velocitySignal * 0.15 + breadthSignal * Math.sign(weightedFlowSignal) + volumeSurge * Math.sign(weightedFlowSignal)
+  const score = clamp(rawScore * 100, -100, 100)
 
   const txCountConf = Math.min(1, totalCexTxs / 10)
   const whaleCountConf = Math.min(1, uniqueWhales / 5)
-  const confidence = Math.round((txCountConf * 0.6 + whaleCountConf * 0.4) * 100)
+  const largeTxConf = (largeTxBuyVol + largeTxSellVol) > 0 ? 0.2 : 0
+  const confidence = Math.round((txCountConf * 0.5 + whaleCountConf * 0.3 + largeTxConf) * 100)
 
   return {
     score: Math.round(score),
@@ -201,6 +243,12 @@ export function computeTier1_CexWhaleFlow(
       cexSellVol: Math.round(cexSellVol),
       uniqueWhales,
       volumeChangeVsPrev: +(volumeChange * 100).toFixed(1),
+      largeTxBuyVol: Math.round(largeTxBuyVol),
+      largeTxSellVol: Math.round(largeTxSellVol),
+      recentBuyVol3h: Math.round(recentBuyVol),
+      recentSellVol3h: Math.round(recentSellVol),
+      weightedFlowSignal: +weightedFlowSignal.toFixed(3),
+      velocitySignal: +velocitySignal.toFixed(3),
     }
   }
 }
@@ -525,7 +573,24 @@ export function computeUnifiedSignal({
     if (trap.adjustment) trapAdjustment += trap.adjustment
     if (trap.confidenceReduction) confidenceReduction += trap.confidenceReduction
   }
-  rawScore = clamp(rawScore + trapAdjustment, -100, 100)
+
+  // Smart Money Divergence Bonus:
+  // When whale flow (Tier 1) strongly disagrees with price momentum (Tier 2),
+  // the whale signal is historically MORE predictive (mean reversion).
+  // Whales buying during dips = accumulation. Whales selling during pumps = distribution.
+  // Boost the whale signal in these scenarios instead of canceling out.
+  let smartMoneyBonus = 0
+  if (tier1.available && tier2.available && tier1.confidence >= 40) {
+    const whaleDirection = Math.sign(tier1.score)
+    const priceDirection = Math.sign(tier2.score)
+    if (whaleDirection !== 0 && whaleDirection !== priceDirection) {
+      // Whale is going against price — this is the contrarian smart money signal
+      const divergenceStrength = Math.min(Math.abs(tier1.score), Math.abs(tier2.score)) / 100
+      smartMoneyBonus = whaleDirection * divergenceStrength * 25 // Up to ±25 bonus
+    }
+  }
+
+  rawScore = clamp(rawScore + trapAdjustment + smartMoneyBonus, -100, 100)
 
   const directions = availableTiers.map(t => Math.sign(t.data.score))
   const agreementCount = directions.filter(d => d === Math.sign(rawScore)).length
