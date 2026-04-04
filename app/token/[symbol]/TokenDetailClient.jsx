@@ -1348,6 +1348,39 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           />
         </Panel>
 
+        {/* ─── WHALE PATTERNS (in main column, below chart) ──────── */}
+        {!patternsLoading && whalePatterns.length > 0 && (
+          <PremiumGate isPremium={isPremium} feature="Whale Pattern Analysis">
+          <Panel style={{ marginBottom: '1.5rem' }}>
+            <TerminalPrompt style={{ marginBottom: '1rem' }}>WHALE_PATTERNS</TerminalPrompt>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: MONO_FONT, fontSize: '0.75rem' }}>
+                <thead>
+                  <tr>
+                    {['Address','Txns','Volume','Net Flow','Pattern'].map(h => (
+                      <th key={h} style={{ padding: '0.4rem', textAlign: h === 'Address' || h === 'Pattern' ? 'left' : 'right', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {whalePatterns.slice(0, 5).map((w, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                      <td style={{ padding: '0.4rem' }}><a href={`/whale/${encodeURIComponent(w.address)}`} style={{ color: COLORS.cyan, textDecoration: 'none', fontWeight: 600 }}>{w.address.slice(0,6)}...{w.address.slice(-4)}</a></td>
+                      <td style={{ padding: '0.4rem', textAlign: 'right', fontWeight: 700, color: COLORS.cyan }}>{w.txCount}</td>
+                      <td style={{ padding: '0.4rem', textAlign: 'right' }}>{formatUSD(w.totalVolume)}</td>
+                      <td style={{ padding: '0.4rem', textAlign: 'right', fontWeight: 700, color: w.netFlow >= 0 ? COLORS.green : COLORS.red }}>{w.netFlow >= 0 ? '+' : ''}{formatUSD(w.netFlow)}</td>
+                      <td style={{ padding: '0.4rem' }}>
+                        <span style={{ fontSize: '0.6rem', fontFamily: MONO_FONT, fontWeight: 600, padding: '0.15rem 0.4rem', borderRadius: '3px', color: w.pattern.includes('ACCUMUL') ? COLORS.green : w.pattern.includes('DISTRIBUT') ? COLORS.red : COLORS.amber, background: w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.08)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)', border: `1px solid ${w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.12)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.12)' : 'rgba(255,171,0,0.12)'}` }}>{w.pattern}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+          </PremiumGate>
+        )}
+
         </MainColumn>
         <SideColumn>
 
@@ -1537,88 +1570,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
         </SideColumn>
         </TwoColumnGrid>
-
-        {/* ─── DEVELOPER ACTIVITY (GitHub) ────────────────────────── */}
-        {priceData && priceData.githubCommits4w > 0 && (
-          <PremiumGate isPremium={isPremium} feature="Developer Activity">
-          <Panel style={{ marginBottom: '1.5rem' }}>
-            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>DEVELOPER_ACTIVITY</TerminalPrompt>
-            <MetricsGrid>
-              <MetricCard>
-                <MetricLabel>Commits (4 weeks)</MetricLabel>
-                <MetricValue>{priceData.githubCommits4w}</MetricValue>
-              </MetricCard>
-              {priceData.githubStars > 0 && (
-                <MetricCard>
-                  <MetricLabel>GitHub Stars</MetricLabel>
-                  <MetricValue>{formatNumber(priceData.githubStars)}</MetricValue>
-                </MetricCard>
-              )}
-              {priceData.githubForks > 0 && (
-                <MetricCard>
-                  <MetricLabel>Forks</MetricLabel>
-                  <MetricValue>{formatNumber(priceData.githubForks)}</MetricValue>
-                </MetricCard>
-              )}
-              {priceData.githubPRsMerged > 0 && (
-                <MetricCard>
-                  <MetricLabel>PRs Merged</MetricLabel>
-                  <MetricValue>{formatNumber(priceData.githubPRsMerged)}</MetricValue>
-                </MetricCard>
-              )}
-            </MetricsGrid>
-          </Panel>
-          </PremiumGate>
-        )}
-
-        {/* ─── WHALE PATTERNS ─────────────────────────────────────── */}
-        {!patternsLoading && whalePatterns.length > 0 && (
-          <PremiumGate isPremium={isPremium} feature="Whale Pattern Analysis">
-          <Panel style={{ marginBottom: '1.5rem' }}>
-            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>WHALE_PATTERNS</TerminalPrompt>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: MONO_FONT }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Address</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Txns</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Volume</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Net Flow</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}`, fontFamily: SANS_FONT }}>Pattern</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {whalePatterns.slice(0, 5).map((w, idx) => (
-                    <tr key={idx} style={{ borderBottom: `1px solid rgba(255,255,255,0.02)` }}>
-                      <td style={{ padding: '0.5rem' }}>
-                        <a href={`/whale/${encodeURIComponent(w.address)}`} style={{ color: COLORS.cyan, textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}>
-                          {w.address.slice(0, 6)}...{w.address.slice(-4)}
-                        </a>
-                      </td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.8rem', fontWeight: 700, color: COLORS.cyan }}>{w.txCount}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.8rem' }}>{formatUSD(w.totalVolume)}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.8rem', fontWeight: 700, color: w.netFlow >= 0 ? COLORS.green : COLORS.red }}>
-                        {w.netFlow >= 0 ? '+' : ''}{formatUSD(w.netFlow)}
-                      </td>
-                      <td style={{ padding: '0.5rem' }}>
-                        <span style={{
-                          fontSize: '0.65rem', fontFamily: MONO_FONT, fontWeight: 600, padding: '0.15rem 0.4rem',
-                          borderRadius: '3px', letterSpacing: '0.5px',
-                          color: w.pattern.includes('ACCUMUL') ? COLORS.green : w.pattern.includes('DISTRIBUT') ? COLORS.red : COLORS.amber,
-                          background: w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.08)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)',
-                          border: `1px solid ${w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.12)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.12)' : 'rgba(255,171,0,0.12)'}`,
-                        }}>
-                          {w.pattern}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
-          </PremiumGate>
-        )}
 
         {/* CMC-Style Deep Dive Analysis */}
         {deepDive && (

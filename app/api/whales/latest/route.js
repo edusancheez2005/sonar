@@ -29,14 +29,23 @@ export async function GET(req) {
   const from = (page - 1) * limit
   const to = from + limit - 1
 
+  // Optional token filter
+  const token = searchParams.get('token')?.toUpperCase() || null
+
   // Fetch extra rows to account for filtering out entity-name whale addresses
-  const { data: rawData, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('all_whale_transactions')
     .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,whale_address')
     .not('token_symbol', 'in', `(${STABLECOINS.join(',')})`)
     .in('classification', ['BUY', 'SELL'])
     .order('timestamp', { ascending: false })
-    .range(from, to + 50)
+
+  // Filter by token if provided
+  if (token) {
+    query = query.eq('token_symbol', token)
+  }
+
+  const { data: rawData, error } = await query.range(from, to + 50)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

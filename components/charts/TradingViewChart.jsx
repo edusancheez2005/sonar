@@ -86,7 +86,7 @@ const PRICE_TYPES = [
   { label: 'Area', value: 'area' },
 ]
 
-export default function TradingViewChart({ symbol, coingeckoId, height = 500 }) {
+export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) {
   const containerRef = useRef(null)
   const chartRef = useRef(null)
   const seriesRefs = useRef({})
@@ -132,13 +132,14 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 500 }) 
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        scaleMargins: { top: 0.05, bottom: 0.28 },
+        scaleMargins: { top: 0.05, bottom: 0.3 },
       },
       timeScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 3,
+        fixLeftEdge: true,
       },
       handleScroll: { vertTouchDrag: false },
     })
