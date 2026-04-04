@@ -51,12 +51,12 @@ export default function BitcoinWhaleTrackerPage() {
           { value: 'ORCA AI', label: 'built-in' },
         ]}
         features={[
-          { icon: '🏛️', title: 'Exchange Flow Monitoring', desc: 'Track BTC flowing in and out of all major exchanges. Net exchange outflows are the most reliable bullish signal in crypto. Inflow spikes signal imminent selling.' },
-          { icon: '⛏️', title: 'Miner Activity Tracking', desc: 'Monitor miner wallet outflows to exchanges. Post-halving miner capitulation events historically mark local price bottoms — catch them in real time.' },
-          { icon: '💤', title: 'Dormant Wallet Alerts', desc: 'Get flagged when long-dormant Bitcoin wallets (5+ years inactive) suddenly move BTC. ORCA AI distinguishes between reorganization and sell-intent.' },
-          { icon: '🤖', title: 'ORCA AI for Bitcoin', desc: 'Ask ORCA about BTC-specific whale behavior: exchange reserves, miner selling rates, government wallet movements, and UTXO age distribution signals.' },
-          { icon: '📊', title: 'UTXO Age Analysis', desc: 'Track Coin Days Destroyed and HODL Waves metrics. When old coins move, it signals conviction shifts among long-term holders — a high-confidence indicator.' },
-          { icon: '🔔', title: 'Custom BTC Alerts', desc: 'Set alerts for BTC transactions above any threshold. Get notified when government wallets, miners, or dormant whales make moves.' },
+          { icon: 'building', title: 'Exchange Flow Monitoring', desc: 'Track BTC flowing in and out of all major exchanges. Net exchange outflows are the most reliable bullish signal in crypto. Inflow spikes signal imminent selling.' },
+          { icon: 'pickaxe', title: 'Miner Activity Tracking', desc: 'Monitor miner wallet outflows to exchanges. Post-halving miner capitulation events historically mark local price bottoms — catch them in real time.' },
+          { icon: 'moon', title: 'Dormant Wallet Alerts', desc: 'Get flagged when long-dormant Bitcoin wallets (5+ years inactive) suddenly move BTC. ORCA AI distinguishes between reorganization and sell-intent.' },
+          { icon: 'cpu', title: 'ORCA AI for Bitcoin', desc: 'Ask ORCA about BTC-specific whale behavior: exchange reserves, miner selling rates, government wallet movements, and UTXO age distribution signals.' },
+          { icon: 'database', title: 'UTXO Age Analysis', desc: 'Track Coin Days Destroyed and HODL Waves metrics. When old coins move, it signals conviction shifts among long-term holders — a high-confidence indicator.' },
+          { icon: 'bell', title: 'Custom BTC Alerts', desc: 'Set alerts for BTC transactions above any threshold. Get notified when government wallets, miners, or dormant whales make moves.' },
         ]}
         steps={[
           { title: 'Sonar monitors every BTC transaction over $10K', desc: 'Our pipeline captures Bitcoin whale movements across the UTXO model, tracking address clusters rather than individual accounts for accurate entity mapping.' },
@@ -88,6 +88,31 @@ export default function BitcoinWhaleTrackerPage() {
           { q: 'What is the most reliable Bitcoin whale signal?', a: 'Exchange flow direction — particularly sustained outflows (5+ days). When BTC consistently leaves exchanges, holders are moving to self-custody with no intent to sell. This has preceded every major BTC rally in the past 5 years.' },
         ]}
         blogSlug="bitcoin-whale-tracker"
+        demoTxs={[
+          { type: 'buy', amount: '$18.5M BTC', addr: 'bc1q...x7k4', time: '15s ago', id: 1 },
+          { type: 'sell', amount: '$5.2M BTC', addr: '3FZb...Q9nR', time: '48s ago', id: 2 },
+          { type: 'buy', amount: '$42.0M BTC', addr: 'bc1q...m3p8', time: '1m ago', id: 3 },
+          { type: 'buy', amount: '$11.3M BTC', addr: '1P5Z...Kd7w', time: '3m ago', id: 4 },
+          { type: 'sell', amount: '$7.8M BTC', addr: 'bc1q...r2v5', time: '4m ago', id: 5 },
+          { type: 'buy', amount: '$25.1M BTC', addr: '3Cbq...Lf9x', time: '5m ago', id: 6 },
+          { type: 'sell', amount: '$3.4M BTC', addr: 'bc1q...h6n1', time: '7m ago', id: 7 },
+          { type: 'buy', amount: '$55.0M BTC', addr: '1FeX...Wp4z', time: '8m ago', id: 8 },
+        ]}
+        chartData={[
+          {value:60},{value:50},{value:70},{value:-25},{value:75},{value:55},{value:-10},{value:68},
+          {value:62},{value:80},{value:-5},{value:85},{value:72},{value:55},{value:78},{value:-12},
+          {value:88},{value:75},{value:65},{value:90},{value:-3},{value:82},{value:92},{value:95},
+        ]}
+        tickerItems={[
+          { symbol: 'BTC', price: '$63,420', change: '+2.1%' },
+          { symbol: 'WBTC', price: '$63,380', change: '+2.0%' },
+          { symbol: 'STX', price: '$1.82', change: '+5.4%' },
+          { symbol: 'ORDI', price: '$38.50', change: '-3.2%' },
+          { symbol: 'RUNE', price: '$4.15', change: '+1.7%' },
+          { symbol: 'SATS', price: '$0.00032', change: '+8.3%' },
+          { symbol: 'MSTR', price: '$1,245', change: '+1.4%' },
+          { symbol: 'GBTC', price: '$58.20', change: '+0.9%' },
+        ]}
       />
     </>
   )

@@ -51,12 +51,12 @@ export default function SolanaWhaleTrackerPage() {
           { value: 'ORCA AI', label: 'built-in' },
         ]}
         features={[
-          { icon: '⚡', title: 'Real-Time SOL Transactions', desc: 'Every Solana whale transaction over $10K tracked and classified as BUY, SELL, TRANSFER, or DEFI. Sub-second chain finality means you see moves the instant they happen.' },
-          { icon: '🔓', title: 'Staking Flow Monitoring', desc: 'Track large SOL unstaking events that signal potential selling 2-3 days ahead. Epoch-based lock periods give you a predictive window no other chain offers.' },
-          { icon: '🤖', title: 'ORCA AI for Solana', desc: 'Ask ORCA about SOL-specific whale activity. Get plain-English analysis of staking events, DEX flows on Jupiter and Raydium, and memecoin whale movements.' },
-          { icon: '👁️', title: 'Wallet Tracker', desc: 'Follow any Solana wallet — VC funds, protocol treasuries, even memecoin snipers. Monitor all their transactions and DeFi interactions in real time.' },
-          { icon: '🔔', title: 'Custom Alerts', desc: 'Set alerts for SOL transactions above any threshold. Get notified when whale activity matches your criteria via email or in-app notifications.' },
-          { icon: '📊', title: 'Net Flow Analytics', desc: 'See whether SOL whales are accumulating or distributing across 1h, 6h, 24h, and 7d timeframes. Spot trend changes before they hit the price.' },
+          { icon: 'bolt', title: 'Real-Time SOL Transactions', desc: 'Every Solana whale transaction over $10K tracked and classified as BUY, SELL, TRANSFER, or DEFI. Sub-second chain finality means you see moves the instant they happen.' },
+          { icon: 'lock', title: 'Staking Flow Monitoring', desc: 'Track large SOL unstaking events that signal potential selling 2-3 days ahead. Epoch-based lock periods give you a predictive window no other chain offers.' },
+          { icon: 'cpu', title: 'ORCA AI for Solana', desc: 'Ask ORCA about SOL-specific whale activity. Get plain-English analysis of staking events, DEX flows on Jupiter and Raydium, and memecoin whale movements.' },
+          { icon: 'eye', title: 'Wallet Tracker', desc: 'Follow any Solana wallet — VC funds, protocol treasuries, even memecoin snipers. Monitor all their transactions and DeFi interactions in real time.' },
+          { icon: 'bell', title: 'Custom Alerts', desc: 'Set alerts for SOL transactions above any threshold. Get notified when whale activity matches your criteria via email or in-app notifications.' },
+          { icon: 'chart', title: 'Net Flow Analytics', desc: 'See whether SOL whales are accumulating or distributing across 1h, 6h, 24h, and 7d timeframes. Spot trend changes before they hit the price.' },
         ]}
         steps={[
           { title: 'Sonar ingests every SOL transaction over $10K', desc: 'Our pipeline monitors the Solana blockchain continuously, capturing whale movements the moment they confirm on-chain.' },
@@ -88,6 +88,31 @@ export default function SolanaWhaleTrackerPage() {
           { q: 'How does SOL whale tracking compare to ETH?', a: 'Solana has faster finality (sub-second vs 12+ seconds) so whale impact is more immediate. Ethereum has more labeled wallets and deeper historical data. Sonar covers both chains with the same level of real-time monitoring and AI analysis.' },
         ]}
         blogSlug="solana-whale-tracker"
+        demoTxs={[
+          { type: 'buy', amount: '$2.4M SOL', addr: '7xKp...3fNq', time: '12s ago', id: 1 },
+          { type: 'sell', amount: '$890K SOL', addr: '9mWt...8kLp', time: '45s ago', id: 2 },
+          { type: 'buy', amount: '$5.1M SOL', addr: '3nRv...2xMj', time: '1m ago', id: 3 },
+          { type: 'buy', amount: '$1.8M SOL', addr: 'Dkf4...9pQw', time: '2m ago', id: 4 },
+          { type: 'sell', amount: '$3.2M SOL', addr: '8bYt...4nHk', time: '3m ago', id: 5 },
+          { type: 'buy', amount: '$4.7M SOL', addr: '2pLx...7rFs', time: '4m ago', id: 6 },
+          { type: 'buy', amount: '$1.2M SOL', addr: '6wQn...3mDt', time: '5m ago', id: 7 },
+          { type: 'sell', amount: '$2.9M SOL', addr: '4kJp...8vRl', time: '6m ago', id: 8 },
+        ]}
+        chartData={[
+          {value:45},{value:38},{value:52},{value:-15},{value:60},{value:42},{value:-22},{value:55},
+          {value:48},{value:65},{value:-10},{value:72},{value:58},{value:40},{value:68},{value:-18},
+          {value:75},{value:62},{value:50},{value:80},{value:-8},{value:70},{value:85},{value:90},
+        ]}
+        tickerItems={[
+          { symbol: 'SOL', price: '$148.32', change: '+3.2%' },
+          { symbol: 'JUP', price: '$1.24', change: '+5.8%' },
+          { symbol: 'RAY', price: '$2.89', change: '-1.4%' },
+          { symbol: 'BONK', price: '$0.000024', change: '+12.1%' },
+          { symbol: 'PYTH', price: '$0.42', change: '+2.7%' },
+          { symbol: 'ORCA', price: '$3.15', change: '-0.8%' },
+          { symbol: 'MNDE', price: '$0.18', change: '+4.2%' },
+          { symbol: 'JITO', price: '$3.67', change: '+1.9%' },
+        ]}
       />
     </>
   )

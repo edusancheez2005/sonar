@@ -51,12 +51,12 @@ export default function EthereumWhaleTrackerPage() {
           { value: 'ORCA AI', label: 'built-in' },
         ]}
         features={[
-          { icon: '💎', title: 'ETH & ERC-20 Tracking', desc: 'Every whale transaction over $10K for native ETH and all major ERC-20 tokens. AI classifies each as BUY, SELL, TRANSFER, or DEFI automatically.' },
-          { icon: '🔗', title: 'Staking Flow Analysis', desc: 'Monitor the Ethereum staking withdrawal queue. See when large validators unstake — a leading indicator of potential selling days in advance.' },
-          { icon: '🏦', title: 'DeFi Whale Intelligence', desc: 'Track whale interactions with Aave, Uniswap, Lido, and Eigenlayer. Know instantly when whales are leveraging up or deleveraging.' },
-          { icon: '🤖', title: 'ORCA AI for Ethereum', desc: 'Ask ORCA about ETH whale behavior. Get context on ICO wallets, foundation sells, institutional movements, and DeFi protocol flows.' },
-          { icon: '📈', title: 'Exchange Flow Tracking', desc: 'Monitor ETH flowing in and out of all major exchanges. Sustained outflows signal accumulation. Sudden inflow spikes signal imminent selling.' },
-          { icon: '🔔', title: 'Custom Alerts', desc: 'Set alerts for ETH and any ERC-20 token. Get notified when whale activity exceeds your threshold or when net flow direction changes.' },
+          { icon: 'diamond', title: 'ETH & ERC-20 Tracking', desc: 'Every whale transaction over $10K for native ETH and all major ERC-20 tokens. AI classifies each as BUY, SELL, TRANSFER, or DEFI automatically.' },
+          { icon: 'link', title: 'Staking Flow Analysis', desc: 'Monitor the Ethereum staking withdrawal queue. See when large validators unstake — a leading indicator of potential selling days in advance.' },
+          { icon: 'building', title: 'DeFi Whale Intelligence', desc: 'Track whale interactions with Aave, Uniswap, Lido, and Eigenlayer. Know instantly when whales are leveraging up or deleveraging.' },
+          { icon: 'cpu', title: 'ORCA AI for Ethereum', desc: 'Ask ORCA about ETH whale behavior. Get context on ICO wallets, foundation sells, institutional movements, and DeFi protocol flows.' },
+          { icon: 'trending', title: 'Exchange Flow Tracking', desc: 'Monitor ETH flowing in and out of all major exchanges. Sustained outflows signal accumulation. Sudden inflow spikes signal imminent selling.' },
+          { icon: 'bell', title: 'Custom Alerts', desc: 'Set alerts for ETH and any ERC-20 token. Get notified when whale activity exceeds your threshold or when net flow direction changes.' },
         ]}
         steps={[
           { title: 'Sonar monitors every ETH transaction over $10K', desc: 'Our pipeline captures whale movements across native ETH and all major ERC-20 tokens as they confirm on the Ethereum blockchain.' },
@@ -88,6 +88,31 @@ export default function EthereumWhaleTrackerPage() {
           { q: 'Which ETH signals are most reliable?', a: 'Exchange flow direction is the single most reliable signal. Sustained outflows (5+ days) are strongly bullish. Sudden inflow spikes are reliably bearish. Staking queue events also offer high-confidence signals.' },
         ]}
         blogSlug="ethereum-whale-tracker"
+        demoTxs={[
+          { type: 'buy', amount: '$8.2M ETH', addr: '0x1a3...f4d2', time: '8s ago', id: 1 },
+          { type: 'sell', amount: '$3.1M ETH', addr: '0x9b7...2e8c', time: '32s ago', id: 2 },
+          { type: 'buy', amount: '$12.5M ETH', addr: '0x4d2...a7f1', time: '1m ago', id: 3 },
+          { type: 'buy', amount: '$6.8M USDC', addr: '0x8f3...c5b9', time: '2m ago', id: 4 },
+          { type: 'sell', amount: '$4.5M ETH', addr: '0x2c1...d6e4', time: '3m ago', id: 5 },
+          { type: 'buy', amount: '$15.3M ETH', addr: '0x7e9...b3a8', time: '4m ago', id: 6 },
+          { type: 'sell', amount: '$2.1M LINK', addr: '0x5a4...f8c2', time: '5m ago', id: 7 },
+          { type: 'buy', amount: '$9.7M ETH', addr: '0x3b6...e1d5', time: '6m ago', id: 8 },
+        ]}
+        chartData={[
+          {value:55},{value:42},{value:65},{value:-20},{value:70},{value:48},{value:-12},{value:62},
+          {value:58},{value:75},{value:-8},{value:80},{value:65},{value:50},{value:72},{value:-15},
+          {value:82},{value:70},{value:60},{value:85},{value:-5},{value:78},{value:88},{value:92},
+        ]}
+        tickerItems={[
+          { symbol: 'ETH', price: '$2,450', change: '+1.8%' },
+          { symbol: 'UNI', price: '$3.13', change: '-2.3%' },
+          { symbol: 'LINK', price: '$14.82', change: '+4.1%' },
+          { symbol: 'AAVE', price: '$92.50', change: '+2.6%' },
+          { symbol: 'LDO', price: '$1.85', change: '-0.9%' },
+          { symbol: 'ARB', price: '$0.78', change: '+3.4%' },
+          { symbol: 'OP', price: '$1.42', change: '+1.2%' },
+          { symbol: 'MKR', price: '$1,580', change: '-1.7%' },
+        ]}
       />
     </>
   )
