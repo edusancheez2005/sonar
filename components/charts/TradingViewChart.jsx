@@ -169,7 +169,7 @@ function TradingViewChart({ symbol, height = 500 }) {
 
     const chart = createChart(el, {
       width: el.clientWidth,
-      height: 160,
+      height: 200,
       layout: {
         background: { type: ColorType.Solid, color: '#0a0e17' },
         textColor: '#5a6a7a',
@@ -182,14 +182,15 @@ function TradingViewChart({ symbol, height = 500 }) {
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        scaleMargins: { top: 0.08, bottom: 0.08 },
+        scaleMargins: { top: 0.08, bottom: 0.02 },
       },
       timeScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        timeVisible: whaleDays <= 7,
+        timeVisible: true,
         secondsVisible: false,
         rightOffset: 2,
         fixLeftEdge: true,
+        barSpacing: whaleDays <= 1 ? 12 : whaleDays <= 7 ? 8 : 5,
       },
     })
 
@@ -302,7 +303,7 @@ function TradingViewChart({ symbol, height = 500 }) {
             <span><span style={{ color: '#00e676' }}>■</span> WHALE BUYS</span>
             <span><span style={{ color: '#ff1744' }}>■</span> WHALE SELLS</span>
           </WhaleLabel>
-          <div ref={whaleRef} style={{ width: '100%', height: '160px' }} />
+          <div ref={whaleRef} style={{ width: '100%', height: '200px' }} />
         </WhaleChartBox>
       )}
     </Wrapper>
