@@ -108,10 +108,15 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) 
     setActiveOverlays(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
-  // Create chart instance once
+  // Create chart instance — recreate when config changes for clean slate
   useEffect(() => {
     if (!lwc || !containerRef.current) return
     const { createChart, ColorType, CrosshairMode } = lwc
+
+    // Clear any previous chart
+    if (containerRef.current.firstChild) {
+      containerRef.current.innerHTML = ''
+    }
 
     const chart = createChart(containerRef.current, {
       width: containerRef.current.clientWidth,
@@ -133,18 +138,20 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) 
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        scaleMargins: { top: 0.05, bottom: 0.3 },
+        scaleMargins: { top: 0.05, bottom: 0.28 },
       },
       timeScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
-        timeVisible: true,
+        timeVisible: selectedDays <= 7,
         secondsVisible: false,
         rightOffset: 3,
         fixLeftEdge: true,
+        barSpacing: selectedDays <= 0.25 ? 14 : selectedDays <= 1 ? 8 : selectedDays <= 7 ? 6 : 4,
       },
       handleScroll: { vertTouchDrag: false },
     })
     chartRef.current = chart
+    seriesRefs.current = {}
 
     const ro = new ResizeObserver(entries => {
       for (const e of entries) chart.applyOptions({ width: e.contentRect.width })
@@ -169,8 +176,11 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) 
       setHoverInfo(Object.keys(info).length > 0 ? info : null)
     })
 
+    // Fetch data and render
+    renderChart(chart)
+
     return () => { ro.disconnect(); chart.remove(); chartRef.current = null; seriesRefs.current = {} }
-  }, [lwc, height])
+  }, [lwc, height, selectedDays, chartType, activeOverlays, whaleData])
 
   // Fetch whale data
   useEffect(() => {
@@ -182,42 +192,38 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) 
       .catch(() => { setWhaleData([]); setWhaleSummary(null) })
   }, [symbol, selectedDays])
 
-  // Render all series
-  useEffect(() => {
-    if (!chartRef.current || !lwc) return
-    renderChart()
-  }, [selectedDays, chartType, activeOverlays, lwc, whaleData])
-
-  const renderChart = useCallback(async () => {
-    const chart = chartRef.current
+  const renderChart = useCallback(async (chart) => {
     if (!chart || !lwc) return
     setLoading(true)
 
     try {
-      // Clear existing series
-      for (const s of Object.values(seriesRefs.current)) {
-        try { chart.removeSeries(s) } catch {}
-      }
-      seriesRefs.current = {}
-
+      const isSubDay = selectedDays < 1
       const apiDays = Math.max(1, Math.ceil(selectedDays))
-      const interval = selectedDays <= 1 ? 'hourly' : 'daily'
 
-      const ohlcParams = new URLSearchParams({ days: String(apiDays) })
-      const mcParams = new URLSearchParams({ days: String(apiDays), interval })
-      if (coingeckoId) { ohlcParams.set('id', coingeckoId); mcParams.set('id', coingeckoId) }
-      else { ohlcParams.set('symbol', symbol); mcParams.set('symbol', symbol) }
+      // For sub-day views, always use market-chart with hourly data (much more granular than OHLC)
+      // For longer views, use OHLC for candlestick and market-chart for line/area
+      const needOHLC = chartType === 'candlestick' && !isSubDay
+      const needMC = true // always need market-chart for volume + sub-day price data
 
-      const [ohlcRes, mcRes] = await Promise.all([
-        fetch(`/api/coingecko/ohlc?${ohlcParams}`),
-        fetch(`/api/coingecko/market-chart?${mcParams}`),
-      ])
+      const params = new URLSearchParams({ days: String(apiDays) })
+      if (coingeckoId) params.set('id', coingeckoId)
+      else params.set('symbol', symbol)
 
-      const ohlcJson = ohlcRes.ok ? await ohlcRes.json() : null
-      const mcJson = mcRes.ok ? await mcRes.json() : null
+      const mcParams = new URLSearchParams({ days: String(apiDays), interval: apiDays <= 7 ? 'hourly' : 'daily' })
+      if (coingeckoId) mcParams.set('id', coingeckoId)
+      else mcParams.set('symbol', symbol)
+
+      const fetches = [
+        needOHLC ? fetch(`/api/coingecko/ohlc?${params}`).then(r => r.ok ? r.json() : null) : Promise.resolve(null),
+        needMC ? fetch(`/api/coingecko/market-chart?${mcParams}`).then(r => r.ok ? r.json() : null) : Promise.resolve(null),
+      ]
+      const [ohlcJson, mcJson] = await Promise.all(fetches)
 
       // Time cutoff for sub-day views
-      const cutoffMs = selectedDays < 1 ? Date.now() - selectedDays * 24 * 60 * 60 * 1000 : 0
+      const cutoffMs = isSubDay ? Date.now() - selectedDays * 24 * 60 * 60 * 1000 : 0
+
+      // Build price data from market-chart prices (hourly, much better coverage)
+      const mcPrices = mcJson?.data?.prices?.filter(([ts]) => ts >= cutoffMs) || []
 
       // ── MARKET VOLUME ──────────────────────
       if (activeOverlays.volume && mcJson?.data?.total_volumes) {
@@ -227,18 +233,24 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) 
         })
         volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } })
 
-        const ohlcLookup = ohlcJson ? new Map(ohlcJson.data.map(d => [Math.floor(d.timestamp / 1000), d])) : new Map()
+        // Build a price lookup from market-chart prices for volume coloring
+        const pricePairs = mcPrices.length > 1 ? mcPrices : (mcJson.data.prices || [])
         const volData = dedup(
           mcJson.data.total_volumes
             .filter(([ts]) => ts >= cutoffMs)
-            .map(([ts, v]) => {
+            .map(([ts, v], i, arr) => {
               const t = Math.floor(ts / 1000)
-              const c = ohlcLookup.get(t)
-              const up = c ? c.close >= c.open : true
-              return { time: t, value: v, color: up ? 'rgba(0, 230, 118, 0.12)' : 'rgba(255, 23, 68, 0.12)' }
+              // Color based on whether price went up or down vs previous data point
+              let up = true
+              if (i > 0) {
+                const prevPrice = findClosestPrice(pricePairs, arr[i - 1][0])
+                const curPrice = findClosestPrice(pricePairs, ts)
+                if (prevPrice && curPrice) up = curPrice >= prevPrice
+              }
+              return { time: t, value: v, color: up ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255, 23, 68, 0.15)' }
             })
         )
-        volSeries.setData(volData)
+        if (volData.length > 0) volSeries.setData(volData)
         seriesRefs.current.volume = volSeries
       }
 
@@ -271,14 +283,32 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) 
       }
 
       // ── PRICE SERIES ──────────────────────
-      if (ohlcJson?.data) {
-        const ohlc = dedup(
-          ohlcJson.data
-            .filter(d => d.timestamp >= cutoffMs)
-            .map(d => ({ time: Math.floor(d.timestamp / 1000), open: d.open, high: d.high, low: d.low, close: d.close }))
-        )
-
-        if (chartType === 'candlestick') {
+      if (chartType === 'candlestick') {
+        // For sub-day: synthesize OHLC from market-chart hourly prices
+        // For longer: use real OHLC data
+        let ohlc = []
+        if (isSubDay && mcPrices.length > 1) {
+          // Group hourly prices into ~5min synthetic candles (each price point is a candle)
+          ohlc = dedup(mcPrices.map(([ts, price], i) => {
+            const t = Math.floor(ts / 1000)
+            // Use neighboring values for OHLC approximation
+            const prev = i > 0 ? mcPrices[i - 1][1] : price
+            return {
+              time: t,
+              open: prev,
+              high: Math.max(prev, price),
+              low: Math.min(prev, price),
+              close: price,
+            }
+          }))
+        } else if (ohlcJson?.data) {
+          ohlc = dedup(
+            ohlcJson.data
+              .filter(d => d.timestamp >= cutoffMs)
+              .map(d => ({ time: Math.floor(d.timestamp / 1000), open: d.open, high: d.high, low: d.low, close: d.close }))
+          )
+        }
+        if (ohlc.length > 0) {
           const s = chart.addCandlestickSeries({
             upColor: '#00e676', downColor: '#ff1744',
             borderDownColor: '#ff1744', borderUpColor: '#00e676',
@@ -286,28 +316,40 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) 
           })
           s.setData(ohlc)
           seriesRefs.current.price = s
-        } else if (chartType === 'line') {
-          const s = chart.addLineSeries({
-            color: '#00e5ff', lineWidth: 2,
-            crosshairMarkerVisible: true, crosshairMarkerRadius: 3,
-          })
-          s.setData(ohlc.map(d => ({ time: d.time, value: d.close })))
-          seriesRefs.current.price = s
-        } else {
-          const s = chart.addAreaSeries({
-            lineColor: '#00e5ff', topColor: 'rgba(0, 229, 255, 0.18)',
-            bottomColor: 'rgba(0, 229, 255, 0.01)', lineWidth: 2,
-            crosshairMarkerVisible: true, crosshairMarkerRadius: 3,
-          })
-          s.setData(ohlc.map(d => ({ time: d.time, value: d.close })))
-          seriesRefs.current.price = s
+        }
+      } else {
+        // Line / Area — always use market-chart prices (better granularity)
+        let lineData = []
+        if (mcPrices.length > 0) {
+          lineData = dedup(mcPrices.map(([ts, price]) => ({ time: Math.floor(ts / 1000), value: price })))
+        } else if (ohlcJson?.data) {
+          // Fallback to OHLC closes
+          lineData = dedup(
+            ohlcJson.data
+              .filter(d => d.timestamp >= cutoffMs)
+              .map(d => ({ time: Math.floor(d.timestamp / 1000), value: d.close }))
+          )
+        }
+        if (lineData.length > 0) {
+          if (chartType === 'line') {
+            const s = chart.addLineSeries({
+              color: '#00e5ff', lineWidth: 2,
+              crosshairMarkerVisible: true, crosshairMarkerRadius: 3,
+            })
+            s.setData(lineData)
+            seriesRefs.current.price = s
+          } else {
+            const s = chart.addAreaSeries({
+              lineColor: '#00e5ff', topColor: 'rgba(0, 229, 255, 0.18)',
+              bottomColor: 'rgba(0, 229, 255, 0.01)', lineWidth: 2,
+              crosshairMarkerVisible: true, crosshairMarkerRadius: 3,
+            })
+            s.setData(lineData)
+            seriesRefs.current.price = s
+          }
         }
       }
 
-      chart.timeScale().applyOptions({
-        timeVisible: selectedDays <= 7,
-        barSpacing: selectedDays <= 0.25 ? 14 : selectedDays <= 1 ? 8 : selectedDays <= 7 ? 6 : 4,
-      })
       chart.timeScale().fitContent()
 
     } catch (err) {
@@ -316,6 +358,18 @@ export default function TradingViewChart({ symbol, coingeckoId, height = 520 }) 
       setLoading(false)
     }
   }, [selectedDays, chartType, activeOverlays, symbol, coingeckoId, lwc, whaleData])
+
+  // Find closest price in the market-chart prices array for a given timestamp
+  function findClosestPrice(prices, targetTs) {
+    if (!prices.length) return null
+    let best = prices[0][1], bestDiff = Math.abs(prices[0][0] - targetTs)
+    for (let i = 1; i < prices.length; i++) {
+      const diff = Math.abs(prices[i][0] - targetTs)
+      if (diff < bestDiff) { bestDiff = diff; best = prices[i][1] }
+      else break // prices are sorted, no need to continue
+    }
+    return best
+  }
 
   function dedup(arr) {
     const seen = new Set()

@@ -1384,6 +1384,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         </MainColumn>
         <SideColumn>
 
+        {/* ─── LIVE WHALE FEED ───────────────────────────────────── */}
+        <Panel style={{ marginBottom: '1.5rem', padding: '1rem' }}>
+          <TerminalPrompt style={{ marginBottom: '0.75rem' }}>LIVE_WHALE_FEED</TerminalPrompt>
+          <WhaleTransactionFeed symbol={symbol} limit={20} pollInterval={10000} />
+        </Panel>
+
         {/* ─── SOCIAL INTELLIGENCE (LunarCrush) ──────────────────── */}
         {!socialLoading && socialData && (
           <PremiumGate isPremium={isPremium} feature="Social Intelligence">
@@ -1561,12 +1567,6 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             </div>
           </Panel>
         )}
-
-        {/* ─── LIVE WHALE FEED ───────────────────────────────────── */}
-        <Panel style={{ marginBottom: '1.5rem', padding: '1rem' }}>
-          <TerminalPrompt style={{ marginBottom: '0.75rem' }}>LIVE_WHALE_FEED</TerminalPrompt>
-          <WhaleTransactionFeed symbol={symbol} limit={20} pollInterval={10000} />
-        </Panel>
 
         </SideColumn>
         </TwoColumnGrid>
