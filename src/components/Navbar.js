@@ -130,7 +130,7 @@ const Navbar = ({ onLogout }) => {
     const sb = supabaseBrowser();
     sb.auth.getSession().then(({ data }) => setSession(data.session || null));
     sb.auth.getUser().then(({ data }) => setUser(data?.user || null));
-    try { if (typeof window !== 'undefined') setAdminBypass(localStorage.getItem('isAdminBypass') === 'true'); } catch {}
+    // Admin bypass removed for security
     const { data: sub } = sb.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
       setUser(sess?.user || null);
@@ -150,7 +150,7 @@ const Navbar = ({ onLogout }) => {
 
   const handleLogout = async () => {
     try { await supabaseBrowser().auth.signOut(); } catch {}
-    try { if (typeof window !== 'undefined') { window.localStorage.removeItem('adminLogin'); window.localStorage.removeItem('isAdminBypass'); } } catch {}
+    // Cleaned up legacy admin storage
     if (onLogout) onLogout();
     router.push('/');
   };

@@ -322,13 +322,41 @@ export default function PrivacyPolicy() {
           <ul>
             <li><strong>Supabase:</strong> Authentication and database services - <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
             <li><strong>Stripe:</strong> Payment processing - <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>Vercel:</strong> Hosting and deployment - <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>Vercel:</strong> Hosting, deployment, and analytics - <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
             <li><strong>CoinGecko:</strong> Cryptocurrency market data - <a href="https://www.coingecko.com/en/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
             <li><strong>CryptoPanic:</strong> Cryptocurrency news - <a href="https://cryptopanic.com/about/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>xAI (Grok):</strong> AI inference for ORCA AI assistant conversations - <a href="https://x.ai/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>OpenAI:</strong> Fallback AI inference when primary provider is unavailable - <a href="https://openai.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>LunarCrush:</strong> Social sentiment and engagement metrics for cryptocurrency tokens - <a href="https://lunarcrush.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>Brevo:</strong> Email delivery for onboarding sequences and notifications - <a href="https://www.brevo.com/legal/privacypolicy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
           </ul>
           <p>
             We encourage you to review the privacy policies of these third-party services to understand how they collect, use, and protect your information.
           </p>
+
+          <h3>9.1 Browser Fingerprinting</h3>
+          <p>
+            For our community sentiment voting feature, we use a locally generated browser fingerprint (a random UUID stored in your browser's localStorage) to prevent duplicate votes. This fingerprint:
+          </p>
+          <ul>
+            <li>Is generated randomly and does not identify you personally</li>
+            <li>Is stored only in your browser's localStorage — you can delete it at any time by clearing browser data</li>
+            <li>Is stored in our database only in association with your votes, not linked to any personal information</li>
+            <li>Is retained for 30 days, after which associated vote records are anonymised</li>
+          </ul>
+          <p>You can opt out of fingerprinting by clearing your browser's localStorage or using your browser's private/incognito mode.</p>
+
+          <h3>9.2 Account Deletion</h3>
+          <p>
+            You can permanently delete your account and all associated data at any time through your profile settings or by making a request to <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>. Upon deletion, we will remove:
+          </p>
+          <ul>
+            <li>Your authentication credentials and profile information</li>
+            <li>Your sentiment votes and watchlist entries</li>
+            <li>Any feedback you have submitted</li>
+            <li>All personally identifiable data associated with your account</li>
+          </ul>
+          <p>This process is irreversible. Anonymised, aggregated analytics data may be retained as it cannot be linked back to you.</p>
         </Section>
 
         <Section
@@ -390,7 +418,7 @@ export default function PrivacyPolicy() {
           </p>
         </Section>
 
-        <LastUpdated>Last Updated: October 18, 2025</LastUpdated>
+        <LastUpdated>Last Updated: April 4, 2026</LastUpdated>
       </Content>
     </PageContainer>
   )

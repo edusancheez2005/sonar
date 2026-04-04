@@ -21,7 +21,7 @@ export async function GET(req) {
   // Auth: require CRON_SECRET for all requests
   const { searchParams } = new URL(req.url)
   const singleToken = searchParams.get('token')?.toUpperCase()
-  const secret = searchParams.get('secret') || req.headers.get('authorization')?.replace('Bearer ', '')
+  const secret = req.headers.get('authorization')?.replace('Bearer ', '')
 
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

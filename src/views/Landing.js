@@ -750,15 +750,7 @@ const Landing = () => {
     try {
       const entered = (formData.email || '').trim();
       const adminEmail = (entered.includes('@') ? entered : `${entered}@sonar.local`).toLowerCase();
-      const adminHash = process.env.NEXT_PUBLIC_ADMIN_HASH || '';
-      const inputHash = btoa(`${adminEmail}::${formData.password}`);
-      if (adminHash && inputHash === adminHash) {
-        try { if (typeof window !== 'undefined') { window.localStorage.setItem('adminLogin', 'ZWR1YWRtaW5hY2NvdW50OjpSYXNjYTA0MDQ='); window.localStorage.setItem('isAdminBypass', 'true'); } } catch {}
-        showToast('Admin login successful', 'success');
-        setShowLoginModal(false);
-        navigate('/dashboard');
-        return;
-      }
+      // Admin login removed for security — use Supabase auth only
       const sb = supabaseBrowser();
       const { data, error } = await sb.auth.signInWithPassword({ email: formData.email, password: formData.password });
       if (error) throw error;
@@ -862,9 +854,7 @@ const Landing = () => {
       } catch {}
       const { data } = await sb.auth.getSession();
       if (data?.session) setIsLoggedIn(true);
-      try {
-        if (typeof window !== 'undefined' && localStorage.getItem('isAdminBypass') === 'true') setIsLoggedIn(true);
-      } catch {}
+      // Admin bypass removed for security
     };
     checkAuth();
   }, []);

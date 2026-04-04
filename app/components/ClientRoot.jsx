@@ -7,6 +7,7 @@ import GlobalStyles from '@/src/styles/GlobalStyles'
 import Navbar from '@/src/components/Navbar'
 import Footer from '@/src/components/Footer'
 import FeedbackWidget from '@/src/components/FeedbackWidget'
+import CookieConsent from '@/components/CookieConsent'
 
 export default function ClientRoot({ children }) {
   const pathname = usePathname()
@@ -25,6 +26,7 @@ export default function ClientRoot({ children }) {
       <main>{children}</main>
       <Footer />
       {!hideFeedback && <FeedbackWidget />}
+      <CookieConsent />
     </StyleSheetManager>
   )
 } 
