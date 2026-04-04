@@ -126,106 +126,108 @@ export function computeTier1_CexWhaleFlow(
   const cutoff = now - lookbackMs
   const prevCutoff = now - 2 * lookbackMs
 
-  const cexTxs = transactions.filter(tx =>
-    tx.counterparty_type === 'CEX' &&
+  // Use ALL BUY/SELL whale transactions (not just CEX) — matches dashboard data
+  const allTxs = transactions.filter(tx =>
     ['BUY', 'SELL'].includes((tx.classification || '').toUpperCase()) &&
     new Date(tx.timestamp).getTime() >= cutoff
   )
 
-  const prevCexTxs = transactions.filter(tx =>
-    tx.counterparty_type === 'CEX' &&
+  const prevTxs = transactions.filter(tx =>
     ['BUY', 'SELL'].includes((tx.classification || '').toUpperCase()) &&
     new Date(tx.timestamp).getTime() >= prevCutoff &&
     new Date(tx.timestamp).getTime() < cutoff
   )
 
-  if (cexTxs.length === 0) {
+  if (allTxs.length === 0) {
     return { score: 0, confidence: 0, available: false, factors: {} }
   }
 
-  let cexBuyVol = 0, cexSellVol = 0, cexBuyVolWeighted = 0, cexSellVolWeighted = 0
-  let cexBuys = 0, cexSells = 0
+  let buyVol = 0, sellVol = 0, buyVolWeighted = 0, sellVolWeighted = 0
+  let buys = 0, sells = 0
+  let cexBuyVol = 0, cexSellVol = 0 // CEX sub-signal (higher conviction)
   const uniqueBuyAddrs = new Set<string>()
   const uniqueSellAddrs = new Set<string>()
-  let largeTxBuyVol = 0, largeTxSellVol = 0 // Txs > $500K
+  let largeTxBuyVol = 0, largeTxSellVol = 0
 
-  // Track velocity: transactions in last 3 hours vs rest
   const recentCutoff = now - 3 * 60 * 60 * 1000
   let recentBuyVol = 0, recentSellVol = 0
 
-  for (const tx of cexTxs) {
+  for (const tx of allTxs) {
     const usd = Number(tx.usd_value || 0)
     const side = (tx.classification || '').toUpperCase()
     const whale = tx.whale_address || tx.from_address || ''
     const txTime = new Date(tx.timestamp).getTime()
+    const isCex = tx.counterparty_type === 'CEX'
 
-    // Exponential time-decay: recent txs matter more (half-life = 6 hours)
-    const ageMs = now - txTime
-    const decay = Math.exp(-ageMs / (6 * 60 * 60 * 1000))
-
-    // Size emphasis: sqrt scaling so large txs matter more but don't dominate
+    // Exponential time-decay (half-life = 6h)
+    const decay = Math.exp(-(now - txTime) / (6 * 60 * 60 * 1000))
+    // Size emphasis (sqrt scaling)
     const sizeWeight = Math.sqrt(Math.max(1, usd / 10000))
+    // CEX transactions get 1.5x weight (higher conviction than EOA transfers)
+    const cexBoost = isCex ? 1.5 : 1.0
 
-    const weighted = usd * decay * sizeWeight
+    const weighted = usd * decay * sizeWeight * cexBoost
 
     if (side === 'BUY') {
-      cexBuys++
-      cexBuyVol += usd
-      cexBuyVolWeighted += weighted
+      buys++
+      buyVol += usd
+      buyVolWeighted += weighted
       uniqueBuyAddrs.add(whale.toLowerCase())
       if (usd > 500000) largeTxBuyVol += usd
       if (txTime >= recentCutoff) recentBuyVol += usd
+      if (isCex) cexBuyVol += usd
     } else if (side === 'SELL') {
-      cexSells++
-      cexSellVol += usd
-      cexSellVolWeighted += weighted
+      sells++
+      sellVol += usd
+      sellVolWeighted += weighted
       uniqueSellAddrs.add(whale.toLowerCase())
       if (usd > 500000) largeTxSellVol += usd
       if (txTime >= recentCutoff) recentSellVol += usd
+      if (isCex) cexSellVol += usd
     }
   }
 
-  let prevCexVol = 0
-  for (const tx of prevCexTxs) {
-    prevCexVol += Number(tx.usd_value || 0)
-  }
+  let prevVol = 0
+  for (const tx of prevTxs) prevVol += Number(tx.usd_value || 0)
 
-  const totalCexVol = cexBuyVol + cexSellVol
-  const totalWeighted = cexBuyVolWeighted + cexSellVolWeighted
-  const netCexFlow = cexBuyVol - cexSellVol
-  const totalCexTxs = cexBuys + cexSells
-  const cexBuyRatio = totalCexTxs > 0 ? cexBuys / totalCexTxs : 0.5
+  const totalVol = buyVol + sellVol
+  const totalWeighted = buyVolWeighted + sellVolWeighted
+  const netFlow = buyVol - sellVol
+  const totalTxs = buys + sells
+  const buyRatio = totalTxs > 0 ? buys / totalTxs : 0.5
   const uniqueWhales = new Set([...uniqueBuyAddrs, ...uniqueSellAddrs]).size
-  const volumeChange = prevCexVol > 0 ? (totalCexVol - prevCexVol) / prevCexVol : 0
+  const volumeChange = prevVol > 0 ? (totalVol - prevVol) / prevVol : 0
 
-  // Primary signal: time-decay + size-weighted flow (better than raw ratio)
+  // Primary: time-decay + size-weighted + CEX-boosted flow
   const weightedFlowSignal = totalWeighted > 0
-    ? Math.tanh((cexBuyVolWeighted - cexSellVolWeighted) / (totalWeighted * 0.4))
+    ? Math.tanh((buyVolWeighted - sellVolWeighted) / (totalWeighted * 0.4))
     : 0
 
   // Large transaction signal (institutional conviction)
   const largeTxNet = largeTxBuyVol - largeTxSellVol
-  const largeTxSignal = totalCexVol > 0
-    ? Math.tanh(largeTxNet / (totalCexVol * 0.3)) * 0.5
+  const largeTxSignal = totalVol > 0
+    ? Math.tanh(largeTxNet / (totalVol * 0.3)) * 0.5
     : 0
 
-  // Velocity signal: are whales accelerating activity in last 3h?
+  // Velocity: are whales accelerating in last 3h?
   const recentNet = recentBuyVol - recentSellVol
-  const olderBuyVol = cexBuyVol - recentBuyVol
-  const olderSellVol = cexSellVol - recentSellVol
+  const olderBuyVol = buyVol - recentBuyVol
+  const olderSellVol = sellVol - recentSellVol
   const olderNet = olderBuyVol - olderSellVol
-  const velocitySignal = (totalCexVol > 0 && (olderBuyVol + olderSellVol) > 0)
-    ? Math.tanh((recentNet - olderNet * (3 / (lookbackMs / (60*60*1000) - 3))) / (totalCexVol * 0.2)) * 0.3
+  const lookbackHours = lookbackMs / (60 * 60 * 1000)
+  const velocitySignal = (totalVol > 0 && (olderBuyVol + olderSellVol) > 0)
+    ? Math.tanh((recentNet - olderNet * (3 / Math.max(1, lookbackHours - 3))) / (totalVol * 0.2)) * 0.3
     : 0
 
-  // Breadth (more unique whales = higher conviction)
+  // Breadth + surge
   const breadthSignal = Math.min(1, uniqueWhales / 10) * 0.2
   const volumeSurge = Math.min(1, Math.max(0, volumeChange)) * 0.3
 
-  const rawScore = weightedFlowSignal * 0.55 + largeTxSignal * 0.20 + velocitySignal * 0.15 + breadthSignal * Math.sign(weightedFlowSignal) + volumeSurge * Math.sign(weightedFlowSignal)
+  const rawScore = weightedFlowSignal * 0.55 + largeTxSignal * 0.20 + velocitySignal * 0.15
+    + breadthSignal * Math.sign(weightedFlowSignal) + volumeSurge * Math.sign(weightedFlowSignal)
   const score = clamp(rawScore * 100, -100, 100)
 
-  const txCountConf = Math.min(1, totalCexTxs / 10)
+  const txCountConf = Math.min(1, totalTxs / 10)
   const whaleCountConf = Math.min(1, uniqueWhales / 5)
   const largeTxConf = (largeTxBuyVol + largeTxSellVol) > 0 ? 0.2 : 0
   const confidence = Math.round((txCountConf * 0.5 + whaleCountConf * 0.3 + largeTxConf) * 100)
@@ -235,10 +237,12 @@ export function computeTier1_CexWhaleFlow(
     confidence,
     available: true,
     factors: {
-      cexBuyRatio: +(cexBuyRatio * 100).toFixed(1),
-      netCexFlow: Math.round(netCexFlow),
-      cexBuys,
-      cexSells,
+      buyRatio: +(buyRatio * 100).toFixed(1),
+      netFlow: Math.round(netFlow),
+      buys,
+      sells,
+      buyVol: Math.round(buyVol),
+      sellVol: Math.round(sellVol),
       cexBuyVol: Math.round(cexBuyVol),
       cexSellVol: Math.round(cexSellVol),
       uniqueWhales,
