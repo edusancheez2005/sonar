@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { computeUnifiedSignal } from '@/app/lib/signalEngine'
+import { coinRegistry } from '@/lib/coingecko/coin-registry'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // allow up to 60s for batch processing
@@ -202,24 +203,52 @@ async function fetchSentimentScore(tokenSymbol) {
 
 
 async function fetchPriceData(tokenSymbol) {
-  // Map common symbols to CoinGecko IDs
+  // Static fallback map for when coinRegistry is unavailable
   const SYMBOL_TO_ID = {
     BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', XRP: 'ripple',
     BNB: 'binancecoin', ADA: 'cardano', DOGE: 'dogecoin', AVAX: 'avalanche-2',
-    DOT: 'polkadot', MATIC: 'matic-network', LINK: 'chainlink', UNI: 'uniswap',
-    SHIB: 'shiba-inu', LTC: 'litecoin', ATOM: 'cosmos', FIL: 'filecoin',
-    APT: 'aptos', ARB: 'arbitrum', OP: 'optimism', NEAR: 'near',
-    IMX: 'immutable-x', AAVE: 'aave', MKR: 'maker', CRV: 'curve-dao-token',
-    SNX: 'havven', COMP: 'compound-governance-token', LDO: 'lido-dao',
-    PEPE: 'pepe', WIF: 'dogwifcoin', STRK: 'starknet', FET: 'fetch-ai',
-    RENDER: 'render-token', INJ: 'injective-protocol', SEI: 'sei-network',
-    SUI: 'sui', TIA: 'celestia', JUP: 'jupiter-exchange-solana',
-    TRX: 'tron', BONK: 'bonk', JTO: 'jito-governance-token',
-    PYTH: 'pyth-network', RAY: 'raydium', ORCA: 'orca',
+    DOT: 'polkadot', MATIC: 'matic-network', POL: 'matic-network',
+    LINK: 'chainlink', UNI: 'uniswap', SHIB: 'shiba-inu', LTC: 'litecoin',
+    ATOM: 'cosmos', FIL: 'filecoin', APT: 'aptos', ARB: 'arbitrum',
+    OP: 'optimism', NEAR: 'near', IMX: 'immutable-x', AAVE: 'aave',
+    MKR: 'maker', CRV: 'curve-dao-token', SNX: 'havven',
+    COMP: 'compound-governance-token', LDO: 'lido-dao', PEPE: 'pepe',
+    WIF: 'dogwifcoin', STRK: 'starknet', FET: 'fetch-ai', 'RENDER': 'render-token',
+    INJ: 'injective-protocol', SEI: 'sei-network', SUI: 'sui', TIA: 'celestia',
+    JUP: 'jupiter-exchange-solana', TRX: 'tron', BONK: 'bonk',
+    JTO: 'jito-governance-token', PYTH: 'pyth-network', RAY: 'raydium',
+    ORCA: 'orca', ETC: 'ethereum-classic', XLM: 'stellar', HBAR: 'hedera-hashgraph',
+    VET: 'vechain', ICP: 'internet-computer', ALGO: 'algorand',
+    GRT: 'the-graph', SAND: 'the-sandbox', MANA: 'decentraland',
+    AXS: 'axie-infinity', ENS: 'ethereum-name-service', SUSHI: 'sushi',
+    BAL: 'balancer', YFI: 'yearn-finance', '1INCH': '1inch',
+    BAT: 'basic-attention-token', ZRX: '0x', GALA: 'gala', ENJ: 'enjincoin',
+    CHZ: 'chiliz', DYDX: 'dydx', GMX: 'gmx', RUNE: 'thorchain',
+    FTM: 'fantom', STX: 'blockstack', KAS: 'kaspa', TAO: 'bittensor',
+    RNDR: 'render-token', WLD: 'worldcoin-wld', JASMY: 'jasmycoin',
+    ENA: 'ethena', PENDLE: 'pendle', ONDO: 'ondo-finance', FLOKI: 'floki',
+    TON: 'the-open-network', THETA: 'theta-token', 'RPL': 'rocket-pool',
+    WETH: 'weth', WBTC: 'wrapped-bitcoin', STETH: 'staked-ether',
+    ETHFI: 'ether-fi', EIGEN: 'eigenlayer', SSV: 'ssv-network',
+    W: 'wormhole', MANTA: 'manta-network', DYM: 'dymension',
+    PIXEL: 'pixel-game', PORTAL: 'portal-2', ALT: 'altlayer',
   }
 
-  const coinId = SYMBOL_TO_ID[tokenSymbol]
-  if (!coinId) return null
+  // Try coinRegistry first (dynamic resolution with search fallback)
+  let coinId = SYMBOL_TO_ID[tokenSymbol]
+  if (!coinId) {
+    try {
+      const metadata = await coinRegistry.resolve(tokenSymbol)
+      if (metadata) coinId = metadata.id
+    } catch (err) {
+      console.warn(`[SignalEngine] coinRegistry resolve failed for ${tokenSymbol}:`, err.message)
+    }
+  }
+
+  if (!coinId) {
+    console.warn(`[SignalEngine] No CoinGecko ID for ${tokenSymbol}`)
+    return null
+  }
 
   try {
     const apiKey = process.env.COINGECKO_API_KEY || ''
