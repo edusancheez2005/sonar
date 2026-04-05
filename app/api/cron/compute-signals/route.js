@@ -35,12 +35,18 @@ export async function GET(req) {
 
     console.log(`[SignalEngine] Processing ${tokens.length} tokens: ${tokens.join(', ')}`)
 
+    // Market beta: fetch BTC 24h change to detect broad market regime
+    // When BTC is down >2%, dampen BUY signals (market headwind)
+    // When BTC is up >2%, dampen SELL signals (market tailwind)
+    const btcBeta = await fetchMarketBeta()
+    console.log(`[SignalEngine] Market beta: BTC 24h = ${btcBeta.btc24hChange?.toFixed(2)}%`)
+
     const results = []
     const errors = []
 
     for (const token of tokens) {
       try {
-        const signal = await computeSignalForToken(token)
+        const signal = await computeSignalForToken(token, btcBeta)
         results.push(signal)
 
         // Store in token_signals table
@@ -136,7 +142,7 @@ async function getActiveTokens() {
 /**
  * Gather all data sources for a single token and compute the signal.
  */
-async function computeSignalForToken(tokenSymbol) {
+async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
   // Parallel data fetching — use cached price snapshots first, CoinGecko as fallback
   const [transactions, sentimentData, cachedPrice, socialData, communityVotes] = await Promise.all([
     fetchWhaleTransactions(tokenSymbol),
@@ -188,11 +194,60 @@ async function computeSignalForToken(tokenSymbol) {
     tokenSymbol,
   })
 
-  // Attach current price for backtesting
-  signal.price_at_signal = priceData?.current_price || null
+  // Market beta adjustment: dampen signals that fight the broad market trend
+  // This is a quant-standard risk adjustment — individual signals should account for market regime
+  const btc24h = btcBeta.btc24hChange || 0
+  if (tokenSymbol !== 'BTC' && tokenSymbol !== 'WBTC') {
+    const isBullish = signal.signal === 'STRONG BUY' || signal.signal === 'BUY'
+    const isBearish = signal.signal === 'STRONG SELL' || signal.signal === 'SELL'
+
+    // Market down >2% and signal is BUY → apply headwind penalty
+    if (btc24h < -2 && isBullish) {
+      const penalty = Math.min(15, Math.abs(btc24h) * 2) // up to -15 score penalty
+      signal.rawScore = Math.max(-100, (signal.rawScore || 0) - penalty)
+      signal.score = Math.round(Math.max(0, Math.min(100, (signal.rawScore + 100) / 2)))
+      // Reclassify
+      if (signal.score < 60) signal.signal = 'NEUTRAL'
+      else if (signal.score < 75) signal.signal = 'BUY'
+      signal.traps = [...(signal.traps || []), { type: 'Market Headwind', severity: 'MEDIUM', adjustment: -Math.round(penalty), description: `BTC is down ${btc24h.toFixed(1)}% — broad market selloff dampens bullish signals` }]
+    }
+
+    // Market up >2% and signal is SELL → apply tailwind dampening
+    if (btc24h > 2 && isBearish) {
+      const boost = Math.min(10, btc24h * 1.5)
+      signal.rawScore = Math.min(100, (signal.rawScore || 0) + boost)
+      signal.score = Math.round(Math.max(0, Math.min(100, (signal.rawScore + 100) / 2)))
+      if (signal.score > 40) signal.signal = 'NEUTRAL'
+      else if (signal.score > 25) signal.signal = 'SELL'
+    }
+  }
+
+  // Attach current price for backtesting — guard against 0/null
+  const price = priceData?.current_price || null
+  signal.price_at_signal = price && price > 0.000001 ? price : null
   signal.market_cap = priceData?.market_cap || null
 
   return signal
+}
+
+/**
+ * Fetch BTC 24h change as a market regime indicator.
+ * Used for market beta adjustment on individual token signals.
+ */
+async function fetchMarketBeta() {
+  try {
+    const { data } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_change_24h')
+      .eq('ticker', 'BTC')
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    return { btc24hChange: data?.price_change_24h || 0 }
+  } catch {
+    return { btc24hChange: 0 }
+  }
 }
 
 

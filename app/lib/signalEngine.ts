@@ -653,12 +653,17 @@ function clamp(val: number, min: number, max: number): number {
 }
 
 function getSignalLabel(score: number, confidence: number): SignalLabel {
+  // Confidence gate: need minimum confidence to issue any directional signal
   if (confidence < 15) return 'NEUTRAL'
-  if (score >= 75) return 'STRONG BUY'
-  if (score >= 60) return 'BUY'
-  if (score > 40 && score < 60) return 'NEUTRAL'
-  if (score <= 25) return 'STRONG SELL'
-  if (score <= 40) return 'SELL'
+  // Tightened thresholds (v2): reduce bullish bias
+  // Old: STRONG BUY >=75, BUY >=60
+  // New: STRONG BUY >=78, BUY >=63 (raised by 3 points each)
+  // SELL thresholds unchanged — SELL signals were already accurate at 75%
+  if (score >= 78) return 'STRONG BUY'
+  if (score >= 63) return 'BUY'
+  if (score > 37 && score < 63) return 'NEUTRAL'
+  if (score <= 22) return 'STRONG SELL'
+  if (score <= 37) return 'SELL'
   return 'NEUTRAL'
 }
 
