@@ -1,14 +1,13 @@
 /**
  * Technical Analysis Module for Signal Engine v4
  * 
- * Computes RSI, SMA crossovers, Bollinger Bands, ATR, and ADX
+ * Computes RSI, SMA crossovers, Bollinger Bands, and regime detection
  * from price_snapshots data (collected every 15 minutes).
  * 
- * Uses the `trading-signals` npm package for calculations.
- * All indicators are computed server-side from historical price data.
+ * All indicators computed from scratch — no external dependencies.
  */
 
-import { RSI, SMA, BollingerBands, ATR, ADX, EMA } from 'trading-signals'
+// ─── PURE MATH HELPERS (no library needed) ───
 
 export interface PriceCandle {
   price: number
@@ -75,12 +74,30 @@ export function computeTechnicalIndicators(
   const prices = candles.map(c => c.price).filter(p => p > 0)
   if (prices.length < 20) return defaults
 
-  // ─── RSI (14-period) ───
+  // ─── RSI (14-period) — Wilder's smoothing ───
   let rsi14: number | null = null
   try {
-    const rsiCalc = new RSI(14)
-    for (const p of prices) rsiCalc.update(p)
-    if (rsiCalc.isStable) rsi14 = Number(rsiCalc.getResult().toFixed(2))
+    const period = 14
+    if (prices.length >= period + 1) {
+      const changes: number[] = []
+      for (let i = 1; i < prices.length; i++) changes.push(prices[i] - prices[i - 1])
+      
+      let avgGain = 0, avgLoss = 0
+      for (let i = 0; i < period; i++) {
+        if (changes[i] > 0) avgGain += changes[i]
+        else avgLoss += Math.abs(changes[i])
+      }
+      avgGain /= period
+      avgLoss /= period
+      
+      for (let i = period; i < changes.length; i++) {
+        avgGain = (avgGain * (period - 1) + (changes[i] > 0 ? changes[i] : 0)) / period
+        avgLoss = (avgLoss * (period - 1) + (changes[i] < 0 ? Math.abs(changes[i]) : 0)) / period
+      }
+      
+      const rs = avgLoss > 0 ? avgGain / avgLoss : 100
+      rsi14 = +(100 - 100 / (1 + rs)).toFixed(2)
+    }
   } catch { /* not enough data */ }
 
   // RSI signal: oversold (<30) = bullish, overbought (>70) = bearish
@@ -95,37 +112,29 @@ export function computeTechnicalIndicators(
     // 40-60 = neutral (rsiSignal stays 0)
   }
 
-  // ─── SMAs (20 and 50 period) ───
-  let sma20: number | null = null
-  let sma50: number | null = null
-  try {
-    const sma20Calc = new SMA(20)
-    for (const p of prices) sma20Calc.update(p)
-    if (sma20Calc.isStable) sma20 = Number(sma20Calc.getResult().toFixed(6))
-  } catch {}
-  try {
-    if (prices.length >= 50) {
-      const sma50Calc = new SMA(50)
-      for (const p of prices) sma50Calc.update(p)
-      if (sma50Calc.isStable) sma50 = Number(sma50Calc.getResult().toFixed(6))
-    }
-  } catch {}
+  // ─── SMA (Simple Moving Average) ───
+  const calcSMA = (data: number[], period: number): number | null => {
+    if (data.length < period) return null
+    const slice = data.slice(-period)
+    return slice.reduce((s, v) => s + v, 0) / period
+  }
 
-  // ─── EMAs (12 and 26 for MACD-like signal) ───
-  let ema12: number | null = null
-  let ema26: number | null = null
-  try {
-    const ema12Calc = new EMA(12)
-    for (const p of prices) ema12Calc.update(p)
-    if (ema12Calc.isStable) ema12 = Number(ema12Calc.getResult().toFixed(6))
-  } catch {}
-  try {
-    if (prices.length >= 26) {
-      const ema26Calc = new EMA(26)
-      for (const p of prices) ema26Calc.update(p)
-      if (ema26Calc.isStable) ema26 = Number(ema26Calc.getResult().toFixed(6))
+  let sma20 = calcSMA(prices, 20)
+  let sma50 = calcSMA(prices, 50)
+
+  // ─── EMA (Exponential Moving Average) ───
+  const calcEMA = (data: number[], period: number): number | null => {
+    if (data.length < period) return null
+    const k = 2 / (period + 1)
+    let ema = data.slice(0, period).reduce((s, v) => s + v, 0) / period
+    for (let i = period; i < data.length; i++) {
+      ema = data[i] * k + ema * (1 - k)
     }
-  } catch {}
+    return ema
+  }
+
+  let ema12 = calcEMA(prices, 12)
+  let ema26 = calcEMA(prices, 26)
 
   // SMA signal: price position relative to moving averages
   const priceVsSma20 = sma20 ? ((currentPrice - sma20) / sma20) * 100 : 0
@@ -155,25 +164,24 @@ export function computeTechnicalIndicators(
     macdSignal = Math.tanh(macdPct * 5) * 50 // bounded to ±50
   }
 
-  // ─── Bollinger Bands (20-period, 2 std dev) ───
+  // ─── Bollinger Bands (20-period, 2 std dev) — pure math ───
   let bbUpper: number | null = null
   let bbMiddle: number | null = null
   let bbLower: number | null = null
   let bbWidth: number | null = null
   let bbPosition = 0.5
-  try {
-    const bbCalc = new BollingerBands(20, 2)
-    for (const p of prices) bbCalc.update(p)
-    if (bbCalc.isStable) {
-      const bb = bbCalc.getResult()
-      bbUpper = Number(bb.upper.toFixed(6))
-      bbMiddle = Number(bb.middle.toFixed(6))
-      bbLower = Number(bb.lower.toFixed(6))
-      bbWidth = bbUpper - bbLower
-      // Position: 0 = at lower band, 1 = at upper band
-      bbPosition = bbWidth > 0 ? (currentPrice - bbLower) / bbWidth : 0.5
-    }
-  } catch {}
+  if (prices.length >= 20) {
+    const bbPeriod = 20
+    const bbSlice = prices.slice(-bbPeriod)
+    const bbMean = bbSlice.reduce((s, v) => s + v, 0) / bbPeriod
+    const bbVariance = bbSlice.reduce((s, v) => s + (v - bbMean) ** 2, 0) / bbPeriod
+    const bbStd = Math.sqrt(bbVariance)
+    bbMiddle = bbMean
+    bbUpper = bbMean + 2 * bbStd
+    bbLower = bbMean - 2 * bbStd
+    bbWidth = bbUpper - bbLower
+    bbPosition = bbWidth > 0 ? (currentPrice - bbLower) / bbWidth : 0.5
+  }
 
   // BB signal: price near lower band = oversold (bullish), near upper = overbought (bearish)
   let bbSignal = 0
