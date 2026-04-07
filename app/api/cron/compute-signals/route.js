@@ -377,7 +377,7 @@ async function fetchPriceData(tokenSymbol) {
     OP: 'optimism', NEAR: 'near', IMX: 'immutable-x', AAVE: 'aave',
     MKR: 'maker', CRV: 'curve-dao-token', SNX: 'havven',
     COMP: 'compound-governance-token', LDO: 'lido-dao', PEPE: 'pepe',
-    WIF: 'dogwifcoin', STRK: 'starknet', FET: 'fetch-ai', 'RENDER': 'render-token',
+    WIF: 'dogwifcoin', STRK: 'starknet', FET: 'artificial-superintelligence-alliance', 'RENDER': 'render-token',
     INJ: 'injective-protocol', SEI: 'sei-network', SUI: 'sui', TIA: 'celestia',
     JUP: 'jupiter-exchange-solana', TRX: 'tron', BONK: 'bonk',
     JTO: 'jito-governance-token', PYTH: 'pyth-network', RAY: 'raydium',

@@ -9,8 +9,10 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-// Top 50 crypto tickers with their CoinGecko IDs
+// Top crypto tickers with their CoinGecko IDs
+// Must include ALL tokens that compute-signals processes (ALWAYS_INCLUDE + active)
 const TICKER_MAP = [
+  // Top 20 by market cap
   { symbol: 'BTC', id: 'bitcoin' },
   { symbol: 'ETH', id: 'ethereum' },
   { symbol: 'USDT', id: 'tether' },
@@ -31,6 +33,7 @@ const TICKER_MAP = [
   { symbol: 'ATOM', id: 'cosmos' },
   { symbol: 'ETC', id: 'ethereum-classic' },
   { symbol: 'XLM', id: 'stellar' },
+  // Infrastructure & L1/L2
   { symbol: 'NEAR', id: 'near' },
   { symbol: 'ALGO', id: 'algorand' },
   { symbol: 'VET', id: 'vechain' },
@@ -39,49 +42,81 @@ const TICKER_MAP = [
   { symbol: 'HBAR', id: 'hedera-hashgraph' },
   { symbol: 'ARB', id: 'arbitrum' },
   { symbol: 'OP', id: 'optimism' },
-  { symbol: 'GRT', id: 'the-graph' },
-  { symbol: 'SAND', id: 'the-sandbox' },
-  { symbol: 'MANA', id: 'decentraland' },
-  { symbol: 'AAVE', id: 'aave' },
+  { symbol: 'SUI', id: 'sui' },
+  { symbol: 'SEI', id: 'sei-network' },
+  { symbol: 'TIA', id: 'celestia' },
   { symbol: 'STX', id: 'blockstack' },
   { symbol: 'INJ', id: 'injective-protocol' },
+  { symbol: 'STRK', id: 'starknet' },
+  { symbol: 'MNT', id: 'mantle' },
+  // DeFi
+  { symbol: 'AAVE', id: 'aave' },
   { symbol: 'MKR', id: 'maker' },
   { symbol: 'SNX', id: 'havven' },
   { symbol: 'RUNE', id: 'thorchain' },
-  { symbol: 'FTM', id: 'fantom' },
+  { symbol: 'CRV', id: 'curve-dao-token' },
+  { symbol: 'COMP', id: 'compound-governance-token' },
+  { symbol: 'LDO', id: 'lido-dao' },
+  { symbol: 'PENDLE', id: 'pendle' },
+  { symbol: 'ONDO', id: 'ondo-finance' },
+  { symbol: 'ENA', id: 'ethena' },
+  { symbol: 'EIGEN', id: 'eigenlayer' },
+  { symbol: 'SSV', id: 'ssv-network' },
+  { symbol: 'ENS', id: 'ethereum-name-service' },
+  { symbol: '1INCH', id: '1inch' },
+  { symbol: 'SUSHI', id: 'sushi' },
+  { symbol: 'CVX', id: 'convex-finance' },
+  { symbol: 'FXS', id: 'frax-share' },
+  { symbol: 'RPL', id: 'rocket-pool' },
+  { symbol: 'YFI', id: 'yearn-finance' },
+  { symbol: 'LPT', id: 'livepeer' },
+  { symbol: 'GNO', id: 'gnosis' },
+  // AI / Data
+  { symbol: 'FET', id: 'artificial-superintelligence-alliance' },
+  { symbol: 'RENDER', id: 'render-token' },
+  { symbol: 'TAO', id: 'bittensor' },
+  { symbol: 'NMR', id: 'numeraire' },
+  // Gaming & Metaverse
+  { symbol: 'GRT', id: 'the-graph' },
+  { symbol: 'SAND', id: 'the-sandbox' },
+  { symbol: 'MANA', id: 'decentraland' },
   { symbol: 'IMX', id: 'immutable-x' },
   { symbol: 'AXS', id: 'axie-infinity' },
   { symbol: 'GALA', id: 'gala' },
   { symbol: 'ENJ', id: 'enjincoin' },
   { symbol: 'CHZ', id: 'chiliz' },
-  { symbol: 'LDO', id: 'lido-dao' },
-  { symbol: 'CRV', id: 'curve-dao-token' },
-  { symbol: 'COMP', id: 'compound-governance-token' },
-  { symbol: 'YFI', id: 'yearn-finance' },
-  { symbol: 'BAT', id: 'basic-attention-token' },
-  { symbol: 'ZRX', id: '0x' },
-  { symbol: 'SUSHI', id: 'sushi' },
-  { symbol: 'PYTH', id: 'pyth-network' },
-  { symbol: 'SUI', id: 'sui' },
-  { symbol: 'SEI', id: 'sei-network' },
-  { symbol: 'TIA', id: 'celestia' },
-  { symbol: 'JUP', id: 'jupiter-exchange-solana' },
+  { symbol: 'APE', id: 'apecoin' },
+  // Memecoins
+  { symbol: 'PEPE', id: 'pepe' },
+  { symbol: 'WLD', id: 'worldcoin-wld' },
   { symbol: 'WIF', id: 'dogwifcoin' },
   { symbol: 'BONK', id: 'bonk' },
   { symbol: 'FLOKI', id: 'floki' },
-  { symbol: 'TAO', id: 'bittensor' },
-  { symbol: 'RNDR', id: 'render-token' },
-  { symbol: 'PEPE', id: 'pepe' },
-  { symbol: 'WLD', id: 'worldcoin-wld' },
+  // Infrastructure & Other
+  { symbol: 'FTM', id: 'fantom' },
+  { symbol: 'DYDX', id: 'dydx' },
+  { symbol: 'GMX', id: 'gmx' },
+  { symbol: 'BAT', id: 'basic-attention-token' },
+  { symbol: 'ZRX', id: '0x' },
+  { symbol: 'BLUR', id: 'blur' },
+  { symbol: 'LRC', id: 'loopring' },
+  { symbol: 'QNT', id: 'quant-network' },
+  { symbol: 'MASK', id: 'mask-network' },
+  { symbol: 'SKL', id: 'skale' },
+  { symbol: 'ANKR', id: 'ankr' },
+  { symbol: 'CELO', id: 'celo' },
+  { symbol: 'API3', id: 'api3' },
   { symbol: 'MINA', id: 'mina-protocol' },
   { symbol: 'KAS', id: 'kaspa' },
-  { symbol: 'PENDLE', id: 'pendle' },
-  { symbol: 'BLUR', id: 'blur' },
-  { symbol: 'DYDX', id: 'dydx' },
-  { symbol: 'GMX', id: 'gmx' }
+  { symbol: 'PYTH', id: 'pyth-network' },
+  { symbol: 'JUP', id: 'jupiter-exchange-solana' },
+  { symbol: 'RNDR', id: 'render-token' },
+  // Wrapped
+  { symbol: 'WBTC', id: 'wrapped-bitcoin' },
+  { symbol: 'WETH', id: 'weth' },
 ]
 
-const BATCH_SIZE = 50 // CoinGecko allows up to 250 IDs per request, we'll use 50
+const BATCH_SIZE = 100 // CoinGecko allows up to 250 IDs per request
 
 interface CoinGeckoPrice {
   usd: number
