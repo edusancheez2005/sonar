@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { computeUnifiedSignal } from '@/app/lib/signalEngine'
+import { computeTechnicalIndicators } from '@/app/lib/technicalAnalysis'
 import { coinRegistry } from '@/lib/coingecko/coin-registry'
 
 export const dynamic = 'force-dynamic'
@@ -144,12 +145,13 @@ async function getActiveTokens() {
  */
 async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
   // Parallel data fetching — use cached price snapshots first, CoinGecko as fallback
-  const [transactions, sentimentData, cachedPrice, socialData, communityVotes] = await Promise.all([
+  const [transactions, sentimentData, cachedPrice, socialData, communityVotes, priceHistory] = await Promise.all([
     fetchWhaleTransactions(tokenSymbol),
     fetchSentimentScore(tokenSymbol),
     fetchCachedPrice(tokenSymbol),
     fetchSocialData(tokenSymbol),
     fetchCommunityVotes(tokenSymbol),
+    fetchPriceHistory(tokenSymbol),
   ])
 
   // If cached price exists, use it. Otherwise fall back to CoinGecko API.
@@ -182,6 +184,11 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
     contributors: priceData.developer_data.contributors || 0,
   } : null
 
+  // Compute technical indicators from price history
+  const technicalSignals = priceHistory && priceData
+    ? computeTechnicalIndicators(priceHistory, priceData.current_price)
+    : null
+
   // Run the engine
   const signal = computeUnifiedSignal({
     transactions,
@@ -192,6 +199,7 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
     communityVotes,
     devActivity,
     tokenSymbol,
+    technicalSignals,
   })
 
   // Market beta adjustment: dampen signals that fight the broad market trend
@@ -223,6 +231,36 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
   }
 
   return signal
+}
+
+/**
+ * Fetch price history for technical analysis.
+ * Returns last 100 price snapshots (~25 hours at 15-min intervals).
+ * Sorted oldest → newest for indicator computation.
+ */
+async function fetchPriceHistory(tokenSymbol) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_usd, volume_24h, timestamp')
+      .eq('ticker', tokenSymbol)
+      .order('timestamp', { ascending: false })
+      .limit(100)
+
+    if (error || !data || data.length < 10) return null
+
+    // Sort oldest → newest (indicators need chronological order)
+    return data
+      .filter(d => d.price_usd > 0)
+      .reverse()
+      .map(d => ({
+        price: d.price_usd,
+        volume: d.volume_24h || 0,
+        timestamp: d.timestamp,
+      }))
+  } catch {
+    return null
+  }
 }
 
 /**

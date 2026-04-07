@@ -122,6 +122,16 @@ export interface ComputeSignalParams {
   communityVotes?: CommunityVotes | null
   devActivity?: DevActivity | null
   tokenSymbol?: string
+  technicalSignals?: {
+    compositeScore: number
+    compositeConfidence: number
+    rsi14: number | null
+    rsiSignal: number
+    smaSignal: number
+    bbSignal: number
+    regime: string
+    regimeConfidence: number
+  } | null
 }
 
 // ─── TIER 1: CEX WHALE FLOW ──────────────────────────────────────────────
@@ -539,11 +549,50 @@ export function computeUnifiedSignal({
   communityVotes = null,
   devActivity = null,
   tokenSymbol = 'UNKNOWN',
+  technicalSignals = null,
 }: ComputeSignalParams): UnifiedSignal {
   const tier1 = computeTier1_CexWhaleFlow(transactions)
-  const tier2 = computeTier2_PriceMomentum(priceChanges, volumeData)
+  const tier2Raw = computeTier2_PriceMomentum(priceChanges, volumeData)
   const tier3 = computeTier3_SentimentSocial(sentimentData, socialData)
   const tier4 = computeTier4_WeakSignals(transactions, communityVotes, devActivity)
+
+  // v4: Enhance Tier 2 with real technical analysis if available
+  const tier2 = { ...tier2Raw }
+  if (technicalSignals && technicalSignals.compositeConfidence > 20) {
+    // Blend CoinGecko momentum (30%) with TA indicators (70%)
+    // TA is more reliable because it uses RSI, SMA, Bollinger from actual price history
+    const taScore = technicalSignals.compositeScore
+    const blended = tier2Raw.available
+      ? Math.round(tier2Raw.score * 0.3 + taScore * 0.7)
+      : taScore
+    tier2.score = clamp(blended, -100, 100)
+    tier2.confidence = Math.max(tier2.confidence, technicalSignals.compositeConfidence)
+    tier2.available = true
+    tier2.factors = {
+      ...tier2.factors,
+      rsi14: technicalSignals.rsi14,
+      rsiSignal: technicalSignals.rsiSignal,
+      smaSignal: technicalSignals.smaSignal,
+      bbSignal: technicalSignals.bbSignal,
+      regime: technicalSignals.regime,
+      taComposite: taScore,
+    }
+  }
+
+  // v4: Regime-based weight adjustment
+  // In downtrends, increase momentum weight and decrease whale weight
+  // In high volatility, reduce all signal confidence
+  let regimeMultiplier = 1.0
+  let regimeNote = ''
+  if (technicalSignals) {
+    if (technicalSignals.regime === 'trending_down') {
+      regimeMultiplier = 0.7 // reduce overall signal magnitude in downtrends
+      regimeNote = 'Downtrend detected — signals dampened'
+    } else if (technicalSignals.regime === 'high_volatility') {
+      regimeMultiplier = 0.6 // high vol = unreliable signals
+      regimeNote = 'High volatility regime — low conviction'
+    }
+  }
 
   // v3 weights: momentum dominates for 24h evaluation
   // Whale flow is a medium-term signal (3-7 days) not a 24h predictor
@@ -609,6 +658,9 @@ export function computeUnifiedSignal({
 
   rawScore = clamp(rawScore + trapAdjustment + smartMoneyBonus, -100, 100)
 
+  // v4: Apply regime multiplier — dampens signals in adverse regimes
+  rawScore = Math.round(rawScore * regimeMultiplier)
+
   const directions = availableTiers.map(t => Math.sign(t.data.score))
   const agreementCount = directions.filter(d => d === Math.sign(rawScore)).length
   const confluenceMultiplier = 0.6 + (agreementCount / availableTiers.length) * 0.4
@@ -655,6 +707,15 @@ export function computeUnifiedSignal({
   factors.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
 
   const timeframe = determineTimeframe(tier1, tier2)
+
+  // v4: Add regime detection to traps if applicable
+  if (regimeNote) {
+    traps.push({
+      type: 'REGIME_WARNING',
+      severity: 'MEDIUM',
+      description: regimeNote,
+    })
+  }
 
   return {
     signal,

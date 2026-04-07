@@ -27,7 +27,8 @@
     "resend": "^6.0.2",
     "server-only": "^0.0.1",
     "stripe": "^19.1.0",
-    "styled-components": "^6.1.0"
+    "styled-components": "^6.1.0",
+    "trading-signals": "^7.4.3"
   },
   "scripts": {
     "dev": "next dev",
