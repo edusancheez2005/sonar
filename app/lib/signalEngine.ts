@@ -132,6 +132,16 @@ export interface ComputeSignalParams {
     regime: string
     regimeConfidence: number
   } | null
+  derivativesData?: {
+    fundingRate: number
+    fundingSignal: number
+    longShortRatio: number
+    longShortSignal: number
+    topTraderSignal: number
+    compositeSignal: number
+    openInterestUsd: number
+    available: boolean
+  } | null
 }
 
 // ─── TIER 1: CEX WHALE FLOW ──────────────────────────────────────────────
@@ -550,6 +560,7 @@ export function computeUnifiedSignal({
   devActivity = null,
   tokenSymbol = 'UNKNOWN',
   technicalSignals = null,
+  derivativesData = null,
 }: ComputeSignalParams): UnifiedSignal {
   const tier1 = computeTier1_CexWhaleFlow(transactions)
   const tier2Raw = computeTier2_PriceMomentum(priceChanges, volumeData)
@@ -594,9 +605,16 @@ export function computeUnifiedSignal({
     }
   }
 
-  // v3 weights: momentum dominates for 24h evaluation
-  // Whale flow is a medium-term signal (3-7 days) not a 24h predictor
-  const baseWeights = { tier1: 0.25, tier2: 0.40, tier3: 0.25, tier4: 0.10 }
+  // v5: Derivatives data (funding rates, long/short ratios) — most predictive short-term indicator
+  const hasDeriv = derivativesData && derivativesData.available
+  const derivScore = hasDeriv ? derivativesData.compositeSignal : 0
+  const derivConf = hasDeriv ? 70 : 0
+
+  // v5 weights with derivatives: T1=20%, T2=30%, T3=15%, T4=5%, derivatives=30%
+  // Without derivatives: fallback to v3 weights T1=25%, T2=40%, T3=25%, T4=10%
+  const baseWeights = hasDeriv
+    ? { tier1: 0.20, tier2: 0.30, tier3: 0.15, tier4: 0.05 }
+    : { tier1: 0.25, tier2: 0.40, tier3: 0.25, tier4: 0.10 }
   const tiers = [
     { key: 'tier1' as const, data: tier1, weight: baseWeights.tier1, effectiveWeight: 0 },
     { key: 'tier2' as const, data: tier2, weight: baseWeights.tier2, effectiveWeight: 0 },
@@ -630,6 +648,11 @@ export function computeUnifiedSignal({
   let rawScore = 0
   for (const t of availableTiers) {
     rawScore += t.data.score * t.effectiveWeight
+  }
+
+  // v5: Add derivatives signal (30% weight when available)
+  if (hasDeriv) {
+    rawScore += derivScore * 0.30
   }
 
   const traps = detectTraps(tier1, tier2, tier3, volumeData)
@@ -681,6 +704,7 @@ export function computeUnifiedSignal({
   for (const t of availableTiers) {
     baseConfidence += t.data.confidence * t.effectiveWeight
   }
+  if (hasDeriv) baseConfidence += derivConf * 0.30
   const confidence = Math.round(
     Math.min(100, Math.max(0, baseConfidence * confluenceMultiplier - confidenceReduction - tierDisagreementPenalty))
   )

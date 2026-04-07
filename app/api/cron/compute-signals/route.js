@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { computeUnifiedSignal } from '@/app/lib/signalEngine'
 import { computeTechnicalIndicators } from '@/app/lib/technicalAnalysis'
+import { fetchDerivativesData } from '@/app/lib/derivativesData'
 import { coinRegistry } from '@/lib/coingecko/coin-registry'
 
 export const dynamic = 'force-dynamic'
@@ -162,6 +163,9 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
     priceData = await fetchPriceData(tokenSymbol)
   }
 
+  // Fetch derivatives data (Binance Futures - free, no key needed)
+  const derivativesData = await fetchDerivativesData(tokenSymbol, priceData?.current_price)
+
   // Build price changes object
   const priceChanges = priceData ? {
     change_1h: priceData.price_change_percentage_1h_in_currency || 0,
@@ -200,6 +204,7 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
     devActivity,
     tokenSymbol,
     technicalSignals,
+    derivativesData: derivativesData?.available ? derivativesData : null,
   })
 
   // Market beta adjustment: dampen signals that fight the broad market trend
