@@ -1,14 +1,22 @@
 /**
- * Sonar Unified Signal Engine v1.0
+ * Sonar Unified Signal Engine v3.0
  *
  * Produces a single actionable signal per token:
  *   STRONG BUY / BUY / NEUTRAL / SELL / STRONG SELL
  *
- * Tiered signal architecture:
- *   Tier 1 (40%): CEX whale flow — exchange inflow/outflow only
- *   Tier 2 (30%): Price momentum + volume intensity
- *   Tier 3 (20%): News sentiment + social intelligence
+ * Tiered signal architecture (v3 rebalanced):
+ *   Tier 1 (25%): CEX whale flow — exchange inflow/outflow only (reduced from 40%)
+ *   Tier 2 (40%): Price momentum + volume intensity (increased from 30%)
+ *   Tier 3 (25%): News sentiment + social intelligence (increased from 20%)
  *   Tier 4 (10%): EOA activity + community votes + dev activity
+ *
+ * Key v3 changes:
+ *   - Momentum dominates for 24h signals (40% weight)
+ *   - Whale flow reduced to 25% (it's a medium-term signal, not short-term)
+ *   - Wider NEUTRAL band (35-65 instead of 37-63)
+ *   - Tier disagreement forces NEUTRAL (confidence-based)
+ *   - Market beta threshold lowered to 1% for alts
+ *   - Breadth/surge bonuses removed (caused permanent bullish bias)
  */
 
 // ─── TYPES ────────────────────────────────────────────────────────────────
@@ -219,12 +227,15 @@ export function computeTier1_CexWhaleFlow(
     ? Math.tanh((recentNet - olderNet * (3 / Math.max(1, lookbackHours - 3))) / (totalVol * 0.2)) * 0.3
     : 0
 
-  // Breadth + surge
-  const breadthSignal = Math.min(1, uniqueWhales / 10) * 0.2
-  const volumeSurge = Math.min(1, Math.max(0, volumeChange)) * 0.3
+  // Breadth + surge — DIRECTIONALLY NEUTRAL (v3 fix)
+  // These should NOT always add in the buy direction
+  // Instead, they increase confidence but don't move the score
+  const breadthBonus = Math.min(1, uniqueWhales / 10) * 0.15
+  const surgeBonus = Math.min(1, Math.max(0, volumeChange)) * 0.2
 
-  const rawScore = weightedFlowSignal * 0.55 + largeTxSignal * 0.20 + velocitySignal * 0.15
-    + breadthSignal * Math.sign(weightedFlowSignal) + volumeSurge * Math.sign(weightedFlowSignal)
+  // v3: breadth and surge amplify the existing signal, not push it further bullish
+  const directionMultiplier = 1 + breadthBonus + surgeBonus
+  const rawScore = (weightedFlowSignal * 0.55 + largeTxSignal * 0.20 + velocitySignal * 0.15) * directionMultiplier
   const score = clamp(rawScore * 100, -100, 100)
 
   const txCountConf = Math.min(1, totalTxs / 10)
@@ -534,7 +545,9 @@ export function computeUnifiedSignal({
   const tier3 = computeTier3_SentimentSocial(sentimentData, socialData)
   const tier4 = computeTier4_WeakSignals(transactions, communityVotes, devActivity)
 
-  const baseWeights = { tier1: 0.40, tier2: 0.30, tier3: 0.20, tier4: 0.10 }
+  // v3 weights: momentum dominates for 24h evaluation
+  // Whale flow is a medium-term signal (3-7 days) not a 24h predictor
+  const baseWeights = { tier1: 0.25, tier2: 0.40, tier3: 0.25, tier4: 0.10 }
   const tiers = [
     { key: 'tier1' as const, data: tier1, weight: baseWeights.tier1, effectiveWeight: 0 },
     { key: 'tier2' as const, data: tier2, weight: baseWeights.tier2, effectiveWeight: 0 },
@@ -600,12 +613,24 @@ export function computeUnifiedSignal({
   const agreementCount = directions.filter(d => d === Math.sign(rawScore)).length
   const confluenceMultiplier = 0.6 + (agreementCount / availableTiers.length) * 0.4
 
+  // v3: Tier disagreement detection
+  // If the two heaviest tiers (momentum + whales) disagree, force lower confidence
+  let tierDisagreementPenalty = 0
+  if (tier1.available && tier2.available) {
+    const whaleDir = Math.sign(tier1.score)
+    const momentumDir = Math.sign(tier2.score)
+    if (whaleDir !== 0 && momentumDir !== 0 && whaleDir !== momentumDir) {
+      // Tiers disagree — this is uncertain, reduce confidence significantly
+      tierDisagreementPenalty = 25
+    }
+  }
+
   let baseConfidence = 0
   for (const t of availableTiers) {
     baseConfidence += t.data.confidence * t.effectiveWeight
   }
   const confidence = Math.round(
-    Math.min(100, Math.max(0, baseConfidence * confluenceMultiplier - confidenceReduction))
+    Math.min(100, Math.max(0, baseConfidence * confluenceMultiplier - confidenceReduction - tierDisagreementPenalty))
   )
 
   const score = Math.round(clamp((rawScore + 100) / 2, 0, 100))
@@ -653,17 +678,15 @@ function clamp(val: number, min: number, max: number): number {
 }
 
 function getSignalLabel(score: number, confidence: number): SignalLabel {
+  // v3 thresholds — wider NEUTRAL band to reduce false directional signals
   // Confidence gate: need minimum confidence to issue any directional signal
-  if (confidence < 15) return 'NEUTRAL'
-  // Tightened thresholds (v2): reduce bullish bias
-  // Old: STRONG BUY >=75, BUY >=60
-  // New: STRONG BUY >=78, BUY >=63 (raised by 3 points each)
-  // SELL thresholds unchanged — SELL signals were already accurate at 75%
-  if (score >= 78) return 'STRONG BUY'
-  if (score >= 63) return 'BUY'
-  if (score > 37 && score < 63) return 'NEUTRAL'
-  if (score <= 22) return 'STRONG SELL'
-  if (score <= 37) return 'SELL'
+  if (confidence < 20) return 'NEUTRAL'  // raised from 15
+  // Wider neutral zone: 35-65 (was 37-63)
+  if (score >= 80) return 'STRONG BUY'   // raised from 78
+  if (score >= 65) return 'BUY'          // raised from 63
+  if (score > 35 && score < 65) return 'NEUTRAL'  // wider band
+  if (score <= 20) return 'STRONG SELL'  // lowered from 22
+  if (score <= 35) return 'SELL'         // lowered from 37
   return 'NEUTRAL'
 }
 

@@ -201,31 +201,26 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
     const isBullish = signal.signal === 'STRONG BUY' || signal.signal === 'BUY'
     const isBearish = signal.signal === 'STRONG SELL' || signal.signal === 'SELL'
 
-    // Market down >2% and signal is BUY → apply headwind penalty
-    if (btc24h < -2 && isBullish) {
-      const penalty = Math.min(15, Math.abs(btc24h) * 2) // up to -15 score penalty
+    // v3: Market down >1% and signal is BUY → apply headwind penalty (lowered from 2%)
+    // Alts bleed 2-3x harder than BTC, so even a -1% BTC move is significant
+    if (btc24h < -1 && isBullish) {
+      const penalty = Math.min(20, Math.abs(btc24h) * 3)
       signal.rawScore = Math.max(-100, (signal.rawScore || 0) - penalty)
       signal.score = Math.round(Math.max(0, Math.min(100, (signal.rawScore + 100) / 2)))
-      // Reclassify
-      if (signal.score < 60) signal.signal = 'NEUTRAL'
-      else if (signal.score < 75) signal.signal = 'BUY'
-      signal.traps = [...(signal.traps || []), { type: 'Market Headwind', severity: 'MEDIUM', adjustment: -Math.round(penalty), description: `BTC is down ${btc24h.toFixed(1)}% — broad market selloff dampens bullish signals` }]
+      if (signal.score < 65) signal.signal = 'NEUTRAL'
+      else if (signal.score < 80) signal.signal = 'BUY'
+      signal.traps = [...(signal.traps || []), { type: 'Market Headwind', severity: 'MEDIUM', adjustment: -Math.round(penalty), description: `BTC down ${btc24h.toFixed(1)}% - market headwind dampens bullish signals` }]
     }
 
-    // Market up >2% and signal is SELL → apply tailwind dampening
-    if (btc24h > 2 && isBearish) {
-      const boost = Math.min(10, btc24h * 1.5)
+    // v3: Market up >1% and signal is SELL → apply tailwind dampening
+    if (btc24h > 1 && isBearish) {
+      const boost = Math.min(15, btc24h * 2)
       signal.rawScore = Math.min(100, (signal.rawScore || 0) + boost)
       signal.score = Math.round(Math.max(0, Math.min(100, (signal.rawScore + 100) / 2)))
-      if (signal.score > 40) signal.signal = 'NEUTRAL'
-      else if (signal.score > 25) signal.signal = 'SELL'
+      if (signal.score > 35) signal.signal = 'NEUTRAL'
+      else if (signal.score > 20) signal.signal = 'SELL'
     }
   }
-
-  // Attach current price for backtesting — guard against 0/null
-  const price = priceData?.current_price || null
-  signal.price_at_signal = price && price > 0.000001 ? price : null
-  signal.market_cap = priceData?.market_cap || null
 
   return signal
 }
