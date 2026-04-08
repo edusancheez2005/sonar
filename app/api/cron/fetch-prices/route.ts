@@ -151,80 +151,112 @@ export async function GET(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE!
     )
 
-    const apiKey = process.env.COINGECKO_API_KEY
-    if (!apiKey) {
-      throw new Error('COINGECKO_API_KEY not configured')
-    }
+    // v6: Binance is primary, CoinGecko is fallback (no longer required)
 
     let totalInserted = 0
     const errors: string[] = []
 
-    // Process in batches to respect rate limits
-    for (let i = 0; i < TICKER_MAP.length; i += BATCH_SIZE) {
-      const batch = TICKER_MAP.slice(i, i + BATCH_SIZE)
-      const coinIds = batch.map(t => t.id).join(',')
-
-      try {
-        // Fetch prices from CoinGecko Pro API
-        const url = `https://pro-api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`
-
-        const response = await fetch(url, {
-          headers: {
-            'Accept': 'application/json',
-            'x-cg-pro-api-key': apiKey
+    // v6: Try Binance first (free, no key, real-time prices)
+    // Single call for all symbols, then batch 24hr tickers for volume/change
+    const binancePrices: Record<string, any> = {}
+    try {
+      // Get all Binance USDT pair prices in one call (weight: 4)
+      const binancePriceRes = await fetch('https://api.binance.com/api/v3/ticker/price', { signal: AbortSignal.timeout(10000) })
+      if (binancePriceRes.ok) {
+        const allPrices: { symbol: string; price: string }[] = await binancePriceRes.json()
+        for (const p of allPrices) {
+          if (p.symbol.endsWith('USDT')) {
+            const ticker = p.symbol.replace('USDT', '')
+            binancePrices[ticker] = { price: parseFloat(p.price) }
           }
-        })
-
-        if (!response.ok) {
-          throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}`)
         }
+      }
 
-        const data = await response.json()
-
-        // Insert price data for each coin
-        for (const ticker of batch) {
-          const priceData: CoinGeckoPrice = data[ticker.id]
-
-          if (!priceData || !priceData.usd) {
-            console.warn(`No price data for ${ticker.symbol} (${ticker.id})`)
-            continue
-          }
-
-          try {
-            const { error: insertError } = await supabase
-              .from('price_snapshots')
-              .insert({
-                ticker: ticker.symbol,
-                timestamp: new Date().toISOString(),
-                price_usd: priceData.usd,
-                market_cap: priceData.usd_market_cap || null,
-                volume_24h: priceData.usd_24h_vol || null,
-                price_change_1h: null, // Not available in simple/price endpoint
-                price_change_24h: priceData.usd_24h_change || null,
-                price_change_7d: null // Not available in simple/price endpoint
-              })
-
-            if (insertError) {
-              // Ignore duplicate key errors
-              if (!insertError.message.includes('duplicate key')) {
-                errors.push(`Failed to insert ${ticker.symbol}: ${insertError.message}`)
-              }
-            } else {
-              totalInserted++
+      // Get 24hr ticker for volume + change (weight: 80 for all)
+      const binance24hRes = await fetch('https://api.binance.com/api/v3/ticker/24hr', { signal: AbortSignal.timeout(15000) })
+      if (binance24hRes.ok) {
+        const all24h: any[] = await binance24hRes.json()
+        for (const t of all24h) {
+          if (t.symbol.endsWith('USDT')) {
+            const ticker = t.symbol.replace('USDT', '')
+            if (binancePrices[ticker]) {
+              binancePrices[ticker].volume_24h = parseFloat(t.quoteVolume) || 0
+              binancePrices[ticker].price_change_24h = parseFloat(t.priceChangePercent) || 0
             }
-
-          } catch (insertErr) {
-            errors.push(`Insert error for ${ticker.symbol}: ${insertErr}`)
           }
         }
+      }
+      console.log(`[FetchPrices] Binance: ${Object.keys(binancePrices).length} prices fetched`)
+    } catch (binErr) {
+      console.warn(`[FetchPrices] Binance failed, falling back to CoinGecko: ${binErr}`)
+    }
 
-        // Small delay between batches to respect rate limits (250 req/min = ~240ms per request)
-        await delay(500)
+    // Insert Binance prices for tokens we track
+    for (const ticker of TICKER_MAP) {
+      const bp = binancePrices[ticker.symbol]
+      if (bp && bp.price > 0) {
+        try {
+          const { error: insertError } = await supabase
+            .from('price_snapshots')
+            .insert({
+              ticker: ticker.symbol,
+              timestamp: new Date().toISOString(),
+              price_usd: bp.price,
+              market_cap: null, // Binance doesn't provide mcap
+              volume_24h: bp.volume_24h || null,
+              price_change_1h: null,
+              price_change_24h: bp.price_change_24h || null,
+              price_change_7d: null,
+            })
+          if (!insertError) totalInserted++
+          else if (!insertError.message.includes('duplicate key')) {
+            errors.push(`Binance insert ${ticker.symbol}: ${insertError.message}`)
+          }
+        } catch {}
+        continue // Skip CoinGecko for this token
+      }
+    }
 
-      } catch (batchError) {
-        const errorMsg = `Batch fetch error: ${batchError instanceof Error ? batchError.message : 'Unknown error'}`
-        console.error(errorMsg)
-        errors.push(errorMsg)
+    // Fallback: CoinGecko for tokens Binance didn't cover (WBTC, WETH, etc.)
+    const missingTokens = TICKER_MAP.filter(t => !binancePrices[t.symbol] || !binancePrices[t.symbol].price)
+    
+    if (missingTokens.length > 0) {
+      const apiKey = process.env.COINGECKO_API_KEY
+      if (apiKey) {
+        const coinIds = missingTokens.map(t => t.id).join(',')
+        try {
+          const url = `https://pro-api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`
+          const response = await fetch(url, {
+            headers: { 'Accept': 'application/json', 'x-cg-pro-api-key': apiKey }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            for (const ticker of missingTokens) {
+              const priceData = data[ticker.id]
+              if (!priceData || !priceData.usd) continue
+              try {
+                const { error: insertError } = await supabase
+                  .from('price_snapshots')
+                  .insert({
+                    ticker: ticker.symbol,
+                    timestamp: new Date().toISOString(),
+                    price_usd: priceData.usd,
+                    market_cap: priceData.usd_market_cap || null,
+                    volume_24h: priceData.usd_24h_vol || null,
+                    price_change_1h: null,
+                    price_change_24h: priceData.usd_24h_change || null,
+                    price_change_7d: null,
+                  })
+                if (!insertError) totalInserted++
+                else if (!insertError.message.includes('duplicate key')) {
+                  errors.push(`CG insert ${ticker.symbol}: ${insertError.message}`)
+                }
+              } catch {}
+            }
+          }
+        } catch (cgErr) {
+          errors.push(`CoinGecko fallback failed: ${cgErr}`)
+        }
       }
     }
 

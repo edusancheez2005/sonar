@@ -33,6 +33,10 @@ export interface DerivativesData {
   topTraderShortRatio: number
   topTraderSignal: number     // -100 to +100
   
+  // Taker buy/sell volume (direct aggression measurement)
+  takerBuySellRatio: number   // >1 = buyers aggressive, <1 = sellers aggressive
+  takerSignal: number         // -100 to +100
+  
   // Composite
   compositeSignal: number     // -100 to +100
   available: boolean
@@ -43,6 +47,7 @@ const DEFAULT_RESULT: DerivativesData = {
   openInterest: 0, openInterestUsd: 0,
   longRatio: 0.5, shortRatio: 0.5, longShortRatio: 1, longShortSignal: 0,
   topTraderLongRatio: 0.5, topTraderShortRatio: 0.5, topTraderSignal: 0,
+  takerBuySellRatio: 1, takerSignal: 0,
   compositeSignal: 0, available: false,
 }
 
@@ -63,11 +68,12 @@ export async function fetchDerivativesData(
   const symbol = `${tokenSymbol}USDT`
 
   try {
-    const [fundingRes, oiRes, lsRes, topRes] = await Promise.allSettled([
+    const [fundingRes, oiRes, lsRes, topRes, takerRes] = await Promise.allSettled([
       fetchWithTimeout(`${BINANCE_FUTURES_BASE}/fapi/v1/fundingRate?symbol=${symbol}&limit=1`),
       fetchWithTimeout(`${BINANCE_FUTURES_BASE}/fapi/v1/openInterest?symbol=${symbol}`),
       fetchWithTimeout(`${BINANCE_FUTURES_BASE}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=1h&limit=1`),
       fetchWithTimeout(`${BINANCE_FUTURES_BASE}/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=1h&limit=1`),
+      fetchWithTimeout(`${BINANCE_FUTURES_BASE}/futures/data/takerlongshortRatio?symbol=${symbol}&period=1h&limit=1`),
     ])
 
     // Funding rate
@@ -124,16 +130,24 @@ export async function fetchDerivativesData(
     else if (topTraderShortRatio > 0.60) topTraderSignal = -20 // top traders short = mild bearish
 
     // Smart money divergence: top traders vs retail
-    // If retail is heavily long but top traders are short = strongest bearish signal
     if (longRatio > 0.58 && topTraderShortRatio > 0.55) {
-      topTraderSignal = -50 // retail long + smart short = bearish divergence
+      topTraderSignal = -50
     } else if (shortRatio > 0.58 && topTraderLongRatio > 0.55) {
-      topTraderSignal = 50 // retail short + smart long = bullish divergence
+      topTraderSignal = 50
     }
 
-    // Composite: funding 40%, long/short 35%, top traders 25%
+    // Taker buy/sell volume — direct aggression measurement
+    let takerBuySellRatio = 1
+    let takerSignal = 0
+    if (takerRes.status === 'fulfilled' && takerRes.value?.[0]) {
+      takerBuySellRatio = parseFloat(takerRes.value[0].buySellRatio) || 1
+      // Continuous signal: ratio > 1 = buyers aggressive, < 1 = sellers aggressive
+      takerSignal = Math.round(Math.tanh((takerBuySellRatio - 1.0) * 5) * 80)
+    }
+
+    // Composite: funding 30%, long/short 25%, top traders 20%, taker volume 25%
     const compositeSignal = Math.round(
-      fundingSignal * 0.40 + longShortSignal * 0.35 + topTraderSignal * 0.25
+      fundingSignal * 0.30 + longShortSignal * 0.25 + topTraderSignal * 0.20 + takerSignal * 0.25
     )
 
     return {
@@ -149,6 +163,8 @@ export async function fetchDerivativesData(
       topTraderLongRatio: +topTraderLongRatio.toFixed(4),
       topTraderShortRatio: +topTraderShortRatio.toFixed(4),
       topTraderSignal,
+      takerBuySellRatio: +takerBuySellRatio.toFixed(4),
+      takerSignal,
       compositeSignal,
       available: true,
     }

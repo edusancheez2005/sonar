@@ -590,18 +590,17 @@ export function computeUnifiedSignal({
     }
   }
 
-  // v4: Regime-based weight adjustment
-  // In downtrends, increase momentum weight and decrease whale weight
-  // In high volatility, reduce all signal confidence
-  let regimeMultiplier = 1.0
+  // v6: Regime affects CONFIDENCE only, not score magnitude
+  // v4's regime multiplier on raw score was squashing everything to NEUTRAL
+  let regimeConfidencePenalty = 0
   let regimeNote = ''
   if (technicalSignals) {
     if (technicalSignals.regime === 'trending_down') {
-      regimeMultiplier = 0.7 // reduce overall signal magnitude in downtrends
-      regimeNote = 'Downtrend detected — signals dampened'
+      regimeConfidencePenalty = 15 // reduce confidence, not score
+      regimeNote = 'Downtrend detected'
     } else if (technicalSignals.regime === 'high_volatility') {
-      regimeMultiplier = 0.6 // high vol = unreliable signals
-      regimeNote = 'High volatility regime — low conviction'
+      regimeConfidencePenalty = 20
+      regimeNote = 'High volatility regime'
     }
   }
 
@@ -681,22 +680,18 @@ export function computeUnifiedSignal({
 
   rawScore = clamp(rawScore + trapAdjustment + smartMoneyBonus, -100, 100)
 
-  // v4: Apply regime multiplier — dampens signals in adverse regimes
-  rawScore = Math.round(rawScore * regimeMultiplier)
-
   const directions = availableTiers.map(t => Math.sign(t.data.score))
   const agreementCount = directions.filter(d => d === Math.sign(rawScore)).length
   const confluenceMultiplier = 0.6 + (agreementCount / availableTiers.length) * 0.4
 
-  // v3: Tier disagreement detection
-  // If the two heaviest tiers (momentum + whales) disagree, force lower confidence
+  // v6: Tier disagreement — reduced penalty from 25 to 10
+  // 25 was too harsh combined with regime penalty, forced everything NEUTRAL
   let tierDisagreementPenalty = 0
   if (tier1.available && tier2.available) {
     const whaleDir = Math.sign(tier1.score)
     const momentumDir = Math.sign(tier2.score)
     if (whaleDir !== 0 && momentumDir !== 0 && whaleDir !== momentumDir) {
-      // Tiers disagree — this is uncertain, reduce confidence significantly
-      tierDisagreementPenalty = 25
+      tierDisagreementPenalty = 10
     }
   }
 
@@ -706,7 +701,7 @@ export function computeUnifiedSignal({
   }
   if (hasDeriv) baseConfidence += derivConf * 0.30
   const confidence = Math.round(
-    Math.min(100, Math.max(0, baseConfidence * confluenceMultiplier - confidenceReduction - tierDisagreementPenalty))
+    Math.min(100, Math.max(0, baseConfidence * confluenceMultiplier - confidenceReduction - tierDisagreementPenalty - regimeConfidencePenalty))
   )
 
   const score = Math.round(clamp((rawScore + 100) / 2, 0, 100))
@@ -763,15 +758,14 @@ function clamp(val: number, min: number, max: number): number {
 }
 
 function getSignalLabel(score: number, confidence: number): SignalLabel {
-  // v3 thresholds — wider NEUTRAL band to reduce false directional signals
-  // Confidence gate: need minimum confidence to issue any directional signal
-  if (confidence < 20) return 'NEUTRAL'  // raised from 15
-  // Wider neutral zone: 35-65 (was 37-63)
-  if (score >= 80) return 'STRONG BUY'   // raised from 78
-  if (score >= 65) return 'BUY'          // raised from 63
-  if (score > 35 && score < 65) return 'NEUTRAL'  // wider band
-  if (score <= 20) return 'STRONG SELL'  // lowered from 22
-  if (score <= 35) return 'SELL'         // lowered from 37
+  // v6 thresholds — balanced band that actually fires signals
+  // v3-v5 had 35-65 NEUTRAL which was too wide (100% NEUTRAL output)
+  if (confidence < 15) return 'NEUTRAL'
+  if (score >= 72) return 'STRONG BUY'
+  if (score >= 58) return 'BUY'
+  if (score > 42 && score < 58) return 'NEUTRAL'  // 16-point band (was 30)
+  if (score <= 28) return 'STRONG SELL'
+  if (score <= 42) return 'SELL'
   return 'NEUTRAL'
 }
 
