@@ -128,64 +128,34 @@ export default async function NewsPage() {
 
       if (symbols.size > 0) {
         try {
-          // 1) Fetch full list to map symbol -> id (best-effort)
-          const listRes = await fetch('https://api.coingecko.com/api/v3/coins/list?include_platform=false', { cache: 'no-store' })
-          if (listRes.ok) {
-            const list = await listRes.json()
+          // Fetch all Binance 24hr tickers (single call, weight 80)
+          const bnRes = await fetch('https://data-api.binance.vision/api/v3/ticker/24hr', { cache: 'no-store' })
+          if (bnRes.ok) {
+            const allTickers = await bnRes.json()
             const bySymbol = new Map()
-            for (const c of list) {
-              const sym = String(c?.symbol || '').toUpperCase()
-              if (!sym) continue
-              const arr = bySymbol.get(sym) || []
-              arr.push({ id: c.id, name: c.name })
-              bySymbol.set(sym, arr)
-            }
-
-            // Map our symbols to coin ids (pick first match if multiple)
-            const ids = []
-            const symToId = new Map()
-            for (const sym of symbols) {
-              const candidates = bySymbol.get(sym)
-              if (candidates && candidates.length > 0) {
-                const id = candidates[0].id
-                symToId.set(sym, id)
-                ids.push(id)
-              }
-            }
-
-            if (ids.length > 0) {
-              const uniqIds = Array.from(new Set(ids)).slice(0, 100)
-              const marketsUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(uniqIds.join(','))}&price_change_percentage=24h`
-              const mRes = await fetch(marketsUrl, { cache: 'no-store' })
-              if (mRes.ok) {
-                const m = await mRes.json()
-              const byId = new Map()
-              for (const row of m) {
-                const change24h =
-                  typeof row.price_change_percentage_24h_in_currency?.usd === 'number'
-                    ? row.price_change_percentage_24h_in_currency.usd
-                    : row.price_change_percentage_24h
-                byId.set(row.id, {
-                  price_usd: Number(row.current_price),
-                  change24h: typeof change24h === 'number' && Number.isFinite(change24h) ? change24h : 0,
-                })
-              }
-
-                // Enrich instruments in-place
-                initialNews = initialNews.map((it) => {
-                  const enriched = (it.instruments || []).map((ins) => {
-                    const id = symToId.get(String(ins.code || '').toUpperCase())
-                    const md = id ? byId.get(id) : null
-                    return {
-                      ...ins,
-                      price_usd: md?.price_usd,
-                      change24h: md?.change24h,
-                    }
-                  })
-                  return { ...it, instruments: enriched }
+            for (const t of allTickers) {
+              if (t.symbol.endsWith('USDT')) {
+                const sym = t.symbol.replace('USDT', '')
+                bySymbol.set(sym, {
+                  price_usd: parseFloat(t.lastPrice) || 0,
+                  change24h: parseFloat(t.priceChangePercent) || 0,
                 })
               }
             }
+
+            // Enrich instruments in-place
+            initialNews = initialNews.map((it) => {
+              const enriched = (it.instruments || []).map((ins) => {
+                const sym = String(ins.code || '').toUpperCase()
+                const md = bySymbol.get(sym)
+                return {
+                  ...ins,
+                  price_usd: md?.price_usd,
+                  change24h: md?.change24h,
+                }
+              })
+              return { ...it, instruments: enriched }
+            })
           }
         } catch {}
       }

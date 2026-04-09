@@ -223,7 +223,7 @@ const faqData = [
       },
       {
         question: 'How often is data updated?',
-        answer: 'Whale transaction data updates every 15 minutes. Price data from CoinGecko refreshes every 15 minutes. News articles are ingested continuously in real-time. ORCA AI accesses the latest data for every query.'
+        answer: 'Whale transaction data updates every 15 minutes. Price data from Binance refreshes in real-time. News articles are ingested continuously. ORCA AI accesses the latest data for every query.'
       },
       {
         question: 'Can I export data?',

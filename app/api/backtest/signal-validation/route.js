@@ -252,51 +252,27 @@ async function generateHourlySignals(coins, startTime, endTime) {
   return signals
 }
 
-// Fetch hourly prices from CoinGecko
+// Fetch hourly prices from Binance klines (replaces CoinGecko)
 async function fetchHourlyPrices(coins, startTime, endTime, gbpusd) {
   const prices = {}
-  const fromTs = Math.floor(startTime.getTime() / 1000)
-  const toTs = Math.floor(endTime.getTime() / 1000)
+  const startMs = startTime.getTime()
+  const endMs = endTime.getTime()
   
   for (let coin of coins) {
-    const cgId = SYMBOL_TO_COINGECKO_ID[coin]
-    if (!cgId) {
-      console.warn(`⚠️ No CoinGecko ID for ${coin}`)
-      prices[coin] = []
-      continue
-    }
+    const pair = coin === 'WBTC' ? 'BTCUSDT' : coin === 'WETH' ? 'ETHUSDT' : `${coin}USDT`
     
     try {
       const res = await fetch(
-        `https://api.coingecko.com/api/v3/coins/${cgId}/market_chart/range?vs_currency=usd&from=${fromTs}&to=${toTs}`,
-        {
-          headers: {
-            'x-cg-demo-api-key': process.env.COINGECKO_API_KEY || ''
-          }
-        }
+        `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1h&startTime=${startMs}&endTime=${endMs}&limit=1000`,
+        { signal: AbortSignal.timeout(10000) }
       )
       
       if (res.ok) {
-        const data = await res.json()
-        const hourlyPrices = []
-        
-        // CoinGecko returns prices as [ms_timestamp, price]
-        // Aggregate to hourly buckets
-        const pricesByHour = {}
-        data.prices?.forEach(([ts, price]) => {
-          const hourBucket = Math.floor(ts / (1000 * 60 * 60))
-          if (!pricesByHour[hourBucket]) pricesByHour[hourBucket] = []
-          pricesByHour[hourBucket].push(price / gbpusd) // Convert to GBP
-        })
-        
-        // Take the last price of each hour as the "close"
-        Object.keys(pricesByHour).sort().forEach(hourBucket => {
-          const pricesInHour = pricesByHour[hourBucket]
-          hourlyPrices.push({
-            timestamp: new Date(Number(hourBucket) * 60 * 60 * 1000).toISOString(),
-            close: pricesInHour[pricesInHour.length - 1]
-          })
-        })
+        const klines = await res.json()
+        const hourlyPrices = klines.map(k => ({
+          timestamp: new Date(k[0]).toISOString(),
+          close: parseFloat(k[4]) / gbpusd // Convert to GBP
+        }))
         
         prices[coin] = hourlyPrices
         console.log(`  ${coin}: ${hourlyPrices.length} hourly prices`)
@@ -304,9 +280,6 @@ async function fetchHourlyPrices(coins, startTime, endTime, gbpusd) {
         console.warn(`  ${coin}: Price fetch failed (${res.status})`)
         prices[coin] = []
       }
-      
-      // Rate limiting
-      await new Promise(resolve => setTimeout(resolve, 200))
       
     } catch (err) {
       console.error(`Price fetch failed for ${coin}:`, err)

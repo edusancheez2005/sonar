@@ -15,11 +15,9 @@ import {
   interpretAltRank,
   LunarCrushEnhancedData
 } from './lunarcrush-api'
-import {
-  getCoinById,
-  getMarketChart,
-} from '@/lib/coingecko/client'
-import { coinRegistry } from '@/lib/coingecko/coin-registry'
+import { getKlines, get24hrTicker, getRollingTicker } from '@/lib/binance/client'
+import type { BinanceKline, Binance24hrTicker } from '@/lib/binance/client'
+import { symbolToPair, daysToInterval } from '@/lib/binance/symbol-map'
 import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 import { 
   formatWhaleMovesDetailed,
@@ -156,44 +154,49 @@ interface WhaleAlertsData {
 }
 
 /**
- * Fetch CoinGecko chart data for trend analysis
+ * Fetch Binance chart data for trend analysis (replaces CoinGecko)
  */
-async function fetchCoinGeckoChartData(ticker: string) {
+async function fetchBinanceChartData(ticker: string) {
   try {
-    // Resolve ticker to CoinGecko ID
-    const metadata = await coinRegistry.resolve(ticker)
-    if (!metadata) {
-      console.log(`⚠️ CoinGecko: ${ticker} not found in registry`)
+    const pair = symbolToPair(ticker)
+    if (!pair) {
+      console.log(`⚠️ Binance: ${ticker} not mapped`)
       return null
     }
 
-    // Fetch 1-day (granular), 7-day and 30-day chart data + enriched coin details
-    const [chart1d, chart7d, chart30d, coinDetails] = await Promise.all([
-      getMarketChart(metadata.id, 1, 'hourly').catch(() => null),
-      getMarketChart(metadata.id, 7, 'daily').catch(() => null),
-      getMarketChart(metadata.id, 30, 'daily').catch(() => null),
-      getCoinById(metadata.id, { market_data: true, community_data: true, developer_data: true }).catch(() => null),
+    const now = Date.now()
+    // Fetch 1-day (5m candles), 7-day (1h candles), 30-day (4h candles) in parallel
+    const [klines1d, klines7d, klines30d, ticker24h] = await Promise.all([
+      getKlines(pair, '5m', 288, now - 86400000).catch((): BinanceKline[] => []),
+      getKlines(pair, '1h', 168, now - 7 * 86400000).catch((): BinanceKline[] => []),
+      getKlines(pair, '4h', 180, now - 30 * 86400000).catch((): BinanceKline[] => []),
+      get24hrTicker(pair).catch((): Binance24hrTicker[] => []),
     ])
 
     return {
-      id: metadata.id,
-      name: metadata.name,
-      image_url: metadata.image_url,
-      chart_1d: chart1d,
-      chart_7d: chart7d,
-      chart_30d: chart30d,
-      details: coinDetails,
+      id: ticker.toLowerCase(),
+      name: ticker,
+      image_url: null,
+      chart_1d: klines1d.length > 0 ? { prices: klines1d.map(k => [k.openTime, k.close] as [number, number]), total_volumes: klines1d.map(k => [k.openTime, k.quoteVolume] as [number, number]) } : null,
+      chart_7d: klines7d.length > 0 ? { prices: klines7d.map(k => [k.openTime, k.close] as [number, number]), total_volumes: klines7d.map(k => [k.openTime, k.quoteVolume] as [number, number]) } : null,
+      chart_30d: klines30d.length > 0 ? { prices: klines30d.map(k => [k.openTime, k.close] as [number, number]), total_volumes: klines30d.map(k => [k.openTime, k.quoteVolume] as [number, number]) } : null,
+      ticker24h: ticker24h[0] || null,
+      // Taker buy pressure from 7d klines
+      taker_buy_ratio_7d: klines7d.length > 0
+        ? klines7d.reduce((sum, k) => sum + k.takerBuyBaseVol, 0) / Math.max(klines7d.reduce((sum, k) => sum + k.volume, 0), 1)
+        : null,
+      details: null,
     }
   } catch (error) {
-    console.error(`CoinGecko fetch error for ${ticker}:`, error)
+    console.error(`Binance fetch error for ${ticker}:`, error)
     return null
   }
 }
 
 /**
- * Process CoinGecko chart data for Orca
+ * Process Binance chart data for Orca (same output shape as old CoinGecko processor)
  */
-function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
+function processBinanceChartData(data: any): CoinGeckoChartData | undefined {
   if (!data || !data.chart_7d) return undefined
 
   try {
@@ -246,6 +249,13 @@ function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
       return 'stable'
     }
 
+    // Compute multi-timeframe price changes from kline data
+    const computeChange = (prices: [number, number][]) => {
+      if (prices.length < 2) return null
+      return ((prices[prices.length - 1][1] - prices[0][1]) / prices[0][1]) * 100
+    }
+    const t24h = data.ticker24h
+
     return {
       id: data.id,
       name: data.name,
@@ -255,41 +265,38 @@ function processCoinGeckoChartData(data: any): CoinGeckoChartData | undefined {
       volatility_7d: calculateVolatility(prices7d),
       price_swing_7d: get7dSwing(prices7d),
       volume_trend: getVolumeTrend(volumes7d),
-      market_cap_rank: data.details?.market_cap_rank || null,
-      // Enriched data from /coins/{id}
-      sentiment_votes_up_pct: data.details?.sentiment_votes_up_percentage || null,
-      watchlist_users: data.details?.watchlist_portfolio_users || null,
-      community_data: data.details?.community_data || null,
-      developer_data: data.details?.developer_data || null,
-      market_data_enriched: data.details?.market_data ? {
-        price_change_1h: data.details.market_data.price_change_percentage_1h_in_currency?.usd || null,
-        price_change_24h: data.details.market_data.price_change_percentage_24h || null,
-        price_change_7d: data.details.market_data.price_change_percentage_7d || null,
-        price_change_14d: data.details.market_data.price_change_percentage_14d || null,
-        price_change_30d: data.details.market_data.price_change_percentage_30d || null,
-        price_change_60d: data.details.market_data.price_change_percentage_60d || null,
-        price_change_200d: data.details.market_data.price_change_percentage_200d || null,
-        price_change_1y: data.details.market_data.price_change_percentage_1y || null,
-        total_supply: data.details.market_data.total_supply || null,
-        max_supply: data.details.market_data.max_supply || null,
-        circulating_supply: data.details.market_data.circulating_supply || null,
-        fdv: data.details.market_data.fully_diluted_valuation?.usd || null,
-        mcap_fdv_ratio: data.details.market_data.market_cap_fdv_ratio || null,
-        total_volume: data.details.market_data.total_volume?.usd || null,
-        volume_to_mcap: data.details.market_data.total_volume?.usd && data.details.market_data.market_cap?.usd
-          ? (data.details.market_data.total_volume.usd / data.details.market_data.market_cap.usd) : null,
+      market_cap_rank: null,
+      sentiment_votes_up_pct: null,
+      watchlist_users: null,
+      community_data: null,
+      developer_data: null,
+      // Computed from Binance klines instead of CoinGecko market_data
+      market_data_enriched: t24h ? {
+        price_change_1h: null, // Would need 1h rolling ticker
+        price_change_24h: t24h.priceChangePercent ?? null,
+        price_change_7d: computeChange(prices7d),
+        price_change_14d: null,
+        price_change_30d: computeChange(prices30d),
+        price_change_60d: null,
+        price_change_200d: null,
+        price_change_1y: null,
+        total_supply: null,
+        max_supply: null,
+        circulating_supply: null,
+        fdv: null,
+        mcap_fdv_ratio: null,
+        total_volume: t24h.quoteVolume ?? null,
+        volume_to_mcap: null,
       } : null,
-      // 24-hour sparkline: hourly data points
       sparkline_24h: prices1d.length > 0
         ? prices1d.map((p: [number, number]) => p[1])
         : null,
-      // 7-day sparkline: sample every 4th point to get ~42 data points
       sparkline_7d: prices7d.length > 0 
         ? prices7d.filter((_: any, i: number) => i % 4 === 0).map((p: [number, number]) => p[1])
         : null,
     }
   } catch (error) {
-    console.error('Error processing CoinGecko chart data:', error)
+    console.error('Error processing Binance chart data:', error)
     return undefined
   }
 }
@@ -335,7 +342,7 @@ export async function buildOrcaContext(
     tracked(fetchLunarCrushAI(ticker), 'social', (d: any) => d?.sentiment_pct != null ? `${d.sentiment_pct}% bullish` : 'Social data loaded'),
     tracked(fetchWhaleAlerts(ticker, supabase), 'whale_alerts', (d: any[]) => `${d?.length || 0} large alerts`),
     tracked(fetchLunarCrushEnhanced(ticker), 'lunarcrush', (d: any) => d?.coin?.galaxy_score ? `Galaxy Score ${d.coin.galaxy_score}` : 'Loaded'),
-    tracked(fetchCoinGeckoChartData(ticker), 'charts', (d: any) => d ? '7d/30d charts loaded' : 'No chart data'),
+    tracked(fetchBinanceChartData(ticker), 'charts', (d: any) => d ? '7d/30d charts loaded' : 'No chart data'),
   ])
   
   return {
@@ -347,7 +354,7 @@ export async function buildOrcaContext(
     news: processNewsData(newsData),
     whaleAlerts: processWhaleAlertsData(whaleAlertsData),
     lunarcrush: processLunarCrushData(lunarcrushData),
-    coingecko: processCoinGeckoChartData(coingeckoData)
+    coingecko: processBinanceChartData(coingeckoData)
   }
 }
 
@@ -719,139 +726,37 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
       console.error('Error fetching price snapshots:', error)
     }
     
-    // CoinGecko ID mapping (expanded)
-    const coinGeckoIds: Record<string, string> = {
-      'BTC': 'bitcoin',
-      'ETH': 'ethereum',
-      'SOL': 'solana',
-      'ADA': 'cardano',
-      'XRP': 'ripple',
-      'DOGE': 'dogecoin',
-      'SHIB': 'shiba-inu',
-      'PEPE': 'pepe',
-      'MATIC': 'matic-network',
-      'POL': 'matic-network',
-      'DOT': 'polkadot',
-      'LINK': 'chainlink',
-      'AVAX': 'avalanche-2',
-      'UNI': 'uniswap',
-      'LTC': 'litecoin',
-      'BNB': 'binancecoin',
-      'BONK': 'bonk',
-      'WIF': 'dogwifcoin',
-      'FLOKI': 'floki',
-      'AAVE': 'aave',
-      'CRV': 'curve-dao-token',
-      'SUSHI': 'sushi',
-      'ATOM': 'cosmos',
-      'NEAR': 'near',
-      // Additional tokens
-      'ANKR': 'ankr',
-      'FET': 'fetch-ai',
-      'RENDER': 'render-token',
-      'RNDR': 'render-token',
-      'ARB': 'arbitrum',
-      'OP': 'optimism',
-      'IMX': 'immutable-x',
-      'APE': 'apecoin',
-      'SAND': 'the-sandbox',
-      'MANA': 'decentraland',
-      'AXS': 'axie-infinity',
-      'ENS': 'ethereum-name-service',
-      'LDO': 'lido-dao',
-      'RPL': 'rocket-pool',
-      'MKR': 'maker',
-      'COMP': 'compound-governance-token',
-      'SNX': 'synthetix-network-token',
-      'GRT': 'the-graph',
-      'FIL': 'filecoin',
-      'THETA': 'theta-token',
-      'VET': 'vechain',
-      'ALGO': 'algorand',
-      'HBAR': 'hedera',
-      'ICP': 'internet-computer',
-      'TRX': 'tron',
-      'XLM': 'stellar',
-      'ETC': 'ethereum-classic',
-      'XMR': 'monero',
-      'BCH': 'bitcoin-cash',
-      'APT': 'aptos',
-      'SUI': 'sui',
-      'SEI': 'sei-network',
-      'INJ': 'injective-protocol',
-      'TIA': 'celestia',
-      'STX': 'blockstack',
-      'RUNE': 'thorchain',
-      'CAKE': 'pancakeswap-token',
-      '1INCH': '1inch',
-      'BAT': 'basic-attention-token',
-      'ENJ': 'enjincoin',
-      'CHZ': 'chiliz',
-      'GALA': 'gala',
-      'BLUR': 'blur',
-      'MAGIC': 'magic',
-      'GMX': 'gmx',
-      'PENDLE': 'pendle',
-      'JUP': 'jupiter-exchange-solana',
-      'PYTH': 'pyth-network',
-      'WLD': 'worldcoin-wld',
-      'ORDI': 'ordinals',
-      'AI': 'sleepless-ai',
-      'TAO': 'bittensor',
-      'AGIX': 'singularitynet',
-      'OCEAN': 'ocean-protocol'
-    }
+    // Binance pair mapping for live price data
+    const pair = symbolToPair(ticker)
     
-    const coinId = coinGeckoIds[ticker.toUpperCase()]
     let athData: any = null
     let livePrice: any = null
     
-    // ALWAYS fetch live CoinGecko data (more reliable than DB snapshots)
-    if (coinId) {
+    // Fetch live Binance data (replaces CoinGecko Pro API)
+    if (pair) {
       try {
-        console.log(`📊 Fetching live CoinGecko data for ${ticker} (${coinId})...`)
-        const cgResponse = await fetch(
-          `https://pro-api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false`,
-          {
-            headers: { 'x-cg-pro-api-key': process.env.COINGECKO_API_KEY || '' }
-          }
-        )
+        console.log(`📊 Fetching live Binance data for ${ticker} (${pair})...`)
+        const ticker24h = await get24hrTicker(pair)
         
-        if (cgResponse.ok) {
-          const cgData = await cgResponse.json()
-          console.log(`✅ Got live price for ${ticker}: $${cgData.market_data?.current_price?.usd}`)
+        if (ticker24h.length > 0) {
+          const t = ticker24h[0]
+          console.log(`✅ Got live price for ${ticker}: $${t.lastPrice}`)
           
-          // Store ATH data
-          athData = {
-            ath: cgData.market_data?.ath?.usd || null,
-            ath_date: cgData.market_data?.ath_date?.usd || null,
-            ath_change_percentage: cgData.market_data?.ath_change_percentage?.usd || null,
-            atl: cgData.market_data?.atl?.usd || null,
-            atl_date: cgData.market_data?.atl_date?.usd || null,
-            atl_change_percentage: cgData.market_data?.atl_change_percentage?.usd || null,
-            market_cap_rank: cgData.market_cap_rank || null,
-            total_supply: cgData.market_data?.total_supply || null,
-            circulating_supply: cgData.market_data?.circulating_supply || null
-          }
-          
-          // Create a live price snapshot (use this if DB is empty)
           livePrice = {
             ticker: ticker.toUpperCase(),
-            price_usd: cgData.market_data?.current_price?.usd || 0,
-            price_change_24h: cgData.market_data?.price_change_percentage_24h || 0,
-            market_cap: cgData.market_data?.market_cap?.usd || 0,
-            volume_24h: cgData.market_data?.total_volume?.usd || 0,
+            price_usd: t.lastPrice,
+            price_change_24h: t.priceChangePercent,
+            market_cap: 0, // Binance doesn't provide market cap
+            volume_24h: t.quoteVolume,
             timestamp: new Date().toISOString()
           }
-        } else {
-          console.error(`CoinGecko API error: ${cgResponse.status}`)
         }
-      } catch (cgError) {
-        console.error(`Error fetching CoinGecko data for ${ticker}:`, cgError)
+      } catch (bnError) {
+        console.error(`Error fetching Binance data for ${ticker}:`, bnError)
       }
     }
     
-    // Use DB snapshots if available, otherwise use live CoinGecko data
+    // Use DB snapshots if available, otherwise use live Binance data
     const finalSnapshots = (snapshots && snapshots.length > 0) ? snapshots : (livePrice ? [livePrice] : [])
     
     console.log(`📈 Price data for ${ticker}: ${finalSnapshots.length} snapshots, current: $${finalSnapshots[0]?.price_usd || 0}`)
@@ -1284,7 +1189,7 @@ ${context.whaleAlerts.recent_alerts.slice(0, 5).map((a: any) =>
 CONTEXT FOR ${context.ticker}
 ${'='.repeat(50)}
 
-PRICE DATA (CoinGecko):
+PRICE DATA (Binance):
 Current Price: ${formatCurrency(context.price.current)}
 24h Change: ${formatPercentage(context.price.change_24h)}
 Market Cap: ${formatCurrency(context.price.market_cap)}
@@ -1294,13 +1199,13 @@ ${context.price.ath ? `All Time High: ${formatCurrency(context.price.ath)}${cont
 ${context.price.ath_distance !== null ? `Distance from ATH: ${formatPercentage(context.price.ath_distance)} ${context.price.ath_distance < -50 ? '[SIGNIFICANT DISCOUNT]' : context.price.ath_distance < -30 ? '[NOTABLE DISCOUNT]' : context.price.ath_distance > -10 ? '[NEAR ATH]' : ''}` : ''}
 ${context.price.market_cap_rank ? `Market Cap Rank: #${context.price.market_cap_rank}` : ''}
 
-${context.coingecko ? `CHART & TREND ANALYSIS (CoinGecko Pro):
+${context.coingecko ? `CHART & TREND ANALYSIS (Binance):
 7-Day Trend: ${context.coingecko.trend_7d.toUpperCase()} ${context.coingecko.trend_7d === 'bullish' ? '[UPTREND]' : context.coingecko.trend_7d === 'bearish' ? '[DOWNTREND]' : '[SIDEWAYS]'}
 30-Day Trend: ${context.coingecko.trend_30d.toUpperCase()}
 7-Day Price Range: ${formatCurrency(context.coingecko.price_swing_7d.low)} - ${formatCurrency(context.coingecko.price_swing_7d.high)}
 Volatility (7d): ${context.coingecko.volatility_7d.toFixed(2)}% ${context.coingecko.volatility_7d > 10 ? '[HIGH VOLATILITY]' : context.coingecko.volatility_7d < 5 ? '[LOW VOLATILITY]' : '[MODERATE]'}
 Volume Trend: ${context.coingecko.volume_trend.toUpperCase()} ${context.coingecko.volume_trend === 'increasing' ? '[RISING INTEREST]' : context.coingecko.volume_trend === 'decreasing' ? '[DECLINING INTEREST]' : ''}
-${(context.coingecko as any).sentiment_votes_up_pct != null ? `CoinGecko Community Sentiment: ${(context.coingecko as any).sentiment_votes_up_pct.toFixed(1)}% bullish votes` : ''}
+${(context.coingecko as any).sentiment_votes_up_pct != null ? `Community Sentiment: ${(context.coingecko as any).sentiment_votes_up_pct.toFixed(1)}% bullish votes` : ''}
 ${(context.coingecko as any).watchlist_users ? `Watchlist Users: ${formatLargeNumber((context.coingecko as any).watchlist_users)} (popularity indicator)` : ''}
 ${(context.coingecko as any).market_data_enriched ? `
 MULTI-TIMEFRAME PRICE CHANGES:

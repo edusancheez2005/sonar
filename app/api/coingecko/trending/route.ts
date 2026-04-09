@@ -1,86 +1,87 @@
 /**
  * API Route: Get trending coins and top gainers/losers
- * Uses /coins/markets as fallback for gainers/losers (compatible with all API tiers)
+ * Data source: Binance 24hr ticker (replaced CoinGecko)
+ * Trending = highest volume; gainers/losers = 24h price change
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getTrending, getCoinsMarkets } from '@/lib/coingecko/client'
+import { get24hrTicker } from '@/lib/binance/client'
+import { pairToSymbol } from '@/lib/binance/symbol-map'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+// Token name map for display (Binance only gives symbols)
+const TOKEN_NAMES: Record<string, string> = {
+  BTC: 'Bitcoin', ETH: 'Ethereum', BNB: 'BNB', SOL: 'Solana',
+  XRP: 'XRP', ADA: 'Cardano', DOGE: 'Dogecoin', AVAX: 'Avalanche',
+  DOT: 'Polkadot', LINK: 'Chainlink', UNI: 'Uniswap', ATOM: 'Cosmos',
+  LTC: 'Litecoin', FIL: 'Filecoin', NEAR: 'NEAR Protocol', APT: 'Aptos',
+  ARB: 'Arbitrum', OP: 'Optimism', AAVE: 'Aave', MKR: 'Maker',
+  CRV: 'Curve', SNX: 'Synthetix', COMP: 'Compound', SUSHI: 'SushiSwap',
+  ALGO: 'Algorand', FTM: 'Fantom', SAND: 'The Sandbox', MANA: 'Decentraland',
+  AXS: 'Axie Infinity', GRT: 'The Graph', SHIB: 'Shiba Inu', PEPE: 'Pepe',
+  WLD: 'Worldcoin', SUI: 'Sui', SEI: 'Sei', TIA: 'Celestia',
+  INJ: 'Injective', STX: 'Stacks', IMX: 'Immutable', RENDER: 'Render',
+  FET: 'Fetch.ai', JUP: 'Jupiter', WIF: 'dogwifhat', BONK: 'Bonk',
+  FLOKI: 'Floki', JASMY: 'JasmyCoin', ENA: 'Ethena', PENDLE: 'Pendle',
+  TAO: 'Bittensor', ONDO: 'Ondo', TRX: 'Tron', TON: 'Toncoin',
+  ETC: 'Ethereum Classic', XLM: 'Stellar', HBAR: 'Hedera', VET: 'VeChain',
+  ICP: 'Internet Computer', THETA: 'Theta', RUNE: 'THORChain', ENS: 'ENS',
+  MATIC: 'Polygon', POL: 'Polygon',
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const timeframe = searchParams.get('timeframe') || '24h'
+    const allTickers = await get24hrTicker()
 
-    // Map timeframe to price_change_percentage parameter
-    const priceChangeParam = timeframe === '1h' ? '1h' 
-      : timeframe === '7d' ? '7d'
-      : timeframe === '30d' ? '30d'
-      : '24h'
-
-    // Fetch trending and market data
-    const [trending, marketData] = await Promise.all([
-      getTrending(),
-      getCoinsMarkets({
-        vs_currency: 'usd',
-        order: 'market_cap_desc',
-        per_page: 100,
-        page: 1,
-        sparkline: false,
-        price_change_percentage: priceChangeParam,
+    // Filter to only USDT pairs we track
+    const tracked = allTickers
+      .filter(t => t.symbol.endsWith('USDT'))
+      .map(t => {
+        const sym = pairToSymbol(t.symbol)
+        if (!sym) return null
+        return {
+          id: sym.toLowerCase(),
+          symbol: sym.toLowerCase(),
+          name: TOKEN_NAMES[sym] || sym,
+          image: null, // Frontend uses TokenIcon component which handles this
+          current_price: t.lastPrice,
+          market_cap: null,
+          market_cap_rank: null,
+          price_change_percentage_24h: t.priceChangePercent,
+          price_change_percentage: t.priceChangePercent,
+          volume: t.quoteVolume,
+        }
       })
-    ])
+      .filter(Boolean) as any[]
 
-    // Calculate gainers and losers from market data
-    const sortedByChange = [...marketData].sort((a, b) => {
-      const aChange = timeframe === '1h' ? (a.price_change_percentage_1h_in_currency || 0)
-        : timeframe === '7d' ? (a.price_change_percentage_7d_in_currency || 0)
-        : timeframe === '30d' ? (a.price_change_percentage_30d_in_currency || 0)
-        : (a.price_change_percentage_24h || 0)
-      
-      const bChange = timeframe === '1h' ? (b.price_change_percentage_1h_in_currency || 0)
-        : timeframe === '7d' ? (b.price_change_percentage_7d_in_currency || 0)
-        : timeframe === '30d' ? (b.price_change_percentage_30d_in_currency || 0)
-        : (b.price_change_percentage_24h || 0)
-      
-      return bChange - aChange
-    })
+    // Trending = highest quote volume (most traded)
+    const trending = [...tracked]
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 15)
+      .map(t => ({
+        id: t.id,
+        symbol: t.symbol,
+        name: t.name,
+        large: t.image,
+        thumb: t.image,
+        market_cap_rank: t.market_cap_rank,
+        price_btc: null,
+        data: { price_change_percentage_24h: { usd: t.price_change_percentage_24h } },
+      }))
 
-    const top_gainers = sortedByChange.slice(0, 20).map(coin => ({
-      id: coin.id,
-      symbol: coin.symbol,
-      name: coin.name,
-      image: coin.image,
-      current_price: coin.current_price,
-      market_cap: coin.market_cap,
-      market_cap_rank: coin.market_cap_rank,
-      price_change_percentage_24h: coin.price_change_percentage_24h,
-      price_change_percentage: timeframe === '1h' ? coin.price_change_percentage_1h_in_currency
-        : timeframe === '7d' ? coin.price_change_percentage_7d_in_currency
-        : timeframe === '30d' ? coin.price_change_percentage_30d_in_currency
-        : coin.price_change_percentage_24h,
-    }))
+    // Top gainers = highest 24h % change
+    const sortedByChange = [...tracked].sort(
+      (a, b) => b.price_change_percentage - a.price_change_percentage
+    )
 
-    const top_losers = sortedByChange.slice(-20).reverse().map(coin => ({
-      id: coin.id,
-      symbol: coin.symbol,
-      name: coin.name,
-      image: coin.image,
-      current_price: coin.current_price,
-      market_cap: coin.market_cap,
-      market_cap_rank: coin.market_cap_rank,
-      price_change_percentage_24h: coin.price_change_percentage_24h,
-      price_change_percentage: timeframe === '1h' ? coin.price_change_percentage_1h_in_currency
-        : timeframe === '7d' ? coin.price_change_percentage_7d_in_currency
-        : timeframe === '30d' ? coin.price_change_percentage_30d_in_currency
-        : coin.price_change_percentage_24h,
-    }))
+    const top_gainers = sortedByChange.slice(0, 20)
+    const top_losers = sortedByChange.slice(-20).reverse()
 
     return NextResponse.json({
       success: true,
-      trending: trending.coins.map(c => c.item),
+      trending,
       top_gainers,
       top_losers,
       timestamp: new Date().toISOString(),
