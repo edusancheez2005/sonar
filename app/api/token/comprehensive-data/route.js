@@ -158,7 +158,8 @@ export async function GET(req) {
     }
 
     // 1. Get Binance market data (replaces CoinGecko)
-    const pair = symbol === 'WBTC' ? 'BTCUSDT' : symbol === 'WETH' ? 'ETHUSDT' : `${symbol}USDT`
+    const PAIR_MAP = { WBTC: 'BTCUSDT', WETH: 'ETHUSDT', MATIC: 'POLUSDT' }
+    const pair = PAIR_MAP[symbol] || `${symbol}USDT`
     try {
       const [ticker24hRes, klines7dRes, klines30dRes] = await Promise.all([
         fetch(`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${pair}`, {

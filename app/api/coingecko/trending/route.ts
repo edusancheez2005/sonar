@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
           price_change_percentage_24h: t.priceChangePercent,
           price_change_percentage: t.priceChangePercent,
           volume: t.quoteVolume,
+          total_volume: t.quoteVolume,
+          score: Math.round(t.quoteVolume / 1000000), // Volume-based score (millions)
         }
       })
       .filter(Boolean) as any[]
@@ -67,6 +69,10 @@ export async function GET(request: NextRequest) {
         large: t.image,
         thumb: t.image,
         market_cap_rank: t.market_cap_rank,
+        current_price: t.current_price,
+        price_change_percentage: t.price_change_percentage,
+        total_volume: t.total_volume,
+        score: t.score,
         price_btc: null,
         data: { price_change_percentage_24h: { usd: t.price_change_percentage_24h } },
       }))

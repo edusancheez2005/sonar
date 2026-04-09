@@ -37,8 +37,9 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Symbol must be 1-10 alphanumeric characters' }, { status: 400 })
     }
 
-    // Map to Binance pair
-    const pair = symbol === 'WBTC' ? 'BTCUSDT' : symbol === 'WETH' ? 'ETHUSDT' : `${symbol}USDT`
+    // Map to Binance pair (handle rebrands)
+    const PAIR_MAP = { WBTC: 'BTCUSDT', WETH: 'ETHUSDT', MATIC: 'POLUSDT' }
+    const pair = PAIR_MAP[symbol] || `${symbol}USDT`
 
     // Fetch Binance 24hr ticker + 7d/30d klines in parallel
     const [ticker24hRes, klines7dRes, klines30dRes] = await Promise.all([
@@ -97,7 +98,9 @@ export async function GET(req) {
       change1y: 0,
 
       high_24h: high24,
+      high24h: high24,
       low_24h: low24,
+      low24h: low24,
       range_position_24h: high24 && low24 && high24 !== low24
         ? ((currentPrice - low24) / (high24 - low24) * 100).toFixed(2)
         : null,
