@@ -458,7 +458,7 @@ export default function ClientOrca() {
   const [agentSteps, setAgentSteps] = useState([]) // Real-time SSE progress steps
   const [quota, setQuota] = useState(null)
   const [session, setSession] = useState(null)
-  const [isPremium, setIsPremium] = useState(false)
+  const [isPremium, setIsPremium] = useState(true) // All features unlocked
   const [checkingPremium, setCheckingPremium] = useState(true)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [sessions, setSessions] = useState([])

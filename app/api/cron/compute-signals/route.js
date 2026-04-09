@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { computeUnifiedSignal } from '@/app/lib/signalEngine'
 import { computeTechnicalIndicators } from '@/app/lib/technicalAnalysis'
 import { fetchDerivativesData } from '@/app/lib/derivativesData'
-import { coinRegistry } from '@/lib/coingecko/coin-registry'
+import { symbolToPair } from '@/lib/binance/symbol-map'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120 // allow up to 120s for batch processing (50 tokens)
@@ -145,7 +145,7 @@ async function getActiveTokens() {
  * Gather all data sources for a single token and compute the signal.
  */
 async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
-  // Parallel data fetching — use cached price snapshots first, CoinGecko as fallback
+  // Parallel data fetching — use cached price snapshots first, Binance as fallback
   const [transactions, sentimentData, cachedPrice, socialData, communityVotes, priceHistory] = await Promise.all([
     fetchWhaleTransactions(tokenSymbol),
     fetchSentimentScore(tokenSymbol),
@@ -169,7 +169,7 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
   // Build price changes object
   const priceChanges = priceData ? {
     change_1h: priceData.price_change_percentage_1h_in_currency || 0,
-    change_6h: 0, // CoinGecko doesn't provide 6h natively
+    change_6h: 0, // Binance 24hr ticker doesn't provide 6h natively
     change_24h: priceData.price_change_percentage_24h || 0,
     change_7d: priceData.price_change_percentage_7d || 0,
     change_30d: priceData.price_change_percentage_30d || 0,
@@ -182,7 +182,7 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
     market_cap: priceData.market_cap || 0,
   } : {}
 
-  // Dev activity from CoinGecko (if available)
+  // Dev activity (not available from Binance — would need separate GitHub API integration)
   const devActivity = priceData?.developer_data ? {
     commits: priceData.developer_data.commit_count_4_weeks || 0,
     contributors: priceData.developer_data.contributors || 0,
@@ -234,6 +234,10 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
       else if (signal.score > 20) signal.signal = 'SELL'
     }
   }
+
+  // Record price at signal time for accuracy tracking
+  signal.price_at_signal = priceData?.current_price || null
+  signal.market_cap = priceData?.market_cap || null
 
   return signal
 }
@@ -410,79 +414,35 @@ async function fetchCachedPrice(tokenSymbol) {
 
 
 async function fetchPriceData(tokenSymbol) {
-  // Static fallback map for when coinRegistry is unavailable
-  const SYMBOL_TO_ID = {
-    BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', XRP: 'ripple',
-    BNB: 'binancecoin', ADA: 'cardano', DOGE: 'dogecoin', AVAX: 'avalanche-2',
-    DOT: 'polkadot', MATIC: 'matic-network', POL: 'matic-network',
-    LINK: 'chainlink', UNI: 'uniswap', SHIB: 'shiba-inu', LTC: 'litecoin',
-    ATOM: 'cosmos', FIL: 'filecoin', APT: 'aptos', ARB: 'arbitrum',
-    OP: 'optimism', NEAR: 'near', IMX: 'immutable-x', AAVE: 'aave',
-    MKR: 'maker', CRV: 'curve-dao-token', SNX: 'havven',
-    COMP: 'compound-governance-token', LDO: 'lido-dao', PEPE: 'pepe',
-    WIF: 'dogwifcoin', STRK: 'starknet', FET: 'artificial-superintelligence-alliance', 'RENDER': 'render-token',
-    INJ: 'injective-protocol', SEI: 'sei-network', SUI: 'sui', TIA: 'celestia',
-    JUP: 'jupiter-exchange-solana', TRX: 'tron', BONK: 'bonk',
-    JTO: 'jito-governance-token', PYTH: 'pyth-network', RAY: 'raydium',
-    ORCA: 'orca', ETC: 'ethereum-classic', XLM: 'stellar', HBAR: 'hedera-hashgraph',
-    VET: 'vechain', ICP: 'internet-computer', ALGO: 'algorand',
-    GRT: 'the-graph', SAND: 'the-sandbox', MANA: 'decentraland',
-    AXS: 'axie-infinity', ENS: 'ethereum-name-service', SUSHI: 'sushi',
-    BAL: 'balancer', YFI: 'yearn-finance', '1INCH': '1inch',
-    BAT: 'basic-attention-token', ZRX: '0x', GALA: 'gala', ENJ: 'enjincoin',
-    CHZ: 'chiliz', DYDX: 'dydx', GMX: 'gmx', RUNE: 'thorchain',
-    FTM: 'fantom', STX: 'blockstack', KAS: 'kaspa', TAO: 'bittensor',
-    RNDR: 'render-token', WLD: 'worldcoin-wld', JASMY: 'jasmycoin',
-    ENA: 'ethena', PENDLE: 'pendle', ONDO: 'ondo-finance', FLOKI: 'floki',
-    TON: 'the-open-network', THETA: 'theta-token', 'RPL': 'rocket-pool',
-    WETH: 'weth', WBTC: 'wrapped-bitcoin', STETH: 'staked-ether',
-    ETHFI: 'ether-fi', EIGEN: 'eigenlayer', SSV: 'ssv-network',
-    W: 'wormhole', MANTA: 'manta-network', DYM: 'dymension',
-    PIXEL: 'pixel-game', PORTAL: 'portal-2', ALT: 'altlayer',
-  }
-
-  // Try coinRegistry first (dynamic resolution with search fallback)
-  let coinId = SYMBOL_TO_ID[tokenSymbol]
-  if (!coinId) {
-    try {
-      const metadata = await coinRegistry.resolve(tokenSymbol)
-      if (metadata) coinId = metadata.id
-    } catch (err) {
-      console.warn(`[SignalEngine] coinRegistry resolve failed for ${tokenSymbol}:`, err.message)
-    }
-  }
-
-  if (!coinId) {
-    console.warn(`[SignalEngine] No CoinGecko ID for ${tokenSymbol}`)
+  // Use Binance as primary price source (replaces CoinGecko)
+  const pair = symbolToPair(tokenSymbol)
+  if (!pair) {
+    console.warn(`[SignalEngine] No Binance pair for ${tokenSymbol}`)
     return null
   }
 
   try {
-    const apiKey = process.env.COINGECKO_API_KEY || ''
-    const baseUrl = apiKey ? 'https://pro-api.coingecko.com/api/v3' : 'https://api.coingecko.com/api/v3'
-    const headers = apiKey ? { 'x-cg-pro-api-key': apiKey } : {}
-
     const res = await fetch(
-      `${baseUrl}/coins/${coinId}?localization=false&tickers=false&community_data=true&developer_data=true&sparkline=false`,
-      { headers, signal: AbortSignal.timeout(10000) }
+      `https://api.binance.com/api/v3/ticker/24hr?symbol=${pair}`,
+      { signal: AbortSignal.timeout(10000) }
     )
 
     if (!res.ok) return null
-    const json = await res.json()
+    const t = await res.json()
 
     return {
-      current_price: json.market_data?.current_price?.usd || 0,
-      price_change_percentage_1h_in_currency: json.market_data?.price_change_percentage_1h_in_currency?.usd || 0,
-      price_change_percentage_24h: json.market_data?.price_change_percentage_24h || 0,
-      price_change_percentage_7d: json.market_data?.price_change_percentage_7d || 0,
-      price_change_percentage_30d: json.market_data?.price_change_percentage_30d || 0,
-      total_volume: json.market_data?.total_volume?.usd || 0,
-      market_cap: json.market_data?.market_cap?.usd || 0,
-      developer_data: json.developer_data || null,
-      community_data: json.community_data || null,
+      current_price: parseFloat(t.lastPrice) || 0,
+      price_change_percentage_1h_in_currency: 0, // Not directly available from 24hr ticker
+      price_change_percentage_24h: parseFloat(t.priceChangePercent) || 0,
+      price_change_percentage_7d: 0,
+      price_change_percentage_30d: 0,
+      total_volume: parseFloat(t.quoteVolume) || 0,
+      market_cap: 0,
+      developer_data: null,
+      community_data: null,
     }
   } catch (err) {
-    console.error(`[SignalEngine] CoinGecko error for ${tokenSymbol}:`, err.message)
+    console.error(`[SignalEngine] Binance error for ${tokenSymbol}:`, err.message)
     return null
   }
 }

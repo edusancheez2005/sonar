@@ -176,7 +176,7 @@ export default function TrendingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState('24h')
-  const [isPremium, setIsPremium] = useState(false)
+  const [isPremium, setIsPremium] = useState(true) // All features unlocked
   const [whaleData, setWhaleData] = useState({}) // symbol -> whale stats
   // Category social trending (LunarCrush)
   const [activeCategory, setActiveCategory] = useState('defi')

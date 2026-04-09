@@ -6,7 +6,7 @@ import RequirePremiumClient from './RequirePremiumClient'
 export default function DashboardWrapper() {
   return (
     <RequirePremiumClient>
-      {({ isPremium }) => <Dashboard isPremium={isPremium} />}
+      {({ isPremium }) => <Dashboard isPremium={true} />}
     </RequirePremiumClient>
   )
 }

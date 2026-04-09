@@ -46,7 +46,7 @@ export async function checkRateLimit(
         .single()
       
       const plan = profile?.plan || 'free'
-      const limit = plan === 'unlimited' ? 999999 : (plan === 'pro' || plan === 'premium') ? 5 : 2
+      const limit = 999999 // All plans get unlimited access
       
       // Create today's quota
       const { data: newQuota, error: insertError } = await supabase

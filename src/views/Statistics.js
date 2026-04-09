@@ -272,7 +272,7 @@ export default function Statistics() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const [isPremium, setIsPremium] = useState(false)
+  const [isPremium, setIsPremium] = useState(true) // All features unlocked
 
   const debounceRef = useRef(null)
   const prevFiltersRef = useRef({ token:'', side:'', chain:'', minUsd:'', maxUsd:'', sinceHours:24 })
