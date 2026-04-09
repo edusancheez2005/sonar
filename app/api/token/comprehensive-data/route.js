@@ -157,11 +157,12 @@ export async function GET(req) {
       news: null
     }
 
-    // 1. Get Binance market data (replaces CoinGecko)
+    // 1. Get Binance price data + CoinGecko metadata in parallel
     const PAIR_MAP = { WBTC: 'BTCUSDT', WETH: 'ETHUSDT', MATIC: 'POLUSDT' }
     const pair = PAIR_MAP[symbol] || `${symbol}USDT`
+    const cgId = coinGeckoId || symbol.toLowerCase()
     try {
-      const [ticker24hRes, klines7dRes, klines30dRes] = await Promise.all([
+      const [ticker24hRes, klines7dRes, klines30dRes, cgRes] = await Promise.all([
         fetch(`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${pair}`, {
           signal: AbortSignal.timeout(8000)
         }).catch(() => null),
@@ -171,7 +172,15 @@ export async function GET(req) {
         fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1d&limit=30`, {
           signal: AbortSignal.timeout(8000)
         }).catch(() => null),
+        fetch(
+          `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true`,
+          { signal: AbortSignal.timeout(8000) }
+        ).catch(() => null),
       ])
+
+      let cg = null
+      try { if (cgRes?.ok) cg = await cgRes.json() } catch {}
+      const md = cg?.market_data || {}
 
       if (ticker24hRes?.ok) {
         const t = await ticker24hRes.json()
@@ -185,44 +194,66 @@ export async function GET(req) {
           return openFirst > 0 ? ((closeLast - openFirst) / openFirst) * 100 : 0
         }
 
+        const vol24 = parseFloat(t.quoteVolume) || 0
+        const mcap = md.market_cap?.usd || 0
+
         response.marketData = {
           current_price: parseFloat(t.lastPrice) || 0,
-          market_cap: 0,
-          market_cap_rank: null,
-          fully_diluted_valuation: 0,
-          total_volume_24h: parseFloat(t.quoteVolume) || 0,
-          volume_to_market_cap_ratio: 0,
-          circulating_supply: 0,
-          total_supply: 0,
-          max_supply: null,
+          market_cap: mcap,
+          market_cap_rank: cg?.market_cap_rank || null,
+          fully_diluted_valuation: md.fully_diluted_valuation?.usd || 0,
+          total_volume_24h: vol24,
+          volume_to_market_cap_ratio: mcap ? ((vol24 / mcap) * 100).toFixed(2) : 0,
+          circulating_supply: md.circulating_supply || 0,
+          total_supply: md.total_supply || 0,
+          max_supply: md.max_supply || null,
           price_change_24h: parseFloat(t.priceChange) || 0,
           price_change_percentage_24h: parseFloat(t.priceChangePercent) || 0,
-          price_change_percentage_7d: computeChange(klines7d),
-          price_change_percentage_30d: computeChange(klines30d),
-          price_change_percentage_1y: 0,
-          ath: 0, ath_date: null, ath_change_percentage: 0,
-          atl: 0, atl_date: null, atl_change_percentage: 0,
+          price_change_percentage_7d: computeChange(klines7d) || getPct(md.price_change_percentage_7d_in_currency?.usd, md.price_change_percentage_7d),
+          price_change_percentage_30d: computeChange(klines30d) || getPct(md.price_change_percentage_30d_in_currency?.usd, md.price_change_percentage_30d),
+          price_change_percentage_1y: getPct(md.price_change_percentage_1y_in_currency?.usd, md.price_change_percentage_1y),
+          ath: md.ath?.usd || 0, ath_date: md.ath_date?.usd || null, ath_change_percentage: md.ath_change_percentage?.usd || 0,
+          atl: md.atl?.usd || 0, atl_date: md.atl_date?.usd || null, atl_change_percentage: md.atl_change_percentage?.usd || 0,
           high_24h: parseFloat(t.highPrice) || 0,
           low_24h: parseFloat(t.lowPrice) || 0,
-          homepage: null, blockchain_site: null, official_forum_url: null,
-          chat_url: null, announcement_url: null, twitter_screen_name: null,
-          facebook_username: null, telegram_channel_identifier: null,
-          subreddit_url: null, repos_url: null,
-          description: null,
-          categories: [],
-          contract_address: null,
-          asset_platform_id: null,
-          sentiment_votes_up_percentage: 0,
-          sentiment_votes_down_percentage: 0,
-          developer_data: { forks: 0, stars: 0, subscribers: 0, total_issues: 0, closed_issues: 0, pull_requests_merged: 0, pull_request_contributors: 0, commit_count_4_weeks: 0 },
-          community_data: { twitter_followers: 0, reddit_subscribers: 0, reddit_accounts_active_48h: 0, telegram_channel_user_count: 0 },
-          tickers: []
+          homepage: cg?.links?.homepage?.[0] || null,
+          blockchain_site: cg?.links?.blockchain_site?.filter(s => s)?.[0] || null,
+          official_forum_url: cg?.links?.official_forum_url?.filter(s => s)?.[0] || null,
+          chat_url: cg?.links?.chat_url?.filter(s => s)?.[0] || null,
+          announcement_url: cg?.links?.announcement_url?.filter(s => s)?.[0] || null,
+          twitter_screen_name: cg?.links?.twitter_screen_name || null,
+          facebook_username: cg?.links?.facebook_username || null,
+          telegram_channel_identifier: cg?.links?.telegram_channel_identifier || null,
+          subreddit_url: cg?.links?.subreddit_url || null,
+          repos_url: cg?.links?.repos_url?.github?.[0] || null,
+          description: cg?.description?.en || null,
+          categories: cg?.categories || [],
+          contract_address: cg?.contract_address || null,
+          asset_platform_id: cg?.asset_platform_id || null,
+          sentiment_votes_up_percentage: cg?.sentiment_votes_up_percentage || 0,
+          sentiment_votes_down_percentage: cg?.sentiment_votes_down_percentage || 0,
+          developer_data: {
+            forks: cg?.developer_data?.forks || 0, stars: cg?.developer_data?.stars || 0,
+            subscribers: cg?.developer_data?.subscribers || 0, total_issues: cg?.developer_data?.total_issues || 0,
+            closed_issues: cg?.developer_data?.closed_issues || 0, pull_requests_merged: cg?.developer_data?.pull_requests_merged || 0,
+            pull_request_contributors: cg?.developer_data?.pull_request_contributors || 0, commit_count_4_weeks: cg?.developer_data?.commit_count_4_weeks || 0
+          },
+          community_data: {
+            twitter_followers: cg?.community_data?.twitter_followers || 0, reddit_subscribers: cg?.community_data?.reddit_subscribers || 0,
+            reddit_accounts_active_48h: cg?.community_data?.reddit_accounts_active_48h || 0, telegram_channel_user_count: cg?.community_data?.telegram_channel_user_count || 0
+          },
+          tickers: (cg?.tickers || []).slice(0, 10).map(tk => ({
+            exchange: tk.market?.name || 'Unknown', pair: tk.base + '/' + tk.target,
+            price: tk.last || 0, volume: tk.volume || 0,
+            bid_ask_spread: tk.bid_ask_spread_percentage || 0, trust_score: tk.trust_score || 'unknown',
+            last_traded: tk.last_traded_at || null
+          }))
         }
 
         response.price = response.marketData.current_price
       }
     } catch (err) {
-      console.error('Binance API error:', err)
+      console.error('Data fetch error:', err)
     }
 
     // 2. Get Whale Transaction Data from our DB
