@@ -13,23 +13,12 @@ export default function robots(): MetadataRoute.Robots {
           '/private/',
           '/_next/',
           '/auth/callback',
+          '/pricing',
+          '/profile',
         ],
       },
-      {
-        userAgent: 'Googlebot',
-        allow: '/',
-        crawlDelay: 1,
-      },
-      {
-        userAgent: 'Bingbot',
-        allow: '/',
-        crawlDelay: 1,
-      },
     ],
-    sitemap: [
-      `${base}/sitemap.xml`,
-      `${base}/sitemap-main.xml`,
-    ],
+    sitemap: `${base}/sitemap.xml`,
     host: base,
   }
 } 
