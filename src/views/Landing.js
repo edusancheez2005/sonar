@@ -777,12 +777,11 @@ const Landing = () => {
       const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, password: formData.password }) });
       const json = await res.json();
       if (!res.ok || !json?.ok) throw new Error(json?.error || 'Signup failed');
-      const sb = supabaseBrowser();
-      const { error: loginErr } = await sb.auth.signInWithPassword({ email: formData.email, password: formData.password });
-      if (loginErr) throw loginErr;
-      showToast('Account created. Welcome!', 'success');
-      setShowSignupModal(false);
-      navigate('/ai-advisor');
+      // Email verification required — show confirmation message
+      setLastSignupEmail(formData.email);
+      setSignupInfo('Check your email for a verification link. Click it to activate your account.');
+      setResendAvailable(true);
+      showToast('Verification email sent! Check your inbox.', 'success');
     } catch (err) {
       const raw = (err && typeof err.message === 'string') ? err.message : (typeof err === 'string' ? err : (() => { try { return JSON.stringify(err); } catch { return ''; } })());
       const lower = (raw || '').toLowerCase();
@@ -1334,7 +1333,7 @@ const Landing = () => {
             style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', padding: '1rem 0', borderTop: '1px solid rgba(0, 229, 255, 0.08)', borderBottom: '1px solid rgba(0, 229, 255, 0.08)', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#5a6a7a' }}>
             <span>Tracking <strong style={{ color: '#e0e6ed' }}>200+</strong> tokens</span>
             <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
-            <span>Powered by <strong style={{ color: '#e0e6ed' }}>CoinGecko</strong> + <strong style={{ color: '#e0e6ed' }}>LunarCrush</strong></span>
+            <span>Powered by <strong style={{ color: '#e0e6ed' }}>Binance</strong> + <strong style={{ color: '#e0e6ed' }}>LunarCrush</strong></span>
             <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
             <span><strong style={{ color: '#e0e6ed' }}>Free</strong> for all traders</span>
           </motion.div>
