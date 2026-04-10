@@ -2060,47 +2060,138 @@ const Landing = () => {
 
       {/* ─── SIGNUP MODAL ─── */}
       {showSignupModal && (
-        <Modal initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <FormContainer initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}>
-            <h3>Create an Account</h3>
-            <button type="button" onClick={async () => { try { const sb = supabaseBrowser(); const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/ai-advisor` } }); if (error) setSignupError('Google sign-up failed.'); } catch { setSignupError('An error occurred.'); } }}
-              style={{ width: '100%', padding: '0.75rem 1rem', marginBottom: '1.5rem', backgroundColor: '#fff', color: '#1f1f1f', border: '1px solid #dadce0', borderRadius: '8px', fontSize: '1rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s ease' }}
-              onMouseOver={e => { e.currentTarget.style.backgroundColor = '#f8f9fa'; }} onMouseOut={e => { e.currentTarget.style.backgroundColor = '#fff'; }}>
-              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-              Continue with Google
-            </button>
-            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1rem', position: 'relative' }}>
-              <span style={{ backgroundColor: 'var(--background-card)', padding: '0 1rem', position: 'relative', zIndex: 1 }}>or</span>
-              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(54, 166, 186, 0.2)', zIndex: 0 }} />
+        <Modal initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={e => { if (e.target === e.currentTarget) setShowSignupModal(false); }}>
+          <motion.div
+            initial={{ y: 40, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            style={{
+              display: 'flex', width: '100%', maxWidth: '900px', maxHeight: '90vh',
+              borderRadius: '20px', overflow: 'hidden',
+              border: '1px solid rgba(0, 229, 255, 0.15)',
+              boxShadow: '0 25px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 229, 255, 0.08)',
+            }}
+          >
+            {/* Left brand panel */}
+            <div style={{
+              width: '320px', minHeight: '100%', padding: '2.5rem 2rem',
+              background: 'linear-gradient(160deg, #0a1929 0%, #0d2847 40%, #0a1929 100%)',
+              display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+              position: 'relative', overflow: 'hidden', flexShrink: 0,
+            }}>
+              <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle at 30% 50%, rgba(0, 229, 255, 0.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
+              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🐋</div>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 0.5rem', background: 'linear-gradient(135deg, #00e5ff, #36a6ba)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Join Sonar</h2>
+                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>Track whales. Decode signals.<br/>Trade smarter.</p>
+              </motion.div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', position: 'relative', zIndex: 1 }}>
+                {[{ icon: '📡', text: 'Real-time whale tracking' }, { icon: '🤖', text: 'AI-powered signals' }, { icon: '📊', text: 'Multi-chain analytics' }].map((item, i) => (
+                  <motion.div key={i} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.6 + i * 0.15 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', borderRadius: '10px', background: 'rgba(0, 229, 255, 0.04)', border: '1px solid rgba(0, 229, 255, 0.08)' }}>
+                    <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{item.text}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
+                style={{ marginTop: 'auto', paddingTop: '2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
+                Trusted by 500+ traders worldwide
+              </motion.p>
             </div>
-            <Form onSubmit={handleSignup}>
-              <FormGroup><label htmlFor="signup-name">Display Name</label><input type="text" id="signup-name" name="displayName" placeholder="How should we call you?" value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} /></FormGroup>
-              <FormGroup><label htmlFor="signup-email">Email</label><input type="email" id="signup-email" name="email" value={formData.email} onChange={e => { setFormData({ ...formData, email: e.target.value }); setLastSignupEmail(e.target.value); }} required /></FormGroup>
-              <FormGroup><label htmlFor="signup-password">Password</label><input type="password" id="signup-password" name="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required /></FormGroup>
-              <FormGroup><label htmlFor="confirm-password">Retype Password</label><input type="password" id="confirm-password" name="confirmPassword" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} required /></FormGroup>
-              <FormGroup><label htmlFor="signup-country">Country</label><select id="signup-country" name="country" value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(54,166,186,0.3)', background: 'var(--background-card)', color: 'var(--text-primary)', fontSize: '0.95rem' }}><option value="">Select your country</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="CA">Canada</option><option value="AU">Australia</option><option value="DE">Germany</option><option value="FR">France</option><option value="IN">India</option><option value="PK">Pakistan</option><option value="NG">Nigeria</option><option value="BR">Brazil</option><option value="JP">Japan</option><option value="KR">South Korea</option><option value="SG">Singapore</option><option value="AE">UAE</option><option value="TR">Turkey</option><option value="PH">Philippines</option><option value="ID">Indonesia</option><option value="MY">Malaysia</option><option value="TH">Thailand</option><option value="VN">Vietnam</option><option value="OTHER">Other</option></select></FormGroup>
-              <FormGroup><label htmlFor="signup-experience">Trading Experience</label><select id="signup-experience" name="experienceLevel" value={formData.experienceLevel} onChange={e => setFormData({ ...formData, experienceLevel: e.target.value })} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(54,166,186,0.3)', background: 'var(--background-card)', color: 'var(--text-primary)', fontSize: '0.95rem' }}><option value="">How experienced are you?</option><option value="beginner">Beginner (under 1 year)</option><option value="intermediate">Intermediate (1-3 years)</option><option value="advanced">Advanced (3+ years)</option><option value="professional">Professional / Institutional</option></select></FormGroup>
-              <FormGroup><label>What interests you?</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>{['Whale Tracking', 'AI Signals', 'DeFi', 'Memecoins', 'NFTs', 'Bitcoin', 'Altcoins', 'Day Trading'].map(interest => (<button key={interest} type="button" onClick={() => { const cur = formData.interests || []; setFormData({ ...formData, interests: cur.includes(interest) ? cur.filter(i => i !== interest) : [...cur, interest] }); }} style={{ padding: '0.4rem 0.75rem', borderRadius: '20px', border: `1px solid ${(formData.interests || []).includes(interest) ? 'var(--primary)' : 'rgba(54,166,186,0.3)'}`, background: (formData.interests || []).includes(interest) ? 'rgba(54,166,186,0.15)' : 'transparent', color: (formData.interests || []).includes(interest) ? 'var(--primary)' : 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.15s ease' }}>{interest}</button>))}</div></FormGroup>
-              <FormGroup style={{ flexDirection: 'row', alignItems: 'flex-start', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(54, 166, 186, 0.2)' }}>
-                <input type="checkbox" id="terms-checkbox" checked={formData.acceptedTerms || false} onChange={e => setFormData({ ...formData, acceptedTerms: e.target.checked })} required style={{ marginTop: '0.25rem', width: 'auto', minWidth: '18px', height: '18px', cursor: 'pointer' }} />
-                <label htmlFor="terms-checkbox" style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
-                  I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Privacy Policy</a>. Trading cryptocurrencies involves substantial risk of loss.
-                </label>
-              </FormGroup>
-              {signupError && <p style={{ color: 'tomato', margin: 0 }}>{signupError}</p>}
-              {signupInfo && <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{signupInfo}</p>}
-              {resendMsg && <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{resendMsg}</p>}
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
-                <PillButton type="button" onClick={() => setShowSignupModal(false)}>Cancel</PillButton>
-                <PrimaryPill type="submit" disabled={signupLoading}>{signupLoading ? 'Creating...' : 'Sign Up'}</PrimaryPill>
-                {resendAvailable && (
-                  <PillButton type="button" disabled={resendLoading || resendCooldown > 0} onClick={resendVerification}>
-                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : (resendLoading ? 'Resending...' : 'Resend email')}
-                  </PillButton>
-                )}
+
+            {/* Right form panel */}
+            <div style={{
+              flex: 1, padding: '2rem 2.5rem', overflowY: 'auto',
+              background: 'linear-gradient(180deg, #0c1824 0%, #080f18 100%)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.4rem', margin: 0, color: '#fff', fontWeight: 700 }}>Create Account</h3>
+                <button type="button" onClick={() => setShowSignupModal(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.5rem', cursor: 'pointer', padding: '0.25rem', lineHeight: 1 }}>×</button>
               </div>
-            </Form>
-          </FormContainer>
+
+              {/* Google OAuth */}
+              <motion.button type="button" whileHover={{ scale: 1.02, boxShadow: '0 4px 20px rgba(255,255,255,0.1)' }} whileTap={{ scale: 0.98 }}
+                onClick={async () => { try { const sb = supabaseBrowser(); const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/ai-advisor` } }); if (error) setSignupError('Google sign-up failed.'); } catch { setSignupError('An error occurred.'); } }}
+                style={{ width: '100%', padding: '0.7rem 1rem', marginBottom: '1.25rem', backgroundColor: '#fff', color: '#1f1f1f', border: 'none', borderRadius: '12px', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
+                <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                Continue with Google
+              </motion.button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '0 0 1.25rem' }}>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(0, 229, 255, 0.1)' }} />
+                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>or sign up with email</span>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(0, 229, 255, 0.1)' }} />
+              </div>
+
+              <Form onSubmit={handleSignup} style={{ gap: '1rem' }}>
+                {/* Row: Name + Email */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <FormGroup style={{ gap: '0.3rem' }}><label style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Display Name</label><input type="text" placeholder="e.g. CryptoWhale" value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} style={{ borderRadius: '10px', padding: '0.65rem 0.75rem', fontSize: '0.9rem', border: '1px solid rgba(0,229,255,0.12)', background: 'rgba(0,229,255,0.03)' }} /></FormGroup>
+                  <FormGroup style={{ gap: '0.3rem' }}><label style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Email <span style={{ color: '#00e5ff' }}>*</span></label><input type="email" placeholder="you@email.com" value={formData.email} onChange={e => { setFormData({ ...formData, email: e.target.value }); setLastSignupEmail(e.target.value); }} required style={{ borderRadius: '10px', padding: '0.65rem 0.75rem', fontSize: '0.9rem', border: '1px solid rgba(0,229,255,0.12)', background: 'rgba(0,229,255,0.03)' }} /></FormGroup>
+                </div>
+
+                {/* Row: Passwords */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <FormGroup style={{ gap: '0.3rem' }}><label style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Password <span style={{ color: '#00e5ff' }}>*</span></label><input type="password" placeholder="Min 8 characters" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required style={{ borderRadius: '10px', padding: '0.65rem 0.75rem', fontSize: '0.9rem', border: '1px solid rgba(0,229,255,0.12)', background: 'rgba(0,229,255,0.03)' }} /></FormGroup>
+                  <FormGroup style={{ gap: '0.3rem' }}><label style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Confirm Password <span style={{ color: '#00e5ff' }}>*</span></label><input type="password" placeholder="Retype password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} required style={{ borderRadius: '10px', padding: '0.65rem 0.75rem', fontSize: '0.9rem', border: '1px solid rgba(0,229,255,0.12)', background: 'rgba(0,229,255,0.03)' }} /></FormGroup>
+                </div>
+
+                {/* Row: Country + Experience */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <FormGroup style={{ gap: '0.3rem' }}><label style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Country</label><select value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(0,229,255,0.12)', background: 'rgba(0,229,255,0.03)', color: 'var(--text-primary)', fontSize: '0.9rem', cursor: 'pointer' }}><option value="">Select country</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="CA">Canada</option><option value="AU">Australia</option><option value="DE">Germany</option><option value="FR">France</option><option value="IN">India</option><option value="PK">Pakistan</option><option value="NG">Nigeria</option><option value="BR">Brazil</option><option value="JP">Japan</option><option value="KR">South Korea</option><option value="SG">Singapore</option><option value="AE">UAE</option><option value="TR">Turkey</option><option value="PH">Philippines</option><option value="ID">Indonesia</option><option value="OTHER">Other</option></select></FormGroup>
+                  <FormGroup style={{ gap: '0.3rem' }}><label style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Experience</label><select value={formData.experienceLevel} onChange={e => setFormData({ ...formData, experienceLevel: e.target.value })} style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(0,229,255,0.12)', background: 'rgba(0,229,255,0.03)', color: 'var(--text-primary)', fontSize: '0.9rem', cursor: 'pointer' }}><option value="">Your level</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="professional">Professional</option></select></FormGroup>
+                </div>
+
+                {/* Interests tags */}
+                <FormGroup style={{ gap: '0.4rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Interests</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {['Whale Tracking', 'AI Signals', 'DeFi', 'Memecoins', 'NFTs', 'Bitcoin', 'Altcoins', 'Day Trading'].map((interest, i) => (
+                      <motion.button key={interest} type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}
+                        onClick={() => { const cur = formData.interests || []; setFormData({ ...formData, interests: cur.includes(interest) ? cur.filter(j => j !== interest) : [...cur, interest] }); }}
+                        style={{
+                          padding: '0.35rem 0.7rem', borderRadius: '20px', fontSize: '0.8rem', cursor: 'pointer',
+                          fontWeight: 500, transition: 'all 0.2s ease',
+                          border: `1px solid ${(formData.interests || []).includes(interest) ? '#00e5ff' : 'rgba(0,229,255,0.15)'}`,
+                          background: (formData.interests || []).includes(interest) ? 'rgba(0, 229, 255, 0.12)' : 'transparent',
+                          color: (formData.interests || []).includes(interest) ? '#00e5ff' : 'rgba(255,255,255,0.45)',
+                          boxShadow: (formData.interests || []).includes(interest) ? '0 0 12px rgba(0, 229, 255, 0.15)' : 'none',
+                        }}>{interest}</motion.button>
+                    ))}
+                  </div>
+                </FormGroup>
+
+                {/* Terms */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.75rem 0 0', borderTop: '1px solid rgba(0,229,255,0.08)' }}>
+                  <input type="checkbox" id="terms-checkbox" checked={formData.acceptedTerms || false} onChange={e => setFormData({ ...formData, acceptedTerms: e.target.checked })} required style={{ marginTop: '0.15rem', width: 'auto', minWidth: '16px', height: '16px', cursor: 'pointer', accentColor: '#00e5ff' }} />
+                  <label htmlFor="terms-checkbox" style={{ fontSize: '0.75rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.35)', cursor: 'pointer' }}>
+                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#00e5ff' }}>Terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#00e5ff' }}>Privacy Policy</a>
+                  </label>
+                </div>
+
+                {signupError && <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} style={{ color: '#ff4757', margin: 0, fontSize: '0.85rem', padding: '0.5rem 0.75rem', background: 'rgba(255,71,87,0.08)', borderRadius: '8px', border: '1px solid rgba(255,71,87,0.2)' }}>{signupError}</motion.p>}
+
+                {/* Submit */}
+                <motion.button type="submit" disabled={signupLoading}
+                  whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(0, 229, 255, 0.2)' }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{
+                    width: '100%', padding: '0.8rem', borderRadius: '12px', border: 'none',
+                    background: 'linear-gradient(135deg, #00e5ff 0%, #36a6ba 100%)',
+                    color: '#080f18', fontSize: '1rem', fontWeight: 700, cursor: signupLoading ? 'wait' : 'pointer',
+                    opacity: signupLoading ? 0.7 : 1, transition: 'all 0.2s ease',
+                    letterSpacing: '0.3px',
+                  }}>{signupLoading ? 'Creating your account...' : 'Start Tracking Whales'}</motion.button>
+
+                <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
+                  Already have an account?{' '}
+                  <button type="button" onClick={() => { setShowSignupModal(false); setShowLoginModal(true); }} style={{ background: 'none', border: 'none', color: '#00e5ff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, padding: 0 }}>Sign in</button>
+                </p>
+              </Form>
+            </div>
+          </motion.div>
         </Modal>
       )}
 
