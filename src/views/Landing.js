@@ -925,7 +925,7 @@ const Landing = () => {
 
             <HeroHighlight variants={itemVariants} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
               <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.2 }} whileHover={{ scale: 1.05 }}>
-                <div className="number"><CountUp target={650} suffix="+" /></div><div className="label">Happy Users</div>
+                <div className="number"><CountUp target={1000} suffix="+" /></div><div className="label">Happy Users</div>
               </StatBadge>
               <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.4 }} whileHover={{ scale: 1.05 }}>
                 <div className="number"><CountUp target={2000} suffix="+" /></div><div className="label">Profitable Trades</div>
