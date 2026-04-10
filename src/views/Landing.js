@@ -2096,7 +2096,7 @@ const Landing = () => {
               </motion.div>
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
                 style={{ marginTop: 'auto', paddingTop: '2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
-                Trusted by 500+ traders worldwide
+                Trusted by 1,000+ traders worldwide
               </motion.p>
             </div>
 

@@ -3,7 +3,7 @@ import HomeClient from './HomeClient'
 
 export const metadata = {
   title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
-  description: 'Track crypto whale transactions in real-time across 10+ blockchains. AI-powered signals from ORCA 2.0. Institutional-grade analytics for $7.99/month. 500+ traders trust Sonar.',
+  description: 'Track crypto whale transactions in real-time across 10+ blockchains. AI-powered signals from ORCA 2.0. Institutional-grade analytics for $7.99/month. 1,000+ traders trust Sonar.',
   keywords: [
     'crypto tracker', 'whale wallet tracker', 'crypto whale tracker', 'crypto predictor algorithm',
     'whale transaction tracker', 'real time whale alerts', 'crypto intelligence platform',
@@ -13,7 +13,7 @@ export const metadata = {
   alternates: { canonical: 'https://www.sonartracker.io' },
   openGraph: {
     title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
-    description: 'Track crypto whale transactions in real-time. AI-powered signals, institutional-grade analytics. 500+ traders trust Sonar.',
+    description: 'Track crypto whale transactions in real-time. AI-powered signals, institutional-grade analytics. 1,000+ traders trust Sonar.',
     url: 'https://www.sonartracker.io',
     type: 'website',
     images: [{ url: '/screenshots/stats-dashboard.png', width: 1200, height: 630, alt: 'Sonar Tracker Dashboard' }],
