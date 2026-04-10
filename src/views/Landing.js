@@ -2081,12 +2081,12 @@ const Landing = () => {
             }}>
               <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle at 30% 50%, rgba(0, 229, 255, 0.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
               <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🐋</div>
+                <img src="/logo2.png" alt="Sonar" style={{ width: '80px', height: 'auto', marginBottom: '0.75rem', filter: 'drop-shadow(0 0 20px rgba(0, 229, 255, 0.3))' }} />
                 <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 0.5rem', background: 'linear-gradient(135deg, #00e5ff, #36a6ba)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Join Sonar</h2>
                 <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>Track whales. Decode signals.<br/>Trade smarter.</p>
               </motion.div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', position: 'relative', zIndex: 1 }}>
-                {[{ icon: '📡', text: 'Real-time whale tracking' }, { icon: '🤖', text: 'AI-powered signals' }, { icon: '📊', text: 'Multi-chain analytics' }].map((item, i) => (
+                {[{ icon: '📡', text: 'Real-time whale tracking' }, { icon: '🧠', text: 'AI-powered signals' }, { icon: '⛓️', text: 'Multi-chain analytics' }, { icon: '🔔', text: 'Custom whale alerts' }].map((item, i) => (
                   <motion.div key={i} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.6 + i * 0.15 }}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', borderRadius: '10px', background: 'rgba(0, 229, 255, 0.04)', border: '1px solid rgba(0, 229, 255, 0.08)' }}>
                     <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
