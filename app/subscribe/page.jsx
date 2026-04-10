@@ -626,13 +626,18 @@ export default function SubscribePage() {
               </Price>
             </PriceContainer>
             <FeatureList>
-              <li>Access to News and Market Updates</li>
-              <li>Basic Market Pulse (KPI strip)</li>
-              <li>Top Net Inflows and Outflows</li>
-              <li>Limited Statistics (25 rows)</li>
-              <li>Trending: Top 5 only</li>
-              <li>1 Orca AI prompt per day</li>
-              <li>Basic 3-level sentiment</li>
+              <li>Real-time whale transaction tracking</li>
+              <li>AI buy/sell classification</li>
+              <li>ORCA AI advisor (unlimited)</li>
+              <li>Crypto news with sentiment analysis</li>
+              <li>Multi-chain analytics (ETH, BTC, SOL + more)</li>
+              <li>Trending coins, top gainers & losers</li>
+              <li>Whale leaderboard & wallet tracker</li>
+              <li>Full statistics + CSV export</li>
+              <li>Token detail pages with charts</li>
+              <li>Community sentiment voting</li>
+              <li>Custom whale alerts</li>
+              <li>Binance derivatives data</li>
             </FeatureList>
             <Button
               $featured={false}
@@ -651,8 +656,8 @@ export default function SubscribePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <Badge>MOST POPULAR</Badge>
-            <PlanName>Premium</PlanName>
+            <Badge>SUPPORT SONAR</Badge>
+            <PlanName>Pro</PlanName>
             <PriceContainer>
               <Price>
                 $7.99<span>/month</span>
@@ -660,18 +665,15 @@ export default function SubscribePage() {
             </PriceContainer>
             <FeatureList>
               <li>Everything in Free, plus:</li>
-              <li>Real-time whale transaction tracking (24/7)</li>
-              <li>Full buy/sell pressure, most traded tokens, top whales</li>
-              <li>Social Intelligence: Galaxy Score, Alt Rank, sentiment</li>
-              <li>News and social buzz on every token page</li>
-              <li>Community data, developer activity, CoinGecko insights</li>
-              <li>Enhanced 6-level sentiment with confidence scoring</li>
-              <li>10 Orca AI conversations per day with inline charts</li>
-              <li>Full statistics (200 rows) + CSV export</li>
-              <li>Full trending (12+ coins per section)</li>
-              <li>Whale deep dive analysis per token</li>
-              <li>Real-time whale alerts ($500k+)</li>
-              <li>Priority support</li>
+              <li>Priority access to new features</li>
+              <li>ORCA Predicts: AI predictions with track record</li>
+              <li>Smart Money Mirror dashboard</li>
+              <li>Whale Whisper: AI-generated market narratives</li>
+              <li>Liquidation radar & cascade alerts</li>
+              <li>Connect wallet: personalized whale alerts</li>
+              <li>Early access to signal marketplace</li>
+              <li>Priority support from the team</li>
+              <li>Support indie development 💙</li>
             </FeatureList>
             <Button
               $featured={true}
