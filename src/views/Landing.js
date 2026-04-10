@@ -1821,7 +1821,7 @@ const Landing = () => {
       {/* ─── TESTIMONIALS CAROUSEL ─── */}
       <TrustSection>
         <motion.h2 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
-          650+ traders. $2B+ volume tracked.
+          1,000+ traders. $2B+ volume tracked.
         </motion.h2>
         <p className="subtitle">Don't take our word for it.</p>
 
