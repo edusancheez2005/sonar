@@ -672,7 +672,7 @@ const Landing = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '', displayName: '', country: '', experienceLevel: '', interests: [] });
   const [waitEmail, setWaitEmail] = useState('');
   const [waitMsg, setWaitMsg] = useState('');
   const [signupLoading, setSignupLoading] = useState(false);
@@ -774,14 +774,15 @@ const Landing = () => {
     if (formData.password !== formData.confirmPassword) { setSignupError('Passwords do not match'); showToast('Passwords do not match', 'error'); return; }
     try {
       setSignupLoading(true);
-      const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, password: formData.password }) });
+      const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, password: formData.password, displayName: formData.displayName, country: formData.country, experienceLevel: formData.experienceLevel, interests: formData.interests }) });
       const json = await res.json();
       if (!res.ok || !json?.ok) throw new Error(json?.error || 'Signup failed');
-      // Email verification required — show confirmation message
-      setLastSignupEmail(formData.email);
-      setSignupInfo('Check your email for a verification link. Click it to activate your account.');
-      setResendAvailable(true);
-      showToast('Verification email sent! Check your inbox.', 'success');
+      const sb = supabaseBrowser();
+      const { error: loginErr } = await sb.auth.signInWithPassword({ email: formData.email, password: formData.password });
+      if (loginErr) throw loginErr;
+      showToast('Account created. Welcome!', 'success');
+      setShowSignupModal(false);
+      navigate('/ai-advisor');
     } catch (err) {
       const raw = (err && typeof err.message === 'string') ? err.message : (typeof err === 'string' ? err : (() => { try { return JSON.stringify(err); } catch { return ''; } })());
       const lower = (raw || '').toLowerCase();
@@ -2073,9 +2074,13 @@ const Landing = () => {
               <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(54, 166, 186, 0.2)', zIndex: 0 }} />
             </div>
             <Form onSubmit={handleSignup}>
+              <FormGroup><label htmlFor="signup-name">Display Name</label><input type="text" id="signup-name" name="displayName" placeholder="How should we call you?" value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} /></FormGroup>
               <FormGroup><label htmlFor="signup-email">Email</label><input type="email" id="signup-email" name="email" value={formData.email} onChange={e => { setFormData({ ...formData, email: e.target.value }); setLastSignupEmail(e.target.value); }} required /></FormGroup>
               <FormGroup><label htmlFor="signup-password">Password</label><input type="password" id="signup-password" name="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required /></FormGroup>
               <FormGroup><label htmlFor="confirm-password">Retype Password</label><input type="password" id="confirm-password" name="confirmPassword" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} required /></FormGroup>
+              <FormGroup><label htmlFor="signup-country">Country</label><select id="signup-country" name="country" value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(54,166,186,0.3)', background: 'var(--background-card)', color: 'var(--text-primary)', fontSize: '0.95rem' }}><option value="">Select your country</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="CA">Canada</option><option value="AU">Australia</option><option value="DE">Germany</option><option value="FR">France</option><option value="IN">India</option><option value="PK">Pakistan</option><option value="NG">Nigeria</option><option value="BR">Brazil</option><option value="JP">Japan</option><option value="KR">South Korea</option><option value="SG">Singapore</option><option value="AE">UAE</option><option value="TR">Turkey</option><option value="PH">Philippines</option><option value="ID">Indonesia</option><option value="MY">Malaysia</option><option value="TH">Thailand</option><option value="VN">Vietnam</option><option value="OTHER">Other</option></select></FormGroup>
+              <FormGroup><label htmlFor="signup-experience">Trading Experience</label><select id="signup-experience" name="experienceLevel" value={formData.experienceLevel} onChange={e => setFormData({ ...formData, experienceLevel: e.target.value })} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(54,166,186,0.3)', background: 'var(--background-card)', color: 'var(--text-primary)', fontSize: '0.95rem' }}><option value="">How experienced are you?</option><option value="beginner">Beginner (under 1 year)</option><option value="intermediate">Intermediate (1-3 years)</option><option value="advanced">Advanced (3+ years)</option><option value="professional">Professional / Institutional</option></select></FormGroup>
+              <FormGroup><label>What interests you?</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>{['Whale Tracking', 'AI Signals', 'DeFi', 'Memecoins', 'NFTs', 'Bitcoin', 'Altcoins', 'Day Trading'].map(interest => (<button key={interest} type="button" onClick={() => { const cur = formData.interests || []; setFormData({ ...formData, interests: cur.includes(interest) ? cur.filter(i => i !== interest) : [...cur, interest] }); }} style={{ padding: '0.4rem 0.75rem', borderRadius: '20px', border: `1px solid ${(formData.interests || []).includes(interest) ? 'var(--primary)' : 'rgba(54,166,186,0.3)'}`, background: (formData.interests || []).includes(interest) ? 'rgba(54,166,186,0.15)' : 'transparent', color: (formData.interests || []).includes(interest) ? 'var(--primary)' : 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.15s ease' }}>{interest}</button>))}</div></FormGroup>
               <FormGroup style={{ flexDirection: 'row', alignItems: 'flex-start', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(54, 166, 186, 0.2)' }}>
                 <input type="checkbox" id="terms-checkbox" checked={formData.acceptedTerms || false} onChange={e => setFormData({ ...formData, acceptedTerms: e.target.checked })} required style={{ marginTop: '0.25rem', width: 'auto', minWidth: '18px', height: '18px', cursor: 'pointer' }} />
                 <label htmlFor="terms-checkbox" style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>

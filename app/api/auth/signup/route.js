@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 function isValidEmail(email) {
   if (typeof email !== 'string') return false
@@ -19,6 +19,10 @@ export async function POST(req) {
 
     const email = String(body?.email || '').trim().toLowerCase()
     const password = String(body?.password || '')
+    const displayName = String(body?.displayName || '').trim().slice(0, 100)
+    const country = String(body?.country || '').trim().slice(0, 100)
+    const experienceLevel = String(body?.experienceLevel || '').trim().slice(0, 30)
+    const interests = Array.isArray(body?.interests) ? body.interests.slice(0, 10).map(i => String(i).slice(0, 50)) : []
 
     if (!isValidEmail(email)) {
       return NextResponse.json({ ok: false, error: 'Invalid email' }, { status: 400 })
@@ -27,19 +31,11 @@ export async function POST(req) {
       return NextResponse.json({ ok: false, error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
-    // Use standard signUp — respects Supabase "Confirm email" setting
-    // User receives a verification email and must click the link before signing in
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
-
-    const { data, error } = await supabase.auth.signUp({
+    // Create user (auto-confirmed — email verification disabled until SMTP is configured)
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.sonartracker.io'}/auth/callback`,
-      },
+      email_confirm: true,
     })
 
     if (error) {
@@ -54,16 +50,22 @@ export async function POST(req) {
       return NextResponse.json({ ok: false, error: msg || 'Failed to create account' }, { status: 400 })
     }
 
-    // If email confirmation is required, user won't have a confirmed session yet
-    const needsConfirmation = data?.user?.identities?.length === 0 || 
-                               data?.user?.email_confirmed_at === null
+    // Update profile with extra fields
+    if (data?.user?.id && (displayName || country || experienceLevel || interests.length > 0)) {
+      const profileUpdate = {}
+      if (displayName) profileUpdate.display_name = displayName
+      if (country) profileUpdate.country = country
+      if (experienceLevel) profileUpdate.experience_level = experienceLevel
+      if (interests.length > 0) profileUpdate.interests = interests
 
-    return NextResponse.json({ 
-      ok: true, 
-      userId: data?.user?.id || null,
-      needsConfirmation: needsConfirmation !== false,
-      message: 'Check your email for a verification link to complete signup.'
-    })
+      await supabaseAdmin
+        .from('profiles')
+        .update(profileUpdate)
+        .eq('id', data.user.id)
+        .catch(() => {}) // Non-critical — profile created by trigger
+    }
+
+    return NextResponse.json({ ok: true, userId: data?.user?.id || null })
   } catch (err) {
     const msg = (err && typeof err.message === 'string') ? err.message : 'Server error'
     return NextResponse.json({ ok: false, error: msg }, { status: 500 })
