@@ -638,10 +638,6 @@ const Dashboard = ({ isPremium = false }) => {
   const [topHighValueTxs, setTopHighValueTxs] = useState([])
    const [marketMomentum, setMarketMomentum] = useState({ volumeChange: 0, activityChange: 0 });
   const [timeSeries, setTimeSeries] = useState({ labels: [], volume: [], count: [] })
-  
-  // Whale Whisper + Smart Money Mirror
-  const [whisperData, setWhisperData] = useState(null)
-  const [smartMoneyData, setSmartMoneyData] = useState(null)
   const [tokenLeaders, setTokenLeaders] = useState([])
   const [tokenInflows, setTokenInflows] = useState([])
   const [tokenOutflows, setTokenOutflows] = useState([])
@@ -713,29 +709,6 @@ const Dashboard = ({ isPremium = false }) => {
     fetch('/api/social/macro').then(r => r.json()).then(d => {
       if (d?.factors) setMacroFactors(d)
     }).catch(() => {})
-  }, [])
-
-  // Fetch Whale Whisper + Smart Money Mirror
-  useEffect(() => {
-    // Whale Whisper (updates every 4h, poll every 5 min)
-    const fetchWhisper = () => {
-      fetch('/api/dashboard/whale-whisper').then(r => r.json()).then(d => {
-        if (d?.whisper) setWhisperData(d.whisper)
-      }).catch(() => {})
-    }
-    fetchWhisper()
-    const whisperTimer = setInterval(fetchWhisper, 300000)
-
-    // Smart Money Mirror (real-time, poll every 60s)
-    const fetchSmartMoney = () => {
-      fetch('/api/dashboard/smart-money').then(r => r.json()).then(d => {
-        if (d?.tokens) setSmartMoneyData(d)
-      }).catch(() => {})
-    }
-    fetchSmartMoney()
-    const smTimer = setInterval(fetchSmartMoney, 60000)
-
-    return () => { clearInterval(whisperTimer); clearInterval(smTimer) }
   }, [])
 
   useEffect(() => {
@@ -1186,142 +1159,6 @@ const Dashboard = ({ isPremium = false }) => {
                       })()}
                     </Panel>
                   </GridContainer>
-                </SectionGap>
-              </motion.div>
-
-              {/* ─── WHALE WHISPER — AI Market Narrative ──────────────── */}
-              <motion.div variants={fadeUp}>
-                <SectionGap>
-                  <Panel style={{ position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: whisperData?.market_bias === 'bullish' ? COLORS.green : whisperData?.market_bias === 'bearish' ? COLORS.red : COLORS.cyan }} />
-                    <PanelHeader>
-                      <TerminalPrompt>WHALE_WHISPER</TerminalPrompt>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {whisperData?.market_bias && (
-                          <span style={{
-                            padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700,
-                            fontFamily: MONO_FONT, letterSpacing: '0.5px', textTransform: 'uppercase',
-                            background: whisperData.market_bias === 'bullish' ? 'rgba(0, 230, 118, 0.1)' : whisperData.market_bias === 'bearish' ? 'rgba(255, 23, 68, 0.1)' : 'rgba(0, 229, 255, 0.06)',
-                            color: whisperData.market_bias === 'bullish' ? COLORS.green : whisperData.market_bias === 'bearish' ? COLORS.red : COLORS.cyan,
-                            border: `1px solid ${whisperData.market_bias === 'bullish' ? 'rgba(0, 230, 118, 0.2)' : whisperData.market_bias === 'bearish' ? 'rgba(255, 23, 68, 0.2)' : 'rgba(0, 229, 255, 0.1)'}`,
-                          }}>{whisperData.market_bias}</span>
-                        )}
-                        {whisperData?.confidence != null && (
-                          <span style={{ fontSize: '0.7rem', color: COLORS.textMuted, fontFamily: MONO_FONT }}>{whisperData.confidence}% conf</span>
-                        )}
-                        {whisperData?.created_at && (
-                          <PanelBadge>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</PanelBadge>
-                        )}
-                      </div>
-                    </PanelHeader>
-                    {whisperData?.narrative ? (
-                      <div style={{ fontFamily: MONO_FONT, fontSize: '0.82rem', lineHeight: 1.75, color: COLORS.textPrimary, whiteSpace: 'pre-wrap' }}>
-                        {whisperData.narrative}
-                      </div>
-                    ) : (
-                      <div style={{ fontFamily: MONO_FONT, fontSize: '0.8rem', color: COLORS.textMuted, fontStyle: 'italic' }}>
-                        Generating first market narrative... Updates every 4 hours.
-                      </div>
-                    )}
-                    {whisperData?.summary && (
-                      <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: `1px solid ${COLORS.borderSubtle}`, fontSize: '0.75rem', color: COLORS.textMuted, fontFamily: SANS_FONT }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLORS.cyan} strokeWidth="2" style={{ verticalAlign: 'middle', marginRight: '0.4rem' }}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                        {whisperData.summary}
-                      </div>
-                    )}
-                  </Panel>
-                </SectionGap>
-              </motion.div>
-
-              {/* ─── SMART MONEY MIRROR ────────────────────────────────── */}
-              <motion.div variants={fadeUp}>
-                <SectionGap>
-                  <Panel>
-                    <PanelHeader>
-                      <TerminalPrompt>SMART_MONEY_MIRROR</TerminalPrompt>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {smartMoneyData?.summary && (
-                          <>
-                            <span style={{ fontSize: '0.7rem', fontFamily: MONO_FONT, color: COLORS.green }}>{smartMoneyData.summary.bullishCount} bullish</span>
-                            <span style={{ fontSize: '0.7rem', fontFamily: MONO_FONT, color: COLORS.red }}>{smartMoneyData.summary.bearishCount} bearish</span>
-                            <span style={{ fontSize: '0.7rem', fontFamily: MONO_FONT, color: COLORS.textMuted }}>{smartMoneyData.summary.neutralCount} aligned</span>
-                          </>
-                        )}
-                        <PanelBadge>LIVE</PanelBadge>
-                      </div>
-                    </PanelHeader>
-                    <PanelSubtext style={{ marginBottom: '1rem', marginLeft: 0 }}>Top 20% Binance traders vs retail — divergence signals institutional positioning</PanelSubtext>
-
-                    {/* Header row */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 70px 60px', gap: '0.5rem', padding: '0.5rem 0', borderBottom: `1px solid ${COLORS.borderSubtle}`, marginBottom: '0.25rem' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: COLORS.textMuted, fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Token</span>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: COLORS.textMuted, fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Smart Money</span>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: COLORS.textMuted, fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Retail</span>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: COLORS.textMuted, fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Gap</span>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: COLORS.textMuted, fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Fund</span>
-                    </div>
-
-                    {/* Token rows */}
-                    {(smartMoneyData?.tokens || []).slice(0, 12).map((t, idx) => {
-                      const divColor = t.divergence > 5 ? COLORS.green : t.divergence < -5 ? COLORS.red : COLORS.textMuted
-                      const smColor = t.smartMoney.longPct > 55 ? COLORS.green : t.smartMoney.longPct < 45 ? COLORS.red : COLORS.amber
-                      const rtColor = t.retail.longPct > 55 ? COLORS.green : t.retail.longPct < 45 ? COLORS.red : COLORS.amber
-                      const fundColor = t.fundingRate > 0.005 ? COLORS.red : t.fundingRate < -0.002 ? COLORS.green : COLORS.textMuted
-
-                      return (
-                        <motion.div key={t.symbol} custom={idx} variants={rowVariant} initial="hidden" animate="visible"
-                          style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 70px 60px', gap: '0.5rem', padding: '0.55rem 0', borderBottom: `1px solid rgba(255,255,255,0.02)`, alignItems: 'center', cursor: 'pointer' }}
-                          onClick={() => window.location.href = `/token/${t.symbol.toLowerCase()}`}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0, 229, 255, 0.03)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          {/* Token */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: COLORS.textPrimary, fontFamily: MONO_FONT }}>{t.symbol}</span>
-                            {t.signal !== 'aligned' && (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill={t.signal === 'bullish_divergence' ? COLORS.green : COLORS.red} stroke="none">
-                                <circle cx="12" cy="12" r="6" />
-                              </svg>
-                            )}
-                          </div>
-
-                          {/* Smart Money bar */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden', position: 'relative' }}>
-                              <motion.div initial={{ width: 0 }} animate={{ width: `${t.smartMoney.longPct}%` }} transition={{ duration: 0.8, delay: idx * 0.05 }}
-                                style={{ height: '100%', borderRadius: '3px', background: smColor }} />
-                            </div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: smColor, fontFamily: MONO_FONT, minWidth: '38px', textAlign: 'right' }}>{t.smartMoney.longPct}%</span>
-                          </div>
-
-                          {/* Retail bar */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden', position: 'relative' }}>
-                              <motion.div initial={{ width: 0 }} animate={{ width: `${t.retail.longPct}%` }} transition={{ duration: 0.8, delay: idx * 0.05 }}
-                                style={{ height: '100%', borderRadius: '3px', background: rtColor }} />
-                            </div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: rtColor, fontFamily: MONO_FONT, minWidth: '38px', textAlign: 'right' }}>{t.retail.longPct}%</span>
-                          </div>
-
-                          {/* Divergence */}
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: divColor, fontFamily: MONO_FONT, textAlign: 'right' }}>
-                            {t.divergence > 0 ? '+' : ''}{t.divergence}%
-                          </span>
-
-                          {/* Funding */}
-                          <span style={{ fontSize: '0.72rem', fontWeight: 500, color: fundColor, fontFamily: MONO_FONT, textAlign: 'right' }}>
-                            {t.fundingRate != null ? `${t.fundingRate.toFixed(3)}%` : '—'}
-                          </span>
-                        </motion.div>
-                      )
-                    })}
-
-                    {(!smartMoneyData?.tokens || smartMoneyData.tokens.length === 0) && (
-                      <div style={{ padding: '2rem', textAlign: 'center', color: COLORS.textMuted, fontFamily: MONO_FONT, fontSize: '0.8rem' }}>
-                        Loading smart money data...
-                      </div>
-                    )}
-                  </Panel>
                 </SectionGap>
               </motion.div>
 

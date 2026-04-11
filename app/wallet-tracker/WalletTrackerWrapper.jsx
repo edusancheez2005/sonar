@@ -10,6 +10,7 @@ import EarlyMoverRadar from '@/components/wallet-tracker/EarlyMoverRadar'
 import FollowingView from '@/components/wallet-tracker/FollowingView'
 import SonarPulse from '@/components/wallet-tracker/SonarPulse'
 import InfoGuide from '@/components/wallet-tracker/InfoGuide'
+import SmartMoneyPanel from '@/components/wallet-tracker/SmartMoneyPanel'
 import WhaleConsensus from '@/components/wallet-tracker/WhaleConsensus'
 import WalletComparison from '@/components/wallet-tracker/WalletComparison'
 import BacktestTool from '@/components/wallet-tracker/BacktestTool'
@@ -381,6 +382,9 @@ export default function WalletTrackerWrapper() {
                   </ErrorBoundary>
                 </div>
                 <InfoGuide />
+
+                {/* Smart Money Mirror */}
+                <SmartMoneyPanel />
               </div>
             </Layout>
           </>

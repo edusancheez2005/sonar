@@ -273,9 +273,17 @@ export default function Statistics() {
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [isPremium, setIsPremium] = useState(true) // All features unlocked
+  const [whisperData, setWhisperData] = useState(null)
 
   const debounceRef = useRef(null)
   const prevFiltersRef = useRef({ token:'', side:'', chain:'', minUsd:'', maxUsd:'', sinceHours:24 })
+
+  // Fetch Whale Whisper
+  useEffect(() => {
+    fetch('/api/dashboard/whale-whisper').then(r => r.json()).then(d => {
+      if (d?.whisper) setWhisperData(d.whisper)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     async function loadChains() {
@@ -424,6 +432,39 @@ export default function Statistics() {
           <LiveDot>LIVE</LiveDot>
         </PageTitle>
       </motion.div>
+
+      {/* Whale Whisper — AI Market Narrative */}
+      {whisperData?.narrative && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+          style={{ marginBottom: '1.5rem', padding: '1.25rem 1.5rem', background: 'rgba(13, 17, 28, 0.8)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0, 229, 255, 0.08)', borderRadius: '8px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: whisperData.market_bias === 'bullish' ? '#00e676' : whisperData.market_bias === 'bearish' ? '#ff1744' : '#00e5ff' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', textTransform: 'uppercase' }}>WHALE WHISPER</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{
+                padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.5px', textTransform: 'uppercase',
+                background: whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.1)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.1)' : 'rgba(0,229,255,0.06)',
+                color: whisperData.market_bias === 'bullish' ? '#00e676' : whisperData.market_bias === 'bearish' ? '#ff1744' : '#00e5ff',
+                border: `1px solid ${whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.2)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.2)' : 'rgba(0,229,255,0.1)'}`,
+              }}>{whisperData.market_bias}</span>
+              <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{whisperData.confidence}%</span>
+              <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', lineHeight: 1.7, color: '#e0e6ed', whiteSpace: 'pre-wrap' }}>
+            {whisperData.narrative}
+          </div>
+          {whisperData.summary && (
+            <div style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif" }}>
+              {whisperData.summary}
+            </div>
+          )}
+        </motion.div>
+      )}
 
       <Panel>
         <Presets>
