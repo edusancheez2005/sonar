@@ -39,8 +39,15 @@ const TRACKED_TOKENS = [
 async function fetchJson(url) {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
-    return res.ok ? res.json() : null
-  } catch { return null }
+    if (!res.ok) {
+      console.error(`[SmartMoney] ${url} returned ${res.status}`)
+      return null
+    }
+    return res.json()
+  } catch (err) {
+    console.error(`[SmartMoney] ${url} failed: ${err.message}`)
+    return null
+  }
 }
 
 export async function GET() {
@@ -111,6 +118,17 @@ export async function GET() {
     }
 
     const tokens = results.filter(Boolean).sort((a, b) => Math.abs(b.divergence) - Math.abs(a.divergence))
+
+    // Debug: if no tokens, try a single test call and report the error
+    if (tokens.length === 0) {
+      let debugInfo = null
+      try {
+        const testRes = await fetch(`${FUTURES_BASE}/futures/data/topLongShortPositionRatio?symbol=BTCUSDT&period=4h&limit=1`, { signal: AbortSignal.timeout(10000) })
+        debugInfo = { status: testRes.status, ok: testRes.ok, body: await testRes.text().catch(() => 'failed to read') }
+      } catch (e) { debugInfo = { error: e.message } }
+      console.error('[SmartMoney] No tokens returned. Debug:', JSON.stringify(debugInfo))
+      return NextResponse.json({ tokens: [], summary: { bullishCount: 0, bearishCount: 0, neutralCount: 0, strongestDivergence: null }, debug: debugInfo, timestamp: new Date().toISOString() })
+    }
 
     const bullishCount = tokens.filter(t => t.signal === 'bullish_divergence').length
     const bearishCount = tokens.filter(t => t.signal === 'bearish_divergence').length
