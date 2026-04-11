@@ -435,7 +435,7 @@ export default function Statistics() {
 
       {/* Whale Whisper — AI Market Narrative */}
       {whisperData?.narrative && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           style={{ marginBottom: '1.5rem', padding: '1.25rem 1.5rem', background: 'rgba(13, 17, 28, 0.8)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0, 229, 255, 0.08)', borderRadius: '8px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: whisperData.market_bias === 'bullish' ? '#00e676' : whisperData.market_bias === 'bearish' ? '#ff1744' : '#00e5ff' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
@@ -455,13 +455,32 @@ export default function Statistics() {
               <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', lineHeight: 1.7, color: '#e0e6ed', whiteSpace: 'pre-wrap' }}>
-            {whisperData.narrative}
+          {/* Narrative with highlighted keywords and staggered paragraphs */}
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', lineHeight: 1.75, color: '#c0cad6' }}>
+            {whisperData.narrative.split('\n\n').filter(Boolean).map((para, idx) => (
+              <motion.p key={idx} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.15 + idx * 0.2 }}
+                style={{ margin: idx > 0 ? '0.75rem 0 0' : 0, padding: '0.5rem 0.75rem', borderLeft: `2px solid ${idx === 0 ? 'rgba(0,229,255,0.3)' : idx === whisperData.narrative.split('\n\n').filter(Boolean).length - 1 ? (whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.4)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.4)' : 'rgba(0,229,255,0.3)') : 'rgba(255,255,255,0.06)'}`, borderRadius: '0 4px 4px 0', background: idx === 0 ? 'rgba(0,229,255,0.02)' : 'transparent' }}
+                dangerouslySetInnerHTML={{ __html: para
+                  .replace(/(\$[\d,.]+[BKMTX]?)/g, '<span style="color:#00e5ff;font-weight:700">$1</span>')
+                  .replace(/(\+[\d.]+%|-[\d.]+%)/g, (m) => `<span style="color:${m.startsWith('+') ? '#00e676' : '#ff1744'};font-weight:700">${m}</span>`)
+                  .replace(/(STRONG BUY|BUY|SELL|STRONG SELL|NEUTRAL)/g, (m) => {
+                    const c = m.includes('BUY') ? '#00e676' : m.includes('SELL') ? '#ff1744' : '#ffab00'
+                    return `<span style="color:${c};font-weight:700;padding:0.1rem 0.3rem;border-radius:3px;background:${c}11;border:1px solid ${c}33;font-size:0.72rem">${m}</span>`
+                  })
+                  .replace(/\b(BTC|ETH|SOL|XRP|DOGE|ADA|PEPE|LINK|BNB|AVAX)\b/g, '<span style="color:#e0e6ed;font-weight:700">$1</span>')
+                  .replace(/(BULLISH|BEARISH|NEUTRAL)/g, (m) => {
+                    const c = m === 'BULLISH' ? '#00e676' : m === 'BEARISH' ? '#ff1744' : '#ffab00'
+                    return `<span style="color:${c};font-weight:800;letter-spacing:0.5px">${m}</span>`
+                  })
+                }} />
+            ))}
           </div>
           {whisperData.summary && (
-            <div style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif" }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+              style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
               {whisperData.summary}
-            </div>
+            </motion.div>
           )}
         </motion.div>
       )}

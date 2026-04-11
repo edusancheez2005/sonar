@@ -82,19 +82,3 @@ export async function GET() {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
-
-    const bullishCount = tokens.filter(t => t.signal === 'bullish_divergence').length
-    const bearishCount = tokens.filter(t => t.signal === 'bearish_divergence').length
-    const neutralCount = tokens.filter(t => t.signal === 'aligned').length
-    const strongestDivergence = tokens[0] || null
-
-    return NextResponse.json({
-      tokens,
-      summary: { bullishCount, bearishCount, neutralCount, strongestDivergence },
-      timestamp: new Date().toISOString(),
-    })
-  } catch (err) {
-    console.error('[SmartMoney] Error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
