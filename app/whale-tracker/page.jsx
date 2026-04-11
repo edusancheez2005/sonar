@@ -111,7 +111,7 @@ export default function WhaleTrackerPage() {
           {/* Final CTA */}
           <div style={{ textAlign: 'center', padding: '3rem 0' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1rem' }}>Stop trading blind.</h2>
-            <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>Join 1,000+ traders who see whale movements before they hit the charts.</p>
+            <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>Join 700+ traders who see whale movements before they hit the charts.</p>
             <a href="/subscribe" style={{ display: 'inline-block', padding: '1rem 2.5rem', borderRadius: '8px', background: 'linear-gradient(135deg, #36a6ba, #2d8a9a)', color: '#fff', fontWeight: 700, textDecoration: 'none', fontSize: '1.1rem' }}>Start Tracking Whales — Free</a>
           </div>
         </div>

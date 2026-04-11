@@ -186,7 +186,7 @@ const faqData = [
     items: [
       {
         question: 'What is Sonar Tracker?',
-        answer: 'Sonar Tracker is a real-time cryptocurrency whale transaction monitoring and analytics platform. We track large transactions (over $10,000) across 10+ blockchains including Ethereum, Bitcoin, Solana, Polygon, and BSC. Our AI analyst <a href="/ai-advisor">ORCA</a> provides plain-English interpretation of whale movements to help traders make data-driven decisions. Over 1,000 traders use Sonar for whale intelligence.'
+        answer: 'Sonar Tracker is a real-time cryptocurrency whale transaction monitoring and analytics platform. We track large transactions (over $10,000) across 10+ blockchains including Ethereum, Bitcoin, Solana, Polygon, and BSC. Our AI analyst <a href="/ai-advisor">ORCA</a> provides plain-English interpretation of whale movements to help traders make data-driven decisions. Over 700 traders use Sonar for whale intelligence.'
       },
       {
         question: 'What is ORCA AI?',

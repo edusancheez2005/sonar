@@ -928,7 +928,7 @@ const Landing = () => {
 
             <HeroHighlight variants={itemVariants} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
               <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.2 }} whileHover={{ scale: 1.05 }}>
-                <div className="number"><CountUp target={1000} suffix="+" /></div><div className="label">Happy Users</div>
+                <div className="number"><CountUp target={700} suffix="+" /></div><div className="label">Happy Users</div>
               </StatBadge>
               <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.4 }} whileHover={{ scale: 1.05 }}>
                 <div className="number"><CountUp target={2000} suffix="+" /></div><div className="label">Profitable Trades</div>
@@ -1824,7 +1824,7 @@ const Landing = () => {
       {/* ─── TESTIMONIALS CAROUSEL ─── */}
       <TrustSection>
         <motion.h2 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
-          1,000+ traders. $2B+ volume tracked.
+          700+ traders. $2B+ volume tracked.
         </motion.h2>
         <p className="subtitle">Don't take our word for it.</p>
 
@@ -2099,7 +2099,7 @@ const Landing = () => {
               </motion.div>
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
                 style={{ marginTop: 'auto', paddingTop: '2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
-                Trusted by 1,000+ traders worldwide
+                Trusted by 700+ traders worldwide
               </motion.p>
             </div>
 

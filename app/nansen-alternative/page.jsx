@@ -103,7 +103,7 @@ export default function NansenAlternativePage() {
         {/* CTA */}
         <div style={{ textAlign: 'center', padding: '3rem 0' }}>
           <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1rem' }}>Ready to switch?</h2>
-          <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>Try Sonar free. No credit card required. See why 1,000+ traders made the switch.</p>
+          <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>Try Sonar free. No credit card required. See why 700+ traders made the switch.</p>
           <a href="/subscribe" style={{ display: 'inline-block', padding: '1rem 2.5rem', borderRadius: '8px', background: 'linear-gradient(135deg, #36a6ba, #2d8a9a)', color: '#fff', fontWeight: 700, textDecoration: 'none', fontSize: '1.1rem' }}>Start Free — Upgrade Anytime</a>
         </div>
       </div>
