@@ -672,7 +672,7 @@ const Landing = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '', displayName: '', country: '', experienceLevel: '', interests: [] });
+  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '', displayName: '', country: '', experienceLevel: '', interests: [], website_url: '' });
   const [waitEmail, setWaitEmail] = useState('');
   const [waitMsg, setWaitMsg] = useState('');
   const [signupLoading, setSignupLoading] = useState(false);
@@ -769,6 +769,8 @@ const Landing = () => {
   const handleSignup = async (e) => {
     e.preventDefault();
     setSignupError(''); setSignupInfo(''); setResendMsg(''); setResendAvailable(false);
+    // Honeypot anti-bot: if the hidden field is filled, it's a bot
+    if (formData.website_url) { console.log('Bot detected via honeypot'); return; }
     if (!formData.displayName?.trim()) { setSignupError('Display name is required'); showToast('Display name is required', 'error'); return; }
     if (!formData.email || !formData.password) { setSignupError('Email and password are required'); showToast('Email and password are required', 'error'); return; }
     if (formData.password.length < 8) { setSignupError('Password must be at least 8 characters'); showToast('Password must be at least 8 characters', 'error'); return; }
@@ -2126,6 +2128,10 @@ const Landing = () => {
               </div>
 
               <Form onSubmit={handleSignup} style={{ gap: '1rem' }}>
+                {/* Honeypot - invisible to humans, bots fill this */}
+                <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }} aria-hidden="true" tabIndex={-1}>
+                  <input type="text" name="website_url" autoComplete="off" tabIndex={-1} value={formData.website_url} onChange={e => setFormData({ ...formData, website_url: e.target.value })} />
+                </div>
                 {/* Row: Name + Email */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <FormGroup style={{ gap: '0.3rem' }}><label style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Display Name <span style={{ color: '#00e5ff' }}>*</span></label><input type="text" placeholder="e.g. CryptoWhale" value={formData.displayName} onChange={e => setFormData({ ...formData, displayName: e.target.value })} required style={{ borderRadius: '10px', padding: '0.65rem 0.75rem', fontSize: '0.9rem', border: '1px solid rgba(0,229,255,0.12)', background: 'rgba(0,229,255,0.03)' }} /></FormGroup>
