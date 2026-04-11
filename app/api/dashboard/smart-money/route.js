@@ -1,28 +1,14 @@
 /**
  * GET /api/dashboard/smart-money
  * Returns top trader vs retail positioning for major tokens.
- * Data from Binance Futures API (free, no key needed).
  * 
- * Response shape:
- * {
- *   tokens: [
- *     {
- *       symbol: 'BTC',
- *       price: 71000,
- *       change24h: 0.5,
- *       smartMoney: { longPct: 55.2, shortPct: 44.8 },
- *       retail: { longPct: 72.1, shortPct: 27.9 },
- *       divergence: -16.9,  // negative = smart money less bullish than retail
- *       fundingRate: 0.0102,
- *       takerRatio: 1.05,
- *       signal: 'bearish_divergence' | 'bullish_divergence' | 'aligned'
- *     }
- *   ],
- *   summary: { bullishCount, bearishCount, neutralCount, strongestDivergence }
- * }
+ * Strategy: Fetches derivatives data directly from Binance.
+ * If Binance Futures is geo-blocked (451), falls back to
+ * pre-computed derivatives from the signal engine stored in token_signals.
  */
 
 import { NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -30,7 +16,6 @@ export const maxDuration = 30
 const FUTURES_BASE = 'https://fapi.binance.com'
 const SPOT_BASE = 'https://data-api.binance.vision'
 
-// Tokens with active Binance USDT-M futures (top by volume)
 const TRACKED_TOKENS = [
   'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE',
   'ADA', 'AVAX', 'LINK', 'PEPE', 'SUI', 'ARB',
@@ -38,21 +23,15 @@ const TRACKED_TOKENS = [
 
 async function fetchJson(url) {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
-    if (!res.ok) {
-      console.error(`[SmartMoney] ${url} returned ${res.status}`)
-      return null
-    }
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
+    if (!res.ok) return null
     return res.json()
-  } catch (err) {
-    console.error(`[SmartMoney] ${url} failed: ${err.message}`)
-    return null
-  }
+  } catch { return null }
 }
 
 export async function GET() {
   try {
-    // Fetch all 24h tickers in one call (weight: 80)
+    // Get prices from Binance spot (always works)
     const allTickers = await fetchJson(`${SPOT_BASE}/api/v3/ticker/24hr`)
     const priceMap = {}
     if (allTickers) {
@@ -66,69 +45,91 @@ export async function GET() {
       }
     }
 
-    // Fetch derivatives data in batches of 4 to avoid rate limits
-    const results = []
-    for (let i = 0; i < TRACKED_TOKENS.length; i += 4) {
-      const batch = TRACKED_TOKENS.slice(i, i + 4)
-      const batchResults = await Promise.all(
-        batch.map(async (token) => {
-        const symbol = `${token}USDT`
+    // Try Binance Futures directly first
+    const testRes = await fetchJson(`${FUTURES_BASE}/futures/data/topLongShortPositionRatio?symbol=BTCUSDT&period=4h&limit=1`)
+    const binanceWorking = testRes !== null && Array.isArray(testRes)
 
-        const [topTrader, globalRatio, funding, taker] = await Promise.all([
-          fetchJson(`${FUTURES_BASE}/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=4h&limit=1`),
-          fetchJson(`${FUTURES_BASE}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=4h&limit=1`),
-          fetchJson(`${FUTURES_BASE}/fapi/v1/fundingRate?symbol=${symbol}&limit=1`),
-          fetchJson(`${FUTURES_BASE}/futures/data/takerlongshortRatio?symbol=${symbol}&period=4h&limit=1`),
-        ])
+    let tokens = []
 
-        const smartLong = topTrader?.[0] ? parseFloat(topTrader[0].longAccount) * 100 : null
-        const retailLong = globalRatio?.[0] ? parseFloat(globalRatio[0].longAccount) * 100 : null
-        const fundRate = funding?.[0] ? parseFloat(funding[0].fundingRate) * 100 : null
-        const takerRatio = taker?.[0] ? parseFloat(taker[0].buySellRatio) : null
+    if (binanceWorking) {
+      // Direct Binance path
+      for (let i = 0; i < TRACKED_TOKENS.length; i += 4) {
+        const batch = TRACKED_TOKENS.slice(i, i + 4)
+        const batchResults = await Promise.all(batch.map(async (token) => {
+          const symbol = `${token}USDT`
+          const [topTrader, globalRatio, funding, taker] = await Promise.all([
+            fetchJson(`${FUTURES_BASE}/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=4h&limit=1`),
+            fetchJson(`${FUTURES_BASE}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=4h&limit=1`),
+            fetchJson(`${FUTURES_BASE}/fapi/v1/fundingRate?symbol=${symbol}&limit=1`),
+            fetchJson(`${FUTURES_BASE}/futures/data/takerlongshortRatio?symbol=${symbol}&period=4h&limit=1`),
+          ])
 
-        if (smartLong === null || retailLong === null) return null
+          const smartLong = topTrader?.[0] ? parseFloat(topTrader[0].longAccount) * 100 : null
+          const retailLong = globalRatio?.[0] ? parseFloat(globalRatio[0].longAccount) * 100 : null
+          if (smartLong === null || retailLong === null) return null
 
-        const divergence = smartLong - retailLong // positive = smart money more bullish
-        let signal = 'aligned'
-        if (divergence < -8) signal = 'bearish_divergence' // smart money less bullish than retail
-        else if (divergence > 8) signal = 'bullish_divergence' // smart money more bullish
+          const divergence = smartLong - retailLong
+          const fundRate = funding?.[0] ? parseFloat(funding[0].fundingRate) * 100 : null
+          const takerRatio = taker?.[0] ? parseFloat(taker[0].buySellRatio) : null
+          const p = priceMap[token] || { price: 0, change24h: 0 }
 
+          return {
+            symbol: token, price: p.price, change24h: Math.round(p.change24h * 100) / 100,
+            smartMoney: { longPct: Math.round(smartLong * 10) / 10, shortPct: Math.round((100 - smartLong) * 10) / 10 },
+            retail: { longPct: Math.round(retailLong * 10) / 10, shortPct: Math.round((100 - retailLong) * 10) / 10 },
+            divergence: Math.round(divergence * 10) / 10,
+            fundingRate: fundRate !== null ? Math.round(fundRate * 10000) / 10000 : null,
+            takerRatio: takerRatio !== null ? Math.round(takerRatio * 1000) / 1000 : null,
+            signal: divergence < -8 ? 'bearish_divergence' : divergence > 8 ? 'bullish_divergence' : 'aligned',
+          }
+        }))
+        tokens.push(...batchResults.filter(Boolean))
+      }
+    } else {
+      // Fallback: read derivatives from latest signal engine results
+      const { data: signals } = await supabaseAdmin
+        .from('token_signals')
+        .select('token, tier1_factors, computed_at')
+        .in('token', TRACKED_TOKENS)
+        .order('computed_at', { ascending: false })
+        .limit(100)
+
+      // Also get latest derivatives from derivativesData stored in signal cron logs
+      // Use the whale-whisper data snapshot as fallback
+      const { data: whisper } = await supabaseAdmin
+        .from('whale_whispers')
+        .select('data_snapshot')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      const derivSnapshot = whisper?.data_snapshot?.derivatives || {}
+
+      for (const token of TRACKED_TOKENS) {
+        const d = derivSnapshot[token]
         const p = priceMap[token] || { price: 0, change24h: 0 }
+        if (!d) continue
 
-        return {
-          symbol: token,
-          price: p.price,
-          change24h: Math.round(p.change24h * 100) / 100,
-          smartMoney: {
-            longPct: Math.round(smartLong * 10) / 10,
-            shortPct: Math.round((100 - smartLong) * 10) / 10,
-          },
-          retail: {
-            longPct: Math.round(retailLong * 10) / 10,
-            shortPct: Math.round((100 - retailLong) * 10) / 10,
-          },
+        const retailLong = parseFloat(d.retailLongPct) || 50
+        const smartLong = parseFloat(d.topTraderLongPct) || 50
+        const divergence = smartLong - retailLong
+        const fundStr = d.fundingRate || '0%'
+        const fundRate = parseFloat(fundStr) || 0
+
+        tokens.push({
+          symbol: token, price: p.price, change24h: Math.round(p.change24h * 100) / 100,
+          smartMoney: { longPct: Math.round(smartLong * 10) / 10, shortPct: Math.round((100 - smartLong) * 10) / 10 },
+          retail: { longPct: Math.round(retailLong * 10) / 10, shortPct: Math.round((100 - retailLong) * 10) / 10 },
           divergence: Math.round(divergence * 10) / 10,
-          fundingRate: fundRate !== null ? Math.round(fundRate * 10000) / 10000 : null,
-          takerRatio: takerRatio !== null ? Math.round(takerRatio * 1000) / 1000 : null,
-          signal,
-        }
-      })
-    )
-      results.push(...batchResults)
+          fundingRate: Math.round(fundRate * 10000) / 10000,
+          takerRatio: null,
+          signal: divergence < -8 ? 'bearish_divergence' : divergence > 8 ? 'bullish_divergence' : 'aligned',
+          source: 'cached',
+        })
+      }
     }
 
-    const tokens = results.filter(Boolean).sort((a, b) => Math.abs(b.divergence) - Math.abs(a.divergence))
-
-    // Debug: if no tokens, try a single test call and report the error
-    if (tokens.length === 0) {
-      let debugInfo = null
-      try {
-        const testRes = await fetch(`${FUTURES_BASE}/futures/data/topLongShortPositionRatio?symbol=BTCUSDT&period=4h&limit=1`, { signal: AbortSignal.timeout(10000) })
-        debugInfo = { status: testRes.status, ok: testRes.ok, body: await testRes.text().catch(() => 'failed to read') }
-      } catch (e) { debugInfo = { error: e.message } }
-      console.error('[SmartMoney] No tokens returned. Debug:', JSON.stringify(debugInfo))
-      return NextResponse.json({ tokens: [], summary: { bullishCount: 0, bearishCount: 0, neutralCount: 0, strongestDivergence: null }, debug: debugInfo, timestamp: new Date().toISOString() })
-    }
+    tokens.sort((a, b) => Math.abs(b.divergence) - Math.abs(a.divergence))
 
     const bullishCount = tokens.filter(t => t.signal === 'bullish_divergence').length
     const bearishCount = tokens.filter(t => t.signal === 'bearish_divergence').length
