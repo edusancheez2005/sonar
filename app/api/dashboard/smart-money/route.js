@@ -25,20 +25,20 @@
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 30
 
 const FUTURES_BASE = 'https://fapi.binance.com'
 const SPOT_BASE = 'https://data-api.binance.vision'
 
-// Tokens with active Binance USDT-M futures
+// Tokens with active Binance USDT-M futures (top by volume)
 const TRACKED_TOKENS = [
-  'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA',
-  'AVAX', 'LINK', 'DOT', 'UNI', 'NEAR', 'ARB', 'OP',
-  'SUI', 'PEPE', 'INJ', 'FET', 'ATOM', 'LTC',
+  'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE',
+  'ADA', 'AVAX', 'LINK', 'PEPE', 'SUI', 'ARB',
 ]
 
 async function fetchJson(url) {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) })
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
     return res.ok ? res.json() : null
   } catch { return null }
 }
@@ -59,9 +59,12 @@ export async function GET() {
       }
     }
 
-    // Fetch derivatives data for all tracked tokens in parallel
-    const results = await Promise.all(
-      TRACKED_TOKENS.map(async (token) => {
+    // Fetch derivatives data in batches of 4 to avoid rate limits
+    const results = []
+    for (let i = 0; i < TRACKED_TOKENS.length; i += 4) {
+      const batch = TRACKED_TOKENS.slice(i, i + 4)
+      const batchResults = await Promise.all(
+        batch.map(async (token) => {
         const symbol = `${token}USDT`
 
         const [topTrader, globalRatio, funding, taker] = await Promise.all([
@@ -104,6 +107,8 @@ export async function GET() {
         }
       })
     )
+      results.push(...batchResults)
+    }
 
     const tokens = results.filter(Boolean).sort((a, b) => Math.abs(b.divergence) - Math.abs(a.divergence))
 
