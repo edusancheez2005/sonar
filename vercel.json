@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/whale-whisper",
       "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/cache-derivatives",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
