@@ -76,7 +76,7 @@ export async function GET(req) {
 
     // Per-signal-type accuracy
     const byType = {}
-    for (const t of ['STRONG_BUY', 'BUY', 'SELL', 'STRONG_SELL']) {
+    for (const t of ['STRONG BUY', 'BUY', 'SELL', 'STRONG SELL']) {
       const tOutcomes = outcomes.filter(o => o.signal_type === t)
       const tCorrect = tOutcomes.filter(o => o.correct).length
       byType[t] = {

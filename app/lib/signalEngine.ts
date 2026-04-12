@@ -1,22 +1,33 @@
 /**
- * Sonar Unified Signal Engine v3.0
+ * Sonar Unified Signal Engine v7.0
  *
  * Produces a single actionable signal per token:
  *   STRONG BUY / BUY / NEUTRAL / SELL / STRONG SELL
  *
- * Tiered signal architecture (v3 rebalanced):
- *   Tier 1 (25%): CEX whale flow — exchange inflow/outflow only (reduced from 40%)
- *   Tier 2 (40%): Price momentum + volume intensity (increased from 30%)
- *   Tier 3 (25%): News sentiment + social intelligence (increased from 20%)
- *   Tier 4 (10%): EOA activity + community votes + dev activity
+ * Tiered signal architecture:
+ *   WITH derivatives (v5+):
+ *     Tier 1 (20%): CEX whale flow
+ *     Tier 2 (30%): Price momentum + volume + technical analysis
+ *     Tier 3 (15%): News sentiment + social intelligence
+ *     Tier 4 (5%):  EOA activity + community votes + dev activity
+ *     Derivatives (30%): Funding rates, L/S ratios, top traders, taker volume
  *
- * Key v3 changes:
- *   - Momentum dominates for 24h signals (40% weight)
- *   - Whale flow reduced to 25% (it's a medium-term signal, not short-term)
- *   - Wider NEUTRAL band (35-65 instead of 37-63)
- *   - Tier disagreement forces NEUTRAL (confidence-based)
- *   - Market beta threshold lowered to 1% for alts
- *   - Breadth/surge bonuses removed (caused permanent bullish bias)
+ *   WITHOUT derivatives:
+ *     Tier 1 (25%): CEX whale flow
+ *     Tier 2 (40%): Price momentum + volume + technical analysis
+ *     Tier 3 (25%): News sentiment + social intelligence
+ *     Tier 4 (10%): EOA activity + community votes + dev activity
+ *
+ * v7 changes:
+ *   - Live Binance price for price_at_signal (fixes stale price bug)
+ *   - 6h/30d momentum computed from price snapshots (was hardcoded to 0)
+ *   - Taker buy pressure from Binance klines (replaces binary volume multiplier)
+ *   - Rolling Window Ticker for 1h/6h changes directly from Binance
+ *   - PEPE/SHIB re-enabled for derivatives (NO_FUTURES fix)
+ *   - Market beta thresholds synced with getSignalLabel() (58/72/42/28)
+ *   - evaluate-signals STRONG BUY format fixed (was STRONG_BUY)
+ *   - Factors expanded to top 5 (was 3)
+ *   - Duplicate accuracy route resolved
  */
 
 // ─── TYPES ────────────────────────────────────────────────────────────────
@@ -723,6 +734,15 @@ export function computeUnifiedSignal({
       contribution: Math.round(t.data.score * t.effectiveWeight),
     })
   }
+  // v7: Include derivatives as a factor when available
+  if (hasDeriv) {
+    factors.push({
+      name: 'Derivatives',
+      score: derivScore,
+      weight: 30,
+      contribution: Math.round(derivScore * 0.30),
+    })
+  }
   factors.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
 
   const timeframe = determineTimeframe(tier1, tier2)
@@ -741,7 +761,7 @@ export function computeUnifiedSignal({
     score,
     confidence,
     rawScore: Math.round(rawScore),
-    factors: factors.slice(0, 3),
+    factors: factors.slice(0, 5),
     traps,
     tiers: { tier1, tier2, tier3, tier4 },
     timestamp: new Date().toISOString(),

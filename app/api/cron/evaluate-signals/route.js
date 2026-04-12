@@ -3,13 +3,13 @@
  * Schedule: Every hour
  * 
  * Looks back at signals from 1h, 6h, and 24h ago.
- * Fetches current price from price_snapshots.
+ * Fetches current price from Binance (live) with price_snapshots fallback.
  * Compares price_at_signal vs current price to see if the signal was correct.
  * Stores results in signal_outcomes table.
  * 
  * A signal is "correct" if:
- *   - STRONG_BUY / BUY → price went UP
- *   - STRONG_SELL / SELL → price went DOWN
+ *   - STRONG BUY / BUY → price went UP
+ *   - STRONG SELL / SELL → price went DOWN
  *   - NEUTRAL → no evaluation (excluded)
  */
 
@@ -32,16 +32,38 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get latest prices from price_snapshots
-    const { data: priceRows } = await supabaseAdmin
-      .from('price_snapshots')
-      .select('ticker, price_usd')
-      .order('timestamp', { ascending: false })
-      .limit(500)
-
+    // Get LIVE prices from Binance (always fresh), with price_snapshots as fallback
     const priceMap = new Map()
-    for (const row of (priceRows || [])) {
-      if (!priceMap.has(row.ticker)) priceMap.set(row.ticker, row.price_usd)
+    try {
+      const binanceRes = await fetch('https://api.binance.com/api/v3/ticker/price', {
+        signal: AbortSignal.timeout(10000),
+      })
+      if (binanceRes.ok) {
+        const allPrices = await binanceRes.json()
+        for (const p of allPrices) {
+          if (p.symbol.endsWith('USDT')) {
+            const token = p.symbol.replace('USDT', '')
+            priceMap.set(token, parseFloat(p.price))
+          }
+        }
+        // Map wrapped tokens
+        if (priceMap.has('BTC')) priceMap.set('WBTC', priceMap.get('BTC'))
+        if (priceMap.has('ETH')) priceMap.set('WETH', priceMap.get('ETH'))
+      }
+    } catch (e) {
+      console.warn('[EvalSignals] Binance price fetch failed, using snapshots:', e.message)
+    }
+
+    // Fallback: fill gaps from price_snapshots
+    if (priceMap.size < 20) {
+      const { data: priceRows } = await supabaseAdmin
+        .from('price_snapshots')
+        .select('ticker, price_usd')
+        .order('timestamp', { ascending: false })
+        .limit(500)
+      for (const row of (priceRows || [])) {
+        if (!priceMap.has(row.ticker)) priceMap.set(row.ticker, row.price_usd)
+      }
     }
 
     let evaluated = 0
@@ -91,8 +113,8 @@ export async function GET(req) {
         }
 
         const priceChange = ((currentPrice - sig.price_at_signal) / sig.price_at_signal) * 100
-        const isBullish = sig.signal === 'STRONG_BUY' || sig.signal === 'BUY'
-        const isBearish = sig.signal === 'STRONG_SELL' || sig.signal === 'SELL'
+        const isBullish = sig.signal === 'STRONG BUY' || sig.signal === 'BUY'
+        const isBearish = sig.signal === 'STRONG SELL' || sig.signal === 'SELL'
 
         let correct = null
         if (isBullish) correct = priceChange > 0

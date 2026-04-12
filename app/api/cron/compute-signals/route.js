@@ -155,12 +155,46 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
     fetchPriceHistory(tokenSymbol),
   ])
 
-  // If cached price exists, use it. Otherwise fall back to CoinGecko API.
+  // If cached price exists, use it. Otherwise fall back to Binance API.
   let priceData = null
   if (cachedPrice) {
     priceData = cachedPrice
   } else {
     priceData = await fetchPriceData(tokenSymbol)
+  }
+
+  // v7: Always fetch LIVE price from Binance for price_at_signal (fixes stale price bug)
+  // Also fetch 6h change from Binance Rolling Window Ticker
+  const livePrice = await fetchBinanceLivePrice(tokenSymbol)
+  if (livePrice) {
+    // Override price_at_signal with truly live Binance price
+    if (priceData) {
+      priceData.current_price = livePrice.price
+      // Fill in 6h change from Rolling Window Ticker if available
+      if (livePrice.change_6h !== undefined) {
+        priceData.price_change_percentage_6h = livePrice.change_6h
+      }
+      // Use Binance volume if our cached data is stale
+      if (livePrice.volume_24h && (!priceData.total_volume || priceData.total_volume === 0)) {
+        priceData.total_volume = livePrice.volume_24h
+      }
+      // Use Binance market cap estimate
+      if (livePrice.market_cap && (!priceData.market_cap || priceData.market_cap === 0)) {
+        priceData.market_cap = livePrice.market_cap
+      }
+    } else {
+      priceData = {
+        current_price: livePrice.price,
+        price_change_percentage_1h_in_currency: livePrice.change_1h || 0,
+        price_change_percentage_24h: livePrice.change_24h || 0,
+        price_change_percentage_6h: livePrice.change_6h || 0,
+        price_change_percentage_7d: 0,
+        price_change_percentage_30d: 0,
+        total_volume: livePrice.volume_24h || 0,
+        market_cap: livePrice.market_cap || 0,
+        taker_buy_pressure: livePrice.taker_buy_pressure || null,
+      }
+    }
   }
 
   // Fetch derivatives data (Binance Futures - free, no key needed)
@@ -169,10 +203,10 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
   // Build price changes object
   const priceChanges = priceData ? {
     change_1h: priceData.price_change_percentage_1h_in_currency || 0,
-    change_6h: 0, // Binance 24hr ticker doesn't provide 6h natively
+    change_6h: priceData.price_change_percentage_6h || 0, // v7: computed from snapshots or Binance Rolling Window
     change_24h: priceData.price_change_percentage_24h || 0,
     change_7d: priceData.price_change_percentage_7d || 0,
-    change_30d: priceData.price_change_percentage_30d || 0,
+    change_30d: priceData.price_change_percentage_30d || 0, // v7: computed from snapshots
   } : {}
 
   // Build volume data
@@ -220,8 +254,9 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
       const penalty = Math.min(20, Math.abs(btc24h) * 3)
       signal.rawScore = Math.max(-100, (signal.rawScore || 0) - penalty)
       signal.score = Math.round(Math.max(0, Math.min(100, (signal.rawScore + 100) / 2)))
-      if (signal.score < 65) signal.signal = 'NEUTRAL'
-      else if (signal.score < 80) signal.signal = 'BUY'
+      // v7: Use engine thresholds (58/72) not ad-hoc values
+      if (signal.score < 58) signal.signal = 'NEUTRAL'
+      else if (signal.score < 72) signal.signal = 'BUY'
       signal.traps = [...(signal.traps || []), { type: 'Market Headwind', severity: 'MEDIUM', adjustment: -Math.round(penalty), description: `BTC down ${btc24h.toFixed(1)}% - market headwind dampens bullish signals` }]
     }
 
@@ -230,8 +265,9 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
       const boost = Math.min(15, btc24h * 2)
       signal.rawScore = Math.min(100, (signal.rawScore || 0) + boost)
       signal.score = Math.round(Math.max(0, Math.min(100, (signal.rawScore + 100) / 2)))
-      if (signal.score > 35) signal.signal = 'NEUTRAL'
-      else if (signal.score > 20) signal.signal = 'SELL'
+      // v7: Use engine thresholds (42/28) not ad-hoc values
+      if (signal.score > 42) signal.signal = 'NEUTRAL'
+      else if (signal.score > 28) signal.signal = 'SELL'
     }
   }
 
@@ -274,9 +310,22 @@ async function fetchPriceHistory(tokenSymbol) {
 
 /**
  * Fetch BTC 24h change as a market regime indicator.
- * Used for market beta adjustment on individual token signals.
+ * v7: Use Binance 24hr ticker (always fresh) with Supabase fallback.
  */
 async function fetchMarketBeta() {
+  try {
+    // Try Binance first (always live)
+    const res = await fetch(
+      'https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT',
+      { signal: AbortSignal.timeout(8000) }
+    )
+    if (res.ok) {
+      const d = await res.json()
+      return { btc24hChange: parseFloat(d.priceChangePercent) || 0 }
+    }
+  } catch {}
+
+  // Fallback to Supabase
   try {
     const { data } = await supabaseAdmin
       .from('price_snapshots')
@@ -394,16 +443,47 @@ async function fetchCachedPrice(tokenSymbol) {
       ? ((latest.price_usd - weekAgoSnap.price_usd) / weekAgoSnap.price_usd) * 100
       : 0
 
+    // v7: Get snapshot from ~6 hours ago for 6h price change
+    const sixHoursAgo = new Date(Date.now() - 6.5 * 60 * 60 * 1000).toISOString()
+    const { data: sixHourSnap } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_usd')
+      .eq('ticker', tokenSymbol)
+      .lte('timestamp', sixHoursAgo)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const priceChange6h = sixHourSnap?.price_usd
+      ? ((latest.price_usd - sixHourSnap.price_usd) / sixHourSnap.price_usd) * 100
+      : 0
+
+    // v7: Get snapshot from ~30 days ago for 30d price change
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: monthAgoSnap } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_usd')
+      .eq('ticker', tokenSymbol)
+      .lte('timestamp', thirtyDaysAgo)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const priceChange30d = monthAgoSnap?.price_usd
+      ? ((latest.price_usd - monthAgoSnap.price_usd) / monthAgoSnap.price_usd) * 100
+      : 0
+
     return {
       current_price: latest.price_usd,
       price_change_percentage_1h_in_currency: priceChange1h,
+      price_change_percentage_6h: priceChange6h,
       price_change_percentage_24h: latest.price_change_24h || 0,
       price_change_percentage_7d: priceChange7d,
-      price_change_percentage_30d: 0, // Not available from snapshots
+      price_change_percentage_30d: priceChange30d,
       total_volume: latest.volume_24h || 0,
       avg_volume_7d: avgVolume7d,
       market_cap: latest.market_cap || 0,
-      developer_data: null, // Not in snapshots
+      developer_data: null,
       community_data: null,
     }
   } catch (err) {
@@ -443,6 +523,78 @@ async function fetchPriceData(tokenSymbol) {
     }
   } catch (err) {
     console.error(`[SignalEngine] Binance error for ${tokenSymbol}:`, err.message)
+    return null
+  }
+}
+
+
+/**
+ * v7: Fetch LIVE price from Binance for accurate price_at_signal,
+ * plus 1h/6h rolling window changes and taker buy pressure from klines.
+ * Uses two cheap endpoints:
+ *   - /api/v3/ticker/price (weight: 2) — real-time last traded price
+ *   - /api/v3/ticker (weight: 4 per window) — rolling window price changes
+ *   - /api/v3/klines (weight: 2) — taker buy pressure from recent 4h candles
+ */
+async function fetchBinanceLivePrice(tokenSymbol) {
+  const pair = symbolToPair(tokenSymbol)
+  if (!pair) return null
+
+  try {
+    // Fetch live price + rolling window changes in parallel
+    const [priceRes, change1hRes, change6hRes, klinesRes] = await Promise.allSettled([
+      fetch(`https://data-api.binance.vision/api/v3/ticker/price?symbol=${pair}`, { signal: AbortSignal.timeout(8000) }),
+      fetch(`https://data-api.binance.vision/api/v3/ticker?symbol=${pair}&windowSize=1h`, { signal: AbortSignal.timeout(8000) }),
+      fetch(`https://data-api.binance.vision/api/v3/ticker?symbol=${pair}&windowSize=6h`, { signal: AbortSignal.timeout(8000) }),
+      fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=4h&limit=6`, { signal: AbortSignal.timeout(8000) }),
+    ])
+
+    let price = null
+    let change_1h = undefined
+    let change_6h = undefined
+    let change_24h = undefined
+    let volume_24h = 0
+    let market_cap = 0
+    let taker_buy_pressure = null
+
+    // Parse live price
+    if (priceRes.status === 'fulfilled' && priceRes.value.ok) {
+      const d = await priceRes.value.json()
+      price = parseFloat(d.price) || null
+    }
+
+    // Parse 1h rolling window
+    if (change1hRes.status === 'fulfilled' && change1hRes.value.ok) {
+      const d = await change1hRes.value.json()
+      change_1h = parseFloat(d.priceChangePercent) || 0
+      volume_24h = parseFloat(d.quoteVolume) || 0
+    }
+
+    // Parse 6h rolling window
+    if (change6hRes.status === 'fulfilled' && change6hRes.value.ok) {
+      const d = await change6hRes.value.json()
+      change_6h = parseFloat(d.priceChangePercent) || 0
+    }
+
+    // Parse klines for taker buy pressure
+    if (klinesRes.status === 'fulfilled' && klinesRes.value.ok) {
+      const candles = await klinesRes.value.json()
+      if (candles && candles.length > 0) {
+        let totalVol = 0, takerBuyVol = 0
+        for (const c of candles) {
+          totalVol += parseFloat(c[5]) || 0      // base asset volume
+          takerBuyVol += parseFloat(c[9]) || 0   // taker buy base asset volume
+        }
+        if (totalVol > 0) {
+          taker_buy_pressure = takerBuyVol / totalVol // 0.55+ = aggressive buying, 0.45- = aggressive selling
+        }
+      }
+    }
+
+    if (!price) return null
+    return { price, change_1h, change_6h, change_24h, volume_24h, market_cap, taker_buy_pressure }
+  } catch (err) {
+    console.error(`[SignalEngine] Binance live price error for ${tokenSymbol}:`, err.message)
     return null
   }
 }

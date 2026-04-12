@@ -52,7 +52,8 @@ const DEFAULT_RESULT: DerivativesData = {
 }
 
 // Tokens that DON'T have Binance USDT perpetuals
-const NO_FUTURES = new Set(['PEPE', 'SHIB', 'MKR', 'LRC', 'FXS', 'MNT', 'WBTC', 'WETH'])
+// v7: Removed PEPE and SHIB — they have had USDT perpetuals since 2023
+const NO_FUTURES = new Set(['MKR', 'LRC', 'FXS', 'WBTC', 'WETH'])
 
 /**
  * Fetch all derivatives data for a token from Binance Futures API.
