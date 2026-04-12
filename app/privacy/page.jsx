@@ -303,13 +303,32 @@ export default function PrivacyPolicy() {
             You can control cookies through your browser settings. However, disabling cookies may affect the functionality of certain features.
           </p>
           <p>
-            <strong>Types of Cookies We Use:</strong>
+            <strong>Types of Cookies and Local Storage We Use:</strong>
           </p>
           <ul>
-            <li><strong>Essential Cookies:</strong> Required for basic site functionality and security</li>
-            <li><strong>Preference Cookies:</strong> Remember your settings and preferences</li>
-            <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our site</li>
+            <li><strong>Essential Cookies/Storage:</strong>
+              <ul>
+                <li><code>sb-*-auth-token</code> — Supabase authentication session (required for login)</li>
+                <li><code>sonar_cookie_consent</code> — Records your cookie consent preference</li>
+                <li><code>sonar_theme</code> — Your display theme preference</li>
+              </ul>
+            </li>
+            <li><strong>Preference Storage:</strong>
+              <ul>
+                <li><code>sonar_tutorial_*</code> — Tracks which onboarding tutorials you have viewed</li>
+                <li><code>sonar_sentiment_fp</code> — Anonymised fingerprint for sentiment voting (prevents duplicate votes; see Section 9.1)</li>
+              </ul>
+            </li>
+            <li><strong>Analytics (optional, can be rejected):</strong>
+              <ul>
+                <li>Vercel Web Analytics — anonymous page view counting, no personal data collected</li>
+                <li><code>sonar_analytics_disabled</code> — Set to 'true' if you reject analytics cookies</li>
+              </ul>
+            </li>
           </ul>
+          <p>
+            You can reject non-essential cookies via the cookie banner shown on your first visit, or by clearing your browser's localStorage. Essential cookies cannot be disabled as they are required for the Service to function.
+          </p>
         </Section>
 
         <Section
@@ -325,11 +344,27 @@ export default function PrivacyPolicy() {
             <li><strong>Vercel:</strong> Hosting, deployment, and analytics - <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
             <li><strong>CoinGecko:</strong> Cryptocurrency market data - <a href="https://www.coingecko.com/en/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
             <li><strong>CryptoPanic:</strong> Cryptocurrency news - <a href="https://cryptopanic.com/about/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>xAI (Grok):</strong> AI inference for ORCA AI assistant conversations - <a href="https://x.ai/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>xAI (Grok):</strong> AI inference for ORCA data analysis - <a href="https://x.ai/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
             <li><strong>OpenAI:</strong> Fallback AI inference when primary provider is unavailable - <a href="https://openai.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
             <li><strong>LunarCrush:</strong> Social sentiment and engagement metrics for cryptocurrency tokens - <a href="https://lunarcrush.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
             <li><strong>Brevo:</strong> Email delivery for onboarding sequences and notifications - <a href="https://www.brevo.com/legal/privacypolicy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
           </ul>
+
+          <h3>9.1 AI Data Processing (xAI/OpenAI)</h3>
+          <p>
+            When you interact with ORCA AI, the following data is sent to our AI provider (xAI or OpenAI as fallback):
+          </p>
+          <ul>
+            <li><strong>Your query text</strong> — the question or prompt you type</li>
+            <li><strong>Contextual market data</strong> — aggregated whale transaction summaries, price data, sentiment scores, and news headlines relevant to the token you are asking about</li>
+            <li><strong>No personal data is sent</strong> — your email, name, IP address, and account details are never included in AI requests</li>
+          </ul>
+          <p>
+            <strong>Data retention by AI providers:</strong> Queries sent to xAI and OpenAI are subject to their respective data retention policies. Sonar does not control how these providers store or process data after it is transmitted. We recommend reviewing their privacy policies linked above. Sonar stores your conversation history in our database so you can access past sessions; you can delete your conversation history at any time from your profile settings.
+          </p>
+          <p>
+            <strong>AI training:</strong> We do not use your personal queries to train AI models. However, xAI and OpenAI may use API data per their own terms — we recommend reviewing their policies if this is a concern.
+          </p>
           <p>
             We encourage you to review the privacy policies of these third-party services to understand how they collect, use, and protect your information.
           </p>

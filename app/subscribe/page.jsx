@@ -572,8 +572,8 @@ export default function SubscribePage() {
               background: 'rgba(0, 230, 118, 0.06)', border: '1px solid rgba(0, 230, 118, 0.15)',
               borderRadius: '8px', padding: '0.75rem 1.25rem', textAlign: 'center',
             }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#00e676', fontFamily: "'JetBrains Mono', monospace" }}>10</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>AI prompts/day</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#00e676', fontFamily: "'JetBrains Mono', monospace" }}>Unlimited</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ORCA AI queries</div>
             </div>
             <div style={{
               background: 'rgba(255, 171, 0, 0.06)', border: '1px solid rgba(255, 171, 0, 0.15)',
@@ -628,7 +628,7 @@ export default function SubscribePage() {
             <FeatureList>
               <li>Real-time whale transaction tracking</li>
               <li>AI buy/sell classification</li>
-              <li>ORCA AI advisor (unlimited)</li>
+              <li>ORCA AI data analysis (unlimited)</li>
               <li>Crypto news with sentiment analysis</li>
               <li>Multi-chain analytics (ETH, BTC, SOL + more)</li>
               <li>Trending coins, top gainers & losers</li>
@@ -845,38 +845,38 @@ export default function SubscribePage() {
                 </tr>
                 <tr>
                   <td>Token Pages: Social Intelligence</td>
-                  <td><span className="cross">Locked</span></td>
-                  <td><span className="check">Galaxy Score, Alt Rank, Sentiment</span></td>
+                  <td><span className="check">Full</span></td>
+                  <td><span className="check">Full + Priority</span></td>
                 </tr>
                 <tr>
                   <td>Token Pages: News + Social Buzz</td>
-                  <td><span className="cross">Locked</span></td>
+                  <td><span className="check">Full</span></td>
                   <td><span className="check">Full</span></td>
                 </tr>
                 <tr>
                   <td>Token Pages: Whale Transactions</td>
-                  <td><span className="cross">Locked</span></td>
-                  <td><span className="check">Full History + Deep Dive</span></td>
+                  <td><span className="check">Full</span></td>
+                  <td><span className="check">Full + Deep Dive</span></td>
                 </tr>
                 <tr>
                   <td>Sentiment Algorithm</td>
-                  <td>Basic (3-level)</td>
-                  <td><span className="check">Enhanced (6-level + confidence %)</span></td>
+                  <td><span className="check">Full (6-level)</span></td>
+                  <td><span className="check">Full (6-level + confidence %)</span></td>
                 </tr>
                 <tr>
-                  <td>Orca AI Conversations</td>
-                  <td>1 per day</td>
-                  <td><span className="check">10 per day + inline charts</span></td>
+                  <td>ORCA AI Analysis</td>
+                  <td><span className="check">Unlimited</span></td>
+                  <td><span className="check">Unlimited + Priority</span></td>
                 </tr>
                 <tr>
-                  <td>Statistics</td>
-                  <td>25 rows</td>
-                  <td><span className="check">200 rows + CSV export</span></td>
+                  <td>Statistics + CSV Export</td>
+                  <td><span className="check">Full</span></td>
+                  <td><span className="check">Full</span></td>
                 </tr>
                 <tr>
                   <td>Trending Coins</td>
-                  <td>Top 5 per section</td>
-                  <td><span className="check">12+ per section</span></td>
+                  <td><span className="check">Full</span></td>
+                  <td><span className="check">Full</span></td>
                 </tr>
                 <tr>
                   <td>Support</td>

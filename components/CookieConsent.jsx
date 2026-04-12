@@ -42,7 +42,9 @@ export default function CookieConsent() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const consent = localStorage.getItem(CONSENT_KEY)
-    if (!consent) setShow(true)
+    // Only hide if user explicitly accepted or rejected — not on dismissal
+    if (consent === 'accepted' || consent === 'rejected') return
+    setShow(true)
   }, [])
 
   const accept = () => {
@@ -52,7 +54,6 @@ export default function CookieConsent() {
 
   const reject = () => {
     localStorage.setItem(CONSENT_KEY, 'rejected')
-    // Disable analytics by setting flag (check this before loading analytics)
     localStorage.setItem('sonar_analytics_disabled', 'true')
     setShow(false)
   }
@@ -62,11 +63,11 @@ export default function CookieConsent() {
   return (
     <Banner>
       <Text>
-        We use essential cookies for authentication and optional analytics cookies to improve your experience.
-        See our <a href="/privacy">Privacy Policy</a> for details.
+        We use essential cookies for authentication and security. We also use optional analytics (Vercel Web Analytics) to understand how the site is used.
+        You can accept or reject non-essential cookies. See our <a href="/privacy">Privacy Policy</a> for full details.
       </Text>
       <Buttons>
-        <RejectBtn onClick={reject}>Reject non-essential</RejectBtn>
+        <RejectBtn onClick={reject}>Reject analytics</RejectBtn>
         <AcceptBtn onClick={accept}>Accept all</AcceptBtn>
       </Buttons>
     </Banner>

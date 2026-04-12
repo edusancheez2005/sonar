@@ -166,16 +166,30 @@ export default function TermsOfService() {
           transition={{ delay: 0.2, duration: 0.5 }}
         >
           <h2>2. Description of Service</h2>
+          <h3>2.1 Platform Overview</h3>
           <p>
-            Sonar Tracker provides real-time tracking and analysis of large cryptocurrency transactions ("whale activity") across various blockchains. The Service includes:
+            Sonar Tracker provides tracking and analysis of large cryptocurrency transactions ("whale activity") across various blockchains. The Service includes:
           </p>
           <ul>
-            <li>Real-time whale transaction monitoring</li>
-            <li>AI-powered market sentiment analysis (Orca 2.0)</li>
+            <li>Whale transaction monitoring and analytics</li>
+            <li>ORCA — an AI-powered data analysis tool (see Section 2.2)</li>
             <li>Token-specific analytics and metrics</li>
-            <li>Cryptocurrency news aggregation</li>
-            <li>Market statistics and visualization tools</li>
+            <li>Cryptocurrency news aggregation with sentiment analysis</li>
+            <li>Market statistics and visualisation tools</li>
+            <li>Derivatives market data (funding rates, open interest, positioning data)</li>
           </ul>
+          <h3>2.2 ORCA AI — Data Analysis Tool</h3>
+          <p>
+            ORCA is Sonar Tracker's AI-powered <strong>data analysis and summarisation tool</strong>. ORCA processes on-chain whale transaction data, market sentiment, news, and derivatives positioning to generate summaries and market context in plain English. <strong>ORCA is not a financial advisor, investment manager, or regulated person.</strong> ORCA does not provide personalised investment advice, portfolio management, or recommendations to buy, sell, or hold any financial instrument. All ORCA outputs are for informational and educational purposes only and should not be relied upon as the basis for any investment decision.
+          </p>
+          <h3>2.3 Regulatory Status</h3>
+          <p>
+            <strong>Sonar Tracker is not authorised, registered, or regulated by the Financial Conduct Authority (FCA) or any other financial regulatory body in any jurisdiction.</strong> The Service does not constitute a regulated activity under the Financial Services and Markets Act 2000 (FSMA). Sonar Tracker does not provide investment advice, portfolio management, or any other activity that would require FCA authorisation. Users located in jurisdictions where the use of cryptocurrency analytics tools is restricted or prohibited should not use this Service.
+          </p>
+          <h3>2.4 No Custody</h3>
+          <p>
+            Sonar Tracker does not hold, store, transmit, or have access to any user's cryptocurrency, digital assets, private keys, or wallet credentials. The Service is purely an analytics and data platform. We never ask for wallet passwords or seed phrases.
+          </p>
           <p>
             We reserve the right to modify, suspend, or discontinue any part of the Service at any time without prior notice.
           </p>
@@ -195,7 +209,11 @@ export default function TermsOfService() {
           <p>
             You are responsible for safeguarding your account password and for any activities or actions under your account. You must notify us immediately of any unauthorized use of your account.
           </p>
-          <h3>3.3 Premium Subscriptions</h3>
+          <h3>3.3 Account Deletion</h3>
+          <p>
+            You may delete your account at any time by contacting us at <a href="mailto:eduardo@sonartracker.io" style={{ color: 'var(--primary)' }}>eduardo@sonartracker.io</a>. Upon deletion, all personally identifiable information associated with your account will be permanently removed within 30 days. Anonymised analytics data (e.g., aggregate usage statistics) may be retained.
+          </p>
+          <h3>3.4 Premium Subscriptions</h3>
           <p>
             Premium features are available through paid subscription plans. Subscriptions are billed monthly at the rate specified at the time of purchase. You may cancel your subscription at any time through your account settings or the Stripe customer portal.
           </p>
