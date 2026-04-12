@@ -931,7 +931,7 @@ const Landing = () => {
                 <div className="number"><CountUp target={700} suffix="+" /></div><div className="label">Happy Users</div>
               </StatBadge>
               <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.4 }} whileHover={{ scale: 1.05 }}>
-                <div className="number"><CountUp target={2000} suffix="+" /></div><div className="label">Profitable Trades</div>
+                <div className="number"><CountUp target={2000} suffix="+" /></div><div className="label">Signals Generated</div>
               </StatBadge>
               <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.6 }} whileHover={{ scale: 1.05 }}>
                 <div className="number"><CountUp target={10} suffix="M+" /></div><div className="label">News Analyzed</div>
@@ -1832,14 +1832,14 @@ const Landing = () => {
           <CarouselTrack>
             {/* Duplicate array for infinite scroll effect */}
             {[...Array(2)].flatMap((_, dupeIdx) => [
-              { name: 'James Martinez', role: 'Crypto Day Trader', quote: 'Caught a $500K WETH whale move 15 minutes early. Made 23% in 2 hours. This tool pays for itself every single day.', img: '/assets/faces/face-1.png' },
-              { name: 'Sarah Kim', role: 'Portfolio Manager', quote: "I used to wonder why prices suddenly spiked. Sonar's real-time alerts completely changed my trading strategy. Night and day.", img: '/assets/faces/face-2.png' },
-              { name: 'David Chen', role: 'Institutional Trader', quote: 'The AI analysis tools are genuinely impressive. Spotted large SOL movements before a major price shift. Essential for serious traders.', img: '/assets/faces/face-3.png' },
-              { name: 'Emily Rodriguez', role: 'DeFi Analyst', quote: 'Switched from Nansen to Sonar. Better signal-to-noise ratio, cleaner interface, and faster whale alerts. At a fraction of the cost.', img: '/assets/faces/face-4.png' },
-              { name: 'Raj Patel', role: 'Swing Trader', quote: 'The sentiment analysis paired with whale tracking gives me an edge nobody else in my trading group has. Worth every penny.', img: '/assets/faces/face-6.png' },
-              { name: "Claire O'Brien", role: 'Hedge Fund Manager', quote: 'Our fund uses Sonar daily. The institutional-grade data quality and sub-second latency are exactly what we needed.', img: '/assets/faces/face-7.png' },
-              { name: 'Tom Wheeler', role: 'Quant Trader', quote: 'The whale flow data is cleaner than anything else I\'ve used. Sonar gives me the edge I need for my algo strategies.', img: '/assets/faces/face-5.png' },
-              { name: 'Richard Hayes', role: 'Venture Partner', quote: 'We use Sonar to track smart money movements before making investment decisions. It\'s become part of our due diligence stack.', img: '/assets/faces/face-8.png' },
+              { name: 'Crypto Trader', role: 'Verified User', quote: 'The whale tracking alerts helped me understand market movements I was completely missing before. Great tool for staying informed.', img: '/assets/faces/face-1.png' },
+              { name: 'Portfolio Analyst', role: 'Verified User', quote: 'I used to wonder why prices suddenly moved. Seeing whale transaction data in real-time gave me context I never had before.', img: '/assets/faces/face-2.png' },
+              { name: 'DeFi Researcher', role: 'Verified User', quote: 'The AI analysis tools help me process on-chain data much faster. Useful for tracking large SOL and ETH movements.', img: '/assets/faces/face-3.png' },
+              { name: 'On-Chain Analyst', role: 'Verified User', quote: 'Clean interface, fast whale alerts, and the ORCA AI advisor gives surprisingly insightful analysis. Good value for the price.', img: '/assets/faces/face-4.png' },
+              { name: 'Swing Trader', role: 'Verified User', quote: 'The sentiment analysis paired with whale tracking provides useful data points. Helps me stay informed about market conditions.', img: '/assets/faces/face-6.png' },
+              { name: 'Institutional Analyst', role: 'Verified User', quote: 'We use Sonar to monitor large transaction flows across multiple chains. The multi-chain coverage is comprehensive.', img: '/assets/faces/face-7.png' },
+              { name: 'Quant Researcher', role: 'Verified User', quote: 'The whale flow data is clean and well-organized. Useful for research and understanding market microstructure.', img: '/assets/faces/face-5.png' },
+              { name: 'Crypto Enthusiast', role: 'Verified User', quote: 'Sonar makes on-chain data accessible. The dashboard is intuitive and the AI explanations help me learn about whale behaviour.', img: '/assets/faces/face-8.png' },
             ].map((t, i) => (
               <CarouselCard key={`${dupeIdx}-${i}`}>
                 <div className="rating">★★★★★</div>

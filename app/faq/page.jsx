@@ -219,7 +219,7 @@ const faqData = [
       },
       {
         question: 'How accurate is the buy/sell classification?',
-        answer: 'Sonar\'s AI classification achieves high accuracy by analyzing DEX interactions, exchange deposit/withdrawal patterns, and historical wallet behavior. Edge cases like OTC deals or complex multi-hop transactions may require additional context. ORCA AI can provide deeper interpretation when needed.'
+        answer: 'Sonar\\'s AI classification analyzes DEX interactions, exchange deposit/withdrawal patterns, and historical wallet behavior to categorise transactions. Edge cases like OTC deals or complex multi-hop transactions may require additional context. Classification accuracy varies by token and chain. This is data analysis, not financial advice.'
       },
       {
         question: 'How often is data updated?',

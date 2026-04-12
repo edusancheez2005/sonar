@@ -101,8 +101,8 @@ const Footer = () => {
             <a href="/faq">FAQ</a>
           </nav>
         </div>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.5, textAlign: 'center', lineHeight: 1.5, maxWidth: '700px', marginLeft: 'auto', marginRight: 'auto', marginTop: '1rem' }}>
-          Sonar Tracker provides data and analytics for informational purposes only. Nothing on this site constitutes financial, investment, or trading advice. Cryptocurrency trading involves significant risk — past performance does not guarantee future results.
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', opacity: 0.6, textAlign: 'center', lineHeight: 1.6, maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto', marginTop: '1rem' }}>
+          Sonar Tracker provides on-chain data analysis and market intelligence for informational and educational purposes only. Nothing on this platform constitutes financial advice, investment recommendations, or a solicitation to buy, sell, or hold any cryptocurrency or financial instrument. Sonar is not authorised or regulated by the Financial Conduct Authority (FCA) or any other financial regulatory body. Cryptocurrency markets are highly volatile — you may lose some or all of your investment. Past performance of any signal, analysis, or data does not guarantee future results. Always conduct your own research and consult a qualified financial advisor before making investment decisions.
         </p>
       </BottomBar>
     </FooterContainer>

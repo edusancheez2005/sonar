@@ -1,11 +1,11 @@
 export const metadata = {
-  title: 'Best Nansen Alternative 2026 — Same Data, 95% Less',
-  description: 'Looking for a Nansen alternative? Sonar Tracker offers the same institutional-grade whale tracking and on-chain analytics at $7.99/mo instead of $150+.',
-  keywords: 'nansen alternative, nansen alternative free, nansen alternative cheap, best nansen alternative 2026, whale tracking alternative, on chain analytics alternative',
+  title: 'Nansen Alternative 2026 — Affordable Whale Tracking',
+  description: 'Looking for a Nansen alternative? Sonar Tracker offers whale tracking and on-chain analytics at $7.99/mo. Different approach, accessible pricing.',
+  keywords: 'nansen alternative, nansen alternative free, nansen alternative cheap, whale tracking alternative, on chain analytics alternative',
   alternates: { canonical: 'https://www.sonartracker.io/nansen-alternative' },
   openGraph: {
-    title: 'Best Nansen Alternative 2026 — Sonar Tracker',
-    description: 'Same institutional-grade whale tracking at $7.99/mo instead of $150+. AI signals included.',
+    title: 'Nansen Alternative 2026 — Sonar Tracker',
+    description: 'Whale tracking and on-chain analytics at $7.99/mo. AI-powered market analysis included.',
     url: 'https://www.sonartracker.io/nansen-alternative',
     type: 'website',
   },

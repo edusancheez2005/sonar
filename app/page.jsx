@@ -74,7 +74,7 @@ function FaqJsonLd() {
             name: 'Is Sonar Tracker data real-time and how accurate is it?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Yes, Sonar Tracker provides absolutely real-time data with sub-second latency for critical transactions. Our ingestion pipeline updates continuously across all supported blockchains, and the UI refreshes automatically with the latest data. We employ an 8-phase AI analysis engine that includes pattern recognition, whale behavior analysis, transaction clustering, risk assessment, market sentiment analysis, volume correlation, temporal analysis, and predictive modeling. Our data accuracy is institutional-grade, with comprehensive validation and cross-chain verification to ensure reliability.'
+              text: 'Sonar Tracker provides near real-time data for whale transactions. Our ingestion pipeline updates every 15 minutes across all supported blockchains, and the UI refreshes automatically with the latest data. We employ a multi-phase AI analysis engine that includes pattern recognition, whale behavior analysis, transaction clustering, risk assessment, market sentiment analysis, volume correlation, and temporal analysis. Note: Sonar provides data and analytics, not financial advice. Past performance of signals does not guarantee future results.'nsure reliability.'
             },
           },
           {

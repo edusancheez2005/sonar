@@ -1,11 +1,11 @@
 export const metadata = {
-  title: 'AI Crypto Trading Signals — Powered by ORCA',
-  description: 'Get AI-powered crypto trading signals from ORCA 2.0. Analyzes whale movements, news sentiment, and on-chain data to deliver clear buy/sell signals.',
-  keywords: 'ai crypto signals, ai crypto trading, crypto prediction ai, ai crypto advisor, crypto intelligence ai, ai trading signals, orca ai crypto',
+  title: 'AI Crypto Market Analysis — Powered by ORCA',
+  description: 'AI-powered crypto market analysis from ORCA 2.0. Analyzes whale movements, news sentiment, and on-chain data to provide market insights. Not financial advice.',
+  keywords: 'ai crypto analysis, crypto market intelligence, crypto analytics ai, ai crypto advisor, crypto intelligence ai, ai market analysis, orca ai crypto',
   alternates: { canonical: 'https://www.sonartracker.io/ai-crypto-signals' },
   openGraph: {
-    title: 'AI Crypto Trading Signals — ORCA by Sonar Tracker',
-    description: 'AI-powered crypto signals: whale analysis, sentiment scoring, and clear buy/sell recommendations.',
+    title: 'AI Crypto Market Analysis — ORCA by Sonar Tracker',
+    description: 'AI-powered crypto market analysis: whale tracking, sentiment scoring, and on-chain intelligence. For informational purposes only.',
     url: 'https://www.sonartracker.io/ai-crypto-signals',
     type: 'website',
   },
@@ -32,14 +32,17 @@ export default function AiCryptoSignalsPage() {
           {/* Hero */}
           <p style={{ color: '#9b59b6', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '1rem' }}>AI Crypto Intelligence</p>
           <h1 style={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1.15, marginBottom: '1.5rem', background: 'linear-gradient(90deg, #9b59b6, #f1c40f, #36a6ba)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            AI Crypto Trading Signals
+            AI Crypto Market Analysis
           </h1>
           <p style={{ fontSize: '1.25rem', color: '#8a9bb0', lineHeight: 1.7, marginBottom: '1rem', maxWidth: '700px' }}>
-            ORCA 2.0 analyzes whale movements, news sentiment, and on-chain data across 10+ blockchains — then tells you what it means in plain English.
+            ORCA 2.0 analyzes whale movements, news sentiment, and on-chain data across 10+ blockchains — then summarises what it means in plain English.
           </p>
-          <p style={{ fontSize: '1rem', color: '#6b7d8f', lineHeight: 1.7, marginBottom: '2.5rem' }}>
-            Not a black-box bot. Not vague predictions. Clear analysis grounded in real data, delivered when you need it.
+          <p style={{ fontSize: '1rem', color: '#6b7d8f', lineHeight: 1.7, marginBottom: '1rem' }}>
+            Not a black-box bot. Not vague predictions. Data analysis grounded in real on-chain activity, delivered when you need it.
           </p>
+          <div style={{ padding: '0.75rem 1rem', background: 'rgba(255,171,0,0.06)', border: '1px solid rgba(255,171,0,0.15)', borderRadius: '8px', marginBottom: '2.5rem', fontSize: '0.8rem', color: '#bbb', lineHeight: 1.6 }}>
+            <strong style={{ color: '#ffab00' }}>Disclaimer:</strong> Sonar provides on-chain data analysis and market intelligence for informational purposes only. Nothing on this platform constitutes financial advice, investment recommendations, or solicitation to buy or sell any cryptocurrency. Past performance does not guarantee future results. Always do your own research. Trading cryptocurrencies involves substantial risk of loss.
+          </div>
           <a href="/subscribe" style={{ display: 'inline-block', padding: '0.9rem 2rem', borderRadius: '8px', background: 'linear-gradient(90deg, #9b59b6, #f1c40f)', color: '#0a1621', fontWeight: 700, textDecoration: 'none', fontSize: '1rem', marginBottom: '4rem' }}>Get ORCA Access — $7.99/mo</a>
 
           {/* How It Works */}
