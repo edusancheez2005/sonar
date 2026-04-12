@@ -666,12 +666,8 @@ export default function SubscribePage() {
             <FeatureList>
               <li>Everything in Free, plus:</li>
               <li>Priority access to new features</li>
-              <li>ORCA Predicts: AI predictions with track record</li>
               <li>Smart Money Mirror dashboard</li>
               <li>Whale Whisper: AI-generated market narratives</li>
-              <li>Liquidation radar & cascade alerts</li>
-              <li>Connect wallet: personalized whale alerts</li>
-              <li>Early access to signal marketplace</li>
               <li>Priority support from the team</li>
               <li>Support indie development 💙</li>
             </FeatureList>
