@@ -296,20 +296,6 @@ Write the full article now. Return ONLY the HTML content starting with <h1>. Inc
             imageUrl = tempUrl
           }
         }
-        const tempUrl = imgResponse.data?.[0]?.url
-        if (tempUrl) {
-          // Download and upload to Supabase Storage
-          const imgBlob = await fetch(tempUrl).then(r => r.arrayBuffer())
-          const fileName = `blog/${topic.slug}-${Date.now()}.png`
-          const { error: uploadErr } = await sb.storage
-            .from('blog-images')
-            .upload(fileName, imgBlob, { contentType: 'image/png', upsert: true })
-
-          if (!uploadErr) {
-            const { data: urlData } = sb.storage.from('blog-images').getPublicUrl(fileName)
-            imageUrl = urlData?.publicUrl || ''
-          }
-        }
       } catch (imgErr) {
         console.error('Image generation failed (non-fatal):', imgErr.message)
       }
