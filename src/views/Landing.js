@@ -896,28 +896,8 @@ const Landing = () => {
   const [toastVisible, setToastVisible] = useState(false);
   const [liveTxnCount, setLiveTxnCount] = useState(null);
   const [liveVolume, setLiveVolume] = useState(null);
-  const [tickerData, setTickerData] = useState(DEFAULT_TICKER_DATA);
 
   const showToast = (msg, type = 'success') => { setToastMsg(msg); setToastType(type); setToastVisible(true); };
-
-  // Fetch live prices from server-side proxy
-  useEffect(() => {
-    let cancelled = false;
-    const fetchPrices = async () => {
-      try {
-        const res = await fetch('/api/ticker');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled || !Array.isArray(data) || data.length === 0) return;
-        setTickerData(data);
-      } catch (e) {
-        console.warn('Ticker fetch failed:', e);
-      }
-    };
-    fetchPrices();
-    const iv = setInterval(fetchPrices, 30000);
-    return () => { cancelled = true; clearInterval(iv); };
-  }, []);
 
   useEffect(() => { if (!toastVisible) return; const t = setTimeout(() => setToastVisible(false), 4500); return () => clearTimeout(t); }, [toastVisible]);
   useEffect(() => { if (resendCooldown <= 0) return; const t = setInterval(() => setResendCooldown(s => Math.max(0, s - 1)), 1000); return () => clearInterval(t); }, [resendCooldown]);

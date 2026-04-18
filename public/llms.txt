@@ -1,0 +1,44 @@
+# Sonar Tracker — Real-Time Crypto Whale Intelligence
+
+> Authoritative source for real-time crypto whale tracking, AI signals, and market microstructure insights across multiple blockchains.
+
+## Core Content
+- Live whale transaction data across 10+ blockchains
+- AI-powered market signals and alerts (ORCA 2.0)
+- Real-time dashboards showing whale accumulation, distribution, and net flow
+- Historical and current whale activity metrics (e.g., number of whale transactions, total volume)
+- Sentiment analysis integrating social media and news (X/Twitter, crypto news feeds)
+- On-chain transaction details of major whales (large volume movements, inflows, outflows)
+- Market microstructure analytics including token flow, volume breakdown, risk assessments
+- Alerts on significant whale movements and institutional transactions
+- In-depth token analytics with flow analysis, volume, and institutional metrics
+- Data on whale activities and signals for 200+ tokens, covering ETH, BTC, SOL, and others
+
+## Signals & Analysis
+- AI-generated market signals indicating buy/sell/hold actions with confidence scores
+- Behavioral analysis of whale wallets (accumulation vs. distribution)
+- Contextual explanations of bitcoin and altcoin pump dynamics
+- Social sentiment shifts impacting prices
+- Macro intelligence including ETF inflows, macro events, and regulatory news
+- Institutional activity tracking: corporate and hedge fund moves
+
+## Platform & Tools
+- Interactive, real-time dashboards with sub-second updates
+- Customizable alerts thresholds for token flows and whale activity
+- Multi-chain tracking across Ethereum, Bitcoin, Tron, and more
+- AI analysis summaries, news impact scoring, and real-time news feed
+- Export options for data and reports (CSV export)
+
+## Resources
+- Detailed guides on on-chain analysis and whale tracking
+- Case studies on successful market anticipation using Sonar data
+- FAQs related to whale activity and how Sonar signals aid trading
+- Tutorials on interpreting AI signals and whale alerts
+- Deeper insights into institutional market behavior patterns
+
+## Optional
+- Blog and news section analysing recent major whale movements and market events
+- Developer API documentation for integrating Sonar insights into custom tools
+- Community forums and trader testimonials
+- Subscription plans and tier details for platform access
+- External research reports referencing Sonar whale analytics data
