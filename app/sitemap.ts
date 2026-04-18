@@ -78,6 +78,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const landingPages: MetadataRoute.Sitemap = [
     { url: `${BASE}/whale-tracker`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE}/nansen-alternative`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE}/arkham-alternative`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE}/ai-crypto-signals`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE}/solana-whale-tracker`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE}/ethereum-whale-tracker`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
