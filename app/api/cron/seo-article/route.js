@@ -202,7 +202,7 @@ Write a comprehensive, 1800-2200 word article optimized for the target keyword. 
 
 RULES:
 - Write in HTML format (h1, h2, h3, p, ul, ol, li, table, thead, tbody, tr, th, td, blockquote, strong, em, a tags)
-- Include 4-6 external links to authoritative sources (Ledger Academy, CoinGecko, research papers) with rel="nofollow noopener noreferrer" target="_blank"
+- For external links, use this EXACT format: <a href="URL" rel="nofollow noopener noreferrer" target="_blank">Link Text</a>. The rel and target attributes go INSIDE the <a> tag, NOT as visible text
 - Include 7-10 internal links to sonartracker.io pages using the provided list
 - Use the target keyword naturally 8-12 times throughout
 - Include data points, percentages, and specific numbers
@@ -272,6 +272,14 @@ The IMAGE_PROMPT line MUST be on its own line at the very top, followed by a new
     if (h1Idx > 0) {
       rawContent = rawContent.substring(h1Idx)
     }
+    // Fix malformed anchors: remove rel/target text that leaked outside <a> tags
+    rawContent = rawContent.replace(/(<\/a>)\s*rel="[^"]*"\s*target="[^"]*"/gi, '$1')
+    rawContent = rawContent.replace(/>\s*rel="nofollow[^"]*"\s*target="_blank"\s*</gi, '><')
+    // Fix anchors where rel/target appear as link text inside the <a>
+    rawContent = rawContent.replace(/(<a\s[^>]*>)([^<]*)\s*rel="nofollow[^"]*"\s*target="_blank"([^<]*<\/a>)/gi, '$1$2$3')
+    // Fix anchors missing rel/target in attributes but having them as text
+    rawContent = rawContent.replace(/<a\s+href="(https?:\/\/[^"]+)"\s*>([^<]*)\s*rel="[^"]*"\s*target="[^"]*"([^<]*)<\/a>/gi,
+      '<a href="$1" rel="nofollow noopener noreferrer" target="_blank">$2$3</a>')
     // Fallback image prompt if none extracted
     if (!imagePrompt) {
       imagePrompt = `A professional crypto trader analyzing whale movement data on multiple monitors in a modern office, dark blue ambient lighting, blockchain visualization on screens`
