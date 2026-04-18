@@ -105,7 +105,7 @@ ${whispers?.[0]?.narrative || 'No narrative available'}
     // 3. Generate blog post with AI
     const slug = `whale-report-${now.toISOString().slice(0, 10)}`
 
-    // Check if post already exists
+    // Check if post already exists — if so, update it
     const { data: existing } = await supabaseAdmin
       .from('blog_posts')
       .select('id')
@@ -113,7 +113,16 @@ ${whispers?.[0]?.narrative || 'No narrative available'}
       .single()
 
     if (existing) {
-      return NextResponse.json({ ok: true, message: 'Post already exists', slug })
+      // Update existing post with fresh data
+      const { error: updateError } = await supabaseAdmin
+        .from('blog_posts')
+        .update({ title, description, content, updated_at: new Date().toISOString() })
+        .eq('slug', slug)
+
+      if (updateError) {
+        return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 })
+      }
+      return NextResponse.json({ ok: true, slug, title, updated: true, stats: { totalWhaleTxs, totalVolume: fmtVol, buyRatio } })
     }
 
     const completion = await xai.chat.completions.create({
