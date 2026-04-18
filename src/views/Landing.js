@@ -515,13 +515,12 @@ const NavLink = styled(NavButton)``;
 
 /* ── NEW HERO + MARQUEE + DASHBOARD STYLED COMPONENTS ── */
 const NewHero = styled.section`
-  position: relative; z-index: 1; min-height: 100vh;
+  position: relative; z-index: 1; height: 100vh; min-height: 700px;
   display: grid; grid-template-columns: 1fr 1fr; gap: 0;
-  padding: 120px 60px 60px;
-  max-width: 1600px; margin: 0 auto;
-  align-items: center; overflow: visible; background: var(--background-dark);
-  @media (max-width: 1100px) { grid-template-columns: 1fr; padding: 120px 32px 40px; }
-  @media (max-width: 600px) { padding: 100px 20px 40px; }
+  padding: 80px 60px 40px;
+  align-items: center; overflow: hidden; background: var(--background-dark);
+  @media (max-width: 1100px) { grid-template-columns: 1fr; height: auto; min-height: 100vh; padding: 100px 32px 40px; }
+  @media (max-width: 600px) { padding: 90px 20px 40px; }
 `;
 const NewHeroStars = styled.div`
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
@@ -536,8 +535,9 @@ const NewHeroStars = styled.div`
 `;
 const HeroCopy = styled.div`
   display: flex; flex-direction: column; gap: 28px; align-self: center;
-  position: relative; z-index: 2; max-width: 640px;
-  padding-left: 20px;
+  position: relative; z-index: 2; max-width: 700px;
+  padding-left: 40px;
+  @media (max-width: 1400px) { padding-left: 20px; max-width: 600px; }
   @media (max-width: 1100px) { order: 1; max-width: 100%; padding-left: 0; }
 `;
 const Eyebrow = styled.div`
@@ -552,7 +552,7 @@ const HeroPulseDot = styled.span`
   box-shadow: 0 0 8px #5DF0B0; animation: ${heroPulse} 1.6s ease-in-out infinite;
 `;
 const NewHeadline = styled.h1`
-  font-size: clamp(52px, 6vw, 90px); font-weight: 300; line-height: 1.02;
+  font-size: clamp(56px, 7vw, 100px); font-weight: 300; line-height: 1.02;
   letter-spacing: -0.025em; color: #E6F7FB; margin: 0;
 `;
 const HeadlineAccent = styled.span`
@@ -589,13 +589,14 @@ const HeroTrustChip = styled.span`
   b { color: #7FE3F5; font-weight: 500; }
 `;
 const GlobeArea = styled.div`
-  position: relative; display: flex; align-items: center; justify-content: center; min-height: 720px;
-  @media (max-width: 1100px) { order: 2; min-height: 520px; }
+  position: relative; display: flex; align-items: center; justify-content: center;
+  height: 100%; min-height: 500px;
+  @media (max-width: 1100px) { order: 2; min-height: 400px; }
 `;
 const GlobeWrap = styled.div`
-  position: relative; width: 800px; height: 800px; margin-left: -120px; pointer-events: none;
-  @media (max-width: 1100px) { margin-left: 0; width: 520px; height: 520px; }
-  @media (max-width: 600px) { width: 360px; height: 360px; }
+  position: relative; width: min(55vw, 900px); height: min(55vw, 900px); margin-left: -80px; pointer-events: none;
+  @media (max-width: 1100px) { margin-left: 0; width: min(80vw, 600px); height: min(80vw, 600px); }
+  @media (max-width: 600px) { width: min(90vw, 400px); height: min(90vw, 400px); }
 `;
 const GlobePedestal = styled.div`
   position: absolute; left: 50%; bottom: -40px; transform: translateX(-50%);
