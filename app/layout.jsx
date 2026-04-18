@@ -136,9 +136,9 @@ export const metadata = {
     site: '@sonartracker',
   },
   verification: {
-    google: 'google-site-verification=kUMRrdT4lX2VHZbCenjhRbxFfOQVd_gUzMtqpxaaa_A',
-    yandex: 'your-yandex-verification-code',
-    bing: 'your-bing-verification-code',
+    google: process.env.GOOGLE_SITE_VERIFICATION || 'kUMRrdT4lX2VHZbCenjhRbxFfOQVd_gUzMtqpxaaa_A',
+    yandex: process.env.YANDEX_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION ? { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } : undefined,
   },
   other: {
     'msapplication-TileColor': '#3498db',

@@ -1,8 +1,10 @@
 import { MetadataRoute } from 'next'
+import { createClient } from '@supabase/supabase-js'
 
 const BASE = 'https://www.sonartracker.io'
 
-const blogSlugs = [
+// Fallback hardcoded blog slugs (in case DB is unreachable)
+const fallbackBlogSlugs = [
   'what-is-whale-tracking',
   'copy-whale-trades',
   'real-time-crypto-transactions',
@@ -54,8 +56,17 @@ const glossaryTerms = [
   'market-maker', 'token-flow', 'whale-score',
 ]
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 3600 // Regenerate sitemap hourly
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date().toISOString()
+
+  // Initialize Supabase for dynamic content
+  const sb = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { persistSession: false },
+      })
+    : null
 
   // Core pages
   const corePages: MetadataRoute.Sitemap = [
@@ -100,7 +111,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ]
 
-  // Blog posts (all 33)
+  // Blog posts: combine static fallback + dynamic AI-generated posts
+  let blogSlugs = [...fallbackBlogSlugs]
+  if (sb) {
+    try {
+      const { data: dynamicBlogs } = await sb
+        .from('blog_posts')
+        .select('slug, updated_at')
+        .order('created_at', { ascending: false })
+        .limit(500)
+      if (dynamicBlogs) {
+        const dynamicSlugs = dynamicBlogs.map((b: any) => b.slug)
+        blogSlugs = Array.from(new Set([...blogSlugs, ...dynamicSlugs]))
+      }
+    } catch (_) { /* fall back to hardcoded */ }
+  }
   const blogPages: MetadataRoute.Sitemap = blogSlugs.map(slug => ({
     url: `${BASE}/blog/${slug}`,
     lastModified: now,
@@ -116,11 +141,55 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.5,
   }))
 
+  // Programmatic SEO: top whale addresses
+  let whalePages: MetadataRoute.Sitemap = []
+  if (sb) {
+    try {
+      const { data: whales } = await sb
+        .from('addresses')
+        .select('address')
+        .not('entity_name', 'is', null)
+        .limit(2000)
+      if (whales) {
+        whalePages = whales.map((w: any) => ({
+          url: `${BASE}/whale/${encodeURIComponent(w.address)}`,
+          lastModified: now,
+          changeFrequency: 'daily' as const,
+          priority: 0.6,
+        }))
+      }
+    } catch (_) { /* skip */ }
+  }
+
+  // Programmatic SEO: top tokens
+  let tokenPages: MetadataRoute.Sitemap = []
+  if (sb) {
+    try {
+      const { data: tokens } = await sb
+        .from('all_whale_transactions')
+        .select('token_symbol')
+        .gte('timestamp', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .not('token_symbol', 'is', null)
+        .limit(10000)
+      if (tokens) {
+        const uniqueSymbols = Array.from(new Set(tokens.map((t: any) => t.token_symbol).filter(Boolean))).slice(0, 500)
+        tokenPages = uniqueSymbols.map((sym: any) => ({
+          url: `${BASE}/token/${encodeURIComponent(sym)}`,
+          lastModified: now,
+          changeFrequency: 'daily' as const,
+          priority: 0.7,
+        }))
+      }
+    } catch (_) { /* skip */ }
+  }
+
   return [
     ...corePages,
     ...landingPages,
     ...infoPages,
     ...blogPages,
     ...glossaryPages,
+    ...whalePages,
+    ...tokenPages,
   ]
 }

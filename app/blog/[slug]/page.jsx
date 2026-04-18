@@ -1,6 +1,16 @@
 import React from 'react'
 import BlogPostClient from './BlogPostClient'
 import DynamicBlogPost from './DynamicBlogPost'
+import { createClient } from '@supabase/supabase-js'
+
+async function getDynamicPost(slug) {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null
+  try {
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+    const { data } = await sb.from('blog_posts').select('slug,title,description,cover_image,created_at,updated_at').eq('slug', slug).maybeSingle()
+    return data || null
+  } catch { return null }
+}
 
 const posts = {
   'what-is-whale-tracking': { title: 'What is Whale Tracking? How It Works and Why It Matters', description: 'Understand how whale tracking reveals large on-chain moves and how traders use it for edge.', date: '2025-08-01' },
@@ -40,22 +50,43 @@ const posts = {
 
 export async function generateMetadata({ params }) {
   const { slug } = params
-  const post = posts[slug] || posts['what-is-whale-tracking']
-
-  return {
-    title: `${post.title}`,
-    description: post.description,
-    alternates: { canonical: `https://www.sonartracker.io/blog/${slug}` },
-    openGraph: {
-      title: post.title,
+  if (posts[slug]) {
+    const post = posts[slug]
+    return {
+      title: `${post.title}`,
       description: post.description,
-      url: `https://www.sonartracker.io/blog/${slug}`,
-      type: 'article',
-      publishedTime: post.date,
-      authors: ['Sonar Tracker Team'],
-      siteName: 'Sonar Tracker',
-    },
+      alternates: { canonical: `https://www.sonartracker.io/blog/${slug}` },
+      openGraph: {
+        title: post.title,
+        description: post.description,
+        url: `https://www.sonartracker.io/blog/${slug}`,
+        type: 'article',
+        publishedTime: post.date,
+        authors: ['Sonar Tracker Team'],
+        siteName: 'Sonar Tracker',
+      },
+    }
   }
+  // Dynamic post from DB
+  const dyn = await getDynamicPost(slug)
+  if (dyn) {
+    return {
+      title: dyn.title,
+      description: dyn.description || `${dyn.title} - Sonar Tracker insights.`,
+      alternates: { canonical: `https://www.sonartracker.io/blog/${slug}` },
+      openGraph: {
+        title: dyn.title,
+        description: dyn.description || '',
+        url: `https://www.sonartracker.io/blog/${slug}`,
+        type: 'article',
+        publishedTime: dyn.created_at,
+        modifiedTime: dyn.updated_at,
+        images: dyn.cover_image ? [{ url: dyn.cover_image }] : [],
+        siteName: 'Sonar Tracker',
+      },
+    }
+  }
+  return { title: 'Sonar Tracker Blog', description: 'Crypto whale tracking insights.' }
 }
 
 function BlogPostSchema({ slug }) {
@@ -79,11 +110,34 @@ function BlogPostSchema({ slug }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 }
 
-export default function BlogPost({ params }) {
+function DynamicBlogSchema({ post, slug }) {
+  if (!post) return null
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.description,
+    datePublished: post.created_at,
+    dateModified: post.updated_at || post.created_at,
+    author: { '@type': 'Organization', name: 'Sonar Tracker', url: 'https://www.sonartracker.io' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Sonar Tracker',
+      logo: { '@type': 'ImageObject', url: 'https://www.sonartracker.io/logo2.png' },
+    },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://www.sonartracker.io/blog/${slug}` },
+    image: post.cover_image || 'https://www.sonartracker.io/screenshots/stats-dashboard.png',
+  }
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+}
+
+export default async function BlogPost({ params }) {
   const isStaticPost = !!posts[params.slug]
+  const dyn = isStaticPost ? null : await getDynamicPost(params.slug)
   return (
     <>
       {isStaticPost && <BlogPostSchema slug={params.slug} />}
+      {!isStaticPost && dyn && <DynamicBlogSchema post={dyn} slug={params.slug} />}
       {isStaticPost ? <BlogPostClient slug={params.slug} /> : <DynamicBlogPost slug={params.slug} />}
     </>
   )
