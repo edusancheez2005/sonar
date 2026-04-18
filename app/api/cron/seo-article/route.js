@@ -250,9 +250,16 @@ Write the full article now. Return ONLY the HTML content starting with <h1>. Inc
         break
       }
     }
-    // Clean the prompt text out of the content
+    // Clean the prompt text out of the content aggressively
     if (imagePrompt) {
-      rawContent = rawContent.replace(imagePrompt, '').replace(/IMAGE_PROMPT:\s*/i, '').trim()
+      rawContent = rawContent.replace(imagePrompt, '').replace(/IMAGE_PROMPT:\s*/gi, '').trim()
+    }
+    // Also remove any leftover prompt-like text before the first HTML tag
+    rawContent = rawContent.replace(/^[^<]*IMAGE_PROMPT[^<]*/i, '').trim()
+    // Remove any non-HTML text before the first tag
+    const firstTagIdx = rawContent.indexOf('<')
+    if (firstTagIdx > 0) {
+      rawContent = rawContent.substring(firstTagIdx)
     }
     // Fallback image prompt if none extracted
     if (!imagePrompt) {
@@ -301,15 +308,15 @@ Write the full article now. Return ONLY the HTML content starting with <h1>. Inc
       }
     }
 
-    // Insert image at the top of the article if we have one
+    // Insert image BEFORE the h1 tag
     if (imageUrl) {
-      const imgTag = `<img src="${imageUrl}" alt="${topic.keyword}" style="width:100%;border-radius:8px;margin-bottom:1.5em;">`
-      rawContent = rawContent.replace(/(<h1[^>]*>)/, `$1\n${imgTag}`)
+      const imgTag = `<img src="${imageUrl}" alt="${topic.keyword}" style="width:100%;border-radius:12px;margin-bottom:2em;">`
+      rawContent = imgTag + '\n' + rawContent
     }
 
-    // Extract title and description from content
-    const titleMatch = rawContent.match(/<h1[^>]*>(.*?)<\/h1>/i)
-    const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '') : topic.angle
+    // Extract title from the h1 (after image insertion, so image isn't in title)
+    const titleMatch = rawContent.match(/<h1[^>]*>(.*?)<\/h1>/is)
+    const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : topic.angle
     const description = `Learn about ${topic.keyword}. ${topic.angle.slice(0, 120)}.`
 
     // Delete existing post with same slug if any
