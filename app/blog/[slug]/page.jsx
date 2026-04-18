@@ -1,5 +1,6 @@
 import React from 'react'
 import BlogPostClient from './BlogPostClient'
+import DynamicBlogPost from './DynamicBlogPost'
 
 const posts = {
   'what-is-whale-tracking': { title: 'What is Whale Tracking? How It Works and Why It Matters', description: 'Understand how whale tracking reveals large on-chain moves and how traders use it for edge.', date: '2025-08-01' },
@@ -79,13 +80,16 @@ function BlogPostSchema({ slug }) {
 }
 
 export default function BlogPost({ params }) {
+  const isStaticPost = !!posts[params.slug]
   return (
     <>
-      <BlogPostSchema slug={params.slug} />
-      <BlogPostClient slug={params.slug} />
+      {isStaticPost && <BlogPostSchema slug={params.slug} />}
+      {isStaticPost ? <BlogPostClient slug={params.slug} /> : <DynamicBlogPost slug={params.slug} />}
     </>
   )
 }
+
+export const dynamicParams = true
 
 export async function generateStaticParams() {
   return Object.keys(posts).map(slug => ({ slug }))

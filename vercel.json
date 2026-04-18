@@ -55,6 +55,10 @@
     {
       "path": "/api/cron/cache-derivatives",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/seo-article",
+      "schedule": "0 8 * * *"
     }
   ]
 }
