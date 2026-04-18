@@ -42,6 +42,24 @@ const TOPIC_POOL = [
   { keyword: 'crypto trading signals accuracy', slug: 'crypto-trading-signals-accuracy-tested', angle: 'Crypto trading signals accuracy tested: backtesting results from the top signal providers' },
   { keyword: 'altcoin whale activity', slug: 'altcoin-whale-activity-patterns', angle: 'Altcoin whale activity patterns: what large holders do before major alt season moves' },
   { keyword: 'real time crypto alerts', slug: 'real-time-crypto-alerts-setup', angle: 'Real-time crypto alerts setup: configuring whale notifications, price triggers, and signal alerts' },
+  { keyword: 'crypto whale wallet analysis', slug: 'crypto-whale-wallet-analysis-techniques', angle: 'Crypto whale wallet analysis techniques: from address clustering to behavioral profiling' },
+  { keyword: 'whale watching trading strategy', slug: 'whale-watching-trading-strategy-guide', angle: 'Whale watching trading strategy: a systematic approach to following smart money in crypto' },
+  { keyword: 'crypto market prediction tools', slug: 'crypto-market-prediction-tools-2026', angle: 'Crypto market prediction tools in 2026: which ones use real data and which are just noise' },
+  { keyword: 'how whales manipulate crypto', slug: 'how-whales-manipulate-crypto-markets', angle: 'How whales manipulate crypto markets: wash trading, spoofing, and pump schemes explained' },
+  { keyword: 'crypto whale alert bot', slug: 'crypto-whale-alert-bot-setup', angle: 'Building a crypto whale alert bot: Telegram, Discord, and API-based notification systems' },
+  { keyword: 'on chain metrics trading', slug: 'on-chain-metrics-trading-guide', angle: 'On-chain metrics for trading: SOPR, NVT, exchange reserves, and how to interpret each one' },
+  { keyword: 'crypto exchange flow analysis', slug: 'crypto-exchange-flow-analysis', angle: 'Crypto exchange flow analysis: reading net deposits and withdrawals for price direction' },
+  { keyword: 'whale token accumulation', slug: 'whale-token-accumulation-before-pump', angle: 'Whale token accumulation before price pumps: identifying the pattern before it is too late' },
+  { keyword: 'crypto data analysis python', slug: 'crypto-data-analysis-python-guide', angle: 'Crypto data analysis with Python: APIs, pandas workflows, and whale tracking scripts' },
+  { keyword: 'blockchain transaction monitoring', slug: 'blockchain-transaction-monitoring-tools', angle: 'Blockchain transaction monitoring tools: comparing features for compliance and trading' },
+  { keyword: 'crypto whale buying signals', slug: 'crypto-whale-buying-signals-indicators', angle: 'Crypto whale buying signals: the 5 indicators that precede major accumulation phases' },
+  { keyword: 'best free crypto tools', slug: 'best-free-crypto-tools-traders-2026', angle: 'Best free crypto tools for traders in 2026: from whale tracking to portfolio management' },
+  { keyword: 'defi whale movements', slug: 'defi-whale-movements-tracking', angle: 'DeFi whale movements: tracking large positions across Aave, Uniswap, and lending protocols' },
+  { keyword: 'crypto market intelligence', slug: 'crypto-market-intelligence-platform-guide', angle: 'Crypto market intelligence platforms: how professionals aggregate data for trading decisions' },
+  { keyword: 'whale transaction tracker', slug: 'whale-transaction-tracker-comparison', angle: 'Whale transaction trackers compared: accuracy, speed, chain coverage, and pricing in 2026' },
+  { keyword: 'crypto trading data sources', slug: 'crypto-trading-data-sources-ranked', angle: 'Crypto trading data sources ranked: which feeds are worth paying for and which are free' },
+  { keyword: 'bitcoin whale watching', slug: 'bitcoin-whale-watching-strategy', angle: 'Bitcoin whale watching: how to monitor BTC whale wallets and interpret their movements' },
+  { keyword: 'ethereum gas whale activity', slug: 'ethereum-gas-whale-activity-analysis', angle: 'Ethereum gas and whale activity: how high-gas transactions signal major market moves' },
 ]
 
 // Internal links to include in articles
@@ -91,6 +109,51 @@ export async function GET(req) {
     }
 
     const topic = availableTopics[Math.floor(Math.random() * Math.min(5, availableTopics.length))]
+
+    // Fetch real platform data for data-driven articles
+    let platformData = ''
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+      const { data: recentWhales } = await sb
+        .from('all_whale_transactions')
+        .select('token_symbol, usd_value, transaction_type, blockchain')
+        .gte('timestamp', sevenDaysAgo)
+        .order('usd_value', { ascending: false })
+        .limit(50)
+
+      const { data: signals } = await sb
+        .from('token_signals')
+        .select('token, signal, confidence, price_at_signal')
+        .order('computed_at', { ascending: false })
+        .limit(20)
+
+      const { data: sentiment } = await sb
+        .from('sentiment_scores')
+        .select('ticker, score, label')
+        .order('window_start', { ascending: false })
+        .limit(15)
+
+      if (recentWhales?.length) {
+        const totalVol = recentWhales.reduce((s, t) => s + (Number(t.usd_value) || 0), 0)
+        const topTokens = {}
+        recentWhales.forEach(t => {
+          topTokens[t.token_symbol] = (topTokens[t.token_symbol] || 0) + (Number(t.usd_value) || 0)
+        })
+        const sorted = Object.entries(topTokens).sort((a, b) => b[1] - a[1]).slice(0, 5)
+
+        platformData = `\n\nREAL SONAR TRACKER DATA (use these exact numbers in the article where relevant):
+- Total whale volume tracked this week: $${(totalVol / 1e6).toFixed(1)}M across ${recentWhales.length} transactions
+- Top whale tokens by volume: ${sorted.map(([t, v]) => `${t} ($${(v / 1e6).toFixed(1)}M)`).join(', ')}
+- Active signals: ${(signals || []).slice(0, 5).map(s => `${s.token}: ${s.signal} (${s.confidence}% confidence)`).join(', ')}
+- Market sentiment: ${(sentiment || []).slice(0, 5).map(s => `${s.ticker}: ${s.label}`).join(', ')}
+- Sonar tracks 10+ blockchains, 200+ tokens, with 700+ active traders using the platform
+
+IMPORTANT: Weave these real data points naturally into the article. Cite them as "According to Sonar Tracker data" or "Real-time data from sonartracker.io shows".`
+      }
+    } catch (e) {
+      // Non-fatal - article still generates without platform data
+    }
 
     // Pick 5-8 random internal links for this article
     const shuffled = [...INTERNAL_LINKS].sort(() => Math.random() - 0.5)
@@ -154,6 +217,7 @@ SLUG: ${topic.slug}
 
 INTERNAL LINKS TO USE (pick 7-10 and weave naturally):
 ${linksContext}
+${platformData}
 
 Write the full article now. Return ONLY the HTML content starting with <h1>. Include the DALL-E image prompt as the very first line before the <h1>, prefixed with "IMAGE_PROMPT: ".`
 
@@ -172,22 +236,38 @@ Write the full article now. Return ONLY the HTML content starting with <h1>. Inc
       return NextResponse.json({ ok: false, error: 'AI generated insufficient content' }, { status: 500 })
     }
 
-    // Extract image prompt
+    // Extract image prompt (try multiple patterns)
     let imagePrompt = ''
-    const imgMatch = rawContent.match(/IMAGE_PROMPT:\s*(.+?)(\n|<)/i)
-    if (imgMatch) {
-      imagePrompt = imgMatch[1].trim()
-      rawContent = rawContent.replace(/IMAGE_PROMPT:\s*.+?\n?/i, '')
+    const imgPatterns = [
+      /IMAGE_PROMPT:\s*(.+?)(?:\n|$)/i,
+      /IMAGE_PROMPT:\s*(.+?)(?:<)/i,
+      /^(.+?)(?:\n\s*<h1)/i,
+    ]
+    for (const pat of imgPatterns) {
+      const m = rawContent.match(pat)
+      if (m && m[1] && !m[1].includes('<') && m[1].length > 10) {
+        imagePrompt = m[1].trim()
+        break
+      }
+    }
+    // Clean the prompt text out of the content
+    if (imagePrompt) {
+      rawContent = rawContent.replace(imagePrompt, '').replace(/IMAGE_PROMPT:\s*/i, '').trim()
+    }
+    // Fallback image prompt if none extracted
+    if (!imagePrompt) {
+      imagePrompt = `A professional crypto trader analyzing whale movement data on multiple monitors in a modern office, dark blue ambient lighting, blockchain visualization on screens`
     }
 
-    // Generate image with DALL-E (if OpenAI key available)
+    // Generate image with DALL-E
     let imageUrl = ''
-    if (imagePrompt && openaiKey) {
+    const dalleKey = process.env.OPENAI_API_KEY
+    if (dalleKey) {
       try {
-        const dalle = new OpenAI({ apiKey: openaiKey })
+        const dalle = new OpenAI({ apiKey: dalleKey })
         const imgResponse = await dalle.images.generate({
           model: 'dall-e-3',
-          prompt: imagePrompt + '. Professional photography style, clean composition, soft lighting, modern workspace aesthetic. No text or watermarks.',
+          prompt: imagePrompt + '. Professional photography style, clean composition, soft lighting. No text, no watermarks, no logos.',
           n: 1,
           size: '1792x1024',
           quality: 'standard',
