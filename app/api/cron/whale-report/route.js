@@ -46,13 +46,13 @@ export async function GET(req) {
       .order('created_at', { ascending: false })
       .limit(1)
 
-    // Top whale transactions
+    // Top whale transactions — fetch more for accurate volume stats
     const { data: whaleTxs } = await supabaseAdmin
       .from('all_whale_transactions')
-      .select('token_symbol, amount_usd, transaction_type, blockchain, timestamp')
+      .select('token_symbol, usd_value, transaction_type, blockchain, timestamp')
       .gte('timestamp', threeDaysAgo)
-      .order('amount_usd', { ascending: false })
-      .limit(20)
+      .order('usd_value', { ascending: false })
+      .limit(2000)
 
     // Sentiment scores
     const { data: sentiment } = await supabaseAdmin
@@ -69,7 +69,7 @@ export async function GET(req) {
 
     // Calculate stats
     const totalWhaleTxs = (whaleTxs || []).length
-    const totalVolume = (whaleTxs || []).reduce((sum, t) => sum + (t.amount_usd || 0), 0)
+    const totalVolume = (whaleTxs || []).reduce((sum, t) => sum + (Number(t.usd_value) || 0), 0)
     const buyTxs = (whaleTxs || []).filter(t => t.transaction_type === 'buy')
     const sellTxs = (whaleTxs || []).filter(t => t.transaction_type === 'sell')
     const buyRatio = totalWhaleTxs > 0 ? ((buyTxs.length / totalWhaleTxs) * 100).toFixed(1) : '50'
@@ -89,8 +89,8 @@ WHALE ACTIVITY REPORT (${dateStart} - ${dateEnd}):
 Total whale transactions: ${totalWhaleTxs}
 Total volume: ${fmtVol}
 Buy/Sell ratio: ${buyRatio}% buys
-Top buy tokens: ${buyTxs.slice(0, 5).map(t => `${t.token_symbol} ($${(t.amount_usd/1e6).toFixed(1)}M)`).join(', ')}
-Top sell tokens: ${sellTxs.slice(0, 5).map(t => `${t.token_symbol} ($${(t.amount_usd/1e6).toFixed(1)}M)`).join(', ')}
+Top buy tokens: ${buyTxs.slice(0, 5).map(t => `${t.token_symbol} ($${(Number(t.usd_value)/1e6).toFixed(1)}M)`).join(', ')}
+Top sell tokens: ${sellTxs.slice(0, 5).map(t => `${t.token_symbol} ($${(Number(t.usd_value)/1e6).toFixed(1)}M)`).join(', ')}
 
 ACTIVE SIGNALS:
 ${Object.values(latestSignals).map(s => `${s.token}: ${s.signal} (confidence: ${s.confidence}%, price: $${s.price_at_signal})`).join('\n')}
