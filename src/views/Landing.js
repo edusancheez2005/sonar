@@ -515,13 +515,13 @@ const NavLink = styled(NavButton)``;
 
 /* ── NEW HERO + MARQUEE + DASHBOARD STYLED COMPONENTS ── */
 const NewHero = styled.section`
-  position: relative; z-index: 1; min-height: calc(100vh - 70px);
+  position: relative; z-index: 1; min-height: 100vh;
   display: grid; grid-template-columns: 1fr 1fr; gap: 0;
-  padding: 100px 40px 40px;
-  max-width: 1440px; margin: 0 auto;
+  padding: 120px 60px 60px;
+  max-width: 1600px; margin: 0 auto;
   align-items: center; overflow: visible; background: var(--background-dark);
   @media (max-width: 1100px) { grid-template-columns: 1fr; padding: 120px 32px 40px; }
-  @media (max-width: 600px) { padding: 120px 20px 40px; }
+  @media (max-width: 600px) { padding: 100px 20px 40px; }
 `;
 const NewHeroStars = styled.div`
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
@@ -535,9 +535,9 @@ const NewHeroStars = styled.div`
     radial-gradient(circle at 50% 40%, rgba(20, 80, 110, 0.25), transparent 70%);
 `;
 const HeroCopy = styled.div`
-  display: flex; flex-direction: column; gap: 22px; align-self: center;
-  position: relative; z-index: 2; max-width: 600px;
-  padding-left: 40px;
+  display: flex; flex-direction: column; gap: 28px; align-self: center;
+  position: relative; z-index: 2; max-width: 640px;
+  padding-left: 20px;
   @media (max-width: 1100px) { order: 1; max-width: 100%; padding-left: 0; }
 `;
 const Eyebrow = styled.div`
@@ -552,7 +552,7 @@ const HeroPulseDot = styled.span`
   box-shadow: 0 0 8px #5DF0B0; animation: ${heroPulse} 1.6s ease-in-out infinite;
 `;
 const NewHeadline = styled.h1`
-  font-size: clamp(44px, 5.4vw, 80px); font-weight: 300; line-height: 1.02;
+  font-size: clamp(52px, 6vw, 90px); font-weight: 300; line-height: 1.02;
   letter-spacing: -0.025em; color: #E6F7FB; margin: 0;
 `;
 const HeadlineAccent = styled.span`
@@ -560,13 +560,13 @@ const HeadlineAccent = styled.span`
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 `;
 const HeroSub = styled.p`
-  font-size: 16px; line-height: 1.55; color: rgba(220, 240, 250, 0.6); max-width: 420px; margin: 0;
+  font-size: 18px; line-height: 1.6; color: rgba(220, 240, 250, 0.6); max-width: 480px; margin: 0;
 `;
 const HeroCtaRow = styled.div`display: flex; gap: 12px; flex-wrap: wrap;`;
 const HeroBtn = styled.button`
   border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500;
-  padding: ${({ $lg }) => $lg ? '14px 28px' : '10px 20px'}; border-radius: 999px;
-  font-size: ${({ $lg }) => $lg ? '14px' : '13px'}; letter-spacing: 0.01em;
+  padding: ${({ $lg }) => $lg ? '16px 32px' : '12px 24px'}; border-radius: 999px;
+  font-size: ${({ $lg }) => $lg ? '16px' : '14px'}; letter-spacing: 0.01em;
   transition: all 180ms; display: inline-flex; align-items: center; gap: 8px;
 `;
 const HeroBtnPrimary = styled(HeroBtn)`
@@ -589,11 +589,11 @@ const HeroTrustChip = styled.span`
   b { color: #7FE3F5; font-weight: 500; }
 `;
 const GlobeArea = styled.div`
-  position: relative; display: flex; align-items: center; justify-content: center; min-height: 640px;
+  position: relative; display: flex; align-items: center; justify-content: center; min-height: 720px;
   @media (max-width: 1100px) { order: 2; min-height: 520px; }
 `;
 const GlobeWrap = styled.div`
-  position: relative; width: 720px; height: 720px; margin-left: -160px; pointer-events: none;
+  position: relative; width: 800px; height: 800px; margin-left: -120px; pointer-events: none;
   @media (max-width: 1100px) { margin-left: 0; width: 520px; height: 520px; }
   @media (max-width: 600px) { width: 360px; height: 360px; }
 `;
@@ -646,7 +646,7 @@ const DEFAULT_TICKER_DATA = [
   { sym: 'ADA', price: '$1.24',       delta: '+2.05%', up: true },
   { sym: 'AVAX', price: '$54.12',     delta: '-1.18%', up: false },
   { sym: 'LINK', price: '$28.40',     delta: '+3.88%', up: true },
-  { sym: 'TON', price: '$7.22',       delta: '+1.44%', up: true },
+  { sym: 'SUI', price: '$3.85',       delta: '+2.10%', up: true },
 ];
 
 const LoginButton = styled.button`
