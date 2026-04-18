@@ -100,25 +100,11 @@ ${whispers?.[0]?.narrative || 'No narrative available'}
     // 3. Generate blog post with AI
     const slug = `whale-report-${now.toISOString().slice(0, 10)}`
 
-    // Check if post already exists — if so, update it
-    const { data: existing } = await supabaseAdmin
+    // Delete existing post for today if any, then create fresh
+    await supabaseAdmin
       .from('blog_posts')
-      .select('id')
+      .delete()
       .eq('slug', slug)
-      .single()
-
-    if (existing) {
-      // Update existing post with fresh data
-      const { error: updateError } = await supabaseAdmin
-        .from('blog_posts')
-        .update({ title, description, content, updated_at: new Date().toISOString() })
-        .eq('slug', slug)
-
-      if (updateError) {
-        return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 })
-      }
-      return NextResponse.json({ ok: true, slug, title, updated: true, stats: { totalWhaleTxs, totalVolume: fmtVol, buyRatio } })
-    }
 
     // Initialize AI client inside handler (not module scope)
     const xaiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || ''
