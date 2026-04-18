@@ -14,11 +14,6 @@ import OpenAI from 'openai'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
-const xai = new OpenAI({
-  apiKey: process.env.XAI_API_KEY || process.env.GROK_API_KEY || '',
-  baseURL: 'https://api.x.ai/v1',
-})
-
 export async function GET(req) {
   try {
     const authHeader = req.headers.get('authorization')
@@ -124,6 +119,10 @@ ${whispers?.[0]?.narrative || 'No narrative available'}
       }
       return NextResponse.json({ ok: true, slug, title, updated: true, stats: { totalWhaleTxs, totalVolume: fmtVol, buyRatio } })
     }
+
+    // Initialize AI client inside handler (not module scope)
+    const xaiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || ''
+    const xai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
 
     const completion = await xai.chat.completions.create({
       model: 'grok-3-mini',
