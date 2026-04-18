@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useMemo } from 'react'
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
+import { motion } from 'framer-motion'
 
 /* ── helpers ── */
 function gen(n, start, vol) {
@@ -293,6 +294,20 @@ export default function DashboardPreview() {
 
   return (
     <Wrap>
+      {/* Scanning line effect */}
+      <motion.div
+        initial={{ top: '-2px' }}
+        whileInView={{ top: '100%' }}
+        viewport={{ once: true }}
+        transition={{ duration: 2.5, delay: 0.3, ease: 'linear', repeat: 2, repeatDelay: 1.5 }}
+        style={{
+          position: 'absolute', left: 0, right: 0, height: '2px', zIndex: 10,
+          background: 'linear-gradient(90deg, transparent, rgba(127, 227, 245, 0.5), rgba(127, 227, 245, 0.8), rgba(127, 227, 245, 0.5), transparent)',
+          boxShadow: '0 0 20px rgba(127, 227, 245, 0.3), 0 0 60px rgba(127, 227, 245, 0.15)',
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* Top chrome */}
       <TopChrome>
         <Traffic><span /><span /><span /></Traffic>
@@ -325,16 +340,23 @@ export default function DashboardPreview() {
               { label: 'Whale txns', val: '2,155', spark: series.eth, delta: '+11.8%' },
               { label: 'Signals fired', val: '94', spark: series.sol, delta: '+2.1%' },
             ].map((s, i) => (
-              <StatCard key={i}>
-                <StatLabel>{s.label}</StatLabel>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <StatVal>{s.val}</StatVal>
-                    <div style={{ fontSize: 11, color: '#5DF0B0', fontFamily: "'JetBrains Mono', monospace" }}>{s.delta}</div>
+              <motion.div key={i}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.2 + i * 0.15, type: 'spring', stiffness: 200 }}
+              >
+                <StatCard>
+                  <StatLabel>{s.label}</StatLabel>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <StatVal>{s.val}</StatVal>
+                      <div style={{ fontSize: 11, color: '#5DF0B0', fontFamily: "'JetBrains Mono', monospace" }}>{s.delta}</div>
+                    </div>
+                    <SparkLine points={s.spark} width={80} height={32} />
                   </div>
-                  <SparkLine points={s.spark} width={80} height={32} />
-                </div>
-              </StatCard>
+                </StatCard>
+              </motion.div>
             ))}
           </StatRow>
 
@@ -348,6 +370,12 @@ export default function DashboardPreview() {
           </Tabs>
 
           {/* Chart */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.5 }}
+          >
           <ChartCard>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
               <div>
@@ -370,8 +398,15 @@ export default function DashboardPreview() {
             </div>
             <BigChart />
           </ChartCard>
+          </motion.div>
 
           {/* Bottom grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.7 }}
+          >
           <BottomGrid>
             <TableCard>
               <TableTitle>Top whale movements</TableTitle>
@@ -404,6 +439,7 @@ export default function DashboardPreview() {
               ))}
             </TableCard>
           </BottomGrid>
+          </motion.div>
         </Main>
       </Body>
     </Wrap>

@@ -1129,10 +1129,26 @@ const Landing = () => {
 
       {/* ─── DASHBOARD PREVIEW ─── */}
       <DashSection id="dashboard-preview">
-        <DashSectionLabel>The product</DashSectionLabel>
-        <DashSectionTitle>Every signal. <HeadlineAccent>Every chain.</HeadlineAccent><br />In one terminal.</DashSectionTitle>
-        <DashSectionSub>Sonar aggregates on-chain movement, exchange flows, sentiment, and news into a single real-time view. Act on data, not vibes.</DashSectionSub>
-        <DashboardPreview />
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.7 }}
+        >
+          <DashSectionLabel>The product</DashSectionLabel>
+          <DashSectionTitle>Every signal. <HeadlineAccent>Every chain.</HeadlineAccent><br />In one terminal.</DashSectionTitle>
+          <DashSectionSub>Sonar aggregates on-chain movement, exchange flows, sentiment, and news into a single real-time view. Act on data, not vibes.</DashSectionSub>
+        </motion.div>
+        <div style={{ perspective: '1200px' }}>
+          <motion.div
+            initial={{ opacity: 0, rotateX: 8, y: 80, scale: 0.95 }}
+            whileInView={{ opacity: 1, rotateX: 0, y: 0, scale: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <DashboardPreview />
+          </motion.div>
+        </div>
       </DashSection>
 
       {/* ─── THE PROBLEM ─── */}
