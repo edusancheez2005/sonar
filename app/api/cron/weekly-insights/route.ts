@@ -292,6 +292,60 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
     return NextResponse.json({ error: 'DB insert failed', details: insertErr.message }, { status: 500 })
   }
 
+  // ─── STEP 4b: Also create a blog post from the same data ─────
+  try {
+    const blogSlug = `whale-pulse-${weekStartStr}`
+    const blogTitle = `${insights.subject || 'Whale Pulse: ' + weekLabel}`
+    const blogDescription = insights.summary || `Weekly whale intelligence report for ${weekLabel}. AI-analyzed whale movements, market signals, and sentiment shifts.`
+
+    // Build blog HTML from insights
+    const topNewsHtml = (insights.top_news || []).map((n: any) =>
+      `<li><strong>${escapeHtml(n.title)}</strong> (${escapeHtml(n.source)}) — ${escapeHtml(n.impact)}</li>`
+    ).join('')
+
+    const whaleMovesHtml = (insights.whale_moves || []).map((w: any) =>
+      `<li><strong>${escapeHtml(w.token)}</strong> — ${escapeHtml(w.direction)}, $${(w.volume_usd / 1e6).toFixed(1)}M. ${escapeHtml(w.narrative)}</li>`
+    ).join('')
+
+    const priceMoversHtml = (insights.price_movers || []).map((p: any) =>
+      `<li><strong>${escapeHtml(p.token)}</strong> ${p.change_pct >= 0 ? '+' : ''}${p.change_pct}% — ${escapeHtml(p.narrative)}</li>`
+    ).join('')
+
+    const sentShift = insights.sentiment_shift || {}
+
+    const blogContent = `
+      <p>${escapeHtml(insights.summary || '')}</p>
+
+      <h2>Market Sentiment: ${(sentShift.overall || 'Neutral').charAt(0).toUpperCase() + (sentShift.overall || 'neutral').slice(1)}</h2>
+      <p>${escapeHtml(sentShift.narrative || 'No sentiment data available for this period.')}</p>
+
+      <h2>Top News This Week</h2>
+      <ul>${topNewsHtml || '<li>No major news this period.</li>'}</ul>
+
+      <h2>Biggest Whale Movements</h2>
+      <ul>${whaleMovesHtml || '<li>No significant whale movements detected.</li>'}</ul>
+
+      <h2>Price Movers</h2>
+      <ul>${priceMoversHtml || '<li>No significant price movements.</li>'}</ul>
+
+      <h2>What to Watch Next Week</h2>
+      <p>Stay ahead of the market with real-time whale tracking on <a href="https://www.sonartracker.io/dashboard">Sonar Tracker</a>. Our AI-powered signals and whale alerts help you move before the crowd.</p>
+    `
+
+    // Delete existing blog post for this week if any, then create
+    await sb.from('blog_posts').delete().eq('slug', blogSlug)
+    await sb.from('blog_posts').insert({
+      slug: blogSlug,
+      title: blogTitle,
+      description: blogDescription,
+      content: blogContent,
+      category: 'whale-report',
+      tags: ['whale-pulse', 'weekly-report', 'market-analysis', 'whale-movements'],
+    })
+  } catch (blogErr: any) {
+    console.error('Blog post creation failed (non-fatal):', blogErr.message)
+  }
+
   // ─── STEP 5: Send via Brevo Campaign (List #3) ───────────────
 
   const brevoResult = await sendBrevoEmail(brevoKey, insights.subject || `Whale Pulse: Week of ${weekLabel}`, htmlBody, weekLabel)

@@ -55,10 +55,6 @@
     {
       "path": "/api/cron/cache-derivatives",
       "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/whale-report",
-      "schedule": "0 10 */3 * *"
     }
   ]
 }
