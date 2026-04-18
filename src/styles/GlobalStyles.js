@@ -22,6 +22,8 @@ const GlobalStyles = createGlobalStyle`
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+    /* Landing page tokens */
+    --landing-border: rgba(120, 220, 240, 0.14);
   }
 
   html { scroll-behavior: smooth; }

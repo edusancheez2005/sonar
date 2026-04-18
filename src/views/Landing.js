@@ -3,6 +3,9 @@ import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient';
+import Globe from '@/src/components/landing/Globe';
+import OrbitingLogos from '@/src/components/landing/OrbitingLogos';
+import DashboardPreview from '@/src/components/landing/DashboardPreview';
 
 /* ================================================================
    KEYFRAMES
@@ -25,6 +28,16 @@ const shimmer = keyframes`
 const scrollCarousel = keyframes`
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+`;
+
+const marqueeScroll = keyframes`
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+`;
+
+const heroPulse = keyframes`
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.6; }
 `;
 
 /* ================================================================
@@ -500,6 +513,142 @@ const NavButton = styled.button`
 
 const NavLink = styled(NavButton)``;
 
+/* ── NEW HERO + MARQUEE + DASHBOARD STYLED COMPONENTS ── */
+const NewHero = styled.section`
+  position: relative; z-index: 1; min-height: calc(100vh - 70px);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  padding: 100px 40px 40px;
+  max-width: 1440px; margin: 0 auto;
+  align-items: center; overflow: visible; background: var(--background-dark);
+  @media (max-width: 1100px) { grid-template-columns: 1fr; padding: 120px 32px 40px; }
+  @media (max-width: 600px) { padding: 120px 20px 40px; }
+`;
+const NewHeroStars = styled.div`
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 13% 22%, rgba(200,240,255,0.5), transparent),
+    radial-gradient(1px 1px at 78% 45%, rgba(200,240,255,0.4), transparent),
+    radial-gradient(1px 1px at 42% 78%, rgba(200,240,255,0.35), transparent),
+    radial-gradient(1px 1px at 91% 12%, rgba(200,240,255,0.3), transparent),
+    radial-gradient(1px 1px at 22% 92%, rgba(200,240,255,0.25), transparent),
+    radial-gradient(1px 1px at 68% 88%, rgba(200,240,255,0.3), transparent),
+    radial-gradient(circle at 50% 40%, rgba(20, 80, 110, 0.25), transparent 70%);
+`;
+const HeroCopy = styled.div`
+  display: flex; flex-direction: column; gap: 22px; align-self: center;
+  position: relative; z-index: 2; max-width: 600px;
+  padding-left: 40px;
+  @media (max-width: 1100px) { order: 1; max-width: 100%; padding-left: 0; }
+`;
+const Eyebrow = styled.div`
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1.8px;
+  text-transform: uppercase; color: #7FE3F5; padding: 6px 12px;
+  border: 1px solid rgba(125, 230, 245, 0.25); border-radius: 999px;
+  background: rgba(125, 230, 245, 0.05); width: fit-content;
+`;
+const HeroPulseDot = styled.span`
+  width: 6px; height: 6px; border-radius: 50%; background: #5DF0B0;
+  box-shadow: 0 0 8px #5DF0B0; animation: ${heroPulse} 1.6s ease-in-out infinite;
+`;
+const NewHeadline = styled.h1`
+  font-size: clamp(44px, 5.4vw, 80px); font-weight: 300; line-height: 1.02;
+  letter-spacing: -0.025em; color: #E6F7FB; margin: 0;
+`;
+const HeadlineAccent = styled.span`
+  font-weight: 500; background: linear-gradient(180deg, #AFF0FA, #4EC5DB);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+`;
+const HeroSub = styled.p`
+  font-size: 16px; line-height: 1.55; color: rgba(220, 240, 250, 0.6); max-width: 420px; margin: 0;
+`;
+const HeroCtaRow = styled.div`display: flex; gap: 12px; flex-wrap: wrap;`;
+const HeroBtn = styled.button`
+  border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500;
+  padding: ${({ $lg }) => $lg ? '14px 28px' : '10px 20px'}; border-radius: 999px;
+  font-size: ${({ $lg }) => $lg ? '14px' : '13px'}; letter-spacing: 0.01em;
+  transition: all 180ms; display: inline-flex; align-items: center; gap: 8px;
+`;
+const HeroBtnPrimary = styled(HeroBtn)`
+  background: linear-gradient(180deg, #8DE8F7 0%, #4EC5DB 100%); color: #02161F; font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(125, 230, 245, 0.5), 0 10px 30px -8px rgba(125, 230, 245, 0.5);
+  &:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(125, 230, 245, 0.7), 0 16px 40px -8px rgba(125, 230, 245, 0.6); }
+`;
+const HeroBtnGhost = styled(HeroBtn)`
+  background: transparent; color: #7FE3F5; border: 1px solid rgba(125, 230, 245, 0.35);
+  &:hover { background: rgba(125, 230, 245, 0.08); border-color: rgba(125, 230, 245, 0.6); }
+`;
+const HeroTrustRow = styled.div`
+  display: flex; gap: 8px; align-items: center; margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: rgba(180, 230, 245, 0.4); letter-spacing: 0.06em; flex-wrap: wrap;
+`;
+const HeroTrustChip = styled.span`
+  padding: 6px 10px; border: 1px solid rgba(120, 220, 240, 0.14); border-radius: 6px;
+  color: rgba(220, 240, 250, 0.6); background: rgba(8, 20, 32, 0.5);
+  b { color: #7FE3F5; font-weight: 500; }
+`;
+const GlobeArea = styled.div`
+  position: relative; display: flex; align-items: center; justify-content: center; min-height: 640px;
+  @media (max-width: 1100px) { order: 2; min-height: 520px; }
+`;
+const GlobeWrap = styled.div`
+  position: relative; width: 720px; height: 720px; margin-left: -160px; pointer-events: none;
+  @media (max-width: 1100px) { margin-left: 0; width: 520px; height: 520px; }
+  @media (max-width: 600px) { width: 360px; height: 360px; }
+`;
+const GlobePedestal = styled.div`
+  position: absolute; left: 50%; bottom: -40px; transform: translateX(-50%);
+  width: 380px; height: 80px; background: radial-gradient(ellipse at center, rgba(125, 230, 245, 0.2), transparent 65%);
+  filter: blur(10px); pointer-events: none;
+`;
+const MarqueeWrap = styled.div`
+  position: relative; z-index: 2; overflow: hidden; padding: 12px 0;
+  border-top: 1px solid rgba(120, 220, 240, 0.14); border-bottom: 1px solid rgba(120, 220, 240, 0.14);
+  background: rgba(5, 12, 20, 0.6);
+`;
+const MarqueeTrack = styled.div`
+  display: flex; gap: 50px; width: max-content;
+  animation: ${marqueeScroll} 60s linear infinite;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(220, 240, 250, 0.6);
+  span { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  b { color: #7FE3F5; font-weight: 500; }
+  .up { color: #5DF0B0; font-style: normal; }
+  .down { color: #F5A86B; font-style: normal; }
+`;
+const DashSection = styled.section`
+  position: relative; z-index: 1; padding: 80px 40px 120px; background: var(--background-dark);
+  @media (max-width: 880px) { padding: 60px 20px 80px; }
+`;
+const DashSectionLabel = styled.div`
+  display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(180, 230, 245, 0.4);
+  &::before { content: ''; width: 30px; height: 1px; background: #7FE3F5; opacity: 0.5; }
+`;
+const DashSectionTitle = styled.h2`
+  font-size: clamp(32px, 3vw, 48px); font-weight: 300; letter-spacing: -0.02em;
+  line-height: 1.1; margin: 0 0 12px; max-width: 720px; color: #E6F7FB;
+`;
+const DashSectionSub = styled.p`
+  font-size: 16px; color: rgba(220, 240, 250, 0.6); max-width: 560px; margin: 0 0 40px;
+`;
+
+const TICKER_SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','LINKUSDT','TONUSDT'];
+const TICKER_LABELS = ['BTC','ETH','SOL','XRP','BNB','DOGE','ADA','AVAX','LINK','TON'];
+const DEFAULT_TICKER_DATA = [
+  { sym: 'BTC', price: '$108,420.50', delta: '+2.41%', up: true },
+  { sym: 'ETH', price: '$4,120.85',   delta: '+1.88%', up: true },
+  { sym: 'SOL', price: '$248.12',     delta: '+4.12%', up: true },
+  { sym: 'XRP', price: '$3.41',       delta: '-0.62%', up: false },
+  { sym: 'BNB', price: '$712.30',     delta: '+0.94%', up: true },
+  { sym: 'DOGE', price: '$0.412',     delta: '+3.27%', up: true },
+  { sym: 'ADA', price: '$1.24',       delta: '+2.05%', up: true },
+  { sym: 'AVAX', price: '$54.12',     delta: '-1.18%', up: false },
+  { sym: 'LINK', price: '$28.40',     delta: '+3.88%', up: true },
+  { sym: 'TON', price: '$7.22',       delta: '+1.44%', up: true },
+];
+
 const LoginButton = styled.button`
   background: none; border: 1px solid var(--primary); color: var(--primary);
   padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;
@@ -665,6 +814,33 @@ const CountUp = ({ target, prefix = '', suffix = '', duration = 2000 }) => {
 };
 
 /* ================================================================
+   GLOBE RESPONSIVE WRAPPER
+   ================================================================ */
+function GlobeResponsive() {
+  const ref = useRef(null);
+  const [globeSize, setGlobeSize] = useState(720);
+
+  useEffect(() => {
+    const update = () => {
+      if (ref.current) {
+        const w = ref.current.offsetWidth;
+        setGlobeSize(w);
+      }
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <Globe style="holographic" motion="medium" size={globeSize} />
+      <OrbitingLogos size={globeSize} motion="medium" />
+    </div>
+  );
+}
+
+/* ================================================================
    COMPONENT
    ================================================================ */
 const Landing = () => {
@@ -692,8 +868,28 @@ const Landing = () => {
   const [toastVisible, setToastVisible] = useState(false);
   const [liveTxnCount, setLiveTxnCount] = useState(null);
   const [liveVolume, setLiveVolume] = useState(null);
+  const [tickerData, setTickerData] = useState(DEFAULT_TICKER_DATA);
 
   const showToast = (msg, type = 'success') => { setToastMsg(msg); setToastType(type); setToastVisible(true); };
+
+  // Fetch live prices from server-side proxy
+  useEffect(() => {
+    let cancelled = false;
+    const fetchPrices = async () => {
+      try {
+        const res = await fetch('/api/ticker');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !Array.isArray(data) || data.length === 0) return;
+        setTickerData(data);
+      } catch (e) {
+        console.warn('Ticker fetch failed:', e);
+      }
+    };
+    fetchPrices();
+    const iv = setInterval(fetchPrices, 30000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, []);
 
   useEffect(() => { if (!toastVisible) return; const t = setTimeout(() => setToastVisible(false), 4500); return () => clearTimeout(t); }, [toastVisible]);
   useEffect(() => { if (resendCooldown <= 0) return; const t = setInterval(() => setResendCooldown(s => Math.max(0, s - 1)), 1000); return () => clearInterval(t); }, [resendCooldown]);
@@ -894,459 +1090,51 @@ const Landing = () => {
         </NavLinks>
       </NavBar>
 
-      {/* ─── HERO ─── */}
-      <HeroSection>
-        <WhaleBackground>
-          <svg className="whale-svg" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
-            <path d="M40,70 C35,60 30,65 25,70 C20,75 15,80 15,90 C15,95 20,100 25,100 C30,100 30,95 35,95 C40,95 45,100 50,100 C55,100 60,95 65,90 C70,85 80,80 85,75 C90,70 95,65 150,50 L120,60 C75,65 70,70 65,75 C60,80 55,85 50,85 C45,85 40,80 40,70 Z" />
-            <circle cx="30" cy="80" r="2" />
-            <path d="M100,60 C110,50 120,45 130,45" stroke="currentColor" strokeWidth="3" fill="none" />
-            <path d="M100,50 C115,40 130,35 145,35" stroke="currentColor" strokeWidth="3" fill="none" />
-            <path d="M100,40 C120,30 140,25 160,25" stroke="currentColor" strokeWidth="3" fill="none" />
-          </svg>
-          <motion.div className="coin" animate={{ y: [0, -15, 0], rotate: 360 }} transition={{ y: { repeat: Infinity, duration: 2, ease: "easeInOut" }, rotate: { repeat: Infinity, duration: 8, ease: "linear" } }}>S</motion.div>
-        </WhaleBackground>
+      {/* ─── HERO (GLOBE DESIGN) ─── */}
+      <NewHero>
+        <NewHeroStars />
+        <HeroCopy>
+          <Eyebrow><HeroPulseDot />Live · Tracking $12.4B in flows</Eyebrow>
+          <NewHeadline>
+            <HeadlineAccent>Sonar</HeadlineAccent><br />
+            <span style={{ fontWeight: 300 }}>Real-Time Crypto</span><br />
+            Intelligence
+          </NewHeadline>
+          <HeroSub>Your crypto market intelligence partner. Track whales. Read signals. Move first, across every chain, in real time.</HeroSub>
+          <HeroCtaRow>
+            <HeroBtnPrimary $lg onClick={() => isLoggedIn ? navigate('/dashboard') : setShowLoginModal(true)}>Launch app →</HeroBtnPrimary>
+            <HeroBtnGhost $lg onClick={() => { const el = document.getElementById('dashboard-preview'); el?.scrollIntoView({ behavior: 'smooth' }); }}>See live demo</HeroBtnGhost>
+          </HeroCtaRow>
+          <HeroTrustRow>
+            <HeroTrustChip><b>700+</b> traders</HeroTrustChip>
+            <HeroTrustChip><b>2,000+</b> signals</HeroTrustChip>
+            <HeroTrustChip><b>10M+</b> datapoints/day</HeroTrustChip>
+          </HeroTrustRow>
+        </HeroCopy>
+        <GlobeArea>
+          <GlobeWrap>
+            <GlobeResponsive />
+          </GlobeWrap>
+          <GlobePedestal />
+        </GlobeArea>
+      </NewHero>
 
-        <FloatingElements>
-          {circles.map((circle, i) => (
-            <Circle key={i} style={{ width: circle.size, height: circle.size, left: circle.x, top: circle.y }}
-              initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 0.1, scale: 1 }}
-              transition={{ duration: 2, delay: circle.delay, repeat: Infinity, repeatType: 'reverse' }} />
+      {/* ─── CRYPTO MARQUEE ─── */}
+      <MarqueeWrap>
+        <MarqueeTrack>
+          {[...tickerData, ...tickerData].map((t, i) => (
+            <span key={i}>{t.sym} <b>{t.price}</b>{' '}<em className={t.up ? 'up' : 'down'}>{t.delta}</em></span>
           ))}
-        </FloatingElements>
+        </MarqueeTrack>
+      </MarqueeWrap>
 
-        <HeroContent>
-          <motion.div variants={containerVariants} initial="hidden" animate="visible">
-            <HeroTitle variants={itemVariants} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-              <span style={{ WebkitTextFillColor: 'var(--primary)' }}>Sonar</span>
-              <span style={{ WebkitTextFillColor: 'transparent' }}>{" "}Real-Time Crypto Intelligence</span>
-            </HeroTitle>
-
-            <HeroSubtitle variants={itemVariants}>
-              Your crypto market intelligence partner. Track whales. Read signals. Move first.
-            </HeroSubtitle>
-
-            <HeroHighlight variants={itemVariants} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
-              <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.2 }} whileHover={{ scale: 1.05 }}>
-                <div className="number"><CountUp target={700} suffix="+" /></div><div className="label">Happy Users</div>
-              </StatBadge>
-              <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.4 }} whileHover={{ scale: 1.05 }}>
-                <div className="number"><CountUp target={2000} suffix="+" /></div><div className="label">Signals Generated</div>
-              </StatBadge>
-              <StatBadge initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.6 }} whileHover={{ scale: 1.05 }}>
-                <div className="number"><CountUp target={10} suffix="M+" /></div><div className="label">News Analyzed</div>
-              </StatBadge>
-            </HeroHighlight>
-
-            {/* Live Whale Activity Ticker */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.8 }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', marginBottom: '2rem', flexWrap: 'wrap',
-                background: 'rgba(0, 229, 255, 0.03)', border: '1px solid rgba(0, 229, 255, 0.08)', borderRadius: '6px', padding: '0.65rem 1.5rem',
-                fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace" }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: '#00e676', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>
-                <PulseDot /> LIVE
-              </span>
-              <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
-              <span style={{ fontSize: '0.75rem', color: '#5a6a7a' }}><span style={{ color: '#00e5ff', fontWeight: 700 }}>{liveTxnCount || '---'}</span> whale transactions tracked today</span>
-              <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
-              <span style={{ fontSize: '0.75rem', color: '#5a6a7a' }}><span style={{ color: '#00e5ff', fontWeight: 700 }}>{liveVolume || '---'}</span> total volume</span>
-            </motion.div>
-
-            <ButtonGroup initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}>
-              <Button className="primary" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowLoginModal(true)} title="Login to access your dashboard">Login</Button>
-              <Button className="secondary" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => { const el = document.getElementById('features'); el?.scrollIntoView({ behavior: 'smooth' }); }} title="See features">See Product</Button>
-            </ButtonGroup>
-          </motion.div>
-        </HeroContent>
-      </HeroSection>
-
-      {/* ─── ANIMATED DASHBOARD DEMO ─── */}
-      <section style={{ padding: '5rem 2rem 6rem', background: 'linear-gradient(180deg, rgba(10, 14, 23, 0.95) 0%, rgba(10, 14, 23, 1) 100%)', position: 'relative', overflow: 'hidden' }}>
-        {/* Floating data particles */}
-        {[...Array(18)].map((_, i) => (
-          <motion.div key={`p-${i}`}
-            style={{
-              position: 'absolute',
-              width: Math.random() * 3 + 1 + 'px',
-              height: Math.random() * 3 + 1 + 'px',
-              borderRadius: '50%',
-              background: ['#00e5ff', '#00e676', '#ffab00', '#ff1744'][i % 4],
-              left: `${5 + Math.random() * 90}%`,
-              top: `${5 + Math.random() * 90}%`,
-              opacity: 0,
-              pointerEvents: 'none',
-            }}
-            animate={{
-              y: [0, -20 - Math.random() * 40, 0],
-              opacity: [0, 0.5, 0],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 4,
-              delay: Math.random() * 5,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-        ))}
-
-        <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem', background: 'linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em' }}>Your Crypto Command Center</h2>
-            <p style={{ fontSize: '1.1rem', color: '#5a6a7a', maxWidth: '620px', margin: '0 auto', lineHeight: 1.6 }}>Watch your intelligence dashboard come to life. Real-time whale flows, AI signals, and market sentiment — assembled in seconds.</p>
-          </motion.div>
-
-          {/* Dashboard Frame — 3D perspective entrance */}
-          <div style={{ perspective: '1200px' }}>
-            <motion.div
-              initial={{ opacity: 0, rotateX: 8, y: 60 }}
-              whileInView={{ opacity: 1, rotateX: 0, y: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                background: 'rgba(13, 17, 28, 0.95)',
-                border: '1px solid rgba(0, 229, 255, 0.15)',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: '0 30px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(0, 229, 255, 0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
-                position: 'relative',
-              }}
-            >
-              {/* Scanning line overlay */}
-              <motion.div
-                initial={{ top: '-2px' }}
-                whileInView={{ top: '100%' }}
-                viewport={{ once: true }}
-                transition={{ duration: 2.5, delay: 0.5, ease: 'linear', repeat: 2, repeatDelay: 1.5 }}
-                style={{
-                  position: 'absolute', left: 0, right: 0, height: '2px', zIndex: 10,
-                  background: 'linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.6), rgba(0, 229, 255, 0.9), rgba(0, 229, 255, 0.6), transparent)',
-                  boxShadow: '0 0 20px rgba(0, 229, 255, 0.4), 0 0 60px rgba(0, 229, 255, 0.2)',
-                  pointerEvents: 'none',
-                }}
-              />
-
-              {/* Title Bar */}
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '0.75rem 1.5rem',
-                  borderBottom: '1px solid rgba(0, 229, 255, 0.1)',
-                  background: 'rgba(10, 14, 23, 0.9)',
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#00e5ff', letterSpacing: '2px' }}>SONAR</span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', color: '#00e676', fontWeight: 600 }}><PulseDot /> LIVE</span>
-                </div>
-                <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 1.5 }}
-                  style={{ fontSize: '0.7rem', color: '#5a6a7a' }}>
-                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </motion.div>
-              </motion.div>
-
-              {/* KPI Row — cards spring in one by one */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid rgba(0, 229, 255, 0.06)' }}>
-                {[
-                  { label: 'PORTFOLIO', value: '$124,563', color: '#00e5ff', sub: '+12.4% today', icon: '◆' },
-                  { label: 'ACCUMULATION', value: '3', color: '#00e676', sub: '> $1M Inflow', icon: '▲' },
-                  { label: 'DISTRIBUTION', value: '6', color: '#ff1744', sub: '> $1M Outflow', icon: '▼' },
-                  { label: 'WHALE SIGNALS', value: '8', color: '#ffab00', sub: 'Active alerts', icon: '◉' },
-                ].map((kpi, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.5 + i * 0.15, type: 'spring', stiffness: 200 }}
-                    style={{
-                      padding: '1.25rem 1rem', textAlign: 'center',
-                      borderRight: i < 3 ? '1px solid rgba(0, 229, 255, 0.06)' : 'none',
-                      position: 'relative', overflow: 'hidden',
-                    }}
-                  >
-                    <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 0.06 }} viewport={{ once: true }} transition={{ delay: 0.8 + i * 0.15 }}
-                      style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 50% 50%, ${kpi.color}, transparent 70%)` }} />
-                    <div style={{ fontSize: '0.55rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-                      <span style={{ color: kpi.color, marginRight: '0.3rem' }}>{kpi.icon}</span>{kpi.label}
-                    </div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: kpi.color, textShadow: `0 0 20px ${kpi.color}40` }}>{kpi.value}</div>
-                    <motion.div initial={{ opacity: 0, y: 5 }} whileInView={{ opacity: 0.7, y: 0 }} viewport={{ once: true }} transition={{ delay: 1.2 + i * 0.15 }}
-                      style={{ fontSize: '0.6rem', color: kpi.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 500 }}>
-                      {kpi.sub}
-                    </motion.div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Main Content: Chart + Whale Alerts */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', borderBottom: '1px solid rgba(0, 229, 255, 0.06)' }}>
-                {/* Chart Panel — slides in from left, draws line */}
-                <motion.div
-                  initial={{ opacity: 0, x: -40 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: 1.0, type: 'spring', stiffness: 100 }}
-                  style={{ padding: '1.5rem', borderRight: '1px solid rgba(0, 229, 255, 0.06)' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px' }}>
-                      <span style={{ color: '#00e676', fontWeight: 800 }}>&gt;</span> PRICE_CHART
-                    </span>
-                    <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 2.0 }}
-                      style={{ fontSize: '0.65rem', color: '#00e676', fontFamily: "'JetBrains Mono', monospace" }}>
-                      ETH +4.2%
-                    </motion.span>
-                  </div>
-                  <svg viewBox="0 0 300 80" style={{ width: '100%', height: '100px' }}>
-                    <defs>
-                      <linearGradient id="demoChartGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#00e676" stopOpacity="0.8" />
-                      </linearGradient>
-                      <linearGradient id="demoChartFill" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.2" />
-                        <stop offset="100%" stopColor="#00e5ff" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    {[20, 40, 60].map(yy => (
-                      <motion.line key={yy} x1="0" y1={yy} x2="300" y2={yy}
-                        stroke="rgba(0, 229, 255, 0.05)" strokeWidth="0.5"
-                        initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-                        transition={{ delay: 1.2 }} />
-                    ))}
-                    <motion.path
-                      d="M0,65 C15,62 30,58 45,55 S75,48 90,52 S120,40 135,38 S165,30 180,35 S210,25 225,20 S255,18 270,12 S290,8 300,5"
-                      fill="none" stroke="url(#demoChartGrad)" strokeWidth="2.5" strokeLinecap="round"
-                      initial={{ pathLength: 0, opacity: 0 }}
-                      whileInView={{ pathLength: 1, opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 2, delay: 1.3, ease: 'easeInOut' }}
-                    />
-                    <motion.path
-                      d="M0,65 C15,62 30,58 45,55 S75,48 90,52 S120,40 135,38 S165,30 180,35 S210,25 225,20 S255,18 270,12 S290,8 300,5 L300,80 L0,80 Z"
-                      fill="url(#demoChartFill)"
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 1, delay: 2.5 }}
-                    />
-                    <motion.circle cx="300" cy="5" r="4" fill="#00e676"
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: [0, 1, 1], scale: [0, 1.5, 1] }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: 3.2 }}
-                      style={{ filter: 'drop-shadow(0 0 6px #00e676)' }}
-                    />
-                  </svg>
-                </motion.div>
-
-                {/* Live Whale Alerts — slide in one by one with blur-to-sharp */}
-                <motion.div
-                  initial={{ opacity: 0, x: 40 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: 1.2, type: 'spring', stiffness: 100 }}
-                  style={{ padding: '1.5rem' }}
-                >
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', marginBottom: '1rem' }}>
-                    <span style={{ color: '#00e676', fontWeight: 800 }}>&gt;</span> WHALE_ALERTS
-                  </div>
-                  {[
-                    { token: 'ETH', amount: '+$2.1M', color: '#00e676', time: '3m ago' },
-                    { token: 'SOL', amount: '-$800K', color: '#ff1744', time: '5m ago' },
-                    { token: 'BTC', amount: '+$5.3M', color: '#00e676', time: '1m ago' },
-                    { token: 'LINK', amount: '+$420K', color: '#00e676', time: '8m ago' },
-                  ].map((alert, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: 20, filter: 'blur(4px)' }}
-                      whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: 1.8 + i * 0.3 }}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '0.5rem 0.75rem', marginBottom: '0.5rem',
-                        background: `${alert.color}08`, borderRadius: '6px',
-                        border: `1px solid ${alert.color}15`,
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.9rem' }}>🐋</span>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#e0e6ed' }}>{alert.token}</span>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: alert.color }}>{alert.amount}</span>
-                      </div>
-                      <span style={{ fontSize: '0.6rem', color: '#5a6a7a' }}>{alert.time}</span>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </div>
-
-              {/* Bottom Row: Net Inflows + Sentiment */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-                {/* Net Inflows */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.7, delay: 2.0 }}
-                  style={{ padding: '1.25rem 1.5rem', borderRight: '1px solid rgba(0, 229, 255, 0.06)' }}
-                >
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', marginBottom: '0.75rem' }}>
-                    <span style={{ color: '#00e676', fontWeight: 800 }}>&gt;</span> NET_INFLOWS
-                  </div>
-                  {[
-                    { token: 'IMX', value: '+$1.42M', pct: 100 },
-                    { token: 'SNX', value: '+$710K', pct: 50 },
-                    { token: 'ALICE', value: '+$244K', pct: 17 },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '50px 1fr 70px', gap: '0.75rem', alignItems: 'center', padding: '0.3rem 0' }}>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 600, color: '#e0e6ed' }}>{item.token}</span>
-                      <div style={{ height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${item.pct}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1.2, delay: 2.3 + i * 0.2, ease: [0.16, 1, 0.3, 1] }}
-                          style={{ height: '100%', background: 'linear-gradient(90deg, #00e676, #00e5ff)', borderRadius: '3px', boxShadow: '0 0 8px rgba(0, 230, 118, 0.3)' }}
-                        />
-                      </div>
-                      <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 2.8 + i * 0.2 }}
-                        style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.7rem', fontWeight: 600, color: '#00e676', textAlign: 'right' }}>
-                        {item.value}
-                      </motion.span>
-                    </div>
-                  ))}
-                </motion.div>
-
-                {/* Sentiment Panel */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.7, delay: 2.2 }}
-                  style={{ padding: '1.25rem 1.5rem' }}
-                >
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', marginBottom: '0.75rem' }}>
-                    <span style={{ color: '#00e676', fontWeight: 800 }}>&gt;</span> SENTIMENT
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 2.8, type: 'spring', stiffness: 200 }}
-                      style={{ fontSize: '2rem', fontWeight: 800, color: '#00e676', fontFamily: "'JetBrains Mono', monospace", textShadow: '0 0 20px rgba(0, 230, 118, 0.4)' }}
-                    >
-                      72%
-                    </motion.span>
-                    <motion.span
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 3.0 }}
-                      style={{ fontSize: '0.75rem', color: '#00e676', fontWeight: 600, background: 'rgba(0, 230, 118, 0.1)', padding: '0.2rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(0, 230, 118, 0.2)' }}
-                    >
-                      BULLISH
-                    </motion.span>
-                  </div>
-                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      whileInView={{ width: '72%' }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 1.5, delay: 2.5, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ height: '100%', background: 'linear-gradient(90deg, #ff1744 0%, #ffab00 30%, #00e676 100%)', borderRadius: '3px', boxShadow: '0 0 10px rgba(0, 230, 118, 0.3)' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
-                    <span style={{ fontSize: '0.55rem', color: '#ff1744', fontFamily: "'JetBrains Mono', monospace" }}>FEAR</span>
-                    <span style={{ fontSize: '0.55rem', color: '#00e676', fontFamily: "'JetBrains Mono', monospace" }}>GREED</span>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Blurred Premium Teaser */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 3.0 }}
-                style={{ padding: '1.5rem', textAlign: 'center', filter: 'blur(4px)', opacity: 0.4, pointerEvents: 'none', userSelect: 'none', borderTop: '1px solid rgba(0, 229, 255, 0.06)' }}
-              >
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#00e5ff', marginBottom: '0.75rem' }}>&gt; ORCA_AI_SIGNALS</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
-                  {['BUY ETH', 'HOLD BTC', 'BUY SOL', 'SELL LINK', 'BUY UNI'].map(t => (
-                    <div key={t} style={{ background: 'rgba(0,229,255,0.03)', borderRadius: '4px', padding: '0.75rem', fontFamily: "'JetBrains Mono', monospace", color: '#e0e6ed', fontSize: '0.7rem', fontWeight: 700 }}>{t}</div>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-
-          {/* CTA below dashboard */}
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.5 }} style={{ textAlign: 'center', marginTop: '2.5rem' }}>
-            <motion.a
-              href="#"
-              onClick={(e) => { e.preventDefault(); setShowLoginModal(true); }}
-              whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(0, 229, 255, 0.3)' }}
-              whileTap={{ scale: 0.97 }}
-              style={{
-                display: 'inline-block', padding: '0.85rem 2.5rem', borderRadius: '8px',
-                background: 'linear-gradient(135deg, #00e5ff, #00b8d4)', color: '#0a0e17',
-                fontFamily: "'JetBrains Mono', monospace", fontSize: '0.9rem', fontWeight: 700,
-                textDecoration: 'none', letterSpacing: '0.5px',
-                boxShadow: '0 4px 20px rgba(0, 229, 255, 0.25)',
-              }}
-            >
-              Sign up free to explore →
-            </motion.a>
-            <p style={{ fontSize: '0.75rem', color: '#5a6a7a', marginTop: '1rem', fontFamily: "'JetBrains Mono', monospace" }}>
-              No credit card required. Free tier available.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── VALUE PROPS + SOCIAL PROOF ─── */}
-      <section style={{ padding: '4rem 2rem', background: 'linear-gradient(180deg, rgba(10, 14, 23, 1) 0%, rgba(10, 14, 23, 0.95) 100%)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-            {[
-              { value: '$0', title: 'Full Platform Access', desc: 'Whale tracking, signals, sentiment, news, and analytics. All free, forever.' },
-              { value: '10/day', title: 'Orca AI Prompts', desc: 'Deep analysis on any token with live whale data, sentiment, and price charts' },
-              { value: '24/7', title: 'Whale Tracking', desc: 'Real-time alerts across Ethereum, Bitcoin, Tron, and major blockchains' },
-            ].map((item, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}
-                style={{ background: 'rgba(0, 229, 255, 0.03)', border: '1px solid rgba(0, 229, 255, 0.08)', borderRadius: '8px', padding: '1.5rem', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#00e5ff', fontFamily: "'JetBrains Mono', monospace", marginBottom: '0.5rem' }}>{item.value}</div>
-                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#e0e6ed', marginBottom: '0.4rem' }}>{item.title}</div>
-                <div style={{ fontSize: '0.8rem', color: '#5a6a7a', lineHeight: 1.5 }}>{item.desc}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-            style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', padding: '1rem 0', borderTop: '1px solid rgba(0, 229, 255, 0.08)', borderBottom: '1px solid rgba(0, 229, 255, 0.08)', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.75rem', color: '#5a6a7a' }}>
-            <span>Tracking <strong style={{ color: '#e0e6ed' }}>200+</strong> tokens</span>
-            <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
-            <span>Powered by <strong style={{ color: '#e0e6ed' }}>Binance</strong> + <strong style={{ color: '#e0e6ed' }}>LunarCrush</strong></span>
-            <span style={{ color: 'rgba(0, 229, 255, 0.15)' }}>|</span>
-            <span><strong style={{ color: '#e0e6ed' }}>Free</strong> for all traders</span>
-          </motion.div>
-
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <a href="/subscribe" style={{ display: 'inline-block', padding: '0.6rem 1.5rem', borderRadius: '4px', border: '1px solid rgba(0, 229, 255, 0.2)', color: '#00e5ff', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none', letterSpacing: '0.5px' }}>See Full Pricing →</a>
-          </div>
-        </div>
-      </section>
+      {/* ─── DASHBOARD PREVIEW ─── */}
+      <DashSection id="dashboard-preview">
+        <DashSectionLabel>The product</DashSectionLabel>
+        <DashSectionTitle>Every signal. <HeadlineAccent>Every chain.</HeadlineAccent><br />In one terminal.</DashSectionTitle>
+        <DashSectionSub>Sonar aggregates on-chain movement, exchange flows, sentiment, and news into a single real-time view. Act on data, not vibes.</DashSectionSub>
+        <DashboardPreview />
+      </DashSection>
 
       {/* ─── THE PROBLEM ─── */}
       <ProblemSection style={{ position: 'relative', overflow: 'hidden', padding: '10rem 2rem' }}>
