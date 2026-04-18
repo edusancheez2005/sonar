@@ -279,6 +279,7 @@ The IMAGE_PROMPT line MUST be on its own line at the very top, followed by a new
 
     // Generate image with DALL-E
     let imageUrl = ''
+    let imageDebug = ''
     const dalleKey = process.env.OPENAI_API_KEY
     if (dalleKey) {
       try {
@@ -292,6 +293,10 @@ The IMAGE_PROMPT line MUST be on its own line at the very top, followed by a new
         })
         const tempUrl = imgResponse.data?.[0]?.url
         if (tempUrl) {
+          // Ensure bucket exists (idempotent)
+          try {
+            await sb.storage.createBucket('blog-images', { public: true })
+          } catch (_) { /* bucket likely exists */ }
           // Try uploading to Supabase Storage
           try {
             const imgRes = await fetch(tempUrl)
@@ -304,18 +309,21 @@ The IMAGE_PROMPT line MUST be on its own line at the very top, followed by a new
             if (!uploadErr) {
               const { data: urlData } = sb.storage.from('blog-images').getPublicUrl(fileName)
               imageUrl = urlData?.publicUrl || tempUrl
+              imageDebug = 'supabase-upload-ok'
             } else {
               console.error('Supabase upload error:', uploadErr.message)
-              // Use DALL-E temp URL as fallback (expires in 1hr but at least shows in article)
+              imageDebug = `supabase-upload-failed: ${uploadErr.message}`
               imageUrl = tempUrl
             }
           } catch (uploadErr) {
             console.error('Upload failed, using temp URL:', uploadErr.message)
+            imageDebug = `upload-exception: ${uploadErr.message}`
             imageUrl = tempUrl
           }
         }
       } catch (imgErr) {
         console.error('Image generation failed (non-fatal):', imgErr.message)
+        imageDebug = `dalle-failed: ${imgErr.message}`
       }
     }
 
@@ -354,6 +362,7 @@ The IMAGE_PROMPT line MUST be on its own line at the very top, followed by a new
       title,
       keyword: topic.keyword,
       hasImage: !!imageUrl,
+      imageDebug,
       remainingTopics: availableTopics.length - 1,
     })
 
