@@ -219,7 +219,13 @@ INTERNAL LINKS TO USE (pick 7-10 and weave naturally):
 ${linksContext}
 ${platformData}
 
-Write the full article now. Return ONLY the HTML content starting with <h1>. Include the DALL-E image prompt as the very first line before the <h1>, prefixed with "IMAGE_PROMPT: ".`
+Write the full article now. Return your response in this EXACT format:
+
+IMAGE_PROMPT: <one line DALL-E description here>
+<h1>Article Title</h1>
+<p>...rest of article HTML...</p>
+
+The IMAGE_PROMPT line MUST be on its own line at the very top, followed by a newline, then the HTML starting with <h1>. Do NOT wrap the image prompt in any HTML tags. Do NOT repeat the image prompt anywhere inside the article body.`
 
     const completion = await ai.chat.completions.create({
       model,
@@ -260,6 +266,11 @@ Write the full article now. Return ONLY the HTML content starting with <h1>. Inc
     const firstTagIdx = rawContent.indexOf('<')
     if (firstTagIdx > 0) {
       rawContent = rawContent.substring(firstTagIdx)
+    }
+    // CRITICAL: Strip everything before the <h1> tag (removes <p>prompt text</p> wrappers)
+    const h1Idx = rawContent.search(/<h1[\s>]/i)
+    if (h1Idx > 0) {
+      rawContent = rawContent.substring(h1Idx)
     }
     // Fallback image prompt if none extracted
     if (!imagePrompt) {
