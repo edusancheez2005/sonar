@@ -1,6 +1,6 @@
 /**
- * CRON: Auto Whale Report — AI-Generated Blog Post
- * Schedule: Every 3 days (0 10 */3 * *)
+ * CRON: Auto Whale Report - AI-Generated Blog Post
+ * Schedule: Every 3 days at 10am UTC
  * 
  * Pulls real whale data, signals, and market narrative from existing tables.
  * Uses Grok (xAI) to generate an SEO-optimized blog post with real data.
