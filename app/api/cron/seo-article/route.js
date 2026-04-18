@@ -274,6 +274,30 @@ Write the full article now. Return ONLY the HTML content starting with <h1>. Inc
         })
         const tempUrl = imgResponse.data?.[0]?.url
         if (tempUrl) {
+          // Try uploading to Supabase Storage
+          try {
+            const imgRes = await fetch(tempUrl)
+            const imgBuf = Buffer.from(await imgRes.arrayBuffer())
+            const fileName = `blog/${topic.slug}-${Date.now()}.png`
+            const { error: uploadErr } = await sb.storage
+              .from('blog-images')
+              .upload(fileName, imgBuf, { contentType: 'image/png', upsert: true })
+
+            if (!uploadErr) {
+              const { data: urlData } = sb.storage.from('blog-images').getPublicUrl(fileName)
+              imageUrl = urlData?.publicUrl || tempUrl
+            } else {
+              console.error('Supabase upload error:', uploadErr.message)
+              // Use DALL-E temp URL as fallback (expires in 1hr but at least shows in article)
+              imageUrl = tempUrl
+            }
+          } catch (uploadErr) {
+            console.error('Upload failed, using temp URL:', uploadErr.message)
+            imageUrl = tempUrl
+          }
+        }
+        const tempUrl = imgResponse.data?.[0]?.url
+        if (tempUrl) {
           // Download and upload to Supabase Storage
           const imgBlob = await fetch(tempUrl).then(r => r.arrayBuffer())
           const fileName = `blog/${topic.slug}-${Date.now()}.png`
