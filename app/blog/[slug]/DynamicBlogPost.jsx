@@ -39,6 +39,12 @@ const Tag = styled.span`
   background: rgba(54,166,186,0.1); color: var(--primary); font-weight: 500;
 `
 
+const TagRow = styled.div`
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  margin-top: 3rem; padding-top: 2rem;
+  border-top: 1px solid var(--secondary);
+`
+
 const Loading = styled.div`
   max-width: 800px; margin: 0 auto; padding: 8rem 2rem;
   text-align: center; color: var(--text-secondary);
@@ -67,9 +73,13 @@ export default function DynamicBlogPost({ slug }) {
     <Wrap>
       <Meta>
         <span>{date}</span>
-        {(post.tags || []).slice(0, 3).map(t => <Tag key={t}>{t}</Tag>)}
       </Meta>
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
+      {(post.tags || []).length > 0 && (
+        <TagRow>
+          {(post.tags || []).slice(0, 6).map(t => <Tag key={t}>{t}</Tag>)}
+        </TagRow>
+      )}
     </Wrap>
   )
 }
