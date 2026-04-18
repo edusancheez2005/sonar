@@ -3,8 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient';
-import Globe from '@/src/components/landing/Globe';
-import OrbitingLogos from '@/src/components/landing/OrbitingLogos';
+import Globe from '@/src/components/landing/GlobeV2';
 import DashboardPreview from '@/src/components/landing/DashboardPreview';
 
 /* ================================================================
@@ -513,110 +512,177 @@ const NavButton = styled.button`
 
 const NavLink = styled(NavButton)``;
 
-/* ── NEW HERO + MARQUEE + DASHBOARD STYLED COMPONENTS ── */
-const NewHero = styled.section`
-  position: relative; z-index: 1; height: 100vh; min-height: 700px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
-  padding: 80px 60px 40px;
-  align-items: center; overflow: hidden; background: var(--background-dark);
-  @media (max-width: 1100px) { grid-template-columns: 1fr; height: auto; min-height: 100vh; padding: 100px 32px 40px; }
-  @media (max-width: 600px) { padding: 90px 20px 40px; }
-`;
-const NewHeroStars = styled.div`
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+
+/* ── V2 HERO — FULL-VIEWPORT GLOBE BACKGROUND ── */
+const V2Hero = styled.section`
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 700px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   background:
-    radial-gradient(1px 1px at 13% 22%, rgba(200,240,255,0.5), transparent),
-    radial-gradient(1px 1px at 78% 45%, rgba(200,240,255,0.4), transparent),
-    radial-gradient(1px 1px at 42% 78%, rgba(200,240,255,0.35), transparent),
-    radial-gradient(1px 1px at 91% 12%, rgba(200,240,255,0.3), transparent),
-    radial-gradient(1px 1px at 22% 92%, rgba(200,240,255,0.25), transparent),
-    radial-gradient(1px 1px at 68% 88%, rgba(200,240,255,0.3), transparent),
-    radial-gradient(circle at 50% 40%, rgba(20, 80, 110, 0.25), transparent 70%);
+    radial-gradient(1200px 700px at 50% 0%, rgba(34, 211, 238, 0.07), transparent 60%),
+    radial-gradient(900px 600px at 100% 100%, rgba(14, 116, 144, 0.12), transparent 60%),
+    linear-gradient(180deg, #060c14 0%, #081019 60%, #060c14 100%);
+  z-index: 1;
+  &::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(34, 211, 238, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(800px 500px at 50% 45%, black, transparent 80%);
+    pointer-events: none;
+    opacity: 0.5;
+  }
 `;
-const HeroCopy = styled.div`
-  display: flex; flex-direction: column; gap: 28px; align-self: center;
-  position: relative; z-index: 2; max-width: 700px;
-  padding-left: 40px;
-  @media (max-width: 1400px) { padding-left: 20px; max-width: 600px; }
-  @media (max-width: 1100px) { order: 1; max-width: 100%; padding-left: 0; }
+
+const V2HeroContent = styled.div`
+  position: relative;
+  z-index: 4;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 40px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  @media (max-width: 700px) { padding: 0 20px 40px; }
 `;
-const Eyebrow = styled.div`
+
+const V2Eyebrow = styled.div`
   display: inline-flex; align-items: center; gap: 10px;
-  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1.8px;
-  text-transform: uppercase; color: #7FE3F5; padding: 6px 12px;
-  border: 1px solid rgba(125, 230, 245, 0.25); border-radius: 999px;
-  background: rgba(125, 230, 245, 0.05); width: fit-content;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: #5a7484;
+  padding: 6px 14px; border-radius: 999px;
+  border: 1px solid rgba(34,211,238,0.15);
+  background: rgba(8, 16, 25, 0.55);
+  backdrop-filter: blur(6px);
+  margin-bottom: 28px;
 `;
-const HeroPulseDot = styled.span`
-  width: 6px; height: 6px; border-radius: 50%; background: #5DF0B0;
-  box-shadow: 0 0 8px #5DF0B0; animation: ${heroPulse} 1.6s ease-in-out infinite;
+
+const V2EyebrowDot = styled.span`
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 10px #4ade80;
+  animation: ${heroPulse} 1.4s ease-in-out infinite;
 `;
-const NewHeadline = styled.h1`
-  font-size: clamp(56px, 7vw, 100px); font-weight: 300; line-height: 1.02;
-  letter-spacing: -0.025em; color: #E6F7FB; margin: 0;
+
+const V2Headline = styled.h1`
+  font-size: clamp(44px, 6.4vw, 84px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0 0 22px;
+  font-weight: 600;
+  color: #e6f6fb;
 `;
-const HeadlineAccent = styled.span`
-  font-weight: 500; background: linear-gradient(180deg, #AFF0FA, #4EC5DB);
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+
+const V2HeadlineAccent = styled.span`
+  color: #22d3ee;
+  text-shadow: 0 0 40px rgba(34, 211, 238, 0.35);
 `;
-const HeroSub = styled.p`
-  font-size: 18px; line-height: 1.6; color: rgba(220, 240, 250, 0.6); max-width: 480px; margin: 0;
+
+const V2Sub = styled.p`
+  font-size: clamp(16px, 1.3vw, 19px);
+  line-height: 1.5;
+  color: #8aa3b0;
+  max-width: 620px;
+  margin: 0 auto 36px;
 `;
-const HeroCtaRow = styled.div`display: flex; gap: 12px; flex-wrap: wrap;`;
-const HeroBtn = styled.button`
-  border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500;
-  padding: ${({ $lg }) => $lg ? '16px 32px' : '12px 24px'}; border-radius: 999px;
-  font-size: ${({ $lg }) => $lg ? '16px' : '14px'}; letter-spacing: 0.01em;
-  transition: all 180ms; display: inline-flex; align-items: center; gap: 8px;
+
+const V2Stats = styled.div`
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+  margin-bottom: 26px;
 `;
-const HeroBtnPrimary = styled(HeroBtn)`
-  background: linear-gradient(180deg, #8DE8F7 0%, #4EC5DB 100%); color: #02161F; font-weight: 600;
-  box-shadow: 0 0 0 1px rgba(125, 230, 245, 0.5), 0 10px 30px -8px rgba(125, 230, 245, 0.5);
-  &:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(125, 230, 245, 0.7), 0 16px 40px -8px rgba(125, 230, 245, 0.6); }
+
+const V2Stat = styled.div`
+  display: inline-flex; align-items: baseline; gap: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(34,211,238,0.15);
+  background: rgba(10, 20, 32, 0.55);
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+  color: #8aa3b0;
+  b { color: #67e8f9; font-weight: 600; }
+  @media (max-width: 700px) { font-size: 13px; padding: 8px 14px; }
 `;
-const HeroBtnGhost = styled(HeroBtn)`
-  background: transparent; color: #7FE3F5; border: 1px solid rgba(125, 230, 245, 0.35);
-  &:hover { background: rgba(125, 230, 245, 0.08); border-color: rgba(125, 230, 245, 0.6); }
+
+const V2Ticker = styled.div`
+  display: flex; align-items: center; gap: 16px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(34,211,238,0.14);
+  background: rgba(8, 16, 25, 0.6);
+  backdrop-filter: blur(10px);
+  max-width: 640px;
+  margin: 0 auto 30px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #5a7484;
+  @media (max-width: 700px) { flex-wrap: wrap; font-size: 11px; }
 `;
-const HeroTrustRow = styled.div`
-  display: flex; gap: 8px; align-items: center; margin-top: 4px;
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  color: rgba(180, 230, 245, 0.4); letter-spacing: 0.06em; flex-wrap: wrap;
+
+const V2TickerLive = styled.span`
+  color: #4ade80;
+  display: inline-flex; align-items: center; gap: 6px;
+  &::before {
+    content: ''; width: 6px; height: 6px; background: #4ade80; border-radius: 50%;
+    box-shadow: 0 0 8px #4ade80;
+    animation: ${heroPulse} 1.4s ease-in-out infinite;
+  }
 `;
-const HeroTrustChip = styled.span`
-  padding: 6px 10px; border: 1px solid rgba(120, 220, 240, 0.14); border-radius: 6px;
-  color: rgba(220, 240, 250, 0.6); background: rgba(8, 20, 32, 0.5);
-  b { color: #7FE3F5; font-weight: 500; }
+
+const V2TickerVal = styled.span`
+  color: #67e8f9;
 `;
-const GlobeArea = styled.div`
-  position: relative; display: flex; align-items: center; justify-content: center;
-  height: 100%; min-height: 500px;
-  @media (max-width: 1100px) { order: 2; min-height: 400px; }
+
+const V2TickerSep = styled.span`
+  color: rgba(255,255,255,0.08);
 `;
-const GlobeWrap = styled.div`
-  position: relative; width: min(55vw, 900px); height: min(55vw, 900px); margin-left: -80px; pointer-events: none;
-  @media (max-width: 1100px) { margin-left: 0; width: min(80vw, 600px); height: min(80vw, 600px); }
-  @media (max-width: 600px) { width: min(90vw, 400px); height: min(90vw, 400px); }
+
+const V2CtaRow = styled.div`
+  display: flex; justify-content: center; gap: 14px;
+  margin-top: 8px;
 `;
-const GlobePedestal = styled.div`
-  position: absolute; left: 50%; bottom: -40px; transform: translateX(-50%);
-  width: 380px; height: 80px; background: radial-gradient(ellipse at center, rgba(125, 230, 245, 0.2), transparent 65%);
-  filter: blur(10px); pointer-events: none;
+
+const V2BtnPrimary = styled.button`
+  appearance: none; border: 0;
+  padding: 13px 28px;
+  border-radius: 999px;
+  font: 500 15px 'Inter', sans-serif;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease;
+  background: linear-gradient(180deg, #22d3ee, #0891b2);
+  color: #04131a;
+  box-shadow:
+    0 0 0 1px rgba(165,243,252,0.3) inset,
+    0 10px 30px rgba(34, 211, 238, 0.35),
+    0 0 60px rgba(34, 211, 238, 0.25);
+  &:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(165,243,252,0.5) inset, 0 14px 40px rgba(34, 211, 238, 0.45); }
 `;
-const MarqueeWrap = styled.div`
-  position: relative; z-index: 2; overflow: hidden; padding: 12px 0;
-  border-top: 1px solid rgba(120, 220, 240, 0.14); border-bottom: 1px solid rgba(120, 220, 240, 0.14);
-  background: rgba(5, 12, 20, 0.6);
+
+const V2BtnGhost = styled.button`
+  appearance: none;
+  padding: 13px 28px;
+  border-radius: 999px;
+  font: 500 15px 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background .2s ease;
+  background: rgba(8,16,25,0.5);
+  color: #67e8f9;
+  border: 1px solid rgba(34,211,238,0.35);
+  backdrop-filter: blur(6px);
+  &:hover { background: rgba(34, 211, 238, 0.08); }
 `;
-const MarqueeTrack = styled.div`
-  display: flex; gap: 50px; width: max-content;
-  animation: ${marqueeScroll} 60s linear infinite;
-  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(220, 240, 250, 0.6);
-  span { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-  b { color: #7FE3F5; font-weight: 500; }
-  .up { color: #5DF0B0; font-style: normal; }
-  .down { color: #F5A86B; font-style: normal; }
-`;
+
+/* ── DASHBOARD PREVIEW SECTION ── */
 const DashSection = styled.section`
   position: relative; z-index: 1; padding: 80px 40px 120px; background: var(--background-dark);
   @media (max-width: 880px) { padding: 60px 20px 80px; }
@@ -634,22 +700,10 @@ const DashSectionTitle = styled.h2`
 const DashSectionSub = styled.p`
   font-size: 16px; color: rgba(220, 240, 250, 0.6); max-width: 560px; margin: 0 0 40px;
 `;
-
-const TICKER_SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','LINKUSDT','TONUSDT'];
-const TICKER_LABELS = ['BTC','ETH','SOL','XRP','BNB','DOGE','ADA','AVAX','LINK','TON'];
-const DEFAULT_TICKER_DATA = [
-  { sym: 'BTC', price: '$108,420.50', delta: '+2.41%', up: true },
-  { sym: 'ETH', price: '$4,120.85',   delta: '+1.88%', up: true },
-  { sym: 'SOL', price: '$248.12',     delta: '+4.12%', up: true },
-  { sym: 'XRP', price: '$3.41',       delta: '-0.62%', up: false },
-  { sym: 'BNB', price: '$712.30',     delta: '+0.94%', up: true },
-  { sym: 'DOGE', price: '$0.412',     delta: '+3.27%', up: true },
-  { sym: 'ADA', price: '$1.24',       delta: '+2.05%', up: true },
-  { sym: 'AVAX', price: '$54.12',     delta: '-1.18%', up: false },
-  { sym: 'LINK', price: '$28.40',     delta: '+3.88%', up: true },
-  { sym: 'SUI', price: '$3.85',       delta: '+2.10%', up: true },
-];
-
+const HeadlineAccent = styled.span`
+  font-weight: 500; background: linear-gradient(180deg, #AFF0FA, #4EC5DB);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+`;
 const LoginButton = styled.button`
   background: none; border: 1px solid var(--primary); color: var(--primary);
   padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;
@@ -813,33 +867,6 @@ const CountUp = ({ target, prefix = '', suffix = '', duration = 2000 }) => {
 
   return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
 };
-
-/* ================================================================
-   GLOBE RESPONSIVE WRAPPER
-   ================================================================ */
-function GlobeResponsive() {
-  const ref = useRef(null);
-  const [globeSize, setGlobeSize] = useState(720);
-
-  useEffect(() => {
-    const update = () => {
-      if (ref.current) {
-        const w = ref.current.offsetWidth;
-        setGlobeSize(w);
-      }
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
-  return (
-    <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Globe style="holographic" motion="medium" size={globeSize} />
-      <OrbitingLogos size={globeSize} motion="medium" />
-    </div>
-  );
-}
 
 /* ================================================================
    COMPONENT
@@ -1091,43 +1118,34 @@ const Landing = () => {
         </NavLinks>
       </NavBar>
 
-      {/* ─── HERO (GLOBE DESIGN) ─── */}
-      <NewHero>
-        <NewHeroStars />
-        <HeroCopy>
-          <Eyebrow><HeroPulseDot />Live · Tracking $12.4B in flows</Eyebrow>
-          <NewHeadline>
-            <HeadlineAccent>Sonar</HeadlineAccent><br />
-            <span style={{ fontWeight: 300 }}>Real-Time Crypto</span><br />
-            Intelligence
-          </NewHeadline>
-          <HeroSub>Your crypto market intelligence partner. Track whales. Read signals. Move first, across every chain, in real time.</HeroSub>
-          <HeroCtaRow>
-            <HeroBtnPrimary $lg onClick={() => isLoggedIn ? navigate('/dashboard') : setShowLoginModal(true)}>Launch app →</HeroBtnPrimary>
-            <HeroBtnGhost $lg onClick={() => { const el = document.getElementById('dashboard-preview'); el?.scrollIntoView({ behavior: 'smooth' }); }}>See live demo</HeroBtnGhost>
-          </HeroCtaRow>
-          <HeroTrustRow>
-            <HeroTrustChip><b>700+</b> traders</HeroTrustChip>
-            <HeroTrustChip><b>2,000+</b> signals</HeroTrustChip>
-            <HeroTrustChip><b>10M+</b> datapoints/day</HeroTrustChip>
-          </HeroTrustRow>
-        </HeroCopy>
-        <GlobeArea>
-          <GlobeWrap>
-            <GlobeResponsive />
-          </GlobeWrap>
-          <GlobePedestal />
-        </GlobeArea>
-      </NewHero>
-
-      {/* ─── CRYPTO MARQUEE ─── */}
-      <MarqueeWrap>
-        <MarqueeTrack>
-          {[...tickerData, ...tickerData].map((t, i) => (
-            <span key={i}>{t.sym} <b>{t.price}</b>{' '}<em className={t.up ? 'up' : 'down'}>{t.delta}</em></span>
-          ))}
-        </MarqueeTrack>
-      </MarqueeWrap>
+      {/* ─── HERO (V2 GLOBE BACKGROUND) ─── */}
+      <V2Hero>
+        <Globe />
+        <V2HeroContent>
+          <V2Eyebrow><V2EyebrowDot />LIVE ON 14 CHAINS</V2Eyebrow>
+          <V2Headline>
+            <V2HeadlineAccent>Sonar</V2HeadlineAccent> Real-Time<br />
+            Crypto Intelligence
+          </V2Headline>
+          <V2Sub>Your crypto market intelligence partner. Track whales. Read signals. Move first.</V2Sub>
+          <V2Stats>
+            <V2Stat><b>700+</b> Happy Users</V2Stat>
+            <V2Stat><b>2,000+</b> Signals Generated</V2Stat>
+            <V2Stat><b>10M+</b> News Analyzed</V2Stat>
+          </V2Stats>
+          <V2Ticker>
+            <V2TickerLive>LIVE</V2TickerLive>
+            <V2TickerSep>│</V2TickerSep>
+            <span><V2TickerVal>{liveTxnCount || '2,155'}</V2TickerVal> whale transactions tracked today</span>
+            <V2TickerSep>│</V2TickerSep>
+            <span><V2TickerVal>{liveVolume || '$973.4M'}</V2TickerVal> total volume</span>
+          </V2Ticker>
+          <V2CtaRow>
+            <V2BtnPrimary onClick={() => isLoggedIn ? navigate('/dashboard') : setShowLoginModal(true)}>Login</V2BtnPrimary>
+            <V2BtnGhost onClick={() => { const el = document.getElementById('dashboard-preview'); el?.scrollIntoView({ behavior: 'smooth' }); }}>See Product</V2BtnGhost>
+          </V2CtaRow>
+        </V2HeroContent>
+      </V2Hero>
 
       {/* ─── DASHBOARD PREVIEW ─── */}
       <DashSection id="dashboard-preview">
