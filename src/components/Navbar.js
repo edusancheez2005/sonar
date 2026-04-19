@@ -137,9 +137,25 @@ const Navbar = ({ onLogout }) => {
     });
     return () => sub?.subscription?.unsubscribe?.();
   }, []);
+
+  // The watchlist count badge moved to the WalletTrackerTabs component
+  // (Following tab) as part of the IA consolidation. The nav no longer
+  // surfaces Entities / Figures / Watchlist — they live under the
+  // Wallet Tracker hub instead.
+
   if (!mounted) return null;
 
   const isActive = (path) => pathname === path;
+  // Treat /entities, /figures, /watchlist as still under the Wallet
+  // Tracker parent so the top-nav "Wallet Tracker" link stays highlighted.
+  const isWalletTrackerSection =
+    pathname === '/wallet-tracker' ||
+    pathname?.startsWith('/wallet-tracker/') ||
+    pathname === '/entities' || pathname?.startsWith('/entities/') ||
+    pathname === '/entity' || pathname?.startsWith('/entity/') ||
+    pathname === '/figures' || pathname?.startsWith('/figures/') ||
+    pathname === '/figure' || pathname?.startsWith('/figure/') ||
+    pathname === '/watchlist' || pathname?.startsWith('/watchlist/');
   const isOnLandingPage = pathname === '/';
   const isAuthenticated = !!(session || user || adminBypass);
 
@@ -262,7 +278,7 @@ const Navbar = ({ onLogout }) => {
               </MenuItem>
             </motion.div>
             <motion.div variants={menuVariants} initial="hidden" animate="visible">
-              <MenuItem $active={isActive('/wallet-tracker')} variants={itemVariants}>
+              <MenuItem $active={isWalletTrackerSection} variants={itemVariants}>
                 <NextLink href="/wallet-tracker">Wallet Tracker</NextLink>
               </MenuItem>
             </motion.div>
