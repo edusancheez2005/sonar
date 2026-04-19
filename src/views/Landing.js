@@ -1086,6 +1086,7 @@ const Landing = () => {
         </Logo>
         <NavLinks>
           <NavLink onClick={() => { const el = document.getElementById('features'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Features</NavLink>
+          <NavLink onClick={() => { const el = document.getElementById('problem'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Problem</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('pricing'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Pricing</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('orca-cta'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }} title="AI-powered crypto trading insights">AI Advisor</NavLink>
           <NavLink onClick={() => navigate('/blog')} title="Crypto analytics guides">Blog</NavLink>
@@ -1151,7 +1152,7 @@ const Landing = () => {
       </DashSection>
 
       {/* ─── THE PROBLEM ─── */}
-      <ProblemSection style={{ position: 'relative', overflow: 'hidden', padding: '10rem 2rem' }}>
+      <ProblemSection id="problem" style={{ position: 'relative', overflow: 'hidden', padding: '10rem 2rem' }}>
         {/* Background dramatic glow */}
         <motion.div
           initial={{ opacity: 0 }}
