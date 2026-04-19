@@ -1086,7 +1086,6 @@ const Landing = () => {
         </Logo>
         <NavLinks>
           <NavLink onClick={() => { const el = document.getElementById('features'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Features</NavLink>
-          <NavLink onClick={() => { const el = document.getElementById('about'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Team</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('pricing'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }}>Pricing</NavLink>
           <NavLink onClick={() => { const el = document.getElementById('orca-cta'); if (el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 100; window.scrollTo({ top, behavior: 'smooth' }); } }} title="AI-powered crypto trading insights">AI Advisor</NavLink>
           <NavLink onClick={() => navigate('/blog')} title="Crypto analytics guides">Blog</NavLink>
@@ -1659,46 +1658,6 @@ const Landing = () => {
           </CarouselTrack>
         </CarouselOuter>
       </TrustSection>
-
-      {/* ─── TEAM ─── */}
-      <TeamSection id="about">
-        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true, amount: 0.2 }} style={{ textAlign: 'center', marginBottom: '4rem' }}>
-          <SectionHeading>Team</SectionHeading>
-          <p style={{ fontSize: '1.4rem', color: 'var(--text-secondary)', maxWidth: '800px', margin: '0 auto', lineHeight: '1.8' }}>
-            I've been in crypto for years and saw the same pattern again and again: retail traders react late because the real signals are scattered across explorers, paid groups, and noisy social feeds.
-          </p>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} viewport={{ once: true, amount: 0.2 }}
-          style={{ background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.1) 0%, rgba(26, 40, 56, 0.8) 100%)', border: '2px solid rgba(54, 166, 186, 0.3)', borderRadius: '24px', padding: '3rem', maxWidth: '900px', margin: '0 auto 3rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '1.25rem', color: 'var(--text-primary)', lineHeight: '1.9', marginBottom: '0' }}>
-            I built <OrcaAccent>Sonar</OrcaAccent> to make the market readable in real time. The AI agent, <OrcaAccent>ORCA 2.0</OrcaAccent>, is trained specifically for crypto — grounded in millions of on-chain transactions, news articles, and sentiment signals — so traders can finally <strong style={{ color: 'var(--primary)' }}>anticipate moves instead of reacting to them</strong>.
-          </p>
-        </motion.div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', maxWidth: '1100px', margin: '0 auto', padding: '0 1rem' }}>
-          {[
-            { title: 'Interned at Microsoft', desc: 'Built by Eduardo Sanchez Morales, a Cloud Solutions Architect Intern at Microsoft with hands-on experience building reliable, large-scale distributed systems.',
-              icon: <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke="var(--primary)" strokeWidth="2" fill="var(--primary)" fillOpacity="0.2"/><path d="M8 21h8M12 17v4" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/></svg> },
-            { title: 'Crypto-First AI', desc: 'ORCA 2.0 is trained on millions of crypto news articles, sentiment signals, and transaction patterns to explain market moves clearly.',
-              icon: <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--primary)" strokeWidth="2" fill="var(--primary)" fillOpacity="0.2"/><path d="M12 6v6l4 2" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/></svg> },
-            { title: 'Built for Real Traders', desc: 'Sonar combines whale tracking, sentiment analysis, and news into one platform — validated with 32 active traders before launch.',
-              icon: <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="var(--primary)" strokeWidth="2" fill="var(--primary)" fillOpacity="0.2"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="var(--primary)" strokeWidth="2"/></svg> },
-          ].map((card, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 * (i + 1) }} viewport={{ once: true, amount: 0.2 }}
-              whileHover={{ transform: 'translateY(-8px)', boxShadow: '0 20px 40px rgba(54, 166, 186, 0.2)' }}
-              style={{ background: 'linear-gradient(135deg, rgba(54, 166, 186, 0.08) 0%, rgba(26, 40, 56, 0.6) 100%)', border: '1px solid rgba(54, 166, 186, 0.2)', borderRadius: '20px', padding: '2.5rem', backdropFilter: 'blur(10px)', transition: 'transform 0.3s ease, box-shadow 0.3s ease', textAlign: 'center' }}>
-              <div style={{ marginBottom: '1.5rem' }}>{card.icon}</div>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '1rem' }}>{card.title}</h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', fontSize: '1.05rem' }}>{card.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-
-        <p style={{ marginTop: '3rem', fontSize: '0.9rem', color: 'var(--text-secondary)', opacity: 0.7, textAlign: 'center' }}>
-          Microsoft is a trademark of Microsoft Corporation. This product is not affiliated with or endorsed by Microsoft.
-        </p>
-      </TeamSection>
 
       {/* ─── PRICING ─── */}
       <PricingSection id="pricing">
