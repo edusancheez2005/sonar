@@ -758,7 +758,20 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
     
     // Use DB snapshots if available, otherwise use live Binance data
     const finalSnapshots = (snapshots && snapshots.length > 0) ? snapshots : (livePrice ? [livePrice] : [])
-    
+
+    // CRITICAL: If we have live Binance data, override the latest snapshot's price/change
+    // because DB snapshots can be stale (only refreshed every 15min) and Binance is real-time.
+    // This prevents the header showing -1.10% when actual 24h move is -19%.
+    if (livePrice && finalSnapshots.length > 0) {
+      finalSnapshots[0] = {
+        ...finalSnapshots[0],
+        price_usd: livePrice.price_usd,
+        price_change_24h: livePrice.price_change_24h,
+        volume_24h: livePrice.volume_24h ?? finalSnapshots[0].volume_24h,
+        timestamp: livePrice.timestamp,
+      }
+    }
+
     console.log(`📈 Price data for ${ticker}: ${finalSnapshots.length} snapshots, current: $${finalSnapshots[0]?.price_usd || 0}`)
     
     return {

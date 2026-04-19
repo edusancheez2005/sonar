@@ -1114,7 +1114,12 @@ export default function ClientOrca() {
                         const width = 400
                         const height = 80
                         const padding = 2
-                        const isPositive = prices[prices.length - 1] >= prices[0]
+                        // Use authoritative 24h ticker change instead of computing from sparkline endpoints
+                        // (sparkline endpoints can be skewed and disagree with the official 24h ticker)
+                        const authoritativeChange = message.data.price?.change_24h
+                        const sparklineChange = ((prices[prices.length - 1] - prices[0]) / prices[0]) * 100
+                        const displayChange = authoritativeChange != null ? authoritativeChange : sparklineChange
+                        const isPositive = displayChange >= 0
                         const color = isPositive ? colors.sentimentBull : colors.sentimentBear
                         
                         const points = prices.map((p, i) => {
@@ -1137,7 +1142,7 @@ export default function ClientOrca() {
                                 24H PRICE CHART
                               </span>
                               <span style={{ fontSize: '0.65rem', fontFamily: MONO_FONT, color: isPositive ? colors.sentimentBull : colors.sentimentBear, fontWeight: 700 }}>
-                                {isPositive ? '▲' : '▼'} {((prices[prices.length-1] - prices[0]) / prices[0] * 100).toFixed(2)}%
+                                {isPositive ? '▲' : '▼'} {Math.abs(displayChange).toFixed(2)}%
                               </span>
                             </div>
                             <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
