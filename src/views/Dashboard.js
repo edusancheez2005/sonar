@@ -277,15 +277,17 @@ const KPILabel = styled.div`
 `
 
 const KPIValue = styled.div`
-  font-size: 1.8rem; font-weight: 800; font-family: ${MONO_FONT};
+  font-size: 2.4rem; font-weight: 800; font-family: ${MONO_FONT};
   color: ${props => props.$color || COLORS.textPrimary};
-  text-shadow: 0 0 20px ${props => (props.$color || COLORS.cyan) + '30'};
-  line-height: 1; margin-bottom: 0.3rem;
+  text-shadow: 0 0 24px ${props => (props.$color || COLORS.cyan) + '55'},
+               0 0 48px ${props => (props.$color || COLORS.cyan) + '22'};
+  line-height: 1; margin-bottom: 0.45rem;
 `
 
 const KPISub = styled.div`
-  font-size: 0.7rem; color: ${props => props.$color || COLORS.textMuted};
+  font-size: 0.72rem; color: ${props => props.$color || COLORS.textMuted};
   font-family: ${MONO_FONT}; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 0.3rem; justify-content: center;
 `
 
 // ─── LAYOUTS ────────────────────────────────────────────────────────────────
@@ -350,11 +352,15 @@ const HBarLabel = styled.div`
 `
 
 const HBarTrack = styled.div`
-  height: 6px; background: rgba(255, 255, 255, 0.04); border-radius: 3px; overflow: hidden;
+  height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 999px; overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
 `
 
 const HBarFill = styled(motion.div)`
-  height: 100%; border-radius: 3px; background: ${props => props.$color || COLORS.cyan};
+  height: 100%; border-radius: 999px;
+  background: ${props => `linear-gradient(90deg, ${(props.$color || COLORS.cyan)}55 0%, ${(props.$color || COLORS.cyan)} 60%, ${(props.$color || COLORS.cyan)} 100%)`};
+  box-shadow: 0 0 12px ${props => (props.$color || COLORS.cyan) + '99'},
+              0 0 4px ${props => (props.$color || COLORS.cyan) + 'cc'} inset;
 `
 
 const HBarValue = styled.div`
@@ -964,21 +970,31 @@ const Dashboard = ({ isPremium = false }) => {
 
         <DashboardContainer>
             {/* ─── KEY MACRO FACTORS (top of dashboard) ────────────── */}
-            {macroFactors?.factors && (
+            {macroFactors?.factors && (() => {
+              const sentColor = macroFactors.overall_sentiment === 'bullish' ? COLORS.green
+                : macroFactors.overall_sentiment === 'bearish' ? COLORS.red : COLORS.textMuted
+              return (
               <div style={{ marginBottom: '1rem', paddingTop: '1rem' }}>
                 <div style={{
-                  background: COLORS.panelBg, border: `1px solid ${COLORS.borderSubtle}`,
-                  borderLeft: '3px solid #f0b90b', borderRadius: 6, padding: '0.85rem 1.1rem',
+                  background: COLORS.panelBg, backdropFilter: 'blur(12px)',
+                  border: `1px solid ${COLORS.borderSubtle}`,
+                  borderRadius: 8, padding: '1rem 1.25rem',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#f0b90b', fontFamily: MONO_FONT, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                      MACRO FACTORS
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                    <span style={{
+                      fontSize: '0.85rem', fontWeight: 700, color: COLORS.cyan, fontFamily: MONO_FONT,
+                      textTransform: 'uppercase', letterSpacing: '1px',
+                      display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    }}>
+                      <span style={{ color: COLORS.green, fontWeight: 800 }}>&gt;</span>
+                      MACRO_FACTORS
                     </span>
                     {macroFactors.overall_sentiment && (
                       <span style={{
-                        fontSize: '0.55rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: 3, letterSpacing: '0.5px',
-                        color: macroFactors.overall_sentiment === 'bullish' ? COLORS.green : macroFactors.overall_sentiment === 'bearish' ? COLORS.red : COLORS.textMuted,
-                        background: macroFactors.overall_sentiment === 'bullish' ? 'rgba(0,230,118,0.08)' : macroFactors.overall_sentiment === 'bearish' ? 'rgba(255,23,68,0.08)' : 'rgba(90,106,122,0.08)',
+                        fontSize: '0.65rem', fontWeight: 700, padding: '0.25rem 0.6rem', borderRadius: 4,
+                        letterSpacing: '1px', textTransform: 'uppercase', fontFamily: MONO_FONT,
+                        color: sentColor, border: `1px solid ${sentColor}66`,
+                        background: sentColor + '14',
                       }}>
                         {macroFactors.overall_sentiment.toUpperCase()}
                       </span>
@@ -998,26 +1014,37 @@ const Dashboard = ({ isPremium = false }) => {
                       🐋 Ask ORCA
                     </Link>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
-                    {macroFactors.factors.map((f, i) => (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${Math.min(macroFactors.factors.length, 3)}, 1fr)`,
+                    gap: 0,
+                    border: `1px solid ${COLORS.borderSubtle}`, borderRadius: 6,
+                    background: 'rgba(0,229,255,0.015)', overflow: 'hidden',
+                  }}>
+                    {macroFactors.factors.slice(0, 3).map((f, i, arr) => {
+                      const dotColor = f.impact === 'bullish' ? COLORS.green : f.impact === 'bearish' ? COLORS.red : COLORS.textMuted
+                      return (
                       <div key={i} style={{
-                        minWidth: 260, flex: '0 0 auto', padding: '0.6rem 0.75rem',
-                        background: 'rgba(0,229,255,0.02)', borderRadius: 5, border: `1px solid ${COLORS.borderSubtle}`,
+                        padding: '0.85rem 1rem',
+                        borderRight: i < arr.length - 1 ? `1px solid ${COLORS.borderSubtle}` : 'none',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.35rem' }}>
                           <span style={{
-                            width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                            background: f.impact === 'bullish' ? COLORS.green : f.impact === 'bearish' ? COLORS.red : COLORS.textMuted,
+                            width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                            background: dotColor, boxShadow: `0 0 8px ${dotColor}88`,
                           }}/>
-                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: COLORS.textPrimary, whiteSpace: 'nowrap' }}>{f.title}</span>
+                          <span style={{ color: COLORS.textMuted, fontSize: '0.7rem', fontFamily: MONO_FONT }}>&#9656;</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: COLORS.textPrimary }}>{f.title}</span>
                         </div>
-                        <div style={{ fontSize: '0.68rem', color: COLORS.textMuted, lineHeight: 1.45 }}>{f.summary}</div>
+                        <div style={{ fontSize: '0.72rem', color: COLORS.textMuted, lineHeight: 1.5 }}>{f.summary}</div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>
-            )}
+              )
+            })()}
 
             <motion.div
               variants={staggerContainer}
@@ -1035,7 +1062,9 @@ const Dashboard = ({ isPremium = false }) => {
                     <KPIValue $color={COLORS.green}>
                       <AnimatedNumber value={tokenInflows.filter(t => (t.netUsd || 0) > 1000000).length} />
                     </KPIValue>
-                    <KPISub $color={COLORS.green}>&gt; $1M Net Inflow</KPISub>
+                    <KPISub $color={COLORS.green}>
+                      <span style={{ fontSize: '0.7rem' }}>▲</span> ${formatCompact(tokenInflows.reduce((s, t) => s + Math.max(0, t.netUsd || 0), 0))} Net Inflow
+                    </KPISub>
                   </KPICell>
 
                   <KPICell>
@@ -1043,7 +1072,9 @@ const Dashboard = ({ isPremium = false }) => {
                     <KPIValue $color={COLORS.red}>
                       <AnimatedNumber value={tokenOutflows.filter(t => Math.abs(t.netUsd || 0) > 1000000).length} />
                     </KPIValue>
-                    <KPISub $color={COLORS.red}>&gt; $1M Net Outflow</KPISub>
+                    <KPISub $color={COLORS.red}>
+                      <span style={{ fontSize: '0.7rem' }}>▼</span> ${formatCompact(tokenOutflows.reduce((s, t) => s + Math.abs(t.netUsd || 0), 0))} Net Outflow
+                    </KPISub>
                   </KPICell>
 
                   <KPICell>
@@ -1051,7 +1082,9 @@ const Dashboard = ({ isPremium = false }) => {
                     <KPIValue $color={COLORS.cyan}>
                       <AnimatedNumber value={whaleActivity.filter(t => (t.uniqueWhales || 0) > 10).length} />
                     </KPIValue>
-                    <KPISub $color={COLORS.cyan}>&gt; 10 Unique Whales</KPISub>
+                    <KPISub $color={COLORS.cyan}>
+                      {whaleActivity.reduce((s, t) => s + (t.uniqueWhales || 0), 0)} Unique Whales
+                    </KPISub>
                   </KPICell>
 
                   <KPICell>
