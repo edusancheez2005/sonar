@@ -1,14 +1,29 @@
 import React from 'react'
 import AuthGuard from '@/app/components/AuthGuard'
+import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import WalletTrackerHub from './WalletTrackerHub'
 import WalletTrackerWrapper from './WalletTrackerWrapper'
 
 export const metadata = {
-  title: 'Whale Wallet Tracker — Top Smart Money Wallets',
-  description: 'Track top whale wallets, smart money scores, and portfolio activity across Ethereum, Solana, Bitcoin, and more.',
+  title: 'Wallet Tracker — Research Wallets, Entities & Public Figures',
+  description: 'Research any wallet, browse tracked entities, follow verified public figures, and manage your watchlist — all from one hub.',
   alternates: { canonical: 'https://www.sonartracker.io/wallet-tracker' },
 }
 
+async function fetchFeaturedFigures() {
+  const { data, error } = await supabaseAdmin
+    .from('curated_entities')
+    .select('slug, display_name, category, avatar_url, twitter_handle')
+    .eq('is_featured', true)
+    .order('display_name', { ascending: true })
+    .limit(8)
+  if (error) return []
+  return data || []
+}
+
 export default async function WalletTrackerPage() {
+  const featuredFigures = await fetchFeaturedFigures()
+
   return (
     <AuthGuard>
       <>
@@ -27,15 +42,16 @@ export default async function WalletTrackerPage() {
                 },
                 {
                   '@type': 'WebPage',
-                  name: 'Whale Wallet Tracker — Top Smart Money Wallets',
+                  name: 'Wallet Tracker — Research Wallets, Entities & Public Figures',
                   url: 'https://www.sonartracker.io/wallet-tracker',
                   isPartOf: { '@id': 'https://www.sonartracker.io#website' },
-                  description: 'Track top whale wallets, smart money scores, and portfolio activity across Ethereum, Solana, Bitcoin, and more.',
+                  description: 'Research any wallet, browse tracked entities, follow verified public figures, and manage your watchlist — all from one hub.',
                 },
               ],
             }),
           }}
         />
+        <WalletTrackerHub featuredFigures={featuredFigures} />
         <WalletTrackerWrapper />
       </>
     </AuthGuard>

@@ -31,12 +31,11 @@ const TAB_TITLES = {
 }
 
 const PageContainer = styled.div`
-  min-height: 100vh;
   background: var(--background-dark);
-  padding: 2rem;
+  padding: 0 2rem 2rem;
 
   @media (max-width: 768px) {
-    padding: 1rem;
+    padding: 0 1rem 1rem;
   }
 `
 
@@ -45,17 +44,18 @@ const Container = styled.div`
   margin: 0 auto;
 `
 
-const PageTitle = styled.h1`
-  font-size: 1.6rem;
-  font-weight: 800;
-  margin-bottom: 1.5rem;
+const SubSectionTitle = styled.h2`
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: linear-gradient(135deg, #00e5ff, #36a6ba, #00d4aa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  svg { width: 22px; height: 22px; }
 `
 
 const WhaleIcon = () => (
@@ -321,7 +321,14 @@ export default function WalletTrackerWrapper() {
     <ToastProvider>
     <PageContainer>
       <Container>
-        <PageTitle><WhaleIcon />Whale Wallet Tracker <SonarPulse active /></PageTitle>
+        {/* Page title moved to WalletTrackerHub (SSR) so the hub owns the
+            outer header; the wrapper now just renders its own sub-tabs
+            (Leaderboard / Following / Pods / etc.) and content. */}
+        <SubSectionTitle>
+          <WhaleIcon />
+          <span>Whale research tools</span>
+          <SonarPulse active />
+        </SubSectionTitle>
         <Tabs>
           <Tab $active={activeTab === 'leaderboard'} onClick={() => setActiveTab('leaderboard')}>Leaderboard</Tab>
           <Tab $active={activeTab === 'following'} onClick={() => setActiveTab('following')}>Following</Tab>
