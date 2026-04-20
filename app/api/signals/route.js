@@ -3,6 +3,28 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
 
+// ─── Signal-quality kill switch ──────────────────────────────────────────
+// As of 2026-04-20 the signal engine has 0/116 directional accuracy on BUY
+// signals over the last 30 days (p ≈ 0). Until the root cause is found
+// (Tier 1 sign inversion vs regime tag-along) we mute BUY signals at the
+// API boundary so the UI cannot show inverse-predictive recommendations.
+// SELL signals are also regime-biased but at least directionally correct
+// in current data; they pass through with a downstream BETA disclaimer.
+//
+// Flip this to false once the IC audit + signal rebuild lands.
+const HIDE_BULLISH_SIGNALS = true
+const BULLISH = new Set(['BUY', 'STRONG BUY'])
+
+function neutralize(row) {
+  if (!HIDE_BULLISH_SIGNALS || !row || !BULLISH.has(row.signal)) return row
+  return {
+    ...row,
+    signal: 'NEUTRAL',
+    score: 50,
+    muted_reason: 'bullish_under_review',
+  }
+}
+
 /**
  * GET /api/signals
  * Returns the latest computed signal for each token (or a specific token).
@@ -31,7 +53,7 @@ export async function GET(req) {
         .limit(96) // ~24h at 15min intervals
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-      return NextResponse.json({ token, signals: data || [] })
+      return NextResponse.json({ token, signals: (data || []).map(neutralize) })
     }
 
     if (token) {
@@ -46,7 +68,7 @@ export async function GET(req) {
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
       if (!data) return NextResponse.json({ error: 'No signal found' }, { status: 404 })
-      return NextResponse.json({ signal: data })
+      return NextResponse.json({ signal: neutralize(data) })
     }
 
     // Return latest signal per token (most recent per token)
@@ -65,7 +87,7 @@ export async function GET(req) {
     for (const row of latestSignals || []) {
       if (!seen.has(row.token)) {
         seen.add(row.token)
-        deduped.push(row)
+        deduped.push(neutralize(row))
         if (deduped.length >= limit) break
       }
     }
@@ -76,6 +98,7 @@ export async function GET(req) {
     return NextResponse.json({
       signals: deduped,
       count: deduped.length,
+      muted: HIDE_BULLISH_SIGNALS ? 'Bullish signals are temporarily muted while the model is recalibrated. See /api/signals/accuracy.' : null,
     })
   } catch (err) {
     console.error('[Signals API] Error:', err)
