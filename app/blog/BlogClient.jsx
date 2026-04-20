@@ -613,13 +613,27 @@ const posts = [
   },
 ]
 
-export default function BlogClient() {
+export default function BlogClient({ dynamicPosts = [] }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [email, setEmail] = useState('')
   const [subscribeMessage, setSubscribeMessage] = useState('')
   const [isSubscribing, setIsSubscribing] = useState(false)
 
-  const filteredPosts = posts.filter(post =>
+  // Merge AI-generated posts (from Supabase) with hardcoded ones, dedupe by slug, AI posts first.
+  const seen = new Set()
+  const mergedPosts = []
+  for (const p of dynamicPosts) {
+    if (!p?.slug || seen.has(p.slug)) continue
+    seen.add(p.slug)
+    mergedPosts.push(p)
+  }
+  for (const p of posts) {
+    if (!p?.slug || seen.has(p.slug)) continue
+    seen.add(p.slug)
+    mergedPosts.push(p)
+  }
+
+  const filteredPosts = mergedPosts.filter(post =>
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.category.toLowerCase().includes(searchTerm.toLowerCase())
