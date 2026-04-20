@@ -573,10 +573,27 @@ export function computeUnifiedSignal({
   technicalSignals = null,
   derivativesData = null,
 }: ComputeSignalParams): UnifiedSignal {
-  const tier1 = computeTier1_CexWhaleFlow(transactions)
+  const tier1Raw = computeTier1_CexWhaleFlow(transactions)
   const tier2Raw = computeTier2_PriceMomentum(priceChanges, volumeData)
   const tier3 = computeTier3_SentimentSocial(sentimentData, socialData)
   const tier4 = computeTier4_WeakSignals(transactions, communityVotes, devActivity)
+
+  // ─── IC-driven recalibration (2026-04-20) ──────────────────────────────
+  // 30-day Information Coefficient audit (n≈6000 outcomes, 13-15 tokens):
+  //   tier1_score: mean IC = -0.16 across all horizons, hit-rate 60-69% → INVERTED
+  //   tier2_score: mean IC = +0.07 / +0.05 / +0.11 → NOISE (no edge)
+  //   tier3_score: mean IC = +0.14 (1h) / +0.33 (6h) / -0.01 (24h) → keep
+  //   confidence (composite): IR = -0.78 — caused by tier1+tier2 reinforcing
+  //     each other in the wrong direction; fixes itself when tier1 is flipped.
+  //
+  // Until we know whether tier1's classification labels are inverted at the
+  // data layer (whale-transactions repo) or the engine's interpretation is
+  // wrong, we apply a sign flip at the engine boundary. Set
+  // SIGNAL_ENGINE_IC_FIX=off in env to revert in one deploy.
+  const IC_FIX_ENABLED = process.env.SIGNAL_ENGINE_IC_FIX !== 'off'
+  const tier1 = IC_FIX_ENABLED
+    ? { ...tier1Raw, score: -tier1Raw.score, factors: { ...tier1Raw.factors, ic_sign_flipped: true } }
+    : tier1Raw
 
   // v4: Enhance Tier 2 with real technical analysis if available
   const tier2 = { ...tier2Raw }
@@ -622,9 +639,15 @@ export function computeUnifiedSignal({
 
   // v5 weights with derivatives: T1=20%, T2=30%, T3=15%, T4=5%, derivatives=30%
   // Without derivatives: fallback to v3 weights T1=25%, T2=40%, T3=25%, T4=10%
-  const baseWeights = hasDeriv
-    ? { tier1: 0.20, tier2: 0.30, tier3: 0.15, tier4: 0.05 }
-    : { tier1: 0.25, tier2: 0.40, tier3: 0.25, tier4: 0.10 }
+  // IC_FIX_ENABLED: zero out T2 (no measurable edge per IC audit) and
+  // redistribute to T1 + T3, the only tiers with ranking power.
+  const baseWeights = IC_FIX_ENABLED
+    ? (hasDeriv
+        ? { tier1: 0.30, tier2: 0.00, tier3: 0.30, tier4: 0.05 }
+        : { tier1: 0.45, tier2: 0.00, tier3: 0.45, tier4: 0.10 })
+    : (hasDeriv
+        ? { tier1: 0.20, tier2: 0.30, tier3: 0.15, tier4: 0.05 }
+        : { tier1: 0.25, tier2: 0.40, tier3: 0.25, tier4: 0.10 })
   const tiers = [
     { key: 'tier1' as const, data: tier1, weight: baseWeights.tier1, effectiveWeight: 0 },
     { key: 'tier2' as const, data: tier2, weight: baseWeights.tier2, effectiveWeight: 0 },
@@ -678,8 +701,13 @@ export function computeUnifiedSignal({
   // the whale signal is historically MORE predictive (mean reversion).
   // Whales buying during dips = accumulation. Whales selling during pumps = distribution.
   // Boost the whale signal in these scenarios instead of canceling out.
+  //
+  // IC_FIX_ENABLED: disabled. This bonus amplified Tier 1's direction; with
+  // Tier 1 historically inverted (mean IC = -0.16) and Tier 2 noise (IC ≈ 0),
+  // the bonus was systematically pushing the score in the wrong direction.
+  // Re-enable only after a clean IC audit confirms Tier 1 is correctly signed.
   let smartMoneyBonus = 0
-  if (tier1.available && tier2.available && tier1.confidence >= 40) {
+  if (!IC_FIX_ENABLED && tier1.available && tier2.available && tier1.confidence >= 40) {
     const whaleDirection = Math.sign(tier1.score)
     const priceDirection = Math.sign(tier2.score)
     if (whaleDirection !== 0 && whaleDirection !== priceDirection) {

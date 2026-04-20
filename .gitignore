@@ -32,3 +32,4 @@ MARKETING_PLAN*
 DASHBOARD_V2_PROMPT*
 brevo-*.yaml
 brevo/
+.env*.local

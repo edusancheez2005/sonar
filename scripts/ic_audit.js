@@ -50,9 +50,9 @@ const FEATURES = ['score', 'tier1_score', 'tier2_score', 'tier3_score', 'tier4_s
 const HORIZONS = HORIZON_FILTER ? [HORIZON_FILTER] : ['1h', '6h', '24h']
 
 // Min outcomes per token before we trust a per-token IC
-const MIN_PER_TOKEN = 20
+const MIN_PER_TOKEN = 10
 // Min token count before we trust the aggregate IC
-const MIN_TOKEN_COUNT = 5
+const MIN_TOKEN_COUNT = 4
 
 // ─── Stats helpers (pure JS, no deps) ────────────────────────────────────
 function ranks(arr) {
@@ -128,15 +128,25 @@ function gradeIR(absIR) {
 async function loadJoined(daysBack) {
   const since = new Date(Date.now() - daysBack * 86400 * 1000).toISOString()
 
-  // Pull signals first (with the tier scores we want as features).
-  const { data: signals, error: sErr } = await supabase
-    .from('token_signals')
-    .select('id, token, score, raw_score, confidence, tier1_score, tier2_score, tier3_score, tier4_score, computed_at')
-    .gte('computed_at', since)
-    .limit(50000)
-  if (sErr) { console.error('signals query failed:', sErr.message); process.exit(1) }
-  const sigById = new Map((signals || []).map(s => [s.id, s]))
-  console.log(`Loaded ${signals.length} signals.`)
+  // Pull signals in pages — Supabase caps PostgREST queries at 1000 rows.
+  const sigById = new Map()
+  let page = 0
+  const PAGE = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from('token_signals')
+      .select('id, token, score, raw_score, confidence, tier1_score, tier2_score, tier3_score, tier4_score, computed_at')
+      .gte('computed_at', since)
+      .order('computed_at', { ascending: false })
+      .range(page * PAGE, page * PAGE + PAGE - 1)
+    if (error) { console.error('signals query failed:', error.message); process.exit(1) }
+    if (!data || data.length === 0) break
+    for (const s of data) sigById.set(s.id, s)
+    if (data.length < PAGE) break
+    page++
+    if (page > 50) break // hard guard, 50k signals is way more than 30 days
+  }
+  console.log(`Loaded ${sigById.size} signals.`)
 
   // Pull outcomes in chunks, joined by signal_id.
   const ids = [...sigById.keys()]
@@ -152,7 +162,9 @@ async function loadJoined(daysBack) {
   }
   console.log(`Loaded ${outcomes.length} outcomes.`)
 
-  // Join.
+  // Join. Skip rows where the move is below the noise floor — those are
+  // data-feed gaps, not real outcomes, and they pollute IC with zeros.
+  const NOISE_FLOOR_PCT = 0.05
   const joined = []
   for (const o of outcomes) {
     const s = sigById.get(o.signal_id)
@@ -161,6 +173,7 @@ async function loadJoined(daysBack) {
     const labelAlpha = (o.alpha_pct === null || o.alpha_pct === undefined)
       ? null : Number(o.alpha_pct)
     if (!Number.isFinite(labelRaw)) continue
+    if (Math.abs(labelRaw) < NOISE_FLOOR_PCT) continue
     joined.push({
       token: s.token,
       window: o.eval_window,
