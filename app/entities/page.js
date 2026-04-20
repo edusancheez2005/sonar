@@ -24,6 +24,29 @@ export const metadata = {
   },
 }
 
+// Collapse noisy label variants to their canonical entity name so a
+// row like "Wintermute - Market Maker (JUP holder)" groups with
+// "Wintermute" instead of splintering the directory into 50 near-
+// duplicates. Applied BEFORE group-by in `aggregateEntities` and also
+// used to match curated company/government rows to labels.
+function normalizeEntityName(label) {
+  if (!label) return ''
+  let t = String(label).trim()
+  // Strip a chain of suffixes; run multiple passes because some
+  // labels carry more than one (e.g. "Binance Exchange 2 (JUP holder)").
+  let prev = null
+  while (prev !== t) {
+    prev = t
+    t = t
+      .replace(/\s*\([^()]*holder\)\s*$/i, '')        // "(JUP holder)"
+      .replace(/\s*-\s*Market Maker\s*$/i, '')         // " - Market Maker"
+      .replace(/\s+Exchange\s+\d+\s*$/i, ' Exchange')  // "Exchange 2" → "Exchange"
+      .replace(/\s+Hot Wallet\s+\d+\s*$/i, ' Hot Wallet')
+      .trim()
+  }
+  return t
+}
+
 async function fetchLabeledEntities() {
   const PAGE = 1000
   const MAX_PAGES = 30
@@ -48,7 +71,9 @@ async function fetchLabeledEntities() {
 function aggregateEntities(rows) {
   const map = new Map()
   for (const r of rows) {
-    const name = r.from_label || r.to_label
+    const rawName = r.from_label || r.to_label
+    if (!rawName) continue
+    const name = normalizeEntityName(rawName)
     if (!name) continue
     let rec = map.get(name)
     if (!rec) {
@@ -79,28 +104,140 @@ function aggregateEntities(rows) {
     .filter((e) => e.tx_count >= 10)
     .filter((e) => !isJunkEntityLabel(e.entity_name))
     .sort((a, b) => b.tx_count - a.tx_count)
-    .slice(0, 100)
+    .slice(0, 200) // keep a larger pool; curated merge may bump cards in
     .map((e) => ({ ...e, entity_type: inferEntityType(e.entity_name) }))
 }
 
-async function fetchFeaturedFigures() {
+// Pull curated company + government rows so brand-name entities
+// (Tesla, BlackRock, a16z crypto, El Salvador, …) appear on /entities
+// even when their on-chain labels don't — or show as enriched cards
+// when the labels DO exist. `person` / `celebrity` categories stay on
+// /figures only. Only approved submissions are surfaced publicly.
+async function fetchCuratedCompanies() {
   const { data, error } = await supabaseAdmin
     .from('curated_entities')
-    .select('slug, display_name, category, avatar_url, twitter_handle, addresses')
-    .eq('is_featured', true)
-    .order('display_name', { ascending: true })
-    .limit(6)
+    .select('slug, display_name, description, category, avatar_url, twitter_handle, addresses, submission_status')
+    .in('category', ['company', 'government'])
+    .or('submission_status.eq.approved,submission_status.is.null')
   if (error) return []
   return data || []
 }
 
-export default async function EntitiesDirectoryPage() {
-  const [rawRows, featuredFigures] = await Promise.all([
+// Merge curated company/government rows into the label-aggregated
+// list: enrich existing matches, append the rest as "Tracked" cards
+// with tx_count = 0. Match keys are lowercased normalized names so
+// casing differences don't split entities.
+function mergeCurated(labelEntities, curatedRows) {
+  const byKey = new Map()
+  for (const e of labelEntities) {
+    byKey.set(normalizeEntityName(e.entity_name).toLowerCase(), e)
+  }
+
+  for (const c of curatedRows) {
+    const normalized = normalizeEntityName(c.display_name)
+    const key = normalized.toLowerCase()
+    const existing = byKey.get(key)
+    if (existing) {
+      // Enrich in place — keep the label's live stats, add brand info.
+      existing.curated_slug = c.slug
+      existing.avatar_url = c.avatar_url || existing.avatar_url || null
+      existing.description = c.description || existing.description || null
+      existing.twitter_handle = c.twitter_handle || existing.twitter_handle || null
+      existing.verified = true
+      // If the curated display_name has nicer casing (e.g. "a16z crypto"
+      // vs an all-caps label), prefer the curated spelling.
+      if (normalized !== existing.entity_name) existing.entity_name = normalized
+    } else {
+      byKey.set(key, {
+        entity_name: normalized,
+        tx_count: 0,
+        total_volume: 0,
+        last_active: null,
+        chain_count: 0,
+        entity_type: inferEntityType(normalized),
+        curated_slug: c.slug,
+        avatar_url: c.avatar_url || null,
+        description: c.description || null,
+        twitter_handle: c.twitter_handle || null,
+        tracked: true,
+      })
+    }
+  }
+
+  // Re-sort so active entities rise above the "Tracked, 0 tx" brand
+  // cards, but the latter still show on the page.
+  return [...byKey.values()].sort((a, b) => {
+    if ((b.tx_count || 0) !== (a.tx_count || 0)) return (b.tx_count || 0) - (a.tx_count || 0)
+    return String(a.entity_name).localeCompare(String(b.entity_name))
+  })
+}
+
+const PAGE_SIZE = 30 // 3 × 10 desktop grid
+const VALID_SORTS = new Set(['volume', 'transactions', 'recent', 'alphabetical', 'verified'])
+const DEFAULT_SORT = 'volume'
+
+const SORT_LABELS = {
+  volume: 'volume',
+  transactions: 'transactions',
+  recent: 'recent activity',
+  alphabetical: 'A → Z',
+  verified: 'verified',
+}
+
+function sortEntities(rows, sort) {
+  const list = [...rows]
+  const byVolume = (a, b) => (b.total_volume || 0) - (a.total_volume || 0)
+  const byTx = (a, b) => (b.tx_count || 0) - (a.tx_count || 0)
+  const byRecent = (a, b) => new Date(b.last_active || 0) - new Date(a.last_active || 0)
+  const byName = (a, b) =>
+    String(a.entity_name || '').localeCompare(String(b.entity_name || ''))
+  switch (sort) {
+    case 'transactions':
+      list.sort((a, b) => byTx(a, b) || byVolume(a, b) || byName(a, b))
+      break
+    case 'recent':
+      list.sort((a, b) => byRecent(a, b) || byVolume(a, b) || byName(a, b))
+      break
+    case 'alphabetical':
+      list.sort(byName)
+      break
+    case 'verified':
+      // Verified-enriched entities first, then curated tracked (zero-
+      // activity) rows, then plain labels — with volume as tie-break.
+      list.sort((a, b) => {
+        const rank = (e) => (e.verified ? 2 : e.tracked ? 1 : 0)
+        return rank(b) - rank(a) || byVolume(a, b) || byName(a, b)
+      })
+      break
+    case 'volume':
+    default:
+      list.sort((a, b) => byVolume(a, b) || byTx(a, b) || byName(a, b))
+      break
+  }
+  return list
+}
+
+function parseSearchParams(searchParams) {
+  const rawSort = (searchParams?.sort || '').toString().toLowerCase()
+  const sort = VALID_SORTS.has(rawSort) ? rawSort : DEFAULT_SORT
+  const rawPage = Number(searchParams?.page)
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1
+  return { sort, page }
+}
+
+export default async function EntitiesDirectoryPage({ searchParams }) {
+  const { sort, page } = parseSearchParams(searchParams || {})
+  const [rawRows, curatedCompanies] = await Promise.all([
     fetchLabeledEntities(),
-    fetchFeaturedFigures(),
+    fetchCuratedCompanies(),
   ])
-  const entities = aggregateEntities(rawRows)
-  const totalTx = entities.reduce((a, e) => a + e.tx_count, 0)
+  const labelEntities = aggregateEntities(rawRows)
+  const merged = mergeCurated(labelEntities, curatedCompanies)
+  const entities = sortEntities(merged, sort)
+  const totalCount = entities.length
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const clampedPage = Math.min(Math.max(1, page), totalPages)
+  const totalTx = entities.reduce((a, e) => a + (e.tx_count || 0), 0)
 
   return (
     <AuthGuard>
@@ -132,8 +269,15 @@ export default async function EntitiesDirectoryPage() {
             Tracked Entities
           </h1>
           <div style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
-            {entities.length.toLocaleString()} entities ·{' '}
-            {totalTx.toLocaleString()} tracked transactions
+            {totalCount.toLocaleString()} tracked entit
+            {totalCount === 1 ? 'y' : 'ies'} · Page {clampedPage} of {totalPages} · Sorted by{' '}
+            {SORT_LABELS[sort] || sort}
+            {totalTx > 0 ? (
+              <>
+                {' '}
+                · <span style={{ opacity: 0.75 }}>{totalTx.toLocaleString()} transactions indexed</span>
+              </>
+            ) : null}
           </div>
         </div>
 
@@ -141,7 +285,10 @@ export default async function EntitiesDirectoryPage() {
 
         <EntitiesDirectoryClient
           entities={entities}
-          featuredFigures={featuredFigures}
+          page={clampedPage}
+          totalPages={totalPages}
+          pageSize={PAGE_SIZE}
+          sort={sort}
         />
       </main>
     </AuthGuard>

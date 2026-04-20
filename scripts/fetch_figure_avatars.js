@@ -78,23 +78,68 @@ const ENS_NAMES = {
 }
 
 // Slug → Wikipedia page title (underscore-joined, URL-safe as-is).
-// Entries not listed here simply skip the Wikipedia step — e.g. Cobie
-// has no standalone Wikipedia page.
+// Entries not listed here simply skip the Wikipedia step.
+// Some entries previously in this map have been removed because the
+// researched title returned 404 or had no image — those now fall
+// through to the unavatar/github catch-all below.
 const WIKIPEDIA_TITLES = {
+  // ── Original seed figures ─────────────────────────────────────────
   'vitalik-buterin': 'Vitalik_Buterin',
   'donald-trump': 'Donald_Trump',
   'michael-saylor': 'Michael_J._Saylor',
   'elon-musk': 'Elon_Musk',
   'justin-sun': 'Justin_Sun',
   'balaji-srinivasan': 'Balaji_Srinivasan',
-  'hayden-adams': 'Hayden_Adams_(businessman)',
-  'arthur-hayes': 'Arthur_Hayes_(cryptocurrency_entrepreneur)',
+  'arthur-hayes': 'Arthur_Hayes_(businessman)', // ← was cryptocurrency_entrepreneur (404)
   sbf: 'Sam_Bankman-Fried',
-  microstrategy: 'Strategy_(company)',
   tesla: 'Tesla,_Inc.',
   'jump-trading': 'Jump_Trading',
-  paradigm: 'Paradigm_(investment_firm)',
   'el-salvador': 'El_Salvador',
+
+  // ── Scraper hardcoded seeds ───────────────────────────────────────
+  'a16z-crypto': 'Andreessen_Horowitz',
+  'anatoly-yakovenko': 'Anatoly_Yakovenko',
+  'andre-cronje': 'Andre_Cronje',
+  'ark-21shares': 'ARK_Invest',
+  'bitwise-bitb': 'Bitwise_Asset_Management',
+  'blackrock-ibit': 'BlackRock',
+  'brian-armstrong': 'Brian_Armstrong_(businessman)',
+  'changpeng-zhao': 'Changpeng_Zhao',
+  'charles-hoskinson': 'Charles_Hoskinson',
+  'coinbase-custody': 'Coinbase',
+  'do-kwon': 'Do_Kwon',
+  'fidelity-fbtc': 'Fidelity_Investments',
+  'franklin-ezbc': 'Franklin_Templeton_Investments',
+  'galaxy-digital': 'Galaxy_Digital',
+  'gavin-wood': 'Gavin_Wood',
+  'grayscale-gbtc': 'Grayscale_Investments',
+  'joe-lubin': 'Joseph_Lubin',
+  'lightspeed-faction': 'Lightspeed_Venture_Partners',
+  'pantera-capital': 'Pantera_Capital',
+  'polychain-capital': 'Polychain_Capital',
+  'sequoia-capital': 'Sequoia_Capital',
+  'sergey-nazarov': 'Sergey_Nazarov_(businessman)',
+  'union-square-ventures': 'Union_Square_Ventures',
+  'valkyrie-brrr': 'Valkyrie_Investments',
+  'vaneck-hodl': 'VanEck',
+
+  // Previously removed (no usable Wikipedia page — fall through to
+  // unavatar/github in the resolver below):
+  //   cobie, hayden-adams, microstrategy (has override), paradigm (has
+  //   override), dragonfly, electric-capital, multicoin-capital,
+  //   stani-kulechov, variant-fund
+}
+
+// Slug → explicit logo URL. Used when a clean CDN/brand asset exists
+// that beats whatever Wikipedia has. Tried first (highest priority).
+const SVG_LOGO_OVERRIDES = {
+  // Strategy (formerly MicroStrategy) — cryptologos hosts a stable,
+  // free-use PNG keyed on the MSTR ticker.
+  microstrategy: 'https://cryptologos.cc/logos/strategy-mstr-logo.png',
+  // Paradigm has no public CDN logo; the simplest reliable source is
+  // their Twitter profile proxied through unavatar. The image bytes
+  // are cached by unavatar so we still save a local copy.
+  paradigm: 'https://unavatar.io/twitter/paradigm?fallback=false',
 }
 
 // Content-Type → filename extension. Falls back to .jpg when a server
@@ -194,6 +239,29 @@ async function tryWikipedia(title) {
   return { buffer: buf, ext: extFromResponse(img), source: 'Wikipedia' }
 }
 
+// Download any direct URL and tag it with a given source label. Used
+// for SVG_LOGO_OVERRIDES entries where the URL is already a final
+// image endpoint — no extra resolution needed.
+async function tryDirectUrl(url, label) {
+  const res = await fetchWithTimeout(url, { headers: { Accept: 'image/*' } })
+  if (!res.ok) throw new Error(`${label} ${res.status}`)
+  const buf = await readImageBuffer(res)
+  return { buffer: buf, ext: extFromResponse(res), source: label }
+}
+
+// Last-resort: unavatar's GitHub proxy keyed on the slug (or a
+// derived handle). Returns 404 with `fallback=false` when the GH
+// user/org doesn't exist, so a miss is cheap and safe.
+async function tryUnavatarGithub(slug) {
+  const handle = String(slug || '').trim()
+  if (!handle) throw new Error('empty slug')
+  const url = `https://unavatar.io/github/${encodeURIComponent(handle)}?fallback=false`
+  const res = await fetchWithTimeout(url, { headers: { Accept: 'image/*' } })
+  if (!res.ok) throw new Error(`unavatar/github ${res.status}`)
+  const buf = await readImageBuffer(res)
+  return { buffer: buf, ext: extFromResponse(res), source: `unavatar/github (${handle})` }
+}
+
 // ─── Figure → ENS candidate resolution ───────────────────────────────────
 function ensCandidateFor(figure) {
   const slug = figure.slug
@@ -280,17 +348,35 @@ async function main() {
     let resolved = null
     const attempts = []
 
-    // 1) ENS
-    const ensName = ensCandidateFor(f)
-    if (ensName) {
+    // Resolution order per figure (first success wins):
+    //   1) SVG_LOGO_OVERRIDES — admin-curated brand logos
+    //   2) ENS avatar (for slugs in ENS_NAMES or with .eth in notes)
+    //   3) Wikipedia thumbnail
+    //   4) unavatar/github catch-all (free fallback for anything else)
+
+    // 1) Explicit brand-logo override
+    const overrideUrl = SVG_LOGO_OVERRIDES[slug]
+    if (overrideUrl) {
       try {
-        resolved = await tryEns(ensName)
+        resolved = await tryDirectUrl(overrideUrl, `logo override (${slug})`)
       } catch (e) {
-        attempts.push(`ENS(${ensName}): ${e.message}`)
+        attempts.push(`override: ${e.message}`)
       }
     }
 
-    // 2) Wikipedia
+    // 2) ENS
+    if (!resolved) {
+      const ensName = ensCandidateFor(f)
+      if (ensName) {
+        try {
+          resolved = await tryEns(ensName)
+        } catch (e) {
+          attempts.push(`ENS(${ensName}): ${e.message}`)
+        }
+      }
+    }
+
+    // 3) Wikipedia
     if (!resolved) {
       const title = WIKIPEDIA_TITLES[slug]
       if (title) {
@@ -301,6 +387,15 @@ async function main() {
         }
       } else {
         attempts.push('Wikipedia: no title mapping')
+      }
+    }
+
+    // 4) unavatar.io/github fallback
+    if (!resolved) {
+      try {
+        resolved = await tryUnavatarGithub(slug)
+      } catch (e) {
+        attempts.push(`unavatar/github: ${e.message}`)
       }
     }
 

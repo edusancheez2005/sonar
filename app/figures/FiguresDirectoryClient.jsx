@@ -1,8 +1,18 @@
 'use client'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import EntityAvatar from '@/app/components/entities/EntityAvatar'
 import { categoryStyle, categoryLabel } from '@/app/lib/entityHelpers'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+
+const SORT_OPTIONS = [
+  { value: 'featured', label: 'Featured' },
+  { value: 'recent', label: 'Recent' },
+  { value: 'alphabetical', label: 'A → Z' },
+  { value: 'category', label: 'Category' },
+]
+
+const SEARCH_RESULT_CAP = 100
 
 async function getAuthHeaders() {
   try {
@@ -16,8 +26,18 @@ async function getAuthHeaders() {
   }
 }
 
-export default function FiguresDirectoryClient({ figures }) {
+export default function FiguresDirectoryClient({
+  figures,
+  page,
+  totalPages,
+  pageSize,
+  sort,
+}) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [followedSlugs, setFollowedSlugs] = useState(new Set())
+  const [q, setQ] = useState('')
 
   const refreshFollows = useCallback(async () => {
     const headers = await getAuthHeaders()
@@ -47,43 +67,261 @@ export default function FiguresDirectoryClient({ figures }) {
     [figures, followedSlugs]
   )
 
+  // While a search query is present, bypass pagination entirely and
+  // show up to SEARCH_RESULT_CAP matches. Sort selection is preserved
+  // (the `figures` prop is already server-sorted).
+  const searchActive = q.trim().length > 0
+  const searchResults = useMemo(() => {
+    if (!searchActive) return []
+    const term = q.trim().toLowerCase()
+    return enriched
+      .filter((f) => {
+        const name = String(f.display_name || '').toLowerCase()
+        const handle = String(f.twitter_handle || '').toLowerCase()
+        const desc = String(f.description || '').toLowerCase()
+        return name.includes(term) || handle.includes(term) || desc.includes(term)
+      })
+      .slice(0, SEARCH_RESULT_CAP)
+  }, [enriched, q, searchActive])
+
+  const pageSlice = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return enriched.slice(start, start + pageSize)
+  }, [enriched, page, pageSize])
+
+  const visible = searchActive ? searchResults : pageSlice
+
+  // Mutate the current URL preserving everything except the one key
+  // we're changing. router.replace is used for search/filter so we
+  // don't flood history with intermediate states.
+  const pushWithParam = useCallback(
+    (changes) => {
+      const params = new URLSearchParams(searchParams.toString())
+      for (const [k, v] of Object.entries(changes)) {
+        if (v == null || v === '' || v === 'featured' || v === 1 || v === '1') {
+          params.delete(k)
+        } else {
+          params.set(k, String(v))
+        }
+      }
+      const qs = params.toString()
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    },
+    [pathname, router, searchParams]
+  )
+
+  const onSortChange = (value) => {
+    // Sort change resets the page so the user isn't left on page 5 of
+    // a completely different ordering.
+    pushWithParam({ sort: value, page: 1 })
+  }
+
+  const onPageChange = (next) => {
+    pushWithParam({ page: next })
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   if (figures.length === 0) {
     return (
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #0d2134 0%, #112a40 100%)',
-          border: '1px solid rgba(54, 166, 186, 0.2)',
-          borderRadius: '16px',
-          padding: '2.5rem 1.5rem',
-          textAlign: 'center',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        No public figures seeded yet.
-      </div>
+      <EmptyCard message="No public figures seeded yet." />
     )
   }
 
   return (
+    <>
+      <Controls
+        sort={sort}
+        q={q}
+        onQ={setQ}
+        onSortChange={onSortChange}
+        searchActive={searchActive}
+        searchCount={searchResults.length}
+        searchCap={SEARCH_RESULT_CAP}
+      />
+
+      {visible.length === 0 ? (
+        <EmptyCard
+          message={
+            searchActive ? `No figures match “${q}”.` : 'No figures on this page.'
+          }
+        />
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '1rem',
+          }}
+        >
+          {visible.map((f) => (
+            <FigureCard key={f.slug} f={f} />
+          ))}
+        </div>
+      )}
+
+      {!searchActive && totalPages > 1 ? (
+        <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
+      ) : null}
+    </>
+  )
+}
+
+// ─── Controls (sort + search) ────────────────────────────────────────────
+
+function Controls({ sort, q, onQ, onSortChange, searchActive, searchCount, searchCap }) {
+  return (
     <div
       style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '1rem',
+        display: 'flex',
+        gap: '0.75rem',
+        alignItems: 'center',
+        marginBottom: '1rem',
+        flexWrap: 'wrap',
       }}
     >
-      {enriched.map((f) => (
-        <FigureCard key={f.slug} f={f} />
-      ))}
+      <input
+        type="text"
+        value={q}
+        onChange={(e) => onQ(e.target.value)}
+        placeholder="Search figures by name, @handle, or keyword…"
+        aria-label="Search figures"
+        style={{
+          flex: '1 1 240px',
+          minWidth: '220px',
+          padding: '0.75rem 1rem',
+          background: 'rgba(54, 166, 186, 0.08)',
+          border: '1px solid rgba(54, 166, 186, 0.3)',
+          borderRadius: '12px',
+          color: 'var(--text-primary)',
+          fontSize: '0.95rem',
+          outline: 'none',
+        }}
+      />
+      <label
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          fontSize: '0.82rem',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <span>Sort by</span>
+        <select
+          value={sort}
+          onChange={(e) => onSortChange(e.target.value)}
+          aria-label="Sort figures"
+          style={{
+            padding: '0.6rem 0.75rem',
+            background: 'rgba(54, 166, 186, 0.08)',
+            border: '1px solid rgba(54, 166, 186, 0.3)',
+            borderRadius: '10px',
+            color: 'var(--text-primary)',
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            outline: 'none',
+          }}
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {searchActive ? (
+        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          {searchCount >= searchCap
+            ? `Showing first ${searchCap} matches`
+            : `${searchCount} match${searchCount === 1 ? '' : 'es'}`}
+        </span>
+      ) : null}
     </div>
   )
 }
+
+// ─── Pagination ──────────────────────────────────────────────────────────
+
+function Pagination({ page, totalPages, onPageChange }) {
+  const canPrev = page > 1
+  const canNext = page < totalPages
+  return (
+    <nav
+      aria-label="Pagination"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.75rem',
+        marginTop: '1.5rem',
+        padding: '1rem 0',
+        color: 'var(--text-secondary)',
+      }}
+    >
+      <PagerButton disabled={!canPrev} onClick={() => canPrev && onPageChange(page - 1)}>
+        ← Previous
+      </PagerButton>
+      <span style={{ fontSize: '0.9rem' }}>
+        Page <strong style={{ color: 'var(--text-primary)' }}>{page}</strong> of {totalPages}
+      </span>
+      <PagerButton disabled={!canNext} onClick={() => canNext && onPageChange(page + 1)}>
+        Next →
+      </PagerButton>
+    </nav>
+  )
+}
+
+function PagerButton({ disabled, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        padding: '0.55rem 1rem',
+        background: disabled ? 'rgba(54, 166, 186, 0.05)' : 'rgba(54, 166, 186, 0.15)',
+        border: `1px solid ${disabled ? 'rgba(54, 166, 186, 0.15)' : 'rgba(54, 166, 186, 0.4)'}`,
+        borderRadius: '10px',
+        color: disabled ? 'var(--text-secondary)' : '#36a6ba',
+        fontSize: '0.85rem',
+        fontWeight: 600,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.55 : 1,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function EmptyCard({ message }) {
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(135deg, #0d2134 0%, #112a40 100%)',
+        border: '1px solid rgba(54, 166, 186, 0.2)',
+        borderRadius: '16px',
+        padding: '2.5rem 1.5rem',
+        textAlign: 'center',
+        color: 'var(--text-secondary)',
+      }}
+    >
+      {message}
+    </div>
+  )
+}
+
+// ─── Figure card ─────────────────────────────────────────────────────────
 
 function FigureCard({ f }) {
   const [hover, setHover] = useState(false)
   const style = categoryStyle(f.category)
   const addrCount = Array.isArray(f.addresses) ? f.addresses.length : 0
   const isFollowed = !!f._isFollowed
+  const isFeatured = !!f.is_featured
   return (
     <a
       href={`/figure/${encodeURIComponent(f.slug)}`}
@@ -99,8 +337,15 @@ function FigureCard({ f }) {
           : 'linear-gradient(135deg, #0d2134 0%, #112a40 100%)',
         border: hover
           ? '1px solid rgba(54, 166, 186, 0.55)'
-          : isFollowed
+          : isFollowed || isFeatured
             ? '1px solid rgba(54, 166, 186, 0.4)'
+            : '1px solid rgba(54, 166, 186, 0.2)',
+        // Featured figures get a subtle teal accent on the left edge —
+        // cheaper than adding another card variant.
+        borderLeft: isFeatured
+          ? '3px solid #36a6ba'
+          : hover
+            ? '1px solid rgba(54, 166, 186, 0.55)'
             : '1px solid rgba(54, 166, 186, 0.2)',
         borderRadius: '18px',
         padding: '1.35rem 1.25rem',
@@ -162,22 +407,41 @@ function FigureCard({ f }) {
           >
             {f.display_name}
           </div>
-          <span
-            style={{
-              display: 'inline-block',
-              padding: '0.18rem 0.55rem',
-              background: style.bg,
-              border: `1px solid ${style.border}`,
-              borderRadius: '999px',
-              color: style.color,
-              fontSize: '0.68rem',
-              fontWeight: 700,
-              letterSpacing: '0.5px',
-              textTransform: 'capitalize',
-            }}
-          >
-            {categoryLabel(f.category)}
-          </span>
+          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+            <span
+              style={{
+                display: 'inline-block',
+                padding: '0.18rem 0.55rem',
+                background: style.bg,
+                border: `1px solid ${style.border}`,
+                borderRadius: '999px',
+                color: style.color,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+                textTransform: 'capitalize',
+              }}
+            >
+              {categoryLabel(f.category)}
+            </span>
+            {isFeatured ? (
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '0.18rem 0.55rem',
+                  background: 'rgba(241, 196, 15, 0.12)',
+                  border: '1px solid rgba(241, 196, 15, 0.4)',
+                  borderRadius: '999px',
+                  color: '#f1c40f',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                }}
+              >
+                ★ FEATURED
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 
