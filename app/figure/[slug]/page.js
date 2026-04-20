@@ -22,11 +22,16 @@ const OG_IMAGE_URL = 'https://www.sonartracker.io/screenshots/stats-dashboard.pn
 async function fetchFigure(slug) {
   const { data, error } = await supabaseAdmin
     .from('curated_entities')
-    .select('slug, display_name, description, category, avatar_url, twitter_handle, is_featured, addresses')
+    .select('slug, display_name, description, category, avatar_url, twitter_handle, is_featured, addresses, submission_status')
     .eq('slug', slug)
     .maybeSingle()
   if (error) return null
-  return data || null
+  if (!data) return null
+  // Non-approved submissions (pending / rejected) are hidden from the
+  // public detail page too — treat them as 404 so the metadata + body
+  // both fall back to the NotFoundView.
+  if (data.submission_status && data.submission_status !== 'approved') return null
+  return data
 }
 
 function normalizeAddresses(addresses) {
