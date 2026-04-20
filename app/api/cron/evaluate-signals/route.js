@@ -24,6 +24,12 @@ const EVAL_WINDOWS = [
   { label: '24h', ms: 24 * 60 * 60 * 1000 },
 ]
 
+// Noise floor: any |price change| below this is statistically indistinguishable
+// from data-feed jitter (and unprofitable after fees+slippage). We mark these
+// outcomes as `correct = null` instead of scoring them as wrong.
+// 5 bps ≈ 0.05% ≈ Binance taker fee on a single side.
+const NOISE_FLOOR_PCT = 0.05
+
 export async function GET(req) {
   try {
     const authHeader = req.headers.get('authorization')
@@ -70,12 +76,37 @@ export async function GET(req) {
     let skipped = 0
     const errors = []
 
+    // BTC is our risk-free-ish benchmark for crypto-relative alpha.
+    // Current BTC price comes from the live priceMap; historical BTC for
+    // each eval window comes from price_snapshots.
+    const btcNow = priceMap.get('BTC') || null
+
     for (const window of EVAL_WINDOWS) {
       // Find signals that were created approximately `window.ms` ago
       // Look in a 30-min window around the target time
       const targetTime = new Date(Date.now() - window.ms)
       const windowStart = new Date(targetTime.getTime() - 15 * 60 * 1000)
       const windowEnd = new Date(targetTime.getTime() + 15 * 60 * 1000)
+
+      // Pull the closest BTC snapshot inside this window (one query per window).
+      let btcAtSignal = null
+      try {
+        const { data: btcRows } = await supabaseAdmin
+          .from('price_snapshots')
+          .select('price_usd, timestamp')
+          .eq('ticker', 'BTC')
+          .gte('timestamp', windowStart.toISOString())
+          .lte('timestamp', windowEnd.toISOString())
+          .order('timestamp', { ascending: true })
+          .limit(1)
+        if (btcRows && btcRows.length > 0) btcAtSignal = Number(btcRows[0].price_usd)
+      } catch (e) {
+        // Non-fatal: alpha will be NULL for this window's outcomes
+      }
+
+      const btcChangePct = (btcNow && btcAtSignal)
+        ? ((btcNow - btcAtSignal) / btcAtSignal) * 100
+        : null
 
       const { data: signals, error: sigErr } = await supabaseAdmin
         .from('token_signals')
@@ -116,9 +147,24 @@ export async function GET(req) {
         const isBullish = sig.signal === 'STRONG BUY' || sig.signal === 'BUY'
         const isBearish = sig.signal === 'STRONG SELL' || sig.signal === 'SELL'
 
+        // Noise-floor gate: tiny moves (or stale-price gaps where
+        // currentPrice ≈ price_at_signal) are NOT a failed prediction.
+        // Mark them null so they're excluded from accuracy aggregations.
         let correct = null
-        if (isBullish) correct = priceChange > 0
-        else if (isBearish) correct = priceChange < 0
+        if (Math.abs(priceChange) >= NOISE_FLOOR_PCT) {
+          if (isBullish) correct = priceChange > 0
+          else if (isBearish) correct = priceChange < 0
+        }
+
+        // Alpha vs BTC benchmark. NULL when we couldn't pin down a BTC
+        // snapshot for this window — better than fabricating zero.
+        let alphaPct = null
+        let beatBenchmark = null
+        if (btcChangePct !== null) {
+          alphaPct = priceChange - btcChangePct
+          if (isBullish) beatBenchmark = alphaPct > 0
+          else if (isBearish) beatBenchmark = alphaPct < 0
+        }
 
         const { error: insertErr } = await supabaseAdmin
           .from('signal_outcomes')
@@ -135,6 +181,11 @@ export async function GET(req) {
             eval_window: window.label,
             signal_time: sig.computed_at,
             eval_time: new Date().toISOString(),
+            btc_price_at_signal: btcAtSignal,
+            btc_price_at_eval: btcNow,
+            btc_change_pct: btcChangePct === null ? null : Math.round(btcChangePct * 100) / 100,
+            alpha_pct: alphaPct === null ? null : Math.round(alphaPct * 100) / 100,
+            beat_benchmark: beatBenchmark,
           })
 
         if (insertErr) {

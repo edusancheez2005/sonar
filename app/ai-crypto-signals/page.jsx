@@ -30,7 +30,10 @@ export default function AiCryptoSignalsPage() {
       <div style={{ minHeight: '100vh', background: '#0a1621', color: '#e8edf2', fontFamily: "'Inter', -apple-system, sans-serif" }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '8rem 2rem 4rem' }}>
           {/* Hero */}
-          <p style={{ color: '#9b59b6', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '1rem' }}>AI Crypto Intelligence</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <p style={{ color: '#9b59b6', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '1.5px', textTransform: 'uppercase', margin: 0 }}>AI Crypto Intelligence</p>
+            <span style={{ display: 'inline-block', padding: '0.2rem 0.55rem', borderRadius: '999px', background: 'rgba(241,196,15,0.12)', border: '1px solid rgba(241,196,15,0.45)', color: '#f1c40f', fontWeight: 700, fontSize: '0.7rem', letterSpacing: '1px' }}>BETA</span>
+          </div>
           <h1 style={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1.15, marginBottom: '1.5rem', background: 'linear-gradient(90deg, #9b59b6, #f1c40f, #36a6ba)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             AI Crypto Market Analysis
           </h1>
@@ -40,8 +43,11 @@ export default function AiCryptoSignalsPage() {
           <p style={{ fontSize: '1rem', color: '#6b7d8f', lineHeight: 1.7, marginBottom: '1rem' }}>
             Not a black-box bot. Not vague predictions. Data analysis grounded in real on-chain activity, delivered when you need it.
           </p>
-          <div style={{ padding: '0.75rem 1rem', background: 'rgba(255,171,0,0.06)', border: '1px solid rgba(255,171,0,0.15)', borderRadius: '8px', marginBottom: '2.5rem', fontSize: '0.8rem', color: '#bbb', lineHeight: 1.6 }}>
+          <div style={{ padding: '0.75rem 1rem', background: 'rgba(255,171,0,0.06)', border: '1px solid rgba(255,171,0,0.15)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.8rem', color: '#bbb', lineHeight: 1.6 }}>
             <strong style={{ color: '#ffab00' }}>Disclaimer:</strong> Sonar provides on-chain data analysis and market intelligence for informational purposes only. Nothing on this platform constitutes financial advice, investment recommendations, or solicitation to buy or sell any cryptocurrency. Past performance does not guarantee future results. Always do your own research. Trading cryptocurrencies involves substantial risk of loss.
+          </div>
+          <div style={{ padding: '0.75rem 1rem', background: 'rgba(155,89,182,0.06)', border: '1px solid rgba(155,89,182,0.25)', borderRadius: '8px', marginBottom: '2.5rem', fontSize: '0.78rem', color: '#bbb', lineHeight: 1.6 }}>
+            <strong style={{ color: '#9b59b6' }}>Signal performance (BETA):</strong> Our directional signal engine is in active calibration. We publish raw outcomes via <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 5px', borderRadius: '4px' }}>/api/signals/accuracy</code> with sample sizes and binomial p-values — no cherry-picking. Headline accuracy fluctuates with market regime; treat any single-token "100% accuracy" stat with n &lt; 30 as noise, not skill.
           </div>
           <a href="/subscribe" style={{ display: 'inline-block', padding: '0.9rem 2rem', borderRadius: '8px', background: 'linear-gradient(90deg, #9b59b6, #f1c40f)', color: '#0a1621', fontWeight: 700, textDecoration: 'none', fontSize: '1rem', marginBottom: '4rem' }}>Get ORCA Access — $7.99/mo</a>
 
