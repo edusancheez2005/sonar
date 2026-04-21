@@ -876,7 +876,7 @@ const Landing = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '', displayName: '', country: '', experienceLevel: '', interests: [], website_url: '' });
+  const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '', displayName: '', country: '', experienceLevel: '', interests: [], website_url: '', acceptedTerms: false, over18: false, notSanctioned: false });
   const [waitEmail, setWaitEmail] = useState('');
   const [waitMsg, setWaitMsg] = useState('');
   const [signupLoading, setSignupLoading] = useState(false);
@@ -979,9 +979,13 @@ const Landing = () => {
     if (!formData.email || !formData.password) { setSignupError('Email and password are required'); showToast('Email and password are required', 'error'); return; }
     if (formData.password.length < 8) { setSignupError('Password must be at least 8 characters'); showToast('Password must be at least 8 characters', 'error'); return; }
     if (formData.password !== formData.confirmPassword) { setSignupError('Passwords do not match'); showToast('Passwords do not match', 'error'); return; }
+    // Eligibility attestations — LEGAL_AUDIT_2026-04-21.md A14.
+    if (!formData.acceptedTerms) { setSignupError('You must accept the Terms and Privacy Policy.'); showToast('Please accept the Terms and Privacy Policy', 'error'); return; }
+    if (!formData.over18) { setSignupError('You must confirm you are aged 18 or over.'); showToast('You must be 18 or over to use Sonar Tracker', 'error'); return; }
+    if (!formData.notSanctioned) { setSignupError('You must confirm you are not in a sanctioned jurisdiction.'); showToast('You must confirm you are not in a sanctioned jurisdiction', 'error'); return; }
     try {
       setSignupLoading(true);
-      const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, password: formData.password, displayName: formData.displayName, country: formData.country, experienceLevel: formData.experienceLevel, interests: formData.interests }) });
+      const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, password: formData.password, displayName: formData.displayName, country: formData.country, experienceLevel: formData.experienceLevel, interests: formData.interests, acceptsTerms: formData.acceptedTerms === true, over18: formData.over18 === true, notSanctioned: formData.notSanctioned === true }) });
       const json = await res.json();
       if (!res.ok || !json?.ok) throw new Error(json?.error || 'Signup failed');
       const sb = supabaseBrowser();
@@ -1318,7 +1322,7 @@ const Landing = () => {
           {[
             { before: 'Manually checking dozens of wallets', after: 'Automated tracking of every whale in real-time' },
             { before: 'Reading generic news 6 hours late', after: 'AI-curated signals the moment they happen' },
-            { before: 'Guessing if a move is accumulation or dump', after: 'Clear BUY/SELL signals with confidence scores' },
+            { before: 'Guessing if a move is accumulation or dump', after: 'Inflow / outflow classification with magnitude scores' },
             { before: 'Paying $500+/mo for institutional tools', after: 'Same intelligence, completely free' },
           ].map((item, i) => (
             <CompareRow key={i}
@@ -1370,7 +1374,7 @@ const Landing = () => {
             <SectionHeading initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>Everything you need.<br />Nothing you don't.</SectionHeading>
             <motion.p initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
               style={{ fontSize: '1.15rem', color: '#6a7a8a', maxWidth: '550px', margin: '0 auto', lineHeight: 1.7 }}>
-              Institutional-grade analytics, AI-powered signals, and real-time whale tracking — all in one platform.
+              Professional whale tracking, real-time on-chain data, and AI summarisation — all in one platform. Informational only.
             </motion.p>
           </div>
 
@@ -1542,7 +1546,7 @@ const Landing = () => {
                 </div>
               </div>
               <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e8edf2', marginBottom: '0.5rem', letterSpacing: '-0.01em' }}>Token Analytics</h3>
-              <p style={{ color: '#6a7a8a', lineHeight: 1.7, fontSize: '0.95rem', margin: 0 }}>Deep-dive into any token with flow analysis, volume breakdown, and institutional-grade metrics.</p>
+              <p style={{ color: '#6a7a8a', lineHeight: 1.7, fontSize: '0.95rem', margin: 0 }}>Deep-dive into any token with flow analysis, volume breakdown, and comprehensive on-chain metrics.</p>
             </motion.div>
           </div>
 
@@ -1565,7 +1569,7 @@ const Landing = () => {
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <SectionHeading>Meet ORCA: Your AI Crypto Analyst</SectionHeading>
             <p style={{ fontSize: '1.3rem', color: 'var(--text-secondary)', maxWidth: '750px', margin: '0 auto', lineHeight: '1.8' }}>
-              Ask any question about any cryptocurrency. ORCA combines real-time whale data, social sentiment, live news, and X/Twitter intelligence into one institutional-grade analysis.
+              Ask any question about any cryptocurrency. ORCA combines real-time whale data, social sentiment, live news, and X/Twitter into one integrated summary. Informational only — not financial advice.
             </p>
           </div>
 
@@ -1678,7 +1682,7 @@ const Landing = () => {
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Full access for everyone</div>
             <div><span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>$0</span><span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>/forever</span></div>
             <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0' }}>
-              {['Real-time whale tracking 24/7', 'AI buy/sell signals', 'Sentiment analysis', 'Token analytics & heatmaps', 'Full transaction history', 'Whale leaderboard', 'News with AI sentiment', '2 ORCA AI conversations/day'].map((f, i) => (
+              {['Real-time whale tracking 24/7', 'AI inflow/outflow classification', 'Sentiment analysis', 'Token analytics & heatmaps', 'Full transaction history', 'Whale leaderboard', 'News with AI sentiment', '2 ORCA AI conversations/day'].map((f, i) => (
                 <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {f}
@@ -1852,7 +1856,7 @@ const Landing = () => {
                 <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>Track whales. Decode signals.<br/>Trade smarter.</p>
               </motion.div>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', position: 'relative', zIndex: 1 }}>
-                {[{ svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>, text: 'Real-time whale tracking' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>, text: 'AI-powered buy/sell signals' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>, text: 'Market sentiment & news' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>, text: 'Multi-chain analytics' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, text: 'ORCA AI advisor' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>, text: 'Custom whale alerts' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/></svg>, text: 'Binance derivatives data' }].map((item, i) => (
+                {[{ svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>, text: 'Real-time whale tracking' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>, text: 'AI-powered inflow/outflow classification' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>, text: 'Market sentiment & news' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>, text: 'Multi-chain analytics' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, text: 'ORCA AI advisor' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>, text: 'Custom whale alerts' }, { svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/></svg>, text: 'Binance derivatives data' }].map((item, i) => (
                   <motion.div key={i} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.6 + i * 0.1 }}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.7rem', borderRadius: '8px', background: 'rgba(0, 229, 255, 0.04)', border: '1px solid rgba(0, 229, 255, 0.08)' }}>
                     <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{item.svg}</span>
@@ -1938,6 +1942,22 @@ const Landing = () => {
                   <input type="checkbox" id="terms-checkbox" checked={formData.acceptedTerms || false} onChange={e => setFormData({ ...formData, acceptedTerms: e.target.checked })} required style={{ marginTop: '0.15rem', width: 'auto', minWidth: '16px', height: '16px', cursor: 'pointer', accentColor: '#00e5ff' }} />
                   <label htmlFor="terms-checkbox" style={{ fontSize: '0.75rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.35)', cursor: 'pointer' }}>
                     I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#00e5ff' }}>Terms</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#00e5ff' }}>Privacy Policy</a>
+                  </label>
+                </div>
+
+                {/* Age 18+ — LEGAL_AUDIT_2026-04-21.md A14 */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
+                  <input type="checkbox" id="over18-checkbox" checked={formData.over18 || false} onChange={e => setFormData({ ...formData, over18: e.target.checked })} required style={{ marginTop: '0.15rem', width: 'auto', minWidth: '16px', height: '16px', cursor: 'pointer', accentColor: '#00e5ff' }} />
+                  <label htmlFor="over18-checkbox" style={{ fontSize: '0.75rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.35)', cursor: 'pointer' }}>
+                    I confirm I am aged 18 or over.
+                  </label>
+                </div>
+
+                {/* Sanctions attestation — LEGAL_AUDIT_2026-04-21.md A14 */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
+                  <input type="checkbox" id="sanctions-checkbox" checked={formData.notSanctioned || false} onChange={e => setFormData({ ...formData, notSanctioned: e.target.checked })} required style={{ marginTop: '0.15rem', width: 'auto', minWidth: '16px', height: '16px', cursor: 'pointer', accentColor: '#00e5ff' }} />
+                  <label htmlFor="sanctions-checkbox" style={{ fontSize: '0.75rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.35)', cursor: 'pointer' }}>
+                    I confirm I am not located in a sanctioned jurisdiction (incl. Cuba, Iran, North Korea, Syria, Crimea, Donetsk, Luhansk, Russia or Belarus) and I am not on any sanctions list.
                   </label>
                 </div>
 

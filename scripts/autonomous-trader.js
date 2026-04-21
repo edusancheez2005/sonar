@@ -1,11 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * 🤖 AUTONOMOUS TRADING BOT
- * 
- * This script acts as an independent trader with £2,400 capital.
- * It makes its own decisions based on whale data, news, and price action.
- * Runs for 24 hours, checking every hour and updating positions.
+ * AUTONOMOUS TRADING BOT — INTERNAL PAPER-TRADING SIMULATION ONLY
+ * ----------------------------------------------------------------
+ * This script is an INTERNAL RESEARCH SIMULATION. It does NOT connect
+ * to any exchange, hold any custody of customer funds, place any real
+ * orders, or execute any transactions on behalf of any user. All
+ * "trades", "capital", "positions", "P&L" and "fees" referenced below
+ * are simulated against public CoinGecko price data for the sole
+ * purpose of evaluating signal hypotheses in a sandbox.
+ *
+ * It is NOT a product, NOT a service offered to users, and NOT
+ * investment advice. Outputs MUST NOT be published, redistributed,
+ * or used as the basis of any investment decision by any third party.
+ *
+ * See LEGAL_AUDIT_2026-04-21.md §1.E finding E5.
  */
 
 // Node 18+ has native fetch

@@ -89,6 +89,8 @@ const Footer = () => {
             <li><a href="/pricing" title="Pricing and subscription plans">Pricing</a></li>
             <li><a href="/terms" title="Terms of Service">Terms</a></li>
             <li><a href="/privacy" title="Privacy Policy">Privacy</a></li>
+            <li><a href="/legal/data-removal-request" title="Request removal of personal data">Data Removal Request</a></li>
+            <li><a href="/legal/dmca" title="DMCA copyright notice and counter-notice">DMCA</a></li>
           </ul>
         </Column>
       </FooterContent>
@@ -96,13 +98,20 @@ const Footer = () => {
         <div className="row">
           <p>&copy; 2026 Sonar. All rights reserved.</p>
           <nav>
-            <a href="/privacy">Privacy Policy</a>
-            <a href="/terms">Terms of Service</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+            <a href="/legal/data-removal-request">Data Removal</a>
+            <a href="/legal/dmca">DMCA</a>
             <a href="/faq">FAQ</a>
           </nav>
         </div>
-        <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', opacity: 0.6, textAlign: 'center', lineHeight: 1.6, maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto', marginTop: '1rem' }}>
-          Sonar Tracker provides on-chain data analysis and market intelligence for informational and educational purposes only. Nothing on this platform constitutes financial advice, investment recommendations, or a solicitation to buy, sell, or hold any cryptocurrency or financial instrument. Sonar is not authorised or regulated by the Financial Conduct Authority (FCA) or any other financial regulatory body. Cryptocurrency markets are highly volatile — you may lose some or all of your investment. Past performance of any signal, analysis, or data does not guarantee future results. Always conduct your own research and consult a qualified financial advisor before making investment decisions.
+        {/* Persistent global disclaimer block. See LEGAL_AUDIT_2026-04-21.md
+            §1.A findings A6, A7. Do not delete or shorten without legal sign-off. */}
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', opacity: 0.65, textAlign: 'center', lineHeight: 1.6, maxWidth: '900px', marginLeft: 'auto', marginRight: 'auto', marginTop: '1rem' }}>
+          <strong>Not financial advice.</strong> Sonar Tracker provides on-chain data analysis and market intelligence for informational and educational purposes only. Nothing on this platform constitutes financial, investment, legal, tax or accounting advice, a recommendation to buy, sell or hold any cryptoasset or financial instrument, or a solicitation. Sonar Tracker is not authorised or regulated by the UK Financial Conduct Authority (FCA), the US Securities and Exchange Commission (SEC), the Commodity Futures Trading Commission (CFTC), the EU European Securities and Markets Authority (ESMA), or any other financial regulatory body, and is not a registered investment adviser or broker-dealer. <strong>Cryptoassets are high-risk and largely unregulated; you can lose all of the money you invest.</strong> Past performance and historical signals do not guarantee future results. Always conduct your own research and consult a qualified, licensed financial adviser before making any investment decision.
+        </p>
+        <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.6, textAlign: 'center', lineHeight: 1.6, maxWidth: '900px', marginLeft: 'auto', marginRight: 'auto' }}>
+          <strong>Eligibility.</strong> The Sonar Tracker service is intended for users aged 18 or over. The service is <strong>not</strong> available to, and may not be accessed by, persons located in or ordinarily resident in jurisdictions subject to comprehensive sanctions administered by the US Office of Foreign Assets Control (OFAC), HM Treasury (UK) or the EU, including but not limited to Cuba, Iran, North Korea, Syria, the Crimea, Donetsk and Luhansk regions of Ukraine, and any jurisdiction added to the consolidated sanctions lists from time to time. By using this site you represent and warrant that you are not such a person.
         </p>
       </BottomBar>
     </FooterContainer>

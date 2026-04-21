@@ -165,6 +165,10 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    // De-indexed 2026-04-21 pending per-record source attribution + a
+    // working GDPR Art. 17 / right-of-publicity removal pathway. See
+    // LEGAL_AUDIT_2026-04-21.md §1.D findings D1, D2, D3.
+    robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
     alternates: { canonical },
     openGraph: {
       title,

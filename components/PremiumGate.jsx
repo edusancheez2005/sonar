@@ -8,12 +8,12 @@ const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'C
 const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
 
 const TEASERS = [
-  'See which whales are buying right now',
-  'Track smart money flows in real-time',
+  'See which whales are transacting right now',
+  'Track large-holder flows in real-time',
   'Galaxy Score, Alt Rank, social sentiment',
   '10 AI conversations per day with Orca',
   'Full whale transaction history + CSV export',
-  '$0.26/day for institutional-grade intelligence',
+  '$0.26/day for professional on-chain analytics',
 ]
 
 const GateWrapper = styled.div`

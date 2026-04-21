@@ -26,9 +26,9 @@ const faqSchema = {
   mainEntity: [
     { '@type': 'Question', name: 'What is a Bitcoin whale tracker?', acceptedAnswer: { '@type': 'Answer', text: 'A Bitcoin whale tracker monitors large BTC transactions on the Bitcoin blockchain in real-time. It identifies when major holders, miners, exchanges, and institutional wallets are moving Bitcoin — movements that historically precede significant BTC price changes.' } },
     { '@type': 'Question', name: 'Why is Bitcoin whale tracking different from other chains?', acceptedAnswer: { '@type': 'Answer', text: 'Bitcoin uses a UTXO (Unspent Transaction Output) model instead of accounts. This means one entity can control hundreds of addresses, making tracking more complex. Coin age analysis (how long BTC has been dormant) is a unique and powerful signal only available on Bitcoin.' } },
-    { '@type': 'Question', name: 'What are the most reliable Bitcoin whale signals?', acceptedAnswer: { '@type': 'Answer', text: 'Exchange flow direction is the most reliable. Sustained BTC outflows from exchanges (5+ days) are strongly bullish — holders are moving to self-custody. Sudden inflow spikes are reliably bearish. Miner selling patterns and dormant wallet movements are also high-conviction signals.' } },
-    { '@type': 'Question', name: 'Can I track Bitcoin miner wallet activity?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Sonar Tracker monitors miner wallet outflows to exchanges. Post-halving periods often see elevated miner selling as less-efficient operations wind down. Tracking miner capitulation events has historically helped identify local price bottoms.' } },
-    { '@type': 'Question', name: 'What happens when a dormant Bitcoin wallet moves?', acceptedAnswer: { '@type': 'Answer', text: 'When a long-dormant BTC wallet (5+ years inactive) suddenly transfers Bitcoin, the market often overreacts on sentiment alone. The actual impact depends on whether the BTC moves to an exchange (sell signal) or to a new cold wallet (reorganization). ORCA AI helps distinguish the intent.' } },
+    { '@type': 'Question', name: 'Which Bitcoin whale metrics does Sonar surface?', acceptedAnswer: { '@type': 'Answer', text: 'Sonar surfaces exchange flow direction (net inflows vs net outflows over 5+ days), miner wallet outflows to exchanges, and dormant wallet reactivations. These are descriptive on-chain observations, not trading recommendations. Past on-chain patterns do not guarantee future price movement.' } },
+    { '@type': 'Question', name: 'Can I track Bitcoin miner wallet activity?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Sonar Tracker monitors miner wallet outflows to exchanges. Post-halving periods often coincide with elevated miner outflows as less-efficient operations wind down. This is descriptive data; it does not predict price.' } },
+    { '@type': 'Question', name: 'What happens when a dormant Bitcoin wallet moves?', acceptedAnswer: { '@type': 'Answer', text: 'When a long-dormant BTC wallet (5+ years inactive) suddenly transfers Bitcoin, the destination address (exchange vs new cold wallet) is recorded. ORCA AI describes the on-chain context. This is informational only and not a recommendation to buy, sell, or hold any asset.' } },
   ]
 }
 
@@ -43,7 +43,7 @@ export default function BitcoinWhaleTrackerPage() {
         accentColor="#F7931A"
         secondaryColor="#FFD93D"
         heroTitle="Track Bitcoin Whale Movements in Real Time"
-        heroSubtitle="Monitor large BTC transactions, exchange flows, miner activity, and dormant wallet movements. ORCA AI explains what each whale move means for Bitcoin price."
+        heroSubtitle="Monitor large BTC transactions, exchange flows, miner activity, and dormant wallet movements. ORCA AI describes the on-chain context for each event. Informational only — not financial advice."
         stats={[
           { value: '#1', label: 'most tracked chain' },
           { value: 'UTXO', label: 'deep analysis' },
@@ -51,28 +51,28 @@ export default function BitcoinWhaleTrackerPage() {
           { value: 'ORCA AI', label: 'built-in' },
         ]}
         features={[
-          { icon: 'building', title: 'Exchange Flow Monitoring', desc: 'Track BTC flowing in and out of all major exchanges. Net exchange outflows are the most reliable bullish signal in crypto. Inflow spikes signal imminent selling.' },
-          { icon: 'pickaxe', title: 'Miner Activity Tracking', desc: 'Monitor miner wallet outflows to exchanges. Post-halving miner capitulation events historically mark local price bottoms — catch them in real time.' },
-          { icon: 'moon', title: 'Dormant Wallet Alerts', desc: 'Get flagged when long-dormant Bitcoin wallets (5+ years inactive) suddenly move BTC. ORCA AI distinguishes between reorganization and sell-intent.' },
-          { icon: 'cpu', title: 'ORCA AI for Bitcoin', desc: 'Ask ORCA about BTC-specific whale behavior: exchange reserves, miner selling rates, government wallet movements, and UTXO age distribution signals.' },
-          { icon: 'database', title: 'UTXO Age Analysis', desc: 'Track Coin Days Destroyed and HODL Waves metrics. When old coins move, it signals conviction shifts among long-term holders — a high-confidence indicator.' },
-          { icon: 'bell', title: 'Custom BTC Alerts', desc: 'Set alerts for BTC transactions above any threshold. Get notified when government wallets, miners, or dormant whales make moves.' },
+          { icon: 'building', title: 'Exchange Flow Monitoring', desc: 'Track BTC moving in and out of all major exchanges. Sonar reports net inflow / net outflow magnitudes — descriptive metrics, not trading instructions.' },
+          { icon: 'pickaxe', title: 'Miner Activity Tracking', desc: 'Monitor miner wallet outflows to exchanges. Sonar surfaces these flows in real time. Past miner-flow patterns do not predict future prices.' },
+          { icon: 'moon', title: 'Dormant Wallet Alerts', desc: 'Get flagged when long-dormant Bitcoin wallets (5+ years inactive) suddenly move BTC. ORCA AI describes the destination (exchange vs new cold wallet) — context only.' },
+          { icon: 'cpu', title: 'ORCA AI for Bitcoin', desc: 'Ask ORCA about BTC-specific on-chain data: exchange reserves, miner outflows, government wallet movements, and UTXO age distribution.' },
+          { icon: 'database', title: 'UTXO Age Analysis', desc: 'Track Coin Days Destroyed and HODL Waves metrics. Movement of long-dormant coins is a descriptive on-chain observation, not a directional indicator.' },
+          { icon: 'bell', title: 'Custom BTC Alerts', desc: 'Set alerts for BTC transactions above any threshold. Get notified when government wallets, miners, or dormant whales transact.' },
         ]}
         steps={[
           { title: 'Sonar monitors every BTC transaction over $10K', desc: 'Our pipeline captures Bitcoin whale movements across the UTXO model, tracking address clusters rather than individual accounts for accurate entity mapping.' },
-          { title: 'AI classifies intent behind each transaction', desc: 'Machine learning determines if BTC is moving to an exchange (sell signal), cold wallet (accumulation), or between wallets (neutral) — context that raw explorers miss.' },
-          { title: 'ORCA analyses exchange flows and coin age', desc: 'ORCA tracks exchange reserve trends, miner behavior, dormant wallet reactivations, and cross-references with macro events for complete BTC intelligence.' },
-          { title: 'You get signals hedge funds pay $10K+/month for', desc: 'The same exchange flow and whale data that institutional desks monitor — with AI interpretation, for $7.99/month.' },
+          { title: 'AI classifies the destination of each transaction', desc: 'Machine learning labels BTC movements by destination type: exchange deposit, withdrawal to cold wallet, or wallet-to-wallet transfer. These are factual classifications, not trading signals.' },
+          { title: 'ORCA describes exchange flows and coin age', desc: 'ORCA reports exchange reserve trends, miner outflows, dormant wallet reactivations, and macro context. Output is descriptive only.' },
+          { title: 'Professional-grade on-chain data at consumer pricing', desc: 'The same public exchange-flow and whale data many professional traders review — with AI summarisation, for $7.99/month. Informational only.' },
         ]}
         whyTrack={[
-          { title: 'Most Market-Moving Whale Activity', desc: 'A single large BTC transfer can move billions in market cap within hours. Government liquidations, institutional buys, and dormant wallet movements generate outsized price reactions.' },
-          { title: 'Exchange Reserves at Historic Lows', desc: 'BTC continuously leaving exchanges signals a supply squeeze. This metric has preceded every major Bitcoin rally in the past 5 years. Sonar tracks it in real time.' },
-          { title: 'Miner Behavior as a Cycle Indicator', desc: 'Post-halving miner capitulation (high selling + hashrate drops) marks local bottoms. Miner accumulation signals the start of bull phases. Sonar monitors both.' },
-          { title: 'Coin Age — Unique to Bitcoin', desc: 'Bitcoin\'s UTXO model uniquely allows tracking how long coins have been dormant. Old coins moving is a high-conviction signal no other chain can provide.' },
+          { title: 'Headline-Generating Whale Activity', desc: 'Large BTC transfers regularly generate news coverage. Government liquidations, treasury buys, and dormant wallet movements are reported here as data points.' },
+          { title: 'Exchange Reserves Are a Watched Metric', desc: 'Net BTC flowing off exchanges is one of the most-discussed on-chain metrics. Sonar surfaces it in real time. Past correlations do not guarantee future price moves.' },
+          { title: 'Miner Behavior as Context', desc: 'Miner outflow magnitudes and hashrate changes are reported. Historical patterns are educational context only — not predictive of future cycles.' },
+          { title: 'Coin Age — Unique to Bitcoin', desc: 'Bitcoin\'s UTXO model uniquely allows tracking how long coins have been dormant. Movement of old coins is a descriptive metric, not a buy or sell instruction.' },
         ]}
         comparisons={[
           { feature: 'Real-time BTC tracking', sonar: '✓', tool2: '✓', tool3: '✓' },
-          { feature: 'AI buy/sell classification', sonar: '✓', tool2: '✗', tool3: '✗' },
+          { feature: 'AI inflow/outflow classification', sonar: '✓', tool2: '✗', tool3: '✗' },
           { feature: 'AI analyst (ORCA)', sonar: '✓', tool2: '✗', tool3: '✗' },
           { feature: 'Exchange flow monitoring', sonar: '✓', tool2: '✓', tool3: 'Limited' },
           { feature: 'Miner activity tracking', sonar: '✓', tool2: '✓', tool3: '✗' },
@@ -82,10 +82,10 @@ export default function BitcoinWhaleTrackerPage() {
         compToolNames={['Glassnode', 'Mempool']}
         faqs={[
           { q: 'Why is Bitcoin whale tracking different from Ethereum?', a: 'Bitcoin\'s UTXO model means one entity can control hundreds of addresses. BTC lacks smart contracts, so whale behavior is buy/hold/sell rather than complex DeFi interactions. Exchange flow and coin age are the most reliable BTC-specific signals.' },
-          { q: 'What happens when a Satoshi-era wallet moves?', a: 'The market typically overreacts. Old-coin movements generate headlines and speculative selling even if the amount is small. ORCA AI helps distinguish between symbolic moves (50 BTC from 2009) and market-moving events (50,000 BTC government liquidation).' },
+          { q: 'What happens when a Satoshi-era wallet moves?', a: 'Old-coin movements typically generate news coverage regardless of the amount. ORCA AI describes the magnitude and destination of the transfer. Informational only — not a recommendation.' },
           { q: 'How does the halving affect whale behavior?', a: 'Halvings reduce miner revenue by 50%, increasing sell pressure as less-efficient operations wind down. Post-halving periods typically see 3-6 months of miner capitulation followed by supply reduction and price appreciation.' },
           { q: 'Can I track Bitcoin whale wallets for free?', a: 'Use blockchain.com or mempool.space for free individual address tracking. For aggregated whale intelligence with AI analysis, Sonar Pro at $7.99/month is the most cost-effective option.' },
-          { q: 'What is the most reliable Bitcoin whale signal?', a: 'Exchange flow direction — particularly sustained outflows (5+ days). When BTC consistently leaves exchanges, holders are moving to self-custody with no intent to sell. This has preceded every major BTC rally in the past 5 years.' },
+          { q: 'Which Bitcoin whale metric does Sonar emphasise?', a: 'Exchange flow direction — particularly sustained outflows (5+ days). Sonar surfaces this metric in real time. It is descriptive on-chain data; past correlations do not guarantee future price movements.' },
         ]}
         blogSlug="bitcoin-whale-tracker"
         demoTxs={[

@@ -7,14 +7,18 @@ import SubmitFigureButton from './SubmitFigureButton'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Public Figures | Sonar',
+  title: 'Figures | Sonar',
   description:
-    'Verified on-chain wallets of public figures: Vitalik Buterin, Michael Saylor, Donald Trump, MicroStrategy, El Salvador, and more. Follow them on Sonar.',
+    'Directory of public on-chain entities tracked on Sonar.',
+  // De-indexed 2026-04-21 pending per-record source attribution + a
+  // working GDPR Art. 17 / right-of-publicity removal pathway. See
+  // LEGAL_AUDIT_2026-04-21.md §1.D findings D1, D2, D3.
+  robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
   alternates: { canonical: 'https://www.sonartracker.io/figures' },
   openGraph: {
-    title: 'Public Figures | Sonar',
+    title: 'Figures | Sonar',
     description:
-      'Track whale moves of public people and institutions with verified on-chain addresses.',
+      'Directory of public on-chain entities tracked on Sonar.',
     url: 'https://www.sonartracker.io/figures',
     type: 'website',
   },

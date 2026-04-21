@@ -227,15 +227,19 @@ export default function TermsOfService() {
           <h2>4. Data and Information Disclaimer</h2>
           <h3>4.1 No Financial Advice</h3>
           <p>
-            <strong>The information provided by Sonar Tracker is for informational purposes only and does not constitute financial, investment, trading, or other types of advice.</strong> You should not treat any of the Service's content as such.
+            <strong>The information provided by Sonar Tracker is for informational purposes only and does not constitute financial, investment, trading, legal, tax or accounting advice.</strong> You should not treat any of the Service's content as such. Nothing on the Service is an offer, solicitation, recommendation, endorsement, or inducement to buy, sell, hold, or transact in any cryptoasset, security, derivative, or other financial instrument.
           </p>
-          <h3>4.2 Data Accuracy</h3>
+          <h3>4.2 Data Accuracy and Third-Party Sources</h3>
           <p>
-            While we strive to provide accurate and up-to-date information, we make no warranties or representations about the accuracy, completeness, or timeliness of the data provided. Blockchain data, market prices, and sentiment analysis may contain errors or delays.
+            The Service aggregates and analyses data sourced from public blockchains and from third-party providers including (without limitation) CoinGecko, CryptoPanic, LunarCrush, Supabase, Stripe, Vercel, xAI and OpenAI. <strong>We do not warrant that any data displayed on the Service is accurate, complete, current, or free from error or omission.</strong> Blockchain reorganisations, indexer lag, oracle failures, third-party API outages, mis-labelled wallets, mis-classified transactions, sentiment-model drift and AI hallucinations may all cause the Service to display data that is wrong. You acknowledge that you act on data displayed by the Service entirely at your own risk.
           </p>
-          <h3>4.3 Investment Risk</h3>
+          <h3>4.3 AI-Generated Output (ORCA, signals, summaries)</h3>
           <p>
-            Cryptocurrency trading and investment carry substantial risk of loss. You should conduct your own research and consult with qualified financial advisors before making any investment decisions. Past performance is not indicative of future results.
+            ORCA, the signal engine, sentiment scoring, news classification, transaction classification and any other features that use machine-learning models (collectively, the "<strong>AI Features</strong>") are <strong>experimental, probabilistic and frequently wrong</strong>. AI Features may produce outputs that are factually incorrect, internally inconsistent, biased, out-of-date, or fabricated ("hallucinated"). AI Features may produce different outputs for the same input. <strong>You must not rely on any AI Feature output as the sole or primary basis for any decision, financial or otherwise.</strong> AI Features are not a substitute for advice from a qualified, licensed professional. Sonar Tracker does not warrant that AI Feature outputs are fit for any particular purpose, and to the maximum extent permitted by law disclaims all liability arising from any use of, or reliance on, AI Feature outputs.
+          </p>
+          <h3>4.4 Investment Risk</h3>
+          <p>
+            Cryptoasset trading and investment carry a substantial risk of loss, including the total loss of capital. Cryptoassets are highly volatile and largely unregulated. You should conduct your own research and consult a qualified, licensed financial adviser before making any investment decision. Past performance, historical signals and back-tests are not indicative of future results.
           </p>
         </Section>
 
@@ -301,16 +305,72 @@ export default function TermsOfService() {
         >
           <h2>8. Limitation of Liability</h2>
           <p>
-            <strong>To the maximum extent permitted by law, Sonar Tracker shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses resulting from:</strong>
+            Nothing in these Terms excludes or limits any liability that cannot lawfully be excluded or limited, including (in the United Kingdom) liability for death or personal injury caused by negligence and liability for fraud or fraudulent misrepresentation.
+          </p>
+          <p>
+            <strong>Subject to the paragraph above, and to the maximum extent permitted by law, Sonar Tracker (and its officers, directors, employees, agents, suppliers and licensors) shall not be liable to you for any indirect, incidental, special, consequential, exemplary or punitive damages, or for any loss of profits, revenues, business, goodwill, opportunity, data or anticipated savings, whether incurred directly or indirectly, arising out of or in connection with:</strong>
           </p>
           <ul>
-            <li>Your use or inability to use the Service</li>
-            <li>Any unauthorized access to or use of our servers and/or any personal information stored therein</li>
-            <li>Any interruption or cessation of transmission to or from the Service</li>
-            <li>Any bugs, viruses, trojan horses, or the like that may be transmitted to or through the Service</li>
-            <li>Any errors or omissions in any content or for any loss or damage incurred as a result of your use of any content posted, emailed, transmitted, or otherwise made available through the Service</li>
-            <li>Any investment decisions made based on data or analysis provided by the Service</li>
+            <li>your use of, or inability to use, the Service;</li>
+            <li>any reliance placed by you on data, signals, AI Features, sentiment, news classifications, transaction classifications, watchlists or any other content displayed on the Service;</li>
+            <li>any investment, trading or financial decision you make, whether or not informed by the Service;</li>
+            <li>any unauthorised access to or use of our servers and/or any personal information stored on them;</li>
+            <li>any interruption, suspension or cessation of the Service;</li>
+            <li>any bugs, viruses, trojan horses or other harmful code that may be transmitted to or through the Service by any third party;</li>
+            <li>any errors or omissions in any content, or any loss or damage incurred as a result of your use of any content posted, transmitted or otherwise made available through the Service;</li>
+            <li>any act or omission of any third-party data provider, AI provider, payment processor, hosting provider, exchange, blockchain, oracle, or other third party.</li>
           </ul>
+          <h3>8.1 Aggregate Cap</h3>
+          <p>
+            <strong>Without prejudice to the exclusions above, our total aggregate liability to you in connection with the Service, whether in contract, tort (including negligence), breach of statutory duty or otherwise, shall in no event exceed the greater of (a) the total amount of subscription fees actually paid by you to Sonar Tracker in the twelve (12) months immediately preceding the event giving rise to the claim, and (b) one hundred British Pounds (£100).</strong> This cap is an essential element of the basis of the bargain between you and Sonar Tracker; the Service would not be made available to you on the same terms without it.
+          </p>
+          <h3>8.2 Free Tier</h3>
+          <p>
+            If you use the Service without paying any subscription fee, our total aggregate liability to you shall in no event exceed one hundred British Pounds (£100).
+          </p>
+        </Section>
+
+        <Section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.85, duration: 0.5 }}
+        >
+          <h2>8A. Indemnification</h2>
+          <p>
+            <strong>To the maximum extent permitted by law, you agree to indemnify, defend and hold harmless Sonar Tracker and its officers, directors, employees, agents, suppliers and licensors from and against any and all claims, liabilities, damages, losses, costs and expenses (including reasonable legal fees) arising out of or in any way connected with:</strong>
+          </p>
+          <ul>
+            <li>your access to or use of the Service;</li>
+            <li>your violation of these Terms;</li>
+            <li>your violation of any third-party right, including any intellectual property right, publicity right, confidentiality right, property right or privacy right;</li>
+            <li>any investment, trading or financial decision you make, whether or not informed by the Service, and any loss of capital you suffer in connection with any such decision;</li>
+            <li>your use of any AI Feature output, including any republication, redistribution or onward reliance by any third party;</li>
+            <li>your breach of applicable law, including securities, commodities, anti-money-laundering, counter-terrorist-financing, sanctions or tax laws.</li>
+          </ul>
+          <p>
+            We reserve the right, at our own expense, to assume the exclusive defence and control of any matter otherwise subject to indemnification by you, in which case you will cooperate with our defence of that matter.
+          </p>
+        </Section>
+
+        <Section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.88, duration: 0.5 }}
+        >
+          <h2>8B. Eligibility and Sanctions</h2>
+          <p>
+            By accessing or using the Service you represent and warrant that:
+          </p>
+          <ul>
+            <li>you are at least 18 years old and have the legal capacity to enter into binding contracts in your jurisdiction;</li>
+            <li>you are not located in, ordinarily resident in, or a national of any jurisdiction subject to comprehensive sanctions administered by the US Office of Foreign Assets Control (OFAC), HM Treasury (UK), the European Union or the United Nations Security Council, including (without limitation) Cuba, Iran, North Korea, Syria, the Crimea, Donetsk and Luhansk regions of Ukraine, the Russian Federation and Belarus;</li>
+            <li>you are not listed on the OFAC Specially Designated Nationals and Blocked Persons List, the UK HM Treasury Consolidated List of Financial Sanctions Targets, the EU Consolidated List of Sanctions, or any equivalent list maintained by any government or supranational body;</li>
+            <li>your use of the Service does not violate any applicable law or regulation in your jurisdiction;</li>
+            <li>you will not use the Service to facilitate any unlawful activity, including money laundering, terrorist financing, market manipulation, insider dealing, or tax evasion.</li>
+          </ul>
+          <p>
+            We may refuse, suspend or terminate access to the Service at any time, without notice, on the basis of any actual or suspected violation of this Section 8B.
+          </p>
         </Section>
 
         <Section
@@ -371,12 +431,40 @@ export default function TermsOfService() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.5 }}
         >
-          <h2>12. Governing Law</h2>
+          <h2>12. Governing Law and Dispute Resolution</h2>
+          <h3>12.1 Governing Law</h3>
           <p>
-            These Terms shall be governed and construed in accordance with the laws of England and Wales, without regard to its conflict of law provisions.
+            These Terms, and any dispute or claim (including non-contractual disputes or claims) arising out of or in connection with them or their subject matter or formation, shall be governed by and construed in accordance with the laws of England and Wales, without regard to its conflict-of-law principles. The United Nations Convention on Contracts for the International Sale of Goods does not apply to these Terms.
+          </p>
+          <h3>12.2 Informal Resolution</h3>
+          <p>
+            Before filing a claim against Sonar Tracker, you agree to try to resolve the dispute informally by contacting <a href="mailto:legal@sonartracker.io" style={{ color: 'var(--primary)' }}>legal@sonartracker.io</a> with a written description of your claim and the relief you seek. We will try to resolve the dispute informally within sixty (60) days of receiving your notice. If we cannot resolve the dispute within that period, either party may bring a formal proceeding.
+          </p>
+          <h3>12.3 Exclusive Jurisdiction</h3>
+          <p>
+            Subject to Section 12.2, you and Sonar Tracker irrevocably agree that the courts of England and Wales shall have <strong>exclusive jurisdiction</strong> to settle any dispute or claim (including non-contractual disputes or claims) arising out of or in connection with these Terms or their subject matter or formation. Nothing in this Section 12.3 limits any non-waivable right that a consumer resident in the European Union may have to bring proceedings in the courts of their country of habitual residence under Article 18 of Regulation (EU) No 1215/2012.
+          </p>
+          <h3>12.4 Class Action Waiver (where lawful)</h3>
+          <p>
+            <strong>To the extent permitted by applicable law, you agree that any dispute resolution proceedings will be conducted only on an individual basis and not in a class, consolidated or representative action.</strong> If for any reason a claim proceeds in court rather than as an individual proceeding, you and Sonar Tracker each waive any right to a jury trial. This Section 12.4 does not apply where it is prohibited by law (including the laws of England and Wales as they apply to consumers).
+          </p>
+          <h3>12.5 Time Bar</h3>
+          <p>
+            Any claim against Sonar Tracker arising out of or relating to the Service or these Terms must be commenced within one (1) year after the cause of action accrues, except where a longer period is required by mandatory applicable law. After such period, the claim is permanently barred.
+          </p>
+        </Section>
+
+        <Section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.25, duration: 0.5 }}
+        >
+          <h2>12A. Severability and Entire Agreement</h2>
+          <p>
+            If any provision of these Terms is held to be invalid, illegal or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect, and the invalid, illegal or unenforceable provision shall be modified to the minimum extent necessary to make it valid, legal and enforceable while preserving the parties' original intent. These Terms, together with the Privacy Policy and any other policies referenced in them, constitute the entire agreement between you and Sonar Tracker concerning the Service and supersede all prior or contemporaneous communications, whether electronic, oral or written.
           </p>
           <p>
-            Any disputes arising from these Terms or the Service shall be subject to the exclusive jurisdiction of the courts of England and Wales.
+            No failure or delay by Sonar Tracker in exercising any right under these Terms shall operate as a waiver of that right.
           </p>
         </Section>
 
@@ -394,7 +482,7 @@ export default function TermsOfService() {
           </p>
         </Section>
 
-        <LastUpdated>Last Updated: March 19, 2026</LastUpdated>
+        <LastUpdated>Last Updated: April 21, 2026</LastUpdated>
       </Content>
     </PageContainer>
   )

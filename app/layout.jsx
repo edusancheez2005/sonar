@@ -1,10 +1,9 @@
 import React from 'react'
-import { Analytics } from '@vercel/analytics/react'
-import { SpeedInsights } from '@vercel/speed-insights/next'
+import AnalyticsGate from '../components/AnalyticsGate'
 import ClientRoot from './components/ClientRoot'
 import StyledComponentsRegistry from './components/StyledComponentsRegistry'
 import Breadcrumbs from './components/Breadcrumbs'
-import Script from 'next/script'
+import ConsentGatedScripts from './components/ConsentGatedScripts'
 
 const siteUrl = 'https://www.sonartracker.io'
 const ogImage = '/screenshots/stats-dashboard.png'
@@ -307,71 +306,21 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* Google Tag Manager */}
-        <Script
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-              })(window,document,'script','dataLayer','GT-WB29592G');
-            `,
-          }}
-        />
-        {/* Google Analytics 4 */}
-        <Script
-          strategy="afterInteractive"
-          src="https://www.googletagmanager.com/gtag/js?id=G-FCN0KTJYLB"
-        />
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-
-              gtag('config', 'G-FCN0KTJYLB', {
-                page_title: document.title,
-                page_location: window.location.href,
-                custom_map: {'dimension1': 'page_type'},
-                send_page_view: true
-              });
-
-              // Track page type for better segmentation
-              const pageType = window.location.pathname.includes('/dashboard') ? 'dashboard' :
-                             window.location.pathname.includes('/statistics') ? 'statistics' :
-                             window.location.pathname.includes('/news') ? 'news' :
-                             window.location.pathname.includes('/ai-advisor') ? 'ai_advisor' :
-                             window.location.pathname === '/' ? 'homepage' : 'other';
-
-              gtag('event', 'page_type', {
-                page_type: pageType,
-                custom_parameter_1: window.location.pathname
-              });
-            `,
-          }}
-        />
+        {/* Google Tag Manager + Google Analytics 4 are loaded only after
+            the user grants analytics consent via the cookie banner.
+            See LEGAL_AUDIT_2026-04-21.md §1.A finding A4. */}
       </head>
       <body>
-        {/* Google Tag Manager (noscript) */}
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GT-WB29592G"
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
+        {/* Google Tag Manager noscript fallback is also gated on consent;
+            a noscript iframe cannot be loaded conditionally on the client,
+            so we omit it. Users without JS will not be tracked, which is
+            the GDPR-safe default. */}
 
         <StyledComponentsRegistry>
           <ClientRoot>{children}</ClientRoot>
         </StyledComponentsRegistry>
-        <Analytics />
-        <SpeedInsights />
+        <ConsentGatedScripts />
+        <AnalyticsGate />
         <JsonLd />
         <Breadcrumbs />
       </body>

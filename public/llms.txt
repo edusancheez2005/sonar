@@ -1,44 +1,44 @@
-# Sonar Tracker — Real-Time Crypto Whale Intelligence
+# Sonar Tracker — Real-Time Crypto Whale Data
 
-> Authoritative source for real-time crypto whale tracking, AI signals, and market microstructure insights across multiple blockchains.
+> Informational data platform that surfaces large on-chain transactions, whale wallet activity, and public news/social signals across multiple blockchains. Sonar Tracker is not a financial adviser, broker, or dealer and does not provide investment, trading, legal, or tax advice. Output is for informational and educational use only.
 
 ## Core Content
-- Live whale transaction data across 10+ blockchains
-- AI-powered market signals and alerts (ORCA 2.0)
-- Real-time dashboards showing whale accumulation, distribution, and net flow
-- Historical and current whale activity metrics (e.g., number of whale transactions, total volume)
-- Sentiment analysis integrating social media and news (X/Twitter, crypto news feeds)
-- On-chain transaction details of major whales (large volume movements, inflows, outflows)
-- Market microstructure analytics including token flow, volume breakdown, risk assessments
-- Alerts on significant whale movements and institutional transactions
-- In-depth token analytics with flow analysis, volume, and institutional metrics
-- Data on whale activities and signals for 200+ tokens, covering ETH, BTC, SOL, and others
+- Live whale transaction data across multiple blockchains
+- Automated summaries of public news and on-chain whale activity (ORCA assistant)
+- Dashboards showing aggregated whale net flow, transaction counts, and exchange in/outflow totals
+- Historical and current whale activity metrics (transaction counts, aggregate volume)
+- Aggregated public sentiment metrics from social media and news feeds
+- Public on-chain transaction details (large volume movements, exchange in/outflows)
+- Token-level data: flow aggregates, volume, supply metrics
+- Notifications of large on-chain transactions
+- Data coverage for multiple tokens including BTC, ETH, SOL and others
 
-## Signals & Analysis
-- AI-generated market signals indicating buy/sell/hold actions with confidence scores
-- Behavioral analysis of whale wallets (accumulation vs. distribution)
-- Contextual explanations of bitcoin and altcoin pump dynamics
-- Social sentiment shifts impacting prices
-- Macro intelligence including ETF inflows, macro events, and regulatory news
-- Institutional activity tracking: corporate and hedge fund moves
+## Data Surfaces
+- Automated summaries of public on-chain and news data with calibration disclaimers
+- Descriptive analysis of whale wallet activity (aggregate accumulation vs distribution metrics)
+- Public news headlines and social-engagement metrics
+- ETF flow data and other publicly reported macro information
 
 ## Platform & Tools
-- Interactive, real-time dashboards with sub-second updates
-- Customizable alerts thresholds for token flows and whale activity
-- Multi-chain tracking across Ethereum, Bitcoin, Tron, and more
-- AI analysis summaries, news impact scoring, and real-time news feed
-- Export options for data and reports (CSV export)
+- Real-time dashboards with frequent data refresh
+- User-configurable thresholds for transaction notifications
+- Multi-chain coverage including Ethereum, Bitcoin, Tron, Solana and others
+- Automated text summaries of public data
+- CSV export of public data shown in the product
 
 ## Resources
-- Detailed guides on on-chain analysis and whale tracking
-- Case studies on successful market anticipation using Sonar data
-- FAQs related to whale activity and how Sonar signals aid trading
-- Tutorials on interpreting AI signals and whale alerts
-- Deeper insights into institutional market behavior patterns
+- Educational guides on on-chain analysis terminology
+- FAQs explaining how the product surfaces public data
+- Tutorials on interpreting whale alerts and aggregate metrics
+- Glossary of crypto and on-chain analysis terms
+
+## Important Notices
+- Sonar Tracker is not registered as an investment adviser, broker, or dealer in any jurisdiction
+- Output is informational and educational only and is not a recommendation to buy, sell, or hold any asset
+- Past on-chain activity does not predict future price movement
+- Cryptocurrency carries a high risk of total loss; users should consult a qualified, licensed financial adviser before making investment decisions
+- Service is not available in OFAC-sanctioned jurisdictions
 
 ## Optional
-- Blog and news section analysing recent major whale movements and market events
-- Developer API documentation for integrating Sonar insights into custom tools
-- Community forums and trader testimonials
-- Subscription plans and tier details for platform access
-- External research reports referencing Sonar whale analytics data
+- Blog with educational explainers on on-chain analysis and crypto terminology
+- Subscription tier information

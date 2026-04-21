@@ -53,8 +53,8 @@ Bing also feeds DuckDuckGo, Yahoo, and ChatGPT search results.
 
 **Name:** Sonar Tracker
 **Tagline:** AI Crypto Whale Tracker — Real-time On-Chain Intelligence
-**Short description (160 chars):** Track crypto whale wallets in real-time across Bitcoin, Ethereum, Solana. AI-powered signals, sentiment analysis, and alerts from $7.99/mo.
-**Long description (500 chars):** Sonar Tracker is the AI-powered crypto whale tracking platform built for traders who want institutional-grade on-chain intelligence at retail prices. Track whale wallets in real-time across Bitcoin, Ethereum, Solana, and 10+ chains. Get AI-generated buy/sell signals, sentiment analysis, customizable alerts, and access ORCA — our AI crypto analyst that translates blockchain data into plain-English trading insights. Free tier available. Premium from $7.99/mo (vs $150+ for Nansen).
+**Short description (160 chars):** Track crypto whale wallets in real-time across Bitcoin, Ethereum, Solana. AI on-chain analysis, sentiment, and alerts from $7.99/mo. Informational only.
+**Long description (500 chars):** Sonar Tracker is the AI-powered crypto whale tracking platform built for users who want professional on-chain analytics at retail prices. Track whale wallets in real-time across Bitcoin, Ethereum, Solana, and 10+ chains. Get AI-generated inflow/outflow classification, sentiment analysis, customizable alerts, and access ORCA — our AI on-chain data summarisation tool that translates blockchain data into plain English. Free tier available. Premium from $7.99/mo (vs $150+ for Nansen). Informational only — not financial advice.
 
 **Logo URL:** https://www.sonartracker.io/logo2.png
 **Screenshot URL:** https://www.sonartracker.io/screenshots/stats-dashboard.png

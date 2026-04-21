@@ -347,14 +347,11 @@ const SubscribeButton = styled.button`
 `
 
 const posts = [
-  {
-    slug: 'whale-alert-alternative',
-    title: 'Whale Alert Alternative 2026: Best Crypto Whale Tracking Tools Compared',
-    summary: 'Looking for a Whale Alert alternative? We compare 8 whale tracking tools — Nansen, Arkham, Sonar Tracker, and more — by features, pricing, and AI capabilities.',
-    readTime: '12 min read',
-    category: 'Comparison',
-    date: 'Apr 4, 2026'
-  },
+  // Pulled 2026-04-21 pending legal review (Lanham Act §43(a) trademark + false-advertising risk).
+  // See LEGAL_AUDIT_2026-04-21.md §1.C. Do not re-add without counsel sign-off.
+  // Removed slugs: 'whale-alert-alternative', 'nansen-vs-sonar-tracker',
+  // 'best-crypto-whale-tracking-tools-2026', 'arkham-vs-sonar-tracker',
+  // 'glassnode-vs-sonar'.
   {
     slug: 'how-to-track-crypto-whales',
     title: 'How to Track Crypto Whale Movements: Complete 2026 Guide',
@@ -404,22 +401,6 @@ const posts = [
     date: 'Apr 4, 2026'
   },
   {
-    slug: 'nansen-vs-sonar-tracker',
-    title: 'Nansen vs Sonar Tracker: Full Comparison for 2026',
-    summary: 'Feature-by-feature breakdown of Nansen ($150+/mo) vs Sonar Tracker ($7.99/mo). Same institutional data, fraction of the cost.',
-    readTime: '10 min read',
-    category: 'Comparison',
-    date: 'Feb 24, 2026'
-  },
-  {
-    slug: 'best-crypto-whale-tracking-tools-2026',
-    title: 'Best Crypto Whale Tracking Tools Compared: 2026 Rankings',
-    summary: 'We tested every major whale tracking platform — Nansen, Arkham, Whale Alert, DeBank, Santiment, and more. Here are the results.',
-    readTime: '12 min read',
-    category: 'Comparison',
-    date: 'Feb 22, 2026'
-  },
-  {
     slug: 'how-to-track-whale-wallets',
     title: 'How to Track Whale Wallets: Step-by-Step for Beginners',
     summary: 'A complete tutorial on finding, following, and interpreting crypto whale wallet activity using free and paid tools.',
@@ -438,7 +419,7 @@ const posts = [
   {
     slug: 'how-ai-changing-crypto-trading',
     title: 'How AI Is Revolutionizing Crypto Trading in 2026',
-    summary: 'From whale pattern recognition to sentiment analysis — how AI tools like ORCA are giving traders an unprecedented edge.',
+    summary: 'From whale pattern recognition to sentiment analysis — how AI tools like ORCA help users summarise on-chain data faster. Informational only.',
     readTime: '8 min read',
     category: 'AI & Technology',
     date: 'Feb 16, 2026'
@@ -450,14 +431,6 @@ const posts = [
     readTime: '10 min read',
     category: 'Basics',
     date: 'Feb 14, 2026'
-  },
-  {
-    slug: 'arkham-vs-sonar-tracker',
-    title: 'Arkham Intelligence vs Sonar Tracker: Which Is Better?',
-    summary: 'Detailed comparison of two popular on-chain analytics platforms. Features, pricing, AI capabilities, and user experience.',
-    readTime: '9 min read',
-    category: 'Comparison',
-    date: 'Feb 12, 2026'
   },
   {
     slug: 'free-crypto-analytics-tools-2026',
@@ -540,14 +513,6 @@ const posts = [
     date: 'Jan 22, 2026'
   },
   {
-    slug: 'glassnode-vs-sonar',
-    title: 'Glassnode vs Sonar: On-Chain Analytics Compared',
-    summary: 'Glassnode focuses on Bitcoin metrics. Sonar covers multi-chain whale tracking with AI. Which is right for your trading style?',
-    readTime: '8 min read',
-    category: 'Comparison',
-    date: 'Jan 20, 2026'
-  },
-  {
     slug: 'custom-whale-alerts-setup',
     title: 'How to Set Up Custom Whale Alerts (5 Configs That Work)',
     summary: 'Five proven whale alert configurations for different trading styles: day trading, swing trading, DeFi farming, and more.',
@@ -590,7 +555,7 @@ const posts = [
   { 
     slug: 'what-is-whale-tracking', 
     title: 'What is Whale Tracking? How It Works and Why It Matters', 
-    summary: 'Understand how whale tracking reveals large on‑chain moves and how traders use it for edge.',
+    summary: 'Understand how whale tracking surfaces large on‑chain moves and how users review the data themselves. Informational only — not financial advice.',
     readTime: '5 min read',
     category: 'Basics',
     date: 'Aug 15, 2025'

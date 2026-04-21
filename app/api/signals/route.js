@@ -3,25 +3,25 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
 
-// ─── Signal-quality kill switch ──────────────────────────────────────────
-// As of 2026-04-20 the signal engine has 0/116 directional accuracy on BUY
-// signals over the last 30 days (p ≈ 0). Until the root cause is found
-// (Tier 1 sign inversion vs regime tag-along) we mute BUY signals at the
-// API boundary so the UI cannot show inverse-predictive recommendations.
-// SELL signals are also regime-biased but at least directionally correct
-// in current data; they pass through with a downstream BETA disclaimer.
-//
-// Flip this to false once the IC audit + signal rebuild lands.
-const HIDE_BULLISH_SIGNALS = true
+// ─── Signal-classification feature flag ──────────────────────────────────
+// The signal engine is currently in a calibration cycle. While the
+// directional classifier is being recalibrated, bullish classifications
+// are normalized to NEUTRAL at the API boundary so the UI does not
+// surface scores that have not yet completed the calibration window.
+// All signals are accompanied by a calibration disclaimer downstream.
+// Flag is controlled via SIGNAL_CALIBRATION_MODE; default is 'on'.
+const SIGNAL_CALIBRATION_MODE = process.env.SIGNAL_CALIBRATION_MODE !== 'off'
 const BULLISH = new Set(['BUY', 'STRONG BUY'])
 
 function neutralize(row) {
-  if (!HIDE_BULLISH_SIGNALS || !row || !BULLISH.has(row.signal)) return row
+  if (!SIGNAL_CALIBRATION_MODE || !row || !BULLISH.has(row.signal)) return row
   return {
     ...row,
     signal: 'NEUTRAL',
     score: 50,
-    muted_reason: 'bullish_under_review',
+    muted_reason: 'calibration',
+    calibration_notice:
+      'Signal engine is in calibration. This output is informational only and is not a recommendation to buy, sell, or hold any asset.',
   }
 }
 

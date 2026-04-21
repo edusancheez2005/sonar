@@ -33,3 +33,9 @@ DASHBOARD_V2_PROMPT*
 brevo-*.yaml
 brevo/
 .env*.local
+
+# Legal remediation backups (kept local only)
+*.pre-remediation-backup
+.claude/
+LEGAL_AUDIT_*.md
+

@@ -228,9 +228,31 @@ export default function BacktestPage() {
         <Container>
           <Title>🧪 Signal Validation Backtest</Title>
           <Subtitle>
-            Test if our Bullish/Bearish signals are profitable. This algorithm simulates £100 trades for each signal over 24 hours,
-            tracking real price movements and calculating total P&L with fees and slippage.
+            Historical pattern analysis. The algorithm simulates £100 trades at each historical signal over the chosen window using
+            recorded price data, applying configurable taker-fee and slippage assumptions. Results are educational, not a forecast.
           </Subtitle>
+
+          <div style={{
+            margin: '0 0 1.5rem 0',
+            padding: '1rem 1.25rem',
+            border: '1px solid rgba(255,171,0,0.45)',
+            background: 'rgba(255,171,0,0.08)',
+            borderRadius: '10px',
+            color: '#e8edf2',
+            fontSize: '0.85rem',
+            lineHeight: 1.55,
+          }}>
+            <strong style={{ color: '#ffab00', display: 'block', marginBottom: '0.4rem' }}>
+              ⚠️ Past Performance Disclaimer (FCA COBS 4.6 / SEC Marketing Rule 206(4)-1)
+            </strong>
+            Backtested returns shown below are <strong>simulated, not real</strong>. They are computed by replaying the signal engine
+            against historical price data within the time window, allocation, taker-fee (bps), and slippage (bps) you configured.
+            They do <strong>not</strong> account for: live execution latency, partial fills, market halts, depth limits, funding rates,
+            tax, withdrawals, or regulatory changes. Per-token / per-window cells with a small sample size (n &lt; 30) are
+            statistically unreliable and should be treated as noise, not skill. <strong>Past performance does not guarantee future
+            results.</strong> Nothing on this page is a recommendation to buy, sell, or hold any asset, and Sonar Tracker is not a
+            registered investment adviser, broker, or dealer in any jurisdiction.
+          </div>
 
           <ConfigCard>
             <h3 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>Configuration</h3>

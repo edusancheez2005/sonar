@@ -12,6 +12,27 @@ const NAME_LIMIT = 120
 const SLUG_LIMIT = 60
 const MAX_ADDRESSES = 20
 
+// Strip ALL HTML/script tags and control characters from user-submitted free text.
+// Submissions are reviewed by a human moderator before publication; this is a
+// defence-in-depth measure to ensure that even reviewer eyes never see
+// rendered markup, and that nothing is ever rendered as HTML downstream.
+function sanitizeFreeText(s) {
+  return String(s || '')
+    // strip tags
+    .replace(/<[^>]*>/g, '')
+    // strip control chars except \n, \r, \t
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    // collapse runs of whitespace
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// At least one absolute http(s) URL must appear in the proof so a moderator
+// can verify the claim. Defamation risk is highest for unsourced assertions.
+function proofHasSourceUrl(s) {
+  return /https?:\/\/[\w.-]+\.[a-z]{2,}(\/\S*)?/i.test(String(s || ''))
+}
+
 async function getUserFromRequest(req) {
   const authHeader = req.headers.get('authorization')
   if (!authHeader) return null
@@ -42,10 +63,10 @@ function validateAddress(entry) {
 function validateBody(body) {
   if (!body || typeof body !== 'object') return 'Invalid JSON body'
   const slug = String(body.slug || '').trim()
-  const display_name = String(body.display_name || '').trim()
-  const description = String(body.description || '').trim()
+  const display_name = sanitizeFreeText(body.display_name)
+  const description = sanitizeFreeText(body.description)
   const category = String(body.category || '').trim().toLowerCase()
-  const proof = String(body.submission_proof || '').trim()
+  const proof = sanitizeFreeText(body.submission_proof)
   const addresses = Array.isArray(body.addresses) ? body.addresses : []
 
   if (!display_name) return 'display_name is required'
@@ -60,6 +81,9 @@ function validateBody(body) {
   }
   if (!proof) return 'submission_proof is required'
   if (proof.length > PROOF_LIMIT) return `submission_proof must be ≤ ${PROOF_LIMIT} chars`
+  if (!proofHasSourceUrl(proof)) {
+    return 'submission_proof must contain at least one source URL (http:// or https://) so a moderator can verify the claim'
+  }
   if (addresses.length === 0) return 'at least one address is required'
   if (addresses.length > MAX_ADDRESSES) return `max ${MAX_ADDRESSES} addresses per submission`
   for (const a of addresses) {
@@ -108,20 +132,28 @@ export async function POST(req) {
 
   const row = {
     slug,
-    display_name: String(body.display_name).trim(),
-    description: String(body.description).trim(),
+    display_name: sanitizeFreeText(body.display_name),
+    description: sanitizeFreeText(body.description),
     category: String(body.category).trim().toLowerCase(),
     twitter_handle: (() => {
       const t = String(body.twitter_handle || '').trim().replace(/^@+/, '')
-      return t || null
+      // Twitter handles: 1–15 alphanumerics + underscore. Reject anything else
+      // outright rather than silently storing garbage.
+      if (!t) return null
+      if (!/^[A-Za-z0-9_]{1,15}$/.test(t)) return null
+      return t
     })(),
     addresses: body.addresses.map((a) => ({
       address: String(a.address).trim(),
       chain: String(a.chain).trim().toLowerCase(),
-      note: a.note ? String(a.note).trim() : null,
+      note: a.note ? sanitizeFreeText(a.note).slice(0, 200) : null,
     })),
-    submission_proof: String(body.submission_proof).trim(),
+    submission_proof: sanitizeFreeText(body.submission_proof),
     submitted_by: user.id,
+    // ALWAYS pending. Approved profiles become Google-indexed; the defamation
+    // and right-of-publicity risk of auto-publishing user-submitted profiles
+    // about real third parties is unacceptable. A human moderator must
+    // approve every row from the admin dashboard before it goes public.
     submission_status: 'pending',
     is_featured: false,
     avatar_url: null,

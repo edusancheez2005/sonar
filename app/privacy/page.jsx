@@ -188,6 +188,21 @@ export default function PrivacyPolicy() {
             <li><strong>Legal Compliance:</strong> To comply with applicable laws and regulations</li>
             <li><strong>Analytics:</strong> To analyze trends, track user behavior, and generate statistical insights</li>
           </ul>
+
+          <h3>3.1 Legal Basis for Processing (UK GDPR / EU GDPR Article 6)</h3>
+          <p>
+            Where the UK GDPR or the EU GDPR applies to our processing of your personal data, we rely on the following legal bases:
+          </p>
+          <ul>
+            <li><strong>Performance of a contract (Art. 6(1)(b)):</strong> to create and operate your account, deliver the Service you have subscribed to, and process payments. Without this data we cannot provide the Service.</li>
+            <li><strong>Legitimate interests (Art. 6(1)(f)):</strong> to secure the Service against fraud and abuse, to debug and improve the Service, to maintain audit logs, and to send you transactional service communications. We have assessed that these interests are not overridden by your fundamental rights.</li>
+            <li><strong>Consent (Art. 6(1)(a)):</strong> for non-essential cookies, web analytics (Vercel Web Analytics, Google Analytics), marketing emails (where required by PECR / ePrivacy Directive), and any optional features you opt into. You may withdraw consent at any time without affecting the lawfulness of processing carried out before withdrawal.</li>
+            <li><strong>Legal obligation (Art. 6(1)(c)):</strong> to retain transaction records for tax, accounting and anti-money-laundering purposes, and to respond to lawful requests from regulators, courts and law-enforcement authorities.</li>
+            <li><strong>Vital interests / public interest (Art. 6(1)(d)/(e)):</strong> not generally relied upon, but may apply in exceptional cases (e.g. responding to a safeguarding emergency).</li>
+          </ul>
+          <p>
+            We do not knowingly process special-category personal data (UK GDPR Art. 9), data revealing criminal convictions or offences (Art. 10), or data of children under 18.
+          </p>
         </Section>
 
         <Section
@@ -336,19 +351,25 @@ export default function PrivacyPolicy() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9, duration: 0.5 }}
         >
-          <h2>9. Third-Party Services</h2>
-          <p>Our Service integrates with third-party services that have their own privacy policies:</p>
+          <h2>9. Third-Party Services and Sub-Processors</h2>
+          <p>
+            We use the following third-party processors and sub-processors to operate the Service. Each is bound by a written data-processing agreement that imposes UK GDPR / EU GDPR Article 28 obligations on the sub-processor, including confidentiality, security, sub-processing controls, audit rights and assistance with data-subject requests. Where personal data is transferred outside the UK / EEA, the safeguards described in Section 11 apply.
+          </p>
           <ul>
-            <li><strong>Supabase:</strong> Authentication and database services - <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>Stripe:</strong> Payment processing - <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>Vercel:</strong> Hosting, deployment, and analytics - <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>CoinGecko:</strong> Cryptocurrency market data - <a href="https://www.coingecko.com/en/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>CryptoPanic:</strong> Cryptocurrency news - <a href="https://cryptopanic.com/about/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>xAI (Grok):</strong> AI inference for ORCA data analysis - <a href="https://x.ai/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>OpenAI:</strong> Fallback AI inference when primary provider is unavailable - <a href="https://openai.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>LunarCrush:</strong> Social sentiment and engagement metrics for cryptocurrency tokens - <a href="https://lunarcrush.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
-            <li><strong>Brevo:</strong> Email delivery for onboarding sequences and notifications - <a href="https://www.brevo.com/legal/privacypolicy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>Supabase Inc.</strong> (USA / EU regions) — authentication, user database, Postgres hosting, file storage. Data categories: account credentials, profile data, watchlists, votes, chat history. <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>Vercel Inc.</strong> (USA, edge network global) — hosting, deployment, web analytics, speed insights. Data categories: IP address, request metadata, anonymous pageview events. <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>Stripe, Inc.</strong> (USA / Ireland) — payment processing, subscription management, fraud prevention. Data categories: payment card details (PCI-DSS scoped), billing address, transaction metadata. <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>Brevo SAS</strong> (France, EU) — transactional and marketing email delivery. Data categories: email address, name, engagement events. <a href="https://www.brevo.com/legal/privacypolicy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>xAI Corp.</strong> (USA) — large-language-model inference for ORCA AI Features. Data categories: your query text and contextual market data only (no personal identifiers). <a href="https://x.ai/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>OpenAI, L.L.C.</strong> (USA) — fallback large-language-model inference when xAI is unavailable. Same data categories as xAI. <a href="https://openai.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>Google LLC</strong> (USA, EU) — Google Analytics 4 and Google Tag Manager (analytics consent only). Data categories: IP address (anonymised), device data, page interactions. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>CoinGecko Pte. Ltd.</strong> (Singapore) — public cryptocurrency market data (no personal data sent). <a href="https://www.coingecko.com/en/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>CryptoPanic</strong> — public cryptocurrency news (no personal data sent). <a href="https://cryptopanic.com/about/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+            <li><strong>LunarCrush, Inc.</strong> (USA) — social sentiment and engagement metrics for cryptocurrency tokens (no personal data sent). <a href="https://lunarcrush.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
           </ul>
+          <p>
+            We will give 30 days' prior notice (by updating this page) before adding a new sub-processor that processes your personal data. Material changes will also be notified by email to subscribers. You may object to a new sub-processor by terminating your subscription before the new sub-processor goes live.
+          </p>
 
           <h3>9.1 AI Data Processing (xAI/OpenAI)</h3>
           <p>
@@ -357,13 +378,16 @@ export default function PrivacyPolicy() {
           <ul>
             <li><strong>Your query text</strong> — the question or prompt you type</li>
             <li><strong>Contextual market data</strong> — aggregated whale transaction summaries, price data, sentiment scores, and news headlines relevant to the token you are asking about</li>
-            <li><strong>No personal data is sent</strong> — your email, name, IP address, and account details are never included in AI requests</li>
+            <li><strong>No personal identifiers</strong> — your email, name, IP address, billing details and account ID are never included in AI requests</li>
           </ul>
           <p>
             <strong>Data retention by AI providers:</strong> Queries sent to xAI and OpenAI are subject to their respective data retention policies. Sonar does not control how these providers store or process data after it is transmitted. We recommend reviewing their privacy policies linked above. Sonar stores your conversation history in our database so you can access past sessions; you can delete your conversation history at any time from your profile settings.
           </p>
           <p>
-            <strong>AI training:</strong> We do not use your personal queries to train AI models. However, xAI and OpenAI may use API data per their own terms — we recommend reviewing their policies if this is a concern.
+            <strong>AI training:</strong> We do not use your personal queries to train AI models, and we have configured our enterprise / API agreements with xAI and OpenAI so that your prompts are not used to train their foundation models. However, those providers may retain logs for abuse-monitoring and compliance for short periods per their published policies.
+          </p>
+          <p>
+            <strong>AI output is not personal data about you</strong> in most cases, but to the extent any AI Feature output incidentally references you, you have the same access, rectification and erasure rights set out in Section 6.
           </p>
           <p>
             We encourage you to review the privacy policies of these third-party services to understand how they collect, use, and protect your information.
@@ -412,10 +436,19 @@ export default function PrivacyPolicy() {
         >
           <h2>11. International Data Transfers</h2>
           <p>
-            Your information may be transferred to and maintained on servers located outside of your country, where data protection laws may differ. By using Sonar Tracker, you consent to the transfer of your information to these locations.
+            Sonar Tracker is operated from the United Kingdom and uses sub-processors located in the United Kingdom, the European Economic Area (EEA), the United States, Singapore and other jurisdictions (see Section 9). When we transfer your personal data from the UK or the EEA to a country that the UK or the European Commission has not deemed to provide an adequate level of data protection, we rely on one or more of the following safeguards:
+          </p>
+          <ul>
+            <li>The European Commission’s <strong>Standard Contractual Clauses</strong> (Module Two: Controller-to-Processor) annexed to Commission Implementing Decision (EU) 2021/914;</li>
+            <li>The UK Information Commissioner’s <strong>International Data Transfer Agreement (IDTA)</strong> or the UK Addendum to the EU SCCs;</li>
+            <li>The <strong>EU–US Data Privacy Framework</strong> and the UK Extension to the DPF, where the receiving organisation is self-certified;</li>
+            <li>Where strictly necessary, the explicit consent of the data subject under UK GDPR Art. 49(1)(a) / EU GDPR Art. 49(1)(a).</li>
+          </ul>
+          <p>
+            We carry out a transfer impact assessment (TIA) for each cross-border data flow and apply supplementary technical measures (encryption in transit, encryption at rest, pseudonymisation where practicable, access controls and key management) so that the personal data continues to enjoy a level of protection essentially equivalent to that guaranteed within the UK / EEA.
           </p>
           <p>
-            We take appropriate safeguards to ensure that your personal information remains protected in accordance with this Privacy Policy.
+            You may obtain a copy of the relevant transfer mechanism (with commercial terms redacted) by emailing <a href="mailto:privacy@sonartracker.io">privacy@sonartracker.io</a>.
           </p>
         </Section>
 
@@ -441,19 +474,28 @@ export default function PrivacyPolicy() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.3, duration: 0.5 }}
         >
-          <h2>13. Contact Us</h2>
+          <h2>13. Contact Us, Data Controller and Complaints</h2>
           <p>
-            If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at:
+            For all privacy-related queries, including to exercise the rights set out in Section 6, to request our list of sub-processors, or to obtain a copy of the safeguards we use for international transfers, please contact:
           </p>
           <p>
-            <strong>Email:</strong> <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>
+            <strong>Data Controller:</strong> SonarTracker (United Kingdom)<br />
+            <strong>Postcode:</strong> SE16 3TY<br />
+            <strong>Email (privacy):</strong> <a href="mailto:privacy@sonartracker.io">privacy@sonartracker.io</a><br />
+            <strong>Email (general):</strong> <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>
           </p>
           <p>
-            <strong>Response Time:</strong> We aim to respond to all inquiries within 48 hours.
+            <strong>Response Time:</strong> We acknowledge data-subject requests within 5 business days and substantively respond within 30 days (extendable to 90 days for complex requests, with notice).
+          </p>
+          <p>
+            <strong>Right to complain:</strong> If you are not satisfied with our response, you have the right to lodge a complaint with a supervisory authority. UK residents may complain to the Information Commissioner&apos;s Office (ICO) at <a href="https://ico.org.uk/make-a-complaint/" target="_blank" rel="noopener noreferrer">ico.org.uk/make-a-complaint</a>. EU residents may complain to the supervisory authority in their member state. California residents may complain to the California Privacy Protection Agency.
+          </p>
+          <p>
+            See also our dedicated <a href="/legal/data-removal-request">Data Removal Request</a> page for the streamlined erasure / right-of-publicity process.
           </p>
         </Section>
 
-        <LastUpdated>Last Updated: April 4, 2026</LastUpdated>
+        <LastUpdated>Last Updated: April 21, 2026</LastUpdated>
       </Content>
     </PageContainer>
   )

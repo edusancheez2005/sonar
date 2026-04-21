@@ -1,7 +1,7 @@
 export const metadata = {
   title: 'AI Crypto Market Analysis — Powered by ORCA',
-  description: 'AI-powered crypto market analysis from ORCA 2.0. Analyzes whale movements, news sentiment, and on-chain data to provide market insights. Not financial advice.',
-  keywords: 'ai crypto analysis, crypto market intelligence, crypto analytics ai, ai crypto advisor, crypto intelligence ai, ai market analysis, orca ai crypto',
+  description: 'AI-powered crypto market analysis from ORCA 2.0. Analyses whale movements, news sentiment, and on-chain data. Informational data analysis tool only — not financial advice.',
+  keywords: 'ai crypto analysis, crypto market intelligence, crypto analytics ai, on-chain ai tool, crypto intelligence ai, ai market analysis, orca ai crypto',
   alternates: { canonical: 'https://www.sonartracker.io/ai-crypto-signals' },
   openGraph: {
     title: 'AI Crypto Market Analysis — ORCA by Sonar Tracker',
@@ -15,11 +15,11 @@ const faqSchema = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
-    { '@type': 'Question', name: 'What is ORCA 2.0?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA 2.0 is Sonar Tracker\'s AI crypto advisor trained on millions of on-chain transactions, news articles, and social sentiment data. It analyzes whale movements and market conditions to deliver clear, actionable trading insights in plain English.' } },
-    { '@type': 'Question', name: 'How accurate are ORCA\'s signals?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA analyzes real-time data including whale transactions, price momentum, volume patterns, and news sentiment. While no AI can predict markets with certainty, our users report significantly earlier detection of major price movements compared to traditional chart analysis.' } },
+    { '@type': 'Question', name: 'What is ORCA 2.0?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA 2.0 is Sonar Tracker\'s automated AI data-analysis tool that summarises public on-chain transactions, news articles, and social sentiment data. It presents factual observations about observed market patterns. It is not an advisor and does not provide investment advice.' } },
+    { '@type': 'Question', name: 'What does ORCA actually output?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA outputs plain-English summaries of public data: whale transactions, price momentum, volume patterns, and news sentiment. It does not predict prices and does not recommend buying, selling, or holding any asset. All investment decisions must be made independently with a licensed adviser.' } },
     { '@type': 'Question', name: 'What data does ORCA analyze?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA processes real-time whale transactions across 10+ blockchains, AI-curated crypto news with sentiment scoring, social media signals, real-time price and volume data from Binance, derivatives data (funding rates, open interest, taker volume), and historical whale behavior patterns.' } },
     { '@type': 'Question', name: 'How much does ORCA cost?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA 2.0 is included with Sonar Tracker Pro at $7.99/month. Pro users get 10 AI analysis prompts per day. No additional charges.' } },
-    { '@type': 'Question', name: 'Can I ask ORCA about specific tokens?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Ask ORCA about any specific token and it will analyze current whale activity, recent price movements, sentiment from news and social media, and provide a clear assessment with supporting data.' } },
+    { '@type': 'Question', name: 'Can I ask ORCA about specific tokens?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Ask ORCA about any specific token and it will summarise current whale activity, recent price movements, and sentiment from news and social media, with supporting data. ORCA does not recommend buying, selling, or holding any asset.' } },
   ]
 }
 
@@ -57,7 +57,7 @@ export default function AiCryptoSignalsPage() {
             {[
               { step: '1', title: 'Data Ingestion', desc: 'ORCA processes millions of whale transactions, news articles, and social signals in real-time across all major blockchains.' },
               { step: '2', title: 'AI Analysis', desc: 'Pattern recognition, sentiment scoring, volume correlation, and whale behavior analysis run in parallel across 8 analysis phases.' },
-              { step: '3', title: 'Clear Signal', desc: 'You get a plain-English explanation: what happened, why it matters, and what it could mean for price — with supporting data.' },
+              { step: '3', title: 'Clear Summary', desc: 'You get a plain-English summary: what happened on-chain, with supporting data and historical context. Informational only — not a price prediction.' },
             ].map((item, i) => (
               <div key={i} style={{ background: 'rgba(13,33,52,0.6)', border: '1px solid rgba(155,89,182,0.2)', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(155,89,182,0.2)', border: '2px solid #9b59b6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontWeight: 700, color: '#9b59b6' }}>{item.step}</div>
@@ -72,8 +72,8 @@ export default function AiCryptoSignalsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '4rem' }}>
             {[
               'Real-time whale transactions across 10+ chains',
-              'Buy/sell classification with confidence scores',
-              'AI-curated news with market impact scoring',
+              'Inflow/outflow classification with magnitude scores',
+              'AI-curated news with market relevance scoring',
               'Social sentiment from crypto communities',
               'Price momentum and volume patterns',
               'Historical whale behavior for each token',

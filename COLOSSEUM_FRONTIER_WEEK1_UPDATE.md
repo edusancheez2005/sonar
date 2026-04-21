@@ -113,7 +113,7 @@ Yellowstone is Alchemy's **gRPC streaming interface** for Solana, built on the G
 ## What's Next — Week 2 Plan
 
 1. **Signal engine enrichment with Solana data** — Feed Solana whale flows into our 4-tier signal engine (currently strongest on EVM chains) so SOL/JUP/RAY/BONK signals reflect real on-chain smart money positioning
-2. **Wallet Consensus tab** — Show what tokens the top 20 smart money wallets are converging on (early alpha signal)
+2. **Wallet Consensus tab** — Show what tokens the top 20 most-active wallets are converging on (early on-chain pattern — descriptive only, not a trading recommendation)
 3. **Pod Detection** — Identify clusters of wallets that trade in coordination (potential insider groups or DAO treasuries)
 4. **ORCA Solana context** — Let users ask "What are Solana whales buying?" and get grounded answers from real-time Yellowstone data
 
