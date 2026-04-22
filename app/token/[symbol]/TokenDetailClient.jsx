@@ -511,20 +511,20 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
     
     // Block 1: Whale Accumulation/Distribution
     blocks.push({
-      title: `${buyPct > 60 ? 'Whale Accumulation' : sellPct > 60 ? 'Whale Distribution' : 'Whale Trading Balance'}`,
-      impact: buyPct > 65 ? 'Bullish Impact' : sellPct > 65 ? 'Bearish Impact' : 'Neutral Impact',
+      title: `${buyPct > 60 ? 'Whale Net Inflow' : sellPct > 60 ? 'Whale Net Outflow' : 'Whale Trading Balance'}`,
+      impact: buyPct > 65 ? 'Net Inflow' : sellPct > 65 ? 'Net Outflow' : 'Balanced',
       content: `
-        <p><strong>Overview:</strong> Whale wallets (transactions $10K+) have executed <strong>${whaleMetrics.buys} buy orders</strong> versus <strong>${whaleMetrics.sells} sell orders</strong> in the last ${sinceHours} hours, resulting in a <strong>${buyPct.toFixed(1)}% / ${sellPct.toFixed(1)}%</strong> buy/sell ratio.</p>
+        <p><strong>Overview:</strong> Whale wallets (transactions $10K+) have executed <strong>${whaleMetrics.buys} inflow transactions</strong> versus <strong>${whaleMetrics.sells} outflow transactions</strong> in the last ${sinceHours} hours, resulting in a <strong>${buyPct.toFixed(1)}% / ${sellPct.toFixed(1)}%</strong> inflow/outflow ratio.</p>
         
-        <p><strong>What this means:</strong> ${
+        <p><strong>What the data shows:</strong> ${
           buyPct > 65 
-            ? `Institutional players are <strong>heavily accumulating</strong> ${symbol}, signaling strong conviction. The ${formatUSD(netFlow)} net inflow suggests whales are positioning for upside. This level of buying pressure (${buyPct.toFixed(1)}%) typically precedes price appreciation if sustained.`
+            ? `Large-holder wallets recorded a net inflow of ${formatUSD(netFlow)} for ${symbol} over the observation window. ${buyPct.toFixed(1)}% of whale transactions were inflows. This is a descriptive on-chain observation only and is not predictive of future price.`
             : sellPct > 65
-            ? `Whales are <strong>aggressively distributing</strong> ${symbol}, with ${formatUSD(Math.abs(netFlow))} flowing out. This selling pressure (${sellPct.toFixed(1)}%) indicates institutional players are de-risking or taking profits. Continued outflows could pressure prices lower.`
-            : `Trading activity is <strong>balanced</strong> between buyers and sellers. The relatively neutral flow (${formatUSD(Math.abs(netFlow))}) suggests indecision among institutional players. Watch for a breakout in either direction as whales pick a side.`
+            ? `Large-holder wallets recorded a net outflow of ${formatUSD(Math.abs(netFlow))} for ${symbol}. ${sellPct.toFixed(1)}% of whale transactions were outflows. This is a descriptive on-chain observation only and is not predictive of future price.`
+            : `Whale inflow and outflow transactions were approximately balanced (net flow ${formatUSD(Math.abs(netFlow))}). Descriptive on-chain observation only.`
         }</p>
         
-        <p><em>Key metric: ${uniqueWhales} unique whale addresses actively trading ${symbol}${uniqueWhales > 20 ? ' – exceptionally high institutional interest.' : uniqueWhales > 10 ? ' – strong institutional participation.' : ' – moderate whale activity.'}</em></p>
+        <p><em>Key metric: ${uniqueWhales} unique large-holder addresses interacted with ${symbol}${uniqueWhales > 20 ? ' — high on-chain participation.' : uniqueWhales > 10 ? ' — moderate on-chain participation.' : ' — limited on-chain participation.'}</em></p>
       `
     })
     
@@ -540,24 +540,24 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       
       blocks.push({
         title: 'Technical Positioning',
-        impact: priceChange24h > 5 ? 'Bullish Momentum' : priceChange24h < -5 ? 'Bearish Momentum' : 'Consolidation',
+        impact: priceChange24h > 5 ? 'Upward Movement' : priceChange24h < -5 ? 'Downward Movement' : 'Consolidation',
         content: `
           <p><strong>Overview:</strong> ${symbol} is trading at <strong>${formatPrice(priceData.price)}</strong>, ${priceChange24h > 0 ? 'up' : 'down'} <strong>${Math.abs(priceChange24h).toFixed(2)}%</strong> in the last 24 hours${pricePosition ? `, currently sitting at <strong>${pricePosition}%</strong> of its daily range` : ''}.</p>
           
-          <p><strong>Multi-timeframe momentum:</strong> 24h ${formatPct(priceChange24h)} • 7d ${formatPct(priceChange7d)} • 30d ${formatPct(priceChange30d)} • 1y ${formatPct(priceChange1y)}.</p>
+          <p><strong>Multi-timeframe price change:</strong> 24h ${formatPct(priceChange24h)} • 7d ${formatPct(priceChange7d)} • 30d ${formatPct(priceChange30d)} • 1y ${formatPct(priceChange1y)}.</p>
           
-          <p><strong>Liquidity pulse:</strong> ${formatUSD(volume24h)} traded in the last 24h (${Number(volumeToMc).toFixed(2)}% of market cap). Market cap currently stands at ${formatUSD(marketCap)}.</p>
+          <p><strong>Liquidity:</strong> ${formatUSD(volume24h)} traded in the last 24h (${Number(volumeToMc).toFixed(2)}% of market cap). Market cap currently stands at ${formatUSD(marketCap)}.</p>
           
-          <p><strong>What this means:</strong> ${
+          <p><strong>What the data shows:</strong> ${
             nearATH 
-              ? `Price is near all-time highs (${athChange.toFixed(2)}% from ATH of ${formatUSD(priceData.ath)}). This suggests strong momentum but also potential resistance. Profit-taking could emerge at these levels.`
+              ? `Price is ${athChange.toFixed(2)}% from the recorded all-time high of ${formatUSD(priceData.ath)}. Descriptive observation only — past prices do not predict future prices.`
               : nearATL
-              ? `Price is close to all-time lows (${atlChange.toFixed(2)}% from ATL of ${formatUSD(priceData.atl)}). This could represent a value opportunity if fundamentals remain strong, but further downside is possible.`
+              ? `Price is ${atlChange.toFixed(2)}% from the recorded all-time low of ${formatUSD(priceData.atl)}. Descriptive observation only — past prices do not predict future prices.`
               : priceChange24h > 5
-              ? `Strong bullish momentum is building. The ${priceChange24h.toFixed(2)}% 24h gain aligns with ${netFlow > 0 ? 'positive' : 'negative'} whale flows, ${netFlow > 0 ? 'reinforcing' : 'contradicting'} the price action.`
+              ? `Price moved ${priceChange24h.toFixed(2)}% over 24h. Whale net flow over the same window was ${netFlow > 0 ? 'positive' : 'negative'}. Descriptive observation only.`
               : priceChange24h < -5
-              ? `Bearish pressure is mounting. The ${priceChange24h.toFixed(2)}% 24h decline ${netFlow < 0 ? 'matches' : 'contradicts'} whale outflows, ${netFlow < 0 ? 'confirming' : 'suggesting potential reversal if'} smart money continues selling.`
-              : `Price is consolidating in a tight range. The lack of strong directional movement suggests market indecision. Watch for a breakout on volume.`
+              ? `Price moved ${priceChange24h.toFixed(2)}% over 24h. Whale net flow over the same window was ${netFlow < 0 ? 'negative' : 'positive'}. Descriptive observation only.`
+              : `Price is in a tight 24h range. Descriptive observation only — past patterns do not predict future prices.`
           }</p>
           
           <p><em>24h Range: ${formatUSD(dayLow)} - ${formatUSD(dayHigh)}</em></p>
@@ -572,12 +572,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       content: `
         <p><strong>Overview:</strong> The average whale transaction size is <strong>${formatUSD(avgTxSize)}</strong>, with total institutional volume of <strong>${formatUSD(totalVolume)}</strong> over the last ${sinceHours} hours.</p>
         
-        <p><strong>What this means:</strong> ${
+        <p><strong>What the data shows:</strong> ${
           avgTxSize > 500000
-            ? `Exceptionally large transaction sizes indicate <strong>high conviction</strong> from institutional players. These are not retail trades – whales are making significant capital commitments${netFlow > 0 ? ', betting on upside' : ', exiting positions'}. This level of activity often precedes major price moves.`
+            ? `Average transaction sizes are large (${formatUSD(avgTxSize)}), indicating significant capital movement by large-holder wallets${netFlow > 0 ? ' with a net inflow' : ' with a net outflow'}. Descriptive on-chain observation only.`
             : avgTxSize > 200000
-            ? `Average transaction sizes suggest <strong>moderate institutional interest</strong>. Whales are active but not making outsized bets. This represents normal institutional trading flow${netFlow > 0 ? ' with a bullish bias' : ' with selling pressure'}.`
-            : `Smaller average transaction sizes may indicate <strong>cautious positioning</strong> or lower conviction. Whales are participating but sizing trades conservatively, suggesting uncertainty about ${symbol}'s near-term direction.`
+            ? `Average transaction sizes are moderate. On-chain activity present${netFlow > 0 ? ' with a net inflow' : ' with a net outflow'}. Descriptive observation only.`
+            : `Average transaction sizes are smaller. Limited large-ticket on-chain activity for ${symbol} over the observation window.`
         }</p>
         
         <p><em>Total ${whaleMetrics.buys + whaleMetrics.sells} whale transactions executed by ${uniqueWhales} unique addresses.</em></p>
@@ -594,15 +594,15 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           title: 'Social Intelligence',
           impact: gs >= 60 ? 'Strong Social Signal' : gs >= 40 ? 'Moderate Interest' : gs > 0 ? 'Low Social Activity' : 'Data Available',
           content: `
-            <p><strong>Overview:</strong> ${gs ? `Galaxy Score <strong>${gs}/100</strong>` : ''}${gs && soc ? ' · ' : ''}${soc ? `Social sentiment <strong>${soc}% bullish</strong>` : ''}${interactions ? ` · <strong>${interactions > 1000000 ? (interactions/1000000).toFixed(1) + 'M' : interactions > 1000 ? (interactions/1000).toFixed(0) + 'K' : interactions}</strong> social interactions in 24h` : ''}</p>
+            <p><strong>Overview:</strong> ${gs ? `Galaxy Score <strong>${gs}/100</strong>` : ''}${gs && soc ? ' · ' : ''}${soc ? `Social sentiment <strong>${soc}% positive</strong>` : ''}${interactions ? ` · <strong>${interactions > 1000000 ? (interactions/1000000).toFixed(1) + 'M' : interactions > 1000 ? (interactions/1000).toFixed(0) + 'K' : interactions}</strong> social interactions in 24h` : ''}</p>
             
-            <p><strong>What this means:</strong> ${
+            <p><strong>What the data shows:</strong> ${
               gs >= 70 && soc >= 65
-                ? `Strong social momentum aligns with ${buyPct > 55 ? 'whale accumulation' : 'market activity'}. High Galaxy Score and bullish sentiment indicate growing community conviction. Social trends often lead price action by 24-48 hours.`
+                ? `High Galaxy Score and high positive social-sentiment share for ${symbol}. Descriptive social-data observation only — social sentiment does not predict future price.`
                 : gs >= 50
-                ? `Moderate social interest. The Galaxy Score suggests the market is watching ${symbol}. Combined with ${buyPct > 55 ? 'whale buying' : 'whale selling'}, this could signal a setup forming.`
+                ? `Moderate Galaxy Score for ${symbol}. Descriptive observation only.`
                 : gs > 0
-                ? `Below-average social activity. Low social attention can mean under-the-radar accumulation or declining interest. Watch for social volume spikes as potential early signals.`
+                ? `Below-average social activity for ${symbol}. Descriptive observation only.`
                 : `Social metrics are being tracked for ${symbol}.`
             }</p>
           `
@@ -610,18 +610,22 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       }
     }
     
-    // Conclusion
+    // Conclusion — descriptive only. NEVER reintroduce forward-looking
+    // language like "could push prices higher", "break below could trigger",
+    // "smart money sees value", "caution advised", "expect a reversal".
+    // Those are price predictions / investment advice and trigger
+    // SEC IA Act §202(a)(11) and FCA RAO Art. 53. See LEGAL_AUDIT_2026-04-21.md.
     let conclusion = ''
     if (buyPct > 65 && priceChange24h > 3) {
-      conclusion = `${symbol}'s outlook appears <strong>bullish</strong> with strong alignment between whale accumulation (${buyPct.toFixed(1)}% buys) and positive price action (+${priceChange24h.toFixed(2)}%). Key support: watch ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'recent lows'}. Key resistance: ${priceData?.high_24h ? formatUSD(priceData.high_24h) : 'recent highs'}. Continued whale buying could push prices higher.`
+      conclusion = `Over the observation window, ${symbol} recorded whale net inflows of ${buyPct.toFixed(1)}% inflow share alongside a 24h price change of +${priceChange24h.toFixed(2)}%. 24h range: ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'N/A'} – ${priceData?.high_24h ? formatUSD(priceData.high_24h) : 'N/A'}. Descriptive on-chain and price data only — not a recommendation and not predictive of future price.`
     } else if (sellPct > 65 && priceChange24h < -3) {
-      conclusion = `${symbol} faces <strong>bearish pressure</strong> from both whale distribution (${sellPct.toFixed(1)}% sells) and negative price momentum (${priceChange24h.toFixed(2)}%). ${formatUSD(Math.abs(netFlow))} in net outflows suggests institutional capitulation. Watch for support at ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'recent lows'}. A break below could trigger further selling.`
+      conclusion = `Over the observation window, ${symbol} recorded whale net outflows of ${sellPct.toFixed(1)}% outflow share with net flow ${formatUSD(Math.abs(netFlow))} alongside a 24h price change of ${priceChange24h.toFixed(2)}%. 24h range: ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'N/A'} – ${priceData?.high_24h ? formatUSD(priceData.high_24h) : 'N/A'}. Descriptive on-chain and price data only — not a recommendation and not predictive of future price.`
     } else if (buyPct > 60 && priceChange24h < -3) {
-      conclusion = `Interesting divergence: whales are <strong>accumulating on weakness</strong> (${buyPct.toFixed(1)}% buys) despite ${priceChange24h.toFixed(2)}% price decline. This suggests smart money sees value at current levels. If buying continues, expect a reversal. Monitor for price stabilization.`
+      conclusion = `Over the observation window, whale inflow share was ${buyPct.toFixed(1)}% while the 24h price change was ${priceChange24h.toFixed(2)}%. Inflow and price moved in opposite directions. Descriptive observation only — not a recommendation.`
     } else if (sellPct > 60 && priceChange24h > 3) {
-      conclusion = `Concerning divergence: price is rising (+${priceChange24h.toFixed(2)}%) while whales distribute (${sellPct.toFixed(1)}% sells). This suggests retail buying into institutional selling – a classic distribution pattern. Caution advised as whale exits could pressure prices lower once retail demand fades.`
+      conclusion = `Over the observation window, whale outflow share was ${sellPct.toFixed(1)}% while the 24h price change was +${priceChange24h.toFixed(2)}%. Outflow and price moved in opposite directions. Descriptive observation only — not a recommendation.`
     } else {
-      conclusion = `${symbol} is in a <strong>consolidation phase</strong> with balanced whale activity (${buyPct.toFixed(1)}% / ${sellPct.toFixed(1)}%) and modest price movement (${priceChange24h > 0 ? '+' : ''}${priceChange24h.toFixed(2)}%). Watch for directional breakout. ${uniqueWhales} whales are actively trading – institutional interest remains. Support: ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'N/A'}. Resistance: ${priceData?.high_24h ? formatUSD(priceData.high_24h) : 'N/A'}.`
+      conclusion = `Over the observation window, whale activity for ${symbol} was approximately balanced (${buyPct.toFixed(1)}% inflow / ${sellPct.toFixed(1)}% outflow) with a 24h price change of ${priceChange24h > 0 ? '+' : ''}${priceChange24h.toFixed(2)}%. ${uniqueWhales} unique large-holder addresses transacted. 24h range: ${priceData?.low_24h ? formatUSD(priceData.low_24h) : 'N/A'} – ${priceData?.high_24h ? formatUSD(priceData.high_24h) : 'N/A'}. Descriptive observation only — not a recommendation.`
     }
     
     return { blocks, conclusion }
@@ -1961,7 +1965,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                 <AnalysisContent>
                   <h3>Market Sentiment</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                    <SentimentBadge $color={orcaAnalysis.sentiment === 'BULLISH' ? '#2ecc71' : orcaAnalysis.sentiment === 'BEARISH' ? '#e74c3c' : '#f39c12'}>
+                    <SentimentBadge $color={orcaAnalysis.sentiment === 'NET INFLOW' ? '#2ecc71' : orcaAnalysis.sentiment === 'NET OUTFLOW' ? '#e74c3c' : '#f39c12'}>
                       <span style={{ marginRight: '0.5rem' }}>●</span>{orcaAnalysis.sentiment}
                     </SentimentBadge>
                     <span style={{ color: 'var(--text-secondary)' }}>
@@ -2010,29 +2014,33 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                     </>
                   )}
 
-                  {orcaAnalysis.recommendation && (
+                  {orcaAnalysis.disclaimer && (
                     <>
-                      <h3>Professional Trading Recommendation</h3>
-                      <RecommendationCard $type={orcaAnalysis.recommendation.type}>
-                        <RecType $type={orcaAnalysis.recommendation.type}>
-                          {orcaAnalysis.recommendation.type === 'BUY' ? '● BUY SIGNAL' :
-                           orcaAnalysis.recommendation.type === 'AVOID' ? '● AVOID / SHORT' :
-                           orcaAnalysis.recommendation.type === 'WAIT' ? '● WAIT FOR CONFIRMATION' :
-                           '● CAUTIOUS ENTRY'}
-                        </RecType>
-                        <RecConfidence>
-                          Confidence: <strong>{orcaAnalysis.recommendation.confidence}</strong>
-                        </RecConfidence>
-                        <p><strong>Reasoning:</strong> {orcaAnalysis.recommendation.reasoning}</p>
-                        <div style={{ marginTop: '1rem' }}>
-                          <strong style={{ color: 'var(--primary)' }}>Action Items:</strong>
-                          <ul style={{ marginTop: '0.5rem' }}>
-                            {orcaAnalysis.recommendation.actions.map((action, i) => (
-                              <li key={i}>{action}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </RecommendationCard>
+                      {/*
+                        2026-04-22: The previous "Professional Trading
+                        Recommendation" block (BUY SIGNAL / AVOID / SHORT /
+                        WAIT FOR CONFIRMATION + confidence + action items
+                        like "Use 3-5% stop-loss" and "Target 15-25% upside")
+                        was removed. That output is unregistered investment
+                        advice under SEC IA Act §202(a)(11) and FCA RAO
+                        Art. 53. Do NOT reintroduce it without an FCA
+                        authorisation + counsel sign-off.
+                        See LEGAL_AUDIT_2026-04-21.md.
+                      */}
+                      <h3>Important Notice</h3>
+                      <div style={{
+                        background: 'rgba(255, 171, 0, 0.08)',
+                        border: '1px solid rgba(255, 171, 0, 0.45)',
+                        borderRadius: '8px',
+                        padding: '1rem 1.25rem',
+                        marginTop: '0.5rem',
+                        color: '#e8edf2',
+                        fontSize: '0.85rem',
+                        lineHeight: 1.6,
+                      }}>
+                        <strong style={{ color: '#ffab00' }}>Informational only — not financial advice.</strong>{' '}
+                        {orcaAnalysis.disclaimer}
+                      </div>
                     </>
                   )}
 

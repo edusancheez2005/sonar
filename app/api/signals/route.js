@@ -3,25 +3,40 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
 
-// ─── Signal-classification feature flag ──────────────────────────────────
-// The signal engine is currently in a calibration cycle. While the
-// directional classifier is being recalibrated, bullish classifications
-// are normalized to NEUTRAL at the API boundary so the UI does not
-// surface scores that have not yet completed the calibration window.
-// All signals are accompanied by a calibration disclaimer downstream.
-// Flag is controlled via SIGNAL_CALIBRATION_MODE; default is 'on'.
-const SIGNAL_CALIBRATION_MODE = process.env.SIGNAL_CALIBRATION_MODE !== 'off'
+// ─── Signal-quality kill switch ──────────────────────────────────────────
+// As of 2026-04-20 the signal engine has 0/116 directional accuracy on BUY
+// signals over the last 30 days (p ≈ 0). Until the root cause is found
+// (Tier 1 sign inversion vs regime tag-along) we mute BUY signals at the
+// API boundary so the UI cannot show inverse-predictive recommendations.
+// SELL signals are also regime-biased but at least directionally correct
+// in current data; they pass through with a downstream BETA disclaimer.
+//
+// Flip this to false once the IC audit + signal rebuild lands.
+const HIDE_BULLISH_SIGNALS = true
 const BULLISH = new Set(['BUY', 'STRONG BUY'])
 
+// Display-layer mapping for the raw DB enum signal value.
+// The DB CHECK constraint requires storage values of
+// ('STRONG BUY','BUY','NEUTRAL','SELL','STRONG SELL'). UI surfaces must
+// render the neutral inflow/outflow vocabulary instead, to avoid the
+// FCA RAO Art. 53 / SEC IA Act §202(a)(11) / MiFID II Art. 4(1)(4)
+// "investment recommendation" trigger. See LEGAL_AUDIT_2026-04-21.md.
+const SIGNAL_DISPLAY_LABEL = {
+  'STRONG BUY': 'STRONG INFLOW',
+  'BUY': 'INFLOW',
+  'NEUTRAL': 'NEUTRAL',
+  'SELL': 'OUTFLOW',
+  'STRONG SELL': 'STRONG OUTFLOW',
+}
+
 function neutralize(row) {
-  if (!SIGNAL_CALIBRATION_MODE || !row || !BULLISH.has(row.signal)) return row
+  if (!row) return row
+  const muted = HIDE_BULLISH_SIGNALS && BULLISH.has(row.signal)
+    ? { ...row, signal: 'NEUTRAL', score: 50, muted_reason: 'bullish_under_review' }
+    : row
   return {
-    ...row,
-    signal: 'NEUTRAL',
-    score: 50,
-    muted_reason: 'calibration',
-    calibration_notice:
-      'Signal engine is in calibration. This output is informational only and is not a recommendation to buy, sell, or hold any asset.',
+    ...muted,
+    display_label: SIGNAL_DISPLAY_LABEL[muted.signal] || 'NEUTRAL',
   }
 }
 

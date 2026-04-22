@@ -72,8 +72,8 @@ export function formatNewsHeadlinesDetailed(headlines: NewsItem[]): string {
     const sentiment = news.sentiment_llm ?? news.sentiment_raw ?? 0
     const sentimentEmoji = sentiment > 0.3 ? '📈' : 
                           sentiment < -0.3 ? '📉' : '➡️'
-    const sentimentLabel = sentiment > 0.3 ? 'Bullish' :
-                          sentiment < -0.3 ? 'Bearish' : 'Neutral'
+    const sentimentLabel = sentiment > 0.3 ? 'Positive' :
+                          sentiment < -0.3 ? 'Negative' : 'Neutral'
     const timeAgo = formatTimeAgo(news.published_at)
     
     return `${index + 1}. ${sentimentEmoji} "${news.title}"
@@ -167,14 +167,16 @@ export function truncateAddress(address: string | null): string {
 }
 
 /**
- * Format sentiment score to label
+ * Format sentiment score to descriptive label.
+ * News-article tone only — NOT a market direction recommendation.
+ * Do NOT reintroduce 'Bullish' / 'Bearish' here. See LEGAL_AUDIT_2026-04-21.md.
  */
 export function formatSentimentLabel(score: number): string {
-  if (score > 0.5) return 'Very Bullish'
-  if (score > 0.2) return 'Bullish'
+  if (score > 0.5) return 'Very Positive'
+  if (score > 0.2) return 'Positive'
   if (score > -0.2) return 'Neutral'
-  if (score > -0.5) return 'Bearish'
-  return 'Very Bearish'
+  if (score > -0.5) return 'Negative'
+  return 'Very Negative'
 }
 
 /**

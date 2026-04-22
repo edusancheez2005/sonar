@@ -45,14 +45,20 @@ export function calculateTokenScore({
   return Math.max(0, Math.min(100, Math.round(score)))
 }
 
+// User-facing labels intentionally use neutral inflow/outflow vocabulary
+// rather than BUY/SELL. Directional opinions on a specific asset would
+// meet the FCA RAO Art. 53 / SEC IA Act §202(a)(11) / MiFID II Art. 4(1)(4)
+// definition of an investment recommendation, and Sonar Tracker is not a
+// registered investment adviser in any jurisdiction.
+// See LEGAL_AUDIT_2026-04-21.md and /memories/repo/legal-remediation-2026-04-21.md.
 export function getScoreLabel(score) {
-  if (score >= 80) return { label: 'STRONG BUY', color: '#00e676' }
-  if (score >= 65) return { label: 'BUY', color: '#00e676' }
-  if (score >= 55) return { label: 'SLIGHT BUY', color: '#b2ff59' }
+  if (score >= 80) return { label: 'STRONG INFLOW', color: '#00e676' }
+  if (score >= 65) return { label: 'INFLOW', color: '#00e676' }
+  if (score >= 55) return { label: 'SLIGHT INFLOW', color: '#b2ff59' }
   if (score >= 45) return { label: 'NEUTRAL', color: '#ffab00' }
-  if (score >= 35) return { label: 'SLIGHT SELL', color: '#ff8a65' }
-  if (score >= 20) return { label: 'SELL', color: '#ff1744' }
-  return { label: 'STRONG SELL', color: '#ff1744' }
+  if (score >= 35) return { label: 'SLIGHT OUTFLOW', color: '#ff8a65' }
+  if (score >= 20) return { label: 'OUTFLOW', color: '#ff1744' }
+  return { label: 'STRONG OUTFLOW', color: '#ff1744' }
 }
 
 export function getScoreGradient(score) {

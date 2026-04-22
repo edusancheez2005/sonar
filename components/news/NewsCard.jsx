@@ -162,8 +162,9 @@ export default function NewsCard({ article }) {
   }
 
   const getSentimentLabel = (sentiment = 0.5) => {
-    if (sentiment > 0.6) return 'Bullish'
-    if (sentiment < 0.4) return 'Bearish'
+    // News-article tone only — NOT market direction.
+    if (sentiment > 0.6) return 'Positive'
+    if (sentiment < 0.4) return 'Negative'
     return 'Neutral'
   }
 

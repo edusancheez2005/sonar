@@ -234,21 +234,27 @@ export function calculateEnhancedSentiment({
   const divergence = hasWhaleData && total > 3 && whaleDirection !== 0 && priceDirection !== 0 && whaleDirection !== priceDirection
 
   // ═══ 9. LABEL DETERMINATION (6 levels) ═══
+  // NOTE: Labels intentionally use neutral inflow/outflow vocabulary, NOT
+  // bullish/bearish or BUY/SELL. Directional opinions on a specific asset
+  // would meet the FCA RAO Art. 53 / SEC IA Act §202(a)(11) / MiFID II
+  // Art. 4(1)(4) definition of an investment recommendation, and Sonar
+  // Tracker is not a registered investment adviser in any jurisdiction.
+  // See LEGAL_AUDIT_2026-04-21.md and /memories/repo/legal-remediation-2026-04-21.md.
   let label, color
   if (score > 0.4) {
-    label = 'STRONGLY BULLISH'; color = '#00e676'
+    label = 'STRONG NET INFLOW'; color = '#00e676'
   } else if (score > 0.15) {
-    label = 'BULLISH'; color = '#00e676'
+    label = 'NET INFLOW'; color = '#00e676'
   } else if (score > 0.05) {
-    label = 'SLIGHTLY BULLISH'; color = '#b2ff59'
+    label = 'SLIGHT NET INFLOW'; color = '#b2ff59'
   } else if (score > -0.05) {
     label = 'NEUTRAL'; color = '#ffab00'
   } else if (score > -0.15) {
-    label = 'SLIGHTLY BEARISH'; color = '#ff8a65'
+    label = 'SLIGHT NET OUTFLOW'; color = '#ff8a65'
   } else if (score > -0.4) {
-    label = 'BEARISH'; color = '#ff1744'
+    label = 'NET OUTFLOW'; color = '#ff1744'
   } else {
-    label = 'STRONGLY BEARISH'; color = '#ff1744'
+    label = 'STRONG NET OUTFLOW'; color = '#ff1744'
   }
 
   // ═══ 10. CONFIDENCE (0-100) ═══

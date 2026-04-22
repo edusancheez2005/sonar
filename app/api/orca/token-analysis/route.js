@@ -61,15 +61,20 @@ export async function POST(req) {
     const sells6h = txs6h.filter(t => t.classification?.toUpperCase() === 'SELL')
     const momentum6h = buys6h.length - sells6h.length
 
-    // Determine sentiment
+    // Determine sentiment label (neutral inflow/outflow vocabulary).
+    // NOTE: Do NOT reintroduce 'BULLISH' / 'BEARISH' here — those are
+    // directional opinions that meet the FCA RAO Art. 53 / SEC IA Act
+    // §202(a)(11) / MiFID II Art. 4(1)(4) definition of an investment
+    // recommendation, and Sonar Tracker is not a registered investment
+    // adviser in any jurisdiction. See LEGAL_AUDIT_2026-04-21.md.
     let sentiment = 'NEUTRAL'
     if (buyPct > 60) {
-      sentiment = 'BULLISH'
+      sentiment = 'NET INFLOW'
     } else if (sellPct > 60) {
-      sentiment = 'BEARISH'
+      sentiment = 'NET OUTFLOW'
     }
 
-    // Determine signal
+    // Determine flow signal (descriptive on-chain pattern).
     let signal = 'NEUTRAL'
     if (netFlow > 0 && buyPct > 55) {
       signal = 'ACCUMULATION'
@@ -120,7 +125,15 @@ export async function POST(req) {
         whaleScore: t.whale_score
       })),
       insights: generateInsights(sentiment, netFlow, buyPct, sellPct, uniqueWhales.size, momentum6h, totalVolume),
-      recommendation: generateRecommendation(sentiment, signal, netFlow, buyPct, momentum6h, totalVolume)
+      // Recommendations REMOVED 2026-04-22. The previous generator emitted
+      // 'BUY' / 'AVOID' / position-sizing / stop-loss / price-target text
+      // ("Use 3-5% stop-loss", "Target 15-25% upside", "Enter on pullbacks",
+      // "Consider short positions"). That is unambiguous unregistered
+      // investment advice under SEC IA Act §202(a)(11) and FCA RAO Art. 53.
+      // The replacement is a neutral, descriptive disclaimer.
+      // See LEGAL_AUDIT_2026-04-21.md and /memories/repo/legal-remediation-2026-04-21.md.
+      disclaimer:
+        'This is descriptive on-chain data for informational purposes only. It is not a recommendation to buy, sell, or hold any asset, and Sonar Tracker is not a registered investment adviser in any jurisdiction. Past on-chain patterns do not guarantee future price movement. Please consult a licensed financial adviser before making investment decisions.'
     }
 
     return NextResponse.json({ ...analysis, hasData: true })
@@ -142,7 +155,7 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
     insights.push({
       icon: 'flow',
       title: 'Significant Capital Flow',
-      description: `${netFlow > 0 ? 'Net inflow' : 'Net outflow'} of ${formatUSD(Math.abs(netFlow))} detected. ${netFlow > 0 ? 'Whales are accumulating' : 'Heavy distribution in progress'}.`
+      description: `${netFlow > 0 ? 'Net inflow' : 'Net outflow'} of ${formatUSD(Math.abs(netFlow))} observed. ${netFlow > 0 ? 'Whale wallets show net deposits' : 'Whale wallets show net withdrawals'}. Descriptive on-chain data only.`
     })
   }
 
@@ -150,14 +163,14 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
   if (buyPct > 65) {
     insights.push({
       icon: 'pressure-up',
-      title: 'Strong Buy Pressure',
-      description: `${buyPct}% of whale transactions are buys. Institutional-grade accumulation pattern detected.`
+      title: 'High Inflow Share',
+      description: `${buyPct}% of whale transactions in the last 24h were classified as inflows. Descriptive metric — not a recommendation.`
     })
   } else if (sellPct > 65) {
     insights.push({
       icon: 'pressure-down',
-      title: 'Heavy Sell Pressure',
-      description: `${sellPct}% of transactions are sells. Whales may be taking profits or derisking positions.`
+      title: 'High Outflow Share',
+      description: `${sellPct}% of whale transactions in the last 24h were classified as outflows. Descriptive metric — not a recommendation.`
     })
   }
 
@@ -166,13 +179,13 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
     insights.push({
       icon: 'whales-high',
       title: 'High Whale Activity',
-      description: `${whaleCount} unique whales are actively trading. Elevated institutional interest.`
+      description: `${whaleCount} unique large-holder wallets transacted in the last 24h. Elevated on-chain participation.`
     })
   } else if (whaleCount < 5) {
     insights.push({
       icon: 'whales-low',
-      title: 'Limited Whale Interest',
-      description: `Only ${whaleCount} whales detected. Low institutional participation may indicate reduced liquidity.`
+      title: 'Limited Whale Activity',
+      description: `Only ${whaleCount} unique large-holder wallets detected. Low on-chain participation may indicate reduced liquidity.`
     })
   }
 
@@ -180,14 +193,14 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
   if (momentum > 5) {
     insights.push({
       icon: 'trend-up',
-      title: 'Positive Momentum',
-      description: `Buy pressure increasing in the last 6 hours (+${momentum} net buys). Bullish continuation likely.`
+      title: 'Inflow Momentum (6h)',
+      description: `Net inflows accelerated in the last 6 hours (+${momentum} net inflow transactions). Descriptive observation — past patterns do not predict future prices.`
     })
   } else if (momentum < -5) {
     insights.push({
       icon: 'trend-down',
-      title: 'Negative Momentum',
-      description: `Sell pressure accelerating in the last 6 hours (${momentum} net sells). Bearish trend developing.`
+      title: 'Outflow Momentum (6h)',
+      description: `Net outflows accelerated in the last 6 hours (${momentum} net outflow transactions). Descriptive observation — past patterns do not predict future prices.`
     })
   }
 
@@ -196,69 +209,15 @@ function generateInsights(sentiment, netFlow, buyPct, sellPct, whaleCount, momen
     insights.push({
       icon: 'volume-high',
       title: 'Exceptional Volume',
-      description: `${formatUSD(volume)} in 24h whale volume. High conviction trading from major players.`
+      description: `${formatUSD(volume)} in 24h whale volume. High transaction magnitude from large-holder wallets.`
     })
   }
 
   return insights
 }
 
-function generateRecommendation(sentiment, signal, netFlow, buyPct, momentum, volume) {
-  const recs = []
-
-  if (sentiment === 'BULLISH' && signal === 'ACCUMULATION') {
-    recs.push({
-      type: 'BUY',
-      confidence: 'HIGH',
-      reasoning: 'Strong accumulation pattern with sustained whale buying. Consider building a position with tight risk management.',
-      actions: [
-        'Enter on pullbacks to support levels',
-        'Use 3-5% stop-loss below recent lows',
-        'Target 15-25% upside based on whale accumulation',
-        'Scale in gradually as momentum continues'
-      ]
-    })
-  } else if (sentiment === 'BEARISH' && signal === 'DISTRIBUTION') {
-    recs.push({
-      type: 'AVOID',
-      confidence: 'HIGH',
-      reasoning: 'Heavy whale distribution detected. Avoid new long positions until selling pressure subsides.',
-      actions: [
-        'Exit existing longs or tighten stops',
-        'Consider short positions if risk-tolerant',
-        'Wait for capitulation and reversal signals',
-        'Monitor for support level breaks'
-      ]
-    })
-  } else if (sentiment === 'NEUTRAL') {
-    recs.push({
-      type: 'WAIT',
-      confidence: 'MEDIUM',
-      reasoning: 'Mixed whale signals. No clear directional bias. Wait for confirmation before entering.',
-      actions: [
-        'Observe for trend development',
-        'Wait for buyPct > 60% or sellPct > 60%',
-        'Monitor volume for breakout signals',
-        'Reduce position sizes if trading'
-      ]
-    })
-  } else {
-    // Moderate signals
-    recs.push({
-      type: 'CAUTIOUS',
-      confidence: 'MEDIUM',
-      reasoning: `Whale activity shows ${sentiment.toLowerCase()} bias but lacks strong conviction. Trade with reduced size.`,
-      actions: [
-        'Use smaller position sizes (25-50% normal)',
-        'Set wider stops to account for volatility',
-        'Wait for momentum confirmation',
-        'Monitor for pattern strengthening'
-      ]
-    })
-  }
-
-  return recs[0]
-}
+// generateRecommendation() removed 2026-04-22. See route export above for
+// the replacement neutral disclaimer.
 
 function formatUSD(value) {
   const num = Number(value)

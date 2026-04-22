@@ -450,7 +450,7 @@ export default function Statistics() {
                 background: whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.1)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.1)' : 'rgba(0,229,255,0.06)',
                 color: whisperData.market_bias === 'bullish' ? '#00e676' : whisperData.market_bias === 'bearish' ? '#ff1744' : '#00e5ff',
                 border: `1px solid ${whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.2)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.2)' : 'rgba(0,229,255,0.1)'}`,
-              }}>{whisperData.market_bias}</span>
+              }}>{whisperData.market_bias === 'bullish' ? 'NET INFLOW' : whisperData.market_bias === 'bearish' ? 'NET OUTFLOW' : 'BALANCED'}</span>
               <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{whisperData.confidence}%</span>
               <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
@@ -464,13 +464,20 @@ export default function Statistics() {
                   .replace(/(\$[\d,.]+[BKMTX]?)/g, '<span style="color:#00e5ff;font-weight:700">$1</span>')
                   .replace(/(\+[\d.]+%|-[\d.]+%)/g, (m) => `<span style="color:${m.startsWith('+') ? '#00e676' : '#ff1744'};font-weight:700">${m}</span>`)
                   .replace(/(STRONG BUY|BUY|SELL|STRONG SELL|NEUTRAL)/g, (m) => {
-                    const c = m.includes('BUY') ? '#00e676' : m.includes('SELL') ? '#ff1744' : '#ffab00'
-                    return `<span style="color:${c};font-weight:700;padding:0.1rem 0.3rem;border-radius:3px;background:${c}11;border:1px solid ${c}33;font-size:0.72rem">${m}</span>`
+                    // Map raw DB-enum signal labels to neutral display labels.
+                    // See LEGAL_AUDIT_2026-04-21.md — do NOT render BUY/SELL verbatim.
+                    const displayMap = { 'STRONG BUY': 'STRONG INFLOW', 'BUY': 'INFLOW', 'NEUTRAL': 'NEUTRAL', 'SELL': 'OUTFLOW', 'STRONG SELL': 'STRONG OUTFLOW' }
+                    const display = displayMap[m] || m
+                    const c = display.includes('INFLOW') ? '#00e676' : display.includes('OUTFLOW') ? '#ff1744' : '#ffab00'
+                    return `<span style="color:${c};font-weight:700;padding:0.1rem 0.3rem;border-radius:3px;background:${c}11;border:1px solid ${c}33;font-size:0.72rem">${display}</span>`
                   })
                   .replace(/\b(BTC|ETH|SOL|XRP|DOGE|ADA|PEPE|LINK|BNB|AVAX)\b/g, '<span style="color:#e0e6ed;font-weight:700">$1</span>')
                   .replace(/(BULLISH|BEARISH|NEUTRAL)/g, (m) => {
-                    const c = m === 'BULLISH' ? '#00e676' : m === 'BEARISH' ? '#ff1744' : '#ffab00'
-                    return `<span style="color:${c};font-weight:800;letter-spacing:0.5px">${m}</span>`
+                    // Map directional adjectives to neutral flow labels.
+                    const displayMap = { 'BULLISH': 'NET INFLOW', 'BEARISH': 'NET OUTFLOW', 'NEUTRAL': 'BALANCED' }
+                    const display = displayMap[m] || m
+                    const c = display === 'NET INFLOW' ? '#00e676' : display === 'NET OUTFLOW' ? '#ff1744' : '#ffab00'
+                    return `<span style="color:${c};font-weight:800;letter-spacing:0.5px">${display}</span>`
                   })
                 }} />
             ))}
