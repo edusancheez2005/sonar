@@ -578,22 +578,48 @@ export function computeUnifiedSignal({
   const tier3 = computeTier3_SentimentSocial(sentimentData, socialData)
   const tier4 = computeTier4_WeakSignals(transactions, communityVotes, devActivity)
 
-  // ─── IC-driven recalibration (2026-04-20) ──────────────────────────────
-  // 30-day Information Coefficient audit (n≈6000 outcomes, 13-15 tokens):
-  //   tier1_score: mean IC = -0.16 across all horizons, hit-rate 60-69% → INVERTED
-  //   tier2_score: mean IC = +0.07 / +0.05 / +0.11 → NOISE (no edge)
-  //   tier3_score: mean IC = +0.14 (1h) / +0.33 (6h) / -0.01 (24h) → keep
-  //   confidence (composite): IR = -0.78 — caused by tier1+tier2 reinforcing
-  //     each other in the wrong direction; fixes itself when tier1 is flipped.
+  // ─── Per-token Tier 1 sign calibration (2026-04-22) ─────────────────────
+  // The 2026-04-20 global sign-flip (IC_FIX_ENABLED universal -1) was based
+  // on a POOLED 30-day IC of -0.16 across 13-15 tokens. Re-audit on 2026-04-22
+  // (n=900-2700 outcomes per token, 1h/6h/24h horizons consistent within ±0.01)
+  // revealed the pooled negative IC was driven by 7 inverted alts dragging down
+  // ~14 correctly-signed majors. The global flip BROKE BTC/WBTC/ETH (which
+  // already had IC = +0.27 to +0.50) and explained the 0/33 BUY post-flip
+  // accuracy: all post-flip BUYs concentrated on BTC/WBTC where the flip was
+  // wrong. Diagnostic: select id, token, signal from token_signals where
+  //   signal='BUY' and created_at > now()-interval '2 days' → 55/55 BTC|WBTC.
   //
-  // Until we know whether tier1's classification labels are inverted at the
-  // data layer (whale-transactions repo) or the engine's interpretation is
-  // wrong, we apply a sign flip at the engine boundary. Set
-  // SIGNAL_ENGINE_IC_FIX=off in env to revert in one deploy.
+  // Action: replace global flip with per-token sign multiplier. Tokens with
+  // mean IC ≤ -0.10 get -1; |IC| < 0.05 get 0 (no Tier 1 contribution); rest
+  // default to +1. Unaudited tokens default to +1 (matches majority pattern).
+  // SIGNAL_ENGINE_IC_FIX=off forces every multiplier back to +1 (kill switch).
+  //
+  // FLIP LIST  (mean IC across 1h/6h/24h ≤ -0.10):
+  //   BLUR -0.87, SHIB -0.60, LINK -0.49, BAT -0.37, UNI -0.36, CRV -0.33, LDO -0.33
+  // ZERO LIST  (|mean IC| < 0.10, treat as noise):
+  //   AAVE -0.10, INJ -0.06, AXS -0.04, CHZ +0.01, IMX +0.01
+  // KEEP LIST (default +1, audit-verified IC ≥ +0.10):
+  //   BTC +0.41, WBTC +0.27, ETH +0.50, WETH +0.50, MNT +0.51, ZRX +0.50,
+  //   PENDLE +0.32, ENS +0.37, FLOKI +0.53, SUSHI +0.58, SAND +0.59, COMP +0.68,
+  //   YFI +0.77, PEPE +0.11, GRT +0.10, SNX +0.18
+  const TIER1_SIGN_BY_TOKEN: Record<string, -1 | 0 | 1> = {
+    BLUR: -1, SHIB: -1, LINK: -1, BAT: -1, UNI: -1, CRV: -1, LDO: -1,
+    AAVE:  0, INJ:  0, AXS:  0, CHZ:  0, IMX:  0,
+  }
   const IC_FIX_ENABLED = process.env.SIGNAL_ENGINE_IC_FIX !== 'off'
-  const tier1 = IC_FIX_ENABLED
-    ? { ...tier1Raw, score: -tier1Raw.score, factors: { ...tier1Raw.factors, ic_sign_flipped: true } }
-    : tier1Raw
+  const tokenKey = (tokenSymbol || '').toUpperCase()
+  const tier1Sign: -1 | 0 | 1 = IC_FIX_ENABLED
+    ? (TIER1_SIGN_BY_TOKEN[tokenKey] ?? 1)
+    : 1
+  const tier1 = tier1Sign === 1
+    ? tier1Raw
+    : {
+        ...tier1Raw,
+        score: tier1Sign === 0 ? 0 : -tier1Raw.score,
+        confidence: tier1Sign === 0 ? 0 : tier1Raw.confidence,
+        available: tier1Sign === 0 ? false : tier1Raw.available,
+        factors: { ...tier1Raw.factors, tier1_sign_multiplier: tier1Sign },
+      }
 
   // v4: Enhance Tier 2 with real technical analysis if available
   const tier2 = { ...tier2Raw }
