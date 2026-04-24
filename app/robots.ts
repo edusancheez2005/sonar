@@ -15,6 +15,17 @@ export default function robots(): MetadataRoute.Robots {
           '/auth/callback',
           '/pricing',
           '/profile',
+          // Block auth-gated query-param URLs that were leaking into the index
+          // (Search Console 2026-04-23 reported /?login=1&required=* as
+          //  "Crawled - currently not indexed"). These are interstitial
+          //  redirects, not real content.
+          '/?login=',
+          '/*?login=',
+          '/*?required=',
+          // Block paginated / filtered URLs that duplicate canonical content
+          '/*?page=',
+          '/*?ref=',
+          '/*?utm_',
         ],
       },
     ],

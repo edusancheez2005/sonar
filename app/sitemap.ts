@@ -142,6 +142,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // Programmatic SEO: top whale addresses
+  // 2026-04-24: trimmed from 2000 → 50 because Google reported 850 pages as
+  // "Discovered, currently not indexed" — almost all auto-generated whale
+  // pages. Crawl budget was being wasted on low-value templated URLs and the
+  // truly important pages weren't being crawled. Quality > quantity for
+  // sitemap inclusion. Re-expand only when these pages have rich, unique
+  // content per address (entity name, transaction history blurb, etc).
   let whalePages: MetadataRoute.Sitemap = []
   if (sb) {
     try {
@@ -149,19 +155,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from('addresses')
         .select('address')
         .not('entity_name', 'is', null)
-        .limit(2000)
+        .order('balance_usd', { ascending: false, nullsFirst: false })
+        .limit(50)
       if (whales) {
         whalePages = whales.map((w: any) => ({
           url: `${BASE}/whale/${encodeURIComponent(w.address)}`,
           lastModified: now,
-          changeFrequency: 'daily' as const,
-          priority: 0.6,
+          changeFrequency: 'weekly' as const,
+          priority: 0.5,
         }))
       }
     } catch (_) { /* skip */ }
   }
 
-  // Programmatic SEO: top tokens
+  // Programmatic SEO: top tokens — trimmed from 500 → 50 (same reason as whales)
   let tokenPages: MetadataRoute.Sitemap = []
   if (sb) {
     try {
@@ -172,8 +179,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .not('token_symbol', 'is', null)
         .limit(10000)
       if (tokens) {
-        const uniqueSymbols = Array.from(new Set(tokens.map((t: any) => t.token_symbol).filter(Boolean))).slice(0, 500)
-        tokenPages = uniqueSymbols.map((sym: any) => ({
+        // Count occurrences and keep only the top 50 most-active symbols.
+        const counts: Record<string, number> = {}
+        for (const t of tokens) {
+          const sym = (t as any).token_symbol
+          if (sym) counts[sym] = (counts[sym] || 0) + 1
+        }
+        const topSymbols = Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 50)
+          .map(([sym]) => sym)
+        tokenPages = topSymbols.map(sym => ({
           url: `${BASE}/token/${encodeURIComponent(sym)}`,
           lastModified: now,
           changeFrequency: 'daily' as const,
