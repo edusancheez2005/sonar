@@ -94,12 +94,17 @@ export async function POST(req) {
       if (experienceLevel) profileUpdate.experience_level = experienceLevel
       if (interests.length > 0) profileUpdate.interests = interests
 
-      await supabaseAdmin
+      const { error: profileErr } = await supabaseAdmin
         .from('profiles')
         .update(profileUpdate)
         .eq('id', data.user.id)
-        .catch(() => {}) // Non-critical — profile created by trigger;
-                          // attestation columns may not yet exist (see migration TODO)
+      if (profileErr) {
+        // Surface the error so we don't silently lose attestations again.
+        // The migration 20260421000000_eligibility_attestations.sql adds the
+        // required columns; if this fires, either the migration didn't run on
+        // this environment or the trigger hasn't created the row yet.
+        console.error('[api/auth/signup] profile update failed for', data.user.id, profileErr.message)
+      }
     }
 
     return NextResponse.json({ ok: true, userId: data?.user?.id || null })
