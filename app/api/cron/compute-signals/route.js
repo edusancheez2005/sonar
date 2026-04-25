@@ -43,12 +43,18 @@ export async function GET(req) {
     const btcBeta = await fetchMarketBeta()
     console.log(`[SignalEngine] Market beta: BTC 24h = ${btcBeta.btc24hChange?.toFixed(2)}%`)
 
+    // Load per-token calibration once per run. Tokens missing from this map
+    // (e.g. brand-new symbols with no outcome history) fall through to the
+    // engine's static defaults. Refreshed daily by /api/cron/calibrate-signals.
+    const calibrationByToken = await loadCalibrationByToken(tokens)
+    console.log(`[SignalEngine] Calibration loaded for ${calibrationByToken.size}/${tokens.length} tokens`)
+
     const results = []
     const errors = []
 
     for (const token of tokens) {
       try {
-        const signal = await computeSignalForToken(token, btcBeta)
+        const signal = await computeSignalForToken(token, btcBeta, calibrationByToken.get(token) || null)
         results.push(signal)
 
         // Store in token_signals table
@@ -83,6 +89,52 @@ export async function GET(req) {
 
 
 // ─── DATA GATHERING ──────────────────────────────────────────────────────
+
+/**
+ * Load per-token calibration rows from `token_signal_calibration` and
+ * collapse the three eval-window rows into a single per-token summary the
+ * engine can act on. The engine's `tier1Sign` is window-agnostic, so we:
+ *   - take the MEDIAN sign across the three windows (robust to one-window
+ *     outliers; if 2/3 say -1, we invert);
+ *   - take the MAX confidence_score across windows (best evidence wins);
+ *   - take the longest window's IC + n_outcomes for transparency.
+ * Tokens with NO calibration rows return undefined => engine uses statics.
+ */
+async function loadCalibrationByToken(tokens) {
+  const upper = tokens.map(t => t.toUpperCase())
+  const { data, error } = await supabaseAdmin
+    .from('token_signal_calibration')
+    .select('token, eval_window, ic, n_outcomes, sign_multiplier, confidence_score')
+    .in('token', upper)
+  if (error) {
+    console.warn('[SignalEngine] calibration load failed (using statics):', error.message)
+    return new Map()
+  }
+  const byToken = new Map()
+  for (const row of data || []) {
+    if (!byToken.has(row.token)) byToken.set(row.token, [])
+    byToken.get(row.token).push(row)
+  }
+  const out = new Map()
+  for (const [token, rows] of byToken) {
+    // Median of sign_multiplier (treat null as 1 for the vote so a single
+    // null window doesn't drag the vote to 0/-1 by itself).
+    const signs = rows.map(r => (r.sign_multiplier === null ? 1 : r.sign_multiplier)).sort((a, b) => a - b)
+    const median = signs[Math.floor(signs.length / 2)]
+    const signMultiplier = (median === -1 || median === 0 || median === 1) ? median : null
+
+    const confidenceScore = rows.reduce((m, r) => Math.max(m, Number(r.confidence_score) || 0), 0)
+    // Pick the row with most outcomes for IC reporting.
+    const widest = rows.slice().sort((a, b) => (b.n_outcomes || 0) - (a.n_outcomes || 0))[0]
+    out.set(token, {
+      signMultiplier,
+      confidenceScore,
+      ic: widest?.ic === null || widest?.ic === undefined ? null : Number(widest.ic),
+      nOutcomes: widest?.n_outcomes || 0,
+    })
+  }
+  return out
+}
 
 /**
  * Get the most active tokens in the last 24h.
@@ -144,7 +196,7 @@ async function getActiveTokens() {
 /**
  * Gather all data sources for a single token and compute the signal.
  */
-async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
+async function computeSignalForToken(tokenSymbol, btcBeta = {}, calibration = null) {
   // Parallel data fetching — use cached price snapshots first, Binance as fallback
   const [transactions, sentimentData, cachedPrice, socialData, communityVotes, priceHistory] = await Promise.all([
     fetchWhaleTransactions(tokenSymbol),
@@ -239,6 +291,7 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}) {
     tokenSymbol,
     technicalSignals,
     derivativesData: derivativesData?.available ? derivativesData : null,
+    calibration,
   })
 
   // Market beta adjustment: dampen signals that fight the broad market trend

@@ -153,6 +153,30 @@ export interface ComputeSignalParams {
     openInterestUsd: number
     available: boolean
   } | null
+  /**
+   * Per-token rolling calibration loaded from the
+   * `token_signal_calibration` table by the cron caller. When provided, it
+   * overrides the static TIER1_SIGN_BY_TOKEN map below AND gates label
+   * emission: tokens whose own historical IC is statistically thin will
+   * stay NEUTRAL even if the score crosses 58/42.
+   *
+   * Shape: {
+   *   signMultiplier: -1 | 0 | 1 | null   // null => use static fallback
+   *   confidenceScore: number              // 0..100, used as label gate
+   *   ic: number | null
+   *   nOutcomes: number
+   * }
+   *
+   * If undefined, the engine behaves exactly as before (static map only).
+   * This keeps the engine importable from places that don't have DB access
+   * (e.g. unit tests, the on-demand single-token UI endpoint).
+   */
+  calibration?: {
+    signMultiplier: -1 | 0 | 1 | null
+    confidenceScore: number
+    ic: number | null
+    nOutcomes: number
+  } | null
 }
 
 // ─── TIER 1: CEX WHALE FLOW ──────────────────────────────────────────────
@@ -572,44 +596,60 @@ export function computeUnifiedSignal({
   tokenSymbol = 'UNKNOWN',
   technicalSignals = null,
   derivativesData = null,
+  calibration = null,
 }: ComputeSignalParams): UnifiedSignal {
   const tier1Raw = computeTier1_CexWhaleFlow(transactions)
   const tier2Raw = computeTier2_PriceMomentum(priceChanges, volumeData)
   const tier3 = computeTier3_SentimentSocial(sentimentData, socialData)
   const tier4 = computeTier4_WeakSignals(transactions, communityVotes, devActivity)
 
-  // ─── Per-token Tier 1 sign calibration (2026-04-22) ─────────────────────
-  // The 2026-04-20 global sign-flip (IC_FIX_ENABLED universal -1) was based
-  // on a POOLED 30-day IC of -0.16 across 13-15 tokens. Re-audit on 2026-04-22
-  // (n=900-2700 outcomes per token, 1h/6h/24h horizons consistent within ±0.01)
-  // revealed the pooled negative IC was driven by 7 inverted alts dragging down
-  // ~14 correctly-signed majors. The global flip BROKE BTC/WBTC/ETH (which
-  // already had IC = +0.27 to +0.50) and explained the 0/33 BUY post-flip
-  // accuracy: all post-flip BUYs concentrated on BTC/WBTC where the flip was
-  // wrong. Diagnostic: select id, token, signal from token_signals where
-  //   signal='BUY' and created_at > now()-interval '2 days' → 55/55 BTC|WBTC.
+  // ─── Per-token Tier 1 sign calibration ──────────────────────────────────
+  // PRIMARY source: live `token_signal_calibration` table, refreshed daily
+  // by /api/cron/calibrate-signals. Passed in as `calibration` param by the
+  // compute-signals cron. The cron derives `signMultiplier` from the
+  // 30-day rolling hit_rate per token.
   //
-  // Action: replace global flip with per-token sign multiplier. Tokens with
-  // mean IC ≤ -0.10 get -1; |IC| < 0.05 get 0 (no Tier 1 contribution); rest
-  // default to +1. Unaudited tokens default to +1 (matches majority pattern).
+  // FALLBACK source: the static map below. This is a safety net for:
+  //   (a) brand-new tokens with no outcome history yet,
+  //   (b) the on-demand single-token UI endpoint that doesn't load
+  //       calibration,
+  //   (c) the moments after a fresh deploy if calibration hasn't run.
+  //
+  // The static values are an audit snapshot (last refresh: 2026-04-25)
+  // computed by the same hit-rate-first rule the cron uses. Anything not
+  // in this map defaults to +1 (keep direction). The cron will silently
+  // override every entry within 24h of running.
+  //
+  // FLIP LIST (hit_rate ≤ 0.40 on 30d, n ≥ 50):
+  //   AAVE, AXS, BAT, BTC, CHZ, CRV, DOGE, ETH, LINK, ONDO, PEPE,
+  //   SHIB, SNX, SOL, UNI, WBTC
+  // KEEP LIST (hit_rate ≥ 0.60, n ≥ 50, default +1):
+  //   ARB, BLUR, COMP, ENA, FLOKI, GRT, IMX, LDO, MANA, PENDLE,
+  //   RNDR, SUSHI, WETH, WLD, YFI, INJ, MNT, ENS
+  // MUTE (0.40 < hit_rate < 0.60, n ≥ 50):
+  //   SAND, ZRX
   // SIGNAL_ENGINE_IC_FIX=off forces every multiplier back to +1 (kill switch).
-  //
-  // FLIP LIST  (mean IC across 1h/6h/24h ≤ -0.10):
-  //   BLUR -0.87, SHIB -0.60, LINK -0.49, BAT -0.37, UNI -0.36, CRV -0.33, LDO -0.33
-  // ZERO LIST  (|mean IC| < 0.10, treat as noise):
-  //   AAVE -0.10, INJ -0.06, AXS -0.04, CHZ +0.01, IMX +0.01
-  // KEEP LIST (default +1, audit-verified IC ≥ +0.10):
-  //   BTC +0.41, WBTC +0.27, ETH +0.50, WETH +0.50, MNT +0.51, ZRX +0.50,
-  //   PENDLE +0.32, ENS +0.37, FLOKI +0.53, SUSHI +0.58, SAND +0.59, COMP +0.68,
-  //   YFI +0.77, PEPE +0.11, GRT +0.10, SNX +0.18
   const TIER1_SIGN_BY_TOKEN: Record<string, -1 | 0 | 1> = {
-    BLUR: -1, SHIB: -1, LINK: -1, BAT: -1, UNI: -1, CRV: -1, LDO: -1,
-    AAVE:  0, INJ:  0, AXS:  0, CHZ:  0, IMX:  0,
+    AAVE: -1, AXS: -1, BAT: -1, BTC: -1, CHZ: -1, CRV: -1, DOGE: -1,
+    ETH: -1, LINK: -1, ONDO: -1, PEPE: -1, SHIB: -1, SNX: -1, SOL: -1,
+    UNI: -1, WBTC: -1,
+    SAND: 0, ZRX: 0,
+    // (KEEP list omitted: default fallback is already +1)
   }
   const IC_FIX_ENABLED = process.env.SIGNAL_ENGINE_IC_FIX !== 'off'
   const tokenKey = (tokenSymbol || '').toUpperCase()
+
+  // Resolution order for tier1Sign:
+  //   1. Live calibration row from DB (if provided AND has a non-null sign)
+  //   2. Static TIER1_SIGN_BY_TOKEN map (the 2026-04-22 baked-in audit)
+  //   3. Default +1 (keep raw direction)
+  // SIGNAL_ENGINE_IC_FIX=off forces every multiplier to +1 (full kill switch).
+  const calibratedSign: -1 | 0 | 1 | null =
+    (calibration && calibration.signMultiplier !== null)
+      ? calibration.signMultiplier
+      : null
   const tier1Sign: -1 | 0 | 1 = IC_FIX_ENABLED
-    ? (TIER1_SIGN_BY_TOKEN[tokenKey] ?? 1)
+    ? (calibratedSign ?? TIER1_SIGN_BY_TOKEN[tokenKey] ?? 1)
     : 1
   const tier1 = tier1Sign === 1
     ? tier1Raw
@@ -770,7 +810,25 @@ export function computeUnifiedSignal({
   )
 
   const score = Math.round(clamp((rawScore + 100) / 2, 0, 100))
-  const signal = getSignalLabel(score, confidence)
+
+  // Per-token calibration gate. If we have a recent calibration row but the
+  // confidence score is below 20, force NEUTRAL.
+  // The calibration cron computes confidence_score = max(|hit_rate-0.5|*200,
+  // |IC|*100). A score < 20 means EITHER hit_rate is in [0.40, 0.60] (coin
+  // flip) AND |IC| < 0.20 (no magnitude correlation either) — the engine
+  // should not stake an opinion on a token whose own track record is that thin.
+  // This is independent of `confidence` (within-snapshot tier agreement);
+  // `confidence` says "how sure is this snapshot", calibration says "how
+  // sure is the engine on this TOKEN historically".
+  const CALIBRATION_LABEL_GATE = 20
+  const failsCalibrationGate =
+    !!calibration &&
+    calibration.nOutcomes >= 20 &&
+    calibration.confidenceScore < CALIBRATION_LABEL_GATE
+
+  const signal: SignalLabel = failsCalibrationGate
+    ? 'NEUTRAL'
+    : getSignalLabel(score, confidence)
 
   const tierNames: Record<string, string> = {
     tier1: 'CEX Whale Flow',

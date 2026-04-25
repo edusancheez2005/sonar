@@ -45,6 +45,10 @@
       "schedule": "30 * * * *"
     },
     {
+      "path": "/api/cron/calibrate-signals",
+      "schedule": "0 3 * * *"
+    },
+    {
       "path": "/api/cron/whale-whisper",
       "schedule": "0 */4 * * *"
     },

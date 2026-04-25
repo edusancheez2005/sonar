@@ -30,6 +30,26 @@ const EVAL_WINDOWS = [
 // 5 bps ≈ 0.05% ≈ Binance taker fee on a single side.
 const NOISE_FLOOR_PCT = 0.05
 
+// CoinGecko ID lookup for tokens NOT reliably on Binance USDT (or where the
+// USDT pair has thin volume / weird symbol). Used as a live fallback when the
+// Binance batch ticker doesn't return a quote — avoids the silent regression
+// where evaluate-signals would fall through to price_snapshots and pick up the
+// SAME signal-time price (yielding price_change_pct = 0.00% and a false negative).
+// Subset mirrored from app/api/cron/fetch-prices/route.ts TICKER_MAP — keep
+// in sync for any new low-liquidity additions.
+const CG_ID_FALLBACK = {
+  SSV: 'ssv-network', EIGEN: 'eigenlayer', LDO: 'lido-dao', CVX: 'convex-finance',
+  BAT: 'basic-attention-token', LRC: 'loopring', MNT: 'mantle', NMR: 'numeraire',
+  YFI: 'yearn-finance', DYDX: 'dydx', LPT: 'livepeer', APE: 'apecoin',
+  QNT: 'quant-network', BLUR: 'blur', PENDLE: 'pendle', ONDO: 'ondo-finance',
+  ENA: 'ethena', ENS: 'ethereum-name-service', RPL: 'rocket-pool', GNO: 'gnosis',
+  FXS: 'frax-share', TAO: 'bittensor', RENDER: 'render-token', RNDR: 'render-token',
+  PYTH: 'pyth-network', JUP: 'jupiter-exchange-solana', KAS: 'kaspa',
+  STRK: 'starknet', CELO: 'celo', API3: 'api3', SKL: 'skale', ANKR: 'ankr',
+  MASK: 'mask-network', GMX: 'gmx', ZRX: '0x', GRT: 'the-graph',
+  COMP: 'compound-governance-token', CRV: 'curve-dao-token', SNX: 'havven',
+}
+
 export async function GET(req) {
   try {
     const authHeader = req.headers.get('authorization')
