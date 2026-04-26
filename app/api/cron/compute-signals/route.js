@@ -37,6 +37,34 @@ export async function GET(req) {
 
     console.log(`[SignalEngine] Processing ${tokens.length} tokens: ${tokens.join(', ')}`)
 
+    // v8 (2026-04-26): Freshness gate. Refuse to compute signals on stale
+    // price snapshots. Without this, when fetch-prices was geo-blocked
+    // upstream, we silently produced 49h of signals on frozen prices and
+    // poisoned the entire signal_outcomes + calibration pipeline. Hard fail
+    // is better than silent corruption.
+    if (!singleToken) {
+      const { data: latestBtc } = await supabaseAdmin
+        .from('price_snapshots')
+        .select('price_usd, timestamp')
+        .eq('ticker', 'BTC')
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!latestBtc) {
+        return NextResponse.json({ error: 'No price snapshots found — fetch-prices not running' }, { status: 503 })
+      }
+      const ageMin = (Date.now() - new Date(latestBtc.timestamp).getTime()) / 60000
+      if (ageMin > 30) {
+        console.error(`[SignalEngine] BTC snapshot stale: ${ageMin.toFixed(1)}min old, $${latestBtc.price_usd}`)
+        return NextResponse.json({
+          error: 'Price snapshots stale',
+          age_min: ageMin,
+          last_btc_price: latestBtc.price_usd,
+          last_snapshot_at: latestBtc.timestamp,
+        }, { status: 503 })
+      }
+    }
+
     // Market beta: fetch BTC 24h change to detect broad market regime
     // When BTC is down >2%, dampen BUY signals (market headwind)
     // When BTC is up >2%, dampen SELL signals (market tailwind)

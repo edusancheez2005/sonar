@@ -58,29 +58,69 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get LIVE prices from Binance (always fresh), with price_snapshots as fallback
+    // v8 (2026-04-26 FIX): api.binance.com is geo-blocked from Vercel's
+    // serverless region. The previous implementation silently caught the
+    // failure and fell through to price_snapshots — which were ALSO stale
+    // because fetch-prices uses the same broken Binance feed. Net effect:
+    // every outcome since 2026-04-24 20:00 UTC was evaluated against a
+    // 49-hour-old price (BTC stuck at $71258 vs real $77981, 9.4% gap).
+    // Switched to CoinGecko Pro as primary (proven reliable from any
+    // region). Binance kept ONLY as enrichment opportunity.
     const priceMap = new Map()
-    try {
-      const binanceRes = await fetch('https://api.binance.com/api/v3/ticker/price', {
-        signal: AbortSignal.timeout(10000),
-      })
-      if (binanceRes.ok) {
-        const allPrices = await binanceRes.json()
-        for (const p of allPrices) {
-          if (p.symbol.endsWith('USDT')) {
-            const token = p.symbol.replace('USDT', '')
-            priceMap.set(token, parseFloat(p.price))
+
+    // Build CG ID list from TICKER_MAP equivalents — we want the same
+    // universe as fetch-prices. Cheaper to just hit CG /simple/price for
+    // all the tokens we care about.
+    const cgKey = process.env.COINGECKO_API_KEY
+    if (cgKey) {
+      // Pull the ticker→cg id map from price_snapshots indirectly by asking
+      // CG for the most-traded universe. Simpler: hardcode the IDs we need
+      // (mirrors fetch-prices/route.ts TICKER_MAP). For evaluate-signals
+      // we only need the tokens that appeared in token_signals recently, so
+      // we ask CG for the union of CG_ID_FALLBACK + a small core set.
+      const CORE_TOKENS = {
+        BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin',
+        XRP: 'ripple', ADA: 'cardano', DOGE: 'dogecoin', TRX: 'tron',
+        AVAX: 'avalanche-2', SHIB: 'shiba-inu', DOT: 'polkadot', LINK: 'chainlink',
+        MATIC: 'matic-network', UNI: 'uniswap', LTC: 'litecoin', ATOM: 'cosmos',
+        ETC: 'ethereum-classic', XLM: 'stellar', NEAR: 'near', ALGO: 'algorand',
+        VET: 'vechain', FIL: 'filecoin', APT: 'aptos', HBAR: 'hedera-hashgraph',
+        ARB: 'arbitrum', OP: 'optimism', SUI: 'sui', SEI: 'sei-network',
+        TIA: 'celestia', STX: 'blockstack', INJ: 'injective-protocol',
+        AAVE: 'aave', MKR: 'maker', RUNE: 'thorchain', SUSHI: 'sushi',
+        SAND: 'the-sandbox', MANA: 'decentraland', IMX: 'immutable-x',
+        AXS: 'axie-infinity', GALA: 'gala', ENJ: 'enjincoin', CHZ: 'chiliz',
+        PEPE: 'pepe', WLD: 'worldcoin-wld', WIF: 'dogwifcoin', BONK: 'bonk',
+        FLOKI: 'floki', FTM: 'fantom', '1INCH': '1inch', FET: 'artificial-superintelligence-alliance',
+        WBTC: 'wrapped-bitcoin', WETH: 'weth',
+      }
+      const allMap = { ...CORE_TOKENS, ...CG_ID_FALLBACK }
+      const ids = [...new Set(Object.values(allMap))].join(',')
+      try {
+        const cgRes = await fetch(
+          `https://pro-api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
+          { headers: { 'x-cg-pro-api-key': cgKey }, signal: AbortSignal.timeout(15000) }
+        )
+        if (cgRes.ok) {
+          const data = await cgRes.json()
+          for (const [sym, cgId] of Object.entries(allMap)) {
+            const usd = data[cgId]?.usd
+            if (usd && usd > 0) priceMap.set(sym, Number(usd))
           }
         }
-        // Map wrapped tokens
-        if (priceMap.has('BTC')) priceMap.set('WBTC', priceMap.get('BTC'))
-        if (priceMap.has('ETH')) priceMap.set('WETH', priceMap.get('ETH'))
+      } catch (e) {
+        console.warn('[EvalSignals] CoinGecko price fetch failed, using snapshots:', e.message)
       }
-    } catch (e) {
-      console.warn('[EvalSignals] Binance price fetch failed, using snapshots:', e.message)
     }
 
-    // Fallback: fill gaps from price_snapshots
+    // Wrapped tokens mirror their underlying when CG didn't return them
+    // explicitly (some CG IDs for wrapped variants drift from spot).
+    if (!priceMap.has('WBTC') && priceMap.has('BTC')) priceMap.set('WBTC', priceMap.get('BTC'))
+    if (!priceMap.has('WETH') && priceMap.has('ETH')) priceMap.set('WETH', priceMap.get('ETH'))
+
+    // Last-resort fallback: fill gaps from price_snapshots. With CG primary
+    // working, this should never fire — but if it does, the freshness
+    // check at insert time means anything we read here is at most 15min old.
     if (priceMap.size < 20) {
       const { data: priceRows } = await supabaseAdmin
         .from('price_snapshots')

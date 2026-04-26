@@ -26,7 +26,7 @@
     },
     {
       "path": "/api/cron/compute-signals",
-      "schedule": "*/15 * * * *"
+      "schedule": "5,20,35,50 * * * *"
     },
     {
       "path": "/api/cron/weekly-insights",
