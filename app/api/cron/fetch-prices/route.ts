@@ -156,59 +156,110 @@ export async function GET(request: Request) {
     let totalInserted = 0
     const errors: string[] = []
 
-    // v8 (2026-04-26 ROOT-CAUSE FIX): Binance api.binance.com is geo-blocked
-    // from Vercel's serverless region. The previous "Binance primary" path
-    // was silently returning 451/403 → empty binancePrices → falling through
-    // to CoinGecko fallback BUT only for tokens "not in binancePrices" — which
-    // was all of them, so it kinda worked. Then a deeper failure (CG quota
-    // or stale CDN response) caused EVERY token to freeze at the same value
-    // for 49.8h straight (BTC stuck at $71258 while real BTC was $77981 —
-    // 9.4% gap). Diagnosed 2026-04-26 from 49h of identical price_snapshots
-    // rows. The whole signal_outcomes table for the period is corrupted.
+    // v9 (2026-04-27): Diagnosed that Vercel's COINGECKO_API_KEY environment
+    // variable is a different (likely demo/expired) key than the one in
+    // local .env.local. Vercel's CG returns stale values stuck at $71258 BTC
+    // for days, while local CG returns live $76842. Verified by hitting the
+    // deployed endpoint with the cron secret — response shape confirms new
+    // code IS deployed, but the upstream data IS the problem.
     //
-    // New order: CoinGecko Pro PRIMARY (paid plan, reliable, returns live
-    // prices from any region). Binance is used ONLY for taker_buy_pressure
-    // enrichment elsewhere. We freshness-check CG response by spot-comparing
-    // BTC against the previous snapshot — if identical to 4 decimal places
-    // we treat the source as poisoned and surface a hard error instead of
-    // silently inserting another stale row.
-    const cgPrices: Record<string, any> = {}
-    const apiKey = process.env.COINGECKO_API_KEY
-    if (!apiKey) {
-      errors.push('COINGECKO_API_KEY missing — cannot fetch live prices')
-    } else {
-      const coinIds = TICKER_MAP.map(t => t.id).join(',')
-      try {
-        const url = `https://pro-api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`
-        const response = await fetch(url, {
-          headers: { 'Accept': 'application/json', 'x-cg-pro-api-key': apiKey },
-          signal: AbortSignal.timeout(15000),
-        })
-        if (!response.ok) {
-          errors.push(`CoinGecko HTTP ${response.status}`)
-        } else {
-          const data = await response.json()
-          for (const ticker of TICKER_MAP) {
-            const pd = data[ticker.id]
-            if (!pd || !pd.usd) continue
-            cgPrices[ticker.symbol] = {
-              price: pd.usd,
-              market_cap: pd.usd_market_cap || null,
-              volume_24h: pd.usd_24h_vol || null,
-              price_change_24h: pd.usd_24h_change || null,
-            }
+    // Switched primary to data-api.binance.vision (Cloudflare-fronted public
+    // Binance read mirror — free, no key, returns ALL ~3570 USDT pairs in
+    // one call, proven to work from any region including Vercel serverless).
+    // CoinGecko stays as enrichment for market_cap (Binance doesn't provide).
+    //
+    // History:
+    //   v6: Binance api.binance.com primary (geo-blocked from Vercel — 49h freeze)
+    //   v8 (2026-04-26): CoinGecko primary (Vercel CG key returned stale data)
+    //   v9 (2026-04-27): data-api.binance.vision primary, CoinGecko enrichment
+    const livePrices: Record<string, { price: number; volume_24h?: number; price_change_24h?: number; market_cap?: number | null }> = {}
+
+    // 1. PRIMARY: data-api.binance.vision — full ticker list (one call)
+    try {
+      const priceRes = await fetch(
+        'https://data-api.binance.vision/api/v3/ticker/price',
+        { signal: AbortSignal.timeout(10000) }
+      )
+      if (priceRes.ok) {
+        const all: { symbol: string; price: string }[] = await priceRes.json()
+        for (const p of all) {
+          if (!p.symbol.endsWith('USDT')) continue
+          const ticker = p.symbol.replace('USDT', '')
+          const price = parseFloat(p.price)
+          if (price > 0) livePrices[ticker] = { price }
+        }
+      } else {
+        errors.push(`data-api.binance.vision /price HTTP ${priceRes.status}`)
+      }
+
+      // 24h ticker for volume + change
+      const t24Res = await fetch(
+        'https://data-api.binance.vision/api/v3/ticker/24hr',
+        { signal: AbortSignal.timeout(15000) }
+      )
+      if (t24Res.ok) {
+        const all24: any[] = await t24Res.json()
+        for (const t of all24) {
+          if (!t.symbol.endsWith('USDT')) continue
+          const ticker = t.symbol.replace('USDT', '')
+          if (livePrices[ticker]) {
+            livePrices[ticker].volume_24h = parseFloat(t.quoteVolume) || 0
+            livePrices[ticker].price_change_24h = parseFloat(t.priceChangePercent) || 0
           }
         }
-      } catch (cgErr) {
-        errors.push(`CoinGecko fetch failed: ${cgErr instanceof Error ? cgErr.message : cgErr}`)
+      }
+    } catch (e) {
+      errors.push(`data-api.binance.vision failed: ${e instanceof Error ? e.message : e}`)
+    }
+
+    // 2. FALLBACK + ENRICHMENT: CoinGecko Pro for tokens NOT on Binance USDT
+    // (mostly wrapped tokens, niche memes) and to add market_cap which
+    // Binance doesn't provide.
+    const cgKey = process.env.COINGECKO_API_KEY
+    if (cgKey) {
+      const missingOrNeedsMcap = TICKER_MAP.filter(t => !livePrices[t.symbol] || livePrices[t.symbol].market_cap == null)
+      if (missingOrNeedsMcap.length > 0) {
+        const ids = missingOrNeedsMcap.map(t => t.id).join(',')
+        try {
+          const cgRes = await fetch(
+            `https://pro-api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`,
+            {
+              headers: { 'Accept': 'application/json', 'x-cg-pro-api-key': cgKey },
+              signal: AbortSignal.timeout(15000),
+            }
+          )
+          if (cgRes.ok) {
+            const data = await cgRes.json()
+            for (const t of missingOrNeedsMcap) {
+              const pd = data[t.id]
+              if (!pd?.usd) continue
+              if (!livePrices[t.symbol]) {
+                // CG is the primary source for this token
+                livePrices[t.symbol] = {
+                  price: pd.usd,
+                  volume_24h: pd.usd_24h_vol || 0,
+                  price_change_24h: pd.usd_24h_change || 0,
+                  market_cap: pd.usd_market_cap || null,
+                }
+              } else if (pd.usd_market_cap) {
+                // Binance gave us price/volume; use CG just for market_cap
+                livePrices[t.symbol].market_cap = pd.usd_market_cap
+              }
+            }
+          } else {
+            errors.push(`CoinGecko HTTP ${cgRes.status}`)
+          }
+        } catch (cgErr) {
+          errors.push(`CoinGecko enrichment failed: ${cgErr instanceof Error ? cgErr.message : cgErr}`)
+        }
       }
     }
 
-    // Stale-source guard: if CG returned the same BTC price as the most
-    // recent snapshot to 4 decimal places, the source is poisoned. Refuse
-    // to insert another stale row — better to skip a 15-min cycle than
-    // poison the dataset further.
-    if (cgPrices.BTC?.price) {
+    // Stale-source guard: if NEW BTC matches the most recent snapshot to 4
+    // decimal places AND that snapshot is < 30min old, source is poisoned.
+    // Refuse to insert another stale row.
+    const newBtcPrice = livePrices.BTC?.price
+    if (newBtcPrice) {
       const { data: lastBtc } = await supabase
         .from('price_snapshots')
         .select('price_usd, timestamp')
@@ -216,16 +267,14 @@ export async function GET(request: Request) {
         .order('timestamp', { ascending: false })
         .limit(1)
         .maybeSingle()
-      if (lastBtc?.price_usd && Math.abs(Number(lastBtc.price_usd) - cgPrices.BTC.price) < 0.0001) {
+      if (lastBtc?.price_usd && Math.abs(Number(lastBtc.price_usd) - newBtcPrice) < 0.0001) {
         const ageMin = (Date.now() - new Date(lastBtc.timestamp).getTime()) / 60000
-        // Only treat as stale if the previous snapshot is also recent (< 30m).
-        // If the last snapshot is older, identical prices would just mean BTC
-        // happens to be at the same level — unusual but not impossible.
         if (ageMin < 30) {
-          errors.push(`BTC price unchanged from previous snapshot ($${lastBtc.price_usd}) — source likely stale, aborting insert`)
+          errors.push(`BTC unchanged ($${lastBtc.price_usd}) in ${ageMin.toFixed(1)}min — source stale, aborting`)
           return NextResponse.json({
             success: false,
             stale: true,
+            sample_btc: newBtcPrice,
             errors,
           }, { status: 503 })
         }
@@ -234,24 +283,24 @@ export async function GET(request: Request) {
 
     // Insert all live prices
     for (const ticker of TICKER_MAP) {
-      const cg = cgPrices[ticker.symbol]
-      if (!cg || !cg.price || cg.price <= 0) continue
+      const lp = livePrices[ticker.symbol]
+      if (!lp || !lp.price || lp.price <= 0) continue
       try {
         const { error: insertError } = await supabase
           .from('price_snapshots')
           .insert({
             ticker: ticker.symbol,
             timestamp: new Date().toISOString(),
-            price_usd: cg.price,
-            market_cap: cg.market_cap,
-            volume_24h: cg.volume_24h,
+            price_usd: lp.price,
+            market_cap: lp.market_cap ?? null,
+            volume_24h: lp.volume_24h ?? null,
             price_change_1h: null,
-            price_change_24h: cg.price_change_24h,
+            price_change_24h: lp.price_change_24h ?? null,
             price_change_7d: null,
           })
         if (!insertError) totalInserted++
         else if (!insertError.message.includes('duplicate key')) {
-          errors.push(`CG insert ${ticker.symbol}: ${insertError.message}`)
+          errors.push(`insert ${ticker.symbol}: ${insertError.message}`)
         }
       } catch {}
     }

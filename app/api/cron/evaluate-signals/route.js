@@ -58,19 +58,33 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // v8 (2026-04-26 FIX): api.binance.com is geo-blocked from Vercel's
-    // serverless region. The previous implementation silently caught the
-    // failure and fell through to price_snapshots — which were ALSO stale
-    // because fetch-prices uses the same broken Binance feed. Net effect:
-    // every outcome since 2026-04-24 20:00 UTC was evaluated against a
-    // 49-hour-old price (BTC stuck at $71258 vs real $77981, 9.4% gap).
-    // Switched to CoinGecko Pro as primary (proven reliable from any
-    // region). Binance kept ONLY as enrichment opportunity.
+    // v9 (2026-04-27): Diagnosed Vercel's COINGECKO_API_KEY env returns
+    // stale data (likely demo/expired key, different from local). Switched
+    // primary to data-api.binance.vision — Cloudflare-fronted Binance
+    // public mirror, no key, works from Vercel serverless region.
+    // CoinGecko stays as fallback for tokens not on Binance USDT.
     const priceMap = new Map()
 
-    // Build CG ID list from TICKER_MAP equivalents — we want the same
-    // universe as fetch-prices. Cheaper to just hit CG /simple/price for
-    // all the tokens we care about.
+    // 1. PRIMARY: data-api.binance.vision bulk ticker
+    try {
+      const r = await fetch(
+        'https://data-api.binance.vision/api/v3/ticker/price',
+        { signal: AbortSignal.timeout(10000) }
+      )
+      if (r.ok) {
+        const all = await r.json()
+        for (const p of all) {
+          if (!p.symbol.endsWith('USDT')) continue
+          const sym = p.symbol.replace('USDT', '')
+          const px = parseFloat(p.price)
+          if (px > 0) priceMap.set(sym, px)
+        }
+      }
+    } catch (e) {
+      console.warn('[EvalSignals] Binance vision fetch failed:', e.message)
+    }
+
+    // 2. FALLBACK: CoinGecko for tokens NOT on Binance USDT
     const cgKey = process.env.COINGECKO_API_KEY
     if (cgKey) {
       // Pull the ticker→cg id map from price_snapshots indirectly by asking
@@ -95,21 +109,25 @@ export async function GET(req) {
         WBTC: 'wrapped-bitcoin', WETH: 'weth',
       }
       const allMap = { ...CORE_TOKENS, ...CG_ID_FALLBACK }
-      const ids = [...new Set(Object.values(allMap))].join(',')
-      try {
-        const cgRes = await fetch(
-          `https://pro-api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
-          { headers: { 'x-cg-pro-api-key': cgKey }, signal: AbortSignal.timeout(15000) }
-        )
-        if (cgRes.ok) {
-          const data = await cgRes.json()
-          for (const [sym, cgId] of Object.entries(allMap)) {
-            const usd = data[cgId]?.usd
-            if (usd && usd > 0) priceMap.set(sym, Number(usd))
+      // Only fetch CG for tokens NOT already populated by Binance vision
+      const missing = Object.entries(allMap).filter(([sym]) => !priceMap.has(sym))
+      if (missing.length > 0) {
+        const ids = [...new Set(missing.map(([, id]) => id))].join(',')
+        try {
+          const cgRes = await fetch(
+            `https://pro-api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
+            { headers: { 'x-cg-pro-api-key': cgKey }, signal: AbortSignal.timeout(15000) }
+          )
+          if (cgRes.ok) {
+            const data = await cgRes.json()
+            for (const [sym, cgId] of missing) {
+              const usd = data[cgId]?.usd
+              if (usd && usd > 0) priceMap.set(sym, Number(usd))
+            }
           }
+        } catch (e) {
+          console.warn('[EvalSignals] CoinGecko fallback failed:', e.message)
         }
-      } catch (e) {
-        console.warn('[EvalSignals] CoinGecko price fetch failed, using snapshots:', e.message)
       }
     }
 
