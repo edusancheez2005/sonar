@@ -138,6 +138,28 @@ export default function PortfolioPanel() {
   const topHoldings = useMemo(() => (portfolio?.holdings || []).slice(0, 8), [portfolio])
   const total = portfolio?.total_usd
 
+  // Multi-chain scan results: [{chain, total_usd, tokens}], sorted by value
+  const [scan, setScan] = useState(null)
+  const [scanning, setScanning] = useState(false)
+  const runScan = useCallback(async () => {
+    if (!address) return
+    setScanning(true)
+    try {
+      const res = await fetch(`/api/wallet/${address}/scan`, { cache: 'no-store' })
+      if (res.ok) {
+        const j = await res.json()
+        setScan(j)
+        // Auto-jump to the chain with the most value if it differs from current
+        if (j?.best_chain && j.best_chain !== chain && j.grand_total > 0) {
+          setActiveWallet(address, j.best_chain, isVerified)
+          setPortfolio(null)
+        }
+      }
+    } finally {
+      setScanning(false)
+    }
+  }, [address, chain, isVerified, setActiveWallet])
+
   if (!isConnected) {
     return (
       <Wrap initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
@@ -209,7 +231,24 @@ export default function PortfolioPanel() {
           )
         })}
         {topHoldings.length === 0 && !loading && (
-          <Sub>No tokens detected on {chain}. Try a different chain above, or click Refresh.</Sub>
+          <div style={{ width: '100%' }}>
+            <Sub style={{ marginBottom: 8 }}>
+              No tokens detected on <b>{chain}</b>. Your assets might live on a different chain.
+            </Sub>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Btn onClick={runScan} disabled={scanning}>
+                {scanning ? 'Scanning all chains…' : 'Scan all chains'}
+              </Btn>
+              <Ghost onClick={onRefresh} disabled={loading}>↻ Refresh this chain</Ghost>
+            </div>
+            {scan && (
+              <div style={{ marginTop: 10, fontSize: 11.5, color: '#94a3b8', fontFamily: 'JetBrains Mono, monospace' }}>
+                {scan.grand_total > 0
+                  ? `Found $${Math.round(scan.grand_total).toLocaleString()} across: ${scan.chains.filter((c) => c.total_usd > 0).map((c) => `${c.chain} $${Math.round(c.total_usd)}`).join(' · ')}`
+                  : `Scanned ${scan.chains.length} chain${scan.chains.length === 1 ? '' : 's'} — nothing above the $0.05 dust threshold. If you expected to see balances, check the address is correct.`}
+              </div>
+            )}
+          </div>
         )}
       </Chips>
 
