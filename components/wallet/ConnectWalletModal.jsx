@@ -357,12 +357,34 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
     } catch { /* ignore */ }
   }
 
-  function handlePaste() {
+  async function handlePaste() {
     setErr(null)
     const a = pasteAddr.trim()
     if (!ADDRESS_RE.test(a)) { setErr('That does not look like a valid wallet address.'); return }
-    setActiveWallet(a, pasteChain, false)
-    personalize(a, pasteChain).then(() => onClose?.())
+    setBusy(true)
+    try {
+      setActiveWallet(a, pasteChain, false)
+      // personalize() resolves silently on upstream error; explicitly fetch
+      // so we can surface a friendlier message before closing.
+      const sb = supabaseBrowser()
+      const { data } = await sb.auth.getSession()
+      const token = data?.session?.access_token
+      const headers = { 'content-type': 'application/json' }
+      if (token) headers.Authorization = `Bearer ${token}`
+      const res = await fetch('/api/wallet/personalize', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ address: a, chain: pasteChain }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(j?.error || `Could not load this wallet (status ${res.status}).`)
+      await refreshTokens()
+      onClose?.()
+    } catch (e) {
+      setErr(e?.message || 'Could not load this wallet.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function handleSignIn() {
@@ -506,7 +528,12 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
 
               {tab === 'paste' && (
                 <div>
-                  <SectionLabel>Watch any address (read-only)</SectionLabel>
+                  <SectionLabel>Watch any address (read-only · no signature, no account)</SectionLabel>
+                  <Sub style={{ margin: '0 0 12px' }}>
+                    Paste any public wallet address. Sonar will personalize the dashboard around
+                    its tokens. Nothing is signed, no account is created, and you can clear it
+                    at any time.
+                  </Sub>
                   <Input
                     placeholder="0x… or Solana / BTC address"
                     value={pasteAddr}
@@ -521,8 +548,8 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
                     <option value="solana">Solana</option>
                     <option value="bitcoin">Bitcoin</option>
                   </Select>
-                  <Primary type="button" onClick={handlePaste} whileTap={{ scale: 0.98 }}>
-                    Watch this address
+                  <Primary type="button" disabled={busy} onClick={handlePaste} whileTap={busy ? {} : { scale: 0.98 }}>
+                    {busy ? 'Loading wallet…' : 'Watch this address'}
                   </Primary>
                 </div>
               )}
