@@ -119,13 +119,13 @@ export async function GET(request: Request) {
         // Small delay to respect rate limits
         await delay(500)
 
-        // 2. Fetch from CryptoPanic (secondary source)
-        const cryptoPanicInserted = await fetchCryptoPanicNews(ticker, supabase)
-        totalInserted += cryptoPanicInserted
-        totalFetched += cryptoPanicInserted
-
-        // Small delay to respect rate limits
-        await delay(500)
+        // 2. Fetch from CryptoPanic (secondary source) - skipped automatically if API is unavailable
+        if (!cryptoPanicDisabled) {
+          const cryptoPanicInserted = await fetchCryptoPanicNews(ticker, supabase)
+          totalInserted += cryptoPanicInserted
+          totalFetched += cryptoPanicInserted
+          await delay(500)
+        }
 
       } catch (error) {
         const errorMsg = `Error fetching news for ${ticker}: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -245,12 +245,32 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
 
 /**
  * Fetch news from CryptoPanic API
+ *
+ * NOTE: The free CryptoPanic Developer plan was discontinued on 2026-04-01.
+ * Until we either upgrade to a paid plan or migrate to an alternative source,
+ * the call will hard-fail with 401/403/404. We detect that on the first ticker
+ * of a run, set `cryptoPanicDisabled = true`, and skip the remaining ~150
+ * tickers silently to avoid spamming logs and burning ~75s of cron time.
+ *
+ * To force-disable without a deploy, set CRYPTOPANIC_DISABLED=true.
  */
+let cryptoPanicDisabled = process.env.CRYPTOPANIC_DISABLED === 'true'
+let cryptoPanicDisabledLogged = false
+
+function disableCryptoPanic(reason: string): void {
+  cryptoPanicDisabled = true
+  if (!cryptoPanicDisabledLogged) {
+    console.warn(`[ingest-news] CryptoPanic disabled for the rest of this run: ${reason}`)
+    cryptoPanicDisabledLogged = true
+  }
+}
+
 async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<number> {
   try {
     const apiToken = process.env.CRYPTOPANIC_API_TOKEN
     if (!apiToken) {
-      throw new Error('CRYPTOPANIC_API_TOKEN not configured')
+      disableCryptoPanic('CRYPTOPANIC_API_TOKEN not configured')
+      return 0
     }
 
     const url = `https://cryptopanic.com/api/developer/v2/posts/?auth_token=${apiToken}&currencies=${ticker}&public=true&kind=news`
@@ -258,6 +278,11 @@ async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<numb
     const response = await fetch(url)
 
     if (!response.ok) {
+      // Hard auth/endpoint failures are not transient -- short-circuit the rest of the run.
+      if ([401, 403, 404, 410].includes(response.status)) {
+        disableCryptoPanic(`HTTP ${response.status} ${response.statusText} (likely free Developer plan retired 2026-04-01)`)
+        return 0
+      }
       throw new Error(`CryptoPanic API error: ${response.status} ${response.statusText}`)
     }
 
