@@ -23,28 +23,16 @@
  *   IR < 0.2                   -> too noisy to trade.
  *
  * Usage:
- *   node scripts/ic_audit.js                     # last 30 days, alpha labels
- *   node scripts/ic_audit.js 14 raw              # last 14 days, raw returns
- *   node scripts/ic_audit.js 30 alpha 24h        # one horizon only
- *   node scripts/ic_audit.js 60 alpha all wf     # walk-forward (60d → 4×15d slices)
- *
- * Outputs a JSON sibling to stdout when --json is appended:
- *   node scripts/ic_audit.js 30 alpha all none --json > audit.json
- *
- * Benchmark features (added 2026-04-29):
- *   - bench_momentum_1h: tier2 already encodes momentum. We re-derive from
- *     `tier2_factors.change_1h` if available; otherwise we skip. If your
- *     engine alpha can't beat raw 1h momentum on its own, it's not alpha.
- *   - xrank_score / xrank_tier2: cross-sectional rank versions of the
- *     composite and tier2 (read from tier1_factors->'_xranks'). Compare to
- *     the raw versions — if xrank IC is materially higher, the engine is
- *     underusing universe-relative information.
+ *   node scripts/ic_audit.js                # last 30 days, alpha labels
+ *   node scripts/ic_audit.js 14 raw         # last 14 days, raw returns
+ *   node scripts/ic_audit.js 30 alpha 24h   # one horizon only
  *
  * Read-only.
  */
 
 const { createClient } = require('@supabase/supabase-js')
 require('dotenv').config({ path: '.env.local' })
+const QUANT = require('./lib/quant-constants.cjs')
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -55,25 +43,19 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 // ─── CLI args ────────────────────────────────────────────────────────────
-const DAYS = parseInt(process.argv[2] || '30', 10)
-const LABEL_KIND = (process.argv[3] || 'alpha').toLowerCase()  // 'alpha' | 'raw'
-const HORIZON_FILTER_RAW = process.argv[4] || null              // '1h'|'6h'|'24h'|'all'|null
-const HORIZON_FILTER = (HORIZON_FILTER_RAW && HORIZON_FILTER_RAW !== 'all') ? HORIZON_FILTER_RAW : null
-const MODE = (process.argv[5] || 'single').toLowerCase()        // 'single' | 'wf' (walk-forward) | 'none'
-const JSON_OUT = process.argv.includes('--json')
+// IC-AUDIT-1 (2026-05-01): per-token detail is now the DEFAULT output. The
+// pooled cross-token IC is still printed in the summary table but the
+// per-token rows below it tell the real story. Pass `--pooled-only` to
+// suppress the per-token detail (legacy behaviour).
+const ARGS = process.argv.slice(2).filter(a => !a.startsWith('--'))
+const FLAGS = new Set(process.argv.slice(2).filter(a => a.startsWith('--')))
+const DAYS = parseInt(ARGS[0] || '30', 10)
+const LABEL_KIND = (ARGS[1] || 'alpha').toLowerCase()  // 'alpha' | 'raw'
+const HORIZON_FILTER = ARGS[2] || null                  // '1h'|'6h'|'24h'|null
+const POOLED_ONLY = FLAGS.has('--pooled-only')
+const PER_TOKEN_TOP_N = parseInt(process.env.IC_AUDIT_TOP_N || '15', 10)
 
-// Walk-forward parameters
-const WF_SLICE_DAYS = 15        // each slice is this many days
-const WF_MIN_SLICES = 3         // need at least this many to report
-
-const FEATURES = [
-  'score', 'tier1_score', 'tier2_score', 'tier3_score', 'tier4_score', 'confidence',
-  // 2026-04-29: benchmark + cross-sectional features. Null-safe — the
-  // audit drops them per-row if missing, so old rows from before
-  // compute-signals started writing _xranks won't break the report.
-  'bench_momentum_1h', 'bench_momentum_24h',
-  'xrank_score', 'xrank_tier1', 'xrank_tier2', 'xrank_tier3',
-]
+const FEATURES = ['score', 'tier1_score', 'tier2_score', 'tier3_score', 'tier4_score', 'confidence']
 const HORIZONS = HORIZON_FILTER ? [HORIZON_FILTER] : ['1h', '6h', '24h']
 
 // Min outcomes per token before we trust a per-token IC
@@ -162,7 +144,7 @@ async function loadJoined(daysBack) {
   while (true) {
     const { data, error } = await supabase
       .from('token_signals')
-      .select('id, token, score, raw_score, confidence, tier1_score, tier2_score, tier3_score, tier4_score, tier1_factors, top_factors, computed_at')
+      .select('id, token, score, raw_score, confidence, tier1_score, tier2_score, tier3_score, tier4_score, computed_at')
       .gte('computed_at', since)
       .order('computed_at', { ascending: false })
       .range(page * PAGE, page * PAGE + PAGE - 1)
@@ -191,7 +173,7 @@ async function loadJoined(daysBack) {
 
   // Join. Skip rows where the move is below the noise floor — those are
   // data-feed gaps, not real outcomes, and they pollute IC with zeros.
-  const NOISE_FLOOR_PCT = 0.05
+  const NOISE_FLOOR_PCT = QUANT.NOISE_FLOOR_PCT
   const joined = []
   for (const o of outcomes) {
     const s = sigById.get(o.signal_id)
@@ -201,34 +183,12 @@ async function loadJoined(daysBack) {
       ? null : Number(o.alpha_pct)
     if (!Number.isFinite(labelRaw)) continue
     if (Math.abs(labelRaw) < NOISE_FLOOR_PCT) continue
-
-    // 2026-04-29: extract benchmark + xrank features. Null-safe via
-    // optional chaining — old rows missing _xranks just get null and
-    // are filtered out by the per-feature label filter.
-    const xranks = (s.tier1_factors && s.tier1_factors._xranks) || {}
-    // tier2 factors live inside top_factors as the array's tier2 entry,
-    // but momentum is also encoded directly in tier1_factors.change_1h
-    // for some snapshots. We try a few paths to be resilient to schema
-    // drift, fall back to null.
-    const tf = s.tier1_factors || {}
-    const benchMomentum1h =
-      Number.isFinite(Number(tf.change_1h)) ? Number(tf.change_1h) : null
-    const benchMomentum24h =
-      Number.isFinite(Number(tf.change_24h)) ? Number(tf.change_24h) : null
-
     joined.push({
       token: s.token,
       window: o.eval_window,
-      computed_at: s.computed_at,
       score: s.score, raw_score: s.raw_score, confidence: s.confidence,
       tier1_score: s.tier1_score, tier2_score: s.tier2_score,
       tier3_score: s.tier3_score, tier4_score: s.tier4_score,
-      bench_momentum_1h: benchMomentum1h,
-      bench_momentum_24h: benchMomentum24h,
-      xrank_score: Number.isFinite(Number(xranks.xrank_score)) ? Number(xranks.xrank_score) : null,
-      xrank_tier1: Number.isFinite(Number(xranks.xrank_tier1)) ? Number(xranks.xrank_tier1) : null,
-      xrank_tier2: Number.isFinite(Number(xranks.xrank_tier2)) ? Number(xranks.xrank_tier2) : null,
-      xrank_tier3: Number.isFinite(Number(xranks.xrank_tier3)) ? Number(xranks.xrank_tier3) : null,
       label_raw: labelRaw,
       label_alpha: labelAlpha,
     })
@@ -236,63 +196,65 @@ async function loadJoined(daysBack) {
   return joined
 }
 
-// ─── Single-pass IC report (per-horizon, per-feature) ───────────────────
-function runIcReport(usable, labelKey, horizons, opts = {}) {
-  const { quiet = false, label = '' } = opts
-  const out = { label, horizons: {} }
+// ─── Main ────────────────────────────────────────────────────────────────
+async function main() {
+  console.log(`\n=== IC Audit ===`)
+  console.log(`Window: last ${DAYS} days`)
+  console.log(`Label : ${LABEL_KIND === 'alpha' ? 'alpha vs BTC (price_change_pct - btc_change_pct)' : 'raw price_change_pct'}`)
+  console.log(`Horizons: ${HORIZONS.join(', ')}\n`)
 
-  for (const horizon of horizons) {
+  const data = await loadJoined(DAYS)
+  if (!data.length) { console.log('No joined rows. Bail.'); return }
+
+  const labelKey = LABEL_KIND === 'alpha' ? 'label_alpha' : 'label_raw'
+  // For alpha labels, drop rows missing benchmark.
+  const usable = data.filter(d => Number.isFinite(d[labelKey]))
+  console.log(`Usable rows after label filter: ${usable.length} / ${data.length}\n`)
+  if (usable.length < 30) {
+    console.log('⚠  <30 rows with this label. Re-run with `raw` or wait for the eval cron to backfill alpha.')
+    if (LABEL_KIND === 'alpha') return
+  }
+
+  for (const horizon of HORIZONS) {
     const slice = usable.filter(d => d.window === horizon)
-    if (!quiet) {
-      console.log('─'.repeat(78))
-      console.log(`Horizon: ${horizon}    (n=${slice.length})${label ? `   [${label}]` : ''}`)
-      console.log('─'.repeat(78))
-    }
+    console.log('─'.repeat(78))
+    console.log(`Horizon: ${horizon}    (n=${slice.length})`)
+    console.log('─'.repeat(78))
     if (slice.length < 30) {
-      if (!quiet) console.log('  ⚠  insufficient sample for this horizon, skipping.\n')
-      out.horizons[horizon] = { n: slice.length, insufficient: true }
+      console.log('  ⚠  insufficient sample for this horizon, skipping.\n')
       continue
     }
 
+    // Group by token for per-token ICs.
     const byToken = new Map()
     for (const r of slice) {
       if (!byToken.has(r.token)) byToken.set(r.token, [])
       byToken.get(r.token).push(r)
     }
 
-    if (!quiet) {
-      console.log(
-        'feature'.padEnd(20) +
-        'mean_IC'.padStart(10) +
-        'std_IC'.padStart(10) +
-        'IR'.padStart(8) +
-        'hit_rate'.padStart(10) +
-        'tokens'.padStart(8) +
-        '   pooled_IC' +
-        '   verdict'
-      )
-    }
+    console.log(
+      'feature'.padEnd(15) +
+      'mean_IC'.padStart(10) +
+      'std_IC'.padStart(10) +
+      'IR'.padStart(8) +
+      'hit_rate'.padStart(10) +
+      'tokens'.padStart(8) +
+      '   pooled_IC' +
+      '   verdict'
+    )
 
-    const featureResults = {}
     for (const feat of FEATURES) {
-      // For null-bearing features (xranks, benchmarks) drop nulls
-      const featSlice = slice.filter(r => Number.isFinite(Number(r[feat])))
-      if (featSlice.length < 30) {
-        if (!quiet) console.log(feat.padEnd(20) + '   (no data)')
-        featureResults[feat] = { n: featSlice.length, insufficient: true }
-        continue
-      }
-
-      const xs = featSlice.map(r => r[feat])
-      const ys = featSlice.map(r => r[labelKey])
+      // Pooled (cross-sectional + time) IC
+      const xs = slice.map(r => r[feat])
+      const ys = slice.map(r => r[labelKey])
       const pooled = spearman(xs, ys)
 
+      // Per-token ICs (only tokens with enough samples)
       const perToken = []
       for (const [tok, rows] of byToken) {
-        const rs = rows.filter(r => Number.isFinite(Number(r[feat])))
-        if (rs.length < MIN_PER_TOKEN) continue
-        const ic = spearman(rs.map(r => r[feat]), rs.map(r => r[labelKey]))
-        if (ic !== null) perToken.push({ tok, ic, n: rs.length })
+        if (rows.length < MIN_PER_TOKEN) continue
+        const ic = spearman(rows.map(r => r[feat]), rows.map(r => r[labelKey]))
+        if (ic !== null) perToken.push({ tok, ic, n: rows.length })
       }
 
       const ics = perToken.map(p => p.ic)
@@ -306,121 +268,50 @@ function runIcReport(usable, labelKey, horizons, opts = {}) {
         ? '—'
         : `${gradeIC(Math.abs(m))} / ${ir === null ? '—' : gradeIR(Math.abs(ir))}`
 
-      featureResults[feat] = {
-        n: featSlice.length,
-        mean_ic: m,
-        std_ic: s,
-        ir,
-        hit_rate: sameSign,
-        token_count: perToken.length,
-        pooled_ic: pooled,
-        verdict,
-      }
-
-      if (!quiet) {
-        console.log(
-          feat.padEnd(20) +
-          fmt(m).padStart(10) +
-          fmt(s).padStart(10) +
-          fmt(ir, 2).padStart(8) +
-          fmt(sameSign, 2).padStart(10) +
-          String(perToken.length).padStart(8) +
-          '   ' + fmt(pooled).padStart(10) +
-          '   ' + verdict
-        )
-      }
+      console.log(
+        feat.padEnd(15) +
+        fmt(m).padStart(10) +
+        fmt(s).padStart(10) +
+        fmt(ir, 2).padStart(8) +
+        fmt(sameSign, 2).padStart(10) +
+        String(perToken.length).padStart(8) +
+        '   ' + fmt(pooled).padStart(10) +
+        '   ' + verdict
+      )
     }
-    out.horizons[horizon] = { n: slice.length, features: featureResults }
-    if (!quiet) console.log()
-  }
-  return out
-}
+    console.log()
+    if ([...byToken.values()].filter(r => r.length >= MIN_PER_TOKEN).length < MIN_TOKEN_COUNT) {
+      console.log(`  ⚠  Only ${[...byToken.values()].filter(r => r.length >= MIN_PER_TOKEN).length} tokens have >= ${MIN_PER_TOKEN} outcomes — IR is unreliable.\n`)
+    }
 
-// ─── Main ────────────────────────────────────────────────────────────────
-async function main() {
-  if (!JSON_OUT) {
-    console.log(`\n=== IC Audit ===`)
-    console.log(`Window: last ${DAYS} days`)
-    console.log(`Label : ${LABEL_KIND === 'alpha' ? 'alpha vs BTC (price_change_pct - btc_change_pct)' : 'raw price_change_pct'}`)
-    console.log(`Mode  : ${MODE === 'wf' ? `walk-forward (${WF_SLICE_DAYS}d slices)` : 'single window'}`)
-    console.log(`Horizons: ${HORIZONS.join(', ')}\n`)
-  }
-
-  const data = await loadJoined(DAYS)
-  if (!data.length) { console.log('No joined rows. Bail.'); return }
-
-  const labelKey = LABEL_KIND === 'alpha' ? 'label_alpha' : 'label_raw'
-  const usable = data.filter(d => Number.isFinite(d[labelKey]))
-  if (!JSON_OUT) console.log(`Usable rows after label filter: ${usable.length} / ${data.length}\n`)
-
-  if (usable.length < 30) {
-    console.log('⚠  <30 rows with this label. Re-run with `raw` or wait for the eval cron to backfill alpha.')
-    if (LABEL_KIND === 'alpha') return
-  }
-
-  // ── SINGLE WINDOW REPORT ─────────────────────────────────────────────
-  const single = runIcReport(usable, labelKey, HORIZONS, { quiet: JSON_OUT })
-
-  // ── WALK-FORWARD ─────────────────────────────────────────────────────
-  const walkForward = []
-  if (MODE === 'wf') {
-    const sliceMs = WF_SLICE_DAYS * 86400 * 1000
-    const now = Date.now()
-    const sliceCount = Math.floor(DAYS / WF_SLICE_DAYS)
-    if (sliceCount < WF_MIN_SLICES) {
-      if (!JSON_OUT) console.log(`⚠  Walk-forward needs ≥ ${WF_MIN_SLICES} slices; got ${sliceCount}. Increase --days.\n`)
-    } else {
-      for (let i = sliceCount - 1; i >= 0; i--) {
-        const sliceEnd = now - i * sliceMs
-        const sliceStart = sliceEnd - sliceMs
-        const sliceRows = usable.filter(d => {
-          const t = new Date(d.computed_at).getTime()
-          return t >= sliceStart && t < sliceEnd
-        })
-        const lbl = `slice ${sliceCount - i}/${sliceCount}: ${new Date(sliceStart).toISOString().slice(0,10)} → ${new Date(sliceEnd).toISOString().slice(0,10)} (n=${sliceRows.length})`
-        if (!JSON_OUT) {
-          console.log('═'.repeat(78))
-          console.log(`WALK-FORWARD ${lbl}`)
-          console.log('═'.repeat(78))
-        }
-        const sliceReport = runIcReport(sliceRows, labelKey, HORIZONS, { quiet: JSON_OUT, label: lbl })
-        walkForward.push(sliceReport)
+    // IC-AUDIT-1: per-token detail for the COMPOSITE score, ranked by |IC|.
+    // This is the table that catches single-token blow-ups (e.g. "ETH IC
+    // is +0.30, ADA IC is -0.50, mean is +0.02" which the aggregate row
+    // would show as 'noise' even though there's a real signal hiding in
+    // the cross-section).
+    if (!POOLED_ONLY) {
+      const perTokenComposite = []
+      for (const [tok, rows] of byToken) {
+        if (rows.length < MIN_PER_TOKEN) continue
+        const ic = spearman(rows.map(r => r.score), rows.map(r => r[labelKey]))
+        if (ic === null) continue
+        perTokenComposite.push({ tok, ic, n: rows.length })
       }
-
-      // ── Walk-forward summary: is the headline IC stable across slices? ─
-      if (!JSON_OUT) {
-        console.log('═'.repeat(78))
-        console.log('WALK-FORWARD STABILITY (mean_IC of `score` across slices)')
-        console.log('═'.repeat(78))
-        for (const horizon of HORIZONS) {
-          const series = walkForward
-            .map(wf => wf.horizons[horizon]?.features?.score?.mean_ic)
-            .filter(v => Number.isFinite(v))
-          if (series.length < 3) {
-            console.log(`  ${horizon}: not enough slices`)
-            continue
-          }
-          const m = mean(series)
-          const s = stdev(series)
-          const sameSign = series.filter(v => Math.sign(v) === Math.sign(m || 0)).length / series.length
-          console.log(`  ${horizon}:  mean=${fmt(m)}   std=${fmt(s)}   sign_consistency=${fmt(sameSign, 2)}   n_slices=${series.length}`)
+      perTokenComposite.sort((a, b) => Math.abs(b.ic) - Math.abs(a.ic))
+      if (perTokenComposite.length > 0) {
+        console.log(`  Per-token composite IC (top ${Math.min(PER_TOKEN_TOP_N, perTokenComposite.length)} by |IC|, ${LABEL_KIND}):`)
+        console.log('    ' + 'token'.padEnd(10) + 'n'.padStart(6) + 'IC'.padStart(10) + '   verdict')
+        for (const r of perTokenComposite.slice(0, PER_TOKEN_TOP_N)) {
+          console.log('    ' +
+            r.tok.padEnd(10) +
+            String(r.n).padStart(6) +
+            fmt(r.ic).padStart(10) +
+            '   ' + gradeIC(Math.abs(r.ic))
+          )
         }
         console.log()
-        console.log('  Decision: a deployable feature has same-sign IC in ≥ 75% of walk-forward slices.')
-        console.log('  Anything that flips sign across slices is in-sample noise, not edge.\n')
       }
     }
-  }
-
-  if (JSON_OUT) {
-    process.stdout.write(JSON.stringify({
-      params: { days: DAYS, label: LABEL_KIND, horizons: HORIZONS, mode: MODE },
-      usable_rows: usable.length,
-      total_rows: data.length,
-      single,
-      walk_forward: walkForward,
-    }, null, 2) + '\n')
-    return
   }
 
   console.log('─'.repeat(78))

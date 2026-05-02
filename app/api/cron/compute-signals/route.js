@@ -151,7 +151,27 @@ async function loadCalibrationByToken(tokens) {
     const median = signs[Math.floor(signs.length / 2)]
     const signMultiplier = (median === -1 || median === 0 || median === 1) ? median : null
 
-    const confidenceScore = rows.reduce((m, r) => Math.max(m, Number(r.confidence_score) || 0), 0)
+    // CALIB-2 (2026-05-01): collapse confidence_score across windows.
+    // Old behavior: MAX — best-window-wins, which was over-confident
+    // because the 1h window almost always has more samples than 24h, so
+    // the noisier short-horizon row dominated. Under CALIBRATION_V2=on we
+    // use a sqrt(n)-weighted mean which gives more credit to windows
+    // backed by more outcomes without being fully linear in n (which
+    // would over-weight 1h again).
+    let confidenceScore
+    if (process.env.CALIBRATION_V2 === 'on') {
+      let num = 0, den = 0
+      for (const r of rows) {
+        const n = Math.max(0, Number(r.n_outcomes) || 0)
+        const w = Math.sqrt(n)
+        const c = Number(r.confidence_score) || 0
+        num += w * c
+        den += w
+      }
+      confidenceScore = den > 0 ? num / den : 0
+    } else {
+      confidenceScore = rows.reduce((m, r) => Math.max(m, Number(r.confidence_score) || 0), 0)
+    }
     // Pick the row with most outcomes for IC reporting.
     const widest = rows.slice().sort((a, b) => (b.n_outcomes || 0) - (a.n_outcomes || 0))[0]
     out.set(token, {

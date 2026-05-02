@@ -186,6 +186,14 @@ export interface ComputeSignalParams {
     ic: number | null
     nOutcomes: number
   } | null
+  /**
+   * Optional clock injection (DET-1, 2026-05-01). When supplied, every
+   * timestamp/cutoff inside the engine derives from this value instead of
+   * `Date.now()`. Required by the backtest harness and unit tests so the
+   * engine becomes a pure function of its inputs. Production cron callers
+   * can omit it to preserve current behavior.
+   */
+  nowMs?: number
 }
 
 // ─── TIER 1: CEX WHALE FLOW ──────────────────────────────────────────────
@@ -240,9 +248,10 @@ const MIN_TX_CONFIDENCE = 0.5
 
 export function computeTier1_CexWhaleFlow(
   transactions: WhaleTransaction[] = [],
-  lookbackMs: number = 24 * 60 * 60 * 1000
+  lookbackMs: number = 24 * 60 * 60 * 1000,
+  nowMs: number = Date.now()
 ): TierResult {
-  const now = Date.now()
+  const now = nowMs
   const cutoff = now - lookbackMs
   const prevCutoff = now - 2 * lookbackMs
 
@@ -539,9 +548,10 @@ export function computeTier3_SentimentSocial(
 export function computeTier4_WeakSignals(
   transactions: WhaleTransaction[] = [],
   communityVotes: CommunityVotes | null = null,
-  devActivity: DevActivity | null = null
+  devActivity: DevActivity | null = null,
+  nowMs: number = Date.now()
 ): TierResult {
-  const now = Date.now()
+  const now = nowMs
   const cutoff24h = now - 24 * 60 * 60 * 1000
   const prevCutoff = now - 48 * 60 * 60 * 1000
 
@@ -684,11 +694,13 @@ export function computeUnifiedSignal({
   technicalSignals = null,
   derivativesData = null,
   calibration = null,
+  nowMs,
 }: ComputeSignalParams): UnifiedSignal {
-  const tier1Raw = computeTier1_CexWhaleFlow(transactions)
+  const _now = typeof nowMs === 'number' ? nowMs : Date.now()
+  const tier1Raw = computeTier1_CexWhaleFlow(transactions, undefined, _now)
   const tier2Raw = computeTier2_PriceMomentum(priceChanges, volumeData)
   const tier3 = computeTier3_SentimentSocial(sentimentData, socialData)
-  const tier4 = computeTier4_WeakSignals(transactions, communityVotes, devActivity)
+  const tier4 = computeTier4_WeakSignals(transactions, communityVotes, devActivity, _now)
 
   // ─── Per-token Tier 1 sign calibration ──────────────────────────────────
   // PRIMARY source: live `token_signal_calibration` table, refreshed daily
@@ -839,7 +851,7 @@ export function computeUnifiedSignal({
       factors: [],
       traps: [],
       tiers: { tier1, tier2, tier3, tier4 },
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(_now).toISOString(),
       token: tokenSymbol,
       timeframe: 'insufficient_data',
     }
@@ -982,7 +994,7 @@ export function computeUnifiedSignal({
     factors: factors.slice(0, 5),
     traps,
     tiers: { tier1, tier2, tier3, tier4 },
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(_now).toISOString(),
     token: tokenSymbol,
     timeframe,
   }

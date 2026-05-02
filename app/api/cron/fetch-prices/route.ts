@@ -155,6 +155,22 @@ export async function GET(request: Request) {
 
     let totalInserted = 0
     const errors: string[] = []
+    const startedAt = Date.now()
+    // v10 (2026-05-01): per SIGNAL_AUDIT_REPORT.md, the route used to
+    // return HTTP 200 with `{ inserted: 0 }` when both providers failed,
+    // which let compute-signals 503 silently for ~5 days while operators
+    // saw a green cron in Vercel. Behind FETCH_PRICES_FAILOVER=on we now:
+    //   - retry each provider once (FETCH-3)
+    //   - cover the union of TICKER_MAP, not just the Binance keyspace (FETCH-4)
+    //   - replace the absolute-cents stale guard with a relative one (FETCH-1)
+    //   - hard-fail HTTP 503 when no provider produced a usable BTC (FETCH-2)
+    //   - write a system_health row whatever the outcome (HEALTH-1)
+    const FAILOVER_ON = process.env.FETCH_PRICES_FAILOVER === 'on'
+    const providersTried: Record<string, 'ok' | 'failed' | 'skipped'> = {
+      'binance.vision /price': 'skipped',
+      'binance.vision /24hr': 'skipped',
+      'coingecko-pro': 'skipped',
+    }
 
     // v9 (2026-04-27): Diagnosed that Vercel's COINGECKO_API_KEY environment
     // variable is a different (likely demo/expired) key than the one in
@@ -175,90 +191,121 @@ export async function GET(request: Request) {
     const livePrices: Record<string, { price: number; volume_24h?: number; price_change_24h?: number; market_cap?: number | null }> = {}
 
     // 1. PRIMARY: data-api.binance.vision — full ticker list (one call)
+    // v10: wrapped in fetchWithRetry so a single transient timeout on a
+    // Vercel cold boot doesn't fail the whole provider.
+    const binancePriceFn = async () => {
+      const r = await fetch('https://data-api.binance.vision/api/v3/ticker/price', {
+        signal: AbortSignal.timeout(10000),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return (await r.json()) as { symbol: string; price: string }[]
+    }
     try {
-      const priceRes = await fetch(
-        'https://data-api.binance.vision/api/v3/ticker/price',
-        { signal: AbortSignal.timeout(10000) }
-      )
-      if (priceRes.ok) {
-        const all: { symbol: string; price: string }[] = await priceRes.json()
-        for (const p of all) {
-          if (!p.symbol.endsWith('USDT')) continue
-          const ticker = p.symbol.replace('USDT', '')
-          const price = parseFloat(p.price)
-          if (price > 0) livePrices[ticker] = { price }
-        }
-      } else {
-        errors.push(`data-api.binance.vision /price HTTP ${priceRes.status}`)
+      const all = FAILOVER_ON ? await fetchWithRetry(binancePriceFn) : await binancePriceFn()
+      for (const p of all) {
+        if (!p.symbol.endsWith('USDT')) continue
+        const ticker = p.symbol.replace('USDT', '')
+        const price = parseFloat(p.price)
+        if (price > 0) livePrices[ticker] = { price }
       }
-
-      // 24h ticker for volume + change
-      const t24Res = await fetch(
-        'https://data-api.binance.vision/api/v3/ticker/24hr',
-        { signal: AbortSignal.timeout(15000) }
-      )
-      if (t24Res.ok) {
-        const all24: any[] = await t24Res.json()
-        for (const t of all24) {
-          if (!t.symbol.endsWith('USDT')) continue
-          const ticker = t.symbol.replace('USDT', '')
-          if (livePrices[ticker]) {
-            livePrices[ticker].volume_24h = parseFloat(t.quoteVolume) || 0
-            livePrices[ticker].price_change_24h = parseFloat(t.priceChangePercent) || 0
-          }
-        }
-      }
+      providersTried['binance.vision /price'] = 'ok'
     } catch (e) {
-      errors.push(`data-api.binance.vision failed: ${e instanceof Error ? e.message : e}`)
+      providersTried['binance.vision /price'] = 'failed'
+      errors.push(`binance.vision /price: ${e instanceof Error ? e.message : e}`)
     }
 
-    // 2. FALLBACK + ENRICHMENT: CoinGecko Pro for tokens NOT on Binance USDT
-    // (mostly wrapped tokens, niche memes) and to add market_cap which
-    // Binance doesn't provide.
+    // 24h ticker for volume + change
+    const binance24Fn = async () => {
+      const r = await fetch('https://data-api.binance.vision/api/v3/ticker/24hr', {
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return (await r.json()) as any[]
+    }
+    try {
+      const all24 = FAILOVER_ON ? await fetchWithRetry(binance24Fn) : await binance24Fn()
+      for (const t of all24) {
+        if (!t.symbol.endsWith('USDT')) continue
+        const ticker = t.symbol.replace('USDT', '')
+        if (livePrices[ticker]) {
+          livePrices[ticker].volume_24h = parseFloat(t.quoteVolume) || 0
+          livePrices[ticker].price_change_24h = parseFloat(t.priceChangePercent) || 0
+        }
+      }
+      providersTried['binance.vision /24hr'] = 'ok'
+    } catch (e) {
+      providersTried['binance.vision /24hr'] = 'failed'
+      errors.push(`binance.vision /24hr: ${e instanceof Error ? e.message : e}`)
+    }
+
+    // 2. FALLBACK + ENRICHMENT: CoinGecko Pro
+    // FETCH-4 fix: under FAILOVER_ON, fetch CG for the *union* of TICKER_MAP
+    // (not just tokens that Binance already returned). This guarantees coverage
+    // for tokens unsupported by Binance.vision (long-tails, some L2s).
     const cgKey = process.env.COINGECKO_API_KEY
     if (cgKey) {
-      const missingOrNeedsMcap = TICKER_MAP.filter(t => !livePrices[t.symbol] || livePrices[t.symbol].market_cap == null)
-      if (missingOrNeedsMcap.length > 0) {
-        const ids = missingOrNeedsMcap.map(t => t.id).join(',')
-        try {
-          const cgRes = await fetch(
+      const targetTokens = FAILOVER_ON
+        ? TICKER_MAP // hit CG for everything; cheap (one batched call)
+        : TICKER_MAP.filter(t => !livePrices[t.symbol] || livePrices[t.symbol].market_cap == null)
+      if (targetTokens.length > 0) {
+        const ids = targetTokens.map(t => t.id).join(',')
+        const cgFn = async () => {
+          const r = await fetch(
             `https://pro-api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`,
             {
               headers: { 'Accept': 'application/json', 'x-cg-pro-api-key': cgKey },
               signal: AbortSignal.timeout(15000),
             }
           )
-          if (cgRes.ok) {
-            const data = await cgRes.json()
-            for (const t of missingOrNeedsMcap) {
-              const pd = data[t.id]
-              if (!pd?.usd) continue
-              if (!livePrices[t.symbol]) {
-                // CG is the primary source for this token
-                livePrices[t.symbol] = {
-                  price: pd.usd,
-                  volume_24h: pd.usd_24h_vol || 0,
-                  price_change_24h: pd.usd_24h_change || 0,
-                  market_cap: pd.usd_market_cap || null,
-                }
-              } else if (pd.usd_market_cap) {
-                // Binance gave us price/volume; use CG just for market_cap
-                livePrices[t.symbol].market_cap = pd.usd_market_cap
+          if (!r.ok) throw new Error(`HTTP ${r.status}`)
+          return (await r.json()) as Record<string, CoinGeckoPrice>
+        }
+        try {
+          const data = FAILOVER_ON ? await fetchWithRetry(cgFn) : await cgFn()
+          for (const t of targetTokens) {
+            const pd = data[t.id]
+            if (!pd?.usd) continue
+            if (!livePrices[t.symbol]) {
+              livePrices[t.symbol] = {
+                price: pd.usd,
+                volume_24h: pd.usd_24h_vol || 0,
+                price_change_24h: pd.usd_24h_change || 0,
+                market_cap: pd.usd_market_cap || null,
               }
+            } else if (pd.usd_market_cap) {
+              livePrices[t.symbol].market_cap = pd.usd_market_cap
             }
-          } else {
-            errors.push(`CoinGecko HTTP ${cgRes.status}`)
           }
+          providersTried['coingecko-pro'] = 'ok'
         } catch (cgErr) {
-          errors.push(`CoinGecko enrichment failed: ${cgErr instanceof Error ? cgErr.message : cgErr}`)
+          providersTried['coingecko-pro'] = 'failed'
+          errors.push(`coingecko-pro: ${cgErr instanceof Error ? cgErr.message : cgErr}`)
         }
       }
     }
 
-    // Stale-source guard: if NEW BTC matches the most recent snapshot to 4
-    // decimal places AND that snapshot is < 30min old, source is poisoned.
-    // Refuse to insert another stale row.
+    // FETCH-2 fix: hard-fail if no provider produced a usable BTC. Without
+    // this, the route used to return 200 with inserted=0 and downstream
+    // compute-signals would 503 silently for days. Loud failure > silent
+    // corruption.
     const newBtcPrice = livePrices.BTC?.price
+    if (FAILOVER_ON && (!newBtcPrice || newBtcPrice <= 0)) {
+      const failure = {
+        success: false,
+        fatal: 'no provider produced a usable BTC price',
+        providers: providersTried,
+        errors,
+      }
+      await writeHealth(supabase, 'fetch-prices', 'error', startedAt, failure)
+      return NextResponse.json(failure, { status: 503 })
+    }
+
+    // FETCH-1 fix: relative stale guard. The old absolute `< 0.0001` USD
+    // threshold was below feed jitter and could in theory falsely fire on
+    // any fresh value. Under FAILOVER_ON we use a relative band: only block
+    // if the price is identical to >= 6 significant digits AND the previous
+    // snapshot is < 30 min old. (We also keep the 30-min check because a
+    // 5-day-stale snapshot must NOT block a new insert.)
     if (newBtcPrice) {
       const { data: lastBtc } = await supabase
         .from('price_snapshots')
@@ -267,10 +314,16 @@ export async function GET(request: Request) {
         .order('timestamp', { ascending: false })
         .limit(1)
         .maybeSingle()
-      if (lastBtc?.price_usd && Math.abs(Number(lastBtc.price_usd) - newBtcPrice) < 0.0001) {
+      if (lastBtc?.price_usd) {
+        const last = Number(lastBtc.price_usd)
         const ageMin = (Date.now() - new Date(lastBtc.timestamp).getTime()) / 60000
-        if (ageMin < 30) {
-          errors.push(`BTC unchanged ($${lastBtc.price_usd}) in ${ageMin.toFixed(1)}min — source stale, aborting`)
+        const relDiff = Math.abs(last - newBtcPrice) / Math.max(last, 1)
+        const STALE_REL_TOL = FAILOVER_ON ? 1e-6 : 0.0001 / Math.max(last, 1)
+        if (relDiff < STALE_REL_TOL && ageMin < 30) {
+          errors.push(`BTC unchanged ($${last}) in ${ageMin.toFixed(1)}min — source stale, aborting`)
+          await writeHealth(supabase, 'fetch-prices', 'error', startedAt, {
+            stale: true, sample_btc: newBtcPrice, providers: providersTried, errors,
+          })
           return NextResponse.json({
             success: false,
             stale: true,
@@ -311,10 +364,32 @@ export async function GET(request: Request) {
       console.error(`⚠️ Encountered ${errors.length} errors:`, errors.slice(0, 5))
     }
 
+    // FETCH-2 fix: even after the BTC checks, a partial cron with zero
+    // inserts means downstream stays stale. Hard-fail loudly.
+    if (FAILOVER_ON && totalInserted === 0) {
+      const failure = {
+        success: false,
+        fatal: 'no rows inserted',
+        providers: providersTried,
+        errors,
+      }
+      await writeHealth(supabase, 'fetch-prices', 'error', startedAt, failure)
+      return NextResponse.json(failure, { status: 503 })
+    }
+
+    const status = errors.length === 0 ? 'ok' : 'partial'
+    await writeHealth(supabase, 'fetch-prices', status, startedAt, {
+      inserted: totalInserted,
+      tokens: TICKER_MAP.length,
+      providers: providersTried,
+      errors: errors.slice(0, 10),
+    })
+
     return NextResponse.json({
       success: true,
       inserted: totalInserted,
       tokens: TICKER_MAP.length,
+      providers: providersTried,
       errors: errors.length > 0 ? errors.slice(0, 10) : undefined
     })
 
@@ -335,5 +410,48 @@ export async function GET(request: Request) {
  */
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * fetchWithRetry — single retry with 2s backoff. Used only when
+ * FETCH_PRICES_FAILOVER=on so prod can still roll back to the original
+ * single-shot behavior if this misbehaves.
+ */
+async function fetchWithRetry<T>(fn: () => Promise<T>, attempts = 2, backoffMs = 2000): Promise<T> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try { return await fn() } catch (e) {
+      lastErr = e
+      if (i < attempts - 1) await delay(backoffMs)
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))
+}
+
+/**
+ * writeHealth — best-effort write to system_health. Never throws; if the
+ * table doesn't exist yet (migration not applied) the failure is logged
+ * but the route still returns its real result to the caller.
+ */
+async function writeHealth(
+  supabase: ReturnType<typeof createClient>,
+  component: string,
+  status: 'ok' | 'partial' | 'error',
+  startedAtMs: number,
+  details: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const finishedAt = new Date()
+    await supabase.from('system_health').insert({
+      component,
+      status,
+      started_at: new Date(startedAtMs).toISOString(),
+      finished_at: finishedAt.toISOString(),
+      duration_ms: Date.now() - startedAtMs,
+      details,
+    })
+  } catch (e) {
+    console.warn(`writeHealth(${component}) failed:`, e instanceof Error ? e.message : e)
+  }
 }
 

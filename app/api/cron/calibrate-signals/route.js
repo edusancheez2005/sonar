@@ -45,6 +45,12 @@ const EVAL_WINDOWS = ['1h', '6h', '24h']
 // Below this, sign_multiplier is NULL and engine falls back to default.
 const MIN_N_FOR_SIGN = 20
 
+// CALIB-1 (2026-05-01): confidence_score used to be computed for any n>=1,
+// which meant a token with three lucky calls reported 100% confidence. Below
+// this floor confidence_score is hard-clamped to 0 so the engine's label gate
+// won't promote it. Behind CALIBRATION_V2=on for prod rollback safety.
+const MIN_N_FOR_CONFIDENCE = 20
+
 // Sign derivation is HIT-RATE-FIRST. The Pearson IC is reported and used to
 // gate label emission via confidence_score, but the sign itself comes from
 // directional accuracy because:
@@ -98,6 +104,9 @@ function deriveConfidenceScore(ic, hitRate, n) {
   // but the magnitude of returns lines up with score magnitude.
   // The engine uses this to gate label emission via CALIBRATION_LABEL_GATE.
   if (n <= 0) return 0
+  // CALIB-1: hard-clamp confidence to 0 below MIN_N_FOR_CONFIDENCE so the
+  // label gate cannot promote a thinly-evidenced token. Gated for rollback.
+  if (process.env.CALIBRATION_V2 === 'on' && n < MIN_N_FOR_CONFIDENCE) return 0
   const fromHitRate = hitRate === null ? 0 : Math.abs(hitRate - 0.5) * 200
   const fromIc = ic === null ? 0 : Math.abs(ic) * 100
   return Math.min(100, Math.max(fromHitRate, fromIc))

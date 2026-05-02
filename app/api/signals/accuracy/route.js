@@ -16,15 +16,21 @@
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { NOISE_FLOOR_PCT, MIN_N_FOR_TRUST, ROUND_TRIP_BPS } from '@/lib/quant/constants'
 
 export const dynamic = 'force-dynamic'
 
-// Same noise floor as the eval cron — if a price moved less than this, it's
-// not a real prediction outcome (data-feed gap or sub-fee jitter).
-const NOISE_FLOOR_PCT = 0.05
+// Noise floor + trust threshold + round-trip cost are imported from
+// lib/quant/constants.ts (single source of truth across the codebase).
 
-// Min sample size before we trust a per-bucket accuracy number.
-const MIN_N_FOR_TRUST = 30
+// API-1 (2026-05-01): /api/signals mutes BUY/STRONG BUY at the boundary.
+// The accuracy API used to include them anyway, which broke symmetry — a
+// user reading /api/signals/accuracy could see a 0% BUY hit-rate they could
+// not reproduce by inspecting /api/signals output. By default we now mirror
+// the same mute on the read side. Pass ?include_muted=true to see all rows
+// (used by ops/audits).
+const HIDE_BULLISH_SIGNALS = true
+const BULLISH_TYPES = new Set(['BUY', 'STRONG BUY'])
 
 /**
  * Two-sided binomial p-value vs a fair-coin null (p=0.5).
@@ -60,6 +66,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url)
     const token = searchParams.get('token')?.toUpperCase()
     const days = Math.min(parseInt(searchParams.get('days') || '30'), 90)
+    const includeMuted = searchParams.get('include_muted') === 'true'
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
@@ -83,6 +90,9 @@ export async function GET(req) {
     // sub-noise moves, but historical rows pre-fix may still need filtering).
     const outcomes = (rawOutcomes || []).filter(
       o => Math.abs(Number(o.price_change_pct)) >= NOISE_FLOOR_PCT
+    ).filter(
+      // API-1: mirror the /api/signals BUY mute unless explicitly overridden.
+      o => includeMuted || !HIDE_BULLISH_SIGNALS || !BULLISH_TYPES.has(o.signal_type)
     )
 
     const disclaimers = [
@@ -180,7 +190,7 @@ export async function GET(req) {
     // direction. Signed return = +price_change_pct for bullish signals,
     // -price_change_pct for bearish signals. This is the realised PnL of
     // a 1-unit, equal-weight, fees-naive strategy that closes at eval_time.
-    const ROUND_TRIP_BPS = 30 // taker fee + slippage, both sides combined
+    // (ROUND_TRIP_BPS imported from lib/quant/constants.ts)
     const signed = (o) => {
       const isBullish = o.signal_type === 'STRONG BUY' || o.signal_type === 'BUY'
       return isBullish ? Number(o.price_change_pct) : -Number(o.price_change_pct)
@@ -216,6 +226,42 @@ export async function GET(req) {
     const round2 = (x) => x === null || x === undefined ? null : Math.round(x * 100) / 100
     const round4 = (x) => x === null || x === undefined ? null : Math.round(x * 1e4) / 1e4
 
+    // HEALTH-1 (2026-05-01): freshness block. Reads the latest row per
+    // component from `v_system_health_latest`. Surfaces upstream pipeline
+    // staleness directly to anything that consumes the accuracy endpoint
+    // (operator dashboards, the public stats page) so a frozen
+    // fetch-prices is impossible to miss.
+    let freshness = null
+    try {
+      const { data: healthRows } = await supabaseAdmin
+        .from('v_system_health_latest')
+        .select('component, status, finished_at, duration_ms, details')
+      if (healthRows) {
+        const nowMs = Date.now()
+        freshness = {
+          components: healthRows.map(r => {
+            const ageSec = r.finished_at
+              ? Math.floor((nowMs - new Date(r.finished_at).getTime()) / 1000)
+              : null
+            return {
+              component: r.component,
+              status: r.status,
+              finished_at: r.finished_at,
+              age_seconds: ageSec,
+              stale: ageSec !== null && ageSec > 30 * 60, // >30min = stale
+              duration_ms: r.duration_ms,
+            }
+          }),
+          checked_at: new Date(nowMs).toISOString(),
+        }
+        freshness.any_stale = freshness.components.some(c => c.stale || c.status === 'error')
+      }
+    } catch (e) {
+      // system_health table may not exist yet (migration unapplied).
+      // Don't fail the whole accuracy endpoint over a missing table.
+      freshness = { error: 'system_health unavailable', detail: e?.message }
+    }
+
     // Recent outcomes
     const recent = outcomes.slice(0, 50).map(o => ({
       token: o.token,
@@ -235,6 +281,14 @@ export async function GET(req) {
 
     return NextResponse.json({
       period_days: days,
+      include_muted: includeMuted,
+      signal_visibility: {
+        bullish_muted: HIDE_BULLISH_SIGNALS && !includeMuted,
+        note: HIDE_BULLISH_SIGNALS && !includeMuted
+          ? 'BUY/STRONG BUY excluded by default to mirror /api/signals. Pass ?include_muted=true to see all signal types.'
+          : null,
+      },
+      freshness,
       overall: { total, correct, accuracy, p_value: overallP },
       by_window: byWindow,
       by_signal_type: byType,

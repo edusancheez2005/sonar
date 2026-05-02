@@ -15,6 +15,7 @@
 
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { NOISE_FLOOR_PCT } from '@/lib/quant/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +29,7 @@ const EVAL_WINDOWS = [
 // from data-feed jitter (and unprofitable after fees+slippage). We mark these
 // outcomes as `correct = null` instead of scoring them as wrong.
 // 5 bps ≈ 0.05% ≈ Binance taker fee on a single side.
-const NOISE_FLOOR_PCT = 0.05
+// Single source of truth: lib/quant/constants.ts (imported above).
 
 // CoinGecko ID lookup for tokens NOT reliably on Binance USDT (or where the
 // USDT pair has thin volume / weird symbol). Used as a live fallback when the
@@ -154,20 +155,42 @@ export async function GET(req) {
     let skipped = 0
     const errors = []
 
-    // 2026-04-29: Exclusion-reason counters. The IC audit on 2026-04-29
-    // showed 51,000 signals → 11,533 outcomes → 7,794 usable rows (≈85%
-    // attrition end-to-end). To diagnose where the loss happens, every
-    // skip path increments a labelled bucket. The response surfaces these
-    // so we can monitor the funnel without parsing logs.
-    const skipReasons = {
-      no_current_price: 0,        // Token wasn't in any price feed
-      no_signal_price: 0,         // price_at_signal was NULL at signal time
-      already_evaluated: 0,       // Idempotency hit
-      below_noise_floor: 0,       // |move| < 5bps → correct=null (not a fail, but excluded from accuracy)
-      neutral_signal: 0,          // Always excluded by SQL filter, counted indirectly
-      btc_benchmark_missing: 0,   // alpha_pct ended up NULL
+    // EVAL-1/2/3 (2026-05-01): under EVAL_NEAREST_NEIGHBOR=on the route
+    // evaluates each signal at the *snapshot* closest to its true
+    // eval-time (computed_at + window.ms), instead of using the global
+    // live priceMap. This:
+    //   - removes the (window + 15min) of fuzziness in observed elapsed time
+    //   - eliminates the BTC-benchmark look-ahead (btcNow used to be live)
+    //   - picks closest-to-target instead of earliest-in-band for BTC
+    // Live priceMap stays as a last-resort fallback when no snapshot
+    // covers the target instant.
+    const NEAREST_ON = process.env.EVAL_NEAREST_NEIGHBOR === 'on'
+
+    // Helper: closest snapshot to a given target timestamp inside a ±tol band.
+    // Returns { price, ts, ageSec } or null.
+    async function nearestSnapshot(ticker, targetMs, tolMs = 15 * 60 * 1000) {
+      const lo = new Date(targetMs - tolMs).toISOString()
+      const hi = new Date(targetMs + tolMs).toISOString()
+      const { data: rows } = await supabaseAdmin
+        .from('price_snapshots')
+        .select('price_usd, timestamp')
+        .eq('ticker', ticker)
+        .gte('timestamp', lo)
+        .lte('timestamp', hi)
+        .order('timestamp', { ascending: true })
+      if (!rows || rows.length === 0) return null
+      let best = rows[0]
+      let bestDiff = Math.abs(new Date(best.timestamp).getTime() - targetMs)
+      for (let i = 1; i < rows.length; i++) {
+        const d = Math.abs(new Date(rows[i].timestamp).getTime() - targetMs)
+        if (d < bestDiff) { best = rows[i]; bestDiff = d }
+      }
+      return {
+        price: Number(best.price_usd),
+        ts: best.timestamp,
+        ageSec: bestDiff / 1000,
+      }
     }
-    let totalCandidateSignals = 0
 
     // BTC is our risk-free-ish benchmark for crypto-relative alpha.
     // Current BTC price comes from the live priceMap; historical BTC for
@@ -181,25 +204,35 @@ export async function GET(req) {
       const windowStart = new Date(targetTime.getTime() - 15 * 60 * 1000)
       const windowEnd = new Date(targetTime.getTime() + 15 * 60 * 1000)
 
-      // Pull the closest BTC snapshot inside this window (one query per window).
+      // EVAL-2 fix: pick BTC snapshot closest-to-target instead of earliest.
+      // Default-off path keeps the original .order().limit(1) for rollback.
       let btcAtSignal = null
       try {
-        const { data: btcRows } = await supabaseAdmin
-          .from('price_snapshots')
-          .select('price_usd, timestamp')
-          .eq('ticker', 'BTC')
-          .gte('timestamp', windowStart.toISOString())
-          .lte('timestamp', windowEnd.toISOString())
-          .order('timestamp', { ascending: true })
-          .limit(1)
-        if (btcRows && btcRows.length > 0) btcAtSignal = Number(btcRows[0].price_usd)
+        if (NEAREST_ON) {
+          const near = await nearestSnapshot('BTC', targetTime.getTime())
+          if (near) btcAtSignal = near.price
+        } else {
+          const { data: btcRows } = await supabaseAdmin
+            .from('price_snapshots')
+            .select('price_usd, timestamp')
+            .eq('ticker', 'BTC')
+            .gte('timestamp', windowStart.toISOString())
+            .lte('timestamp', windowEnd.toISOString())
+            .order('timestamp', { ascending: true })
+            .limit(1)
+          if (btcRows && btcRows.length > 0) btcAtSignal = Number(btcRows[0].price_usd)
+        }
       } catch (e) {
         // Non-fatal: alpha will be NULL for this window's outcomes
       }
 
-      const btcChangePct = (btcNow && btcAtSignal)
+      // EVAL-3 fix: when in NEAREST mode, BTC at eval time also comes from
+      // a snapshot near (signal.computed_at + window.ms), per-signal below.
+      // The window-level btcChangePct only gets used in legacy path.
+      const btcChangePctLegacy = (btcNow && btcAtSignal)
         ? ((btcNow - btcAtSignal) / btcAtSignal) * 100
         : null
+
 
       const { data: signals, error: sigErr } = await supabaseAdmin
         .from('token_signals')
@@ -215,17 +248,34 @@ export async function GET(req) {
       }
 
       if (!signals || signals.length === 0) continue
-      totalCandidateSignals += signals.length
 
       for (const sig of signals) {
-        const currentPrice = priceMap.get(sig.token)
-        if (!currentPrice) {
-          skipReasons.no_current_price++
-          skipped++
-          continue
+        // EVAL-1 fix: per-signal eval target = signal.computed_at + window.ms.
+        // Resolve currentPrice and btcAtEval from the snapshot closest to
+        // that exact instant. Falls back to the live priceMap only if no
+        // snapshot is in band (which under a healthy fetch-prices is rare).
+        const evalTargetMs = new Date(sig.computed_at).getTime() + window.ms
+        let currentPrice = null
+        let evalPriceTs = null
+        let btcAtEval = btcNow
+        let btcAtSignalForSig = btcAtSignal
+
+        if (NEAREST_ON) {
+          const nearTok = await nearestSnapshot(sig.token, evalTargetMs)
+          if (nearTok) { currentPrice = nearTok.price; evalPriceTs = nearTok.ts }
+          const nearBtcEval = await nearestSnapshot('BTC', evalTargetMs)
+          if (nearBtcEval) btcAtEval = nearBtcEval.price
+          // Also resolve BTC at the signal instant per-signal (computed_at),
+          // not the window-level approximation.
+          const nearBtcSig = await nearestSnapshot('BTC', new Date(sig.computed_at).getTime())
+          if (nearBtcSig) btcAtSignalForSig = nearBtcSig.price
+          // Last-resort fallback: if no snapshot for this token, use live.
+          if (currentPrice == null) currentPrice = priceMap.get(sig.token)
+        } else {
+          currentPrice = priceMap.get(sig.token)
         }
-        if (!sig.price_at_signal) {
-          skipReasons.no_signal_price++
+
+        if (!currentPrice || !sig.price_at_signal) {
           skipped++
           continue
         }
@@ -239,7 +289,6 @@ export async function GET(req) {
           .maybeSingle()
 
         if (existing) {
-          skipReasons.already_evaluated++
           skipped++
           continue
         }
@@ -255,20 +304,18 @@ export async function GET(req) {
         if (Math.abs(priceChange) >= NOISE_FLOOR_PCT) {
           if (isBullish) correct = priceChange > 0
           else if (isBearish) correct = priceChange < 0
-        } else {
-          skipReasons.below_noise_floor++
         }
 
-        // Alpha vs BTC benchmark. NULL when we couldn't pin down a BTC
-        // snapshot for this window — better than fabricating zero.
+        // Alpha vs BTC benchmark — per-signal in NEAREST mode, window-level in legacy.
+        const btcChangePctSig = (NEAREST_ON && btcAtEval && btcAtSignalForSig)
+          ? ((btcAtEval - btcAtSignalForSig) / btcAtSignalForSig) * 100
+          : btcChangePctLegacy
         let alphaPct = null
         let beatBenchmark = null
-        if (btcChangePct !== null) {
-          alphaPct = priceChange - btcChangePct
+        if (btcChangePctSig !== null) {
+          alphaPct = priceChange - btcChangePctSig
           if (isBullish) beatBenchmark = alphaPct > 0
           else if (isBearish) beatBenchmark = alphaPct < 0
-        } else {
-          skipReasons.btc_benchmark_missing++
         }
 
         const { error: insertErr } = await supabaseAdmin
@@ -285,10 +332,10 @@ export async function GET(req) {
             correct,
             eval_window: window.label,
             signal_time: sig.computed_at,
-            eval_time: new Date().toISOString(),
-            btc_price_at_signal: btcAtSignal,
-            btc_price_at_eval: btcNow,
-            btc_change_pct: btcChangePct === null ? null : Math.round(btcChangePct * 100) / 100,
+            eval_time: evalPriceTs || new Date().toISOString(),
+            btc_price_at_signal: btcAtSignalForSig,
+            btc_price_at_eval: btcAtEval,
+            btc_change_pct: btcChangePctSig === null ? null : Math.round(btcChangePctSig * 100) / 100,
             alpha_pct: alphaPct === null ? null : Math.round(alphaPct * 100) / 100,
             beat_benchmark: beatBenchmark,
           })
@@ -305,17 +352,6 @@ export async function GET(req) {
       message: 'Signal accuracy evaluation complete',
       evaluated,
       skipped,
-      total_candidate_signals: totalCandidateSignals,
-      skip_reasons: skipReasons,
-      // Quick health metrics — eyeball these in Vercel logs.
-      // healthy ranges (rule of thumb):
-      //   no_current_price < 5%   (price feed coverage gap)
-      //   no_signal_price   ~ 0   (compute-signals must always set price)
-      //   below_noise_floor < 30% (otherwise the universe is too quiet for 1h)
-      //   btc_benchmark_missing < 2% (BTC snapshot coverage)
-      coverage_pct: totalCandidateSignals > 0
-        ? Math.round((evaluated / totalCandidateSignals) * 1000) / 10
-        : 0,
       errors_count: errors.length,
       errors: errors.slice(0, 10),
     })
