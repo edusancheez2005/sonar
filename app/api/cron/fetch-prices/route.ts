@@ -9,6 +9,16 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+// Use the same Supabase client constructor as supabaseAdmin so all crons
+// hit the same project. supabaseAdmin.js prefers SUPABASE_URL over
+// NEXT_PUBLIC_SUPABASE_URL; previously this file only used the latter,
+// which could point at a different project.
+function getSupabase() {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const key = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  return createClient(url, key, { auth: { persistSession: false } })
+}
+
 // Top crypto tickers with their CoinGecko IDs
 // Must include ALL tokens that compute-signals processes (ALWAYS_INCLUDE + active)
 const TICKER_MAP = [
@@ -145,11 +155,8 @@ export async function GET(request: Request) {
       )
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE!
-    )
+    // Initialize Supabase client — same project as supabaseAdmin
+    const supabase = getSupabase()
 
     // v6: Binance is primary, CoinGecko is fallback (no longer required)
 
