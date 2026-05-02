@@ -4,11 +4,18 @@
   "private": true,
   "dependencies": {
     "@emotion/is-prop-valid": "^1.2.1",
+    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/wallet-adapter-wallets": "^0.19.38",
+    "@solana/web3.js": "^1.98.4",
     "@stripe/stripe-js": "^8.0.0",
     "@supabase/auth-helpers-nextjs": "latest",
     "@supabase/supabase-js": "^2.54.0",
+    "@tanstack/react-query": "^5.100.8",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
+    "bs58": "^6.0.0",
     "chart.js": "^4.3.0",
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-chart-financial": "^0.2.1",
@@ -25,9 +32,13 @@
     "remark-gfm": "^4.0.1",
     "resend": "^6.0.2",
     "server-only": "^0.0.1",
+    "siwe": "^3.0.0",
     "stripe": "^19.1.0",
     "styled-components": "^6.1.0",
-    "trading-signals": "^7.4.3"
+    "trading-signals": "^7.4.3",
+    "tweetnacl": "^1.0.3",
+    "viem": "^2.48.8",
+    "wagmi": "^2.19.5"
   },
   "scripts": {
     "dev": "next dev",
@@ -56,6 +67,7 @@
   "devDependencies": {
     "@types/react": "19.1.9",
     "dotenv": "^17.4.2",
-    "eslint-config-next": "^15.4.6"
+    "eslint-config-next": "^15.4.6",
+    "typescript": "5.9.3"
   }
 }

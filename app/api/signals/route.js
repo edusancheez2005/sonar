@@ -53,6 +53,10 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url)
     const token = searchParams.get('token')?.toUpperCase()
+    const tokensParam = searchParams.get('tokens')
+    const tokensFilter = tokensParam
+      ? new Set(tokensParam.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 50))
+      : null
     const limit = Math.min(parseInt(searchParams.get('limit') || '30', 10), 100)
     const history = searchParams.get('history') === 'true'
 
@@ -101,6 +105,7 @@ export async function GET(req) {
     const deduped = []
     for (const row of latestSignals || []) {
       if (!seen.has(row.token)) {
+        if (tokensFilter && !tokensFilter.has(String(row.token).toUpperCase())) continue
         seen.add(row.token)
         deduped.push(neutralize(row))
         if (deduped.length >= limit) break

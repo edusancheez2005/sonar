@@ -39,3 +39,7 @@ brevo/
 .claude/
 LEGAL_AUDIT_*.md
 
+
+npm-install.log
+clientroot_good.txt
+

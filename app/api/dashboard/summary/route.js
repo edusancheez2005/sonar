@@ -485,6 +485,46 @@ export async function GET(req) {
 
     const noData24h = (recent24h || []).length === 0
 
+    // Personalized block — additive, only when ?tokens= is present
+    let personalized = null
+    try {
+      const tokensParam = new URL(req.url).searchParams.get('tokens')
+      if (tokensParam) {
+        const userTokens = Array.from(new Set(
+          tokensParam.split(',').map(s => String(s).trim().toUpperCase()).filter(Boolean).slice(0, 50)
+        ))
+        if (userTokens.length > 0) {
+          const tokenSet = new Set(userTokens)
+          const whaleFlow24h = userTokens.map(sym => {
+            const data = byTokenWhales.get(sym)
+            if (!data) return { symbol: sym, net_usd: 0, buy_count: 0, sell_count: 0, unique_whales: 0 }
+            return {
+              symbol: sym,
+              net_usd: Math.round(data.netUsd),
+              buy_count: data.buys,
+              sell_count: data.sells,
+              unique_whales: data.whales.size,
+            }
+          }).sort((a, b) => Math.abs(b.net_usd) - Math.abs(a.net_usd))
+
+          const personalizedTopTxs = (topHighValueTxs || [])
+            .filter(t => tokenSet.has(String(t.coin || t.token_symbol || '').toUpperCase()))
+            .slice(0, 5)
+
+          const personalizedRecent = recent.filter(t => tokenSet.has(String(t.coin || '').toUpperCase()))
+
+          personalized = {
+            tokens: userTokens,
+            whaleFlow24h,
+            topTxs: personalizedTopTxs,
+            recent: personalizedRecent,
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Personalized block failed:', e?.message)
+    }
+
     return NextResponse.json({ 
       recent, 
       topBuys, 
@@ -501,7 +541,8 @@ export async function GET(req) {
       overall,
       topHighValueTxs,
       tokenTradeCounts,
-      noData24h
+      noData24h,
+      ...(personalized ? { personalized } : {}),
     }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

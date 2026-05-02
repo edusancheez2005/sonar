@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import TokenIcon from '@/components/TokenIcon'
 import WalletTrackerProfile from '@/components/profile/WalletTrackerProfile'
+import WalletIdentitiesCard from '@/components/wallet/WalletIdentitiesCard'
 import NotificationSettings from '@/components/profile/NotificationSettings'
 
 const PageWrapper = styled.div`
@@ -830,6 +831,7 @@ export default function ClientProfile({ email: initialEmail }) {
           {/* ---- Wallet Tracker sections ---- */}
           <NotificationSettings />
           <WalletTrackerProfile />
+          <WalletIdentitiesCard />
         </Grid>
     </Wrapper>
     </PageWrapper>

@@ -311,11 +311,12 @@ export default function GlobeBackground() {
 
     function drawPings(now, rotY, cx, cy, R, ar) {
       for (let i = pings.length - 1; i >= 0; i--) {
-        const p = pings[i]; const age = now - p.born; const tt = age / p.dur
-        if (tt >= 1) { pings.splice(i, 1); continue }
+        const p = pings[i]; const age = now - p.born; const tt = Math.max(0, Math.min(1, age / p.dur))
+        if (age >= p.dur) { pings.splice(i, 1); continue }
         const pos = project(p.c.lat, p.c.lon, rotY, cx, cy, R)
         if (pos.z < 0) continue
-        ctx.beginPath(); ctx.arc(pos.x, pos.y, 2 + tt * 18, 0, Math.PI*2)
+        const rOuter = Math.max(0, 2 + tt * 18)
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, rOuter, 0, Math.PI*2)
         ctx.strokeStyle = `rgba(${ar}, ${0.7 * (1 - tt)})`; ctx.lineWidth = 1; ctx.stroke()
         ctx.fillStyle = `rgba(${ar}, 0.9)`; ctx.beginPath(); ctx.arc(pos.x, pos.y, 1.6, 0, Math.PI*2); ctx.fill()
       }

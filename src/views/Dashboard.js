@@ -23,6 +23,8 @@ import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import TokenHeatmap from '@/components/wallet-tracker/TokenHeatmap'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
+import PortfolioPanel from '@/components/wallet/PortfolioPanel'
+import { usePersonalizedDashboard } from '@/components/wallet/PersonalizedDashboardContext'
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
 
@@ -610,6 +612,10 @@ const rowVariant = {
 const Dashboard = ({ isPremium = false }) => {
   console.log('🔍 Dashboard isPremium:', isPremium)
 
+  const personalized = usePersonalizedDashboard()
+  const personalizedRef = useRef(personalized)
+  useEffect(() => { personalizedRef.current = personalized }, [personalized])
+
   const [transactions, setTransactions] = useState([]);
   const [topBuys, setTopBuys] = useState([]);
   const [topSells, setTopSells] = useState([]);
@@ -720,7 +726,12 @@ const Dashboard = ({ isPremium = false }) => {
     let timer
     const fetchSummary = async () => {
       try {
-        const res = await fetch('/api/dashboard/summary', { cache: 'no-store' })
+        const p = personalizedRef.current
+        const useTokens = p?.mode === 'mine' && Array.isArray(p?.tokens) && p.tokens.length > 0
+        const url = useTokens
+          ? `/api/dashboard/summary?tokens=${encodeURIComponent(p.tokens.join(','))}`
+          : '/api/dashboard/summary'
+        const res = await fetch(url, { cache: 'no-store' })
         const json = await res.json()
         if (res.ok) {
           const recent = json.recent || []
@@ -1051,6 +1062,10 @@ const Dashboard = ({ isPremium = false }) => {
               animate="visible"
               style={{ paddingTop: '1.5rem' }}
             >
+
+              {/* ─── PORTFOLIO PANEL (wallet personalization) ────────── */}
+              <PortfolioPanel />
+              <PersonalizedToggle />
 
               {/* ─── KPI TICKER STRIP (MARKET PULSE) ─────────────────── */}
               <motion.div variants={fadeUp} ref={marketPulseRef} data-tutorial="market-pulse">
@@ -1537,6 +1552,34 @@ const TopWhalesSection = () => {
         )}
       </Panel>
     </SectionGap>
+  )
+}
+
+function PersonalizedToggle() {
+  const { tokens, mode, setMode } = usePersonalizedDashboard()
+  if (!tokens || tokens.length === 0) return null
+  return (
+    <div style={{
+      display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end',
+      margin: '4px 0 10px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+    }}>
+      <span style={{ color: '#94a3b8', marginRight: 6 }}>VIEW:</span>
+      {['all', 'mine'].map((m) => (
+        <button
+          key={m}
+          onClick={() => setMode(m)}
+          style={{
+            padding: '5px 10px', borderRadius: 6, cursor: 'pointer',
+            background: mode === m ? 'rgba(0,229,255,0.18)' : 'rgba(255,255,255,0.04)',
+            border: '1px solid ' + (mode === m ? '#00e5ff' : 'rgba(255,255,255,0.08)'),
+            color: mode === m ? '#00e5ff' : '#cbd5e1',
+            letterSpacing: '0.05em', textTransform: 'uppercase',
+          }}
+        >
+          {m === 'all' ? 'All markets' : `My tokens (${tokens.length})`}
+        </button>
+      ))}
+    </div>
   )
 }
 

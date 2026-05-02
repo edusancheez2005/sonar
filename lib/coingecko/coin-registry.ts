@@ -125,33 +125,51 @@ class CoinRegistry {
   }
 
   /**
-   * Get metadata by CoinGecko ID
+   * Get metadata by CoinGecko ID.
+   *
+   * Defensive: if `coinId` looks like a SYMBOL (short, no hyphen — e.g. "btc",
+   * "tao", "arb") rather than a real CoinGecko id (e.g. "bitcoin",
+   * "bittensor", "arbitrum"), short-circuit through the symbol resolver
+   * instead of hitting `/coins/{id}` which would 404 and spam logs.
+   * This is the single source of the 404 storm seen in production.
    */
   async getById(coinId: string): Promise<CoinMetadata | null> {
     await this.initialize()
 
-    let metadata = this.idToMetadata.get(coinId)
+    // Cache-hit fast path
+    const cached = this.idToMetadata.get(coinId)
+    if (cached) return cached
 
-    if (!metadata) {
-      // Try fetching directly
-      try {
-        const data = await getCoinById(coinId, { market_data: true })
-        metadata = {
-          id: data.id,
-          symbol: data.symbol.toUpperCase(),
-          name: data.name,
-          image_url: data.image?.large || data.image?.small || data.image?.thumb || null,
-          market_cap_rank: data.market_cap_rank || null,
-          platforms: data.platforms,
-        }
-        this.idToMetadata.set(coinId, metadata)
-      } catch (error) {
-        console.error(`Failed to fetch coin ${coinId}:`, error)
-        return null
+    // Heuristic: real CG ids are usually >= 6 chars OR contain a hyphen.
+    // Short hyphen-less strings are almost always symbols mis-passed as ids.
+    const looksLikeSymbol = coinId.length <= 5 && !coinId.includes('-')
+    if (looksLikeSymbol) {
+      const viaSymbol = await this.resolve(coinId)
+      if (viaSymbol) {
+        this.idToMetadata.set(coinId, viaSymbol)
+        return viaSymbol
       }
+      // Don't hit the CG endpoint for clearly-symbol inputs. Return null silently.
+      return null
     }
 
-    return metadata
+    // Real-id path
+    try {
+      const data = await getCoinById(coinId, { market_data: true })
+      const metadata: CoinMetadata = {
+        id: data.id,
+        symbol: data.symbol.toUpperCase(),
+        name: data.name,
+        image_url: data.image?.large || data.image?.small || data.image?.thumb || null,
+        market_cap_rank: data.market_cap_rank || null,
+        platforms: data.platforms,
+      }
+      this.idToMetadata.set(coinId, metadata)
+      return metadata
+    } catch (error) {
+      console.error(`Failed to fetch coin ${coinId}:`, error)
+      return null
+    }
   }
 
   /**

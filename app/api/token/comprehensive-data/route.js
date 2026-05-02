@@ -160,7 +160,12 @@ export async function GET(req) {
     // 1. Get Binance price data + CoinGecko metadata in parallel
     const PAIR_MAP = { WBTC: 'BTCUSDT', WETH: 'ETHUSDT', MATIC: 'POLUSDT' }
     const pair = PAIR_MAP[symbol] || `${symbol}USDT`
-    const cgId = coinGeckoId || symbol.toLowerCase()
+    // Only call CoinGecko's /coins/{id} when we have a real CG id from the
+    // static map. Falling back to symbol.toLowerCase() (e.g. "btc", "tao",
+    // "arb") guarantees a 404 because those are symbols, not CG ids — that
+    // was the source of the 404 log storm. If we don't know the id, skip the
+    // CG metadata fetch and let downstream code degrade to Binance-only data.
+    const cgId = coinGeckoId || null
     try {
       const [ticker24hRes, klines7dRes, klines30dRes, cgRes] = await Promise.all([
         fetch(`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${pair}`, {
@@ -172,10 +177,12 @@ export async function GET(req) {
         fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1d&limit=30`, {
           signal: AbortSignal.timeout(8000)
         }).catch(() => null),
-        fetch(
-          `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true`,
-          { signal: AbortSignal.timeout(8000) }
-        ).catch(() => null),
+        cgId
+          ? fetch(
+              `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true`,
+              { signal: AbortSignal.timeout(8000) }
+            ).catch(() => null)
+          : Promise.resolve(null),
       ])
 
       let cg = null
