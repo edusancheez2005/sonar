@@ -172,7 +172,7 @@ const Footer = () => {
       </FooterContent>
       <BottomBar>
         <div className="row">
-          <p>&copy; 2026 Sonar. All rights reserved.</p>
+          <p>&copy; 2025 Sonar. All rights reserved.</p>
           <nav>
             <a href="/privacy">Privacy</a>
             <a href="/terms">Terms</a>
