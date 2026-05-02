@@ -7,6 +7,10 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useActiveWallet } from './ActiveWalletContext'
 import { usePersonalizedDashboard } from './PersonalizedDashboardContext'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+// Static-import the Solana adapter UI styles so they ship in the main
+// bundle. Dynamic CSS imports break across Vercel deploys when chunk
+// hashes change.
+import '@solana/wallet-adapter-react-ui/styles.css'
 
 // Re-use the address regex from the API
 const ADDRESS_RE = /^(0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44}|[13][a-km-zA-HJ-NP-Z1-9]{25,61}|bc1[a-zA-HJ-NP-Z0-9]{25,90})$/
@@ -111,7 +115,9 @@ export default function ConnectWalletModal({ open, onClose }) {
   const { signMessageAsync } = useSignMessage()
   const { disconnect } = useDisconnect()
 
-  // Lazy-load Solana adapter only when the Solana tab is opened
+  // Lazy-load Solana adapter only when the Solana tab is opened. CSS is
+  // static-imported at the top of this file so it ships in the main bundle
+  // and survives Vercel chunk-hash changes across deploys.
   useEffect(() => {
     if (tab !== 'solana' || solanaAdapter) return
     ;(async () => {
@@ -119,7 +125,6 @@ export default function ConnectWalletModal({ open, onClose }) {
         const ui = await import('@solana/wallet-adapter-react-ui')
         const react = await import('@solana/wallet-adapter-react')
         const wallets = await import('@solana/wallet-adapter-wallets')
-        await import('@solana/wallet-adapter-react-ui/styles.css')
         setSolanaAdapter({ ui, react, wallets })
       } catch (e) {
         setErr(`Solana adapter failed to load: ${e?.message || 'unknown'}`)

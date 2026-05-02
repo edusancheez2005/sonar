@@ -7,6 +7,14 @@ import { useActiveWallet } from './ActiveWalletContext'
 import { usePersonalizedDashboard } from './PersonalizedDashboardContext'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
+const EVM_CHAINS = [
+  { id: 'ethereum', label: 'Ethereum' },
+  { id: 'base',     label: 'Base' },
+  { id: 'arbitrum', label: 'Arbitrum' },
+  { id: 'polygon',  label: 'Polygon' },
+  { id: 'optimism', label: 'Optimism' },
+]
+
 const ConnectWalletModal = dynamic(() => import('./ConnectWalletModal'), { ssr: false })
 
 const Wrap = styled(motion.section)`
@@ -83,7 +91,7 @@ function truncate(addr) {
 }
 
 export default function PortfolioPanel() {
-  const { address, chain, isConnected, isVerified, disconnect } = useActiveWallet()
+  const { address, chain, isConnected, isVerified, disconnect, setActiveWallet } = useActiveWallet()
   const { tokens, addToken, removeToken, refresh, activeFilterToken, setActiveFilterToken } =
     usePersonalizedDashboard()
   const [open, setOpen] = useState(false)
@@ -155,7 +163,7 @@ export default function PortfolioPanel() {
       <Header>
         <div>
           <Title>My portfolio</Title>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
             <Pill title={address}>
               <span>{truncate(address)}</span>
               <span style={{ opacity: 0.6 }}>· {chain}</span>
@@ -164,6 +172,21 @@ export default function PortfolioPanel() {
             <Ghost onClick={() => navigator.clipboard?.writeText(address)}>Copy</Ghost>
             <Ghost onClick={() => { disconnect(); setPortfolio(null) }}>Disconnect</Ghost>
           </div>
+          {/* Chain switcher — only meaningful for EVM addresses (0x...). */}
+          {address && address.startsWith('0x') && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+              {EVM_CHAINS.map((c) => (
+                <Chip
+                  key={c.id}
+                  $active={chain === c.id}
+                  onClick={() => { setActiveWallet(address, c.id, isVerified); setPortfolio(null) }}
+                  title={`Show holdings on ${c.label}`}
+                >
+                  <span>{c.label}</span>
+                </Chip>
+              ))}
+            </div>
+          )}
         </div>
         <div style={{ textAlign: 'right' }}>
           <Total>{loading ? '…' : total != null ? `$${Math.round(total).toLocaleString()}` : '—'}</Total>
@@ -186,7 +209,7 @@ export default function PortfolioPanel() {
           )
         })}
         {topHoldings.length === 0 && !loading && (
-          <Sub>No tokens above $1 detected on {chain}.</Sub>
+          <Sub>No tokens detected on {chain}. Try a different chain above, or click Refresh.</Sub>
         )}
       </Chips>
 

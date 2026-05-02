@@ -10,8 +10,8 @@ import { STABLECOINS, type Holding, type Chain } from '@/lib/wallet/types'
 export const dynamic = 'force-dynamic'
 
 const DEFAULT_TTL = 300 // 5 minutes
-const MIN_VALUE_USD = 1
-const MIN_STABLE_VALUE_USD = 25
+const MIN_VALUE_USD = 0.05
+const MIN_STABLE_VALUE_USD = 5
 
 async function fetchHoldings(chain: Chain, address: string): Promise<Holding[]> {
   if (chain === 'solana') return getSolanaHoldings(address)
@@ -71,6 +71,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ address:
   // Filter
   holdings = holdings.filter((h) => {
     if (!h.symbol) return false
+    // Always keep the chain's native asset (ETH/MATIC/etc) regardless of
+    // value — a wallet with only gas should still be visible.
+    if (h.contract == null) return true
     if (h.value_usd < MIN_VALUE_USD && h.price_usd) return false
     if (STABLECOINS.has(h.symbol.toUpperCase())) {
       if (!includeStables && h.value_usd < MIN_STABLE_VALUE_USD) return false
