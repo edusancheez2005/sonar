@@ -1,16 +1,12 @@
-import React from 'react'
+import ChangelogClient from './ChangelogClient'
 
-export const metadata = { title: "What's New — SONAR" }
+export const metadata = {
+  title: "What's new — Sonar Tracker",
+  description:
+    'Release notes, shipped features and what is coming next on Sonar Tracker. ' +
+    'Whale tracking, AI signals, sentiment, multi-chain analytics.',
+}
 
 export default function ChangelogPage() {
-  return (
-    <main className="container" style={{ padding: '2rem' }}>
-      <h1>What’s New</h1>
-      <ul>
-        <li>Initial Next.js App Router migration (non-destructive)</li>
-        <li>Supabase server-only integration for whales and subscribe</li>
-        <li>SEO: robots, sitemap, OG/Twitter, JSON-LD</li>
-      </ul>
-    </main>
-  )
-} 
+  return <ChangelogClient />
+}
