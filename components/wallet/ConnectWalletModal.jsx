@@ -99,7 +99,7 @@ const TABS = [
   { id: 'paste', label: 'Paste address' },
 ]
 
-export default function ConnectWalletModal({ open, onClose }) {
+export default function ConnectWalletModal({ open, onClose, defaultAttestations, onSignedIn }) {
   const [tab, setTab] = useState('evm')
   const [pasteAddr, setPasteAddr] = useState('')
   const [pasteChain, setPasteChain] = useState('ethereum')
@@ -108,7 +108,11 @@ export default function ConnectWalletModal({ open, onClose }) {
   const { setActiveWallet } = useActiveWallet()
   const { refresh: refreshTokens } = usePersonalizedDashboard()
   const [showSignIn, setShowSignIn] = useState(false)
-  const [att, setAtt] = useState({ over18: false, terms: false, sanctions: false })
+  const [att, setAtt] = useState(() => ({
+    over18:    defaultAttestations?.over18 === true,
+    terms:     defaultAttestations?.terms === true,
+    sanctions: defaultAttestations?.sanctions === true,
+  }))
   const [solanaAdapter, setSolanaAdapter] = useState(null)
 
   const wagmi = useAccount()
@@ -214,6 +218,7 @@ export default function ConnectWalletModal({ open, onClose }) {
       await sb.auth.setSession(vj.session)
       setActiveWallet(address.toLowerCase(), chain, true)
       await personalize(address.toLowerCase(), chain)
+      onSignedIn?.({ address: address.toLowerCase(), chain, user: vj.user })
       onClose?.()
     } catch (e) {
       setErr(e?.message || 'Sign-in failed')
