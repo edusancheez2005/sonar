@@ -1,5 +1,23 @@
 import 'server-only'
 import type { Chain, Holding } from './types'
+import { STABLECOINS } from './types'
+
+// Heuristic: many airdrop-spam tokens hide their nature in their NAME or
+// SYMBOL with claim instructions, URLs, or visit-prompts. We hard-drop any
+// metadata that smells like that so the portfolio panel is not polluted.
+function isSpamToken(symbol: string, name: string): boolean {
+  const s = `${symbol || ''} ${name || ''}`.toLowerCase()
+  return (
+    /https?:\/\//.test(s) ||
+    /\bclaim\b/.test(s) ||
+    /\bvisit\b/.test(s) ||
+    /\baccess\b/.test(s) ||
+    /\.com\b|\.io\b|\.xyz\b|\.app\b|\.me\b|\.org\b/.test(s) ||
+    /\bairdrop\b/.test(s) ||
+    /t\.me\//.test(s) ||
+    /\$\s*\d/.test(s) // "$1500 reward"
+  )
+}
 
 const ALCHEMY_NETWORKS: Partial<Record<Chain, string>> = {
   ethereum: 'eth-mainnet',
@@ -143,11 +161,21 @@ export async function getEvmHoldings(chain: Chain, address: string): Promise<Hol
     const decimals = Number(t.meta.decimals ?? 18)
     const { decimal, numeric } = fromHexBalance(t.tokenBalance, decimals)
     if (numeric <= 0) continue
-    const price = prices[t.contractAddress.toLowerCase()] ?? null
+    const symbol = (t.meta.symbol || '').toUpperCase()
+    const name = t.meta.name || t.meta.symbol || 'Unknown'
+    if (isSpamToken(symbol, name)) continue
+    let price = prices[t.contractAddress.toLowerCase()] ?? null
+    // Fallback: known stablecoins are pegged to $1. CoinGecko occasionally
+    // misses the per-network contract listing (e.g. native USDC on Polygon),
+    // so without this the panel showed a real $53 USDC balance as $0 and
+    // filtered it out as dust.
+    if (price == null && STABLECOINS.has(symbol)) {
+      price = 1
+    }
     const value = price ? numeric * price : 0
     out.push({
-      symbol: (t.meta.symbol || '').toUpperCase(),
-      name: t.meta.name || t.meta.symbol || 'Unknown',
+      symbol,
+      name,
       contract: t.contractAddress.toLowerCase(),
       balance: decimal,
       decimals,
