@@ -3,22 +3,26 @@
 --  Curated famous-wallet seed for `curated_entities` table.
 --
 --  Generated:           2026-05-02
---  Total entities:      66
---  Total addresses:     78
---  Per-chain breakdown:
---     ethereum  : 58
---     bitcoin   :  9
---     solana    :  4
---     polygon   :  3
---     arbitrum  :  2
---     base      :  2
+--  Total entities:               79
+--  Entities with addresses:      15  (~19%)
+--  Entities awaiting backfill:   64  (~81%) — `addresses = []`, `is_featured = false`
+--  Total verified address rows:  21
+--  Per-chain breakdown of populated rows:
+--     ethereum  : 21
+--     (other chains pending admin backfill via /admin/figures)
 --
---  Provenance inventory (every address has a `source` URL field):
---     Etherscan public name tag pages : 47
---     Self-disclosed (tweet / personal site / official ENS reverse) : 14
---     Foundation / DAO governance forum disclosure : 9
---     DOJ / SEC / public court filing : 4
---     Mempool.space / blockchain.com confirmed exchange disclosure : 4
+--  Provenance inventory (every populated address row has a `source` URL):
+--     Etherscan public name tag pages : 21 (100% of populated rows)
+--
+--  Why so many empty rows?
+--     This v2 takes a CONSERVATIVE legal posture. Only addresses currently
+--     bearing a public Etherscan name tag (verified by direct fetch on the
+--     generation date) were committed with provenance. Empty rows are
+--     placeholders for figures whose personal wallets are NOT publicly
+--     attributable without speculation (CZ, Saylor, Cobie, Ansem, etc.) —
+--     they ship with `is_featured = false` and `addresses = []` so they do
+--     NOT pollute the public hub. Admins backfill them via the runtime
+--     endpoint `POST /api/admin/figures/[slug]/addresses` (see Prompt 2).
 --
 --  Verification methodology:
 --     1. Each EVM address on Etherscan was verified to currently bear the
