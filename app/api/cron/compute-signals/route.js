@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdmin, supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 import { computeUnifiedSignal } from '@/app/lib/signalEngine'
 import { computeTechnicalIndicators } from '@/app/lib/technicalAnalysis'
 import { fetchDerivativesData } from '@/app/lib/derivativesData'
@@ -43,7 +43,10 @@ export async function GET(req) {
     // poisoned the entire signal_outcomes + calibration pipeline. Hard fail
     // is better than silent corruption.
     if (!singleToken) {
-      const { data: latestBtc } = await supabaseAdmin
+      // Use the no-cache client so the freshness gate cannot be fooled by
+      // a Next.js fetch cache hit from an earlier invocation of this warm
+      // serverless instance.
+      const { data: latestBtc } = await supabaseAdminFresh
         .from('price_snapshots')
         .select('price_usd, timestamp')
         .eq('ticker', 'BTC')
