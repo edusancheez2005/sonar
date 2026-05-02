@@ -1,5 +1,6 @@
 'use client'
 import React from 'react'
+import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { StyleSheetManager } from 'styled-components'
 import isPropValid from '@emotion/is-prop-valid'
@@ -9,6 +10,11 @@ import Navbar from '@/src/components/Navbar'
 import Footer from '@/src/components/Footer'
 import FeedbackWidget from '@/src/components/FeedbackWidget'
 import CookieConsent from '@/components/CookieConsent'
+import { ActiveWalletProvider } from '@/components/wallet/ActiveWalletContext'
+import { PersonalizedDashboardProvider } from '@/components/wallet/PersonalizedDashboardContext'
+
+// Lazy-load wagmi/RainbowKit only when needed (heavy bundle).
+const WalletProvider = dynamic(() => import('@/components/wallet/WalletProvider'), { ssr: false })
 
 export default function ClientRoot({ children }) {
   const pathname = usePathname()
@@ -23,30 +29,43 @@ export default function ClientRoot({ children }) {
    */
   const inShell = !isLandingPage && !useLegacyTopNav
 
-  return (
-    <StyleSheetManager shouldForwardProp={(propName, target) => {
-      if (typeof target === 'string') {
-        return isPropValid(propName)
-      }
-      return true
-    }}>
-      <GlobalStyles />
-      {isLandingPage ? (
-        <>
-          <main>{children}</main>
-          <Footer />
-        </>
-      ) : useLegacyTopNav ? (
-        <>
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
-        </>
-      ) : (
-        <AppShell>{children}</AppShell>
-      )}
-      {!hideFeedback && <FeedbackWidget hideTrigger={inShell} />}
-      <CookieConsent />
-    </StyleSheetManager>
+  // Mount the heavy wallet stack only on routes that surface wallet UI
+  const needsWallet =
+    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/profile') ||
+    pathname?.startsWith('/wallet-tracker') ||
+    pathname?.startsWith('/watchlist')
+
+  const inner = (
+    <ActiveWalletProvider>
+      <PersonalizedDashboardProvider>
+        <StyleSheetManager shouldForwardProp={(propName, target) => {
+          if (typeof target === 'string') {
+            return isPropValid(propName)
+          }
+          return true
+        }}>
+          <GlobalStyles />
+          {isLandingPage ? (
+            <>
+              <main>{children}</main>
+              <Footer />
+            </>
+          ) : useLegacyTopNav ? (
+            <>
+              <Navbar />
+              <main>{children}</main>
+              <Footer />
+            </>
+          ) : (
+            <AppShell>{children}</AppShell>
+          )}
+          {!hideFeedback && <FeedbackWidget hideTrigger={inShell} />}
+          <CookieConsent />
+        </StyleSheetManager>
+      </PersonalizedDashboardProvider>
+    </ActiveWalletProvider>
   )
-} 
+
+  return needsWallet ? <WalletProvider>{inner}</WalletProvider> : inner
+}

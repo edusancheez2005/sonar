@@ -434,7 +434,7 @@ async function fetchWithRetry<T>(fn: () => Promise<T>, attempts = 2, backoffMs =
  * but the route still returns its real result to the caller.
  */
 async function writeHealth(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   component: string,
   status: 'ok' | 'partial' | 'error',
   startedAtMs: number,
