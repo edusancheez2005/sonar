@@ -5,6 +5,11 @@ import StyledComponentsRegistry from './components/StyledComponentsRegistry'
 import Breadcrumbs from './components/Breadcrumbs'
 import ConsentGatedScripts from './components/ConsentGatedScripts'
 
+// Imported here (root layout) so it ships in the main always-loaded CSS
+// bundle rather than a per-route chunk. Avoids 'Loading CSS chunk failed'
+// errors after a redeploy when ConnectWalletModal is dynamically imported.
+import '@solana/wallet-adapter-react-ui/styles.css'
+
 const siteUrl = 'https://www.sonartracker.io'
 const ogImage = '/screenshots/stats-dashboard.png'
 
