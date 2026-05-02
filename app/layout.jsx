@@ -261,7 +261,7 @@ function JsonLd() {
         contactPoint: {
           '@type': 'ContactPoint',
           contactType: 'customer service',
-          email: 'support@sonartracker.io',
+          email: 'saif@sonartracker.io',
         },
       },
       {

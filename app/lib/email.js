@@ -87,7 +87,7 @@ function getWelcomeEmailHTML(email, name = '') {
             <a href="https://sonartracker.io/dashboard" class="button">Access Your Dashboard →</a>
 
             <p style="margin-top: 30px; font-size: 16px;">
-              <strong>Questions?</strong> Reach out to us at <a href="mailto:support@sonartracker.io">support@sonartracker.io</a>
+              <strong>Questions?</strong> Reach out to us at <a href="mailto:saif@sonartracker.io">saif@sonartracker.io</a>
             </p>
           </div>
 

@@ -88,7 +88,7 @@ export async function POST(req) {
   return NextResponse.json({
     ok: true,
     message:
-      'Your request has been received. We will acknowledge within 5 business days and substantively respond within 30 days at the email address you provided. For urgent matters please also email privacy@sonartracker.io.',
+      'Your request has been received. We will acknowledge within 5 business days and substantively respond within 30 days at the email address you provided. For urgent matters please also email saif@sonartracker.io.',
   })
 }
 

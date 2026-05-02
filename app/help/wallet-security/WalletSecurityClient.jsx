@@ -424,7 +424,7 @@ export default function WalletSecurityClient() {
         <Faq>
           <summary>What happens if I lose access to the wallet I signed in with?</summary>
           <div className="body">
-            Email <a href="mailto:support@sonartracker.io">support@sonartracker.io</a> from the email
+            Email <a href="mailto:saif@sonartracker.io">saif@sonartracker.io</a> from the email
             on file (if you also have one) and we can help recover account access. Without a recovery
             channel we cannot prove ownership of the address — this is by design.
           </div>
@@ -435,7 +435,7 @@ export default function WalletSecurityClient() {
           <div className="body">
             Open your <Link href="/profile" style={{ color: '#00e5ff' }}>profile</Link> and use the
             "Linked wallets" panel to remove an address, or contact{' '}
-            <a href="mailto:privacy@sonartracker.io">privacy@sonartracker.io</a> to delete the entire
+            <a href="mailto:saif@sonartracker.io">saif@sonartracker.io</a> to delete the entire
             account. Cached on-chain data is purged on request as required by GDPR / CCPA.
           </div>
         </Faq>
@@ -453,7 +453,7 @@ export default function WalletSecurityClient() {
         <Faq>
           <summary>Where can I report a security issue?</summary>
           <div className="body">
-            Please email <a href="mailto:security@sonartracker.io">security@sonartracker.io</a>. We
+            Please email <a href="mailto:saif@sonartracker.io">saif@sonartracker.io</a>. We
             acknowledge reports within 72 hours. Coordinated disclosure is appreciated — please do
             not publicly disclose vulnerabilities before we have had a chance to patch them.
           </div>
@@ -489,7 +489,7 @@ export default function WalletSecurityClient() {
           <p>
             Sonar Tracker takes reasonable technical and organizational measures to protect user
             data but cannot guarantee absolute security of any system. Report suspected
-            vulnerabilities to <a href="mailto:security@sonartracker.io">security@sonartracker.io</a>.
+            vulnerabilities to <a href="mailto:saif@sonartracker.io">saif@sonartracker.io</a>.
           </p>
         </Disclaimer>
       </Wrap>

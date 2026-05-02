@@ -448,7 +448,7 @@ export default function PrivacyPolicy() {
             We carry out a transfer impact assessment (TIA) for each cross-border data flow and apply supplementary technical measures (encryption in transit, encryption at rest, pseudonymisation where practicable, access controls and key management) so that the personal data continues to enjoy a level of protection essentially equivalent to that guaranteed within the UK / EEA.
           </p>
           <p>
-            You may obtain a copy of the relevant transfer mechanism (with commercial terms redacted) by emailing <a href="mailto:privacy@sonartracker.io">privacy@sonartracker.io</a>.
+            You may obtain a copy of the relevant transfer mechanism (with commercial terms redacted) by emailing <a href="mailto:saif@sonartracker.io">saif@sonartracker.io</a>.
           </p>
         </Section>
 
@@ -481,7 +481,7 @@ export default function PrivacyPolicy() {
           <p>
             <strong>Data Controller:</strong> SonarTracker (United Kingdom)<br />
             <strong>Postcode:</strong> SE16 3TY<br />
-            <strong>Email (privacy):</strong> <a href="mailto:privacy@sonartracker.io">privacy@sonartracker.io</a><br />
+            <strong>Email (privacy):</strong> <a href="mailto:saif@sonartracker.io">saif@sonartracker.io</a><br />
             <strong>Email (general):</strong> <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>
           </p>
           <p>

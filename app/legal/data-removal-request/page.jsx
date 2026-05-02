@@ -44,7 +44,7 @@ export default function DataRemovalRequestPage() {
       <h2 style={{ fontSize: '1.2rem', marginTop: '3rem' }}>Prefer email?</h2>
       <p>
         You may also email{' '}
-        <a href="mailto:privacy@sonartracker.io" style={{ color: '#00e5ff' }}>privacy@sonartracker.io</a>{' '}
+        <a href="mailto:saif@sonartracker.io" style={{ color: '#00e5ff' }}>saif@sonartracker.io</a>{' '}
         with the subject line <strong>"Data Removal Request"</strong> and the
         same information requested in the form above.
       </p>

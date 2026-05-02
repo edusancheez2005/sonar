@@ -82,7 +82,7 @@ export async function DELETE(req) {
     if (authErr) {
       console.error(`GDPR deletion auth error for ${userId}:`, authErr.message)
       return NextResponse.json({
-        error: 'Failed to delete auth account. Please contact support@sonartracker.io',
+        error: 'Failed to delete auth account. Please contact saif@sonartracker.io',
         partial_deletion: deletionLog,
       }, { status: 500 })
     }
@@ -95,6 +95,6 @@ export async function DELETE(req) {
     })
   } catch (err) {
     console.error('GDPR deletion error:', err)
-    return NextResponse.json({ error: 'Deletion failed. Contact support@sonartracker.io' }, { status: 500 })
+    return NextResponse.json({ error: 'Deletion failed. Contact saif@sonartracker.io' }, { status: 500 })
   }
 }
