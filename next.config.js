@@ -60,12 +60,19 @@ const nextConfig = {
       'react-router-dom': path.resolve(__dirname, 'app/lib/rrd-adapter.js'),
     },
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       '@': path.resolve(__dirname),
       'react-router-dom': path.resolve(__dirname, 'app/lib/rrd-adapter.js'),
     };
+    // pino (pulled in by @walletconnect/logger) optionally requires pino-pretty
+    // which we don't ship in production. Stub it so webpack doesn't fail to
+    // resolve. See https://github.com/pinojs/pino/issues/688
+    config.externals = config.externals || [];
+    if (Array.isArray(config.externals)) {
+      config.externals.push({ 'pino-pretty': 'commonjs pino-pretty' });
+    }
     return config;
   },
 };

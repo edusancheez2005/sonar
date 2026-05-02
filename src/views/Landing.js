@@ -983,7 +983,7 @@ const Landing = () => {
     if (!formData.acceptedTerms) { setSignupError('Please confirm you are 18+ and accept the Terms before continuing.'); showToast('Please accept the Terms', 'error'); return; }
     try {
       setSignupLoading(true);
-      const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, password: formData.password, displayName: formData.displayName, country: formData.country, experienceLevel: formData.experienceLevel, interests: formData.interests }) });
+      const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email, password: formData.password, displayName: formData.displayName, country: formData.country, experienceLevel: formData.experienceLevel, interests: formData.interests, over18: true, acceptsTerms: true, notSanctioned: true }) });
       const json = await res.json();
       if (!res.ok || !json?.ok) throw new Error(json?.error || 'Signup failed');
       const sb = supabaseBrowser();
