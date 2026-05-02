@@ -23,7 +23,6 @@ import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import TokenHeatmap from '@/components/wallet-tracker/TokenHeatmap'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
-import PortfolioPanel from '@/components/wallet/PortfolioPanel'
 import { usePersonalizedDashboard } from '@/components/wallet/PersonalizedDashboardContext'
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
@@ -1063,9 +1062,7 @@ const Dashboard = ({ isPremium = false }) => {
               style={{ paddingTop: '1.5rem' }}
             >
 
-              {/* ─── PORTFOLIO PANEL (wallet personalization) ────────── */}
-              <PortfolioPanel />
-              <PersonalizedToggle />
+              {/* Wallet personalization moved to /personalize (admin-gated). */}
 
               {/* ─── KPI TICKER STRIP (MARKET PULSE) ─────────────────── */}
               <motion.div variants={fadeUp} ref={marketPulseRef} data-tutorial="market-pulse">
@@ -1552,34 +1549,6 @@ const TopWhalesSection = () => {
         )}
       </Panel>
     </SectionGap>
-  )
-}
-
-function PersonalizedToggle() {
-  const { tokens, mode, setMode } = usePersonalizedDashboard()
-  if (!tokens || tokens.length === 0) return null
-  return (
-    <div style={{
-      display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end',
-      margin: '4px 0 10px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
-    }}>
-      <span style={{ color: '#94a3b8', marginRight: 6 }}>VIEW:</span>
-      {['all', 'mine'].map((m) => (
-        <button
-          key={m}
-          onClick={() => setMode(m)}
-          style={{
-            padding: '5px 10px', borderRadius: 6, cursor: 'pointer',
-            background: mode === m ? 'rgba(0,229,255,0.18)' : 'rgba(255,255,255,0.04)',
-            border: '1px solid ' + (mode === m ? '#00e5ff' : 'rgba(255,255,255,0.08)'),
-            color: mode === m ? '#00e5ff' : '#cbd5e1',
-            letterSpacing: '0.05em', textTransform: 'uppercase',
-          }}
-        >
-          {m === 'all' ? 'All markets' : `My tokens (${tokens.length})`}
-        </button>
-      ))}
-    </div>
   )
 }
 

@@ -487,6 +487,19 @@ const ShellRailItem = styled(motion.div)`
       white-space: nowrap;
     }
 
+    .badge {
+      flex-shrink: 0;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.12rem 0.36rem;
+      border-radius: 6px;
+      border: 1px solid rgba(34, 211, 238, 0.28);
+      color: var(--neon-bright);
+      background: rgba(34, 211, 238, 0.08);
+    }
+
     &:hover {
       color: var(--neon-bright);
       background: ${({ $active }) =>
@@ -650,6 +663,17 @@ function IconHelp() {
   )
 }
 
+/** Personalize — user silhouette with a small spark, signalling tailored UX. */
+function IconPersonalize() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="10" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M3.8 19c.6-3.1 3.2-5 6.2-5s5.6 1.9 6.2 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M18 4l.8 2 2 .8-2 .8L18 9.6l-.8-2-2-.8 2-.8L18 4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 const APP_LINKS = [
   {
     href: '/dashboard',
@@ -686,6 +710,13 @@ const APP_LINKS = [
     label: 'Orca AI 2.0',
     match: (p) => p === '/ai-advisor' || p?.startsWith('/ai-advisor/'),
     Icon: IconSpark,
+  },
+  {
+    href: '/personalize',
+    label: 'Personalize',
+    match: (p) => p === '/personalize' || p?.startsWith('/personalize/'),
+    Icon: IconPersonalize,
+    soon: true,
   },
 ]
 
@@ -973,7 +1004,7 @@ export default function AppShell({ children, onLogout }) {
           onMouseLeave={scheduleCloseRailPeek}
         >
           <NavStack>
-            {APP_LINKS.map(({ href, label, match, Icon }) => (
+            {APP_LINKS.map(({ href, label, match, Icon, soon }) => (
               <ShellRailItem
                 key={href}
                 $active={match(pathname)}
@@ -984,14 +1015,15 @@ export default function AppShell({ children, onLogout }) {
               >
                 <NextLink
                   href={href}
-                  aria-label={label}
-                  title={railIconOnly ? label : undefined}
+                  aria-label={soon ? `${label} — preview` : label}
+                  title={railIconOnly ? (soon ? `${label} — preview` : label) : undefined}
                   onClick={() => setDrawerOpen(false)}
                 >
                   <span className="ico" aria-hidden>
                     <Icon />
                   </span>
                   {!railIconOnly ? <span className="lab">{label}</span> : null}
+                  {!railIconOnly && soon ? <span className="badge">Soon</span> : null}
                 </NextLink>
               </ShellRailItem>
             ))}

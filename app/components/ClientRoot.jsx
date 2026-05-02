@@ -19,7 +19,7 @@ const WalletProvider = dynamic(() => import('@/components/wallet/WalletProvider'
   ssr: false,
 })
 
-const WALLET_ROUTES = ['/dashboard', '/profile', '/wallet-tracker', '/watchlist', '/whale']
+const WALLET_ROUTES = ['/dashboard', '/personalize', '/profile', '/wallet-tracker', '/watchlist', '/whale']
 
 export default function ClientRoot({ children }) {
   const pathname = usePathname()
