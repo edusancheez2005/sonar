@@ -203,10 +203,12 @@ async function getActiveTokens() {
     .gte('timestamp', since)
     .not('token_symbol', 'is', null)
 
-  // Always-include list: top tokens that must be tracked regardless of tx count
+  // Always-include list: top tokens that must be tracked regardless of tx count.
+  // MATIC was migrated to POL in 2024; the legacy ticker is dead on every feed,
+  // see 2026-05-03 incident notes in fetch-prices/route.ts.
   const ALWAYS_INCLUDE = [
     'BTC', 'ETH', 'SOL', 'BNB', 'LINK', 'UNI', 'AAVE', 'DOGE',
-    'ADA', 'AVAX', 'DOT', 'MATIC', 'ARB', 'OP', 'SUI', 'NEAR',
+    'ADA', 'AVAX', 'DOT', 'POL', 'ARB', 'OP', 'SUI', 'NEAR',
     'PEPE', 'SHIB', 'WBTC', 'WETH', 'INJ', 'FET', 'RENDER',
   ]
 

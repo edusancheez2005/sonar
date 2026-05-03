@@ -19,6 +19,13 @@ function getSupabase() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
+// Binance USDT pairs to ignore even if Binance returns a price for them.
+// These are zombie/delisted pairs whose quote is frozen — ingesting would
+// poison signal eval. Add new entries when a token gets renamed/migrated.
+const BINANCE_USDT_SKIPLIST = new Set<string>([
+  'MATICUSDT', // Migrated to POL in 2024; pair frozen at $0.3794.
+])
+
 // Top crypto tickers with their CoinGecko IDs
 // Must include ALL tokens that compute-signals processes (ALWAYS_INCLUDE + active)
 const TICKER_MAP = [
@@ -37,7 +44,11 @@ const TICKER_MAP = [
   { symbol: 'SHIB', id: 'shiba-inu' },
   { symbol: 'DOT', id: 'polkadot' },
   { symbol: 'LINK', id: 'chainlink' },
-  { symbol: 'MATIC', id: 'matic-network' },
+  // MATIC was migrated to POL in 2024; matic-network CG id and MATICUSDT Binance pair
+  // are zombie/frozen. Track POL (the live successor) instead. We also explicitly skip
+  // the MATICUSDT pair below in the Binance loop so the frozen $0.3794 quote can't
+  // contaminate price_snapshots under the legacy MATIC ticker.
+  { symbol: 'POL', id: 'polygon-ecosystem-token' },
   { symbol: 'UNI', id: 'uniswap' },
   { symbol: 'LTC', id: 'litecoin' },
   { symbol: 'ATOM', id: 'cosmos' },
@@ -211,6 +222,11 @@ export async function GET(request: Request) {
       const all = FAILOVER_ON ? await fetchWithRetry(binancePriceFn) : await binancePriceFn()
       for (const p of all) {
         if (!p.symbol.endsWith('USDT')) continue
+        // Skip zombie/delisted pairs whose price is frozen at the migration value.
+        // MATICUSDT has been frozen at $0.3794 since the POL migration; ingesting it
+        // poisons signal evaluation (see 2026-05-03 incident: 60 false-fail signals,
+        // reported alpha −9% mostly driven by MATIC fake +290% moves).
+        if (BINANCE_USDT_SKIPLIST.has(p.symbol)) continue
         const ticker = p.symbol.replace('USDT', '')
         const price = parseFloat(p.price)
         if (price > 0) livePrices[ticker] = { price }
@@ -233,6 +249,7 @@ export async function GET(request: Request) {
       const all24 = FAILOVER_ON ? await fetchWithRetry(binance24Fn) : await binance24Fn()
       for (const t of all24) {
         if (!t.symbol.endsWith('USDT')) continue
+        if (BINANCE_USDT_SKIPLIST.has(t.symbol)) continue
         const ticker = t.symbol.replace('USDT', '')
         if (livePrices[ticker]) {
           livePrices[ticker].volume_24h = parseFloat(t.quoteVolume) || 0

@@ -97,7 +97,8 @@ export async function GET(req) {
         BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin',
         XRP: 'ripple', ADA: 'cardano', DOGE: 'dogecoin', TRX: 'tron',
         AVAX: 'avalanche-2', SHIB: 'shiba-inu', DOT: 'polkadot', LINK: 'chainlink',
-        MATIC: 'matic-network', UNI: 'uniswap', LTC: 'litecoin', ATOM: 'cosmos',
+        // MATIC migrated to POL in 2024; matic-network CG id is dead. Track POL.
+        POL: 'polygon-ecosystem-token', UNI: 'uniswap', LTC: 'litecoin', ATOM: 'cosmos',
         ETC: 'ethereum-classic', XLM: 'stellar', NEAR: 'near', ALGO: 'algorand',
         VET: 'vechain', FIL: 'filecoin', APT: 'aptos', HBAR: 'hedera-hashgraph',
         ARB: 'arbitrum', OP: 'optimism', SUI: 'sui', SEI: 'sei-network',
@@ -301,7 +302,16 @@ export async function GET(req) {
         // currentPrice ≈ price_at_signal) are NOT a failed prediction.
         // Mark them null so they're excluded from accuracy aggregations.
         let correct = null
-        if (Math.abs(priceChange) >= NOISE_FLOOR_PCT) {
+        // Outlier sanity filter — physically-impossible moves over a short
+        // window are virtually always upstream data errors (frozen feed,
+        // ticker rename, decimal split), not real price action. Mark them
+        // null so a single bad ticker can't tank the headline accuracy.
+        // Calibrated against 2026-05-03 incident where MATICUSDT zombie
+        // quote produced a fake +290% "move" on every 1h eval.
+        const OUTLIER_LIMITS = { '1h': 50, '6h': 200, '24h': 500 }
+        const outlierLimit = OUTLIER_LIMITS[window.label]
+        const isOutlier = outlierLimit !== undefined && Math.abs(priceChange) > outlierLimit
+        if (!isOutlier && Math.abs(priceChange) >= NOISE_FLOOR_PCT) {
           if (isBullish) correct = priceChange > 0
           else if (isBearish) correct = priceChange < 0
         }
