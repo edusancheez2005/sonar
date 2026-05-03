@@ -1,0 +1,11 @@
+
+> sonar-crypto-dashboard@0.1.0 build
+> next build
+
+ ÔÜá Invalid next.config.js options detected: 
+ ÔÜá     Unrecognized key(s) in object: 'turbopack'
+ ÔÜá See more info here: https://nextjs.org/docs/messages/invalid-next-config
+  Ôû▓ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
