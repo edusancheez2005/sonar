@@ -165,6 +165,15 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
   const win = totalReturn > 0
   const beatBtc = totalReturn > (benchmarks?.btc_hodl?.total_return_pct ?? 0)
   const beatEth = totalReturn > (benchmarks?.eth_hodl?.total_return_pct ?? 0)
+  // Data-quality guard: a wallet that "lost" >90% on <30 trades is almost
+  // never a trader — it's a personal/founder wallet whose outgoing ETH
+  // transfers (gifts, gas top-ups, contract deposits) get replayed as
+  // SELLs against a blind starting cash position. Surfacing -99% as a
+  // headline number is misleading; flag instead.
+  const lowQuality = data && Number.isFinite(totalReturn) && (
+    (totalReturn <= -90 && tradeCount < 30) ||
+    tradeCount < 5
+  )
 
   return (
     <section
@@ -260,6 +269,14 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
       {/* Result */}
       {data && !error ? (
         <>
+          {lowQuality ? (
+            <div role="status" style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', background: 'rgba(247, 147, 26, 0.10)', border: '1px solid rgba(247, 147, 26, 0.45)', borderRadius: '10px', color: '#f7c97a', fontSize: '0.85rem', lineHeight: 1.45 }}>
+              ⚠ <strong>Backtest unreliable for this wallet.</strong>{' '}
+              Only {tradeCount} trade{tradeCount === 1 ? '' : 's'} replayed. This wallet is mostly transfers
+              (gas top-ups, ETH gifts, contract deposits) rather than market trades, so the copy-trade
+              simulation is not meaningful. The numbers below are shown for transparency only.
+            </div>
+          ) : null}
           <div style={{ marginTop: '1.1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.65rem' }}>
             <Stat
               label="Final equity"
