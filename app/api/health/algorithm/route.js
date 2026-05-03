@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
+// Always evaluate at request time. Build-time static generation triggers
+// the 'Dynamic server usage: no-store fetch' bail and pollutes Vercel logs.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
     return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })

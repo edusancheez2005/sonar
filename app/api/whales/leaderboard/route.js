@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
+// Heavy Supabase aggregation over all_whale_transactions; never static-gen.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
     return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })

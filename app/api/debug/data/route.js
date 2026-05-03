@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
+// Opt out of static generation. The count(*) queries below run against
+// all_whale_transactions (millions of rows) and exceed Next's 60s static
+// page generation timeout on Vercel — must always run at request time.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   try {
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {

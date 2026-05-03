@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
+// Heavy Supabase aggregation over all_whale_transactions; never static-gen.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
 
 export async function GET() {
