@@ -92,52 +92,63 @@ export async function GET(request: Request) {
   let skipped = 0
   const errors: Array<{ slug: string; error: string }> = []
 
-  // Process serially. The engine fans out to Alchemy/Helius/CoinGecko
-  // per call and the in-memory price cache only helps within a single
-  // process; running serially keeps us well under the per-provider rate
-  // limits during the nightly window.
-  for (const fig of figures) {
-    processed++
-    const addr = (fig.addresses || []).find((a) =>
-      a?.address && a?.chain && SUPPORTED.has(String(a.chain).toLowerCase() as BacktestChain),
-    )
-    if (!addr) {
-      skipped++
-      continue
-    }
-    const chain = String(addr.chain).toLowerCase() as BacktestChain
-    const address = String(addr.address)
-
-    const [r90, r7] = await Promise.all([
-      backtestWindow(chain, address, start90d, now),
-      backtestWindow(chain, address, start7d, now),
-    ])
-
-    const upsertErr = await sb
-      .from('figure_backtests')
-      .upsert(
-        {
-          slug: fig.slug,
-          chain,
-          address,
-          capital_usd: CAPITAL_USD,
-          return_pct_7d: r7.return_pct,
-          return_pct_90d: r90.return_pct,
-          final_equity_usd_90d: r90.final_equity_usd,
-          trades_replayed: r90.trades,
-          computed_at: new Date().toISOString(),
-          error: r90.error || r7.error,
-        },
-        { onConflict: 'slug' },
+  // Process with bounded concurrency. The previous serial loop ran
+  // figures back-to-back; once the engine started returning real data
+  // (rather than failing instantly on a bad fromBlock) the wall-time
+  // for ~20 figures × 2 windows blew past Vercel's 300s function cap.
+  // A concurrency of 4 keeps us well under per-provider rate limits
+  // (Alchemy 25 cps, CoinGecko Pro 500/min, Helius 10 rps) while
+  // collapsing the run to roughly max-per-figure × ceil(N/4).
+  const CONCURRENCY = 4
+  let cursor = 0
+  async function worker() {
+    while (true) {
+      const i = cursor++
+      if (i >= figures.length) return
+      const fig = figures[i]
+      processed++
+      const addr = (fig.addresses || []).find((a) =>
+        a?.address && a?.chain && SUPPORTED.has(String(a.chain).toLowerCase() as BacktestChain),
       )
-      .then((res) => res.error)
+      if (!addr) {
+        skipped++
+        continue
+      }
+      const chain = String(addr.chain).toLowerCase() as BacktestChain
+      const address = String(addr.address)
 
-    if (upsertErr) {
-      errors.push({ slug: fig.slug, error: upsertErr.message })
-    } else {
-      written++
+      const [r90, r7] = await Promise.all([
+        backtestWindow(chain, address, start90d, now),
+        backtestWindow(chain, address, start7d, now),
+      ])
+
+      const upsertErr = await sb
+        .from('figure_backtests')
+        .upsert(
+          {
+            slug: fig.slug,
+            chain,
+            address,
+            capital_usd: CAPITAL_USD,
+            return_pct_7d: r7.return_pct,
+            return_pct_90d: r90.return_pct,
+            final_equity_usd_90d: r90.final_equity_usd,
+            trades_replayed: r90.trades,
+            computed_at: new Date().toISOString(),
+            error: r90.error || r7.error,
+          },
+          { onConflict: 'slug' },
+        )
+        .then((res) => res.error)
+
+      if (upsertErr) {
+        errors.push({ slug: fig.slug, error: upsertErr.message })
+      } else {
+        written++
+      }
     }
   }
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()))
 
   return NextResponse.json({
     ok: true,
