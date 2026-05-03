@@ -15,7 +15,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { NOISE_FLOOR_PCT, MIN_N_FOR_TRUST, ROUND_TRIP_BPS } from '@/lib/quant/constants'
 
 export const dynamic = 'force-dynamic'
