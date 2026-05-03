@@ -48,8 +48,22 @@ async function backtestWindow(
   start_ms: number,
   end_ms: number,
 ): Promise<WindowResult> {
+  // Per-window hard timeout. A handful of high-activity wallets (e.g.
+  // a cold-storage wallet with 10k+ ERC-20 transfers across hundreds
+  // of unique tokens) blow past Vercel's 300s function cap on the 90d
+  // window because we have to fetch a CoinGecko price series per
+  // unique token. Cap at 45s/window so the cron always returns.
+  const PER_WINDOW_TIMEOUT_MS = 45_000
   try {
-    const out = await runBacktest({ address, chain, capital_usd: CAPITAL_USD, start_ms, end_ms })
+    const out = await Promise.race([
+      runBacktest({ address, chain, capital_usd: CAPITAL_USD, start_ms, end_ms }),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`backtest timed out after ${PER_WINDOW_TIMEOUT_MS / 1000}s`)),
+          PER_WINDOW_TIMEOUT_MS,
+        ),
+      ),
+    ])
     return {
       return_pct: Number.isFinite(out.result.total_return_pct) ? out.result.total_return_pct : null,
       final_equity_usd: Number.isFinite(out.result.final_equity_usd) ? out.result.final_equity_usd : null,
@@ -73,7 +87,11 @@ export async function GET(request: Request) {
   // so any unprocessed figures get picked up on the next run — invoke
   // a second time manually with the same secret to drain the rest.
   const startTs = Date.now()
-  const BUDGET_MS = 250_000
+  // Two windows × per_window_timeout (45s) = 90s worst-case per figure.
+  // With CONCURRENCY=2 we need ~180s budget to drain 4 figures' tail
+  // after we stop scheduling. 200s leaves a 100s safety margin under
+  // the 300s Vercel function cap.
+  const BUDGET_MS = 200_000
 
   const url = new URL(request.url)
   // Optional ?slug=foo,bar to backtest a specific subset (admin tool).
@@ -130,7 +148,7 @@ export async function GET(request: Request) {
   // A concurrency of 4 keeps us well under per-provider rate limits
   // (Alchemy 25 cps, CoinGecko Pro 500/min, Helius 10 rps) while
   // collapsing the run to roughly max-per-figure × ceil(N/4).
-  const CONCURRENCY = 6
+  const CONCURRENCY = 2
   let cursor = 0
   let budgetExceeded = false
   async function worker() {
