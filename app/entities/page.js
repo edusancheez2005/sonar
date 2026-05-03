@@ -1,6 +1,5 @@
 import React from 'react'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
-import AuthGuard from '@/app/components/AuthGuard'
 import WalletTrackerTabs from '@/app/components/wallet-tracker/WalletTrackerTabs'
 import {
   isJunkEntityLabel,
@@ -266,8 +265,7 @@ export default async function EntitiesDirectoryPage({ searchParams }) {
   )
 
   return (
-    <AuthGuard>
-      <main
+    <main
         style={{
           width: '100%',
           maxWidth: '1400px',
@@ -288,6 +286,5 @@ export default async function EntitiesDirectoryPage({ searchParams }) {
           sort={sort}
         />
       </main>
-    </AuthGuard>
   )
 }
