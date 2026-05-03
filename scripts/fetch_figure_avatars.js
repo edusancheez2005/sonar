@@ -262,6 +262,34 @@ async function tryUnavatarGithub(slug) {
   return { buffer: buf, ext: extFromResponse(res), source: `unavatar/github (${handle})` }
 }
 
+// Twitter / X profile photo via unavatar. Most crypto figures &
+// VC firms have a public X handle; this tier reaches them when
+// they have no Wikipedia page and no .eth identity. We honor the
+// `twitter_handle` column on `curated_entities` first; if that is
+// missing we don't guess (avoids pulling random unrelated avatars).
+async function tryUnavatarTwitter(handle) {
+  const h = String(handle || '').trim().replace(/^@/, '')
+  if (!h) throw new Error('no twitter handle')
+  const url = `https://unavatar.io/twitter/${encodeURIComponent(h)}?fallback=false`
+  const res = await fetchWithTimeout(url, { headers: { Accept: 'image/*' } })
+  if (!res.ok) throw new Error(`unavatar/twitter ${res.status}`)
+  const buf = await readImageBuffer(res)
+  return { buffer: buf, ext: extFromResponse(res), source: `unavatar/twitter (@${h})` }
+}
+
+// Farcaster avatar via unavatar. Many founder/builder accounts
+// publish their FC handle in their X bio or in the entity's
+// `farcaster_handle` column (when present). Cheap to try.
+async function tryUnavatarFarcaster(handle) {
+  const h = String(handle || '').trim().replace(/^@/, '')
+  if (!h) throw new Error('no farcaster handle')
+  const url = `https://unavatar.io/farcaster/${encodeURIComponent(h)}?fallback=false`
+  const res = await fetchWithTimeout(url, { headers: { Accept: 'image/*' } })
+  if (!res.ok) throw new Error(`unavatar/farcaster ${res.status}`)
+  const buf = await readImageBuffer(res)
+  return { buffer: buf, ext: extFromResponse(res), source: `unavatar/farcaster (@${h})` }
+}
+
 // ─── Figure → ENS candidate resolution ───────────────────────────────────
 function ensCandidateFor(figure) {
   const slug = figure.slug
@@ -313,10 +341,29 @@ async function main() {
     auth: { persistSession: false },
   })
 
-  const { data: figures, error } = await supabase
-    .from('curated_entities')
-    .select('slug, display_name, avatar_url, addresses')
-    .order('slug', { ascending: true })
+  // Select the columns we need. `farcaster_handle` is optional —
+  // if the column doesn't exist we retry without it. Lets the script
+  // run on schemas that pre-date the farcaster column without a
+  // mandatory migration.
+  let figures = null
+  let error = null
+  {
+    const r = await supabase
+      .from('curated_entities')
+      .select('slug, display_name, avatar_url, addresses, twitter_handle, farcaster_handle')
+      .order('slug', { ascending: true })
+    if (r.error && /farcaster_handle/i.test(r.error.message || '')) {
+      const r2 = await supabase
+        .from('curated_entities')
+        .select('slug, display_name, avatar_url, addresses, twitter_handle')
+        .order('slug', { ascending: true })
+      figures = r2.data
+      error = r2.error
+    } else {
+      figures = r.data
+      error = r.error
+    }
+  }
 
   if (error) {
     console.error('Failed to list curated_entities:', error.message)
@@ -352,7 +399,9 @@ async function main() {
     //   1) SVG_LOGO_OVERRIDES — admin-curated brand logos
     //   2) ENS avatar (for slugs in ENS_NAMES or with .eth in notes)
     //   3) Wikipedia thumbnail
-    //   4) unavatar/github catch-all (free fallback for anything else)
+    //   4) unavatar/twitter (when curated_entities.twitter_handle is set)
+    //   5) unavatar/farcaster (when curated_entities.farcaster_handle is set)
+    //   6) unavatar/github catch-all (free fallback for anything else)
 
     // 1) Explicit brand-logo override
     const overrideUrl = SVG_LOGO_OVERRIDES[slug]
@@ -390,7 +439,25 @@ async function main() {
       }
     }
 
-    // 4) unavatar.io/github fallback
+    // 4) unavatar/twitter (curated handle, no guessing)
+    if (!resolved && f.twitter_handle) {
+      try {
+        resolved = await tryUnavatarTwitter(f.twitter_handle)
+      } catch (e) {
+        attempts.push(`unavatar/twitter(${f.twitter_handle}): ${e.message}`)
+      }
+    }
+
+    // 5) unavatar/farcaster (curated handle, no guessing)
+    if (!resolved && f.farcaster_handle) {
+      try {
+        resolved = await tryUnavatarFarcaster(f.farcaster_handle)
+      } catch (e) {
+        attempts.push(`unavatar/farcaster(${f.farcaster_handle}): ${e.message}`)
+      }
+    }
+
+    // 6) unavatar.io/github fallback
     if (!resolved) {
       try {
         resolved = await tryUnavatarGithub(slug)
