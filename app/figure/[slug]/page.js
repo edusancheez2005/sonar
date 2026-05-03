@@ -1,5 +1,5 @@
 import React from 'react'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import FollowButton from '@/app/components/entities/FollowButton'
 import EntityAvatar from '@/app/components/entities/EntityAvatar'
 import { fetchChainTxsForAddresses } from '@/app/lib/chainFetchers'
