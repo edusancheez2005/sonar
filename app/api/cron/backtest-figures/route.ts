@@ -67,6 +67,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Wall-clock budget: stop scheduling new figures once we're within
+  // 30s of Vercel's 300s function cap. Already-in-flight figures can
+  // still finish their writes. The cron is idempotent (upsert on slug)
+  // so any unprocessed figures get picked up on the next run — invoke
+  // a second time manually with the same secret to drain the rest.
+  const startTs = Date.now()
+  const BUDGET_MS = 250_000
+
+  const url = new URL(request.url)
+  // Optional ?slug=foo,bar to backtest a specific subset (admin tool).
+  const slugFilter = (url.searchParams.get('slug') || '').trim()
+  const onlySlugs = slugFilter
+    ? new Set(slugFilter.split(',').map((s) => s.trim()).filter(Boolean))
+    : null
+  // Optional ?stale_only=1 to skip figures whose figure_backtests row
+  // was computed within the last 18h. Used to cheaply drain leftovers
+  // without re-running figures that already have fresh numbers.
+  const staleOnly = url.searchParams.get('stale_only') === '1'
+
   const sb = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
@@ -79,9 +98,21 @@ export async function GET(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const figures: FigureRow[] = (rows || []).filter(
+  let figures: FigureRow[] = (rows || []).filter(
     (r: any) => Array.isArray(r.addresses) && r.addresses.length > 0,
   )
+  if (onlySlugs) {
+    figures = figures.filter((f) => onlySlugs.has(f.slug))
+  }
+  if (staleOnly) {
+    const cutoff = new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString()
+    const { data: fresh } = await sb
+      .from('figure_backtests')
+      .select('slug, computed_at')
+      .gt('computed_at', cutoff)
+    const freshSet = new Set((fresh || []).map((r: any) => r.slug))
+    figures = figures.filter((f) => !freshSet.has(f.slug))
+  }
 
   const now = Date.now()
   const start7d = now - 7 * 24 * 60 * 60 * 1000
@@ -99,10 +130,15 @@ export async function GET(request: Request) {
   // A concurrency of 4 keeps us well under per-provider rate limits
   // (Alchemy 25 cps, CoinGecko Pro 500/min, Helius 10 rps) while
   // collapsing the run to roughly max-per-figure × ceil(N/4).
-  const CONCURRENCY = 4
+  const CONCURRENCY = 6
   let cursor = 0
+  let budgetExceeded = false
   async function worker() {
     while (true) {
+      if (Date.now() - startTs > BUDGET_MS) {
+        budgetExceeded = true
+        return
+      }
       const i = cursor++
       if (i >= figures.length) return
       const fig = figures[i]
@@ -155,6 +191,9 @@ export async function GET(request: Request) {
     processed,
     written,
     skipped,
+    total_figures: figures.length,
+    budget_exceeded: budgetExceeded,
+    elapsed_ms: Date.now() - startTs,
     errors_count: errors.length,
     errors: errors.slice(0, 10),
   })

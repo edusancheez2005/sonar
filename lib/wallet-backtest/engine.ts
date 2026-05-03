@@ -168,7 +168,10 @@ async function buildEvmTrades(
   const trades: CanonicalTrade[] = []
 
   // Pre-fetch price series for each unique token contract present, so
-  // we avoid hammering coingecko once per trade.
+  // we avoid hammering coingecko once per trade. Run with bounded
+  // concurrency — the previous serial loop was the dominant cost in
+  // the nightly cron because each unique token is one CoinGecko round
+  // trip (~200ms p50, can spike to 2s on cold cache).
   const uniqueRefs = new Map<string, TokenRef>()
   for (const tx of byHash.values()) {
     for (const leg of netLegsForEvmTx(tx)) {
@@ -177,14 +180,24 @@ async function buildEvmTrades(
     }
   }
   const seriesByKey = new Map<string, PricePoint[]>()
-  for (const [key, ref] of uniqueRefs) {
-    try {
-      const s = await getSeries(ref, startMs, endMs + 86400000)
-      seriesByKey.set(key, s)
-    } catch {
-      seriesByKey.set(key, [])
-    }
-  }
+  const refEntries = Array.from(uniqueRefs.entries())
+  const SERIES_CONCURRENCY = 6
+  let refCursor = 0
+  await Promise.all(
+    Array.from({ length: SERIES_CONCURRENCY }, async () => {
+      while (true) {
+        const i = refCursor++
+        if (i >= refEntries.length) return
+        const [key, ref] = refEntries[i]
+        try {
+          const s = await getSeries(ref, startMs, endMs + 86400000)
+          seriesByKey.set(key, s)
+        } catch {
+          seriesByKey.set(key, [])
+        }
+      }
+    }),
+  )
 
   for (const [hash, txTransfers] of byHash) {
     const ts = txTransfers[0].ts
