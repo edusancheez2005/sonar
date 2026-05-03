@@ -159,8 +159,18 @@ export async function GET(
     // Common upstream failures: missing ALCHEMY_API_KEY, COINGECKO 429,
     // Helius 401. Surface a generic message to clients but log details.
     console.error('wallet-backtest failed:', e?.stack || e?.message || e)
+    // Opt-in debug: ?debug=1 returns the underlying error message.
+    // Useful for the nightly cron's /admin diagnostic view; never
+    // wired into the public client.
+    const debug = url.searchParams.get('debug') === '1'
     return NextResponse.json(
-      { error: 'Backtest failed. Try a smaller window or another chain.' },
+      debug
+        ? {
+            error: 'Backtest failed.',
+            debug_message: String(e?.message || e).slice(0, 1000),
+            debug_stack: String(e?.stack || '').slice(0, 2000),
+          }
+        : { error: 'Backtest failed. Try a smaller window or another chain.' },
       { status: 500 }
     )
   }
