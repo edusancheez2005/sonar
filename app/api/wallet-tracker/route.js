@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 
 const VALID_SORT = ['smart_money_score', 'total_volume_usd_30d', 'portfolio_value_usd', 'pnl_estimated_usd']

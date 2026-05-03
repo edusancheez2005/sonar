@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { authenticateApiKey } from '@/app/lib/apiKeyAuth'
 
 export const dynamic = 'force-dynamic'

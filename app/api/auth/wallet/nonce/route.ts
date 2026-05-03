@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 import { ADDRESS_RE, isSupportedChain } from '@/app/lib/walletAuth'
 

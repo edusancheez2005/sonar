@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { readGuestWallet, writeGuestWallet } from '@/app/lib/guestWalletCookie'

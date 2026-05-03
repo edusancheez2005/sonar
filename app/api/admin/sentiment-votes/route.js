@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { supabaseServer } from '@/app/lib/supabaseServerClient'
 import { isAdmin } from '@/app/lib/adminConfig'
 

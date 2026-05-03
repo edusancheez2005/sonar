@@ -8,7 +8,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { fetchDerivativesData } from '@/app/lib/derivativesData'
 
 export const dynamic = 'force-dynamic'

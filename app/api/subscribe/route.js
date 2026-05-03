@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { checkRate } from '@/app/lib/rateLimit'
 import { sendWaitlistConfirmation } from '@/app/lib/email'
 
