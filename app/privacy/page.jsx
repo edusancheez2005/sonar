@@ -495,7 +495,7 @@ export default function PrivacyPolicy() {
           </p>
         </Section>
 
-        <LastUpdated>Last Updated: April 21, 2026</LastUpdated>
+        <LastUpdated>Last Updated: April 21, 2025</LastUpdated>
       </Content>
     </PageContainer>
   )

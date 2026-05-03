@@ -381,12 +381,12 @@ const GhostLink = styled(Link)`
 
 const RELEASES = [
   {
-    quarter: 'Q2 2026',
+    quarter: 'Q2 2025',
     accent: '#22d3ee',
     items: [
       {
         version: 'v2.4',
-        date: 'May 2026',
+        date: 'May 2025',
         tag: 'beta',
         title: 'Personalize — closed beta',
         body: 'Connect a wallet and Sonar reorders the dashboard around the assets you actually hold. Whale flow, signals and news, ranked by your portfolio.',
@@ -398,7 +398,7 @@ const RELEASES = [
       },
       {
         version: 'v2.3',
-        date: 'April 2026',
+        date: 'April 2025',
         tag: 'new',
         title: 'Orca AI 2.0',
         body: 'A rebuilt advisor with a sharper model, longer context window and a panel that explains every recommendation in plain English.',
@@ -410,7 +410,7 @@ const RELEASES = [
       },
       {
         version: 'v2.2',
-        date: 'April 2026',
+        date: 'April 2025',
         tag: 'improved',
         title: 'Faster whale alerts',
         body: 'End-to-end alert latency cut from ~45s to under 8s on the most active chains. New ingestion pipeline on Ethereum, Solana and Base.',
@@ -418,12 +418,12 @@ const RELEASES = [
     ],
   },
   {
-    quarter: 'Q1 2026',
+    quarter: 'Q1 2025',
     accent: '#a78bfa',
     items: [
       {
         version: 'v2.1',
-        date: 'March 2026',
+        date: 'March 2025',
         tag: 'new',
         title: 'Multi-chain analytics rollup',
         body: 'A single view that aggregates whale activity, sentiment and flows across Ethereum, Solana, Base, Arbitrum and Optimism.',
@@ -435,21 +435,21 @@ const RELEASES = [
       },
       {
         version: 'v2.0',
-        date: 'February 2026',
+        date: 'February 2025',
         tag: 'new',
         title: 'Dashboard v2',
         body: 'Ground-up redesign of the home dashboard. Higher information density, calmer colour story, faster initial paint.',
       },
       {
         version: 'v1.9',
-        date: 'January 2026',
+        date: 'January 2025',
         tag: 'improved',
         title: 'Signal accuracy calibration',
         body: 'Recalibrated the buy/sell signal model on six months of live performance data. Per-tier precision is now surfaced in the Statistics page.',
       },
       {
         version: 'v1.8',
-        date: 'January 2026',
+        date: 'January 2025',
         tag: 'fixed',
         title: 'Watchlist sync reliability',
         body: 'Fixed a race condition that occasionally dropped watchlist edits when made from two devices within a few seconds of each other.',

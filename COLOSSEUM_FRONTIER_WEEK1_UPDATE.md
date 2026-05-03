@@ -2,7 +2,7 @@
 
 > **Project:** Sonar Tracker (sonartracker.io)  
 > **Team:** Eduardo Sanchez Morales  
-> **Date:** April 12, 2026  
+> **Date:** April 12, 2025  
 > **Track:** AI / DeFi Intelligence  
 
 ---

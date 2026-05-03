@@ -110,7 +110,7 @@ export default function DmcaPage() {
       </p>
 
       <p style={{ fontSize: '0.8rem', color: '#8a9bb0', marginTop: '3rem' }}>
-        Last updated: 21 April 2026.
+        Last updated: 21 April 2025.
       </p>
     </main>
   )

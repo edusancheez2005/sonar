@@ -347,26 +347,26 @@ const SubscribeButton = styled.button`
 `
 
 const posts = [
-  // Pulled 2026-04-21 pending legal review (Lanham Act §43(a) trademark + false-advertising risk).
-  // See LEGAL_AUDIT_2026-04-21.md §1.C. Do not re-add without counsel sign-off.
+  // Pulled 2025-04-21 pending legal review (Lanham Act §43(a) trademark + false-advertising risk).
+  // See LEGAL_AUDIT_2025-04-21.md §1.C. Do not re-add without counsel sign-off.
   // Removed slugs: 'whale-alert-alternative', 'nansen-vs-sonar-tracker',
-  // 'best-crypto-whale-tracking-tools-2026', 'arkham-vs-sonar-tracker',
+  // 'best-crypto-whale-tracking-tools-2025', 'arkham-vs-sonar-tracker',
   // 'glassnode-vs-sonar'.
   {
     slug: 'how-to-track-crypto-whales',
-    title: 'How to Track Crypto Whale Movements: Complete 2026 Guide',
+    title: 'How to Track Crypto Whale Movements: Complete 2025 Guide',
     summary: 'The definitive guide to tracking crypto whales. Step-by-step methods, tools, real examples, and strategies used by professional traders.',
     readTime: '15 min read',
     category: 'Tutorial',
-    date: 'Apr 4, 2026'
+    date: 'Apr 4, 2025'
   },
   {
     slug: 'best-crypto-whale-tracking-tools',
-    title: 'Top 10 Crypto Whale Tracking Tools Compared (2026)',
+    title: 'Top 10 Crypto Whale Tracking Tools Compared (2025)',
     summary: 'We tested and ranked the 10 best whale tracking platforms. Nansen, Arkham, Sonar Tracker, Glassnode, and more — with pricing, features, and verdicts.',
     readTime: '12 min read',
     category: 'Comparison',
-    date: 'Apr 4, 2026'
+    date: 'Apr 4, 2025'
   },
   {
     slug: 'orca-ai-crypto-analyst',
@@ -374,7 +374,7 @@ const posts = [
     summary: 'Meet ORCA, the AI crypto analyst built into Sonar Tracker. See how it interprets whale movements and delivers plain-English market intelligence.',
     readTime: '8 min read',
     category: 'AI & Technology',
-    date: 'Apr 4, 2026'
+    date: 'Apr 4, 2025'
   },
   {
     slug: 'solana-whale-tracker',
@@ -382,7 +382,7 @@ const posts = [
     summary: 'Track Solana whale wallets and large SOL transactions in real time. Top SOL whales to watch, tools, and AI-powered Solana analysis.',
     readTime: '10 min read',
     category: 'Market Analysis',
-    date: 'Apr 4, 2026'
+    date: 'Apr 4, 2025'
   },
   {
     slug: 'ethereum-whale-tracker',
@@ -390,7 +390,7 @@ const posts = [
     summary: 'Monitor Ethereum whale wallets, staking flows, and DeFi interactions. Complete guide to tracking large ETH transactions with AI analysis.',
     readTime: '10 min read',
     category: 'Market Analysis',
-    date: 'Apr 4, 2026'
+    date: 'Apr 4, 2025'
   },
   {
     slug: 'bitcoin-whale-tracker',
@@ -398,7 +398,7 @@ const posts = [
     summary: 'Track Bitcoin whale wallets, exchange flows, and miner activity. Learn how BTC whale movements affect price with historical examples.',
     readTime: '10 min read',
     category: 'Market Analysis',
-    date: 'Apr 4, 2026'
+    date: 'Apr 4, 2025'
   },
   {
     slug: 'how-to-track-whale-wallets',
@@ -406,7 +406,7 @@ const posts = [
     summary: 'A complete tutorial on finding, following, and interpreting crypto whale wallet activity using free and paid tools.',
     readTime: '8 min read',
     category: 'Tutorial',
-    date: 'Feb 20, 2026'
+    date: 'Feb 20, 2025'
   },
   {
     slug: 'whale-tracking-predicted-crashes',
@@ -414,15 +414,15 @@ const posts = [
     summary: 'Historical examples where on-chain whale data signaled crashes days before they happened. Real data, real trades, real outcomes.',
     readTime: '9 min read',
     category: 'Market Analysis',
-    date: 'Feb 18, 2026'
+    date: 'Feb 18, 2025'
   },
   {
     slug: 'how-ai-changing-crypto-trading',
-    title: 'How AI Is Revolutionizing Crypto Trading in 2026',
+    title: 'How AI Is Revolutionizing Crypto Trading in 2025',
     summary: 'From whale pattern recognition to sentiment analysis — how AI tools like ORCA help users summarise on-chain data faster. Informational only.',
     readTime: '8 min read',
     category: 'AI & Technology',
-    date: 'Feb 16, 2026'
+    date: 'Feb 16, 2025'
   },
   {
     slug: 'on-chain-analysis-beginners',
@@ -430,15 +430,15 @@ const posts = [
     summary: 'Everything you need to know about on-chain metrics: whale flows, exchange balances, net inflows, and how to use them for trading.',
     readTime: '10 min read',
     category: 'Basics',
-    date: 'Feb 14, 2026'
+    date: 'Feb 14, 2025'
   },
   {
-    slug: 'free-crypto-analytics-tools-2026',
-    title: 'Free Crypto Analytics Tools That Actually Work in 2026',
+    slug: 'free-crypto-analytics-tools-2025',
+    title: 'Free Crypto Analytics Tools That Actually Work in 2025',
     summary: 'The best free tools for whale tracking, on-chain analysis, and market intelligence. No subscription required for these.',
     readTime: '7 min read',
     category: 'Tools',
-    date: 'Feb 10, 2026'
+    date: 'Feb 10, 2025'
   },
   {
     slug: 'eth-whale-activity-analysis',
@@ -446,7 +446,7 @@ const posts = [
     summary: 'Deep dive into current Ethereum whale movements. Accumulation vs distribution patterns and what they signal for ETH price.',
     readTime: '8 min read',
     category: 'Market Analysis',
-    date: 'Feb 8, 2026'
+    date: 'Feb 8, 2025'
   },
   {
     slug: 'bitcoin-whale-accumulation-patterns',
@@ -454,7 +454,7 @@ const posts = [
     summary: 'Learn to identify when Bitcoin whales are quietly accumulating before major price moves. On-chain metrics that matter most.',
     readTime: '9 min read',
     category: 'Market Analysis',
-    date: 'Feb 6, 2026'
+    date: 'Feb 6, 2025'
   },
   {
     slug: 'whale-accumulation-vs-distribution',
@@ -462,7 +462,7 @@ const posts = [
     summary: 'The difference between whales buying and selling — and exactly how to tell which is happening right now using on-chain data.',
     readTime: '8 min read',
     category: 'Strategy',
-    date: 'Feb 4, 2026'
+    date: 'Feb 4, 2025'
   },
   {
     slug: 'crypto-market-manipulation-detection',
@@ -470,7 +470,7 @@ const posts = [
     summary: 'Pump-and-dumps, wash trading, stop hunts, and whale manipulation tactics. How to spot them before you become the victim.',
     readTime: '10 min read',
     category: 'Strategy',
-    date: 'Feb 2, 2026'
+    date: 'Feb 2, 2025'
   },
   {
     slug: 'day-traders-whale-signals',
@@ -478,7 +478,7 @@ const posts = [
     summary: 'Practical strategies for incorporating whale transaction data into your day trading workflow. Real examples with entries and exits.',
     readTime: '9 min read',
     category: 'Strategy',
-    date: 'Jan 30, 2026'
+    date: 'Jan 30, 2025'
   },
   {
     slug: 'cost-of-missing-whale-signals',
@@ -486,7 +486,7 @@ const posts = [
     summary: 'Three real scenarios where ignoring whale data cost traders 15-40% in missed gains or preventable losses. The math is brutal.',
     readTime: '7 min read',
     category: 'Market Analysis',
-    date: 'Jan 28, 2026'
+    date: 'Jan 28, 2025'
   },
   {
     slug: 'institutional-traders-on-chain-data',
@@ -494,7 +494,7 @@ const posts = [
     summary: 'What hedge funds and prop desks actually look at on the blockchain. The metrics, strategies, and tools they rely on daily.',
     readTime: '9 min read',
     category: 'Strategy',
-    date: 'Jan 26, 2026'
+    date: 'Jan 26, 2025'
   },
   {
     slug: 'sol-whale-tracker',
@@ -502,7 +502,7 @@ const posts = [
     summary: 'Track the biggest Solana whale wallets. Current accumulation trends, top holders, and what SOL whale activity means for price.',
     readTime: '7 min read',
     category: 'Market Analysis',
-    date: 'Jan 24, 2026'
+    date: 'Jan 24, 2025'
   },
   {
     slug: 'building-trading-strategy-whale-intelligence',
@@ -510,7 +510,7 @@ const posts = [
     summary: 'A complete framework for using whale data as your primary trading signal. Entry rules, exit rules, risk management, and position sizing.',
     readTime: '11 min read',
     category: 'Strategy',
-    date: 'Jan 22, 2026'
+    date: 'Jan 22, 2025'
   },
   {
     slug: 'custom-whale-alerts-setup',
@@ -518,7 +518,7 @@ const posts = [
     summary: 'Five proven whale alert configurations for different trading styles: day trading, swing trading, DeFi farming, and more.',
     readTime: '7 min read',
     category: 'Tutorial',
-    date: 'Jan 18, 2026'
+    date: 'Jan 18, 2025'
   },
   {
     slug: 'why-crypto-keeps-getting-dumped',
@@ -526,7 +526,7 @@ const posts = [
     summary: 'The whale distribution patterns that precede every major dump. Learn to read the signs before you become exit liquidity.',
     readTime: '8 min read',
     category: 'Strategy',
-    date: 'Jan 16, 2026'
+    date: 'Jan 16, 2025'
   },
   { 
     slug: 'bullish-bearish-sentiment-trading', 

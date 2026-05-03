@@ -661,14 +661,14 @@ Orca AI simultaneously runs multiple trading strategies:
       ]
     }
   },
-  // 'nansen-vs-sonar-tracker': REMOVED 2026-04-21 — unsubstantiated competitor
-  // comparison + nominative-fair-use trademark risk. See LEGAL_AUDIT_2026-04-21.md
+  // 'nansen-vs-sonar-tracker': REMOVED 2025-04-21 — unsubstantiated competitor
+  // comparison + nominative-fair-use trademark risk. See LEGAL_AUDIT_2025-04-21.md
   // §1.C findings C3, C4, C5.
-  // 'best-crypto-whale-tracking-tools-2026': REMOVED 2026-04-21 — same reason.
+  // 'best-crypto-whale-tracking-tools-2025': REMOVED 2025-04-21 — same reason.
   'how-to-track-whale-wallets': {
     title: 'How to Track Whale Wallets: Step-by-Step for Beginners',
     category: 'Tutorial',
-    date: 'Feb 20, 2026',
+    date: 'Feb 20, 2025',
     readTime: '8 min read',
     content: {
       intro: 'Whale tracking is the single most actionable form of on-chain analysis. Large holders move markets — and their transactions are public on the blockchain. This guide walks you through finding, following, and interpreting whale wallet activity, even if you have never used a block explorer before.',
@@ -683,7 +683,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'whale-tracking-predicted-crashes': {
     title: '5 Times Whale Tracking Predicted Major Crypto Crashes',
     category: 'Market Analysis',
-    date: 'Feb 18, 2026',
+    date: 'Feb 18, 2025',
     readTime: '9 min read',
     content: {
       intro: 'Skeptics say on-chain data is just noise. The historical record says otherwise. Here are five documented cases where whale movements predicted major market crashes days before they happened — with specific wallet data and timelines.',
@@ -697,12 +697,12 @@ Orca AI simultaneously runs multiple trading strategies:
     }
   },
   'how-ai-changing-crypto-trading': {
-    title: 'How AI Is Revolutionizing Crypto Trading in 2026',
+    title: 'How AI Is Revolutionizing Crypto Trading in 2025',
     category: 'AI & Technology',
-    date: 'Feb 16, 2026',
+    date: 'Feb 16, 2025',
     readTime: '8 min read',
     content: {
-      intro: 'AI in crypto trading has evolved far beyond simple bots that buy low and sell high. In 2026, AI systems analyze whale behavior patterns, score news sentiment, detect manipulation, and generate actionable trading signals. Here is what the landscape looks like and how traders are using these tools.',
+      intro: 'AI in crypto trading has evolved far beyond simple bots that buy low and sell high. In 2025, AI systems analyze whale behavior patterns, score news sentiment, detect manipulation, and generate actionable trading signals. Here is what the landscape looks like and how traders are using these tools.',
       sections: [
         { title: 'The Three Waves of Crypto AI', content: `**Wave 1 (2017-2020): Trading bots**\nSimple automated execution. Grid bots, DCA bots, arbitrage bots. No real intelligence — just automation of predetermined rules.\n\n**Wave 2 (2021-2024): Data analysis**\nMachine learning applied to price prediction, pattern recognition, and risk scoring. Tools like Santiment and Glassnode added ML-powered metrics. Results were mixed — price prediction remains fundamentally hard.\n\n**Wave 3 (2025-present): Intelligence agents**\nLLM-powered advisors that combine multiple data sources (whale data, news, social, price) and deliver plain-English analysis. ORCA 2.0 by Sonar Tracker is an example of this wave. Instead of predicting specific prices, these agents explain what is happening that matters and why.` },
         { title: 'What AI Can Do for Traders Today', content: `**1. Whale Behavior Classification**\nAI classifies every on-chain transaction as BUY, SELL, TRANSFER, or DEFI based on patterns like exchange interactions, DEX swaps, and wallet histories. Manual classification would take hours — AI does it instantly.\n\n**2. News Sentiment Scoring**\nEvery crypto news article is scored for market impact (positive, negative, neutral) and relevance. Instead of reading 200 articles daily, you see the 5 that actually matter.\n\n**3. Pattern Recognition**\nAI identifies recurring whale behaviors that preceded price movements: accumulation before pumps, distribution before dumps, unusual wallet creation patterns before rug pulls.\n\n**4. Natural Language Analysis**\nAsk "What is happening with ETH?" and get a comprehensive answer grounded in real data — whale flows, recent transactions, news sentiment, and price context.` },
@@ -713,7 +713,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'on-chain-analysis-beginners': {
     title: 'On-Chain Analysis for Beginners: Reading the Blockchain',
     category: 'Basics',
-    date: 'Feb 14, 2026',
+    date: 'Feb 14, 2025',
     readTime: '10 min read',
     content: {
       intro: 'On-chain analysis is the study of actual blockchain data — transactions, wallet balances, exchange flows — to understand market dynamics. While technical analysis looks at price charts, on-chain analysis looks at what the money is actually doing. This guide covers the essential metrics every trader should understand.',
@@ -724,16 +724,16 @@ Orca AI simultaneously runs multiple trading strategies:
       ]
     }
   },
-  // 'arkham-vs-sonar-tracker': REMOVED 2026-04-21 — unsubstantiated competitor
-  // comparison + nominative-fair-use trademark risk. See LEGAL_AUDIT_2026-04-21.md
+  // 'arkham-vs-sonar-tracker': REMOVED 2025-04-21 — unsubstantiated competitor
+  // comparison + nominative-fair-use trademark risk. See LEGAL_AUDIT_2025-04-21.md
   // §1.C finding C3.
-  'free-crypto-analytics-tools-2026': {
-    title: 'Free Crypto Analytics Tools That Actually Work in 2026',
+  'free-crypto-analytics-tools-2025': {
+    title: 'Free Crypto Analytics Tools That Actually Work in 2025',
     category: 'Tools',
-    date: 'Feb 10, 2026',
+    date: 'Feb 10, 2025',
     readTime: '7 min read',
     content: {
-      intro: 'You do not need to spend hundreds per month to get quality crypto analytics. Here are the best free tools available in 2026, what each does well, and how to combine them for a comprehensive (and free) trading toolkit.',
+      intro: 'You do not need to spend hundreds per month to get quality crypto analytics. Here are the best free tools available in 2025, what each does well, and how to combine them for a comprehensive (and free) trading toolkit.',
       sections: [
         { title: 'The Free Toolkit', content: `**1. Sonar Tracker (Free Tier)**\n- What you get: News feed, market pulse, basic statistics, limited transaction history\n- Best for: Daily whale monitoring and news sentiment\n- Upgrade path: $7.99/month for full whale tracking + AI\n\n**2. Arkham Intelligence (Free Tier)**\n- What you get: Entity search, basic wallet lookup, Intel Exchange access\n- Best for: Investigating specific wallets and entities\n\n**3. DeBank (Free)**\n- What you get: Multi-chain portfolio tracking, DeFi position monitoring\n- Best for: Viewing whale wallet DeFi positions\n\n**4. Dune Analytics (Free Tier)**\n- What you get: Community-built dashboards, SQL query access\n- Best for: Custom analytics if you know SQL\n\n**5. CoinGecko (Free)**\n- What you get: Price data, market caps, volume, exchange data\n- Best for: Basic market data and token discovery\n\n**6. TradingView (Free Tier)**\n- What you get: Charts, basic indicators, community ideas\n- Best for: Technical analysis alongside on-chain data` },
         { title: 'The Optimal Free Stack', content: `Combine them like this:\n\n**Morning routine (10 minutes):**\n1. Open Sonar Tracker free tier — check overnight whale movements and news\n2. Open CoinGecko — scan for unusual volume movers\n3. Check TradingView — key levels for tokens you are watching\n\n**When a signal appears:**\n1. Large transaction spotted on Sonar\n2. Look up the wallet on Arkham for entity info\n3. Check their DeFi positions on DeBank\n4. Make your trading decision\n\nThis free stack covers 80% of what paid tools offer. The missing 20% is real-time alerts, AI classification, and AI analysis — which is what Sonar Pro provides for $7.99/month.\n\n[Try the free tier at sonartracker.io →](/statistics)` }
@@ -743,7 +743,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'eth-whale-activity-analysis': {
     title: 'ETH Whale Activity: What Smart Money Is Doing Right Now',
     category: 'Market Analysis',
-    date: 'Feb 8, 2026',
+    date: 'Feb 8, 2025',
     readTime: '8 min read',
     content: {
       intro: 'Ethereum remains the most-watched blockchain for whale activity. With DeFi, staking, L2 bridges, and institutional adoption, ETH whale movements carry significant signal. Here is what the current on-chain data reveals about where smart money is positioning.',
@@ -756,7 +756,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'bitcoin-whale-accumulation-patterns': {
     title: 'Bitcoin Whale Accumulation Patterns: How to Read Them',
     category: 'Market Analysis',
-    date: 'Feb 6, 2026',
+    date: 'Feb 6, 2025',
     readTime: '9 min read',
     content: {
       intro: 'Bitcoin whales typically do not buy in one shot. They often accumulate gradually over weeks, using specific patterns that minimise market impact. Understanding these historical patterns is educational context for users reviewing on-chain data — not a guarantee of future price behaviour.',
@@ -769,7 +769,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'whale-accumulation-vs-distribution': {
     title: 'Whale Accumulation vs Distribution: The Only Guide You Need',
     category: 'Strategy',
-    date: 'Feb 4, 2026',
+    date: 'Feb 4, 2025',
     readTime: '8 min read',
     content: {
       intro: 'Accumulation and distribution are the two most important concepts in whale tracking. Accumulation means whales are buying. Distribution means they are selling. Identifying which phase a token is in can save you from buying tops and help you catch bottoms.',
@@ -783,7 +783,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'crypto-market-manipulation-detection': {
     title: 'Crypto Market Manipulation: How to Detect It in Real-Time',
     category: 'Strategy',
-    date: 'Feb 2, 2026',
+    date: 'Feb 2, 2025',
     readTime: '10 min read',
     content: {
       intro: 'Crypto markets are manipulated daily. Pump-and-dumps, wash trading, spoofing, and coordinated whale dumps are common. The good news: most manipulation leaves on-chain footprints that tools like Sonar Tracker can help you detect.',
@@ -796,7 +796,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'day-traders-whale-signals': {
     title: 'How Day Traders Use Whale Signals to Time Entries',
     category: 'Strategy',
-    date: 'Jan 30, 2026',
+    date: 'Jan 30, 2025',
     readTime: '9 min read',
     content: {
       intro: 'Day trading crypto without whale data is like trading stocks without knowing what the institutions are doing. Here are practical strategies for incorporating whale signals into your day trading workflow, with real examples.',
@@ -809,7 +809,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'cost-of-missing-whale-signals': {
     title: 'The Real Cost of Missing Whale Signals (With Examples)',
     category: 'Market Analysis',
-    date: 'Jan 28, 2026',
+    date: 'Jan 28, 2025',
     readTime: '7 min read',
     content: {
       intro: 'We tracked three real-world scenarios where publicly available whale data signaled major moves that most traders missed. The numbers are painful.',
@@ -823,7 +823,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'institutional-traders-on-chain-data': {
     title: 'How Institutional Traders Use On-Chain Data',
     category: 'Strategy',
-    date: 'Jan 26, 2026',
+    date: 'Jan 26, 2025',
     readTime: '9 min read',
     content: {
       intro: 'Institutional traders do not rely on Twitter threads and trading group rumors. They systematically analyze on-chain data to inform position sizing, timing, and risk management. Here is what they look at and how you can replicate their approach.',
@@ -836,7 +836,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'sol-whale-tracker': {
     title: 'SOL Whale Tracker: Real-Time Solana Whale Movements',
     category: 'Market Analysis',
-    date: 'Jan 24, 2026',
+    date: 'Jan 24, 2025',
     readTime: '7 min read',
     content: {
       intro: 'Solana has become one of the most actively traded blockchains, with whale activity that directly impacts SOL price. Here is how to track Solana whales effectively and what the current on-chain data shows.',
@@ -849,7 +849,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'building-trading-strategy-whale-intelligence': {
     title: 'Building a Trading Strategy Around Whale Intelligence',
     category: 'Strategy',
-    date: 'Jan 22, 2026',
+    date: 'Jan 22, 2025',
     readTime: '11 min read',
     content: {
       intro: 'Whale intelligence is not just an additional data point — it can be the foundation of your entire trading strategy. This guide provides a complete framework for using whale data as your primary trading signal, with entry rules, exit rules, position sizing, and risk management.',
@@ -860,13 +860,13 @@ Orca AI simultaneously runs multiple trading strategies:
       ]
     }
   },
-  // 'glassnode-vs-sonar': REMOVED 2026-04-21 — unsubstantiated competitor
-  // comparison + nominative-fair-use trademark risk. See LEGAL_AUDIT_2026-04-21.md
+  // 'glassnode-vs-sonar': REMOVED 2025-04-21 — unsubstantiated competitor
+  // comparison + nominative-fair-use trademark risk. See LEGAL_AUDIT_2025-04-21.md
   // §1.C finding C3.
   'custom-whale-alerts-setup': {
     title: 'How to Set Up Custom Whale Alerts (5 Configs That Work)',
     category: 'Tutorial',
-    date: 'Jan 18, 2026',
+    date: 'Jan 18, 2025',
     readTime: '7 min read',
     content: {
       intro: 'The right whale alert configuration is the difference between useful signals and noise. Too broad and you get overwhelmed. Too narrow and you miss critical moves. Here are five proven configurations for different trading styles.',
@@ -880,7 +880,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'why-crypto-keeps-getting-dumped': {
     title: 'Why Your Crypto Keeps Getting Dumped On',
     category: 'Strategy',
-    date: 'Jan 16, 2026',
+    date: 'Jan 16, 2025',
     readTime: '8 min read',
     content: {
       intro: 'You buy a token. It pumps 10%. You feel great. Then it crashes 25% in hours. Sound familiar? This is not bad luck. You are buying into whale distribution — and on-chain data shows the pattern clearly every time.',
@@ -890,17 +890,17 @@ Orca AI simultaneously runs multiple trading strategies:
       ]
     }
   },
-  // 'whale-alert-alternative': REMOVED 2026-04-21 - unsubstantiated competitor
-  // comparison + nominative-fair-use trademark risk. See LEGAL_AUDIT_2026-04-21.md
+  // 'whale-alert-alternative': REMOVED 2025-04-21 - unsubstantiated competitor
+  // comparison + nominative-fair-use trademark risk. See LEGAL_AUDIT_2025-04-21.md
   // section 1.C finding C3.
 
   'how-to-track-crypto-whales': {
-    title: 'How to Track Crypto Whale Movements: Complete 2026 Guide',
+    title: 'How to Track Crypto Whale Movements: Complete 2025 Guide',
     category: 'Tutorial',
-    date: 'Apr 4, 2026',
+    date: 'Apr 4, 2025',
     readTime: '15 min read',
     content: {
-      intro: 'Crypto whales — wallets holding millions (sometimes billions) of dollars in cryptocurrency — are the single most influential force in digital asset markets. When a whale buys, prices tend to rise. When a whale dumps, prices crash. Understanding how to track these movements gives you a structural advantage over traders who rely on charts and Twitter alone. This is the comprehensive guide to whale tracking in 2026: what whales are, why they matter, how to follow them step by step, and the mistakes to avoid.',
+      intro: 'Crypto whales — wallets holding millions (sometimes billions) of dollars in cryptocurrency — are the single most influential force in digital asset markets. When a whale buys, prices tend to rise. When a whale dumps, prices crash. Understanding how to track these movements gives you a structural advantage over traders who rely on charts and Twitter alone. This is the comprehensive guide to whale tracking in 2025: what whales are, why they matter, how to follow them step by step, and the mistakes to avoid.',
       sections: [
         { title: 'What Are Crypto Whales and Why They Matter', content: `A crypto whale is any wallet or entity that holds enough of an asset to significantly influence its price through a single transaction. The threshold varies by token:\n\n• **Bitcoin:** 1,000+ BTC ($60M+ at current prices)\n• **Ethereum:** 10,000+ ETH ($25M+)\n• **Altcoins:** Varies, but generally top 100 holders by balance\n\n**Types of Whales:**\n\n• **Institutional Whales:** Hedge funds, prop desks, and asset managers (Galaxy Digital, Pantera Capital, a16z). They trade systematically and their movements signal informed conviction.\n\n• **Exchange Whales:** Centralized exchanges holding customer funds. Large movements to/from exchange wallets often precede market-moving events.\n\n• **Protocol Treasuries:** DAOs and protocol foundations (Ethereum Foundation, Solana Foundation). Their selling can create sustained downward pressure.\n\n• **Early Adopters/OGs:** Individuals who accumulated early. Satoshi-era Bitcoin wallets, Ethereum ICO participants. Their movements generate massive sentiment reactions.\n\n• **Government Whales:** Seized assets from law enforcement actions. The German government's sale of 50,000 BTC in July 2024 crashed markets for weeks.\n\n**Why Tracking Them Matters:**\n\nWhen Germany's Federal Criminal Police Office (BKA) began selling seized Bitcoin in June-July 2024, BTC dropped from $71,000 to $54,000. Traders who tracked the government wallet saw the transfers to exchanges days before the market reacted. Those who acted on the whale data avoided a 24% drawdown — or shorted for profit.\n\nSimilarly, when large Ethereum wallets began accumulating aggressively in October 2023 (before the ETF approval), ETH went from $1,600 to $4,000 over the following months. The on-chain data was screaming accumulation while retail sentiment was still bearish.` },
         { title: 'How Whale Movements Affect Prices', content: `Whale transactions affect markets through three mechanisms:\n\n**1. Direct Market Impact**\nA whale selling $50M of ETH on exchanges directly increases supply. If there is not enough buy-side liquidity, the price drops. The larger the sell relative to daily volume, the bigger the impact.\n\n**2. Sentiment Cascade**\nWhale movements are public (blockchains are transparent). When traders see a whale dumping, they front-run the selling — creating a cascade. A $50M sell can trigger $200M+ in follow-on selling from panicked holders.\n\n**3. Liquidity Shifts**\nWhales adding or removing liquidity from DeFi pools changes the trading conditions for everyone. A whale pulling $20M from a Uniswap pool makes that token less liquid and more volatile.\n\n**Real Examples:**\n\n• **German Government BTC Sales (July 2024):** 50,000 BTC ($3.5B) sold over weeks. BTC dropped 24%. Whale watchers saw the exchange transfers days in advance.\n\n• **Jump Trading ETH Liquidation (August 2024):** Jump Crypto unstaked and sold $300M+ in ETH. Combined with the Yen carry trade unwinding, ETH crashed from $3,200 to $2,100 in days. On-chain data showed the unstaking 3 days before the dump.\n\n• **Ethereum Foundation Sells (Recurring):** The EF periodically sells ETH from its treasury. Each sale is visible on-chain before it hits exchanges. Traders who track the foundation wallet can anticipate short-term ETH weakness.` },
@@ -913,12 +913,12 @@ Orca AI simultaneously runs multiple trading strategies:
     }
   },
   'best-crypto-whale-tracking-tools': {
-    title: 'Top 10 Crypto Whale Tracking Tools Compared (2026)',
+    title: 'Top 10 Crypto Whale Tracking Tools Compared (2025)',
     category: 'Comparison',
-    date: 'Apr 4, 2026',
+    date: 'Apr 4, 2025',
     readTime: '12 min read',
     content: {
-      intro: 'The crypto whale tracking space has matured significantly since the days of following a single Twitter bot. In 2026, traders can choose from institutional-grade analytics platforms, AI-powered intelligence tools, and free community-driven resources. We tested and ranked the 10 most popular whale tracking tools to help you find the right fit for your trading style and budget.',
+      intro: 'The crypto whale tracking space has matured significantly since the days of following a single Twitter bot. In 2025, traders can choose from institutional-grade analytics platforms, AI-powered intelligence tools, and free community-driven resources. We tested and ranked the 10 most popular whale tracking tools to help you find the right fit for your trading style and budget.',
       sections: [
         { title: '1. Nansen — Best for Institutional Research', content: `**One-line summary:** The gold standard in wallet labeling with "Smart Money" tracking and deep multi-chain analytics.\n\n**Key Features:**\n• Over 300 million wallet labels across EVM chains\n• Smart Money dashboard tracking wallets with proven profitable track records\n• Token God Mode for comprehensive token analytics\n• NFT analytics with floor price tracking and whale activity\n• Real-time alerts and custom dashboards\n\n**Pricing:** Standard $150/month, VIP $1,500/month\n\n**Best For:** Professional traders, fund managers, and researchers who need the deepest wallet intelligence available. If you have the budget and trade primarily EVM chains, Nansen remains the most comprehensive option.\n\n**Trade-off:** The price. At $150/month minimum, Nansen is 19x more expensive than Sonar Tracker for features that overlap significantly for most retail traders.` },
         { title: '2. Arkham Intelligence — Best Free Research Platform', content: `**One-line summary:** Entity-focused blockchain analytics with powerful free tier and visual transaction graphs.\n\n**Key Features:**\n• Entity identification linking wallets to real-world identities\n• Visual graph explorer for mapping transaction flows\n• Multi-chain support including Bitcoin, Ethereum, Solana, and more\n• Bounty system for community-sourced wallet identification\n• Portfolio tracking for any address\n\n**Pricing:** Generous free tier, premium features require ARKM token staking\n\n**Best For:** On-chain researchers who want to identify WHO is behind specific wallets. The graph explorer is particularly useful for tracing fund flows through complex transaction paths.` },
@@ -934,7 +934,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'orca-ai-crypto-analyst': {
     title: 'What Is ORCA AI? How Sonar Tracker\'s AI Analyst Reads the Blockchain',
     category: 'AI & Technology',
-    date: 'Apr 4, 2026',
+    date: 'Apr 4, 2025',
     readTime: '8 min read',
     content: {
       intro: 'Every crypto trader faces the same problem: there is too much on-chain data and not enough time to interpret it. Whale Alert sends hundreds of notifications daily. Blockchain explorers show millions of transactions. Even paid platforms like Nansen require you to understand wallet labels and flow charts. ORCA is Sonar Tracker\'s answer to this problem — a purpose-built AI analyst that monitors whale transactions across every supported chain and delivers plain-English intelligence you can act on immediately.',
@@ -950,7 +950,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'solana-whale-tracker': {
     title: 'Solana Whale Tracker: How to Monitor Large SOL Transactions in Real Time',
     category: 'Market Analysis',
-    date: 'Apr 4, 2026',
+    date: 'Apr 4, 2025',
     readTime: '10 min read',
     content: {
       intro: 'Solana has cemented its position as one of the most actively traded blockchains in crypto. With sub-second transaction finality, a thriving DeFi ecosystem, and explosive memecoin culture, SOL whale activity directly impacts prices in ways that are both immediate and dramatic. This guide covers everything you need to track Solana whales effectively: why SOL whale tracking matters, the tools to use, which wallets to watch, and how Sonar Tracker\'s ORCA AI interprets Solana-specific whale movements.',
@@ -967,7 +967,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'ethereum-whale-tracker': {
     title: 'Ethereum Whale Tracker: Complete Guide to Tracking ETH Whale Wallets',
     category: 'Market Analysis',
-    date: 'Apr 4, 2026',
+    date: 'Apr 4, 2025',
     readTime: '10 min read',
     content: {
       intro: 'Ethereum remains the backbone of DeFi, NFTs, and smart contract innovation. It also has the highest concentration of tracked and labeled whale wallets of any blockchain. ETH whale movements — staking flows, DeFi interactions, exchange deposits, and token swaps — provide some of the most reliable signals in crypto trading. This guide covers how to track Ethereum whales effectively, the unique aspects of ETH whale behavior, and how AI-powered tools like Sonar Tracker transform raw ETH data into actionable intelligence.',
@@ -984,7 +984,7 @@ Orca AI simultaneously runs multiple trading strategies:
   'bitcoin-whale-tracker': {
     title: 'Bitcoin Whale Tracker: How to Follow BTC Whale Movements',
     category: 'Market Analysis',
-    date: 'Apr 4, 2026',
+    date: 'Apr 4, 2025',
     readTime: '10 min read',
     content: {
       intro: 'Bitcoin is the original whale-tracked cryptocurrency and still the one where whale movements have the most dramatic market impact. A single large BTC transfer can move billions in market cap within hours. Unlike Ethereum\'s account model, Bitcoin\'s UTXO (Unspent Transaction Output) system creates unique tracking challenges and opportunities. This guide covers Bitcoin-specific whale tracking: how the UTXO model works, which wallets to watch, historical examples of whale-driven price moves, and how to use modern tools to track BTC whales in real time.',

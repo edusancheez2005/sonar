@@ -12,13 +12,13 @@ const fallbackBlogSlugs = [
   'bullish-bearish-sentiment-trading',
   'top-whales-7day-analysis',
   'nansen-vs-sonar-tracker',
-  'best-crypto-whale-tracking-tools-2026',
+  'best-crypto-whale-tracking-tools-2025',
   'how-to-track-whale-wallets',
   'whale-tracking-predicted-crashes',
   'how-ai-changing-crypto-trading',
   'on-chain-analysis-beginners',
   'arkham-vs-sonar-tracker',
-  'free-crypto-analytics-tools-2026',
+  'free-crypto-analytics-tools-2025',
   'eth-whale-activity-analysis',
   'bitcoin-whale-accumulation-patterns',
   'whale-accumulation-vs-distribution',
@@ -142,7 +142,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // Programmatic SEO: top whale addresses
-  // 2026-04-24: trimmed from 2000 → 50 because Google reported 850 pages as
+  // 2025-04-24: trimmed from 2000 → 50 because Google reported 850 pages as
   // "Discovered, currently not indexed" — almost all auto-generated whale
   // pages. Crawl budget was being wasted on low-value templated URLs and the
   // truly important pages weren't being crawled. Quality > quantity for

@@ -1,0 +1,133 @@
+{
+  "_doc": "Manifest of curated entities to upsert into Supabase. Edit this file and run `node scripts/sync-curated-from-manifest.mjs` to apply. Every address must have a verifiable public source (Etherscan name tag, Arkham public profile, mempool.space, or self-disclosed tweet/blog). Categories must be one of: person, company, government, protocol, celebrity (matches curated_entities_category_check).",
+  "_categoryAllowList": ["person", "company", "government", "protocol", "celebrity"],
+  "entities": [
+    {
+      "slug": "arbitrum-bridge",
+      "display_name": "Arbitrum L1 Bridge",
+      "description": "Canonical L1 ETH bridge for Arbitrum One. Holds ETH locked on L1 representing Arbitrum L2 deposits — among the largest ETH-holding contracts on Ethereum.",
+      "category": "protocol",
+      "twitter_handle": "arbitrum",
+      "is_featured": true,
+      "addresses": [
+        { "address": "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", "chain": "ethereum", "note": "Arbitrum: Bridge — Etherscan name tag", "source": "https://etherscan.io/address/0x8315177ab297ba92a06054ce80a67ed4dbd7ed3a", "verified": true }
+      ]
+    },
+    {
+      "slug": "optimism-bridge",
+      "display_name": "Optimism L1 Bridge",
+      "description": "Canonical L1 standard bridge for Optimism. Holds ETH and ERC-20 deposits flowing into the OP Mainnet rollup.",
+      "category": "protocol",
+      "twitter_handle": "Optimism",
+      "is_featured": true,
+      "addresses": [
+        { "address": "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1", "chain": "ethereum", "note": "Optimism: L1 Standard Bridge — Etherscan name tag", "source": "https://etherscan.io/address/0x99c9fc46f92e8a1c0dec1b1747d010903e884be1", "verified": true }
+      ]
+    },
+    {
+      "slug": "polygon-bridge",
+      "display_name": "Polygon PoS Bridge",
+      "description": "Canonical L1 bridge contracts for Polygon PoS. Holds the deposits backing pegged tokens on Polygon.",
+      "category": "protocol",
+      "twitter_handle": "0xPolygon",
+      "is_featured": true,
+      "addresses": [
+        { "address": "0xA0c68C638235ee32657e8f720a23ceC1bFc77C77", "chain": "ethereum", "note": "Polygon: ERC20 Bridge (RootChainManager) — Etherscan name tag", "source": "https://etherscan.io/address/0xa0c68c638235ee32657e8f720a23cec1bfc77c77", "verified": true },
+        { "address": "0x401F6c983eA34274ec46f84D70b31C151321188b", "chain": "ethereum", "note": "Polygon: Plasma Bridge — Etherscan name tag", "source": "https://etherscan.io/address/0x401f6c983ea34274ec46f84d70b31c151321188b", "verified": true }
+      ]
+    },
+    {
+      "slug": "base-bridge",
+      "display_name": "Base L1 Bridge",
+      "description": "Canonical L1 bridge for Base (Coinbase's OP-stack L2). Among the fastest-growing bridges on Ethereum.",
+      "category": "protocol",
+      "twitter_handle": "base",
+      "is_featured": true,
+      "addresses": [
+        { "address": "0x49048044D57e1C92A77f79988d21Fa8fAF74E97e", "chain": "ethereum", "note": "Base: L1 Portal — Etherscan name tag", "source": "https://etherscan.io/address/0x49048044d57e1c92a77f79988d21fa8faf74e97e", "verified": true },
+        { "address": "0x3154Cf16ccdb4C6d922629664174b904d80F2C35", "chain": "ethereum", "note": "Base: L1 Standard Bridge — Etherscan name tag", "source": "https://etherscan.io/address/0x3154cf16ccdb4c6d922629664174b904d80f2c35", "verified": true }
+      ]
+    },
+    {
+      "slug": "zksync-bridge",
+      "display_name": "zkSync Era Bridge",
+      "description": "Canonical L1 main contract for zkSync Era. Holds ETH and ERC-20 deposits backing the zkSync L2 rollup.",
+      "category": "protocol",
+      "twitter_handle": "zksync",
+      "is_featured": false,
+      "addresses": [
+        { "address": "0x32400084C286CF3E17e7B677ea9583e60a000324", "chain": "ethereum", "note": "zkSync Era: Main Contract — Etherscan name tag", "source": "https://etherscan.io/address/0x32400084c286cf3e17e7b677ea9583e60a000324", "verified": true }
+      ]
+    },
+    {
+      "slug": "okx",
+      "display_name": "OKX",
+      "description": "Major centralized cryptocurrency exchange. One of the most active CEX wallet clusters on Ethereum.",
+      "category": "company",
+      "twitter_handle": "okx",
+      "is_featured": true,
+      "addresses": [
+        { "address": "0x6cC5F688a315f3dC28A7781717a9A798a59fDA7b", "chain": "ethereum", "note": "OKX 1 — Etherscan name tag", "source": "https://etherscan.io/address/0x6cc5f688a315f3dc28a7781717a9a798a59fda7b", "verified": true },
+        { "address": "0x236F233dBf78341d25fB0F1bD14cb2bA4b8a777c", "chain": "ethereum", "note": "OKX 2 — Etherscan name tag", "source": "https://etherscan.io/address/0x236f233dbf78341d25fb0f1bd14cb2ba4b8a777c", "verified": true }
+      ]
+    },
+    {
+      "slug": "kucoin",
+      "display_name": "KuCoin",
+      "description": "Major centralized exchange. Etherscan-tagged hot wallet cluster.",
+      "category": "company",
+      "twitter_handle": "kucoincom",
+      "is_featured": true,
+      "addresses": [
+        { "address": "0x2B5634C42055806a59e9107ED44D43c426E58258", "chain": "ethereum", "note": "KuCoin 6 — Etherscan name tag", "source": "https://etherscan.io/address/0x2b5634c42055806a59e9107ed44d43c426e58258", "verified": true },
+        { "address": "0xD6216fC19DB775Df9774a6E33526131dA7D19a2c", "chain": "ethereum", "note": "KuCoin 7 — Etherscan name tag", "source": "https://etherscan.io/address/0xd6216fc19db775df9774a6e33526131da7d19a2c", "verified": true }
+      ]
+    },
+    {
+      "slug": "crypto-com",
+      "display_name": "Crypto.com",
+      "description": "Crypto.com exchange and platform. Etherscan-tagged hot wallet.",
+      "category": "company",
+      "twitter_handle": "cryptocom",
+      "is_featured": false,
+      "addresses": [
+        { "address": "0x6262998Ced04146fA42253a5C0AF90CA02dfd2A3", "chain": "ethereum", "note": "Crypto.com 1 — Etherscan name tag", "source": "https://etherscan.io/address/0x6262998ced04146fa42253a5c0af90ca02dfd2a3", "verified": true },
+        { "address": "0x46340b20830761efd32832A74d7169B29FEB9758", "chain": "ethereum", "note": "Crypto.com 2 — Etherscan name tag", "source": "https://etherscan.io/address/0x46340b20830761efd32832a74d7169b29feb9758", "verified": true }
+      ]
+    },
+    {
+      "slug": "gate-io",
+      "display_name": "Gate.io",
+      "description": "Gate.io centralized exchange. Etherscan-tagged hot wallet.",
+      "category": "company",
+      "twitter_handle": "gate_io",
+      "is_featured": false,
+      "addresses": [
+        { "address": "0x0D0707963952f2fBA59dD06f2b425ace40b492Fe", "chain": "ethereum", "note": "Gate.io — Etherscan name tag", "source": "https://etherscan.io/address/0x0d0707963952f2fba59dd06f2b425ace40b492fe", "verified": true }
+      ]
+    },
+    {
+      "slug": "htx-huobi",
+      "display_name": "HTX (Huobi)",
+      "description": "HTX (formerly Huobi) centralized exchange, owned by Justin Sun. Etherscan-tagged hot wallet cluster.",
+      "category": "company",
+      "twitter_handle": "HTX_Global",
+      "is_featured": false,
+      "addresses": [
+        { "address": "0xab5C66752a9e8167967685F1450532fB96d5d24f", "chain": "ethereum", "note": "Huobi 26 — Etherscan name tag", "source": "https://etherscan.io/address/0xab5c66752a9e8167967685f1450532fb96d5d24f", "verified": true },
+        { "address": "0xE93381fB4c4F14bDa253907b18faD305D799241a", "chain": "ethereum", "note": "Huobi 10 — Etherscan name tag", "source": "https://etherscan.io/address/0xe93381fb4c4f14bda253907b18fad305d799241a", "verified": true }
+      ]
+    },
+    {
+      "slug": "convex-finance",
+      "display_name": "Convex Finance",
+      "description": "Convex Finance — boosts Curve LP rewards via veCRV aggregation. Among the largest CRV holders.",
+      "category": "protocol",
+      "twitter_handle": "ConvexFinance",
+      "is_featured": false,
+      "addresses": [
+        { "address": "0xF403C135812408BFbE8713b5A23a04b3D48AAE31", "chain": "ethereum", "note": "Convex Finance: Booster — Etherscan name tag", "source": "https://etherscan.io/address/0xf403c135812408bfbe8713b5a23a04b3d48aae31", "verified": true }
+      ]
+    }
+  ]
+}

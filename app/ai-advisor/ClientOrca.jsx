@@ -1,6 +1,6 @@
 /**
  * ORCA AI 2.0 - Terminal Command Center Interface
- * Updated: February 12, 2026
+ * Updated: February 12, 2025
  * Theme: Terminal/Bloomberg aesthetic
  */
 
