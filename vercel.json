@@ -63,6 +63,10 @@
     {
       "path": "/api/cron/backtest-figures",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-top-wallets",
+      "schedule": "0 15 * * 0"
     }
   ]
 }
