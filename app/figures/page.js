@@ -1,5 +1,5 @@
 import React from 'react'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdmin, supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 import WalletTrackerTabs from '@/app/components/wallet-tracker/WalletTrackerTabs'
 import FiguresDirectoryClient from './FiguresDirectoryClient'
 import SubmitFigureButton from './SubmitFigureButton'
@@ -51,9 +51,13 @@ async function fetchApprovedFigures() {
 }
 
 // Pre-computed nightly by /api/cron/backtest-figures. Returns a Map
-// keyed by slug so the page-load merge stays O(n).
+// keyed by slug so the page-load merge stays O(n). Uses the fresh
+// client so the directory always reflects the latest cron write — the
+// regular supabaseAdmin lets Next.js cache PostgREST responses for the
+// route's lifetime, which made every page render show stale `null`s
+// for hours after a successful cron.
 async function fetchBacktestMap() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdminFresh
     .from('figure_backtests')
     .select('slug, return_pct_7d, return_pct_90d, computed_at')
   if (error || !Array.isArray(data)) return new Map()

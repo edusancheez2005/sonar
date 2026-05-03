@@ -1,6 +1,6 @@
 import React from 'react'
 import AuthGuard from '@/app/components/AuthGuard'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdmin, supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 import WalletTrackerHub from './WalletTrackerHub'
 import WalletTrackerWrapper from './WalletTrackerWrapper'
 
@@ -32,7 +32,10 @@ async function fetchFeaturedFigures() {
 // an approved curated_entities row with at least one address. Cap at
 // 5 per the prompt spec.
 async function fetchTopPerformers() {
-  const { data, error } = await supabaseAdmin
+  // supabaseAdminFresh — the regular client lets Next.js cache
+  // PostgREST responses, which keeps stale (often all-null) data on
+  // the hub for hours after a successful nightly cron.
+  const { data, error } = await supabaseAdminFresh
     .from('figure_backtests')
     .select(
       'slug, return_pct_7d, curated_entities!inner(slug, display_name, category, avatar_url, twitter_handle, addresses, submission_status)',
