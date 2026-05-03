@@ -26,7 +26,7 @@ export const metadata = {
 }
 
 const PAGE_SIZE = 24 // 4 × 6 desktop grid
-const VALID_SORTS = new Set(['featured', 'recent', 'alphabetical', 'category'])
+const VALID_SORTS = new Set(['featured', 'recent', 'alphabetical', 'category', 'performance'])
 const DEFAULT_SORT = 'featured'
 
 // Keep the dataset small enough to sort/slice client-side for snappy
@@ -50,6 +50,16 @@ async function fetchApprovedFigures() {
   )
 }
 
+// Pre-computed nightly by /api/cron/backtest-figures. Returns a Map
+// keyed by slug so the page-load merge stays O(n).
+async function fetchBacktestMap() {
+  const { data, error } = await supabaseAdmin
+    .from('figure_backtests')
+    .select('slug, return_pct_7d, return_pct_90d, computed_at')
+  if (error || !Array.isArray(data)) return new Map()
+  return new Map(data.map((r) => [r.slug, r]))
+}
+
 function sortFigures(rows, sort) {
   const list = [...rows]
   const byName = (a, b) =>
@@ -68,6 +78,21 @@ function sortFigures(rows, sort) {
         (a, b) =>
           String(a.category || '').localeCompare(String(b.category || '')) || byName(a, b)
       )
+      break
+    case 'performance':
+      // Highest 90d backtested return first; figures with no backtest
+      // row yet (newly added) drop to the bottom but stay alphabetical
+      // among themselves so the page never looks empty.
+      list.sort((a, b) => {
+        const ra = a.return_pct_90d
+        const rb = b.return_pct_90d
+        const aHas = typeof ra === 'number' && Number.isFinite(ra)
+        const bHas = typeof rb === 'number' && Number.isFinite(rb)
+        if (aHas && bHas) return rb - ra || byName(a, b)
+        if (aHas) return -1
+        if (bHas) return 1
+        return byName(a, b)
+      })
       break
     case 'featured':
     default:
@@ -89,8 +114,16 @@ function parseSearchParams(searchParams) {
 
 export default async function FiguresDirectoryPage({ searchParams }) {
   const { sort, page } = parseSearchParams(searchParams || {})
-  const all = await fetchApprovedFigures()
-  const sorted = sortFigures(all, sort)
+  const [all, btMap] = await Promise.all([fetchApprovedFigures(), fetchBacktestMap()])
+  const enriched = all.map((f) => {
+    const bt = btMap.get(f.slug)
+    return {
+      ...f,
+      return_pct_7d: bt?.return_pct_7d ?? null,
+      return_pct_90d: bt?.return_pct_90d ?? null,
+    }
+  })
+  const sorted = sortFigures(enriched, sort)
   const totalCount = sorted.length
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const clampedPage = Math.min(Math.max(1, page), totalPages)

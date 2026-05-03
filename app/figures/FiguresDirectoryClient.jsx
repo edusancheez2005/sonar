@@ -7,6 +7,7 @@ import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
+  { value: 'performance', label: '90d return' },
   { value: 'recent', label: 'Recent' },
   { value: 'alphabetical', label: 'A → Z' },
   { value: 'category', label: 'Category' },
@@ -432,6 +433,27 @@ function FigureCard({ f }) {
                 }}
               >
                 ★ FEATURED
+              </span>
+            ) : null}
+            {typeof f.return_pct_90d === 'number' && Number.isFinite(f.return_pct_90d) ? (
+              <span
+                title="90-day backtested return on $10k of paper capital. Updated nightly. Past performance is not indicative of future results."
+                style={{
+                  display: 'inline-block',
+                  padding: '0.18rem 0.55rem',
+                  background:
+                    f.return_pct_90d >= 0 ? 'rgba(46, 204, 113, 0.12)' : 'rgba(231, 76, 60, 0.12)',
+                  border:
+                    f.return_pct_90d >= 0 ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(231, 76, 60, 0.4)',
+                  borderRadius: '999px',
+                  color: f.return_pct_90d >= 0 ? '#2ecc71' : '#e74c3c',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {f.return_pct_90d >= 0 ? '▲' : '▼'} 90d {f.return_pct_90d >= 0 ? '+' : ''}
+                {f.return_pct_90d.toFixed(1)}%
               </span>
             ) : null}
           </div>
