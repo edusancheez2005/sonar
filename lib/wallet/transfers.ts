@@ -85,7 +85,10 @@ async function fetchPage(
     withMetadata: true,
     excludeZeroValue: true,
     maxCount: '0x3e8', // 1000
-    order: 'asc',
+    // Newest-first so backtests of recent windows reach the relevant
+    // transfers before MAX_PAGES is exhausted. Caller still ts-filters
+    // and re-sorts ascending below.
+    order: 'desc',
   }
   if (direction === 'in') params.toAddress = address
   else params.fromAddress = address

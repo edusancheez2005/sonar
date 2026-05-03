@@ -148,13 +148,16 @@ async function buildEvmTrades(
 ): Promise<{ trades: CanonicalTrade[]; warnings: string[] }> {
   const warnings: string[] = []
 
-  // We can't call alchemy with a timestamp range; estimate block range
-  // from chain block time and pad by 1 day on each side.
-  const blockSec = AVG_BLOCK_SECS[chain]
-  const padSec = 86400
-  const fromBlock = Math.max(0, Math.floor((startMs / 1000 - padSec) / blockSec) - 0)
-  // Simpler & safer: set toBlock = 'latest'; we filter by ts below.
-  const transfers = await getEvmTransfers(address, chain, fromBlock, 'latest')
+  // We can't call alchemy with a timestamp range. The previous
+  // implementation tried to estimate fromBlock from startMs/blockSec,
+  // but that divided the absolute UNIX timestamp (~1.78e9s) by ~12s
+  // which produces block numbers in the hundreds of millions — well
+  // beyond any real chain head — so Alchemy rejects with
+  // "fromBlock cannot be greater than toBlock".
+  // We page from block 0 (Alchemy returns oldest-first by default and
+  // we cap at MAX_PAGES) and rely on the ts filter just below to
+  // narrow into the requested window.
+  const transfers = await getEvmTransfers(address, chain, 0, 'latest')
 
   const inRange = transfers.filter((t) => {
     const tsMs = new Date(t.ts).getTime()
