@@ -211,17 +211,50 @@ export async function fetchAlchemyEvmTxs(chain, address, limit = 20) {
 // ─── Bitcoin (mempool.space, no key required) ────────────────────────────
 
 async function doFetchBitcoin(address, limit) {
-  const url = `${MEMPOOL_API}/address/${encodeURIComponent(address)}/txs`
+  // Famous BTC wallets (e.g. MicroStrategy, exchange cold wallets) get
+  // hammered by dust-attack and vanity-tip transactions — hundreds of
+  // sub-1000-sat sends that drown out the few real 6-/7-figure moves.
+  // To surface meaningful flow we (a) page through more history than
+  // `limit` would suggest, and (b) drop dust below a small BTC floor
+  // before applying the caller's row cap.
+  //
+  // mempool.space `/txs` returns the most recent ~25 mempool txs +
+  // page of 25 confirmed; `/txs/chain/:last_seen_txid` lets us page
+  // backwards. Two pages of 50 each is cheap and is enough to find
+  // the headline moves on every wallet we've seen so far.
+  const DUST_BTC = 0.0005 // ≈ $30 at $60k BTC; below this is spam.
+  const MAX_FETCH = Math.max(limit, 100)
+  const target = String(address)
+
   let raw
   try {
-    raw = await fetchWithTimeout(url)
+    raw = await fetchWithTimeout(`${MEMPOOL_API}/address/${encodeURIComponent(target)}/txs`)
   } catch {
     return []
   }
-  const target = String(address)
+  let pool = Array.isArray(raw) ? raw.slice() : []
+  // Walk backwards through history until we have enough non-dust
+  // candidates OR we hit the fetch budget. Each call returns ≤25
+  // confirmed txs older than `lastTxid`.
+  let lastTxid = pool.length ? pool[pool.length - 1]?.txid : null
+  let budget = 4 // up to 4 extra pages = ~100 more confirmed txs
+  while (pool.length < MAX_FETCH && budget > 0 && lastTxid) {
+    let page
+    try {
+      page = await fetchWithTimeout(
+        `${MEMPOOL_API}/address/${encodeURIComponent(target)}/txs/chain/${lastTxid}`,
+      )
+    } catch {
+      break
+    }
+    if (!Array.isArray(page) || page.length === 0) break
+    pool.push(...page)
+    lastTxid = page[page.length - 1]?.txid
+    budget -= 1
+  }
 
   const out = []
-  for (const tx of (raw || []).slice(0, limit)) {
+  for (const tx of pool) {
     const inAmount = (tx.vout || [])
       .filter((v) => v?.scriptpubkey_address === target)
       .reduce((a, v) => a + Number(v.value || 0), 0)
@@ -233,6 +266,12 @@ async function doFetchBitcoin(address, limit) {
     // Net movement relevant to this address, in BTC.
     const amountSat = isIncoming ? inAmount - outAmount : outAmount - inAmount
     const amountBtc = amountSat > 0 ? amountSat / 1e8 : null
+
+    // Drop dust. This is the single highest-leverage fix for the
+    // "/figure/microstrategy shows 20 × $0 transactions" bug — that
+    // wallet receives constant sub-cent vanity tips that have no
+    // analytical value.
+    if (amountBtc === null || amountBtc < DUST_BTC) continue
 
     const counterpartyFrom = (tx.vin || [])
       .map((v) => v?.prevout?.scriptpubkey_address)
@@ -261,6 +300,7 @@ async function doFetchBitcoin(address, limit) {
         source: 'chain_api',
       })
     )
+    if (out.length >= limit) break
   }
   return out
 }

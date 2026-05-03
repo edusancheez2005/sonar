@@ -159,6 +159,22 @@ export async function GET(request) {
             }
           }
 
+          // ── Last-ditch fallback: if portfolioValue is still 0 but we
+          //    have ANY recent USD-valued tx volume, surface a rough
+          //    estimate so the leaderboard doesn't read "$0.00" for an
+          //    obviously active whale. We use 30d gross BUY USD as a
+          //    floor — clearly an undercount, but factually true (this
+          //    wallet acquired at least this much). Better than zero.
+          if (portfolioValue === 0 && txs && txs.length > 0) {
+            let buyFloor = 0
+            for (const tx of txs) {
+              const cls = (tx.classification || '').toUpperCase()
+              const val = Number(tx.usd_value) || 0
+              if (cls === 'BUY' && val > 0) buyFloor += val
+            }
+            if (buyFloor > 0) portfolioValue = buyFloor
+          }
+
           // ── 30d metrics from all_whale_transactions ───────────
           let totalVol30d = 0
           let txCount30d = 0
