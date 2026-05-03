@@ -26,8 +26,44 @@ async function fetchFeaturedFigures() {
   return (data || []).filter((f) => Array.isArray(f.addresses) && f.addresses.length > 0)
 }
 
+// Pre-computed by /api/cron/backtest-figures every 04:00 UTC. We only
+// surface a wallet here if it (a) has a positive return_pct_7d (no
+// point celebrating losers in the headline strip) and (b) maps back to
+// an approved curated_entities row with at least one address. Cap at
+// 5 per the prompt spec.
+async function fetchTopPerformers() {
+  const { data, error } = await supabaseAdmin
+    .from('figure_backtests')
+    .select(
+      'slug, return_pct_7d, curated_entities!inner(slug, display_name, category, avatar_url, twitter_handle, addresses, submission_status)',
+    )
+    .gt('return_pct_7d', 0)
+    .order('return_pct_7d', { ascending: false })
+    .limit(20)
+  if (error || !Array.isArray(data)) return []
+  return data
+    .map((row) => {
+      const ent = row.curated_entities
+      if (!ent || ent.submission_status !== 'approved') return null
+      if (!Array.isArray(ent.addresses) || ent.addresses.length === 0) return null
+      return {
+        slug: ent.slug,
+        display_name: ent.display_name,
+        category: ent.category,
+        avatar_url: ent.avatar_url,
+        twitter_handle: ent.twitter_handle,
+        return_pct_7d: row.return_pct_7d,
+      }
+    })
+    .filter(Boolean)
+    .slice(0, 5)
+}
+
 export default async function WalletTrackerPage() {
-  const featuredFigures = await fetchFeaturedFigures()
+  const [featuredFigures, topPerformers] = await Promise.all([
+    fetchFeaturedFigures(),
+    fetchTopPerformers(),
+  ])
 
   return (
     <AuthGuard>
@@ -56,7 +92,7 @@ export default async function WalletTrackerPage() {
             }),
           }}
         />
-        <WalletTrackerHub featuredFigures={featuredFigures} />
+        <WalletTrackerHub featuredFigures={featuredFigures} topPerformers={topPerformers} />
         <WalletTrackerWrapper />
       </>
     </AuthGuard>

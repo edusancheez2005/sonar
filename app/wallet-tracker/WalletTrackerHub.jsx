@@ -12,6 +12,7 @@ import {
 } from '@/app/lib/entityHelpers'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import AlertBanner from '@/components/wallet-tracker/AlertBanner'
+import TopPerformersWeek from '@/components/wallet-tracker/TopPerformersWeek'
 
 // `/wallet-tracker` hub that sits above the existing leaderboard
 // wrapper. Renders the new unified header, shared tab bar (Research
@@ -19,7 +20,7 @@ import AlertBanner from '@/components/wallet-tracker/AlertBanner'
 // (Featured figures + Your watchlist) to turn Wallet Tracker into a
 // real hub rather than a bare leaderboard.
 
-export default function WalletTrackerHub({ featuredFigures = [] }) {
+export default function WalletTrackerHub({ featuredFigures = [], topPerformers = [] }) {
   return (
     <div
       style={{
@@ -34,6 +35,7 @@ export default function WalletTrackerHub({ featuredFigures = [] }) {
       <HubHeader />
       <WalletTrackerTabs activeOverride="research" />
       <HeroSearch />
+      <TopPerformersWeek performers={topPerformers} />
       <FeaturedFiguresStrip figures={featuredFigures} />
       <WalletWatchlistStrip />
       <AlertBanner />
