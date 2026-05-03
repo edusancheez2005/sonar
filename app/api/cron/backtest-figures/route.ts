@@ -193,6 +193,25 @@ export async function GET(request: Request) {
         backtestWindow(chain, address, start7d, now),
       ])
 
+      // Defence in depth: even if the per-window clamp somehow doesn't
+      // null an absurd return, the upsert path nulls anything beyond the
+      // threshold and surfaces the clamp reason. Both paths use the same
+      // RETURN_CLAMP_PCT constant.
+      const RETURN_CLAMP_PCT = 50_000
+      const clamp = (r: WindowResult): WindowResult => {
+        if (r.return_pct != null && Math.abs(r.return_pct) > RETURN_CLAMP_PCT) {
+          return {
+            return_pct: null,
+            final_equity_usd: null,
+            trades: r.trades,
+            error: r.error || `Result clamped: |return| > ${RETURN_CLAMP_PCT}% likely engine misclassification`,
+          }
+        }
+        return r
+      }
+      const r90c = clamp(r90)
+      const r7c = clamp(r7)
+
       const upsertErr = await sb
         .from('figure_backtests')
         .upsert(
@@ -201,12 +220,12 @@ export async function GET(request: Request) {
             chain,
             address,
             capital_usd: CAPITAL_USD,
-            return_pct_7d: r7.return_pct,
-            return_pct_90d: r90.return_pct,
-            final_equity_usd_90d: r90.final_equity_usd,
-            trades_replayed: r90.trades,
+            return_pct_7d: r7c.return_pct,
+            return_pct_90d: r90c.return_pct,
+            final_equity_usd_90d: r90c.final_equity_usd,
+            trades_replayed: r90c.trades,
             computed_at: new Date().toISOString(),
-            error: r90.error || r7.error,
+            error: r90c.error || r7c.error,
           },
           { onConflict: 'slug' },
         )
@@ -223,6 +242,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
+    build: 'clamp-v2-2026-05-03',
     processed,
     written,
     skipped,
