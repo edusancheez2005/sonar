@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import FollowButton from '@/app/components/entities/FollowButton'
 import EntityAvatar from '@/app/components/entities/EntityAvatar'
 import { fetchChainTxsForAddresses } from '@/app/lib/chainFetchers'
+import WalletBacktestPanel from '@/components/wallet-tracker/WalletBacktestPanel'
 import {
   CLASSIFICATION_COLORS,
   chainDisplay,
@@ -558,6 +559,11 @@ export default async function FigureDetailPage({ params }) {
   const recentTxs = mergedAll.slice(0, 100)
   const chainDataDegraded = chainFetch.timedOut || chainFetch.errors > 0
 
+  // Pick the first backtest-supported address (ethereum/polygon/solana)
+  // so the embedded backtest panel can auto-run without user input.
+  const BACKTEST_CHAINS = new Set(['ethereum', 'polygon', 'solana'])
+  const backtestAddr = addrs.find((a) => BACKTEST_CHAINS.has((a.chain || '').toLowerCase())) || null
+
   // Stats computed from the merged feed — source of truth for the
   // stat cards so "47 transactions, $0 volume" contradictions vanish.
   const txCount = mergedAll.length
@@ -790,6 +796,12 @@ export default async function FigureDetailPage({ params }) {
             className="figure-main-grid"
           >
             <div style={{ minWidth: 0 }}>
+              {backtestAddr ? (
+                <WalletBacktestPanel
+                  address={backtestAddr.address}
+                  defaultChain={backtestAddr.chain}
+                />
+              ) : null}
               <div
                 style={{
                   fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1px',

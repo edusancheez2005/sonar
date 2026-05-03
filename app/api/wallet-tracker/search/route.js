@@ -68,7 +68,7 @@ export async function GET(req) {
   }
 
   return NextResponse.json(
-    { data: results.slice(0, 30) },
+    { data: results.slice(0, 100) },
     { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } }
   )
 }

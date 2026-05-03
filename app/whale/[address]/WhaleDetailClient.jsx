@@ -4,6 +4,7 @@ import React from 'react'
 import styled from 'styled-components'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import WalletBacktestPanel from '@/components/wallet-tracker/WalletBacktestPanel'
 
 const Container = styled.div`
   max-width: 1400px;
@@ -438,6 +439,16 @@ export default function WhaleDetailClient({
         )}
       </Section>
       
+      {/* Copy-trade backtester. Auto-detects chain from address shape:
+          base58-only string => solana, otherwise default to ethereum
+          (user can switch in the panel). */}
+      {address ? (
+        <WalletBacktestPanel
+          address={address}
+          defaultChain={/^0x[a-fA-F0-9]{40}$/.test(address) ? 'ethereum' : 'solana'}
+        />
+      ) : null}
+
       <Section>
         <SectionTitle>
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
