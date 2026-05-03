@@ -64,6 +64,23 @@ async function backtestWindow(
         ),
       ),
     ])
+    // Sanity clamp. Some wallets (e.g. exchange hot wallets, market
+    // makers handling stablecoin <-> shitcoin trades) produce
+    // implausibly large return_pct because the engine misclassifies
+    // the quote leg vs token leg in a multi-leg swap. Until we fix
+    // the engine, treat |return| > 50000% (500x) as untrustworthy and
+    // null out the result with an explanatory error so the directory
+    // doesn't show absurd 5- and 6-figure percentages.
+    const RETURN_CLAMP_PCT = 50_000
+    const total = out.result.total_return_pct
+    if (Number.isFinite(total) && Math.abs(total) > RETURN_CLAMP_PCT) {
+      return {
+        return_pct: null,
+        final_equity_usd: null,
+        trades: out.trades_count,
+        error: `Result clamped: |return| > ${RETURN_CLAMP_PCT}% likely engine misclassification`,
+      }
+    }
     return {
       return_pct: Number.isFinite(out.result.total_return_pct) ? out.result.total_return_pct : null,
       final_equity_usd: Number.isFinite(out.result.final_equity_usd) ? out.result.final_equity_usd : null,

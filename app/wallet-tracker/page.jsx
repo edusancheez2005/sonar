@@ -1,5 +1,4 @@
 import React from 'react'
-import AuthGuard from '@/app/components/AuthGuard'
 import { supabaseAdmin, supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 import WalletTrackerHub from './WalletTrackerHub'
 import WalletTrackerWrapper from './WalletTrackerWrapper'
@@ -69,7 +68,6 @@ export default async function WalletTrackerPage() {
   ])
 
   return (
-    <AuthGuard>
       <>
         <script
           type="application/ld+json"
@@ -98,6 +96,5 @@ export default async function WalletTrackerPage() {
         <WalletTrackerHub featuredFigures={featuredFigures} topPerformers={topPerformers} />
         <WalletTrackerWrapper />
       </>
-    </AuthGuard>
   )
 }
