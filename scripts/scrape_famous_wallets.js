@@ -546,8 +546,9 @@ async function run() {
 
   const { merged, perSource } = await collectAllCandidates()
 
-  // Pull the set of existing slugs so we can skip anything already
-  // present (protects manually-curated rows).
+  // Pull existing rows so we can split candidates into INSERT (new
+  // slug) vs UPDATE (existing slug — refresh metadata only, never
+  // overwrite curated `addresses` / `is_featured` / `submission_status`).
   const { data: existing, error: existErr } = await supabase
     .from('curated_entities')
     .select('slug')
@@ -557,9 +558,14 @@ async function run() {
   }
   const existingSlugs = new Set((existing || []).map((r) => r.slug))
 
+  // Cap the *new* inserts but always allow metadata refresh on
+  // existing rows (the LIMIT is a guard against runaway etherscan
+  // dumps, not a cap on safe in-place updates).
   const newCandidates = merged
     .filter((c) => !existingSlugs.has(c.slug))
     .slice(0, LIMIT)
+
+  const updateCandidates = merged.filter((c) => existingSlugs.has(c.slug))
 
   // Per-source "new" counts for the summary output.
   const newBySource = { DeFiLlama: 0, Etherscan: 0, Hardcoded: 0 }
@@ -569,33 +575,41 @@ async function run() {
   console.log(`📊 Scraped from DefiLlama: ${newBySource.DeFiLlama} new`)
   console.log(`📊 Scraped from Etherscan: ${newBySource.Etherscan} new`)
   console.log(`📊 Hardcoded seeds: ${newBySource.Hardcoded} new`)
+  console.log(`🔄 Existing rows eligible for metadata refresh: ${updateCandidates.length}`)
   console.log('')
 
-  if (newCandidates.length === 0) {
-    console.log('No new entities to insert. Exiting.')
+  if (newCandidates.length === 0 && updateCandidates.length === 0) {
+    console.log('Nothing to insert or refresh. Exiting.')
     return
   }
 
-  const duplicatesCount =
-    merged.length - newCandidates.length // slugs filtered because they already exist
-
   if (DRY_RUN) {
-    console.log(`(dry-run) Would insert ${newCandidates.length} new figures (${duplicatesCount} already exist).`)
+    console.log(`(dry-run) Would insert ${newCandidates.length} new figures and refresh metadata on ${updateCandidates.length} existing rows.`)
     console.log('')
     for (const c of newCandidates) {
       console.log(
         `  + ${c.slug.padEnd(30)} ${c.category.padEnd(10)} ${c.source.padEnd(10)} @${c.twitter_handle || '-'} (${c.addresses.length} addrs)`
       )
     }
+    for (const c of updateCandidates.slice(0, 25)) {
+      console.log(
+        `  ~ ${c.slug.padEnd(30)} (refresh display_name/description/twitter_handle only)`
+      )
+    }
+    if (updateCandidates.length > 25) {
+      console.log(`  ~ … and ${updateCandidates.length - 25} more refresh candidates`)
+    }
     console.log('')
     console.log('Re-run without --dry-run to write to Supabase.')
     return
   }
 
-  // Batch insert. `ignoreDuplicates` collapses to ON CONFLICT DO NOTHING
-  // on the primary key, so even a racing write from another process
-  // can't break us.
-  const rows = newCandidates.map((c) => ({
+  // ── INSERT new rows ──
+  // We use ignoreDuplicates:false so that a race (another process
+  // having just inserted the slug between our read and write) becomes
+  // a normal upsert rather than a silent skip. The newCandidates
+  // filter above means in steady state these slugs are net-new.
+  const insertRows = newCandidates.map((c) => ({
     slug: c.slug,
     display_name: c.display_name,
     description: c.description,
@@ -605,25 +619,46 @@ async function run() {
     is_featured: false,
   }))
 
-  // Chunk the insert to stay under PostgREST payload limits for the
-  // rare case where Etherscan dumps hundreds of addresses.
   const CHUNK = 100
-  let written = 0
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const chunk = rows.slice(i, i + CHUNK)
+  let inserted = 0
+  for (let i = 0; i < insertRows.length; i += CHUNK) {
+    const chunk = insertRows.slice(i, i + CHUNK)
     const { error } = await supabase
       .from('curated_entities')
-      .upsert(chunk, { onConflict: 'slug', ignoreDuplicates: true })
+      .upsert(chunk, { onConflict: 'slug', ignoreDuplicates: false })
     if (error) {
       console.error(`  ✗ insert chunk [${i}..${i + chunk.length}] failed: ${error.message}`)
       continue
     }
-    written += chunk.length
+    inserted += chunk.length
   }
 
-  console.log(
-    `✅ Inserted ${written} new figures (${duplicatesCount} deduped against existing)`
-  )
+  // ── UPDATE existing rows (metadata refresh ONLY) ──
+  // Critically we do NOT touch `addresses`, `is_featured`,
+  // `submission_status`, `submission_proof`, `rejection_reason`, or
+  // `avatar_url`. Those are admin-curated. We only refresh the
+  // display_name / description / twitter_handle fields that the
+  // scraper sources are authoritative for.
+  let refreshed = 0
+  for (const c of updateCandidates) {
+    const patch = {
+      display_name: c.display_name,
+      description: c.description,
+      twitter_handle: c.twitter_handle,
+    }
+    const { error } = await supabase
+      .from('curated_entities')
+      .update(patch)
+      .eq('slug', c.slug)
+    if (error) {
+      console.error(`  ✗ refresh ${c.slug} failed: ${error.message}`)
+      continue
+    }
+    refreshed += 1
+  }
+
+  console.log(`✅ Inserted ${inserted} new figures`)
+  console.log(`🔄 Refreshed metadata on ${refreshed} existing rows (addresses preserved)`)
   console.log('💡 Run: node scripts/fetch_figure_avatars.js to fetch their photos')
 }
 

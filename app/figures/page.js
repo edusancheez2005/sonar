@@ -32,6 +32,11 @@ const DEFAULT_SORT = 'featured'
 // Keep the dataset small enough to sort/slice client-side for snappy
 // pagination UX. If `curated_entities` ever blows past this, move the
 // pagination into the DB query.
+//
+// Empty-address rows are deliberately HIDDEN from the public directory.
+// The seed ships with placeholder rows for figures whose personal
+// wallets aren't publicly attributable; those rows are visible to
+// admins via /admin/figures/backfill but should not surface here.
 async function fetchApprovedFigures() {
   const { data, error } = await supabaseAdmin
     .from('curated_entities')
@@ -40,7 +45,9 @@ async function fetchApprovedFigures() {
     )
     .eq('submission_status', 'approved')
   if (error) return []
-  return data || []
+  return (data || []).filter(
+    (r) => Array.isArray(r.addresses) && r.addresses.length > 0
+  )
 }
 
 function sortFigures(rows, sort) {

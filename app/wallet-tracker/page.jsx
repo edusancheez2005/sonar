@@ -11,14 +11,19 @@ export const metadata = {
 }
 
 async function fetchFeaturedFigures() {
+  // Pull is_featured rows + the addresses column so we can defensively
+  // strip any featured row whose addresses array got emptied (an empty
+  // featured card would be a dead link on the public hub). Bumped from
+  // 8 → 24 now that the curated seed v2 ships with more verified
+  // figures.
   const { data, error } = await supabaseAdmin
     .from('curated_entities')
-    .select('slug, display_name, category, avatar_url, twitter_handle')
+    .select('slug, display_name, category, avatar_url, twitter_handle, addresses')
     .eq('is_featured', true)
     .order('display_name', { ascending: true })
-    .limit(8)
+    .limit(24)
   if (error) return []
-  return data || []
+  return (data || []).filter((f) => Array.isArray(f.addresses) && f.addresses.length > 0)
 }
 
 export default async function WalletTrackerPage() {

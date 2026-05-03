@@ -238,24 +238,41 @@ export default function AdminFiguresPage() {
               Review community submissions and manage the public directory.
             </div>
           </div>
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            style={{
-              padding: '0.55rem 1rem',
-              background: 'rgba(54, 166, 186, 0.15)',
-              border: '1px solid rgba(54, 166, 186, 0.4)',
-              borderRadius: '10px',
-              color: '#36a6ba',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: loading ? 'wait' : 'pointer',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            {loading ? 'Refreshing…' : '⟳ Refresh'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <a
+              href="/admin/figures/backfill"
+              style={{
+                padding: '0.55rem 1rem',
+                background: 'rgba(241, 196, 15, 0.12)',
+                border: '1px solid rgba(241, 196, 15, 0.45)',
+                borderRadius: '10px',
+                color: '#f1c40f',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              ⚡ Backfill addresses
+            </a>
+            <button
+              type="button"
+              onClick={load}
+              disabled={loading}
+              style={{
+                padding: '0.55rem 1rem',
+                background: 'rgba(54, 166, 186, 0.15)',
+                border: '1px solid rgba(54, 166, 186, 0.4)',
+                borderRadius: '10px',
+                color: '#36a6ba',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: loading ? 'wait' : 'pointer',
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? 'Refreshing…' : '⟳ Refresh'}
+            </button>
+          </div>
         </div>
 
         {/* Stats bar */}
