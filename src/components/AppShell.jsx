@@ -992,25 +992,6 @@ export default function AppShell({ children, onLogout }) {
     if (isNarrow) setRailPeek(false)
   }, [isNarrow])
 
-  // While the Telegram popover is open, force the rail into peek-expanded
-  // state so its right edge stays at 236px (the popover anchors to that).
-  // Once the popover closes, schedule the normal close so the rail
-  // re-collapses if the cursor isn't over it.
-  useEffect(() => {
-    if (!telegramOpen) return undefined
-    if (!isNarrow && railCollapsed) {
-      clearRailPeekLeaveTimer()
-      setRailPeek(true)
-    }
-    return () => {
-      // After close, fall back to whatever the cursor position dictates.
-      if (!isNarrow && railCollapsed) {
-        clearRailPeekLeaveTimer()
-        railPeekLeaveTimer.current = setTimeout(() => setRailPeek(false), 180)
-      }
-    }
-  }, [telegramOpen, isNarrow, railCollapsed, clearRailPeekLeaveTimer])
-
   const clearRailPeekLeaveTimer = useCallback(() => {
     if (railPeekLeaveTimer.current) {
       clearTimeout(railPeekLeaveTimer.current)
@@ -1036,6 +1017,30 @@ export default function AppShell({ children, onLogout }) {
       railPeekLeaveTimer.current = setTimeout(() => setRailPeek(true), 60)
     }
   }, [isNarrow, railCollapsed, clearRailPeekLeaveTimer])
+
+  // While the Telegram popover is open, force the rail into peek-expanded
+  // state so its right edge stays at 236px (the popover anchors to that).
+  // Once the popover closes, schedule the normal close so the rail
+  // re-collapses if the cursor isn't over it.
+  //
+  // NOTE: this effect MUST come AFTER `clearRailPeekLeaveTimer` is declared,
+  // otherwise the dependency array reads the binding while it's still in the
+  // TDZ — which webpack's minified prod output throws on as a hard
+  // ReferenceError, even though dev mode is forgiving.
+  useEffect(() => {
+    if (!telegramOpen) return undefined
+    if (!isNarrow && railCollapsed) {
+      clearRailPeekLeaveTimer()
+      setRailPeek(true)
+    }
+    return () => {
+      // After close, fall back to whatever the cursor position dictates.
+      if (!isNarrow && railCollapsed) {
+        clearRailPeekLeaveTimer()
+        railPeekLeaveTimer.current = setTimeout(() => setRailPeek(false), 180)
+      }
+    }
+  }, [telegramOpen, isNarrow, railCollapsed, clearRailPeekLeaveTimer])
 
   const toggleRail = useCallback(() => {
     setRailPeek(false)
