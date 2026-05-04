@@ -16,13 +16,13 @@
  */
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
 
 let cachedResult: any = null
 let cachedAt = 0
-const CACHE_VERSION = 'v3-social-posts-2026-05-04'
+const CACHE_VERSION = 'v4-social-posts-bulkscan-2026-05-04'
 let cachedVersion = ''
 const CACHE_TTL = 30 * 60 * 1000 // 30 min
 
@@ -49,8 +49,7 @@ const POLITICAL_VOICES = [
   'Current SEC Chair',
 ]
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY
+// Bump cache version so previous broken (empty) cache is discarded.
 
 /** LunarCrush sentiment is 1..5; map to bullish/neutral/bearish. */
 function mapSentiment(raw: number | null | undefined): 'bullish' | 'bearish' | 'neutral' {
@@ -96,26 +95,40 @@ function inferContext(body: string): string {
 }
 
 async function fetchCryptoVoicesFromDB() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) return []
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
-    auth: { persistSession: false },
-  })
+  // 60-day window — top voices don't tweet daily.
+  const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
 
-  // 30-day window — top voices don't tweet daily.
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  // Build case-insensitive set of handles for matching.
+  const handlesLower = CRYPTO_VOICES.map(v => v.handle.toLowerCase())
 
+  // Single query for all handles in the last 60 days, then group client-side.
+  // We can't case-insensitive `.in()` server-side, so pull broadly and filter in JS.
+  const { data, error } = await supabaseAdminFresh
+    .from('social_posts')
+    .select('body, published_at, sentiment, interactions, post_link, creator_screen_name, creator_display_name')
+    .gte('published_at', since)
+    .order('published_at', { ascending: false })
+    .limit(2000)
+
+  if (error) {
+    console.warn('[voices] supabase error:', error.message)
+    return []
+  }
+  if (!data || data.length === 0) {
+    console.warn('[voices] supabase returned 0 rows in last 60 days')
+    return []
+  }
+
+  // For each priority handle, find the most recent post.
   const out: any[] = []
   for (const v of CRYPTO_VOICES) {
-    const { data, error } = await supabase
-      .from('social_posts')
-      .select('body, published_at, sentiment, interactions, post_link, creator_screen_name, creator_display_name')
-      .ilike('creator_screen_name', v.handle)
-      .gte('published_at', since)
-      .order('published_at', { ascending: false })
-      .limit(1)
-    if (error || !data || data.length === 0) continue
-    const post: any = data[0]
-    if (!post.body) continue
+    const target = v.handle.toLowerCase()
+    const post: any = data.find((row: any) =>
+      typeof row.creator_screen_name === 'string' &&
+      row.creator_screen_name.toLowerCase() === target &&
+      row.body
+    )
+    if (!post) continue
     out.push({
       name: v.name,
       handle: '@' + v.handle,
@@ -128,6 +141,7 @@ async function fetchCryptoVoicesFromDB() {
       _published: post.published_at,
     })
   }
+  console.log(`[voices] crypto voices matched: ${out.length} of ${CRYPTO_VOICES.length} (scanned ${data.length} rows)`)
   return out
 }
 
@@ -215,8 +229,8 @@ export async function GET(request: Request) {
     }
 
     const [crypto, political] = await Promise.all([
-      fetchCryptoVoicesFromDB().catch(e => { console.warn('[voices] crypto db failed:', e?.message); return [] }),
-      fetchPoliticalVoicesFromGrok().catch(e => { console.warn('[voices] political failed:', e?.message); return [] }),
+      fetchCryptoVoicesFromDB().catch(e => { console.warn('[voices] crypto db failed:', e?.message); return [] as any[] }),
+      fetchPoliticalVoicesFromGrok().catch(e => { console.warn('[voices] political failed:', e?.message); return [] as any[] }),
     ])
 
     const politicalNorm = political.map((p: any) => ({
