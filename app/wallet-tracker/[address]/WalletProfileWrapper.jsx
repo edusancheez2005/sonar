@@ -177,7 +177,7 @@ export default function WalletProfileWrapper({ address }) {
       <PageContainer>
         <Container>
           <Breadcrumbs>
-            <BreadcrumbLink href="/wallet-tracker">Wallet Tracker</BreadcrumbLink>
+            <BreadcrumbLink href="/wallet-tracker">Whale Tracker</BreadcrumbLink>
             <span>&gt;</span>
             <BreadcrumbCurrent>{shortenAddress(address)}</BreadcrumbCurrent>
           </Breadcrumbs>
@@ -196,7 +196,7 @@ export default function WalletProfileWrapper({ address }) {
     <PageContainer>
       <Container>
         <Breadcrumbs>
-          <BreadcrumbLink href="/wallet-tracker">Wallet Tracker</BreadcrumbLink>
+          <BreadcrumbLink href="/wallet-tracker">Whale Tracker</BreadcrumbLink>
           <span>&gt;</span>
           <BreadcrumbCurrent>{displayName}</BreadcrumbCurrent>
         </Breadcrumbs>

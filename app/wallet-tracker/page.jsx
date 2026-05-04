@@ -4,7 +4,7 @@ import WalletTrackerHub from './WalletTrackerHub'
 import WalletTrackerWrapper from './WalletTrackerWrapper'
 
 export const metadata = {
-  title: 'Wallet Tracker — Research Wallets, Entities & Public Figures',
+  title: 'Whale Tracker — Research Wallets, Entities & Public Figures',
   description: 'Research any wallet, browse tracked entities, follow verified public figures, and manage your watchlist — all from one hub.',
   alternates: { canonical: 'https://www.sonartracker.io/wallet-tracker' },
 }
@@ -79,12 +79,12 @@ export default async function WalletTrackerPage() {
                   '@type': 'BreadcrumbList',
                   itemListElement: [
                     { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.sonartracker.io/' },
-                    { '@type': 'ListItem', position: 2, name: 'Wallet Tracker', item: 'https://www.sonartracker.io/wallet-tracker' },
+                    { '@type': 'ListItem', position: 2, name: 'Whale Tracker', item: 'https://www.sonartracker.io/wallet-tracker' },
                   ],
                 },
                 {
                   '@type': 'WebPage',
-                  name: 'Wallet Tracker — Research Wallets, Entities & Public Figures',
+                  name: 'Whale Tracker — Research Wallets, Entities & Public Figures',
                   url: 'https://www.sonartracker.io/wallet-tracker',
                   isPartOf: { '@id': 'https://www.sonartracker.io#website' },
                   description: 'Research any wallet, browse tracked entities, follow verified public figures, and manage your watchlist — all from one hub.',

@@ -21,13 +21,13 @@ import { ToastProvider } from '@/components/wallet-tracker/Toast'
 import { SORT_OPTIONS, CHAINS } from '@/lib/wallet-tracker'
 
 const TAB_TITLES = {
-  leaderboard: 'Leaderboard | Wallet Tracker | Sonar',
-  following: 'Following | Wallet Tracker | Sonar',
-  pods: 'Pod Detection | Wallet Tracker | Sonar',
-  'early-movers': 'Early Movers | Wallet Tracker | Sonar',
-  compare: 'Compare | Wallet Tracker | Sonar',
-  backtest: 'Backtest | Wallet Tracker | Sonar',
-  consensus: 'Whale Consensus | Wallet Tracker | Sonar',
+  leaderboard: 'Leaderboard | Whale Tracker | Sonar',
+  following: 'Following | Whale Tracker | Sonar',
+  pods: 'Pod Detection | Whale Tracker | Sonar',
+  'early-movers': 'Early Movers | Whale Tracker | Sonar',
+  compare: 'Compare | Whale Tracker | Sonar',
+  backtest: 'Backtest | Whale Tracker | Sonar',
+  consensus: 'Whale Consensus | Whale Tracker | Sonar',
 }
 
 const PageContainer = styled.div`
@@ -36,22 +36,28 @@ const PageContainer = styled.div`
 
 const Container = styled.div`
   width: 100%;
-  max-width: 1400px;
+  /* Was 1400px — too tight for the 9-col leaderboard + 340px side panel.
+     Lets the page breathe when the rail is collapsed (+172px) without
+     introducing a horizontal scroll on standard 13"–16" laptops. */
+  max-width: 1680px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 1.5rem;
 
+  @media (min-width: 1280px) {
+    padding: 0 2rem;
+  }
   @media (max-width: 768px) {
     padding: 0 1rem;
   }
 `
 
 const SubSectionTitle = styled.h2`
-  font-size: 0.62rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   font-family: var(--font-mono);
   text-transform: uppercase;
-  margin: 1.5rem 0 0.75rem 0;
+  margin: 1.75rem 0 1rem 0;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -114,9 +120,15 @@ const ExportBtn = styled.button`
 
 const Layout = styled.div`
   display: grid;
-  grid-template-columns: 1fr 340px;
+  /* Side panel: 300px on mid widths, 340px on very wide. Prevents the
+     leaderboard table from getting squeezed below the 9-column threshold
+     where horizontal scroll kicks in. */
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 1rem;
 
+  @media (min-width: 1500px) {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
   }
@@ -204,7 +216,7 @@ export default function WalletTrackerWrapper() {
   }, [fetchLeaderboard])
 
   useEffect(() => {
-    document.title = TAB_TITLES[activeTab] || 'Wallet Tracker | Sonar'
+    document.title = TAB_TITLES[activeTab] || 'Whale Tracker | Sonar'
   }, [activeTab])
 
   const handleSortChange = (newSort) => {

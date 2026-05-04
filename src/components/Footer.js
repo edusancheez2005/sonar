@@ -82,7 +82,57 @@ const BrandColumn = styled(Column)`
     font-size: 0.88rem;
     max-width: 360px;
   }
-`;
+`
+
+const SocialRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    border: 1px solid rgba(34, 211, 238, 0.18);
+    background: rgba(6, 14, 22, 0.6);
+    color: var(--text-secondary);
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease,
+      transform 160ms ease;
+  }
+  a:hover {
+    color: var(--neon-bright);
+    border-color: rgba(34, 211, 238, 0.5);
+    background: rgba(34, 211, 238, 0.08);
+    transform: translateY(-1px);
+  }
+  a svg { margin: 0; display: block; }
+`
+
+const SOCIALS = [
+  {
+    href: 'https://x.com/sonartrackerio',
+    label: 'Sonar on X (Twitter)',
+    Icon: () => (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
+      </svg>
+    ),
+  },
+  {
+    href: 'https://instagram.com/sonartracker.io',
+    label: 'Sonar on Instagram',
+    Icon: () => (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+];
 
 const BottomBar = styled.div`
   max-width: 1200px;
@@ -136,7 +186,20 @@ const Footer = () => {
             Sonar provides real-time cryptocurrency transaction data and analytics 
             to help traders make informed decisions in the volatile crypto market.
           </p>
-
+          <SocialRow>
+            {SOCIALS.map(({ href, label, Icon }) => (
+              <a
+                key={href}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                title={label}
+              >
+                <Icon />
+              </a>
+            ))}
+          </SocialRow>
         </BrandColumn>
         <Column>
           <h3>Platform</h3>

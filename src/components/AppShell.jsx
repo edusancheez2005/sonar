@@ -10,6 +10,7 @@ import { FONT_SANS } from '@/src/styles/fontStacks'
 import Footer from '@/src/components/Footer'
 import TokenSearchField from '@/src/components/nav/TokenSearchField'
 import { isWalletTrackerPath } from '@/src/components/nav/navUtils'
+import TelegramAccessModal from '@/components/sidebar/TelegramAccessModal'
 
 /** Neon cyan chrome — aligned with landing V2Hero / HeroTitle gradients */
 const S = {
@@ -47,6 +48,9 @@ const ChromeHeader = styled.header`
   gap: 0.75rem;
   flex-shrink: 0;
   padding: 0.4rem 1rem 0.55rem 1.1rem;
+  padding-top: max(0.4rem, env(safe-area-inset-top));
+  padding-left: max(1.1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
   border-bottom: 1px solid ${S.border};
   background: ${S.headerBg};
   backdrop-filter: blur(14px);
@@ -54,6 +58,14 @@ const ChromeHeader = styled.header`
   box-shadow: 0 0 24px rgba(34, 211, 238, 0.06);
   position: relative;
   z-index: 200;
+
+  @media (${MQ_NARROW}) {
+    gap: 0.5rem;
+    padding: 0.35rem 0.6rem 0.45rem 0.7rem;
+    padding-top: max(0.35rem, env(safe-area-inset-top));
+    padding-left: max(0.7rem, env(safe-area-inset-left));
+    padding-right: max(0.6rem, env(safe-area-inset-right));
+  }
   &::after {
     content: '';
     position: absolute;
@@ -89,6 +101,12 @@ const LogoMark = styled.div`
       height: 38px;
     }
   }
+  @media (${MQ_NARROW}) {
+    img {
+      height: 26px;
+      max-width: 120px;
+    }
+  }
 `
 
 const HeaderCenter = styled.div`
@@ -105,6 +123,13 @@ const HeaderSearchWrap = styled.div`
   min-width: 0;
   position: relative;
   z-index: 210;
+
+  /* On phones the search dominates the header and crowds the logo +
+     hamburger. Hide it from the chrome and surface it inside the page
+     (every page has its own search bar) — keeps the header tidy. */
+  @media (max-width: 600px) {
+    display: none;
+  }
 `
 
 const HeaderEnd = styled.div`
@@ -203,13 +228,18 @@ const Sidebar = styled.aside`
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(268px, 88vw);
+    width: min(280px, 86vw);
     padding: 0.85rem 0.6rem 1rem;
+    padding-top: max(0.85rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(0.6rem, env(safe-area-inset-left));
     z-index: 100;
     transform: translateX(${({ $open }) => ($open ? '0' : '-100%')});
     box-shadow: ${({ $open }) =>
       $open ? '10px 0 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.12)' : 'none'};
     transition: transform 0.22s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 `
 
@@ -243,7 +273,7 @@ const SidebarFooter = styled.div`
  *   $disabled        → not-allowed cursor + dimmed (Telegram coming soon).
  */
 const FooterRow = styled.button`
-  display: none;
+  display: flex;
   align-items: center;
   gap: 0.6rem;
   width: 100%;
@@ -269,9 +299,6 @@ const FooterRow = styled.button`
     border-color: ${({ $tone }) =>
       $tone === 'danger' ? 'rgba(231, 76, 60, 0.18)' : 'rgba(34, 211, 238, 0.1)'};
     opacity: 1;
-  }
-  @media (min-width: 901px) {
-    display: flex;
   }
   .fr-icon {
     flex-shrink: 0;
@@ -579,6 +606,65 @@ const DisabledRailRow = styled.div`
 
 const itemVariants = { hidden: { opacity: 0, x: -5 }, visible: { opacity: 1, x: 0 } }
 
+/**
+ * Compact social icon strip pinned to the bottom of the sidebar footer.
+ * Always horizontal — even when the rail is collapsed to icon-only — so it
+ * never feels like a stack of separate menu items.
+ *
+ * Hidden labels (visually). Hover lifts and tints cyan to match the rail.
+ */
+const SocialStrip = styled.div`
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.5rem 0.1rem 0.1rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid ${S.border};
+  justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: ${({ $collapsed }) => ($collapsed ? '26px' : '30px')};
+    height: ${({ $collapsed }) => ($collapsed ? '26px' : '30px')};
+    border-radius: 8px;
+    color: ${S.muted};
+    opacity: 0.75;
+    transition: color 160ms ease, background 160ms ease, opacity 160ms ease,
+      transform 160ms ease;
+  }
+  a:hover {
+    color: var(--neon-bright);
+    background: rgba(34, 211, 238, 0.08);
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+  a svg { display: block; }
+`
+
+const SOCIAL_LINKS = [
+  {
+    href: 'https://x.com/sonartrackerio',
+    label: 'Sonar on X (Twitter)',
+    Icon: () => (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
+      </svg>
+    ),
+  },
+  {
+    href: 'https://instagram.com/sonartracker.io',
+    label: 'Sonar on Instagram',
+    Icon: () => (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+]
+
 /** Token mark — outer ring with a centered diamond, à la Nansen "Tokens". */
 function IconDashboard() {
   return (
@@ -837,6 +923,15 @@ export default function AppShell({ children, onLogout }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [railCollapsed, setRailCollapsed] = useState(false)
   const [railPeek, setRailPeek] = useState(false)
+  const [telegramOpen, setTelegramOpen] = useState(false)
+  const [telegramAnchorTop, setTelegramAnchorTop] = useState(200)
+  const telegramBtnRef = useRef(null)
+  /**
+   * Match the popover's actual rendered height (set in TelegramAccessModal).
+   * Card padding (0.7+0.7rem) + header (~32px) + QR wrap (150+16+8) +
+   * handle (~22px) + open btn (~32px) + hint (~18px) ≈ 305.
+   */
+  const TG_POPOVER_H = 310
   const railPeekLeaveTimer = useRef(null)
 
   const readCollapsed = useCallback(() => {
@@ -873,6 +968,22 @@ export default function AppShell({ children, onLogout }) {
     setDrawerOpen(false)
   }, [pathname])
 
+  // Lock body scroll while the mobile drawer is open (prevents
+  // scroll-chaining behind the overlay on iOS) and allow Escape to close.
+  useEffect(() => {
+    if (!drawerOpen) return undefined
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e) => {
+      if (e.key === 'Escape') setDrawerOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [drawerOpen])
+
   useEffect(() => {
     if (!railCollapsed) setRailPeek(false)
   }, [railCollapsed])
@@ -880,6 +991,25 @@ export default function AppShell({ children, onLogout }) {
   useEffect(() => {
     if (isNarrow) setRailPeek(false)
   }, [isNarrow])
+
+  // While the Telegram popover is open, force the rail into peek-expanded
+  // state so its right edge stays at 236px (the popover anchors to that).
+  // Once the popover closes, schedule the normal close so the rail
+  // re-collapses if the cursor isn't over it.
+  useEffect(() => {
+    if (!telegramOpen) return undefined
+    if (!isNarrow && railCollapsed) {
+      clearRailPeekLeaveTimer()
+      setRailPeek(true)
+    }
+    return () => {
+      // After close, fall back to whatever the cursor position dictates.
+      if (!isNarrow && railCollapsed) {
+        clearRailPeekLeaveTimer()
+        railPeekLeaveTimer.current = setTimeout(() => setRailPeek(false), 180)
+      }
+    }
+  }, [telegramOpen, isNarrow, railCollapsed, clearRailPeekLeaveTimer])
 
   const clearRailPeekLeaveTimer = useCallback(() => {
     if (railPeekLeaveTimer.current) {
@@ -889,11 +1019,16 @@ export default function AppShell({ children, onLogout }) {
   }, [])
 
   const scheduleCloseRailPeek = useCallback(() => {
+    // Don't auto-collapse the rail while the Telegram popover is open —
+    // the user's cursor naturally moves from the rail row out into the
+    // popover (Nansen pattern). The popover itself reports hover state
+    // back to us via onPopoverHover.
+    if (telegramOpen) return
     if (!isNarrow && railCollapsed) {
       clearRailPeekLeaveTimer()
       railPeekLeaveTimer.current = setTimeout(() => setRailPeek(false), 180)
     }
-  }, [isNarrow, railCollapsed, clearRailPeekLeaveTimer])
+  }, [isNarrow, railCollapsed, clearRailPeekLeaveTimer, telegramOpen])
 
   const scheduleOpenRailPeek = useCallback(() => {
     if (!isNarrow && railCollapsed) {
@@ -1004,6 +1139,26 @@ export default function AppShell({ children, onLogout }) {
           onMouseLeave={scheduleCloseRailPeek}
         >
           <NavStack>
+            {/**
+             * "Preview" rail entries (entries flagged `soon: true`) are
+             * fully clickable for ALL users, not gated by admin status.
+             *
+             * The page itself decides what to render based on auth:
+             *   - Admins (see `@/app/lib/adminConfig` → `isAdmin(email)`)
+             *     get the real workbench (e.g. `PersonalizeAdmin`).
+             *   - Everyone else gets a public preview component
+             *     (e.g. `PersonalizePreview`) — useful as a marketing
+             *     funnel so prospects can see what's coming.
+             *
+             * The "SOON" badge in the rail signals that the feature isn't
+             * fully GA yet, but the link still navigates so non-admins
+             * land on the preview page.
+             *
+             * ─── WHEN THE FEATURE IS GA FOR EVERYONE ────────────────────
+             * Just remove `soon: true` from the entry in `APP_LINKS`
+             * (top of this file). The badge disappears, behaviour stays
+             * identical otherwise. No other changes needed here.
+             * ──────────────────────────────────────────────────────────*/}
             {APP_LINKS.map(({ href, label, match, Icon, soon }) => (
               <ShellRailItem
                 key={href}
@@ -1044,22 +1199,25 @@ export default function AppShell({ children, onLogout }) {
           </NavStack>
           <SidebarFooter>
             <FooterRow
+              ref={telegramBtnRef}
               type="button"
-              $disabled
-              aria-disabled="true"
-              title="Telegram access — coming soon"
-              aria-label="Telegram access — coming soon"
-              onClick={(e) => e.preventDefault()}
+              title={railIconOnly ? 'Telegram' : undefined}
+              aria-label="Telegram"
+              onClick={() => {
+                setDrawerOpen(false)
+                // Top-align the popover with the row that was clicked.
+                // The clamp on the prop side will shift it UP only by the
+                // exact amount needed if it would otherwise clip the
+                // viewport bottom — never more than that.
+                const r = telegramBtnRef.current?.getBoundingClientRect?.()
+                if (r) setTelegramAnchorTop(Math.round(r.top))
+                setTelegramOpen(true)
+              }}
             >
               <span className="fr-icon" aria-hidden>
                 <IconTelegram />
               </span>
-              {!railIconOnly ? (
-                <>
-                  <span className="fr-label">Telegram access</span>
-                  <span className="fr-badge">Soon</span>
-                </>
-              ) : null}
+              {!railIconOnly ? <span className="fr-label">Telegram</span> : null}
             </FooterRow>
             {FOOTER_LINKS.map(({ href, label, Icon }) => (
               <FooterRow
@@ -1120,6 +1278,21 @@ export default function AppShell({ children, onLogout }) {
                 </FooterRow>
               </>
             ) : null}
+            <SocialStrip $collapsed={railIconOnly}>
+              {SOCIAL_LINKS.map(({ href, label, Icon }) => (
+                <a
+                  key={href}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  title={label}
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  <Icon />
+                </a>
+              ))}
+            </SocialStrip>
             <CollapseRailRow
               type="button"
               aria-expanded={!isNarrow ? !railCollapsed : undefined}
@@ -1159,6 +1332,35 @@ export default function AppShell({ children, onLogout }) {
           <Footer />
         </MainColumn>
       </BodyRow>
+      <TelegramAccessModal
+        open={telegramOpen}
+        onClose={() => setTelegramOpen(false)}
+        // Hug the right edge of whatever the rail is *visually* showing.
+        // While the popover is open we lock the rail to peek=expanded
+        // (236px), so this should reflect that. On mobile both args are
+        // ignored — popover renders as a centered modal.
+        anchorLeft={(!isNarrow && (!railCollapsed || railPeek) ? 236 : 64) + 12}
+        // Bottom of popover ≈ bottom of the Telegram row. Clamp so the
+        // top never goes off-screen and the bottom never exceeds vh-12.
+        anchorTop={(() => {
+          const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+          const top = telegramAnchorTop
+          return Math.max(12, Math.min(top, vh - TG_POPOVER_H - 12))
+        })()}
+        onPopoverHover={(over) => {
+          // Cursor entered the popover — keep the rail expanded.
+          // Cursor left the popover — schedule the rail to collapse if the
+          // user has also left the rail itself. We use the existing
+          // schedule helpers so the timing matches everywhere else.
+          if (over) {
+            clearRailPeekLeaveTimer()
+            if (!isNarrow && railCollapsed) setRailPeek(true)
+          } else {
+            // Modal still open → keep rail expanded; the open-effect lock
+            // above takes care of restore on close.
+          }
+        }}
+      />
     </Shell>
   )
 }

@@ -25,9 +25,9 @@ export default function WalletTrackerHub({ featuredFigures = [], topPerformers =
     <div
       style={{
         width: '100%',
-        maxWidth: '1400px',
+        maxWidth: '1680px',
         margin: '0 auto',
-        padding: '1.5rem 2rem 2rem',
+        padding: '1.5rem 1.5rem 2rem',
         color: 'var(--text-primary)',
       }}
       className="sonar-wt-hub"
@@ -40,6 +40,9 @@ export default function WalletTrackerHub({ featuredFigures = [], topPerformers =
       <WalletWatchlistStrip />
       <AlertBanner />
       <style>{`
+        @media (min-width: 1280px) {
+          .sonar-wt-hub { padding: 1.5rem 2rem 2rem; }
+        }
         @media (max-width: 768px) {
           .sonar-wt-hub { padding: 1rem 1rem 1.5rem; }
         }
@@ -65,7 +68,7 @@ function HubHeader() {
           letterSpacing: '-0.01em',
         }}
       >
-        Wallet Tracker
+        Whale Tracker
       </h1>
       <div
         style={{

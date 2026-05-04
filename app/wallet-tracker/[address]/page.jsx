@@ -28,7 +28,7 @@ export default async function WalletProfilePage({ params }) {
                   '@type': 'BreadcrumbList',
                   itemListElement: [
                     { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.sonartracker.io/' },
-                    { '@type': 'ListItem', position: 2, name: 'Wallet Tracker', item: 'https://www.sonartracker.io/wallet-tracker' },
+                    { '@type': 'ListItem', position: 2, name: 'Whale Tracker', item: 'https://www.sonartracker.io/wallet-tracker' },
                     { '@type': 'ListItem', position: 3, name: address.slice(0, 10) + '...', item: `https://www.sonartracker.io/wallet-tracker/${address}` },
                   ],
                 },

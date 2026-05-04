@@ -71,6 +71,76 @@ const AddressLink = styled(Link)`
   }
 `
 
+const AddressCell = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+`
+
+const CopyBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  border-radius: 5px;
+  background: rgba(6, 14, 22, 0.5);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+
+  &:hover {
+    color: var(--primary);
+    border-color: rgba(34, 211, 238, 0.5);
+    background: rgba(34, 211, 238, 0.08);
+  }
+
+  &[data-copied='true'] {
+    color: #5dd5ed;
+    border-color: rgba(93, 213, 237, 0.6);
+  }
+
+  svg { display: block; }
+`
+
+function CopyAddressButton({ address }) {
+  const [copied, setCopied] = useState(false)
+  const onCopy = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(address)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1200)
+    } catch {
+      // ignore
+    }
+  }
+  return (
+    <CopyBtn
+      type="button"
+      onClick={onCopy}
+      data-copied={copied ? 'true' : 'false'}
+      aria-label={copied ? 'Copied' : 'Copy address'}
+      title={copied ? 'Copied!' : 'Copy address'}
+    >
+      {copied ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </CopyBtn>
+  )
+}
+
 const EntityName = styled.span`
   display: block;
   font-size: 0.8rem;
@@ -241,9 +311,12 @@ export default function LeaderboardTable({ data, sortBy, sortAsc, onSortChange, 
               <tr key={wallet.address + (wallet.chain || '')}>
                 <td><Rank>{rankOffset + i + 1}</Rank></td>
                 <td>
-                  <AddressLink href={`/wallet-tracker/${encodeURIComponent(wallet.address)}`}>
-                    {shortenAddress(wallet.address)}
-                  </AddressLink>
+                  <AddressCell>
+                    <AddressLink href={`/wallet-tracker/${encodeURIComponent(wallet.address)}`}>
+                      {shortenAddress(wallet.address)}
+                    </AddressLink>
+                    <CopyAddressButton address={wallet.address} />
+                  </AddressCell>
                   {wallet.entity_name && <EntityName>{wallet.entity_name}</EntityName>}
                 </td>
                 <td>{wallet.chain && <ChainBadge>{wallet.chain}</ChainBadge>}</td>

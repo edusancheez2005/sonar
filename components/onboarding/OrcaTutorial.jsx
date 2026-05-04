@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -169,6 +169,8 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
   const [rect, setRect] = useState(null)
   const [mounted, setMounted] = useState(false)
   const [done, setDone] = useState(false)
+  const tipRef = useRef(null)
+  const [tipSize, setTipSize] = useState(null) // { w, h } from real DOM
 
   const cur = STEPS[step]
 
@@ -179,29 +181,50 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
     if (isOpen) { setStep(0); setDone(false); setRect(null) }
   }, [isOpen])
 
-  // Measure target element & keep in sync
+  // Strategy: snap, don't smooth-scroll. The previous smooth-scroll +
+  // dark-overlay combo made it feel like the spotlight was "hunting" the
+  // target across the page. Now we:
+  //   1. If the target is already comfortably in view, just measure it.
+  //   2. Otherwise, do an INSTANT scroll (no animation), then measure on
+  //      the next frame. The spotlight appears directly where it belongs.
+  //   3. Re-measure on resize only (no scroll listener — that was the
+  //      original source of jitter).
   useEffect(() => {
     if (!isOpen || done) return
     const el = refs?.[cur?.target]?.current
     if (!el) { setRect(null); return }
+
+    setTipSize(null) // force re-measure for the new step's content
 
     const measure = () => {
       const r = el.getBoundingClientRect()
       setRect({ x: r.left - PAD, y: r.top - PAD, w: r.width + PAD * 2, h: r.height + PAD * 2 })
     }
 
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    const t1 = setTimeout(measure, 400)
-    const t2 = setTimeout(measure, 700)
+    // Is the target already comfortably visible? If yes — no scroll, no
+    // hide-then-show flicker. Just measure synchronously.
+    const r = el.getBoundingClientRect()
+    const vh = window.innerHeight
+    const safeTop = vh * 0.1
+    const safeBottom = vh * 0.9
+    const fullyVisible = r.top >= safeTop && r.bottom <= safeBottom
 
-    const sync = () => requestAnimationFrame(measure)
-    window.addEventListener('resize', sync)
-    window.addEventListener('scroll', sync, true)
+    let rafId = 0
+    if (fullyVisible) {
+      measure()
+    } else {
+      setRect(null) // briefly hide spotlight during the snap to avoid a jump
+      // Instant scroll — `behavior: 'auto'` snaps. Then measure next frame.
+      el.scrollIntoView({ behavior: 'auto', block: 'center' })
+      rafId = requestAnimationFrame(() => requestAnimationFrame(measure))
+    }
+
+    const onResize = () => requestAnimationFrame(measure)
+    window.addEventListener('resize', onResize)
 
     return () => {
-      clearTimeout(t1); clearTimeout(t2)
-      window.removeEventListener('resize', sync)
-      window.removeEventListener('scroll', sync, true)
+      if (rafId) cancelAnimationFrame(rafId)
+      window.removeEventListener('resize', onResize)
     }
   }, [step, isOpen, done, refs, cur?.target])
 
@@ -215,15 +238,55 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
     else setDone(true)
   }, [step])
 
-  // Tooltip placement relative to spotlight
-  const tipStyle = useMemo(() => {
-    if (!rect) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
-    const cx = rect.x + rect.w / 2
-    if (cur.placement === 'bottom') {
-      return { top: rect.y + rect.h + GAP, left: cx, transform: 'translateX(-50%)' }
+  // Re-measure the tip whenever step/rect/viewport changes. We position
+  // using the REAL rendered tip dimensions, not estimates — that's what
+  // pushed the Skip/Next row off-screen previously.
+  useLayoutEffect(() => {
+    if (!rect || !tipRef.current) return
+    const r = tipRef.current.getBoundingClientRect()
+    if (!tipSize || Math.abs(tipSize.w - r.width) > 0.5 || Math.abs(tipSize.h - r.height) > 0.5) {
+      setTipSize({ w: r.width, h: r.height })
     }
-    return { bottom: window.innerHeight - rect.y + GAP, left: cx, transform: 'translateX(-50%)' }
-  }, [rect, cur?.placement])
+  }, [rect, step, tipSize])
+
+  // First pass renders the tip off-screen but visible so we can measure it.
+  // Second pass uses the measured size for accurate viewport clamping.
+  const tipStyle = useMemo(() => {
+    if (!rect) return null // signal: don't render tip yet
+    const M = 16
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    if (!tipSize) {
+      // hidden first paint — let useLayoutEffect measure it
+      return {
+        top: -9999,
+        left: -9999,
+        transform: 'none',
+        visibility: 'hidden',
+        pointerEvents: 'none',
+      }
+    }
+
+    const { w: tipW, h: tipH } = tipSize
+    const cx = rect.x + rect.w / 2
+
+    // Choose vertical side with auto-flip
+    const roomBelow = vh - (rect.y + rect.h) - GAP - M
+    const roomAbove = rect.y - GAP - M
+    let placeBelow = cur.placement === 'bottom'
+    if (placeBelow && roomBelow < tipH && roomAbove > roomBelow) placeBelow = false
+    else if (!placeBelow && roomAbove < tipH && roomBelow > roomAbove) placeBelow = true
+
+    const top = placeBelow
+      ? Math.min(Math.max(M, rect.y + rect.h + GAP), vh - tipH - M)
+      : Math.max(M, rect.y - GAP - tipH)
+
+    // Horizontal: center on target, then clamp so the tip fits fully on screen
+    const left = Math.max(M, Math.min(vw - tipW - M, cx - tipW / 2))
+
+    return { top, left, transform: 'none' }
+  }, [rect, tipSize, cur?.placement])
 
   if (!mounted || !isOpen) return null
 
@@ -236,6 +299,7 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
             <rect width="100%" height="100%" fill="white" />
             {rect && !done && (
               <motion.rect
+                initial={false}
                 animate={{ x: rect.x, y: rect.y, width: rect.w, height: rect.h }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 rx={R} ry={R}
@@ -247,6 +311,7 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
         <rect width="100%" height="100%" fill="rgba(8, 15, 24, 0.72)" mask="url(#sonar-onboard-mask)" />
         {rect && !done && (
           <motion.rect
+            initial={false}
             animate={{ x: rect.x, y: rect.y, width: rect.w, height: rect.h }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             rx={R} ry={R}
@@ -286,14 +351,16 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
         </FinalWrap>
       )}
 
-      {/* Step tooltip */}
-      {!done && (
+      {/* Step tooltip — only render once we've measured the spotlight,
+          otherwise the tip flashes at viewport-center then jumps. */}
+      {!done && tipStyle && (
         <AnimatePresence mode="wait">
           <Tip
             key={step}
+            ref={tipRef}
             style={tipStyle}
             initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: tipSize ? 1 : 0, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
