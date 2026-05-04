@@ -38,7 +38,10 @@ const DEFAULT_SORT = 'featured'
 // wallets aren't publicly attributable; those rows are visible to
 // admins via /admin/figures/backfill but should not surface here.
 async function fetchApprovedFigures() {
-  const { data, error } = await supabaseAdmin
+  // Use the fresh client so newly-seeded figures appear immediately.
+  // The cacheable supabaseAdmin made the directory show stale rows
+  // for hours after a successful seed/sync, even with `force-dynamic`.
+  const { data, error } = await supabaseAdminFresh
     .from('curated_entities')
     .select(
       'slug, display_name, description, category, avatar_url, twitter_handle, is_featured, addresses, created_at'
