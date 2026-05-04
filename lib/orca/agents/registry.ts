@@ -116,8 +116,10 @@ export async function runAgent<O>({
       lastError = isAbort
         ? `agent ${name}: timeout after ${timeoutMs}ms`
         : `agent ${name}: ${msg || 'unknown error'}`
-      // Only retry transient failures.
-      if (attempt === 0 && (isAbort || /5\d\d|network|fetch/i.test(msg))) {
+      // Retry ONLY transient network/5xx failures. Timeout retries never help
+      // (xAI inference latency is the bottleneck — a retry will time out the
+      // same way) and they double the wall-clock budget.
+      if (attempt === 0 && !isAbort && /5\d\d|network|fetch failed|ECONNRESET/i.test(msg)) {
         continue
       }
       break
