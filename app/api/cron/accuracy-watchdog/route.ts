@@ -36,6 +36,22 @@ const ACCURACY_DROP_THRESHOLD_PP = 10
 // 2026-05-04 hardening pass.
 const DISTRIBUTION_SHIFT_THRESHOLD_PCT = 25
 
+// ─── Statistical detectors (added 2026-05-04, post-Stage 4) ──────────────
+// The fixed pp thresholds above are belt-and-suspenders for sudden cliffs.
+// The z-score + CUSUM checks below catch slow drift that wouldn't trip the
+// pp gates on any single day but compounds over a week.
+//
+// Both detectors warm up only once we have enough baseline samples to
+// compute a meaningful mean/std (MIN_BASELINE_SAMPLES). With the cron
+// running every 6h that's ~3 days of history — short enough to be useful,
+// long enough to avoid alerting on the first real-data point.
+const BASELINE_LOOKBACK_DAYS = 30
+const MIN_BASELINE_SAMPLES = 12  // ~3 days @ 6h/sample
+const Z_SCORE_ALERT_THRESHOLD = -2.0  // today's accuracy >2σ below trailing mean
+const CUSUM_K = 0.5  // "slack" in σ units (only count deviations beyond 0.5σ)
+const CUSUM_H = 5.0  // alert when |cumulative deviation| crosses 5σ
+const CUSUM_LOOKBACK = 56  // ~14 days @ 6h/sample
+
 function shareOf(rows, type) {
   if (!rows.length) return 0
   let n = 0
@@ -62,6 +78,37 @@ function accuracyOf(rows) {
   if (!directional.length) return { pct: 0, n: 0 }
   const correct = directional.filter(r => r.correct === true).length
   return { pct: (correct / directional.length) * 100, n: directional.length }
+}
+
+/**
+ * Sample mean + sample standard deviation (n-1 denominator).
+ * Returns { mean: 0, std: 0 } for n<2 — caller is expected to gate on
+ * sample count separately.
+ */
+function meanStd(xs: number[]): { mean: number; std: number } {
+  if (xs.length < 2) return { mean: xs[0] ?? 0, std: 0 }
+  const mean = xs.reduce((a, b) => a + b, 0) / xs.length
+  const variance = xs.reduce((a, b) => a + (b - mean) ** 2, 0) / (xs.length - 1)
+  return { mean, std: Math.sqrt(variance) }
+}
+
+/**
+ * Two-sided CUSUM (Page 1954). Tracks cumulative sums of standardised
+ * deviations from `mean`, with a `k`-sigma slack zone that prevents random
+ * walk drift. Returns the final S+ and S− at the end of the window; either
+ * crossing `h` is an alert. We only care about S− (decreasing accuracy)
+ * for the watchdog but compute both for diagnostic logging.
+ */
+function cusum(xs: number[], mean: number, std: number, k = CUSUM_K) {
+  if (std <= 0 || xs.length === 0) return { sPlus: 0, sMinus: 0 }
+  let sPlus = 0
+  let sMinus = 0
+  for (const x of xs) {
+    const z = (x - mean) / std
+    sPlus = Math.max(0, sPlus + z - k)
+    sMinus = Math.min(0, sMinus + z + k)
+  }
+  return { sPlus, sMinus }
 }
 
 export async function GET(req) {
@@ -112,8 +159,39 @@ export async function GET(req) {
       Math.abs(dist1d.neutral - dist7d.neutral),
     ) * 100
 
+    // ─── Statistical detectors ───────────────────────────────────────────
+    // Pull the trailing 30 days of baseline rows (one per 6h ≈ 120 max) to
+    // compute the rolling mean/std of accuracy_pct. We exclude rows where
+    // sample_size was 0 (the cron still records an empty row to keep the
+    // cadence regular but their accuracy_pct=0 would poison the mean).
+    const baselineSince = new Date(now - BASELINE_LOOKBACK_DAYS * 24 * 3600 * 1000).toISOString()
+    const { data: baselineRows } = await supabaseAdmin
+      .from('accuracy_baseline')
+      .select('accuracy_pct, sample_size, measured_at')
+      .gte('measured_at', baselineSince)
+      .order('measured_at', { ascending: true })
+      .limit(500)
+
+    const validBaseline = (baselineRows || []).filter(r => (r.sample_size || 0) >= 5)
+    const accSeries: number[] = validBaseline.map(r => Number(r.accuracy_pct))
+    let zScore: number | null = null
+    let cusumMinus: number | null = null
+    let baselineMean = 0
+    let baselineStd = 0
+    if (accSeries.length >= MIN_BASELINE_SAMPLES) {
+      const stats = meanStd(accSeries)
+      baselineMean = stats.mean
+      baselineStd = stats.std
+      if (baselineStd > 0) {
+        zScore = (acc1d.pct - baselineMean) / baselineStd
+        const tail = accSeries.slice(-CUSUM_LOOKBACK)
+        cusumMinus = cusum(tail, baselineMean, baselineStd).sMinus
+      }
+    }
+
     // Decide alert level + reason. Accuracy drop dominates (it's the
-    // user-visible failure); distribution shift escalates alongside.
+    // user-visible failure); distribution shift escalates alongside; the
+    // statistical detectors catch slow drift the pp rules would miss.
     let level: 'critical' | 'warn' | null = null
     const reasons: string[] = []
     if (acc7d.n >= 20 && accDelta < -ACCURACY_DROP_THRESHOLD_PP) {
@@ -123,6 +201,20 @@ export async function GET(req) {
     if (rows7d && rows7d.length >= 50 && distDelta > DISTRIBUTION_SHIFT_THRESHOLD_PCT) {
       level = level || 'warn'
       reasons.push(`distribution_shift ${distDelta.toFixed(1)}pp`)
+    }
+    if (zScore !== null && zScore < Z_SCORE_ALERT_THRESHOLD) {
+      // z below −2 with insufficient pp drop is the slow-drift signal: today
+      // is materially worse than the last 30 days even though the 24h-vs-7d
+      // delta hasn't tripped. Promote to critical only if it's also below
+      // −3σ (extreme), otherwise warn.
+      level = zScore < -3 ? 'critical' : (level || 'warn')
+      reasons.push(`z_score ${zScore.toFixed(2)}σ below 30d mean (μ=${baselineMean.toFixed(1)}%, σ=${baselineStd.toFixed(2)})`)
+    }
+    if (cusumMinus !== null && cusumMinus < -CUSUM_H) {
+      // CUSUM crossing means accumulated drift over the last ~14 days is
+      // beyond what random noise explains. Always at least warn.
+      level = level || 'warn'
+      reasons.push(`cusum_drift ${cusumMinus.toFixed(2)} (threshold −${CUSUM_H})`)
     }
     const reasonText = reasons.join(' | ')
 
@@ -195,6 +287,14 @@ export async function GET(req) {
       distribution_24h: dist1d,
       distribution_7d: dist7d,
       distribution_max_shift_pp: Number(distDelta.toFixed(2)),
+      // Statistical detectors — null when warmup hasn't completed.
+      baseline: {
+        samples: accSeries.length,
+        mean_pct: Number(baselineMean.toFixed(2)),
+        std_pct: Number(baselineStd.toFixed(2)),
+        z_score: zScore === null ? null : Number(zScore.toFixed(2)),
+        cusum_minus: cusumMinus === null ? null : Number(cusumMinus.toFixed(2)),
+      },
       webhook: webhookStatus,
     })
   } catch (err) {

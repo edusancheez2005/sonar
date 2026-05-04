@@ -131,6 +131,79 @@ const baseInputs = [
   },
 ]
 
+// Production token universe (mirrors ALWAYS_INCLUDE in compute-signals).
+// 30 symbols × 3 calibration scenarios = 90 deterministic prod-coverage cases.
+// Combined with the 5 edge-case base inputs above, the golden file pins
+// engine behaviour across every token we actually trade signals on.
+const PROD_TOKENS = [
+  'BTC', 'ETH', 'SOL', 'BNB', 'LINK', 'UNI', 'AAVE', 'DOGE',
+  'ADA', 'AVAX', 'DOT', 'POL', 'ARB', 'OP', 'SUI', 'NEAR',
+  'PEPE', 'SHIB', 'WBTC', 'WETH', 'INJ', 'FET', 'RENDER',
+  'LDO', 'MKR', 'CRV', 'COMP', 'SNX', 'GRT', 'ATOM',
+]
+
+// Per-scenario calibration override. Each token runs through ALL THREE so
+// the fixture proves the resolution chain (kill_switch → calibration →
+// snapshot → default) holds regardless of token symbol.
+const CAL_SCENARIOS = [
+  { id: 'no_overrides', cal: null, snap: null },
+  {
+    id: 'calibration_inverts',
+    cal: { signMultiplier: -1, confidenceScore: 70, ic: -0.22, nOutcomes: 120 },
+    snap: null,
+  },
+  {
+    id: 'snapshot_mutes',
+    cal: null,
+    snap: { signMultiplier: 0, confidenceScore: 80, ic: 0.0, nOutcomes: 200 },
+  },
+]
+
+// Mulberry32 PRNG: tiny, deterministic, widely cited. We need reproducible
+// "realistic-looking" inputs without bringing in a dep.
+function mulberry32(seed) {
+  let t = seed >>> 0
+  return function () {
+    t = (t + 0x6D2B79F5) >>> 0
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// Deterministic prod-token input. Seed is derived from token symbol so
+// regenerating from a clean checkout produces byte-identical fixtures.
+function buildProdInput(token, scenario) {
+  let seed = 0
+  for (let i = 0; i < token.length; i++) seed = (seed * 31 + token.charCodeAt(i)) >>> 0
+  const rnd = mulberry32(seed)
+  const buys = 5 + Math.floor(rnd() * 30)
+  const sells = 5 + Math.floor(rnd() * 30)
+  const change = (rnd() - 0.5) * 10
+  return {
+    tokenSymbol: token,
+    transactions: whaleSet({ buys, sells }),
+    priceChanges: {
+      change_1h: change * 0.1,
+      change_6h: change * 0.4,
+      change_24h: change,
+      change_7d: change * 1.8,
+      change_30d: change * 3.2,
+    },
+    volumeData: {
+      volume_24h: 1e8 * (1 + rnd() * 100),
+      avg_volume_7d: 1e8 * (1 + rnd() * 80),
+      market_cap: 1e9 * (1 + rnd() * 500),
+    },
+    sentimentData: { score: (rnd() - 0.5) * 2, count: 50 + Math.floor(rnd() * 200) },
+    socialData: null, communityVotes: null, devActivity: null,
+    technicalSignals: null, derivativesData: null,
+    calibration: scenario.cal,
+    snapshot: scenario.snap,
+    nowMs: NOW_MS,
+  }
+}
+
 function main() {
   const cases = []
   for (const c of baseInputs) {
@@ -147,6 +220,25 @@ function main() {
         sign_decision: out.sign_decision,
       },
     })
+  }
+  // 30 × 3 prod-coverage matrix.
+  for (const token of PROD_TOKENS) {
+    for (const scenario of CAL_SCENARIOS) {
+      const input = buildProdInput(token, scenario)
+      const out = computeUnifiedSignal(input)
+      cases.push({
+        name: `PROD_${token}_${scenario.id}`,
+        input,
+        expected: {
+          signal: out.signal,
+          score: out.score,
+          confidence: out.confidence,
+          rawScore: out.rawScore,
+          timeframe: out.timeframe,
+          sign_decision: out.sign_decision,
+        },
+      })
+    }
   }
   fs.mkdirSync(path.dirname(FIXTURE_PATH), { recursive: true })
   fs.writeFileSync(
