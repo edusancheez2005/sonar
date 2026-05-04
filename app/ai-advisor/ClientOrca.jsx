@@ -1049,7 +1049,7 @@ export default function ClientOrca() {
                               fontSize: '0.6rem',
                               lineHeight: 1.45,
                               color: colors.textMuted,
-                              fontFamily: SANS_FONT,
+                              fontFamily: FONT_SANS,
                               fontStyle: 'italic',
                               fontWeight: 400,
                               opacity: 0.55,
