@@ -185,6 +185,8 @@ export default function TrendingPage() {
   const [sentimentSort, setSentimentSort] = useState('galaxy_score')
   const [sentimentCoins, setSentimentCoins] = useState([])
   const [sentimentLoading, setSentimentLoading] = useState(false)
+  const [sentimentStatus, setSentimentStatus] = useState(null) // {status, message?, stale_reason?}
+  const [categoryStatus, setCategoryStatus] = useState(null)
 
   useEffect(() => {
     async function checkPremium() {
@@ -234,9 +236,11 @@ export default function TrendingPage() {
         if (res.ok) {
           const json = await res.json()
           setCategoryTopics(json.topics || [])
+          setCategoryStatus({ status: json.status, message: json.message, stale_reason: json.stale_reason })
         }
       } catch (err) {
         console.error('Category fetch error:', err)
+        setCategoryStatus({ status: 'upstream_error', message: err?.message || 'fetch failed' })
       } finally {
         setCategoryLoading(false)
       }
@@ -253,10 +257,21 @@ export default function TrendingPage() {
         const res = await fetch(`/api/social/trending-coins?sort=${sentimentSort}&limit=20`)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const json = await res.json()
-        if (!cancelled) setSentimentCoins(json.coins || [])
+        if (!cancelled) {
+          setSentimentCoins(json.coins || [])
+          setSentimentStatus({
+            status: json.status,
+            message: json.message,
+            stale_reason: json.stale_reason,
+            stale_age_seconds: json.stale_age_seconds,
+          })
+        }
       } catch (err) {
         console.error('Sentiment fetch error:', err)
-        if (!cancelled) setSentimentCoins([])
+        if (!cancelled) {
+          setSentimentCoins([])
+          setSentimentStatus({ status: 'upstream_error', message: err?.message || 'fetch failed' })
+        }
       } finally {
         if (!cancelled) setSentimentLoading(false)
       }
@@ -618,8 +633,28 @@ export default function TrendingPage() {
                 )}
 
                 {!sentimentLoading && sentimentCoins.length === 0 && (
-                  <div style={{ padding: '2rem', textAlign: 'center', fontFamily: FONT_MONO, fontSize: '0.7rem', color: COLORS.textMuted }}>
-                    No social-sentiment data right now (LunarCrush quota or upstream issue).
+                  <div style={{ padding: '2rem', textAlign: 'center', fontFamily: FONT_MONO, fontSize: '0.7rem', color: COLORS.textMuted, lineHeight: 1.6 }}>
+                    {sentimentStatus?.status === 'quota_exhausted' ? (
+                      <>
+                        <div style={{ color: COLORS.amber, marginBottom: '0.4rem' }}>⚠ LunarCrush daily quota exhausted</div>
+                        <div>Resets at 00:00 UTC. Cached results will appear automatically once upstream is healthy again.</div>
+                      </>
+                    ) : sentimentStatus?.status === 'unconfigured' ? (
+                      <div style={{ color: COLORS.amber }}>⚠ LUNARCRUSH_API_KEY not configured on the server.</div>
+                    ) : sentimentStatus?.status === 'upstream_error' ? (
+                      <>
+                        <div style={{ color: COLORS.amber, marginBottom: '0.4rem' }}>⚠ LunarCrush upstream error</div>
+                        <div style={{ fontSize: '0.65rem' }}>{sentimentStatus.message}</div>
+                      </>
+                    ) : (
+                      <div>No social-sentiment data right now.</div>
+                    )}
+                  </div>
+                )}
+
+                {!sentimentLoading && sentimentCoins.length > 0 && sentimentStatus?.status === 'stale' && (
+                  <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: 4, background: 'rgba(255, 171, 0, 0.06)', border: `1px solid rgba(255, 171, 0, 0.2)`, fontFamily: FONT_MONO, fontSize: '0.62rem', color: COLORS.amber }}>
+                    ⚠ Showing cached data ({Math.round((sentimentStatus.stale_age_seconds || 0) / 60)} min old) — {sentimentStatus.stale_reason}
                   </div>
                 )}
               </Panel>
@@ -689,7 +724,21 @@ export default function TrendingPage() {
                   </Grid>
                 )}
                 {!categoryLoading && categoryTopics.length === 0 && (
-                  <div style={{ padding: '2rem', textAlign: 'center', fontFamily: FONT_MONO, fontSize: '0.7rem', color: COLORS.textMuted }}>No data for {activeCategory}</div>
+                  <div style={{ padding: '2rem', textAlign: 'center', fontFamily: FONT_MONO, fontSize: '0.7rem', color: COLORS.textMuted, lineHeight: 1.6 }}>
+                    {categoryStatus?.status === 'quota_exhausted' ? (
+                      <>
+                        <div style={{ color: COLORS.amber, marginBottom: '0.4rem' }}>⚠ LunarCrush daily quota exhausted</div>
+                        <div>Resets at 00:00 UTC.</div>
+                      </>
+                    ) : categoryStatus?.status === 'upstream_error' ? (
+                      <>
+                        <div style={{ color: COLORS.amber, marginBottom: '0.4rem' }}>⚠ Upstream error</div>
+                        <div style={{ fontSize: '0.65rem' }}>{categoryStatus.message}</div>
+                      </>
+                    ) : (
+                      <div>No data for {activeCategory}</div>
+                    )}
+                  </div>
                 )}
               </Panel>
             </>

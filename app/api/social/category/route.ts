@@ -41,8 +41,30 @@ export async function GET(request: NextRequest) {
     )
 
     if (!res.ok) {
-      console.error(`LunarCrush category API error: ${res.status}`)
-      return NextResponse.json({ topics: [], category })
+      const body = await res.text().catch(() => '')
+      const isQuota = res.status === 429 || /rate limit|quota/i.test(body)
+      const isDaily = /daily/i.test(body)
+      console.error(`LunarCrush category API error: ${res.status} ${body.slice(0, 200)}`)
+      // Serve stale cache up to 24h if upstream is broken/quota-limited.
+      const stale = cache.get(cacheKey)
+      if (stale && Date.now() - stale.ts < 24 * 60 * 60 * 1000) {
+        return NextResponse.json({
+          ...stale.data,
+          status: 'stale',
+          stale_reason: isQuota
+            ? `LunarCrush ${isDaily ? 'daily' : 'minute'} quota exhausted`
+            : `LunarCrush ${res.status}`,
+          stale_age_seconds: Math.round((Date.now() - stale.ts) / 1000),
+        })
+      }
+      return NextResponse.json({
+        status: isQuota ? 'quota_exhausted' : 'upstream_error',
+        message: isQuota
+          ? `LunarCrush ${isDaily ? 'daily' : 'per-minute'} quota exhausted. Resets at 00:00 UTC.`
+          : `LunarCrush returned ${res.status}.`,
+        category,
+        topics: [],
+      })
     }
 
     const json = await res.json()
@@ -61,7 +83,7 @@ export async function GET(request: NextRequest) {
       categories: t.categories || [],
     }))
 
-    const response = { category, topics, count: topics.length }
+    const response = { status: 'ok', category, topics, count: topics.length }
 
     cache.set(cacheKey, { data: response, ts: Date.now() })
 
