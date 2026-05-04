@@ -1,6 +1,7 @@
 import React from 'react'
 import NewsTerminal from './NewsTerminal'
 import AuthGuard from '@/app/components/AuthGuard'
+import { createClient } from '@supabase/supabase-js'
 
 export const metadata = {
   title: 'News Terminal — Real-Time Crypto Intelligence',
@@ -36,8 +37,54 @@ export default async function NewsPage() {
     }
   }
   try {
-    // 1) Try NewsAPI.org (Existing News API)
-    if (NEWS_KEY) {
+    // 0) PRIMARY: LunarCrush news from our Supabase ingestion (we pay for it!)
+    //    Pull last 7 days, ordered by published_at desc, deduped by url.
+    try {
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+      const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, { auth: { persistSession: false } })
+        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        const { data: lcRows } = await supabase
+          .from('news_items')
+          .select('id, title, url, published_at, source, content, sentiment_raw, ticker, metadata')
+          .gte('published_at', since)
+          .neq('title', 'Untitled')
+          .not('title', 'is', null)
+          .not('url', 'is', null)
+          .order('published_at', { ascending: false })
+          .limit(150)
+        if (Array.isArray(lcRows) && lcRows.length > 0) {
+          const seen = new Set()
+          const lcMapped = []
+          for (const row of lcRows) {
+            if (!row.url || seen.has(row.url)) continue
+            if (domainBlocked(row.url)) continue
+            seen.add(row.url)
+            const tickers = row.ticker ? [{ code: String(row.ticker).toUpperCase(), title: '' }] : extractTokens(`${row.title} ${row.content || ''}`)
+            if (!tickers.length) continue
+            lcMapped.push({
+              id: row.id || row.url,
+              title: row.title,
+              description: row.content || '',
+              published_at: row.published_at,
+              source: row.source || 'LunarCrush',
+              url: row.url,
+              image: '',
+              instruments: tickers,
+              kind: 'news',
+              sentiment_llm: typeof row.sentiment_raw === 'number' ? row.sentiment_raw : null,
+            })
+          }
+          initialNews = lcMapped
+        }
+      }
+    } catch (e) {
+      // Non-fatal: fall through to NewsAPI / CryptoPanic.
+    }
+
+    // 1) Fallback: NewsAPI.org (Existing News API)
+    if (initialNews.length === 0 && NEWS_KEY) {
       try {
         const q = encodeURIComponent('(crypto OR bitcoin OR ethereum OR blockchain)')
         const newsUrl = `https://newsapi.org/v2/everything?language=en&sortBy=publishedAt&pageSize=50&q=${q}`

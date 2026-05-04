@@ -10,50 +10,19 @@ import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 export const dynamic = 'force-dynamic'
 
-// Top 100+ crypto tickers to track (prioritizing ERC-20 tokens)
+// Top 30 tickers ONLY — keeps us safely inside LunarCrush daily quota
+// (each ticker = 1 LC API call per run; 30 tickers × ~6 runs/day = 180 LC calls
+// plus 4 category calls/run = 24/day → ~204/day, well under typical $79/mo quotas).
+// Rotation order matters: most-traded / most-newsy first so a partial run still has signal.
 const TOP_TICKERS = [
-  // Major Layer 1s
-  'BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'AVAX', 'DOT', 'MATIC', 'TRX',
-  'ATOM', 'NEAR', 'ALGO', 'VET', 'FIL', 'APT', 'HBAR', 'STX', 'INJ', 'FTM',
-  'ETC', 'XLM', 'FLOW', 'ICP', 'THETA', 'XTZ', 'EOS', 'KAS', 'ROSE', 'MINA',
-  
-  // Stablecoins (for reference)
-  'USDT', 'USDC', 'DAI', 'BUSD', 'TUSD',
-  
-  // Major ERC-20 DeFi Tokens
-  'UNI', 'LINK', 'AAVE', 'MKR', 'SNX', 'CRV', 'COMP', 'YFI', 'SUSHI', 'BAL',
-  '1INCH', 'LDO', 'LIDO', 'FXS', 'CVX', 'RPL', 'DYDX', 'GMX', 'PERP', 'PENDLE',
-  
-  // Layer 2s & Scaling
-  'ARB', 'OP', 'IMX', 'LRC', 'STRK', 'METIS', 'BOBA',
-  
-  // Meme Coins (ERC-20 & others)
-  'DOGE', 'SHIB', 'PEPE', 'FLOKI', 'BONK', 'WIF', 'MEME', 'DEGEN', 'WOJAK',
-  'ELON', 'AKITA', 'KISHU', 'BABYDOGE', 'SAMO', 'MYRO',
-  
-  // Gaming & Metaverse (mostly ERC-20)
-  'SAND', 'MANA', 'AXS', 'GALA', 'ENJ', 'IMX', 'ILV', 'ALICE', 'TLM', 'YGG',
-  'PRIME', 'BIGTIME', 'BEAM', 'RON', 'MAGIC', 'PORTAL',
-  
-  // AI & Data (ERC-20)
-  'FET', 'AGIX', 'OCEAN', 'GRT', 'RNDR', 'AKT', 'TAO', 'PAAL',
-  
-  // NFT & Social
-  'BLUR', 'LOOKS', 'APE', 'SUPER', 'CHZ', 'AUDIO', 'MASK',
-  
-  // Infrastructure & Oracles (ERC-20)
-  'LINK', 'API3', 'BAND', 'TRB', 'DIA',
-  
-  // Popular ERC-20 Altcoins
-  'BAT', 'ZRX', 'REQ', 'LRC', 'OMG', 'ZIL', 'ICX', 'QTUM', 'ONT', 'STORJ',
-  'FUN', 'REN', 'KNC', 'ANT', 'NMR', 'MLN', 'POLY', 'POWR', 'CELR', 'ANKR',
-  
-  // Newer Trending Tokens
-  'PENDLE', 'ARB', 'SUI', 'SEI', 'TIA', 'JTO', 'PYTH', 'JUPITER', 'WEN',
-  
-  // Exchange Tokens (ERC-20)
-  'BNB', 'CRO', 'OKB', 'HT', 'LEO', 'GT', 'KCS'
+  'BTC', 'ETH', 'SOL', 'XRP', 'BNB', 'DOGE', 'ADA', 'TRX', 'AVAX', 'LINK',
+  'DOT', 'MATIC', 'TON', 'SHIB', 'LTC', 'UNI', 'BCH', 'NEAR', 'ICP', 'APT',
+  'ARB', 'OP', 'PEPE', 'AAVE', 'INJ', 'STX', 'SUI', 'TIA', 'FIL', 'HBAR'
 ]
+
+// LunarCrush categories — pulls high-quality general crypto news (not
+// per-ticker filtered).  This is what powers the main News Terminal feed.
+const CATEGORIES = ['cryptocurrencies', 'defi', 'nfts', 'memecoins', 'layer-2']
 
 interface LunarCrushNewsItem {
   id: string
@@ -106,33 +75,58 @@ export async function GET(request: Request) {
 
     let totalInserted = 0
     let totalFetched = 0
+    let categoryInserted = 0
     const errors: string[] = []
+    let lunarCrushQuotaExhausted = false
 
-    // Fetch news for each ticker
-    for (const ticker of TOP_TICKERS) {
+    // 1. CATEGORY-LEVEL NEWS FIRST — this is the highest-quality general crypto
+    //    news.  Do it first so even if we hit the daily quota mid-run we still
+    //    have great general feed content.
+    for (const cat of CATEGORIES) {
       try {
-        // 1. Fetch from LunarCrush (primary source)
-        const lunarCrushInserted = await fetchLunarCrushNews(ticker, supabase)
-        totalInserted += lunarCrushInserted
-        totalFetched += lunarCrushInserted
-
-        // Small delay to respect rate limits
+        const inserted = await fetchLunarCrushCategoryNews(cat, supabase)
+        if (inserted < 0) { lunarCrushQuotaExhausted = true; break }
+        categoryInserted += inserted
+        totalInserted += inserted
+        totalFetched += inserted
         await delay(500)
-
-        // 2. Fetch from CryptoPanic (secondary source) - skipped automatically if API is unavailable
-        if (!cryptoPanicDisabled) {
-          const cryptoPanicInserted = await fetchCryptoPanicNews(ticker, supabase)
-          totalInserted += cryptoPanicInserted
-          totalFetched += cryptoPanicInserted
-          await delay(500)
-        }
-
-      } catch (error) {
-        const errorMsg = `Error fetching news for ${ticker}: ${error instanceof Error ? error.message : 'Unknown error'}`
-        console.error(errorMsg)
-        errors.push(errorMsg)
+      } catch (e) {
+        const msg = `Category ${cat}: ${e instanceof Error ? e.message : 'unknown'}`
+        console.error(msg)
+        errors.push(msg)
       }
     }
+
+    // 2. PER-TICKER NEWS — adds ticker tagging for token detail pages.
+    if (!lunarCrushQuotaExhausted) {
+      for (const ticker of TOP_TICKERS) {
+        try {
+          const lunarCrushInserted = await fetchLunarCrushNews(ticker, supabase)
+          if (lunarCrushInserted < 0) { lunarCrushQuotaExhausted = true; break }
+          totalInserted += lunarCrushInserted
+          totalFetched += lunarCrushInserted
+          await delay(500)
+
+          if (!cryptoPanicDisabled) {
+            const cryptoPanicInserted = await fetchCryptoPanicNews(ticker, supabase)
+            totalInserted += cryptoPanicInserted
+            totalFetched += cryptoPanicInserted
+            await delay(500)
+          }
+        } catch (error) {
+          const errorMsg = `Error fetching news for ${ticker}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          console.error(errorMsg)
+          errors.push(errorMsg)
+        }
+      }
+    }
+
+    if (lunarCrushQuotaExhausted) {
+      const msg = 'LunarCrush daily quota exhausted — partial run.  Consider lowering cron frequency.'
+      console.warn(`[ingest-news] ${msg}`)
+      errors.push(msg)
+    }
+    console.log(`[ingest-news] category=${categoryInserted} total=${totalInserted}`)
 
     console.log(`✅ News ingestion complete: ${totalInserted} new articles inserted (${totalFetched} total fetched) for ${TOP_TICKERS.length} tickers`)
     
@@ -161,7 +155,78 @@ export async function GET(request: Request) {
 }
 
 /**
- * Fetch news from LunarCrush API
+ * Fetch CATEGORY-level news from LunarCrush.
+ * Categories return general high-quality crypto news (not filtered to a single token).
+ * Returns -1 to signal daily quota exhaustion (caller should stop).
+ */
+async function fetchLunarCrushCategoryNews(category: string, supabase: any): Promise<number> {
+  const apiKey = process.env.LUNARCRUSH_API_KEY
+  if (!apiKey) throw new Error('LUNARCRUSH_API_KEY not configured')
+
+  const url = `https://lunarcrush.com/api4/public/category/${category}/news/v1`
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } })
+
+  if (response.status === 429) {
+    console.warn(`[ingest-news] LunarCrush 429 on category ${category} — daily quota likely exhausted`)
+    return -1
+  }
+  if (!response.ok) throw new Error(`LunarCrush category error: ${response.status} ${response.statusText}`)
+
+  const data = await response.json()
+  if (!data?.data || !Array.isArray(data.data)) return 0
+
+  let inserted = 0
+  for (const item of data.data.slice(0, 25)) {
+    try {
+      const title = item.post_title || item.title
+      const url2 = item.post_link || item.url
+      if (!title || title === 'Untitled' || !url2) continue
+
+      // LunarCrush sentiment is 1..5 → normalize to -1..+1.
+      let sentimentRaw: number | null = null
+      if (typeof item.post_sentiment === 'number') {
+        sentimentRaw = (item.post_sentiment - 3) / 2
+      } else if (typeof item.sentiment === 'number') {
+        sentimentRaw = (item.sentiment - 3) / 2
+      }
+
+      const publishedIso = item.post_created
+        ? new Date(item.post_created * 1000).toISOString()
+        : (item.published_at || new Date().toISOString())
+
+      const { error } = await supabase.from('news_items').insert({
+        source: item.creator_display_name || item.creator_name || 'lunarcrush',
+        external_id: String(item.id || item.post_link || url2),
+        ticker: null, // category-level — not tied to one ticker
+        title,
+        url: url2,
+        published_at: publishedIso,
+        content: item.post_content || item.content || null,
+        author: item.creator_display_name || item.creator_name || null,
+        sentiment_raw: sentimentRaw,
+        metadata: {
+          source_type: 'lunarcrush_category',
+          category,
+          interactions: item.interactions_24h || item.interactions_total,
+          creator_id: item.creator_id,
+          creator_followers: item.creator_followers,
+        },
+      })
+      if (!error) inserted++
+      else if (!error.message.includes('duplicate key')) {
+        console.error(`[ingest-news] Insert error (category ${category}):`, error.message)
+      }
+    } catch (e) {
+      console.error(`[ingest-news] Failed to insert category item:`, e)
+    }
+  }
+  console.log(`[ingest-news] category=${category} inserted=${inserted} of ${data.data.length}`)
+  return inserted
+}
+
+/**
+ * Fetch news from LunarCrush API for a specific ticker.
+ * Returns -1 on daily quota exhaustion.
  */
 async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<number> {
   try {
@@ -178,6 +243,11 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
         'Authorization': `Bearer ${apiKey}`
       }
     })
+
+    if (response.status === 429) {
+      console.warn(`[ingest-news] LunarCrush 429 on ${ticker} — daily quota exhausted, stopping`)
+      return -1
+    }
 
     if (!response.ok) {
       throw new Error(`LunarCrush API error: ${response.status} ${response.statusText}`)

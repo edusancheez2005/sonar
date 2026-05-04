@@ -1,44 +1,207 @@
 /**
- * Key Voices API
- * Returns AI-generated summaries of recent crypto statements from top influencers
- * Uses Grok with web search to find latest takes from famous people
- * Cached for 4 hours
+ * Key Voices API — REAL DATA EDITION
+ *
+ * Pulls the most recent verified posts from priority creators directly out of
+ * Supabase `social_posts` (which is populated by the LunarCrush ingestion job).
+ *
+ * Why no LLM for crypto voices?  Previous Grok-based implementation fabricated
+ * quotes attributed to Trump / Musk / Powell because xAI's Live Search on Chat
+ * Completions was deprecated and Grok answered from training data.  Real
+ * LunarCrush posts can NEVER be hallucinated — they're actual tweets we already
+ * pay to ingest.
+ *
+ * For political figures (Trump/Powell/Bessent/SEC) who don't appear in
+ * crypto-focused LunarCrush data, we use the xAI Responses API
+ * (`/v1/responses` with the `web_search` tool — the new, supported endpoint).
  */
 
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
 let cachedResult: any = null
 let cachedAt = 0
-// Bumping when prompt/search shape changes so old (fabricated) cache is discarded.
-const CACHE_VERSION = 'v2-search_parameters-2026-05-04'
+const CACHE_VERSION = 'v3-social-posts-2026-05-04'
 let cachedVersion = ''
-const CACHE_TTL = 30 * 60 * 1000 // 30 min — refresh frequently for breaking news
+const CACHE_TTL = 30 * 60 * 1000 // 30 min
 
-// Priority accounts: search ALL tweets (geopolitical, economic, anything) — these people move markets
-const PRIORITY_ACCOUNTS = [
-  'Donald Trump (US President, @realDonaldTrump)',
-  'Jerome Powell (Federal Reserve Chair)',
-  'Gary Gensler or current SEC Chair',
+// LunarCrush handles → display metadata.  Order = display priority.
+const CRYPTO_VOICES: Array<{ handle: string; name: string; role: string }> = [
+  { handle: 'saylor',           name: 'Michael Saylor',  role: 'Strategy (MicroStrategy) — Executive Chairman' },
+  { handle: 'VitalikButerin',   name: 'Vitalik Buterin', role: 'Ethereum co-founder' },
+  { handle: 'cz_binance',       name: 'CZ',              role: 'Binance founder' },
+  { handle: 'brian_armstrong',  name: 'Brian Armstrong', role: 'Coinbase CEO' },
+  { handle: 'CryptoHayes',      name: 'Arthur Hayes',    role: 'BitMEX co-founder' },
+  { handle: 'RaoulGMI',         name: 'Raoul Pal',       role: 'Real Vision CEO, macro investor' },
+  { handle: 'CathieDWood',      name: 'Cathie Wood',     role: 'ARK Invest CEO' },
+  { handle: 'APompliano',       name: 'Anthony Pompliano', role: 'Pomp Investments founder' },
+  { handle: 'novogratz',        name: 'Mike Novogratz',  role: 'Galaxy Digital CEO' },
+  { handle: 'BarrySilbert',     name: 'Barry Silbert',   role: 'DCG founder' },
+]
+
+// Macro / political figures — pulled via xAI web_search.
+const POLITICAL_VOICES = [
+  'Donald Trump (@realDonaldTrump) — US President',
+  'Jerome Powell — Federal Reserve Chair',
+  'Scott Bessent — US Treasury Secretary',
   'Elon Musk (@elonmusk)',
-  'Scott Bessent (US Treasury Secretary)',
+  'Current SEC Chair',
 ]
 
-// Standard crypto influencers: search for crypto/market-specific statements
-const CRYPTO_INFLUENCERS = [
-  'Michael Saylor (MicroStrategy CEO, @saylor)',
-  'Vitalik Buterin (Ethereum co-founder, @VitalikButerin)',
-  'CZ / Changpeng Zhao (Binance founder, @caborrowz)',
-  'Cathie Wood (ARK Invest CEO, @CathieDWood)',
-  'Larry Fink (BlackRock CEO)',
-  'Brian Armstrong (Coinbase CEO, @brian_armstrong)',
-  'Raoul Pal (macro investor, @RaoulGMI)',
-  'Arthur Hayes (BitMEX co-founder, @CryptoHayes)',
-]
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const ALL_INFLUENCERS = [...PRIORITY_ACCOUNTS, ...CRYPTO_INFLUENCERS]
+/** LunarCrush sentiment is 1..5; map to bullish/neutral/bearish. */
+function mapSentiment(raw: number | null | undefined): 'bullish' | 'bearish' | 'neutral' {
+  if (raw == null || isNaN(raw)) return 'neutral'
+  if (raw >= 3.6) return 'bullish'
+  if (raw <= 2.4) return 'bearish'
+  return 'neutral'
+}
+
+/** Trim a tweet to ~240 chars at a word boundary, strip trailing URLs. */
+function trimQuote(body: string): string {
+  if (!body) return ''
+  let q = body.replace(/\s+https?:\/\/\S+\s*$/g, '').trim()
+  if (q.length <= 240) return q
+  const slice = q.slice(0, 237)
+  const lastSpace = slice.lastIndexOf(' ')
+  return (lastSpace > 180 ? slice.slice(0, lastSpace) : slice) + '…'
+}
+
+/** Format an ISO timestamp as "May 4, 2026". */
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+/** Build a short context label from the post body. */
+function inferContext(body: string): string {
+  const b = (body || '').toLowerCase()
+  if (/etf|inflow|outflow|blackrock|fidelity|ibit|fbtc/.test(b)) return 'On ETF flows'
+  if (/saylor|strategy.*acquired|microstrategy/.test(b)) return 'On Strategy treasury'
+  if (/eth|ethereum|vitalik|layer\s?2|rollup/.test(b)) return 'On Ethereum'
+  if (/sol\b|solana/.test(b)) return 'On Solana'
+  if (/regulation|sec|cftc|congress|bill|legislation/.test(b)) return 'On regulation'
+  if (/fed|powell|rate|inflation|cpi|fomc/.test(b)) return 'On macro / Fed'
+  if (/tariff|trade war|china|geopolit/.test(b)) return 'On geopolitics'
+  if (/whale|accumul|distribut/.test(b)) return 'On whale flows'
+  if (/bull|rally|moon|ath|all.time/.test(b)) return 'Bullish call'
+  if (/bear|crash|correction|dump|short/.test(b)) return 'Bearish call'
+  if (/coinbase|exchange|listing/.test(b)) return 'On exchanges'
+  return 'Latest post'
+}
+
+async function fetchCryptoVoicesFromDB() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) return []
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
+    auth: { persistSession: false },
+  })
+
+  // 30-day window — top voices don't tweet daily.
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  const out: any[] = []
+  for (const v of CRYPTO_VOICES) {
+    const { data, error } = await supabase
+      .from('social_posts')
+      .select('body, published_at, sentiment, interactions, post_link, creator_screen_name, creator_display_name')
+      .ilike('creator_screen_name', v.handle)
+      .gte('published_at', since)
+      .order('published_at', { ascending: false })
+      .limit(1)
+    if (error || !data || data.length === 0) continue
+    const post: any = data[0]
+    if (!post.body) continue
+    out.push({
+      name: v.name,
+      handle: '@' + v.handle,
+      role: v.role,
+      quote: trimQuote(post.body),
+      date: formatDate(post.published_at),
+      sentiment: mapSentiment(post.sentiment),
+      context: inferContext(post.body),
+      url: post.post_link || null,
+      _published: post.published_at,
+    })
+  }
+  return out
+}
+
+async function fetchPoliticalVoicesFromGrok() {
+  const xaiKey = process.env.XAI_API_KEY
+  if (!xaiKey) return []
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const prompt = `Today is ${today}. Search the web and X for the most recent VERIFIED public statements (last 7 days) from these people that could affect crypto markets:
+
+${POLITICAL_VOICES.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+Topics that count: tariffs, sanctions, military action, Fed rate decisions, CPI/inflation, executive orders, SEC enforcement, crypto regulation, energy policy, trade deals, Treasury actions.
+
+Return ONLY a JSON object — no prose, no code fences:
+{
+  "voices": [
+    {
+      "name": "Full Name",
+      "handle": "@handle or empty",
+      "role": "their title",
+      "quote": "actual or close-paraphrased statement, max 2 sentences",
+      "date": "May 4, 2026",
+      "sentiment": "bullish" | "bearish" | "neutral",
+      "context": "5-word context"
+    }
+  ]
+}
+
+Rules:
+- Only include people you can verify a real statement for in the last 7 days. Skip the rest.
+- Quote must be their actual words or a very close paraphrase.
+- Sentiment = likely impact on crypto markets (military escalation = bearish; rate cut = bullish; etc.)
+- Max 5 entries.`
+
+  try {
+    const resp = await fetch('https://api.x.ai/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${xaiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'grok-4-fast-reasoning',
+        input: prompt,
+        tools: [{ type: 'web_search' }],
+      }),
+      signal: AbortSignal.timeout(90_000),
+    })
+    if (!resp.ok) {
+      console.warn('[voices] xAI responses non-OK:', resp.status, await resp.text().catch(() => ''))
+      return []
+    }
+    const json: any = await resp.json()
+    let text = ''
+    for (const item of json.output || []) {
+      if (item?.content && Array.isArray(item.content)) {
+        for (const c of item.content) {
+          if (c?.type === 'output_text' && typeof c.text === 'string') text += c.text
+        }
+      }
+    }
+    if (!text) return []
+    const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+    if (start < 0 || end < 0) return []
+    const parsed = JSON.parse(cleaned.slice(start, end + 1))
+    return Array.isArray(parsed?.voices) ? parsed.voices : []
+  } catch (e: any) {
+    console.warn('[voices] political voices fetch failed:', e?.message || e)
+    return []
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -47,131 +210,46 @@ export async function GET(request: Request) {
 
     if (!forceRefresh && cachedResult && cachedVersion === CACHE_VERSION && (Date.now() - cachedAt) < CACHE_TTL) {
       return NextResponse.json(cachedResult, {
-        headers: { 'Cache-Control': 's-maxage=1800, stale-while-revalidate=3600' }
+        headers: { 'Cache-Control': 's-maxage=1800, stale-while-revalidate=3600' },
       })
     }
 
-    const xaiKey = process.env.XAI_API_KEY
-    if (!xaiKey) {
-      return NextResponse.json({ error: 'AI provider not configured' }, { status: 500 })
-    }
+    const [crypto, political] = await Promise.all([
+      fetchCryptoVoicesFromDB().catch(e => { console.warn('[voices] crypto db failed:', e?.message); return [] }),
+      fetchPoliticalVoicesFromGrok().catch(e => { console.warn('[voices] political failed:', e?.message); return [] }),
+    ])
 
-    const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
+    const politicalNorm = political.map((p: any) => ({
+      ...p,
+      _published: (() => {
+        const d = new Date(p.date || '')
+        return isNaN(d.getTime()) ? new Date(0).toISOString() : d.toISOString()
+      })(),
+    }))
+
+    // Political first (bigger market movers), then crypto sorted by recency within each.
+    const politicalSorted = politicalNorm.sort((a: any, b: any) =>
+      new Date(b._published).getTime() - new Date(a._published).getTime())
+    const cryptoSorted = crypto.sort((a, b) =>
+      new Date(b._published).getTime() - new Date(a._published).getTime())
+
+    const merged = [...politicalSorted, ...cryptoSorted]
+    const voices = merged.map(({ _published, ...rest }: any) => rest).slice(0, 12)
+
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    const result = { voices, last_updated: today }
 
-    const completion = await ai.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a crypto intelligence analyst with real-time access to X/Twitter. TODAY IS ${today}.
-
-Your job: find the ACTUAL, REAL, VERIFIED latest tweets and public statements from these people. Do NOT fabricate or guess quotes. Only return statements you can verify from X or news sources.
-
-=== PRIORITY ACCOUNTS (search for ALL recent tweets/statements, not just crypto) ===
-These people move crypto markets with ANY statement — geopolitics, trade wars, tariffs,
-military action, sanctions, economic policy, energy, interest rates, AND crypto.
-Find their MOST RECENT tweet or public statement regardless of topic.
-
-${PRIORITY_ACCOUNTS.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-
-=== CRYPTO INFLUENCERS (search for crypto/market-specific statements) ===
-${CRYPTO_INFLUENCERS.map((p, i) => `${i + 1 + PRIORITY_ACCOUNTS.length}. ${p}`).join('\n')}
-
-RULES:
-- ONLY include REAL statements from the LAST 7 DAYS. Nothing older. Nothing fabricated.
-- Prioritize the MOST RECENT statements first (today > yesterday > 2 days ago).
-- For PRIORITY ACCOUNTS: include their most recent tweet/statement EVEN IF it is not about crypto.
-  Geopolitical events (wars, sanctions, trade policy, tariffs, oil, peace deals) directly move BTC and crypto.
-  Label the sentiment based on likely crypto market impact (e.g. military escalation = bearish, peace = bullish).
-- For CRYPTO INFLUENCERS: only include crypto/market-relevant statements.
-- If you CANNOT verify a recent statement for someone, SKIP THEM. Do not make up quotes.
-- Return 6-12 entries maximum, sorted by date (most recent first).
-- Each quote should be their ACTUAL words verbatim, or a very close paraphrase. Not your interpretation.
-- Include the exact or approximate date of the statement.
-- Classify sentiment as bullish, bearish, or neutral for crypto markets.
-
-Return ONLY valid JSON with this structure:
-{
-  "voices": [
-    {
-      "name": "Full Name",
-      "handle": "@twitterhandle",
-      "role": "Their title/role",
-      "quote": "Their actual statement or close paraphrase, max 2 sentences",
-      "date": "Mar 15, 2026",
-      "sentiment": "bullish" or "bearish" or "neutral",
-      "context": "Brief 5-word context like 'On Bitcoin ETF inflows' or 'On ending Ukraine war'"
-    }
-  ],
-  "last_updated": "${today}"
-}
-
-Return ONLY valid JSON. No markdown, no code blocks.`
-        },
-        {
-          role: 'user',
-          content: `Today is ${today}. Search X/Twitter and the web RIGHT NOW for the LATEST verified tweets and public statements from these people in the last 7 days:
-
-PRIORITY (find their MOST RECENT tweet/statement, any topic — geopolitics, trade, military, crypto, economy, peace deals):
-- Donald Trump (@realDonaldTrump) — check his latest Truth Social / X posts
-- Jerome Powell — check latest Fed statements or press conferences
-- SEC Chair — check latest SEC announcements
-- Elon Musk (@elonmusk) — check his latest X posts
-- Scott Bessent (Treasury Secretary) — check latest statements
-
-CRYPTO INFLUENCERS (crypto/market statements only):
-- Michael Saylor (@saylor), Vitalik Buterin (@VitalikButerin), CZ (@caborrowz), Cathie Wood (@CathieDWood), Larry Fink, Brian Armstrong (@brian_armstrong), Raoul Pal (@RaoulGMI), Arthur Hayes (@CryptoHayes)
-
-Also include any breaking geopolitical statements from world leaders that would impact crypto (tariffs, sanctions, military action, energy policy, trade wars, peace negotiations).
-
-IMPORTANT: Only return REAL, VERIFIED quotes. Skip anyone you can't find recent statements for.`
-        }
-      ],
-      temperature: 0.2,
-      max_tokens: 2000,
-      // xAI Live Search — the correct parameter is `search_parameters`, not `search`.
-      // Previously this was silently ignored, so Grok answered from training data and
-      // fabricated plausible-sounding quotes attributed to Trump / Musk / Powell etc.
-      // @ts-ignore - xAI specific
-      search_parameters: {
-        mode: 'on',
-        max_search_results: 30,
-        return_citations: true,
-        sources: [
-          { type: 'x' },
-          { type: 'news' },
-          { type: 'web' }
-        ]
-      }
-    })
-
-    const raw = completion.choices[0]?.message?.content || ''
-
-    let parsed
-    try {
-      const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      parsed = JSON.parse(jsonStr)
-    } catch {
-      parsed = {
-        voices: [{ name: 'Updating', handle: '', role: '', quote: 'Key voices are being refreshed. Check back shortly.', date: today, sentiment: 'neutral', context: 'Refreshing data' }],
-        last_updated: today
-      }
-    }
-
-    cachedResult = parsed
+    cachedResult = result
     cachedAt = Date.now()
     cachedVersion = CACHE_VERSION
 
-    return NextResponse.json(parsed, {
-      headers: { 'Cache-Control': 's-maxage=1800, stale-while-revalidate=3600' }
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 's-maxage=1800, stale-while-revalidate=3600' },
     })
-  } catch (error) {
-    console.error('Key voices error:', error)
+  } catch (error: any) {
+    console.error('Key voices error:', error?.message || error)
     if (cachedResult) {
-      return NextResponse.json(cachedResult, {
-        headers: { 'Cache-Control': 's-maxage=300' }
-      })
+      return NextResponse.json(cachedResult, { headers: { 'Cache-Control': 's-maxage=300' } })
     }
     return NextResponse.json({ error: 'Failed to fetch key voices' }, { status: 500 })
   }

@@ -1,29 +1,59 @@
 /**
- * Macro Factors API
- * Returns AI-generated summary of key factors affecting crypto right now
- * Uses a cheaper Grok model for cost efficiency
- * Cached for 15 minutes
+ * Macro Factors API — REAL DATA EDITION
+ *
+ * Uses the xAI Responses API (`/v1/responses`) with the `web_search` tool — the
+ * NEW supported endpoint for live web search.  The previous Chat Completions
+ * `search_parameters` shape is deprecated (returns 410 Gone), which is why this
+ * endpoint was 500ing.
+ *
+ * To prevent fabrication we also seed the prompt with the latest fresh news
+ * headlines we already store in Supabase, so even if web_search returns weak
+ * results the model has real grounding.
  */
 
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
-let cachedResult = null
+let cachedResult: any = null
 let cachedAt = 0
-// Bumping when prompt/search shape changes so old (fabricated) cache is discarded.
-const CACHE_VERSION = 'v2-search_parameters-2026-05-04'
+const CACHE_VERSION = 'v3-responses-web_search-2026-05-04'
 let cachedVersion = ''
 const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY
+
+async function fetchRecentHeadlines(): Promise<string[]> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) return []
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
+      auth: { persistSession: false },
+    })
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { data } = await supabase
+      .from('news_items')
+      .select('title, source, published_at')
+      .gte('published_at', since)
+      .neq('title', 'Untitled')
+      .not('title', 'is', null)
+      .order('published_at', { ascending: false })
+      .limit(40)
+    if (!data) return []
+    return data
+      .filter((n: any) => n.title)
+      .map((n: any) => `- [${n.source || 'news'}] ${n.title} (${(n.published_at || '').slice(0, 10)})`)
+  } catch (e) {
+    return []
+  }
+}
+
 export async function GET() {
   try {
-    // Return cached if fresh
     if (cachedResult && cachedVersion === CACHE_VERSION && (Date.now() - cachedAt) < CACHE_TTL) {
       return NextResponse.json(cachedResult, {
-        headers: { 'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400' }
+        headers: { 'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400' },
       })
     }
 
@@ -32,75 +62,95 @@ export async function GET() {
       return NextResponse.json({ error: 'AI provider not configured' }, { status: 500 })
     }
 
-    const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
+    const today = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    })
 
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    const headlines = await fetchRecentHeadlines()
+    const headlinesBlock = headlines.length
+      ? `\n\nFor grounding, here are the most recent crypto headlines we have ingested in the last 7 days:\n${headlines.slice(0, 30).join('\n')}\n\nUse these AS A STARTING POINT but ALSO search the web for anything more recent.`
+      : ''
 
-    const completion = await ai.chat.completions.create({
-      model: 'grok-4-1-fast-non-reasoning',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a concise crypto macro analyst. TODAY'S DATE IS ${today}. 
+    const prompt = `Today is ${today}.
 
-CRITICAL: ALL data must be from the LAST 7 DAYS. Do NOT include any events from 2024 or earlier. Every date you mention must be within the last week. If you cannot find recent data for a factor, say "no recent update" instead of citing old data.
+You are a concise crypto macro analyst. Search the web RIGHT NOW for the most important macro factors affecting crypto markets in the last 7 days.
 
-Return a JSON object with exactly this structure:
+Cover these areas (only include a factor if you find real, recent data — skip otherwise):
+1. Federal Reserve: latest rate decision, CPI/PPI data, Fed commentary
+2. Geopolitical: wars, sanctions, trade tensions, tariffs, peace deals
+3. US crypto regulation: SEC/CFTC actions, legislation, executive orders
+4. ETF flows: BTC/ETH ETF inflows/outflows
+5. Institutional moves: MicroStrategy/Strategy, BlackRock, corporate buys
+6. Market structure: BTC dominance, total crypto market cap, stablecoin supply
+7. Any breaking macro event from the last 48 hours${headlinesBlock}
+
+Return ONLY a valid JSON object — no prose, no markdown fences:
 {
   "factors": [
-    { "title": "short title", "impact": "bullish" or "bearish" or "neutral", "summary": "1-2 sentence explanation with specific dates from this week" }
+    { "title": "short title (max 6 words)", "impact": "bullish" | "bearish" | "neutral", "summary": "1-2 sentence explanation with a specific date from this week" }
   ],
-  "overall_sentiment": "bullish" or "bearish" or "neutral",
+  "overall_sentiment": "bullish" | "bearish" | "neutral",
   "last_updated": "${today}"
 }
 
-Include exactly 5-7 factors. Search the web for data from THIS WEEK ONLY about:
-1. Federal Reserve: latest rate decision, CPI/PPI data, Fed commentary from this week
-2. Geopolitical: current wars, sanctions, trade tensions as of today
-3. US crypto regulation: any SEC/CFTC actions, legislation, executive orders this week
-4. ETF flows: BTC/ETH ETF inflows/outflows from the last 7 days
-5. Institutional moves: MicroStrategy, BlackRock, corporate buys THIS WEEK
-6. Market structure: current BTC dominance, total crypto market cap as of today
-7. Any breaking macro event from the last 48 hours
+Rules:
+- Include 5-7 factors total. MUST include at least one bearish or neutral factor unless the entire week is genuinely uniformly bullish.
+- Every factor MUST reference a specific date within the last 7 days.
+- If you can't find recent data for an area, omit it. Never fabricate.
+- Keep summaries under 30 words.`
 
-Keep summaries under 30 words each. Return ONLY valid JSON, no markdown.`
-        },
-        {
-          role: 'user',
-          content: `Today is ${today}. What are the key macro factors affecting the crypto market THIS WEEK? Only include events and data from the last 7 days. Search the web for the most recent information.`
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 800,
-      // xAI Live Search — the correct parameter is `search_parameters`, not `search`.
-      // Previously this was silently ignored, so Grok answered from training data and
-      // hallucinated specific dates / events.
-      // @ts-ignore - xAI specific
-      search_parameters: {
-        mode: 'on',
-        max_search_results: 15,
-        return_citations: true,
-        sources: [
-          { type: 'web' },
-          { type: 'news' },
-          { type: 'x' }
-        ]
-      }
+    const resp = await fetch('https://api.x.ai/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${xaiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'grok-4-fast-reasoning',
+        input: prompt,
+        tools: [{ type: 'web_search' }],
+      }),
+      signal: AbortSignal.timeout(120_000),
     })
 
-    const raw = completion.choices[0]?.message?.content || ''
-    
-    // Parse JSON from response (handle markdown code blocks)
-    let parsed
+    if (!resp.ok) {
+      const errBody = await resp.text().catch(() => '')
+      console.error('[macro] xAI responses non-OK:', resp.status, errBody)
+      if (cachedResult) {
+        return NextResponse.json(cachedResult, { headers: { 'Cache-Control': 's-maxage=300' } })
+      }
+      return NextResponse.json({ error: 'Failed to fetch macro factors' }, { status: 500 })
+    }
+
+    const json: any = await resp.json()
+
+    // Extract assistant text from output[]
+    let raw = ''
+    for (const item of json.output || []) {
+      if (item?.content && Array.isArray(item.content)) {
+        for (const c of item.content) {
+          if (c?.type === 'output_text' && typeof c.text === 'string') raw += c.text
+        }
+      }
+    }
+
+    let parsed: any
     try {
-      const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      parsed = JSON.parse(jsonStr)
-    } catch {
-      // If JSON parsing fails, return a fallback
+      const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+      const start = cleaned.indexOf('{')
+      const end = cleaned.lastIndexOf('}')
+      if (start < 0 || end < 0) throw new Error('no json object found')
+      parsed = JSON.parse(cleaned.slice(start, end + 1))
+    } catch (e) {
+      console.warn('[macro] failed to parse JSON, using fallback')
       parsed = {
-        factors: [{ title: 'Analysis Updating', impact: 'neutral', summary: 'Macro analysis is being refreshed. Check back in a few minutes.' }],
+        factors: [{
+          title: 'Analysis Updating',
+          impact: 'neutral',
+          summary: 'Macro analysis is being refreshed. Check back in a few minutes.',
+        }],
         overall_sentiment: 'neutral',
-        last_updated: new Date().toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })
+        last_updated: today,
       }
     }
 
@@ -109,10 +159,13 @@ Keep summaries under 30 words each. Return ONLY valid JSON, no markdown.`
     cachedVersion = CACHE_VERSION
 
     return NextResponse.json(parsed, {
-      headers: { 'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400' }
+      headers: { 'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400' },
     })
-  } catch (error) {
-    console.error('Macro factors error:', error)
+  } catch (error: any) {
+    console.error('Macro factors error:', error?.message || error)
+    if (cachedResult) {
+      return NextResponse.json(cachedResult, { headers: { 'Cache-Control': 's-maxage=300' } })
+    }
     return NextResponse.json({ error: 'Failed to fetch macro factors' }, { status: 500 })
   }
 }
