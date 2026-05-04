@@ -115,6 +115,30 @@ export interface SignalFactor {
   contribution: number
 }
 
+/**
+ * Provenance of the tier-1 sign-multiplier decision. Persisted by callers so
+ * post-hoc audits can ask "which layer flipped this token?" without
+ * re-running the engine. Added 2026-05-04 (Stage 1: observability).
+ *
+ *   source:
+ *     'calibration' → live row from token_signal_calibration
+ *     'snapshot'    → operator-approved row from signal_calibration_snapshot
+ *     'static_map'  → legacy hardcoded TIER1_SIGN_BY_TOKEN (Stage 2 deletes)
+ *     'default'     → no override, raw direction kept (+1)
+ *     'kill_switch' → SIGNAL_ENGINE_IC_FIX=off forced +1
+ *
+ *   multiplier: the value actually applied to tier1.score (-1 | 0 | 1).
+ *   raw_score:  tier1 score BEFORE the multiplier was applied (−100..+100).
+ *               Sign of this number is the raw directional view; magnitude
+ *               is the conviction. evaluate-signals derives raw_direction
+ *               from sign(raw_score).
+ */
+export interface SignDecision {
+  source: 'calibration' | 'snapshot' | 'static_map' | 'default' | 'kill_switch'
+  multiplier: -1 | 0 | 1
+  raw_score: number
+}
+
 export interface UnifiedSignal {
   signal: SignalLabel
   score: number
@@ -131,6 +155,12 @@ export interface UnifiedSignal {
   timestamp: string
   token: string
   timeframe: string
+  /**
+   * Optional. Present whenever the engine resolved a tier-1 sign multiplier
+   * (which is on every real run). Callers should persist this so the
+   * inversion path is auditable from the DB alone.
+   */
+  sign_decision?: SignDecision
 }
 
 export interface ComputeSignalParams {
@@ -181,6 +211,20 @@ export interface ComputeSignalParams {
    * (e.g. unit tests, the on-demand single-token UI endpoint).
    */
   calibration?: {
+    signMultiplier: -1 | 0 | 1 | null
+    confidenceScore: number
+    ic: number | null
+    nOutcomes: number
+  } | null
+  /**
+   * Per-token operator-approved snapshot loaded from the
+   * `signal_calibration_snapshot` table by the cron caller. Used as the
+   * SECOND fallback (after live calibration, before raw default). Same
+   * shape as `calibration` but unwritable by automation. Added 2026-05-04
+   * Stage 2 — wiring lands here so the engine signature is stable while
+   * compute-signals is updated in the same commit.
+   */
+  snapshot?: {
     signMultiplier: -1 | 0 | 1 | null
     confidenceScore: number
     ic: number | null
@@ -245,6 +289,28 @@ function txConfidence(tx: WhaleTransaction): number {
 // 1 contested"). Including them is including known noise. Threshold matches
 // the upstream Stage-1 cutoff (0.50) per recent reasoning samples.
 const MIN_TX_CONFIDENCE = 0.5
+
+// 2026-05-04 (Stage 1: observability). Emits one structured log line per
+// tier-1 sign-multiplier decision. Gated on SIGNAL_ENGINE_DEBUG=on so prod
+// noise stays bounded; flip the env var to debug a sign-flip incident.
+function logSignDecision(
+  token: string,
+  rawTier1: number,
+  multiplier: -1 | 0 | 1,
+  source: SignDecision['source']
+): void {
+  if (process.env.SIGNAL_ENGINE_DEBUG === 'on') {
+    // eslint-disable-next-line no-console
+    console.log(JSON.stringify({
+      tag: 'sign_decision',
+      token,
+      raw_tier1: rawTier1,
+      multiplier,
+      source,
+      ts: Date.now(),
+    }))
+  }
+}
 
 export function computeTier1_CexWhaleFlow(
   transactions: WhaleTransaction[] = [],
@@ -694,6 +760,7 @@ export function computeUnifiedSignal({
   technicalSignals = null,
   derivativesData = null,
   calibration = null,
+  snapshot = null,
   nowMs,
 }: ComputeSignalParams): UnifiedSignal {
   const _now = typeof nowMs === 'number' ? nowMs : Date.now()
@@ -738,18 +805,32 @@ export function computeUnifiedSignal({
   const IC_FIX_ENABLED = process.env.SIGNAL_ENGINE_IC_FIX !== 'off'
   const tokenKey = (tokenSymbol || '').toUpperCase()
 
-  // Resolution order for tier1Sign:
-  //   1. Live calibration row from DB (if provided AND has a non-null sign)
-  //   2. Static TIER1_SIGN_BY_TOKEN map (the 2026-04-22 baked-in audit)
-  //   3. Default +1 (keep raw direction)
-  // SIGNAL_ENGINE_IC_FIX=off forces every multiplier to +1 (full kill switch).
-  const calibratedSign: -1 | 0 | 1 | null =
-    (calibration && calibration.signMultiplier !== null)
-      ? calibration.signMultiplier
-      : null
-  const tier1Sign: -1 | 0 | 1 = IC_FIX_ENABLED
-    ? (calibratedSign ?? TIER1_SIGN_BY_TOKEN[tokenKey] ?? 1)
-    : 1
+  // Resolution order for tier1Sign (2026-05-04 Stage 1 observability — Stage
+  // 2 deletes the static map):
+  //   1. Live calibration row from DB (if non-null sign)
+  //   2. Operator-approved snapshot row (if non-null sign)
+  //   3. Static TIER1_SIGN_BY_TOKEN map (legacy 2026-04-22 audit, Stage 2 will remove)
+  //   4. Default +1 (raw direction)
+  // SIGNAL_ENGINE_IC_FIX=off forces +1 (full kill switch).
+  let tier1Sign: -1 | 0 | 1 = 1
+  let signSource: SignDecision['source'] = 'default'
+  if (!IC_FIX_ENABLED) {
+    tier1Sign = 1
+    signSource = 'kill_switch'
+  } else if (calibration && calibration.signMultiplier !== null) {
+    tier1Sign = calibration.signMultiplier
+    signSource = 'calibration'
+  } else if (snapshot && snapshot.signMultiplier !== null) {
+    tier1Sign = snapshot.signMultiplier
+    signSource = 'snapshot'
+  } else if (TIER1_SIGN_BY_TOKEN[tokenKey] !== undefined) {
+    tier1Sign = TIER1_SIGN_BY_TOKEN[tokenKey]
+    signSource = 'static_map'
+  } else {
+    tier1Sign = 1
+    signSource = 'default'
+  }
+  logSignDecision(tokenKey || 'UNKNOWN', tier1Raw.score, tier1Sign, signSource)
   const tier1 = tier1Sign === 1
     ? tier1Raw
     : {
@@ -997,6 +1078,11 @@ export function computeUnifiedSignal({
     timestamp: new Date(_now).toISOString(),
     token: tokenSymbol,
     timeframe,
+    sign_decision: {
+      source: signSource,
+      multiplier: tier1Sign,
+      raw_score: Math.round(tier1Raw.score),
+    },
   }
 }
 

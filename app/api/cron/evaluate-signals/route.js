@@ -237,7 +237,7 @@ export async function GET(req) {
 
       const { data: signals, error: sigErr } = await supabaseAdmin
         .from('token_signals')
-        .select('id, token, signal, score, confidence, price_at_signal, computed_at')
+        .select('id, token, signal, score, confidence, raw_score, price_at_signal, computed_at, tier1_factors')
         .gte('computed_at', windowStart.toISOString())
         .lte('computed_at', windowEnd.toISOString())
         .not('signal', 'eq', 'NEUTRAL')
@@ -328,6 +328,21 @@ export async function GET(req) {
           else if (isBearish) beatBenchmark = alphaPct < 0
         }
 
+        // 2026-05-04 (Stage 1: observability). Persist the raw signal
+        // direction so post-hoc audits can ask "would the unflipped engine
+        // have been right?" without rerunning compute-signals. raw_score is
+        // the engine's pre-label composite (token_signals.raw_score). The
+        // direction band is the same as the engine's STRONG/NEUTRAL gate so
+        // a score of ±5 doesn't get counted as a directional view.
+        const RAW_DIRECTION_BAND = 5
+        const rawScoreNum = Number(sig.raw_score)
+        let rawDirection = null
+        if (Number.isFinite(rawScoreNum)) {
+          if (rawScoreNum >= RAW_DIRECTION_BAND) rawDirection = 'bullish'
+          else if (rawScoreNum <= -RAW_DIRECTION_BAND) rawDirection = 'bearish'
+          else rawDirection = 'neutral'
+        }
+
         const { error: insertErr } = await supabaseAdmin
           .from('signal_outcomes')
           .insert({
@@ -348,6 +363,8 @@ export async function GET(req) {
             btc_change_pct: btcChangePctSig === null ? null : Math.round(btcChangePctSig * 100) / 100,
             alpha_pct: alphaPct === null ? null : Math.round(alphaPct * 100) / 100,
             beat_benchmark: beatBenchmark,
+            raw_score: Number.isFinite(rawScoreNum) ? rawScoreNum : null,
+            raw_direction: rawDirection,
           })
 
         if (insertErr) {
