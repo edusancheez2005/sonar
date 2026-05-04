@@ -36,7 +36,7 @@ export async function runQuantAgent(input: QuantInput): Promise<AgentRun<QuantBr
     name: 'quant',
     schema: QuantBriefSchema,
     exec: async (signal) => {
-      const { client, smallModel } = getAgentClient()
+      const { client, miniModel } = getAgentClient()
 
       const slim = {
         ticker: input.ticker,
@@ -63,7 +63,7 @@ Produce the QuantBrief JSON now.`
 
       const completion = await client.chat.completions.create(
         {
-          model: smallModel,
+          model: miniModel,
           messages: [
             { role: 'system', content: SYSTEM },
             { role: 'user', content: userMsg },

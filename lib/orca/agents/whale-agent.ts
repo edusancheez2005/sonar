@@ -38,7 +38,7 @@ export async function runWhaleAgent(input: WhaleInput): Promise<AgentRun<WhaleBr
     name: 'whale',
     schema: WhaleBriefSchema,
     exec: async (signal) => {
-      const { client, smallModel } = getAgentClient()
+      const { client, miniModel } = getAgentClient()
 
       const w = input.whales || {}
       const a = input.whaleAlerts || {}
@@ -103,7 +103,7 @@ Produce the WhaleBrief JSON now. Pick data_source = "both" when both blocks are 
 
       const completion = await client.chat.completions.create(
         {
-          model: smallModel,
+          model: miniModel,
           messages: [
             { role: 'system', content: SYSTEM },
             { role: 'user', content: userMsg },
