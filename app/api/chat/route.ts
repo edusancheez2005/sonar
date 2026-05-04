@@ -108,10 +108,15 @@ Open with a one-sentence positioning of the asset (sector, current cycle context
 - Distance from ATH and market-cap rank as positioning context.
 - On-chain whale data — render whichever source is populated:
   - If the ERC-20 whale_transactions block is supplied: report exact net flow, buy/sell tx counts, buy/sell ratio, CEX vs DEX split, the divergence flag (if any), and whales' share of total 24h volume.
-  - If the multi-chain WHALE ALERT API block is supplied (BTC, XRP, TRX, SOL, native ETH, etc.): report total tracked $500k+ flow, accumulation vs distribution counts, and quote the largest 2-3 named exchange↔wallet movements verbatim from the block. Frame these as descriptive observations of what the public Whale Alert feed reported, not as forecasts.
+  - If the multi-chain WHALE ALERT API block is supplied (BTC, XRP, TRX, SOL, native ETH, etc.): report total tracked $500k+ flow, accumulation vs distribution counts, and render the largest named exchange↔wallet movements as a markdown bulleted list (one bullet per movement, prefixed with **ACCUMULATION** or **DISTRIBUTION** in bold) — quote them verbatim from the block. Frame these as descriptive observations of what the public Whale Alert feed reported, not as forecasts.
+  - When listing "recent largest transactions", also use a markdown bulleted list (one bullet per transaction) rather than a comma-separated paragraph.
   - If neither is supplied: state "On-chain whale data not available for this asset in the current dataset" — do not fabricate.
 - Sentiment composite (combined score, provider score, LLM score, news count behind it) and Galaxy Score / Alt Rank with their natural-language interpretation already supplied.
 - Social: % bullish, raw interaction count, mention count, supportive vs critical themes.
+
+## HANDLING MISSING / N/A DATA (strict)
+
+If a metric in the context block is missing, null, undefined, "N/A", "unavailable", or otherwise has no real value, you MUST OMIT IT ENTIRELY from the response. Do not write sentences such as "engagement at N/A interactions, mentions at N/A, and active creators at N/A" or "the volume-to-market-cap ratio is unavailable". Skip the field silently. If an entire data section (e.g. LunarCrush social, developer data, community data) has no usable values at all, omit that section entirely instead of writing a sentence describing the absence of every field. The only acceptable explicit "not available" message is the single fallback line for whale data described above when both whale sources are empty.
 
 **News and Market Impact**
 For EACH of the 5 most relevant supplied articles produce a paragraph that contains, in this order:
@@ -146,9 +151,10 @@ This output is an automated summary of public data for informational and educati
 2. Wrap all numbers, prices, percentages, and metrics in \`backticks\`.
 3. Bold section headers exactly as labelled above (**Data**, **News and Market Impact**, **Bottom Line**).
 4. Target length: 1100-1600 words on the first response, 400-600 on follow-ups. Density over brevity — every paragraph must contain at least one specific number from the context block.
-5. If required data is missing from the context block, say so plainly — do not guess and do not leave the section empty.
+5. If required data is missing from the context block, OMIT the affected sentence/field entirely (per the "HANDLING MISSING / N/A DATA" rule) — do not guess, do not write "N/A", and do not write sentences whose only purpose is to enumerate missing fields.
 6. Never omit the mandatory disclaimer.
-7. Never recycle the same explanatory sentence across sections — each token's report must read as bespoke to that token's actual numbers.`
+7. Never recycle the same explanatory sentence across sections — each token's report must read as bespoke to that token's actual numbers.
+8. Use markdown bulleted lists ("- " prefix) for any enumeration of 3+ items: notable whale movements, accumulation/distribution events, recent largest transactions, supportive/critical themes. Do not pack these into long comma-separated paragraphs.`
 
 export async function POST(request: Request) {
   const startTime = Date.now()
