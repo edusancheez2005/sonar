@@ -1014,18 +1014,59 @@ export default function ClientOrca() {
                           </a>
                         )}
                       </div>
-                    ) : (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content}
-                      </ReactMarkdown>
-                    )}
+                    ) : (() => {
+                      // Extract mandatory disclaimer so we can render it as small italic.
+                      const raw = message.content || ''
+                      const m = raw.match(/this output is an automated summary/i)
+                      let body = raw
+                      let disclaimer = ''
+                      if (m && m.index != null) {
+                        let start = m.index
+                        while (start > 0 && raw[start - 1] !== '\n') start--
+                        body = raw.slice(0, start)
+                          .replace(/\n?\**\s*(Disclaimer|Important|Note)\s*:?\s*\**\s*$/i, '')
+                          .replace(/\n?[-_*]{3,}\s*$/g, '')
+                          .replace(/\n?>+\s*$/g, '')
+                          .replace(/\n?#{1,6}\s*$/g, '')
+                          .trimEnd()
+                        disclaimer = raw.slice(start)
+                          .replace(/^[\s\n>#-]+/, '')
+                          .replace(/\*\*/g, '')
+                          .replace(/__/g, '')
+                          .replace(/^_+|_+$/g, '')
+                          .replace(/^(Disclaimer|Important Note|Important|Note|IMPORTANT)\s*:?\s*/i, '')
+                          .trim()
+                      }
+                      return (
+                        <>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {body}
+                          </ReactMarkdown>
+                          {disclaimer && (
+                            <p style={{
+                              marginTop: '0.6rem',
+                              marginBottom: 0,
+                              fontSize: '0.6rem',
+                              lineHeight: 1.45,
+                              color: colors.textMuted,
+                              fontFamily: SANS_FONT,
+                              fontStyle: 'italic',
+                              fontWeight: 400,
+                              opacity: 0.55,
+                            }}>
+                              {disclaimer}
+                            </p>
+                          )}
+                        </>
+                      )
+                    })()}
                   </MessageText>
                   
                   {/* Token Header with Logo */}
                   {message.role === 'assistant' && message.ticker && (
                     <div style={{ 
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      marginTop: '12px', marginBottom: '8px', flexWrap: 'wrap', gap: '0.5rem'
+                      marginTop: '8px', marginBottom: '4px', flexWrap: 'wrap', gap: '0.5rem'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <TokenIcon symbol={message.ticker} size={28} />
@@ -1064,7 +1105,7 @@ export default function ClientOrca() {
                   {message.role === 'assistant' && message.data?.price && (
                     <div style={{
                       background: 'rgba(0, 229, 255, 0.02)', border: `1px solid ${colors.borderLight}`,
-                      borderRadius: '6px', padding: '0.75rem', marginTop: '0.5rem', marginBottom: '0.5rem',
+                      borderRadius: '6px', padding: '0.6rem 0.75rem', marginTop: '0.4rem', marginBottom: 0,
                     }}>
                       {/* KPI Row */}
                       <div style={{
