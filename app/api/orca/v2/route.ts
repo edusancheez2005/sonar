@@ -8,10 +8,12 @@
  *   { type: 'done', telemetry }
  *   { type: 'error', error }
  *
- * NOTE: this slice deliberately does NOT require Supabase Bearer auth (per the
- * ORCA_MULTI_AGENT_BUILD_PROMPT verification curl). Before any UI rollout,
- * gate behind ORCA_V2_ENABLED + add the same auth model as /api/chat.
+ * Auth: requires Supabase Bearer token in `Authorization` header. The verified
+ * user.id is used as the canonical userId (any `userId` in the body is ignored).
+ * For local smoke testing without auth, set ORCA_V2_DEV_BYPASS=1 in .env.local
+ * (NEVER set in production — guarded by NODE_ENV check below).
  */
+import { createClient } from '@supabase/supabase-js'
 import { extractTicker } from '@/lib/orca/ticker-extractor'
 import { checkRateLimit } from '@/lib/orca/rate-limiter'
 import { runOrcaPipeline } from '@/lib/orca/agents/orchestrator'
@@ -21,60 +23,81 @@ import type { SSEEvent, PipelineTelemetry } from '@/lib/orca/agents/types'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
 export async function POST(request: Request) {
   let body: any
   try {
     body = await request.json()
   } catch {
-    return new Response(JSON.stringify({ error: 'invalid JSON body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return json(400, { error: 'invalid JSON body' })
   }
 
-  const { message, userId } = body || {}
+  const { message } = body || {}
   if (!message || typeof message !== 'string') {
-    return new Response(JSON.stringify({ error: 'message is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return json(400, { error: 'message is required' })
   }
-  if (!userId || typeof userId !== 'string') {
-    return new Response(JSON.stringify({ error: 'userId is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+
+  // ── Auth: verify Supabase Bearer token ──────────────────────────────────
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE
+  if (!supabaseUrl || !supabaseKey) {
+    return json(500, { error: 'server misconfigured: supabase env missing' })
+  }
+
+  let userId: string
+  const devBypass =
+    process.env.ORCA_V2_DEV_BYPASS === '1' && process.env.NODE_ENV !== 'production'
+
+  if (devBypass) {
+    userId = (body?.userId as string) || 'dev-bypass-user'
+  } else {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !/^Bearer\s+\S+/i.test(authHeader)) {
+      return json(401, { error: 'Unauthorized — missing Bearer token' })
+    }
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+    const sb = createClient(supabaseUrl, supabaseKey)
+    const authPromise = sb.auth.getUser(token)
+    const timeoutPromise = new Promise<{ data: { user: null }; error: any }>((_, reject) =>
+      setTimeout(() => reject(new Error('auth timeout')), 10_000)
+    )
+    let authResult
+    try {
+      authResult = await Promise.race([authPromise, timeoutPromise])
+    } catch {
+      return json(500, { error: 'auth verification timeout' })
+    }
+    const { data, error } = authResult
+    if (error || !data?.user) {
+      return json(401, { error: 'Unauthorized — invalid token' })
+    }
+    userId = data.user.id
   }
 
   // Ticker parse — mirror /api/chat behaviour for the no-ticker case
   const tickerResult = extractTicker(message)
   if (!tickerResult.ticker) {
-    return new Response(
-      JSON.stringify({
-        type: 'conversational',
-        response:
-          "I can only analyse a specific cryptocurrency. Try asking about a ticker like BTC, ETH, SOL, LINK, or any other token.",
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
+    return json(200, {
+      type: 'conversational',
+      response:
+        "I can only analyse a specific cryptocurrency. Try asking about a ticker like BTC, ETH, SOL, LINK, or any other token.",
+    })
   }
   const ticker = tickerResult.ticker
 
-  // Rate limit (best-effort; if Supabase env missing in some preview, skip)
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE
-  if (supabaseUrl && supabaseKey) {
-    try {
-      const quota = await checkRateLimit(userId, supabaseUrl, supabaseKey)
-      if (!quota.canAsk) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded', isRateLimited: true, quota }),
-          { status: 429, headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-    } catch (e) {
-      console.warn('[orca-v2] rate limit check failed (continuing):', (e as Error).message)
+  // Rate limit (best-effort — log and continue if check itself errors)
+  try {
+    const quota = await checkRateLimit(userId, supabaseUrl, supabaseKey)
+    if (!quota.canAsk) {
+      return json(429, { error: 'Rate limit exceeded', isRateLimited: true, quota })
     }
+  } catch (e) {
+    console.warn('[orca-v2] rate limit check failed (continuing):', (e as Error).message)
   }
 
   // SSE stream
