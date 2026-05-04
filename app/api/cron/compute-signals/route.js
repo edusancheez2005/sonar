@@ -778,6 +778,20 @@ async function fetchSocialData(tokenSymbol) {
   const apiKey = process.env.LUNARCRUSH_API_KEY
   if (!apiKey) return null
 
+  // In-process cache: LunarCrush /coins/{symbol}/v1 only refreshes
+  // every ~hour upstream, but compute-signals runs every 15 min and
+  // hits this endpoint once per token. Caching for 30 min cuts our
+  // LunarCrush spend ~50% (4 runs/hr → 2 fresh fetches/hr per token)
+  // without losing material freshness. The Individual plan ceiling is
+  // 2000 calls/day; ~30 tokens × 2 = ~1440/day fits comfortably.
+  if (!global.__lcSocialCache) global.__lcSocialCache = new Map()
+  const cache = global.__lcSocialCache
+  const TTL_MS = 30 * 60 * 1000
+  const cached = cache.get(tokenSymbol)
+  if (cached && Date.now() - cached.ts < TTL_MS) {
+    return cached.data
+  }
+
   try {
     const res = await fetch(
       `https://lunarcrush.com/api4/public/coins/${tokenSymbol}/v1`,
@@ -787,17 +801,27 @@ async function fetchSocialData(tokenSymbol) {
       }
     )
 
-    if (!res.ok) return null
+    // On 429 quota, serve stale cache (up to 6h) instead of returning
+    // null and degrading the signal. If no cache exists, return null.
+    if (!res.ok) {
+      if (res.status === 429 && cached && Date.now() - cached.ts < 6 * 60 * 60 * 1000) {
+        console.warn(`[SignalEngine] LunarCrush 429 for ${tokenSymbol}, serving stale (${Math.round((Date.now() - cached.ts) / 60000)} min old)`)
+        return cached.data
+      }
+      return null
+    }
     const json = await res.json()
     const d = json.data
 
-    return {
+    const data = {
       galaxy_score: d?.galaxy_score || null,
       alt_rank: d?.alt_rank || null,
       sentiment: d?.sentiment || null,
       social_dominance: d?.social_dominance || null,
       interactions_24h: d?.interactions_24h || null,
     }
+    cache.set(tokenSymbol, { data, ts: Date.now() })
+    return data
   } catch (err) {
     console.error(`[SignalEngine] LunarCrush error for ${tokenSymbol}:`, err.message)
     return null
