@@ -13,12 +13,15 @@ export const dynamic = 'force-dynamic'
 
 let cachedResult = null
 let cachedAt = 0
+// Bumping when prompt/search shape changes so old (fabricated) cache is discarded.
+const CACHE_VERSION = 'v2-search_parameters-2026-05-04'
+let cachedVersion = ''
 const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
 
 export async function GET() {
   try {
     // Return cached if fresh
-    if (cachedResult && (Date.now() - cachedAt) < CACHE_TTL) {
+    if (cachedResult && cachedVersion === CACHE_VERSION && (Date.now() - cachedAt) < CACHE_TTL) {
       return NextResponse.json(cachedResult, {
         headers: { 'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400' }
       })
@@ -69,8 +72,20 @@ Keep summaries under 30 words each. Return ONLY valid JSON, no markdown.`
       ],
       temperature: 0.3,
       max_tokens: 800,
+      // xAI Live Search — the correct parameter is `search_parameters`, not `search`.
+      // Previously this was silently ignored, so Grok answered from training data and
+      // hallucinated specific dates / events.
       // @ts-ignore - xAI specific
-      search: { mode: 'on', max_search_results: 10 }
+      search_parameters: {
+        mode: 'on',
+        max_search_results: 15,
+        return_citations: true,
+        sources: [
+          { type: 'web' },
+          { type: 'news' },
+          { type: 'x' }
+        ]
+      }
     })
 
     const raw = completion.choices[0]?.message?.content || ''
@@ -91,6 +106,7 @@ Keep summaries under 30 words each. Return ONLY valid JSON, no markdown.`
 
     cachedResult = parsed
     cachedAt = Date.now()
+    cachedVersion = CACHE_VERSION
 
     return NextResponse.json(parsed, {
       headers: { 'Cache-Control': 's-maxage=43200, stale-while-revalidate=86400' }

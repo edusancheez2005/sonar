@@ -12,6 +12,9 @@ export const dynamic = 'force-dynamic'
 
 let cachedResult: any = null
 let cachedAt = 0
+// Bumping when prompt/search shape changes so old (fabricated) cache is discarded.
+const CACHE_VERSION = 'v2-search_parameters-2026-05-04'
+let cachedVersion = ''
 const CACHE_TTL = 30 * 60 * 1000 // 30 min — refresh frequently for breaking news
 
 // Priority accounts: search ALL tweets (geopolitical, economic, anything) — these people move markets
@@ -42,7 +45,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const forceRefresh = url.searchParams.get('refresh') === '1'
 
-    if (!forceRefresh && cachedResult && (Date.now() - cachedAt) < CACHE_TTL) {
+    if (!forceRefresh && cachedResult && cachedVersion === CACHE_VERSION && (Date.now() - cachedAt) < CACHE_TTL) {
       return NextResponse.json(cachedResult, {
         headers: { 'Cache-Control': 's-maxage=1800, stale-while-revalidate=3600' }
       })
@@ -127,8 +130,20 @@ IMPORTANT: Only return REAL, VERIFIED quotes. Skip anyone you can't find recent 
       ],
       temperature: 0.2,
       max_tokens: 2000,
+      // xAI Live Search — the correct parameter is `search_parameters`, not `search`.
+      // Previously this was silently ignored, so Grok answered from training data and
+      // fabricated plausible-sounding quotes attributed to Trump / Musk / Powell etc.
       // @ts-ignore - xAI specific
-      search: { mode: 'on', max_search_results: 30 }
+      search_parameters: {
+        mode: 'on',
+        max_search_results: 30,
+        return_citations: true,
+        sources: [
+          { type: 'x' },
+          { type: 'news' },
+          { type: 'web' }
+        ]
+      }
     })
 
     const raw = completion.choices[0]?.message?.content || ''
@@ -146,6 +161,7 @@ IMPORTANT: Only return REAL, VERIFIED quotes. Skip anyone you can't find recent 
 
     cachedResult = parsed
     cachedAt = Date.now()
+    cachedVersion = CACHE_VERSION
 
     return NextResponse.json(parsed, {
       headers: { 'Cache-Control': 's-maxage=1800, stale-while-revalidate=3600' }

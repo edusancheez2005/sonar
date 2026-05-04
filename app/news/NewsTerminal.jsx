@@ -375,18 +375,34 @@ export default function NewsTerminal({ initialNews = [] }) {
           const topXPosts = data.posts
             .filter(p => p.interactions > 500 || p.category === 'tracked_creator')
             .slice(0, 30)
-            .map(p => ({
-              id: `x-${p.post_id || p.id}`,
-              title: `${p.creator_name || p.creator_screen_name || 'X'}: ${(p.body || '').slice(0, 120)}${(p.body || '').length > 120 ? '…' : ''}`,
-              description: p.body || '',
-              published_at: p.published_at,
-              source: `@${p.creator_screen_name || 'X'}`,
-              url: p.url || '',
-              image: '',
-              instruments: (p.tickers_mentioned || []).map(t => ({ code: t })),
-              sentiment_llm: p.sentiment || null,
-              kind: 'x-post',
-            }))
+            .map(p => {
+              // social_posts.sentiment uses LunarCrush 1-5 scale (1=bearish, 3=neutral, 5=bullish).
+              // news_items.sentiment_llm uses [-1, +1]. Convert before merging so the badge logic
+              // (which expects [-1, +1] with 0.15 threshold) doesn't tag every neutral X post BULLISH.
+              const rawSent = p.sentiment
+              let normalizedSent = null
+              if (rawSent != null && !Number.isNaN(Number(rawSent))) {
+                const n = Number(rawSent)
+                // Detect scale: LunarCrush is 1-5, news_items is -1..+1
+                if (n >= -1 && n <= 1) {
+                  normalizedSent = n
+                } else if (n >= 1 && n <= 5) {
+                  normalizedSent = (n - 3) / 2 // 1→-1, 3→0, 5→+1
+                }
+              }
+              return {
+                id: `x-${p.post_id || p.id}`,
+                title: `${p.creator_name || p.creator_screen_name || 'X'}: ${(p.body || '').slice(0, 120)}${(p.body || '').length > 120 ? '…' : ''}`,
+                description: p.body || '',
+                published_at: p.published_at,
+                source: `@${p.creator_screen_name || 'X'}`,
+                url: p.url || '',
+                image: '',
+                instruments: (p.tickers_mentioned || []).map(t => ({ code: t })),
+                sentiment_llm: normalizedSent,
+                kind: 'x-post',
+              }
+            })
           if (topXPosts.length > 0) {
             setArticles(prev => {
               const existing = new Set(prev.map(a => a.url || a.id))
