@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
 
 let cachedResult: any = null
 let cachedAt = 0
-const CACHE_VERSION = 'v6-inline-client-2026-05-04'
+const CACHE_VERSION = 'v7-fix-url-column-2026-05-04'
 let cachedVersion = ''
 const CACHE_TTL = 30 * 60 * 1000 // 30 min
 
@@ -112,7 +112,7 @@ async function fetchCryptoVoicesFromDB() {
       debug.tried++
       const { data, error } = await supabase
         .from('social_posts')
-        .select('body, published_at, sentiment, post_link, creator_screen_name')
+        .select('body, published_at, sentiment, url, creator_screen_name')
         .ilike('creator_screen_name', v.handle)
         .gte('published_at', since)
         .not('body', 'is', null)
@@ -133,7 +133,7 @@ async function fetchCryptoVoicesFromDB() {
         date: formatDate(post.published_at),
         sentiment: mapSentiment(post.sentiment),
         context: inferContext(post.body),
-        url: post.post_link || null,
+        url: post.url || null,
         _published: post.published_at,
       }
     })
@@ -251,7 +251,7 @@ export async function GET(request: Request) {
     const voices = merged.map(({ _published, ...rest }: any) => rest).slice(0, 12)
 
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-    const result = { voices, last_updated: today, _debug: cryptoRes.debug }
+    const result = { voices, last_updated: today }
 
     cachedResult = result
     cachedAt = Date.now()
