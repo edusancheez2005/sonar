@@ -185,10 +185,6 @@ export default function TrendingPage() {
   const [sentimentSort, setSentimentSort] = useState('galaxy_score')
   const [sentimentCoins, setSentimentCoins] = useState([])
   const [sentimentLoading, setSentimentLoading] = useState(false)
-  // X / social sentiment leaders (LunarCrush coins/list/v2)
-  const [sentimentView, setSentimentView] = useState('bullish') // bullish | discussed | climbers
-  const [sentimentData, setSentimentData] = useState({ bullish: [], discussed: [], climbers: [] })
-  const [sentimentLoading, setSentimentLoading] = useState(false)
 
   useEffect(() => {
     async function checkPremium() {
@@ -228,33 +224,6 @@ export default function TrendingPage() {
       setLoading(false)
     }
   }
-
-  // Fetch LunarCrush sentiment leaders (one call powers all 3 tabs)
-  useEffect(() => {
-    let cancelled = false
-    async function fetchSentiment() {
-      setSentimentLoading(true)
-      try {
-        const res = await fetch('/api/social/sentiment-leaders')
-        if (res.ok) {
-          const json = await res.json()
-          if (!cancelled) {
-            setSentimentData({
-              bullish: json.bullish || [],
-              discussed: json.discussed || [],
-              climbers: json.climbers || [],
-            })
-          }
-        }
-      } catch (err) {
-        console.error('Sentiment leaders fetch error:', err)
-      } finally {
-        if (!cancelled) setSentimentLoading(false)
-      }
-    }
-    fetchSentiment()
-    return () => { cancelled = true }
-  }, [])
 
   // Fetch LunarCrush category topics
   useEffect(() => {
@@ -528,82 +497,129 @@ export default function TrendingPage() {
                 </div>
               )}
 
-              {/* X / Social Sentiment Leaders (LunarCrush coins/list/v2) */}
+              {/* Trending by X / Social Sentiment (LunarCrush coins/list) */}
               <Panel>
-                <TerminalPrompt>X_SENTIMENT_LEADERS</TerminalPrompt>
-                <div style={{ fontFamily: FONT_MONO, fontSize: '0.65rem', color: COLORS.textMuted, marginTop: '-0.5rem', marginBottom: '0.85rem', letterSpacing: '0.5px' }}>
-                  LIVE FROM LUNARCRUSH · X/TWITTER · REDDIT · TIKTOK · YOUTUBE · UPDATED EVERY 10 MIN
+                <TerminalPrompt>X_SENTIMENT_TRENDING</TerminalPrompt>
+                <div style={{
+                  fontFamily: FONT_MONO, fontSize: '0.65rem', color: COLORS.textMuted,
+                  marginTop: '-0.5rem', marginBottom: '0.9rem', letterSpacing: '0.5px',
+                }}>
+                  Top assets ranked by real-time X / social signals (powered by LunarCrush).
+                  {SENTIMENT_SORTS.find(s => s.key === sentimentSort)?.hint && (
+                    <span style={{ color: COLORS.cyan }}>
+                      {' '}— {SENTIMENT_SORTS.find(s => s.key === sentimentSort)?.hint}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                  <FilterButton $active={sentimentView === 'bullish'} onClick={() => setSentimentView('bullish')}>MOST BULLISH</FilterButton>
-                  <FilterButton $active={sentimentView === 'discussed'} onClick={() => setSentimentView('discussed')}>MOST DISCUSSED</FilterButton>
-                  <FilterButton $active={sentimentView === 'climbers'} onClick={() => setSentimentView('climbers')}>RANK CLIMBERS</FilterButton>
+                  {SENTIMENT_SORTS.map(s => (
+                    <FilterButton
+                      key={s.key}
+                      $active={sentimentSort === s.key}
+                      onClick={() => setSentimentSort(s.key)}
+                    >
+                      {s.label}
+                    </FilterButton>
+                  ))}
                 </div>
+
                 {sentimentLoading && (
                   <div style={{ padding: '2rem', textAlign: 'center', fontFamily: FONT_MONO, fontSize: '0.7rem', color: COLORS.textMuted }}>
-                    Loading social sentiment...
+                    Querying LunarCrush...
                   </div>
                 )}
-                {!sentimentLoading && sentimentData[sentimentView]?.length > 0 && (
+
+                {!sentimentLoading && sentimentCoins.length > 0 && (
                   <Grid>
-                    {sentimentData[sentimentView].slice(0, isPremium ? 20 : 10).map((coin, idx) => (
-                      <Link key={`${sentimentView}-${coin.symbol}`} href={isPremium || idx < 10 ? `/token/${coin.symbol}` : '/subscribe'} style={{ textDecoration: 'none', filter: !isPremium && idx >= 10 ? 'blur(5px)' : 'none', pointerEvents: !isPremium && idx >= 10 ? 'none' : 'auto', userSelect: !isPremium && idx >= 10 ? 'none' : 'auto' }}>
-                        <CoinCard variants={fadeUp} initial="hidden" animate="visible">
-                          <CoinHeader>
-                            <TokenIcon symbol={coin.symbol} imageUrl={coin.logo} size={36} />
-                            <CoinInfo>
-                              <CoinName>{coin.name}</CoinName>
-                              <CoinSymbol>{coin.symbol}</CoinSymbol>
-                            </CoinInfo>
-                            {coin.market_cap_rank && <Rank>#{coin.market_cap_rank}</Rank>}
-                          </CoinHeader>
-                          <CoinMetrics>
-                            {coin.sentiment != null && (
+                    {sentimentCoins.slice(0, isPremium ? 20 : 10).map((coin, idx) => {
+                      const sentColor = coin.sentiment == null
+                        ? COLORS.textMuted
+                        : coin.sentiment >= 60 ? COLORS.green
+                        : coin.sentiment >= 40 ? COLORS.amber
+                        : COLORS.red
+                      const gsColor = coin.galaxy_score == null
+                        ? COLORS.textMuted
+                        : coin.galaxy_score >= 60 ? COLORS.green
+                        : coin.galaxy_score >= 40 ? COLORS.amber
+                        : COLORS.red
+                      const change = coin.percent_change_24h
+                      return (
+                        <Link
+                          key={`${coin.symbol}-${idx}`}
+                          href={isPremium || idx < 10 ? `/token/${coin.symbol}` : '/subscribe'}
+                          style={{
+                            textDecoration: 'none',
+                            filter: !isPremium && idx >= 10 ? 'blur(5px)' : 'none',
+                            pointerEvents: !isPremium && idx >= 10 ? 'none' : 'auto',
+                          }}
+                        >
+                          <CoinCard variants={fadeUp} initial="hidden" animate="visible">
+                            <CoinHeader>
+                              <TokenIcon symbol={coin.symbol} imageUrl={coin.logo} size={36} />
+                              <CoinInfo>
+                                <CoinName>{coin.name}</CoinName>
+                                <CoinSymbol>{coin.symbol}</CoinSymbol>
+                              </CoinInfo>
+                              {coin.galaxy_score != null && (
+                                <span style={{
+                                  fontSize: '0.6rem', fontFamily: FONT_MONO, fontWeight: 700,
+                                  color: gsColor, padding: '0.15rem 0.4rem', borderRadius: '3px',
+                                  background: 'rgba(0, 229, 255, 0.04)',
+                                  border: `1px solid ${COLORS.borderSubtle}`,
+                                }}>
+                                  GS: {coin.galaxy_score}
+                                </span>
+                              )}
+                            </CoinHeader>
+                            <CoinMetrics>
                               <Metric>
-                                <MetricLabel>Sentiment</MetricLabel>
-                                <MetricValue style={{ color: coin.sentiment >= 70 ? COLORS.green : coin.sentiment >= 50 ? COLORS.amber : COLORS.red }}>
-                                  {coin.sentiment}%
-                                </MetricValue>
+                                <MetricLabel>Price</MetricLabel>
+                                <MetricValue>{formatPrice(coin.price)}</MetricValue>
                               </Metric>
-                            )}
-                            <Metric>
-                              <MetricLabel>24h Mentions</MetricLabel>
-                              <MetricValue>{formatInteractions(coin.interactions_24h)}</MetricValue>
-                            </Metric>
-                            {coin.galaxy_score != null && (
+                              {change != null && (
+                                <Metric>
+                                  <MetricLabel>24h</MetricLabel>
+                                  <ChangeValue $positive={change >= 0}>
+                                    {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                                  </ChangeValue>
+                                </Metric>
+                              )}
+                              {coin.sentiment != null && (
+                                <Metric>
+                                  <MetricLabel>Bullish %</MetricLabel>
+                                  <MetricValue style={{ color: sentColor }}>
+                                    {coin.sentiment.toFixed(0)}%
+                                  </MetricValue>
+                                </Metric>
+                              )}
                               <Metric>
-                                <MetricLabel>Galaxy Score</MetricLabel>
-                                <MetricValue style={{ color: coin.galaxy_score >= 60 ? COLORS.green : coin.galaxy_score >= 40 ? COLORS.amber : COLORS.red }}>
-                                  {coin.galaxy_score}
-                                </MetricValue>
+                                <MetricLabel>X Activity</MetricLabel>
+                                <MetricValue>{formatInteractions(coin.interactions_24h)}</MetricValue>
                               </Metric>
-                            )}
-                            {sentimentView === 'climbers' && coin.alt_rank_delta != null && (
-                              <Metric>
-                                <MetricLabel>Rank Δ 24h</MetricLabel>
-                                <MetricValue style={{ color: COLORS.green }}>
-                                  ▲ {coin.alt_rank_delta}
-                                </MetricValue>
-                              </Metric>
-                            )}
-                            {sentimentView !== 'climbers' && coin.change_24h_pct != null && (
-                              <Metric>
-                                <MetricLabel>Price 24h</MetricLabel>
-                                <ChangeValue $positive={coin.change_24h_pct >= 0}>
-                                  {coin.change_24h_pct >= 0 ? '+' : ''}{coin.change_24h_pct.toFixed(2)}%
-                                </ChangeValue>
-                              </Metric>
-                            )}
-                          </CoinMetrics>
-                          {getWhaleBadge(coin.symbol)}
-                        </CoinCard>
-                      </Link>
-                    ))}
+                              {coin.alt_rank != null && (
+                                <Metric>
+                                  <MetricLabel>AltRank</MetricLabel>
+                                  <MetricValue>#{coin.alt_rank}</MetricValue>
+                                </Metric>
+                              )}
+                              {coin.social_dominance != null && (
+                                <Metric>
+                                  <MetricLabel>Mindshare</MetricLabel>
+                                  <MetricValue>{coin.social_dominance.toFixed(2)}%</MetricValue>
+                                </Metric>
+                              )}
+                            </CoinMetrics>
+                            {getWhaleBadge(coin.symbol)}
+                          </CoinCard>
+                        </Link>
+                      )
+                    })}
                   </Grid>
                 )}
-                {!sentimentLoading && sentimentData[sentimentView]?.length === 0 && (
+
+                {!sentimentLoading && sentimentCoins.length === 0 && (
                   <div style={{ padding: '2rem', textAlign: 'center', fontFamily: FONT_MONO, fontSize: '0.7rem', color: COLORS.textMuted }}>
-                    No data available right now.
+                    No social-sentiment data right now (LunarCrush quota or upstream issue).
                   </div>
                 )}
               </Panel>

@@ -9,6 +9,7 @@ import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
+import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,15 +55,9 @@ function hasWhaleData(context: any): boolean {
   return erc20 || multichain
 }
 
-// ORCA System Prompt v6.0 — Non-advisory, data-analysis mode
-// IMPORTANT: Do not reintroduce language that frames ORCA as a trading
-// advisor, hedge-fund analyst, or provider of "conviction", "alpha",
-// "edge", "recommendations", or "trade ideas". Such framing exposes the
-// service to regulation as an unregistered investment adviser under the
-// US Investment Advisers Act of 1940 §202(a)(11), UK FCA RAO Art. 53,
-// and EU MiCA Art. 60. All responses must be positioned as automated
-// summarisation of public + on-chain data, not as guidance to act.
-const ORCA_SYSTEM_PROMPT = `You are ORCA, an automated research assistant for Sonar Tracker. You summarise public news, social posts, and on-chain whale transaction data. You are not a financial adviser, broker, dealer, or analyst, and you are not authorised to provide investment, legal, or tax advice in any jurisdiction.
+// ORCA System Prompt moved to lib/orca/system-prompt.ts (single source of truth
+// shared with the v2 multi-agent synthesiser). DO NOT redefine here.
+const _ORCA_SYSTEM_PROMPT_LEGACY_PLACEHOLDER = `You are ORCA, an automated research assistant for Sonar Tracker. You summarise public news, social posts, and on-chain whale transaction data. You are not a financial adviser, broker, dealer, or analyst, and you are not authorised to provide investment, legal, or tax advice in any jurisdiction.
 
 ## ROLE
 

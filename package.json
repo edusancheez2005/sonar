@@ -38,7 +38,8 @@
     "trading-signals": "^7.4.3",
     "tweetnacl": "^1.0.3",
     "viem": "^2.48.8",
-    "wagmi": "^2.19.5"
+    "wagmi": "^2.19.5",
+    "zod": "^3.25.76"
   },
   "scripts": {
     "dev": "next dev",
