@@ -244,7 +244,7 @@ export async function GET(request: Request) {
     // Political first (bigger market movers), then crypto sorted by recency within each.
     const politicalSorted = politicalNorm.sort((a: any, b: any) =>
       new Date(b._published).getTime() - new Date(a._published).getTime())
-    const cryptoSorted = crypto.sort((a, b) =>
+    const cryptoSorted = crypto.sort((a: any, b: any) =>
       new Date(b._published).getTime() - new Date(a._published).getTime())
 
     const merged = [...politicalSorted, ...cryptoSorted]
