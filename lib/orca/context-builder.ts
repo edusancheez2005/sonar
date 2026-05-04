@@ -496,6 +496,10 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<void>
         const articleTitle = article.post_title || 'Untitled'
         
         if (!articleUrl) continue
+        if (!article.post_title || articleTitle.trim() === '' || articleTitle === 'Untitled') {
+          console.log(`  ⏭️  Skipping article with no title: ${articleUrl}`)
+          continue
+        }
         
         // Filter out irrelevant articles
         if (!isRelevantArticle(article, ticker)) {
@@ -629,8 +633,12 @@ async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<void
       try {
         const publishedAt = new Date(article.published_at).toISOString()
         const articleUrl = article.url || ''
+        const articleTitle = article.title || 'Untitled'
         
         if (!articleUrl) continue // Skip if no URL
+        if (!article.title || articleTitle.trim() === '' || articleTitle === 'Untitled') {
+          continue // Skip if no real title
+        }
         
         // Check if article exists
         const { data: existing } = await supabase
@@ -682,11 +690,16 @@ async function fetchNews(ticker: string, supabase: any): Promise<any[]> {
     
     console.log(`🔍 Querying database for ${ticker} articles...`)
     
-    // Get all articles for this ticker, ordered by when we fetched them
+    // Get all articles for this ticker, ordered by when we fetched them.
+    // Filter out legacy bad rows: empty URLs and the literal 'Untitled' fallback.
     const { data: newsData, count, error } = await supabase
       .from('news_items')
       .select('*', { count: 'exact' })
       .eq('ticker', ticker.toUpperCase())
+      .neq('title', 'Untitled')
+      .neq('url', '')
+      .not('url', 'is', null)
+      .not('title', 'is', null)
       .order('fetched_at', { ascending: false })
       .limit(20)
     

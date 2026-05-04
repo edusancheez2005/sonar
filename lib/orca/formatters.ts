@@ -68,7 +68,18 @@ export function formatNewsHeadlinesDetailed(headlines: NewsItem[]): string {
     return 'No recent news available'
   }
   
-  return headlines.map((news, index) => {
+  // Defensive filter: drop any legacy rows that lack a real title or URL so the
+  // model never receives placeholder "Untitled" entries (which it would then
+  // dutifully render five times in the response).
+  const cleaned = headlines.filter(n =>
+    n && n.title && n.title.trim() !== '' && n.title !== 'Untitled' && n.url && n.url.trim() !== ''
+  )
+  
+  if (cleaned.length === 0) {
+    return 'No recent news available'
+  }
+  
+  return cleaned.map((news, index) => {
     const sentiment = news.sentiment_llm ?? news.sentiment_raw ?? 0
     const sentimentEmoji = sentiment > 0.3 ? '📈' : 
                           sentiment < -0.3 ? '📉' : '➡️'
