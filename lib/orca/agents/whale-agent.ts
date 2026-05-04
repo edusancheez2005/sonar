@@ -85,7 +85,13 @@ export async function runWhaleAgent(input: WhaleInput): Promise<AgentRun<WhaleBr
               total_volume_usd: a.total_volume_usd ?? 0,
               accumulation_signals: a.accumulation_signals ?? 0,
               distribution_signals: a.distribution_signals ?? 0,
-              recent_alerts: (a.recent_alerts || []).slice(0, 10),
+              // Slim each alert: only the fields the brief schema needs.
+              recent_alerts: (a.recent_alerts || []).slice(0, 5).map((alt: any) => ({
+                from: (alt.from?.owner_type || alt.from_label || 'unknown'),
+                to: (alt.to?.owner_type || alt.to_label || 'unknown'),
+                amount_usd: Number(alt.amount_usd) || 0,
+                timestamp: alt.timestamp || alt.time || new Date().toISOString(),
+              })),
             }
           : null,
       }

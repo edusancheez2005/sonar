@@ -20,6 +20,7 @@ You output ONLY a JSON object matching this exact schema:
 Hard rules:
 - Use ONLY headlines provided in the input. Do not invent any.
 - Keep urls EXACTLY as provided. If a url is missing or empty, omit that headline entirely.
+- The "headlines" array MUST contain AT MOST 8 entries. If more headlines are provided in the input, pick the 8 most recent / impactful and DROP the rest.
 - Sentiment is your factual classification of the headline tone, not a prediction.
 - Never use words like "recommend", "buy", "sell", "target", "alpha", "edge", "pump", "dump".
 - Output JSON only, no prose, no markdown fences.`
@@ -42,13 +43,15 @@ export async function runNewsAgent(input: NewsInput): Promise<AgentRun<NewsBrief
     exec: async (signal) => {
       const { client, miniModel } = getAgentClient()
 
+      // Cap input at 8 to mirror the schema cap and shrink the prompt — keeps
+      // the LLM's job mechanical (just classify, don't pick 8 from a long list).
       const cleaned = (input.headlines || [])
         .filter((h) => h && h.title && h.url)
-        .slice(0, 12)
+        .slice(0, 8)
         .map((h) => ({
-          title: String(h.title),
+          title: String(h.title).slice(0, 200),
           url: String(h.url),
-          source: h.source || 'unknown',
+          source: (h.source || 'unknown').slice(0, 60),
           published_at: h.published_at || new Date().toISOString(),
           sentiment_score: typeof h.sentiment_llm === 'number' ? h.sentiment_llm : null,
         }))
