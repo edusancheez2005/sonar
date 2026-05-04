@@ -1280,7 +1280,7 @@ export default function ClientOrca() {
                           display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
                           paddingTop: '0.6rem', borderTop: `1px solid ${colors.borderLight}`,
                         }}>
-                          {message.data.whale_summary && (
+                          {message.data.whale_summary && (message.data.whale_summary.transactions > 0 || Math.abs(message.data.whale_summary.net_flow || 0) > 0) && (
                             <>
                               <span style={{ fontSize: '0.65rem', fontFamily: FONT_MONO, color: message.data.whale_summary.net_flow >= 0 ? colors.sentimentBull : colors.sentimentBear, padding: '0.15rem 0.4rem', borderRadius: '3px', background: message.data.whale_summary.net_flow >= 0 ? 'rgba(0, 230, 118, 0.06)' : 'rgba(255, 23, 68, 0.06)', border: `1px solid ${message.data.whale_summary.net_flow >= 0 ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255, 23, 68, 0.1)'}` }}>
                                 WHALE: {message.data.whale_summary.net_flow >= 0 ? '+' : ''}{formatCompact(message.data.whale_summary.net_flow)}
