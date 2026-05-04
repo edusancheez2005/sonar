@@ -16,13 +16,13 @@
  */
 
 import { NextResponse } from 'next/server'
-import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
 let cachedResult: any = null
 let cachedAt = 0
-const CACHE_VERSION = 'v5-per-handle-ilike-2026-05-04'
+const CACHE_VERSION = 'v6-inline-client-2026-05-04'
 let cachedVersion = ''
 const CACHE_TTL = 30 * 60 * 1000 // 30 min
 
@@ -50,6 +50,8 @@ const POLITICAL_VOICES = [
 ]
 
 // Bump cache version so previous broken (empty) cache is discarded.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || ''
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 /** LunarCrush sentiment is 1..5; map to bullish/neutral/bearish. */
 function mapSentiment(raw: number | null | undefined): 'bullish' | 'bearish' | 'neutral' {
@@ -95,29 +97,34 @@ function inferContext(body: string): string {
 }
 
 async function fetchCryptoVoicesFromDB() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+    console.warn('[voices] supabase env missing')
+    return { voices: [], debug: { reason: 'env-missing' } }
+  }
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, { auth: { persistSession: false } })
+
   // 60-day window — top voices don't tweet daily.
   const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
 
-  // Per-handle query in parallel.  PostgREST caps responses at ~1000 rows so
-  // a "scan everything and filter" approach silently truncates older posts.
-  // `.ilike(col, value)` (no wildcards) is case-insensitive equality — exactly
-  // what we need to match `Saylor` vs `saylor` etc.
+  const debug: any = { tried: 0, matched: 0, errors: [] }
   const results = await Promise.all(
     CRYPTO_VOICES.map(async (v) => {
-      const { data, error } = await supabaseAdminFresh
+      debug.tried++
+      const { data, error } = await supabase
         .from('social_posts')
-        .select('body, published_at, sentiment, interactions, post_link, creator_screen_name')
+        .select('body, published_at, sentiment, post_link, creator_screen_name')
         .ilike('creator_screen_name', v.handle)
         .gte('published_at', since)
         .not('body', 'is', null)
         .order('published_at', { ascending: false })
         .limit(1)
       if (error) {
-        console.warn(`[voices] supabase err for @${v.handle}:`, error.message)
+        debug.errors.push(`${v.handle}: ${error.message}`)
         return null
       }
       const post: any = data?.[0]
       if (!post?.body) return null
+      debug.matched++
       return {
         name: v.name,
         handle: '@' + v.handle,
@@ -133,8 +140,8 @@ async function fetchCryptoVoicesFromDB() {
   )
 
   const out = results.filter((r): r is NonNullable<typeof r> => r !== null)
-  console.log(`[voices] crypto voices matched: ${out.length} of ${CRYPTO_VOICES.length}`)
-  return out
+  console.log(`[voices] crypto matched: ${debug.matched} of ${debug.tried}; errors: ${debug.errors.length}`)
+  return { voices: out, debug }
 }
 
 async function fetchPoliticalVoicesFromGrok() {
@@ -220,10 +227,11 @@ export async function GET(request: Request) {
       })
     }
 
-    const [crypto, political] = await Promise.all([
-      fetchCryptoVoicesFromDB().catch(e => { console.warn('[voices] crypto db failed:', e?.message); return [] as any[] }),
-      fetchPoliticalVoicesFromGrok().catch(e => { console.warn('[voices] political failed:', e?.message); return [] as any[] }),
+    const [cryptoRes, political] = await Promise.all([
+      fetchCryptoVoicesFromDB().catch(e => { console.warn('[voices] crypto db failed:', e?.message); return { voices: [], debug: { error: String(e?.message || e) } } }),
+      fetchPoliticalVoicesFromGrok().catch(e => { console.warn('[voices] political failed:', e?.message); return [] }),
     ])
+    const crypto = cryptoRes.voices
 
     const politicalNorm = political.map((p: any) => ({
       ...p,
@@ -243,7 +251,7 @@ export async function GET(request: Request) {
     const voices = merged.map(({ _published, ...rest }: any) => rest).slice(0, 12)
 
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-    const result = { voices, last_updated: today }
+    const result = { voices, last_updated: today, _debug: cryptoRes.debug }
 
     cachedResult = result
     cachedAt = Date.now()
