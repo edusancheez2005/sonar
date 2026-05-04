@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
 
 let cachedResult: any = null
 let cachedAt = 0
-const CACHE_VERSION = 'v4-social-posts-bulkscan-2026-05-04'
+const CACHE_VERSION = 'v5-per-handle-ilike-2026-05-04'
 let cachedVersion = ''
 const CACHE_TTL = 30 * 60 * 1000 // 30 min
 
@@ -98,50 +98,42 @@ async function fetchCryptoVoicesFromDB() {
   // 60-day window — top voices don't tweet daily.
   const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
 
-  // Build case-insensitive set of handles for matching.
-  const handlesLower = CRYPTO_VOICES.map(v => v.handle.toLowerCase())
-
-  // Single query for all handles in the last 60 days, then group client-side.
-  // We can't case-insensitive `.in()` server-side, so pull broadly and filter in JS.
-  const { data, error } = await supabaseAdminFresh
-    .from('social_posts')
-    .select('body, published_at, sentiment, interactions, post_link, creator_screen_name, creator_display_name')
-    .gte('published_at', since)
-    .order('published_at', { ascending: false })
-    .limit(2000)
-
-  if (error) {
-    console.warn('[voices] supabase error:', error.message)
-    return []
-  }
-  if (!data || data.length === 0) {
-    console.warn('[voices] supabase returned 0 rows in last 60 days')
-    return []
-  }
-
-  // For each priority handle, find the most recent post.
-  const out: any[] = []
-  for (const v of CRYPTO_VOICES) {
-    const target = v.handle.toLowerCase()
-    const post: any = data.find((row: any) =>
-      typeof row.creator_screen_name === 'string' &&
-      row.creator_screen_name.toLowerCase() === target &&
-      row.body
-    )
-    if (!post) continue
-    out.push({
-      name: v.name,
-      handle: '@' + v.handle,
-      role: v.role,
-      quote: trimQuote(post.body),
-      date: formatDate(post.published_at),
-      sentiment: mapSentiment(post.sentiment),
-      context: inferContext(post.body),
-      url: post.post_link || null,
-      _published: post.published_at,
+  // Per-handle query in parallel.  PostgREST caps responses at ~1000 rows so
+  // a "scan everything and filter" approach silently truncates older posts.
+  // `.ilike(col, value)` (no wildcards) is case-insensitive equality — exactly
+  // what we need to match `Saylor` vs `saylor` etc.
+  const results = await Promise.all(
+    CRYPTO_VOICES.map(async (v) => {
+      const { data, error } = await supabaseAdminFresh
+        .from('social_posts')
+        .select('body, published_at, sentiment, interactions, post_link, creator_screen_name')
+        .ilike('creator_screen_name', v.handle)
+        .gte('published_at', since)
+        .not('body', 'is', null)
+        .order('published_at', { ascending: false })
+        .limit(1)
+      if (error) {
+        console.warn(`[voices] supabase err for @${v.handle}:`, error.message)
+        return null
+      }
+      const post: any = data?.[0]
+      if (!post?.body) return null
+      return {
+        name: v.name,
+        handle: '@' + v.handle,
+        role: v.role,
+        quote: trimQuote(post.body),
+        date: formatDate(post.published_at),
+        sentiment: mapSentiment(post.sentiment),
+        context: inferContext(post.body),
+        url: post.post_link || null,
+        _published: post.published_at,
+      }
     })
-  }
-  console.log(`[voices] crypto voices matched: ${out.length} of ${CRYPTO_VOICES.length} (scanned ${data.length} rows)`)
+  )
+
+  const out = results.filter((r): r is NonNullable<typeof r> => r !== null)
+  console.log(`[voices] crypto voices matched: ${out.length} of ${CRYPTO_VOICES.length}`)
   return out
 }
 
