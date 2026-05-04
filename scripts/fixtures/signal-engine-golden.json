@@ -1,0 +1,1602 @@
+{
+  "generated_at": "2026-05-04T13:27:34.533Z",
+  "now_ms": 1777896000000,
+  "cases": [
+    {
+      "name": "BTC_raw_default_bullish_flow",
+      "input": {
+        "tokenSymbol": "BTC",
+        "transactions": [
+          {
+            "transaction_hash": "b0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 250000,
+            "whale_address": "wb0",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 251000,
+            "whale_address": "wb1",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 252000,
+            "whale_address": "wb2",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 253000,
+            "whale_address": "wb3",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 254000,
+            "whale_address": "wb4",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b5",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 255000,
+            "whale_address": "wb5",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b6",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 256000,
+            "whale_address": "wb6",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b7",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 257000,
+            "whale_address": "wb7",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b8",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 258000,
+            "whale_address": "wb8",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b9",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 259000,
+            "whale_address": "wb9",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b10",
+            "timestamp": "2026-05-04T01:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 260000,
+            "whale_address": "wb10",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b11",
+            "timestamp": "2026-05-04T00:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 261000,
+            "whale_address": "wb11",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b12",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 262000,
+            "whale_address": "wb12",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b13",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 263000,
+            "whale_address": "wb13",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b14",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 264000,
+            "whale_address": "wb14",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b15",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 265000,
+            "whale_address": "wb15",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b16",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 266000,
+            "whale_address": "wb16",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b17",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 267000,
+            "whale_address": "wb17",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b18",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 268000,
+            "whale_address": "wb18",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b19",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 269000,
+            "whale_address": "wb19",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b20",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 270000,
+            "whale_address": "wb20",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b21",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 271000,
+            "whale_address": "wb21",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b22",
+            "timestamp": "2026-05-04T01:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 272000,
+            "whale_address": "wb22",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b23",
+            "timestamp": "2026-05-04T00:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 273000,
+            "whale_address": "wb23",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b24",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 274000,
+            "whale_address": "wb24",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b25",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 275000,
+            "whale_address": "wb25",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b26",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 276000,
+            "whale_address": "wb26",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b27",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 277000,
+            "whale_address": "wb27",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b28",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 278000,
+            "whale_address": "wb28",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b29",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 279000,
+            "whale_address": "wb29",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 250000,
+            "whale_address": "ws0",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 251000,
+            "whale_address": "ws1",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 252000,
+            "whale_address": "ws2",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 253000,
+            "whale_address": "ws3",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 254000,
+            "whale_address": "ws4",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s5",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 255000,
+            "whale_address": "ws5",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s6",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 256000,
+            "whale_address": "ws6",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s7",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 257000,
+            "whale_address": "ws7",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s8",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 258000,
+            "whale_address": "ws8",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s9",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 259000,
+            "whale_address": "ws9",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          }
+        ],
+        "priceChanges": {
+          "change_1h": 0.5,
+          "change_6h": 1.2,
+          "change_24h": 3.4,
+          "change_7d": 6,
+          "change_30d": 12
+        },
+        "volumeData": {
+          "volume_24h": 50000000000,
+          "avg_volume_7d": 40000000000,
+          "market_cap": 1300000000000
+        },
+        "sentimentData": {
+          "score": 0.4,
+          "count": 200
+        },
+        "socialData": null,
+        "communityVotes": null,
+        "devActivity": null,
+        "technicalSignals": null,
+        "derivativesData": null,
+        "calibration": null,
+        "snapshot": null,
+        "nowMs": 1777896000000
+      },
+      "expected": {
+        "signal": "BUY",
+        "score": 68,
+        "confidence": 79,
+        "rawScore": 36,
+        "timeframe": "3d-7d",
+        "sign_decision": {
+          "source": "default",
+          "multiplier": 1,
+          "raw_score": 57
+        }
+      }
+    },
+    {
+      "name": "ETH_calibration_inverts_to_minus_one",
+      "input": {
+        "tokenSymbol": "ETH",
+        "transactions": [
+          {
+            "transaction_hash": "b0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 250000,
+            "whale_address": "wb0",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 251000,
+            "whale_address": "wb1",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 252000,
+            "whale_address": "wb2",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 253000,
+            "whale_address": "wb3",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 254000,
+            "whale_address": "wb4",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b5",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 255000,
+            "whale_address": "wb5",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b6",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 256000,
+            "whale_address": "wb6",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b7",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 257000,
+            "whale_address": "wb7",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b8",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 258000,
+            "whale_address": "wb8",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b9",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 259000,
+            "whale_address": "wb9",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b10",
+            "timestamp": "2026-05-04T01:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 260000,
+            "whale_address": "wb10",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b11",
+            "timestamp": "2026-05-04T00:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 261000,
+            "whale_address": "wb11",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b12",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 262000,
+            "whale_address": "wb12",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b13",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 263000,
+            "whale_address": "wb13",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b14",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 264000,
+            "whale_address": "wb14",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b15",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 265000,
+            "whale_address": "wb15",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b16",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 266000,
+            "whale_address": "wb16",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b17",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 267000,
+            "whale_address": "wb17",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b18",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 268000,
+            "whale_address": "wb18",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b19",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 269000,
+            "whale_address": "wb19",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b20",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 270000,
+            "whale_address": "wb20",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b21",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 271000,
+            "whale_address": "wb21",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b22",
+            "timestamp": "2026-05-04T01:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 272000,
+            "whale_address": "wb22",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b23",
+            "timestamp": "2026-05-04T00:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 273000,
+            "whale_address": "wb23",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b24",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 274000,
+            "whale_address": "wb24",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 250000,
+            "whale_address": "ws0",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 251000,
+            "whale_address": "ws1",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 252000,
+            "whale_address": "ws2",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 253000,
+            "whale_address": "ws3",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 254000,
+            "whale_address": "ws4",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          }
+        ],
+        "priceChanges": {
+          "change_1h": 0.2,
+          "change_6h": 0.8,
+          "change_24h": 1.5,
+          "change_7d": 3,
+          "change_30d": 5
+        },
+        "volumeData": {
+          "volume_24h": 20000000000,
+          "avg_volume_7d": 15000000000,
+          "market_cap": 400000000000
+        },
+        "sentimentData": {
+          "score": 0.2,
+          "count": 100
+        },
+        "socialData": null,
+        "communityVotes": null,
+        "devActivity": null,
+        "technicalSignals": null,
+        "derivativesData": null,
+        "calibration": {
+          "signMultiplier": -1,
+          "confidenceScore": 70,
+          "ic": -0.22,
+          "nOutcomes": 120
+        },
+        "snapshot": null,
+        "nowMs": 1777896000000
+      },
+      "expected": {
+        "signal": "SELL",
+        "score": 37,
+        "confidence": 69,
+        "rawScore": -25,
+        "timeframe": "3d-7d",
+        "sign_decision": {
+          "source": "calibration",
+          "multiplier": -1,
+          "raw_score": 57
+        }
+      }
+    },
+    {
+      "name": "SOL_snapshot_fallback_zero_mute",
+      "input": {
+        "tokenSymbol": "SOL",
+        "transactions": [
+          {
+            "transaction_hash": "b0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 250000,
+            "whale_address": "wb0",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 251000,
+            "whale_address": "wb1",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 252000,
+            "whale_address": "wb2",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 253000,
+            "whale_address": "wb3",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 254000,
+            "whale_address": "wb4",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b5",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 255000,
+            "whale_address": "wb5",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b6",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 256000,
+            "whale_address": "wb6",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b7",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 257000,
+            "whale_address": "wb7",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b8",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 258000,
+            "whale_address": "wb8",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b9",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 259000,
+            "whale_address": "wb9",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b10",
+            "timestamp": "2026-05-04T01:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 260000,
+            "whale_address": "wb10",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b11",
+            "timestamp": "2026-05-04T00:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 261000,
+            "whale_address": "wb11",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 250000,
+            "whale_address": "ws0",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 251000,
+            "whale_address": "ws1",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 252000,
+            "whale_address": "ws2",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 253000,
+            "whale_address": "ws3",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 254000,
+            "whale_address": "ws4",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s5",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 255000,
+            "whale_address": "ws5",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s6",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 256000,
+            "whale_address": "ws6",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s7",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 257000,
+            "whale_address": "ws7",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          }
+        ],
+        "priceChanges": {
+          "change_1h": -0.3,
+          "change_6h": -0.7,
+          "change_24h": -1.2,
+          "change_7d": 2,
+          "change_30d": -4
+        },
+        "volumeData": {
+          "volume_24h": 3000000000,
+          "avg_volume_7d": 2500000000,
+          "market_cap": 80000000000
+        },
+        "sentimentData": {
+          "score": 0,
+          "count": 50
+        },
+        "socialData": null,
+        "communityVotes": null,
+        "devActivity": null,
+        "technicalSignals": null,
+        "derivativesData": null,
+        "calibration": {
+          "signMultiplier": null,
+          "confidenceScore": 10,
+          "ic": 0.05,
+          "nOutcomes": 30
+        },
+        "snapshot": {
+          "signMultiplier": 0,
+          "confidenceScore": 80,
+          "ic": 0,
+          "nOutcomes": 200
+        },
+        "nowMs": 1777896000000
+      },
+      "expected": {
+        "signal": "NEUTRAL",
+        "score": 38,
+        "confidence": 100,
+        "rawScore": -23,
+        "timeframe": "24h-7d",
+        "sign_decision": {
+          "source": "snapshot",
+          "multiplier": 0,
+          "raw_score": 12
+        }
+      }
+    },
+    {
+      "name": "NEW_TOKEN_no_overrides_uses_default_plus_one",
+      "input": {
+        "tokenSymbol": "NEW",
+        "transactions": [
+          {
+            "transaction_hash": "b0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 250000,
+            "whale_address": "wb0",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 251000,
+            "whale_address": "wb1",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 252000,
+            "whale_address": "wb2",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 253000,
+            "whale_address": "wb3",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 254000,
+            "whale_address": "wb4",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b5",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 255000,
+            "whale_address": "wb5",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b6",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 256000,
+            "whale_address": "wb6",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b7",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 257000,
+            "whale_address": "wb7",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 250000,
+            "whale_address": "ws0",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 251000,
+            "whale_address": "ws1",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 252000,
+            "whale_address": "ws2",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 253000,
+            "whale_address": "ws3",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 254000,
+            "whale_address": "ws4",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s5",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 255000,
+            "whale_address": "ws5",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s6",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 256000,
+            "whale_address": "ws6",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s7",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 257000,
+            "whale_address": "ws7",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s8",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 258000,
+            "whale_address": "ws8",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s9",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 259000,
+            "whale_address": "ws9",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s10",
+            "timestamp": "2026-05-04T01:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 260000,
+            "whale_address": "ws10",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s11",
+            "timestamp": "2026-05-04T00:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 261000,
+            "whale_address": "ws11",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s12",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 262000,
+            "whale_address": "ws12",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s13",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 263000,
+            "whale_address": "ws13",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s14",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 264000,
+            "whale_address": "ws14",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s15",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 265000,
+            "whale_address": "ws15",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s16",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 266000,
+            "whale_address": "ws16",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s17",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 267000,
+            "whale_address": "ws17",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s18",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 268000,
+            "whale_address": "ws18",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s19",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 269000,
+            "whale_address": "ws19",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s20",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 270000,
+            "whale_address": "ws20",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s21",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 271000,
+            "whale_address": "ws21",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          }
+        ],
+        "priceChanges": {
+          "change_1h": -1,
+          "change_6h": -3,
+          "change_24h": -5,
+          "change_7d": -10,
+          "change_30d": -15
+        },
+        "volumeData": {
+          "volume_24h": 50000000,
+          "avg_volume_7d": 40000000,
+          "market_cap": 1000000000
+        },
+        "sentimentData": null,
+        "socialData": null,
+        "communityVotes": null,
+        "devActivity": null,
+        "technicalSignals": null,
+        "derivativesData": null,
+        "calibration": null,
+        "snapshot": null,
+        "nowMs": 1777896000000
+      },
+      "expected": {
+        "signal": "SELL",
+        "score": 29,
+        "confidence": 90,
+        "rawScore": -42,
+        "timeframe": "24h-7d",
+        "sign_decision": {
+          "source": "default",
+          "multiplier": 1,
+          "raw_score": -50
+        }
+      }
+    },
+    {
+      "name": "LOW_CONFIDENCE_calibration_gates_to_neutral",
+      "input": {
+        "tokenSymbol": "XYZ",
+        "transactions": [
+          {
+            "transaction_hash": "b0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 250000,
+            "whale_address": "wb0",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 251000,
+            "whale_address": "wb1",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 252000,
+            "whale_address": "wb2",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b3",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 253000,
+            "whale_address": "wb3",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b4",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 254000,
+            "whale_address": "wb4",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b5",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 255000,
+            "whale_address": "wb5",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b6",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 256000,
+            "whale_address": "wb6",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b7",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 257000,
+            "whale_address": "wb7",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b8",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 258000,
+            "whale_address": "wb8",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b9",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 259000,
+            "whale_address": "wb9",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b10",
+            "timestamp": "2026-05-04T01:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 260000,
+            "whale_address": "wb10",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b11",
+            "timestamp": "2026-05-04T00:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 261000,
+            "whale_address": "wb11",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b12",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 262000,
+            "whale_address": "wb12",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b13",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 263000,
+            "whale_address": "wb13",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b14",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 264000,
+            "whale_address": "wb14",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b15",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 265000,
+            "whale_address": "wb15",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b16",
+            "timestamp": "2026-05-04T07:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 266000,
+            "whale_address": "wb16",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b17",
+            "timestamp": "2026-05-04T06:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 267000,
+            "whale_address": "wb17",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b18",
+            "timestamp": "2026-05-04T05:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 268000,
+            "whale_address": "wb18",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b19",
+            "timestamp": "2026-05-04T04:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 269000,
+            "whale_address": "wb19",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b20",
+            "timestamp": "2026-05-04T03:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 270000,
+            "whale_address": "wb20",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b21",
+            "timestamp": "2026-05-04T02:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 271000,
+            "whale_address": "wb21",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b22",
+            "timestamp": "2026-05-04T01:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 272000,
+            "whale_address": "wb22",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b23",
+            "timestamp": "2026-05-04T00:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 273000,
+            "whale_address": "wb23",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b24",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 274000,
+            "whale_address": "wb24",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b25",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 275000,
+            "whale_address": "wb25",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b26",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 276000,
+            "whale_address": "wb26",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "b27",
+            "timestamp": "2026-05-04T08:00:00.000Z",
+            "classification": "BUY",
+            "usd_value": 277000,
+            "whale_address": "wb27",
+            "reasoning": "cex_classification buy from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s0",
+            "timestamp": "2026-05-04T11:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 250000,
+            "whale_address": "ws0",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s1",
+            "timestamp": "2026-05-04T10:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 251000,
+            "whale_address": "ws1",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          },
+          {
+            "transaction_hash": "s2",
+            "timestamp": "2026-05-04T09:00:00.000Z",
+            "classification": "SELL",
+            "usd_value": 252000,
+            "whale_address": "ws2",
+            "reasoning": "cex_classification sell from upstream",
+            "confidence": 0.8
+          }
+        ],
+        "priceChanges": {
+          "change_1h": 1,
+          "change_6h": 2,
+          "change_24h": 4,
+          "change_7d": 8,
+          "change_30d": 14
+        },
+        "volumeData": {
+          "volume_24h": 1000000000,
+          "avg_volume_7d": 800000000,
+          "market_cap": 5000000000
+        },
+        "sentimentData": {
+          "score": 0.5,
+          "count": 80
+        },
+        "socialData": null,
+        "communityVotes": null,
+        "devActivity": null,
+        "technicalSignals": null,
+        "derivativesData": null,
+        "calibration": {
+          "signMultiplier": 1,
+          "confidenceScore": 5,
+          "ic": 0.02,
+          "nOutcomes": 40
+        },
+        "snapshot": null,
+        "nowMs": 1777896000000
+      },
+      "expected": {
+        "signal": "NEUTRAL",
+        "score": 73,
+        "confidence": 79,
+        "rawScore": 45,
+        "timeframe": "3d-7d",
+        "sign_decision": {
+          "source": "calibration",
+          "multiplier": 1,
+          "raw_score": 62
+        }
+      }
+    }
+  ]
+}
