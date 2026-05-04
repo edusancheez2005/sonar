@@ -38,7 +38,13 @@ import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
-const LOOKBACK_DAYS = 30
+// CALIB-2 (2026-05-04): shortened from 30d -> 7d. The longer window made the
+// calibrator anchor on stale outcomes from before the cache fix + MATIC
+// migration + outlier filter (all shipped 2026-05-03), causing it to flip
+// healthy tokens (LINK/BTC/ETH/SOL/DOGE/SHIB/...) to sign_multiplier=-1 every
+// night based on contaminated history. 7d ensures the calibration tracks the
+// current pipeline behaviour and decays bad data within a week.
+const LOOKBACK_DAYS = 7
 const EVAL_WINDOWS = ['1h', '6h', '24h']
 
 // Minimum directional outcomes required before we trust a per-token sign.
