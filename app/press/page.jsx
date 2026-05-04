@@ -211,7 +211,7 @@ export default function PressKit() {
           <p>
             <strong>Mission:</strong> Sonar Tracker empowers crypto traders with real-time whale transaction monitoring and AI-powered market intelligence.
           </p>
-          <p><strong>Founded:</strong> 2024</p>
+          <p><strong>Founded:</strong> 2025</p>
           <p><strong>Headquarters:</strong> United Kingdom</p>
           <p><strong>Key Features:</strong></p>
           <ul>
@@ -314,7 +314,7 @@ export default function PressKit() {
         >
           <h2>Boilerplate</h2>
           <p>
-            Sonar Tracker is a leading cryptocurrency whale transaction monitoring platform that provides real-time analytics and AI-powered market intelligence. Founded in 2024 and headquartered in the United Kingdom, Sonar Tracker empowers traders with institutional-grade data, tracking whale transactions over $10,000 across major blockchains. With features including real-time monitoring, advanced sentiment analysis, and the AI advisor Orca 2.0, Sonar Tracker has become the go-to platform for serious crypto traders seeking competitive advantages in volatile markets.
+            Sonar Tracker is a leading cryptocurrency whale transaction monitoring platform that provides real-time analytics and AI-powered market intelligence. Founded in 2025 and headquartered in the United Kingdom, Sonar Tracker empowers traders with institutional-grade data, tracking whale transactions over $10,000 across major blockchains. With features including real-time monitoring, advanced sentiment analysis, and the AI advisor Orca 2.0, Sonar Tracker has become the go-to platform for serious crypto traders seeking competitive advantages in volatile markets.
           </p>
         </Section>
       </Content>
