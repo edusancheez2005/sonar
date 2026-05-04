@@ -1,0 +1,23 @@
+{
+  "_doc": "List of famous traders to add as figures. Each entry needs:\n  - slug: kebab-case unique id\n  - display_name: how it shows on the page\n  - twitter_handle: their X handle (no @)\n  - identifier: either an ENS name (foo.eth) OR a 0x... address OR a Solana base58 address\n  - description: 1-2 sentences\n  - category: one of person | company | government | protocol | celebrity\n\nThe verifier script (scripts/verify-and-sync-traders.mjs) will:\n  1. Resolve each ENS name on-chain via Cloudflare's public Ethereum gateway\n  2. SKIP entries that don't resolve (cannot be verified)\n  3. Upsert verified entries into curated_entities\n\nADD MORE ENTRIES HERE — the script handles the rest.",
+  "traders": [
+    { "slug": "tetranode", "display_name": "Tetranode", "twitter_handle": "Tetranode", "identifier": "tetranode.eth", "category": "person", "description": "Pseudonymous DeFi whale. Large early holder of LOOKS, RPL and DAO governance tokens." },
+    { "slug": "machibigbrother", "display_name": "Machi Big Brother", "twitter_handle": "machibigbrother", "identifier": "machibigbrother.eth", "category": "person", "description": "Jeffrey Huang. Taiwanese musician turned crypto whale; known for high-volume NFT and memecoin trades." },
+    { "slug": "pranksy", "display_name": "Pranksy", "twitter_handle": "pranksy", "identifier": "pranksy.eth", "category": "person", "description": "Major NFT collector and trader since 2018." },
+    { "slug": "punk6529", "display_name": "6529", "twitter_handle": "punk6529", "identifier": "punk6529.eth", "category": "person", "description": "Pseudonymous NFT thinker and large CryptoPunks holder (Punk #6529)." },
+    { "slug": "dingaling", "display_name": "Dingaling", "twitter_handle": "dingalingts", "identifier": "dingaling.eth", "category": "person", "description": "Major NFT collector and OpenSea power-user since 2018." },
+    { "slug": "beanie", "display_name": "Beanie", "twitter_handle": "beaniemaxi", "identifier": "beaniemaxi.eth", "category": "person", "description": "NFT collector and early Bored Apes holder." },
+    { "slug": "fvckrender", "display_name": "Fvckrender", "twitter_handle": "fvckrender", "identifier": "fvckrender.eth", "category": "person", "description": "3D digital artist and prominent NFT collector." },
+    { "slug": "loomdart", "display_name": "Loomdart", "twitter_handle": "loomdart", "identifier": "loomdart.eth", "category": "person", "description": "Veteran trader from eGirl Capital, active on Ethereum since pre-DeFi-summer." },
+    { "slug": "0xsisyphus", "display_name": "0xSisyphus", "twitter_handle": "0xSisyphus", "identifier": "0xsisyphus.eth", "category": "person", "description": "Pseudonymous DeFi/perp trader, ex-Genesis." },
+    { "slug": "smolting", "display_name": "Smolting", "twitter_handle": "smolting", "identifier": "smolting.eth", "category": "person", "description": "DeFi user known for Aave / Compound / GMX positions." },
+    { "slug": "degenspartan", "display_name": "DegenSpartan", "twitter_handle": "degenspartan", "identifier": "degenspartan.eth", "category": "person", "description": "Pseudonymous DeFi-era trader and commentator." },
+    { "slug": "andrew-kang", "display_name": "Andrew Kang", "twitter_handle": "Rewkang", "identifier": "rewkang.eth", "category": "person", "description": "Co-founder Mechanism Capital. Active perp and altcoin trader." },
+    { "slug": "su-zhu", "display_name": "Su Zhu", "twitter_handle": "zhusu", "identifier": "zhusu.eth", "category": "person", "description": "Co-founder of Three Arrows Capital (defunct)." },
+    { "slug": "kain-warwick", "display_name": "Kain Warwick", "twitter_handle": "kaiynne", "identifier": "kain.eth", "category": "person", "description": "Founder of Synthetix and Infinex." },
+    { "slug": "stani-kulechov", "display_name": "Stani Kulechov", "twitter_handle": "StaniKulechov", "identifier": "stani.eth", "category": "person", "description": "Founder of Aave." },
+    { "slug": "kyle-davies", "display_name": "Kyle Davies", "twitter_handle": "kyled116", "identifier": "kyle.eth", "category": "person", "description": "Co-founder of Three Arrows Capital (defunct)." },
+    { "slug": "anthony-sassano", "display_name": "Anthony Sassano", "twitter_handle": "sassal0x", "identifier": "sassal.eth", "category": "person", "description": "Ethereum educator, host of The Daily Gwei." },
+    { "slug": "ryan-sean-adams", "display_name": "Ryan Sean Adams", "twitter_handle": "RyanSAdams", "identifier": "ryan.bankless.eth", "category": "person", "description": "Co-founder of Bankless." }
+  ]
+}
