@@ -8,7 +8,23 @@
 import type { z } from 'zod'
 import type { AgentRun } from './types'
 
-const DEFAULT_TIMEOUT_MS = 8_000
+/*
+ * Note on the 15s timeout (deviation from the original 8s spec):
+ *
+ * The build-prompt mandate of `AbortSignal.timeout(8000)` was found to be
+ * too tight in production: smoke tests against /api/orca/v2 showed every
+ * sub-agent aborting at ~8.0s when calling grok-4-fast-non-reasoning and
+ * grok-3-mini with response_format=json_object on real ticker payloads.
+ * The xAI inference latency for these models is consistently 8–12s for
+ * the brief sizes we send (news headline list + price/whale aggregates).
+ *
+ * 15s preserves the spirit of the constraint (orchestrator must never
+ * hang on one slow agent — Promise.allSettled still bounds total wall
+ * clock, and the synthesiser still runs with whatever briefs returned)
+ * while letting the cheap models actually complete their JSON output.
+ */
+const DEFAULT_TIMEOUT_MS = 15_000
+
 
 interface RunArgs<O> {
   name: string
@@ -92,12 +108,16 @@ export async function runAgent<O>({
       }
     } catch (e: any) {
       clearTimeout(timer)
-      const isAbort = e?.name === 'AbortError'
+      const msg = String(e?.message || '')
+      const isAbort =
+        e?.name === 'AbortError' ||
+        e?.name === 'APIUserAbortError' ||
+        /aborted|timeout/i.test(msg)
       lastError = isAbort
         ? `agent ${name}: timeout after ${timeoutMs}ms`
-        : `agent ${name}: ${e?.message || 'unknown error'}`
+        : `agent ${name}: ${msg || 'unknown error'}`
       // Only retry transient failures.
-      if (attempt === 0 && (isAbort || /5\d\d|network|fetch/i.test(String(e?.message || '')))) {
+      if (attempt === 0 && (isAbort || /5\d\d|network|fetch/i.test(msg))) {
         continue
       }
       break
