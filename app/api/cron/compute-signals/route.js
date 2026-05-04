@@ -80,12 +80,24 @@ export async function GET(req) {
     const calibrationByToken = await loadCalibrationByToken(tokens)
     console.log(`[SignalEngine] Calibration loaded for ${calibrationByToken.size}/${tokens.length} tokens`)
 
+    // 2026-05-04 (Stage 2): operator-curated snapshot fallback. Used by the
+    // engine when the live calibration row is null/insufficient. Empty by
+    // default — every token runs at +1 until an operator approves an
+    // override. The cron NEVER writes here.
+    const snapshotByToken = await loadSnapshotByToken(tokens)
+    console.log(`[SignalEngine] Snapshot loaded for ${snapshotByToken.size}/${tokens.length} tokens`)
+
     const results = []
     const errors = []
 
     for (const token of tokens) {
       try {
-        const signal = await computeSignalForToken(token, btcBeta, calibrationByToken.get(token) || null)
+        const signal = await computeSignalForToken(
+          token,
+          btcBeta,
+          calibrationByToken.get(token) || null,
+          snapshotByToken.get(token) || null,
+        )
         results.push(signal)
 
         // Store in token_signals table
@@ -188,6 +200,58 @@ async function loadCalibrationByToken(tokens) {
 }
 
 /**
+ * 2026-05-04 (Stage 2). Load operator-approved sign overrides from
+ * `signal_calibration_snapshot`. Same window-collapsing semantics as
+ * loadCalibrationByToken so the engine sees a single per-token row.
+ *
+ * Reads via supabaseAdminFresh because this table is mutated by humans on
+ * an irregular cadence — caching could serve a stale row for hours after
+ * an operator approves a new sign.
+ *
+ * Returns an empty Map when the table doesn't exist yet (pre-migration)
+ * so the rest of the pipeline keeps working.
+ */
+async function loadSnapshotByToken(tokens) {
+  const upper = tokens.map(t => t.toUpperCase())
+  const { data, error } = await supabaseAdminFresh
+    .from('signal_calibration_snapshot')
+    .select('token, eval_window, ic, n_outcomes, sign_multiplier, confidence_score')
+    .in('token', upper)
+  if (error) {
+    // Table missing or RLS denial — log once and return empty so the
+    // engine falls through to its default (+1, raw direction).
+    console.warn('[SignalEngine] snapshot load failed (using default):', error.message)
+    return new Map()
+  }
+  const byToken = new Map()
+  for (const row of data || []) {
+    if (!byToken.has(row.token)) byToken.set(row.token, [])
+    byToken.get(row.token).push(row)
+  }
+  const out = new Map()
+  for (const [token, rows] of byToken) {
+    // Median sign across windows for the same robustness reason as live
+    // calibration — one bad-window snapshot shouldn't override the rest.
+    const signs = rows
+      .map(r => (r.sign_multiplier === null ? 1 : r.sign_multiplier))
+      .sort((a, b) => a - b)
+    const median = signs[Math.floor(signs.length / 2)]
+    const signMultiplier = (median === -1 || median === 0 || median === 1) ? median : null
+    const widest = rows.slice().sort((a, b) => (b.n_outcomes || 0) - (a.n_outcomes || 0))[0]
+    const confidenceScore = rows.reduce(
+      (m, r) => Math.max(m, Number(r.confidence_score) || 0), 0,
+    )
+    out.set(token, {
+      signMultiplier,
+      confidenceScore,
+      ic: widest?.ic === null || widest?.ic === undefined ? null : Number(widest.ic),
+      nOutcomes: widest?.n_outcomes || 0,
+    })
+  }
+  return out
+}
+
+/**
  * Get the most active tokens in the last 24h.
  * Counts ALL whale transactions (not just BUY/SELL) to capture transfers too.
  * Always includes top tokens even if they don't appear in whale_transactions
@@ -249,7 +313,7 @@ async function getActiveTokens() {
 /**
  * Gather all data sources for a single token and compute the signal.
  */
-async function computeSignalForToken(tokenSymbol, btcBeta = {}, calibration = null) {
+async function computeSignalForToken(tokenSymbol, btcBeta = {}, calibration = null, snapshot = null) {
   // Parallel data fetching — use cached price snapshots first, Binance as fallback
   const [transactions, sentimentData, cachedPrice, socialData, communityVotes, priceHistory] = await Promise.all([
     fetchWhaleTransactions(tokenSymbol),
@@ -345,6 +409,7 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}, calibration = nu
     technicalSignals,
     derivativesData: derivativesData?.available ? derivativesData : null,
     calibration,
+    snapshot,
   })
 
   // Market beta adjustment: dampen signals that fight the broad market trend

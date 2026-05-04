@@ -10,7 +10,7 @@
  * Derives a `sign_multiplier` (-1 / 0 / +1) and a `confidence_score` and
  * writes them to `token_signal_calibration`. The signal engine reads this
  * table on every compute-signals run to:
- *   (a) override the static TIER1_SIGN_BY_TOKEN map with a *recent* sign,
+ *   (a) override the engine's default +1 with a *recent* sign,
  *   (b) gate BUY/SELL label emission on tokens whose own per-token IC is
  *       statistically too thin to act on.
  *

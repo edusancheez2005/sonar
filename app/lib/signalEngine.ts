@@ -123,7 +123,7 @@ export interface SignalFactor {
  *   source:
  *     'calibration' → live row from token_signal_calibration
  *     'snapshot'    → operator-approved row from signal_calibration_snapshot
- *     'static_map'  → legacy hardcoded TIER1_SIGN_BY_TOKEN (Stage 2 deletes)
+ *     'static_map'  → DEPRECATED, never emitted (deleted 2026-05-04)
  *     'default'     → no override, raw direction kept (+1)
  *     'kill_switch' → SIGNAL_ENGINE_IC_FIX=off forced +1
  *
@@ -194,21 +194,22 @@ export interface ComputeSignalParams {
   } | null
   /**
    * Per-token rolling calibration loaded from the
-   * `token_signal_calibration` table by the cron caller. When provided, it
-   * overrides the static TIER1_SIGN_BY_TOKEN map below AND gates label
-   * emission: tokens whose own historical IC is statistically thin will
-   * stay NEUTRAL even if the score crosses 58/42.
+   * `token_signal_calibration` table by the cron caller. When provided
+   * with a non-null sign multiplier, it directly overrides the engine's
+   * raw tier-1 direction AND gates label emission: tokens whose own
+   * historical IC is statistically thin will stay NEUTRAL even if the
+   * score crosses 58/42.
    *
    * Shape: {
-   *   signMultiplier: -1 | 0 | 1 | null   // null => use static fallback
+   *   signMultiplier: -1 | 0 | 1 | null   // null => fall through to snapshot/default
    *   confidenceScore: number              // 0..100, used as label gate
    *   ic: number | null
    *   nOutcomes: number
    * }
    *
-   * If undefined, the engine behaves exactly as before (static map only).
-   * This keeps the engine importable from places that don't have DB access
-   * (e.g. unit tests, the on-demand single-token UI endpoint).
+   * If undefined or the multiplier is null, the engine falls through to
+   * `snapshot` and then to default (+1, raw direction). The static
+   * sign map was deleted 2026-05-04 (Stage 2 hardening).
    */
   calibration?: {
     signMultiplier: -1 | 0 | 1 | null
@@ -771,47 +772,19 @@ export function computeUnifiedSignal({
 
   // ─── Per-token Tier 1 sign calibration ──────────────────────────────────
   // PRIMARY source: live `token_signal_calibration` table, refreshed daily
-  // by /api/cron/calibrate-signals. Passed in as `calibration` param by the
-  // compute-signals cron. The cron derives `signMultiplier` from the
-  // 30-day rolling hit_rate per token.
-  //
-  // FALLBACK source: the static map below. This is a safety net for:
-  //   (a) brand-new tokens with no outcome history yet,
-  //   (b) the on-demand single-token UI endpoint that doesn't load
-  //       calibration,
-  //   (c) the moments after a fresh deploy if calibration hasn't run.
-  //
-  // The static values are an audit snapshot (last refresh: 2026-04-25)
-  // computed by the same hit-rate-first rule the cron uses. Anything not
-  // in this map defaults to +1 (keep direction). The cron will silently
-  // override every entry within 24h of running.
-  //
-  // FLIP LIST (hit_rate ≤ 0.40 on 30d, n ≥ 50):
-  //   AAVE, AXS, BAT, BTC, CHZ, CRV, DOGE, ETH, LINK, ONDO, PEPE,
-  //   SHIB, SNX, SOL, UNI, WBTC
-  // KEEP LIST (hit_rate ≥ 0.60, n ≥ 50, default +1):
-  //   ARB, BLUR, COMP, ENA, FLOKI, GRT, IMX, LDO, MANA, PENDLE,
-  //   RNDR, SUSHI, WETH, WLD, YFI, INJ, MNT, ENS
-  // MUTE (0.40 < hit_rate < 0.60, n ≥ 50):
-  //   SAND, ZRX
+  // by /api/cron/calibrate-signals. Passed in as `calibration` param.
+  // SECONDARY source: operator-approved `signal_calibration_snapshot` table
+  // (passed in as `snapshot` param). Curated by humans; the cron NEVER writes
+  // it. Acts as a slow-moving fallback when live calibration hasn't reached
+  // confidence yet (Stage 3 hysteresis bar is intentionally high).
+  // DEFAULT: +1 (raw direction). The 16-token static sign map was DELETED
+  // 2026-05-04 (Stage 2 hardening) — it was generated from outcomes
+  // corrupted by the 2026-04 fetch-cache bug and was overriding healthy
+  // tokens to -1 every time live calibration was null.
   // SIGNAL_ENGINE_IC_FIX=off forces every multiplier back to +1 (kill switch).
-  const TIER1_SIGN_BY_TOKEN: Record<string, -1 | 0 | 1> = {
-    AAVE: -1, AXS: -1, BAT: -1, BTC: -1, CHZ: -1, CRV: -1, DOGE: -1,
-    ETH: -1, LINK: -1, ONDO: -1, PEPE: -1, SHIB: -1, SNX: -1, SOL: -1,
-    UNI: -1, WBTC: -1,
-    SAND: 0, ZRX: 0,
-    // (KEEP list omitted: default fallback is already +1)
-  }
   const IC_FIX_ENABLED = process.env.SIGNAL_ENGINE_IC_FIX !== 'off'
   const tokenKey = (tokenSymbol || '').toUpperCase()
 
-  // Resolution order for tier1Sign (2026-05-04 Stage 1 observability — Stage
-  // 2 deletes the static map):
-  //   1. Live calibration row from DB (if non-null sign)
-  //   2. Operator-approved snapshot row (if non-null sign)
-  //   3. Static TIER1_SIGN_BY_TOKEN map (legacy 2026-04-22 audit, Stage 2 will remove)
-  //   4. Default +1 (raw direction)
-  // SIGNAL_ENGINE_IC_FIX=off forces +1 (full kill switch).
   let tier1Sign: -1 | 0 | 1 = 1
   let signSource: SignDecision['source'] = 'default'
   if (!IC_FIX_ENABLED) {
@@ -823,9 +796,6 @@ export function computeUnifiedSignal({
   } else if (snapshot && snapshot.signMultiplier !== null) {
     tier1Sign = snapshot.signMultiplier
     signSource = 'snapshot'
-  } else if (TIER1_SIGN_BY_TOKEN[tokenKey] !== undefined) {
-    tier1Sign = TIER1_SIGN_BY_TOKEN[tokenKey]
-    signSource = 'static_map'
   } else {
     tier1Sign = 1
     signSource = 'default'
