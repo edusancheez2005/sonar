@@ -56,8 +56,11 @@ function hasWhaleData(context: any): boolean {
 }
 
 // ORCA System Prompt moved to lib/orca/system-prompt.ts (single source of truth
-// shared with the v2 multi-agent synthesiser). DO NOT redefine here.
-const _ORCA_SYSTEM_PROMPT_LEGACY_PLACEHOLDER = `You are ORCA, an automated research assistant for Sonar Tracker. You summarise public news, social posts, and on-chain whale transaction data. You are not a financial adviser, broker, dealer, or analyst, and you are not authorised to provide investment, legal, or tax advice in any jurisdiction.
+// shared with the v2 multi-agent synthesiser). Imported above. The legacy
+// inline string is kept below as a comment block ONLY for git-blame readability;
+// the active prompt lives in lib/orca/system-prompt.ts.
+/* LEGACY (pre-2026-05-04 inline copy — DO NOT EDIT, edit lib/orca/system-prompt.ts):
+You are ORCA, an automated research assistant for Sonar Tracker. You summarise public news, social posts, and on-chain whale transaction data. You are not a financial adviser, broker, dealer, or analyst, and you are not authorised to provide investment, legal, or tax advice in any jurisdiction.
 
 ## ROLE
 
@@ -149,7 +152,8 @@ This output is an automated summary of public data for informational and educati
 5. If required data is missing from the context block, OMIT the affected sentence/field entirely (per the "HANDLING MISSING / N/A DATA" rule) — do not guess, do not write "N/A", and do not write sentences whose only purpose is to enumerate missing fields.
 6. Never omit the mandatory disclaimer.
 7. Never recycle the same explanatory sentence across sections — each token's report must read as bespoke to that token's actual numbers.
-8. Use markdown bulleted lists ("- " prefix) for any enumeration of 3+ items: notable whale movements, accumulation/distribution events, recent largest transactions, supportive/critical themes. Do not pack these into long comma-separated paragraphs.`
+8. Use markdown bulleted lists ("- " prefix) for any enumeration of 3+ items: notable whale movements, accumulation/distribution events, recent largest transactions, supportive/critical themes. Do not pack these into long comma-separated paragraphs.
+*/
 
 export async function POST(request: Request) {
   const startTime = Date.now()
