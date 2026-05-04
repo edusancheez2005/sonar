@@ -34,40 +34,55 @@
 
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import {
+  pearsonIC,
+  bootstrapICConfidenceInterval,
+  deriveConfidenceScore as confidenceFromMath,
+} from '@/app/lib/calibration-math'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 120
+// Stage 4 budget: calibration is a single nightly batch, 90s is plenty.
+export const maxDuration = 90
 
-// CALIB-2 (2026-05-04): shortened from 30d -> 7d. The longer window made the
-// calibrator anchor on stale outcomes from before the cache fix + MATIC
-// migration + outlier filter (all shipped 2026-05-03), causing it to flip
-// healthy tokens (LINK/BTC/ETH/SOL/DOGE/SHIB/...) to sign_multiplier=-1 every
-// night based on contaminated history. 7d ensures the calibration tracks the
-// current pipeline behaviour and decays bad data within a week.
-const LOOKBACK_DAYS = 7
+// 2026-05-04 (Stage 3): raised from 7d → 14d. Once the contamination from
+// the 2026-04 cache bug + MATIC zombie quote has aged out (post 2026-05-10),
+// the longer window stabilises the IC estimate without re-introducing the
+// stale-data risk we hit in late April.
+const LOOKBACK_DAYS = 14
 const EVAL_WINDOWS = ['1h', '6h', '24h']
 
-// Minimum directional outcomes required before we trust a per-token sign.
-// Below this, sign_multiplier is NULL and engine falls back to default.
-const MIN_N_FOR_SIGN = 20
+// 2026-05-04 (Stage 3): raised from 20 → 50. n=20 is below the threshold
+// where bootstrap CIs are stable; tokens routinely promoted to -1 on a
+// handful of unlucky days. n=50 ≈ ~12h of compute output × 3 windows and
+// matches the MIN_N_FOR_TRUST in lib/quant/constants.ts for accuracy
+// reporting.
+const MIN_N_FOR_SIGN = 50
 
-// CALIB-1 (2026-05-01): confidence_score used to be computed for any n>=1,
-// which meant a token with three lucky calls reported 100% confidence. Below
-// this floor confidence_score is hard-clamped to 0 so the engine's label gate
-// won't promote it. Behind CALIBRATION_V2=on for prod rollback safety.
-const MIN_N_FOR_CONFIDENCE = 20
+// 2026-05-04 (Stage 3): same threshold as MIN_N_FOR_SIGN. Tokens below this
+// stay at confidence_score=0 so the engine's label gate cannot promote them.
+const MIN_N_FOR_CONFIDENCE = 50
 
-// Sign derivation is HIT-RATE-FIRST. The Pearson IC is reported and used to
-// gate label emission via confidence_score, but the sign itself comes from
-// directional accuracy because:
-//   - IC measures correlation between score *magnitude* and *return size*,
-//     which can be negative even when the directional call is correct most
-//     of the time (e.g. BLUR has IC=-0.78 with hit_rate=0.78 — score is
-//     anti-correlated with move size, but the BUY/SELL call is right).
-//   - hit_rate is what the user actually experiences. If hit_rate < 0.40,
-//     the signal is consistently pointing the wrong way regardless of IC.
+// 2026-05-04 (Stage 3): IC point-estimate magnitude required before we
+// allow a flip-to-negative or flip-to-zero. Backed by the ic_audit.js runs
+// across 30/60d windows where stable per-token edges live in the 0.15-0.30
+// range; anything below is sample noise.
+const MIN_IC_MAGNITUDE = 0.15
+
+// 2026-05-04 (Stage 3): hysteresis. Number of consecutive nightly proposals
+// that must agree before the live token_signal_calibration row's sign is
+// allowed to change. Three nights ≈ 72h of fresh outcomes — long enough to
+// suppress 1-day regime noise, short enough to react to real edge decay.
+const HYSTERESIS_RUNS = 3
+
+// Bootstrap resample count for the IC CI. 200 is the canonical floor for
+// percentile CIs; 500 would be more stable but adds 2-3s per token-window.
+const IC_BOOTSTRAP_RESAMPLES = 200
+
+// Sign derivation is HIT-RATE-FIRST. IC magnitude + CI now act as
+// CONFIRMATION GATES on a hit-rate proposal — we still won't apply a flip
+// if the IC magnitude is in the noise band OR its 95% CI straddles 0.
 //
-// Thresholds:
+// Hit-rate thresholds (unchanged from prior version):
 //   hit_rate >= 0.60  → +1 (keep direction)
 //   hit_rate <= 0.40  → -1 (invert)
 //   0.40 < hr < 0.60  →  0 (coin flip; mute)
@@ -75,47 +90,77 @@ const FLIP_HIT_RATE = 0.40
 const KEEP_HIT_RATE = 0.60
 
 function pearson(xs, ys) {
-  const n = xs.length
-  if (n < 3) return null
-  let sx = 0, sy = 0
-  for (let i = 0; i < n; i++) { sx += xs[i]; sy += ys[i] }
-  const mx = sx / n
-  const my = sy / n
-  let num = 0, dx2 = 0, dy2 = 0
-  for (let i = 0; i < n; i++) {
-    const dx = xs[i] - mx
-    const dy = ys[i] - my
-    num += dx * dy
-    dx2 += dx * dx
-    dy2 += dy * dy
-  }
-  const denom = Math.sqrt(dx2 * dy2)
-  if (!isFinite(denom) || denom === 0) return null
-  return num / denom
+  // Thin wrapper kept for back-compat with any in-file callers; delegates to
+  // the pure module so logic lives in one place.
+  return pearsonIC(xs, ys)
 }
 
-function deriveSign(ic, hitRate, nDirectional) {
-  // Insufficient data → let the engine fall back to its static default.
-  if (nDirectional < MIN_N_FOR_SIGN) return null
+/**
+ * Hit-rate-first sign proposer. Returns null when n is insufficient OR when
+ * the IC magnitude is in the noise band OR when the IC bootstrap CI
+ * straddles 0 — both gates are meant to suppress sample-noise flips that
+ * would otherwise be ratified by a single unlucky day's hit rate.
+ *
+ * `null` here means "do not propose a change to the live row" — the cron
+ * leaves token_signal_calibration.sign_multiplier as-is rather than wiping
+ * it, so a previously confirmed sign keeps applying until enough fresh
+ * evidence accumulates to justify a new proposal.
+ */
+function proposeSign({ ic, hitRate, n, icCI }) {
+  if (n < MIN_N_FOR_SIGN) return null
   if (hitRate === null) return null
-  if (hitRate <= FLIP_HIT_RATE) return -1
-  if (hitRate >= KEEP_HIT_RATE) return 1
-  return 0
+  // Hit-rate proposal:
+  let proposed
+  if (hitRate <= FLIP_HIT_RATE) proposed = -1
+  else if (hitRate >= KEEP_HIT_RATE) proposed = 1
+  else proposed = 0
+  // Stage 3 confirmation gates: only ratify a non-+1 proposal when the IC
+  // magnitude is meaningful AND its CI excludes 0. A proposed +1 needs no
+  // gate (it's the engine's default direction).
+  if (proposed === 1) return 1
+  if (ic === null || Math.abs(ic) < MIN_IC_MAGNITUDE) return null
+  if (!icCI) return null
+  const ciExcludesZero =
+    (icCI.lower > 0 && icCI.upper > 0) ||
+    (icCI.lower < 0 && icCI.upper < 0)
+  if (!ciExcludesZero) return null
+  return proposed
 }
 
-function deriveConfidenceScore(ic, hitRate, n) {
-  // 0..100. Maxes when the historical hit rate is far from 50% (the engine
-  // KNOWS the direction — either keep or flip — with high evidence). The
-  // raw IC contributes a softer floor for cases where hit rate is near 50%
-  // but the magnitude of returns lines up with score magnitude.
-  // The engine uses this to gate label emission via CALIBRATION_LABEL_GATE.
-  if (n <= 0) return 0
-  // CALIB-1: hard-clamp confidence to 0 below MIN_N_FOR_CONFIDENCE so the
-  // label gate cannot promote a thinly-evidenced token. Gated for rollback.
-  if (process.env.CALIBRATION_V2 === 'on' && n < MIN_N_FOR_CONFIDENCE) return 0
-  const fromHitRate = hitRate === null ? 0 : Math.abs(hitRate - 0.5) * 200
-  const fromIc = ic === null ? 0 : Math.abs(ic) * 100
-  return Math.min(100, Math.max(fromHitRate, fromIc))
+function deriveConfidenceScore(ic, hitRate, n, icCI) {
+  return confidenceFromMath({
+    ic,
+    hitRate,
+    n,
+    icCILower: icCI ? icCI.lower : null,
+    icCIUpper: icCI ? icCI.upper : null,
+    minNForConfidence: MIN_N_FOR_CONFIDENCE,
+  })
+}
+
+/**
+ * Hysteresis check. Returns true iff the last HYSTERESIS_RUNS proposals for
+ * this (token, eval_window) all match `proposedSign` AND the live row's
+ * sign currently differs (i.e. there's actually a flip queued up). Returns
+ * false when:
+ *   - fewer than HYSTERESIS_RUNS prior proposals exist (not enough history),
+ *   - any of the recent proposals disagree with the new one (instability),
+ *   - the live sign already equals the proposal (nothing to confirm).
+ */
+async function isFlipConfirmed(token, evalWindow, proposedSign, currentSign) {
+  if (proposedSign === currentSign) return false
+  const { data, error } = await supabaseAdmin
+    .from('calibration_proposal_log')
+    .select('proposed_sign, proposed_at')
+    .eq('token', token)
+    .eq('eval_window', evalWindow)
+    .order('proposed_at', { ascending: false })
+    .limit(HYSTERESIS_RUNS)
+  if (error || !data || data.length < HYSTERESIS_RUNS) return false
+  for (const row of data) {
+    if (row.proposed_sign !== proposedSign) return false
+  }
+  return true
 }
 
 export async function GET(req) {
@@ -157,7 +202,30 @@ export async function GET(req) {
       buckets.get(k).push(o)
     }
 
+    // Pull current live calibration rows in one round-trip — needed both for
+    // the "is this a real change?" check and to keep the existing
+    // sign_multiplier when this run's evidence is too thin to propose a new
+    // one (guards against accidental wipes during quiet days).
+    const tokensSet = new Set()
+    for (const k of buckets.keys()) tokensSet.add(k.split('|')[0])
+    const tokens = [...tokensSet]
+    const currentByKey = new Map()
+    if (tokens.length > 0) {
+      const { data: live } = await supabaseAdmin
+        .from('token_signal_calibration')
+        .select('token, eval_window, sign_multiplier')
+        .in('token', tokens)
+      for (const row of live || []) {
+        currentByKey.set(`${row.token}|${row.eval_window}`, row.sign_multiplier)
+      }
+    }
+
     const rows = []
+    const proposalInserts = []
+    const changeInserts = []
+    const audit = []
+    const decidedAt = new Date().toISOString()
+
     for (const [key, rowsForBucket] of buckets) {
       const [token, evalWindow] = key.split('|')
       const n = rowsForBucket.length
@@ -169,6 +237,12 @@ export async function GET(req) {
         ? pearson(scores, returns)
         : null
 
+      // Bootstrap 95% CI for the IC. Used both as a flip-confirmation gate
+      // (CI must exclude 0) and as a small confidence-score kicker.
+      const icCI = (scores.length === returns.length && scores.length >= 10)
+        ? bootstrapICConfidenceInterval(scores, returns, IC_BOOTSTRAP_RESAMPLES)
+        : null
+
       const nCorrect = rowsForBucket.filter(r => r.correct === true).length
       const hitRate = n > 0 ? nCorrect / n : null
 
@@ -176,14 +250,81 @@ export async function GET(req) {
       const meanAlpha = alphas.length > 0
         ? alphas.reduce((a, b) => a + b, 0) / alphas.length
         : null
-
       const changes = rowsForBucket.map(r => Number(r.price_change_pct)).filter(v => Number.isFinite(v))
       const meanChange = changes.length > 0
         ? changes.reduce((a, b) => a + b, 0) / changes.length
         : null
 
-      const signMultiplier = deriveSign(ic, hitRate, n)
-      const confidenceScore = deriveConfidenceScore(ic, hitRate, n)
+      const proposedSign = proposeSign({ ic, hitRate, n, icCI })
+      const currentSign = currentByKey.get(key)
+      const currentSignNorm = (currentSign === -1 || currentSign === 0 || currentSign === 1) ? currentSign : null
+
+      // Decide what sign actually goes into token_signal_calibration this run.
+      //
+      //   action = 'unchanged': keep the live sign as-is. Either we don't
+      //                         have a proposal at all (insufficient evidence)
+      //                         or the proposal already matches the live sign.
+      //   action = 'propose'  : we have a proposal that disagrees with the
+      //                         live sign but it hasn't been confirmed by
+      //                         HYSTERESIS_RUNS prior matching proposals yet.
+      //                         Log the proposal, do NOT change the live row.
+      //   action = 'apply'    : the proposal is confirmed (last
+      //                         HYSTERESIS_RUNS proposals all agreed).
+      //                         Update the live row + write change_log.
+      let action = 'unchanged'
+      let signToWrite = currentSignNorm
+      let confirmedRuns = 0
+
+      if (proposedSign === null) {
+        action = 'unchanged'
+        signToWrite = currentSignNorm
+      } else if (proposedSign === currentSignNorm) {
+        action = 'unchanged'
+        signToWrite = currentSignNorm
+        // Still log a proposal so the hysteresis count keeps building if this
+        // sign ever gets challenged later — but only when n is meaningful.
+        proposalInserts.push({
+          token, eval_window: evalWindow,
+          proposed_sign: proposedSign,
+          ic: ic === null ? null : Number(ic.toFixed(4)),
+          hit_rate: hitRate === null ? null : Number(hitRate.toFixed(4)),
+          n_outcomes: n,
+          proposed_at: decidedAt,
+        })
+      } else {
+        // Proposal disagrees with the live sign — log it unconditionally,
+        // then check hysteresis BEFORE adding the new proposal so the count
+        // reflects only PRIOR runs.
+        const confirmed = await isFlipConfirmed(token, evalWindow, proposedSign, currentSignNorm)
+        proposalInserts.push({
+          token, eval_window: evalWindow,
+          proposed_sign: proposedSign,
+          ic: ic === null ? null : Number(ic.toFixed(4)),
+          hit_rate: hitRate === null ? null : Number(hitRate.toFixed(4)),
+          n_outcomes: n,
+          proposed_at: decidedAt,
+        })
+        if (confirmed) {
+          action = 'apply'
+          signToWrite = proposedSign
+          confirmedRuns = HYSTERESIS_RUNS
+          changeInserts.push({
+            token, eval_window: evalWindow,
+            old_sign: currentSignNorm,
+            new_sign: proposedSign,
+            ic: ic === null ? null : Number(ic.toFixed(4)),
+            hit_rate: hitRate === null ? null : Number(hitRate.toFixed(4)),
+            n_outcomes: n,
+            confirmed_runs: HYSTERESIS_RUNS,
+            decided_at: decidedAt,
+          })
+        } else {
+          action = 'propose'
+          signToWrite = currentSignNorm
+        }
+      }
+
+      const confidenceScore = deriveConfidenceScore(ic, hitRate, n, icCI)
 
       rows.push({
         token,
@@ -191,17 +332,29 @@ export async function GET(req) {
         ic: ic === null ? null : Number(ic.toFixed(4)),
         hit_rate: hitRate === null ? null : Number(hitRate.toFixed(4)),
         n_outcomes: n,
-        n_directional: n, // we already filtered out NEUTRAL above
+        n_directional: n,
         mean_alpha: meanAlpha === null ? null : Number(meanAlpha.toFixed(4)),
         mean_change: meanChange === null ? null : Number(meanChange.toFixed(4)),
-        sign_multiplier: signMultiplier,
+        sign_multiplier: signToWrite,
         confidence_score: Number(confidenceScore.toFixed(2)),
-        computed_at: new Date().toISOString(),
+        computed_at: decidedAt,
         lookback_days: LOOKBACK_DAYS,
+      })
+
+      audit.push({
+        token,
+        window: evalWindow,
+        current_sign: currentSignNorm,
+        proposed_sign: proposedSign,
+        ic: ic === null ? null : Number(ic.toFixed(4)),
+        ic_ci: icCI ? [Number(icCI.lower.toFixed(4)), Number(icCI.upper.toFixed(4))] : null,
+        n,
+        action,
+        confirmed_runs: confirmedRuns,
       })
     }
 
-    // Upsert all rows in a single round-trip.
+    // Upsert calibration + append-only logs in parallel single round-trips.
     let upsertedCount = 0
     if (rows.length > 0) {
       const { error: upErr } = await supabaseAdmin
@@ -210,21 +363,37 @@ export async function GET(req) {
       if (upErr) throw upErr
       upsertedCount = rows.length
     }
+    if (proposalInserts.length > 0) {
+      const { error: propErr } = await supabaseAdmin
+        .from('calibration_proposal_log')
+        .insert(proposalInserts)
+      if (propErr) {
+        // Non-fatal: a missing proposal_log table shouldn't kill calibration.
+        // Engineers reading this 6 months from now: this is gated behind the
+        // 20260504c migration. If you see this warning, run that migration.
+        console.warn('[CalibrateSignals] proposal_log insert failed:', propErr.message)
+      }
+    }
+    if (changeInserts.length > 0) {
+      const { error: chgErr } = await supabaseAdmin
+        .from('calibration_change_log')
+        .insert(changeInserts)
+      if (chgErr) {
+        console.warn('[CalibrateSignals] change_log insert failed:', chgErr.message)
+      }
+    }
 
-    // Quick summary for the cron log.
     const summary = {
       lookback_days: LOOKBACK_DAYS,
       outcomes_used: outcomes.length,
       buckets: buckets.size,
       upserted: upsertedCount,
-      sample_flips: rows
-        .filter(r => r.sign_multiplier === -1)
+      proposals_logged: proposalInserts.length,
+      changes_applied: changeInserts.length,
+      sample_changes: changeInserts
         .slice(0, 10)
-        .map(r => `${r.token}|${r.eval_window} ic=${r.ic} hit=${r.hit_rate} n=${r.n_outcomes}`),
-      sample_mutes: rows
-        .filter(r => r.sign_multiplier === 0)
-        .slice(0, 10)
-        .map(r => `${r.token}|${r.eval_window} ic=${r.ic} hit=${r.hit_rate} n=${r.n_outcomes}`),
+        .map(c => `${c.token}|${c.eval_window} ${c.old_sign}→${c.new_sign} ic=${c.ic} hit=${c.hit_rate} n=${c.n_outcomes}`),
+      audit_sample: audit.slice(0, 20),
     }
     console.log('[CalibrateSignals]', JSON.stringify(summary))
 
