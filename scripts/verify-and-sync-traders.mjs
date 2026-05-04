@@ -68,7 +68,7 @@ async function resolveIdentifier(identifier) {
       chain: 'ethereum',
       address: addr,
       source: `https://etherscan.io/address/${addr.toLowerCase()}`,
-      note: `${identifier} — ENS reverse-resolved via Cloudflare Ethereum gateway`,
+      note: `${identifier} — ENS reverse-resolved via Ethereum mainnet RPC`,
     }
   }
   return null

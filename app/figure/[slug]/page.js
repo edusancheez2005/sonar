@@ -543,6 +543,22 @@ export default async function FigureDetailPage({ params }) {
   const addrs = normalizeAddresses(figure.addresses)
   const hasAddresses = addrs.length > 0
 
+  // Detect "public ENS wallet" pattern: every address came from ENS
+  // resolution. These are typically display/tip wallets, not the
+  // figure's real treasury — surface a disclaimer so users aren't
+  // misled by the (often tiny) tracked volume.
+  const allAddressesAreEns = hasAddresses && addrs.every((a) =>
+    typeof a?.note === 'string' && /ENS reverse-resolved|ENS-resolved|\.eth\b/i.test(a.note)
+  )
+  const ensIdentifier = (() => {
+    if (!allAddressesAreEns) return null
+    for (const a of addrs) {
+      const m = String(a?.note || '').match(/([a-z0-9-]+(?:\.[a-z0-9-]+)+\.eth)/i)
+      if (m) return m[1]
+    }
+    return null
+  })()
+
   // Sonar queries + on-demand chain fetch run in parallel. The chain
   // fetch has its own 5 s budget inside `fetchChainTxsForAddresses`, so
   // nothing here waits longer than ~5 s even when providers stall.
@@ -721,6 +737,31 @@ export default async function FigureDetailPage({ params }) {
               />
               <StatCard label="Chains" value={String(chainCount)} />
               <StatCard label="Addresses" value={addressCount.toLocaleString()} />
+            </div>
+          ) : null}
+
+          {hasAddresses && allAddressesAreEns && figure.category === 'person' ? (
+            <div
+              style={{
+                margin: '0 0 1rem 0',
+                padding: '0.75rem 1rem',
+                background: 'rgba(241, 196, 15, 0.08)',
+                border: '1px solid rgba(241, 196, 15, 0.35)',
+                borderRadius: '10px',
+                color: 'var(--text-secondary)',
+                fontSize: '0.85rem',
+                lineHeight: 1.5,
+              }}
+            >
+              <strong style={{ color: '#f1c40f' }}>⚠ Public ENS wallet</strong> — this is the
+              address that resolves from{' '}
+              <code style={{ fontFamily: "'Courier New', monospace", color: 'var(--text-primary)' }}>
+                {ensIdentifier || 'their ENS name'}
+              </code>
+              . It is typically a public-facing display wallet and{' '}
+              <strong>may not represent {figure.display_name}&apos;s total holdings</strong>.
+              Executives, founders and celebrities often keep the bulk of their assets on
+              exchanges, custodians or unlabelled cold wallets that are not publicly attributable.
             </div>
           ) : null}
 
