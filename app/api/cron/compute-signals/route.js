@@ -87,6 +87,14 @@ export async function GET(req) {
     const snapshotByToken = await loadSnapshotByToken(tokens)
     console.log(`[SignalEngine] Snapshot loaded for ${snapshotByToken.size}/${tokens.length} tokens`)
 
+    // 2026-05-04 evening: per-direction circuit breaker. Returns
+    // { BUY: bool, SELL: bool } reflecting active suppression. Managed by
+    // /api/cron/accuracy-watchdog when 6h directional accuracy collapses.
+    const breaker = await loadCircuitBreaker()
+    if (breaker.BUY || breaker.SELL) {
+      console.warn(`[SignalEngine] Circuit breaker active: BUY=${breaker.BUY} SELL=${breaker.SELL} — matching outputs will be suppressed to NEUTRAL`)
+    }
+
     const results = []
     const errors = []
 
@@ -98,6 +106,28 @@ export async function GET(req) {
           calibrationByToken.get(token) || null,
           snapshotByToken.get(token) || null,
         )
+
+        // Apply circuit breaker: if a directional family is suppressed,
+        // downgrade to NEUTRAL with a trap explaining why. Rationale: the
+        // engine itself stays honest (raw score preserved on the row), but
+        // the user-facing signal_type is gated so we don't surface a known-
+        // bad direction during a regime regression.
+        const isBuyFamily = signal.signal === 'BUY' || signal.signal === 'STRONG BUY'
+        const isSellFamily = signal.signal === 'SELL' || signal.signal === 'STRONG SELL'
+        if ((isBuyFamily && breaker.BUY) || (isSellFamily && breaker.SELL)) {
+          const family = isBuyFamily ? 'BUY' : 'SELL'
+          signal.original_signal = signal.signal
+          signal.signal = 'NEUTRAL'
+          signal.traps = [
+            ...(signal.traps || []),
+            {
+              type: 'Circuit Breaker',
+              severity: 'HIGH',
+              description: `${family} family auto-suppressed by accuracy watchdog (recent ${family} hit-rate below threshold). Will auto-clear when accuracy mean-reverts.`,
+            },
+          ]
+        }
+
         results.push(signal)
 
         // Store in token_signals table
@@ -250,6 +280,35 @@ async function loadSnapshotByToken(tokens) {
   }
   return out
 }
+
+/**
+ * Read the per-direction circuit breaker state. Returns
+ * `{ BUY: bool, SELL: bool }`. Defaults to all-false when the table is
+ * missing (pre-migration) or the read fails — fail-open so a Supabase
+ * blip cannot accidentally silence the whole signal feed.
+ */
+async function loadCircuitBreaker() {
+  try {
+    const { data, error } = await supabaseAdminFresh
+      .from('signal_circuit_breaker')
+      .select('signal_type, active')
+    if (error) {
+      console.warn('[SignalEngine] circuit_breaker load failed (defaulting open):', error.message)
+      return { BUY: false, SELL: false }
+    }
+    const out = { BUY: false, SELL: false }
+    for (const row of data || []) {
+      if (row.signal_type === 'BUY' || row.signal_type === 'SELL') {
+        out[row.signal_type] = !!row.active
+      }
+    }
+    return out
+  } catch (err) {
+    console.warn('[SignalEngine] circuit_breaker load threw (defaulting open):', err.message)
+    return { BUY: false, SELL: false }
+  }
+}
+
 
 /**
  * Get the most active tokens in the last 24h.

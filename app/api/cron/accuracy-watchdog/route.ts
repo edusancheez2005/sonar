@@ -52,6 +52,21 @@ const CUSUM_K = 0.5  // "slack" in σ units (only count deviations beyond 0.5σ)
 const CUSUM_H = 5.0  // alert when |cumulative deviation| crosses 5σ
 const CUSUM_LOOKBACK = 56  // ~14 days @ 6h/sample
 
+// ─── Per-direction circuit breaker (added 2026-05-04 evening) ────────────
+// When BUY (or SELL) accuracy collapses on the trailing 6h window, the
+// watchdog flips a row in `signal_circuit_breaker`. /api/cron/compute-signals
+// reads it and downgrades matching outputs to NEUTRAL before they're emitted
+// to users. Breaker auto-clears once accuracy mean-reverts.
+//
+// Thresholds tuned from the 2026-05-04 BUY collapse: BUY ran at ~15-25%
+// accuracy for 8+ consecutive hourly buckets. SUPPRESS at <30% with n>=40
+// is ~3σ below coinflip — well past noise. CLEAR at >=45% leaves a 15pp
+// hysteresis band to prevent flapping.
+const BREAKER_LOOKBACK_HOURS = 6
+const BREAKER_MIN_SAMPLES = 40
+const BREAKER_SUPPRESS_PCT = 30
+const BREAKER_CLEAR_PCT = 45
+
 function shareOf(rows, type) {
   if (!rows.length) return 0
   let n = 0
@@ -78,6 +93,21 @@ function accuracyOf(rows) {
   if (!directional.length) return { pct: 0, n: 0 }
   const correct = directional.filter(r => r.correct === true).length
   return { pct: (correct / directional.length) * 100, n: directional.length }
+}
+
+/**
+ * Accuracy of one signal direction over a row set. Treats 'BUY' and
+ * 'STRONG BUY' as the BUY family; same for SELL. Returns { pct, n } where
+ * pct=0 and n=0 if the family has no resolved samples in the window.
+ */
+function directionAccuracy(rows, family: 'BUY' | 'SELL') {
+  const match = family === 'BUY'
+    ? (t: string) => t === 'BUY' || t === 'STRONG BUY'
+    : (t: string) => t === 'SELL' || t === 'STRONG SELL'
+  const filtered = rows.filter(r => r.correct !== null && match(r.signal_type))
+  if (!filtered.length) return { pct: 0, n: 0 }
+  const correct = filtered.filter(r => r.correct === true).length
+  return { pct: (correct / filtered.length) * 100, n: filtered.length }
 }
 
 /**
@@ -216,6 +246,78 @@ export async function GET(req) {
       level = level || 'warn'
       reasons.push(`cusum_drift ${cusumMinus.toFixed(2)} (threshold −${CUSUM_H})`)
     }
+
+    // ─── Circuit breaker per direction ───────────────────────────────────
+    // Compute trailing 6h accuracy for BUY / SELL families and compare to
+    // the suppress / clear thresholds. Read the existing breaker state so
+    // we only flip on real transitions (and so a still-active breaker that
+    // hasn't recovered stays active without rewriting timestamps).
+    const breakerCutoff = new Date(now - BREAKER_LOOKBACK_HOURS * 60 * 60 * 1000).toISOString()
+    const rowsBreakerWindow = (rows7d || []).filter(r => r.signal_time >= breakerCutoff)
+    const buy6h = directionAccuracy(rowsBreakerWindow, 'BUY')
+    const sell6h = directionAccuracy(rowsBreakerWindow, 'SELL')
+
+    const { data: breakerCurrent } = await supabaseAdmin
+      .from('signal_circuit_breaker')
+      .select('signal_type, active, triggered_at')
+    const breakerState: Record<string, { active: boolean; triggered_at: string | null }> = {}
+    for (const row of breakerCurrent || []) {
+      breakerState[row.signal_type] = {
+        active: !!row.active,
+        triggered_at: row.triggered_at,
+      }
+    }
+
+    const breakerOutcome: Record<string, { active: boolean; transition: string | null; pct: number; n: number }> = {}
+    for (const family of ['BUY', 'SELL'] as const) {
+      const m = family === 'BUY' ? buy6h : sell6h
+      const cur = breakerState[family] || { active: false, triggered_at: null }
+      let nextActive = cur.active
+      let transition: string | null = null
+      if (m.n >= BREAKER_MIN_SAMPLES) {
+        if (!cur.active && m.pct < BREAKER_SUPPRESS_PCT) {
+          nextActive = true
+          transition = 'tripped'
+        } else if (cur.active && m.pct >= BREAKER_CLEAR_PCT) {
+          nextActive = false
+          transition = 'cleared'
+        }
+      }
+      breakerOutcome[family] = { active: nextActive, transition, pct: Number(m.pct.toFixed(2)), n: m.n }
+
+      if (transition !== null) {
+        const reason = transition === 'tripped'
+          ? `auto_suppress: ${family} acc ${m.pct.toFixed(1)}% on n=${m.n} over last ${BREAKER_LOOKBACK_HOURS}h (< ${BREAKER_SUPPRESS_PCT}%)`
+          : `auto_clear: ${family} acc ${m.pct.toFixed(1)}% on n=${m.n} recovered (>= ${BREAKER_CLEAR_PCT}%)`
+        const upsertRow: Record<string, unknown> = {
+          signal_type: family,
+          active: nextActive,
+          reason,
+          acc_pct: Number(m.pct.toFixed(2)),
+          sample_size: m.n,
+          updated_at: new Date().toISOString(),
+        }
+        if (transition === 'tripped') {
+          upsertRow.triggered_at = new Date().toISOString()
+          upsertRow.cleared_at = null
+        } else {
+          upsertRow.cleared_at = new Date().toISOString()
+        }
+        const { error: bErr } = await supabaseAdmin
+          .from('signal_circuit_breaker')
+          .upsert(upsertRow, { onConflict: 'signal_type' })
+        if (bErr) {
+          console.warn(`[AccuracyWatchdog] breaker upsert ${family} failed:`, bErr.message)
+        } else {
+          // Promote breaker transitions to alert reasons so the webhook fires.
+          level = transition === 'tripped' ? 'critical' : (level || 'warn')
+          reasons.push(`circuit_breaker_${transition}:${family} (${m.pct.toFixed(1)}% n=${m.n})`)
+        }
+      }
+    }
+
+    // Materialise the final reason text after the breaker block so any
+    // tripped/cleared transitions land in the baseline row + webhook.
     const reasonText = reasons.join(' | ')
 
     // Always record the baseline row so historical trend analysis works.
@@ -295,6 +397,7 @@ export async function GET(req) {
         z_score: zScore === null ? null : Number(zScore.toFixed(2)),
         cusum_minus: cusumMinus === null ? null : Number(cusumMinus.toFixed(2)),
       },
+      circuit_breaker: breakerOutcome,
       webhook: webhookStatus,
     })
   } catch (err) {
