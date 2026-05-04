@@ -118,6 +118,12 @@ const CoinSymbol = styled.div`
   font-family: ${FONT_MONO}; letter-spacing: 0.5px;
 `
 
+const SentimentLine = styled.div`
+  font-size: 0.65rem; line-height: 1.35; margin-top: 4px;
+  font-family: ${FONT_SANS}; color: ${props => props.$color || COLORS.textMuted};
+  font-style: italic; opacity: 0.95;
+`
+
 const Rank = styled.div`
   background: rgba(0, 229, 255, 0.08); color: ${COLORS.cyan};
   padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem;
@@ -185,6 +191,9 @@ export default function TrendingPage() {
   const [sentimentSort, setSentimentSort] = useState('galaxy_score')
   const [sentimentCoins, setSentimentCoins] = useState([])
   const [sentimentLoading, setSentimentLoading] = useState(false)
+  // Symbol -> LunarCrush snapshot, used to render a 1-line sentiment summary
+  // under each coin name in the trending/gainers/losers grids.
+  const [sentimentMap, setSentimentMap] = useState({})
   const [sentimentStatus, setSentimentStatus] = useState(null) // {status, message?, stale_reason?}
   const [categoryStatus, setCategoryStatus] = useState(null)
 
@@ -280,6 +289,28 @@ export default function TrendingPage() {
     return () => { cancelled = true }
   }, [sentimentSort])
 
+  // One-shot LunarCrush snapshot for the SENTIMENT LINE under each coin name in
+  // the gainers/losers/trending grids. Independent of the X_SENTIMENT_TRENDING
+  // panel above so it doesn't re-fetch when the user changes that panel's sort.
+  useEffect(() => {
+    let cancelled = false
+    async function fetchSentimentMap() {
+      try {
+        const res = await fetch('/api/social/trending-coins?sort=galaxy_score&limit=50')
+        if (!res.ok) return
+        const json = await res.json()
+        if (cancelled || !Array.isArray(json.coins)) return
+        const map = {}
+        for (const c of json.coins) {
+          if (c?.symbol) map[String(c.symbol).toUpperCase()] = c
+        }
+        setSentimentMap(map)
+      } catch {}
+    }
+    fetchSentimentMap()
+    return () => { cancelled = true }
+  }, [])
+
   const SOCIAL_CATEGORIES = [
     { key: 'defi', label: 'DeFi' },
     { key: 'memecoins', label: 'Memes' },
@@ -357,6 +388,47 @@ export default function TrendingPage() {
     return `$${mc.toFixed(2)}`
   }
 
+  // Build a 1-sentence sentiment summary from the LunarCrush snapshot, used
+  // as a small italic line under each coin name. Returns null if we have no
+  // social data — never fabricates a vibe.
+  const renderSentimentLine = (symbol) => {
+    if (!symbol) return null
+    const c = sentimentMap[String(symbol).toUpperCase()]
+    if (!c) return null
+    const bull = typeof c.sentiment === 'number' ? c.sentiment : null     // 0-100, % of bullish posts
+    const gs = typeof c.galaxy_score === 'number' ? c.galaxy_score : null // 0-100
+    const inter = typeof c.interactions_24h === 'number' ? c.interactions_24h : 0
+    const altPrev = typeof c.alt_rank_previous === 'number' ? c.alt_rank_previous : null
+    const altNow = typeof c.alt_rank === 'number' ? c.alt_rank : null
+    const altDelta = altPrev != null && altNow != null ? altPrev - altNow : null // positive = climbing
+
+    if (bull == null && gs == null && inter < 1000) return null
+
+    let label, color
+    if (bull != null && bull >= 70) { label = 'Strongly bullish'; color = COLORS.green }
+    else if (bull != null && bull >= 55) { label = 'Bullish'; color = COLORS.green }
+    else if (bull != null && bull >= 45) { label = 'Mixed'; color = COLORS.amber }
+    else if (bull != null && bull >= 30) { label = 'Bearish'; color = COLORS.red }
+    else if (bull != null) { label = 'Strongly bearish'; color = COLORS.red }
+    else if (gs != null && gs >= 60) { label = 'Healthy'; color = COLORS.green }
+    else if (gs != null && gs >= 40) { label = 'Mixed'; color = COLORS.amber }
+    else { label = 'Quiet'; color = COLORS.textMuted }
+
+    const parts = []
+    if (bull != null) parts.push(`${bull.toFixed(0)}% bullish on X`)
+    if (inter >= 1000) parts.push(`${formatInteractions(inter)} mentions/24h`)
+    if (gs != null && gs > 0) parts.push(`Galaxy ${gs}`)
+    if (altDelta != null && Math.abs(altDelta) >= 5) {
+      parts.push(altDelta > 0 ? `rank +${altDelta}` : `rank ${altDelta}`)
+    }
+
+    return (
+      <SentimentLine $color={color}>
+        {label}{parts.length ? ` — ${parts.slice(0, 3).join(' · ')}` : ''}
+      </SentimentLine>
+    )
+  }
+
   return (
     <AuthGuard>
       <PageWrapper>
@@ -392,6 +464,7 @@ export default function TrendingPage() {
                           <CoinInfo>
                             <CoinName>{coin.name}</CoinName>
                             <CoinSymbol>{coin.symbol}</CoinSymbol>
+                            {renderSentimentLine(coin.symbol)}
                           </CoinInfo>
                           {coin.market_cap_rank && <Rank>#{coin.market_cap_rank}</Rank>}
                         </CoinHeader>
@@ -421,6 +494,7 @@ export default function TrendingPage() {
                             <CoinInfo>
                               <CoinName>{coin.name}</CoinName>
                               <CoinSymbol>{coin.symbol}</CoinSymbol>
+                              {renderSentimentLine(coin.symbol)}
                             </CoinInfo>
                             {coin.market_cap_rank && <Rank>#{coin.market_cap_rank}</Rank>}
                           </CoinHeader>
@@ -463,6 +537,7 @@ export default function TrendingPage() {
                             <CoinInfo>
                               <CoinName>{coin.name}</CoinName>
                               <CoinSymbol>{coin.symbol}</CoinSymbol>
+                              {renderSentimentLine(coin.symbol)}
                             </CoinInfo>
                             {coin.market_cap_rank && <Rank>#{coin.market_cap_rank}</Rank>}
                           </CoinHeader>
