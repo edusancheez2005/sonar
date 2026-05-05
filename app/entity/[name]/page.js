@@ -164,6 +164,21 @@ async function fetchArkhamKnownWallets(name) {
   return data
 }
 
+// Live on-chain transfers for this entity, populated by the hourly
+// /api/cron/poll-tracked-addresses cron (Alchemy → Supabase). Returns
+// rows newest-first, deduped by tx_hash + direction (so a swap only
+// shows once even if both legs hit a tracked wallet).
+async function fetchLiveTransfers(name) {
+  if (!name) return []
+  const { data } = await supabaseAdmin
+    .from('tracked_address_transfers')
+    .select('chain, tx_hash, address, direction, block_number, timestamp, counterparty, token_symbol, amount, amount_usd, arkham_label')
+    .ilike('arkham_entity_name', name)
+    .order('timestamp', { ascending: false })
+    .limit(40)
+  return data || []
+}
+
 export async function generateMetadata({ params }) {
   const name = decodeURIComponent(params.name)
   const stats = await fetchEntityStats(name)
@@ -539,6 +554,85 @@ const CHAIN_SHORT = {
   hyperevm: 'HYPE',
 }
 
+function fmtAmount(n) {
+  if (n === null || n === undefined || !Number.isFinite(Number(n))) return '—'
+  const v = Number(n)
+  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`
+  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`
+  if (v >= 1e3) return `${(v / 1e3).toFixed(2)}K`
+  if (v >= 1)   return v.toFixed(2)
+  return v.toPrecision(3)
+}
+
+function LiveTransfersCard({ transfers, name }) {
+  if (!transfers || transfers.length === 0) return null
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(135deg, #0d2134 0%, #112a40 100%)',
+        border: '1px solid rgba(54, 166, 186, 0.2)',
+        borderRadius: '16px',
+        padding: '1.25rem',
+        marginBottom: '1.25rem',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+          marginBottom: '0.85rem',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1px',
+            color: '#36a6ba', textTransform: 'uppercase',
+          }}
+        >
+          Live On-Chain Activity
+        </div>
+        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+          {transfers.length} recent transfers
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+        {transfers.slice(0, 25).map((t) => {
+          const inbound = t.direction === 'in'
+          const arrow = inbound ? '↘' : '↗'
+          const color = inbound ? '#36ba6c' : '#ba6c36'
+          const time = relativeTime(t.timestamp)
+          return (
+            <a
+              key={`${t.chain}-${t.tx_hash}-${t.address}-${t.direction}`}
+              href={`/whale/${encodeURIComponent(t.address)}`}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                gap: '0.6rem', padding: '0.5rem 0.7rem',
+                background: 'rgba(54, 166, 186, 0.05)',
+                border: '1px solid rgba(54, 166, 186, 0.12)',
+                borderRadius: '10px', color: 'var(--text-primary)', textDecoration: 'none',
+              }}
+            >
+              <span style={{ fontSize: '0.95rem', color, flexShrink: 0, width: '1ch' }}>{arrow}</span>
+              <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                  {fmtAmount(t.amount)} {t.token_symbol || (t.chain === 'ethereum' ? 'ETH' : t.chain.toUpperCase())}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {inbound ? 'from' : 'to'} {truncateAddress(t.counterparty || '')} · {(t.chain || '').toUpperCase()}
+                </div>
+              </div>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', flexShrink: 0 }}>{time}</span>
+            </a>
+          )
+        })}
+      </div>
+      <div style={{ marginTop: '0.6rem', fontSize: '0.65rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+        Polled hourly from on-chain RPCs for {name}'s tracked addresses.
+      </div>
+    </div>
+  )
+}
+
 function KnownWalletsCard({ wallets, name }) {
   if (!wallets || wallets.length === 0) return null
   // Group by chain so users can see multi-chain coverage at a glance.
@@ -748,12 +842,13 @@ function AddressesCard({ addresses }) {
 export default async function EntityDetailPage({ params }) {
   const name = decodeURIComponent(params.name)
 
-  const [stats, recentTxs, topTokens, associatedAddresses, knownWallets] = await Promise.all([
+  const [stats, recentTxs, topTokens, associatedAddresses, knownWallets, liveTransfers] = await Promise.all([
     fetchEntityStats(name),
     fetchRecentTxs(name),
     fetchTopTokens(name),
     fetchAssociatedAddresses(name),
     fetchArkhamKnownWallets(name),
+    fetchLiveTransfers(name),
   ])
 
   const empty =
@@ -762,7 +857,8 @@ export default async function EntityDetailPage({ params }) {
       recentTxs.length === 0 &&
       topTokens.length === 0 &&
       associatedAddresses.length === 0 &&
-      knownWallets.length === 0)
+      knownWallets.length === 0 &&
+      liveTransfers.length === 0)
 
   if (empty) return <EntityNotFoundView name={name} />
 
@@ -946,6 +1042,7 @@ export default async function EntityDetailPage({ params }) {
 
           {/* RIGHT: Sidebar */}
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <LiveTransfersCard transfers={liveTransfers} name={name} />
             <TopTokensCard tokens={topTokens} />
             <AddressesCard addresses={associatedAddresses} />
             <KnownWalletsCard wallets={knownWallets} name={name} />

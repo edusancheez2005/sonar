@@ -41,6 +41,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/cron/poll-tracked-addresses",
+      "schedule": "10 * * * *"
+    },
+    {
       "path": "/api/cron/evaluate-signals",
       "schedule": "30 * * * *"
     },

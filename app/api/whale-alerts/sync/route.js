@@ -69,13 +69,72 @@ async function fetchWhaleAlerts() {
 }
 
 /**
+ * Look up entity labels for a batch of (chain, address) pairs against
+ * tracked_address_universe (the Arkham-harvested address book). Returns a
+ * Map keyed by `${chain}:${address.toLowerCase()}` for O(1) join.
+ *
+ * Whale Alert uses chain slugs like "ethereum", "bitcoin", "tron",
+ * "ripple", "binance smart chain". We accept whatever Whale Alert sends;
+ * tracked_address_universe stores Arkham's slugs (ethereum, bitcoin,
+ * tron, bsc, ...). For the mismatched ones (ripple/xrp, binance smart
+ * chain/bsc) we map below.
+ */
+const CHAIN_ALIAS = {
+  'ripple': 'ripple',
+  'xrp': 'ripple',
+  'binance smart chain': 'bsc',
+  'binance-smart-chain': 'bsc',
+  'arbitrum': 'arbitrum_one',
+}
+function normalizeChain(c) {
+  if (!c) return c
+  const k = String(c).toLowerCase().trim()
+  return CHAIN_ALIAS[k] || k
+}
+
+async function fetchUniverseLabels(transactions) {
+  const pairs = new Map() // key -> { chain, address }
+  for (const tx of transactions) {
+    const chain = normalizeChain(tx.blockchain)
+    for (const addr of [tx.from?.address, tx.to?.address]) {
+      if (!addr) continue
+      const key = `${chain}:${String(addr).toLowerCase()}`
+      if (!pairs.has(key)) pairs.set(key, { chain, address: String(addr).toLowerCase() })
+    }
+  }
+  if (pairs.size === 0) return new Map()
+  // Single IN query — addresses live across multiple chains so we filter
+  // chain-side after fetch (cheaper than N round-trips).
+  const allAddrs = [...new Set([...pairs.values()].map((p) => p.address))]
+  // Also try original-case addresses in case the universe stored mixed case.
+  const allAddrsCi = [...new Set(allAddrs.flatMap((a) => [a, a.toLowerCase()]))]
+  const { data, error } = await supabaseAdmin
+    .from('tracked_address_universe')
+    .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label')
+    .in('address', allAddrsCi)
+  if (error || !data) return new Map()
+  const out = new Map()
+  for (const row of data) {
+    const key = `${row.chain}:${String(row.address).toLowerCase()}`
+    out.set(key, row)
+  }
+  return out
+}
+
+/**
  * Save whale alerts to database
  */
 async function saveWhaleAlerts(transactions) {
   if (!transactions || transactions.length === 0) {
-    return { saved: 0, skipped: 0 }
+    return { saved: 0, skipped: 0, enriched: 0 }
   }
-  
+
+  // Pre-fetch our entity labels for every (chain, address) in the batch
+  // so we can stamp from_owner / to_owner with our better attribution
+  // (Arkham-harvested) when Whale Alert returns a generic "unknown".
+  const labelMap = await fetchUniverseLabels(transactions)
+  let enriched = 0
+
   let saved = 0
   let skipped = 0
   
@@ -93,7 +152,23 @@ async function saveWhaleAlerts(transactions) {
         skipped++
         continue
       }
-      
+
+      // Apply our entity attribution on top of Whale Alert's own labels.
+      // Whale Alert often returns owner='unknown' for the second leg of
+      // exchange flows; our tracked_address_universe has entity-grade
+      // attribution for ~1830 addresses across 15 chains, so prefer it
+      // whenever we have a hit.
+      const chain = normalizeChain(tx.blockchain)
+      const fromKey = tx.from?.address ? `${chain}:${String(tx.from.address).toLowerCase()}` : null
+      const toKey = tx.to?.address ? `${chain}:${String(tx.to.address).toLowerCase()}` : null
+      const fromHit = fromKey ? labelMap.get(fromKey) : null
+      const toHit = toKey ? labelMap.get(toKey) : null
+      const fromOwner = fromHit?.arkham_entity_name || tx.from?.owner || null
+      const toOwner = toHit?.arkham_entity_name || tx.to?.owner || null
+      const fromOwnerType = fromHit?.arkham_entity_type || tx.from?.owner_type || null
+      const toOwnerType = toHit?.arkham_entity_type || tx.to?.owner_type || null
+      if (fromHit || toHit) enriched++
+
       // Insert new whale alert
       const { error } = await supabaseAdmin
         .from('whale_alerts')
@@ -105,10 +180,10 @@ async function saveWhaleAlerts(transactions) {
           amount_usd: tx.amount_usd,
           from_address: tx.from?.address || null,
           to_address: tx.to?.address || null,
-          from_owner: tx.from?.owner || null,
-          to_owner: tx.to?.owner || null,
-          from_owner_type: tx.from?.owner_type || null,
-          to_owner_type: tx.to?.owner_type || null,
+          from_owner: fromOwner,
+          to_owner: toOwner,
+          from_owner_type: fromOwnerType,
+          to_owner_type: toOwnerType,
           transaction_type: tx.transaction_type || 'transfer',
           transaction_count: tx.transaction_count || 1,
           timestamp: new Date(tx.timestamp * 1000).toISOString(),
@@ -126,7 +201,7 @@ async function saveWhaleAlerts(transactions) {
     }
   }
   
-  return { saved, skipped }
+  return { saved, skipped, enriched }
 }
 
 /**
@@ -145,14 +220,15 @@ export async function GET(req) {
     const transactions = await fetchWhaleAlerts()
     
     // Save to database
-    const { saved, skipped } = await saveWhaleAlerts(transactions)
-    
-    console.log(`✅ Sync complete: ${saved} saved, ${skipped} skipped`)
-    
+    const { saved, skipped, enriched } = await saveWhaleAlerts(transactions)
+
+    console.log(`✅ Sync complete: ${saved} saved, ${skipped} skipped, ${enriched} arkham-enriched`)
+
     return NextResponse.json({
       success: true,
       saved,
       skipped,
+      enriched,
       total: transactions.length,
       timestamp: new Date().toISOString()
     })
