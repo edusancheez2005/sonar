@@ -527,6 +527,19 @@ function VerifiedAddressesCard({ addrs }) {
                   {a.note}
                 </div>
               ) : null}
+              {a.arkham_label ? (
+                <div
+                  style={{
+                    fontSize: '0.7rem',
+                    color: '#36a6ba',
+                    fontWeight: 600,
+                    marginTop: a.note ? '0.15rem' : 0,
+                  }}
+                  title="On-chain attribution label"
+                >
+                  {a.arkham_label}
+                </div>
+              ) : null}
             </a>
           ))}
         </div>
@@ -564,12 +577,25 @@ export default async function FigureDetailPage({ params }) {
   // nothing here waits longer than ~5 s even when providers stall.
   // Stats, first-seen/last-active, and top tokens all derive from the
   // merged feed below so they agree with what's rendered on the page.
-  const [sonarRecent, chainFetch] = await Promise.all([
+  const [sonarRecent, chainFetch, arkhamLabels] = await Promise.all([
     hasAddresses ? fetchRecentTxs(addrs) : Promise.resolve([]),
     hasAddresses
       ? fetchChainTxsForAddresses(addrs, { limit: 20, budgetMs: 5000 })
       : Promise.resolve({ txs: [], timedOut: false, errors: 0 }),
+    hasAddresses
+      ? import('@/lib/arkham/address-lookup').then((m) =>
+          m.fetchArkhamLabels(addrs.map((a) => a.address))
+        ).catch(() => new Map())
+      : Promise.resolve(new Map()),
   ])
+
+  // Decorate verified addresses with Arkham label (e.g. "Cold Wallet 2")
+  // so the sidebar shows what each wallet is, not just a hash.
+  const decoratedAddrs = addrs.map((a) => {
+    const rec = arkhamLabels.get(a.address) || arkhamLabels.get(String(a.address).toLowerCase())
+    if (!rec) return a
+    return { ...a, arkham_label: rec.label, arkham_entity_type: rec.entity_type }
+  })
 
   const mergedAll = mergeSonarAndChain(sonarRecent, chainFetch.txs)
   const recentTxs = mergedAll.slice(0, 100)
@@ -890,7 +916,7 @@ export default async function FigureDetailPage({ params }) {
             </div>
             <div style={{ minWidth: 0 }}>
               <TopTokensCard tokens={topTokens} anyVolume={topTokensHasVolume} />
-              <VerifiedAddressesCard addrs={addrs} />
+              <VerifiedAddressesCard addrs={decoratedAddrs} />
             </div>
           </div>
         ) : (
@@ -901,7 +927,7 @@ export default async function FigureDetailPage({ params }) {
               gap: '1.25rem',
             }}
           >
-            <VerifiedAddressesCard addrs={addrs} />
+            <VerifiedAddressesCard addrs={decoratedAddrs} />
           </div>
         )}
 

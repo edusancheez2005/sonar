@@ -140,6 +140,30 @@ function escapeOrValue(v) {
   return `"${s}"`
 }
 
+// Pull every Arkham-attributed wallet for this entity from
+// tracked_address_universe (the harvested moat: ~1.8k addresses across
+// 15 chains). Pure DB read, zero outbound API calls.
+async function fetchArkhamKnownWallets(name) {
+  if (!name) return []
+  // Match exact name first, then ilike fallback for slug variants
+  // (e.g. "MicroStrategy" vs "Microstrategy").
+  const { data, error } = await supabaseAdmin
+    .from('tracked_address_universe')
+    .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label, arkham_is_contract')
+    .ilike('arkham_entity_name', name)
+    .limit(200)
+  if (error || !data || data.length === 0) {
+    // Looser fallback: substring match
+    const { data: data2 } = await supabaseAdmin
+      .from('tracked_address_universe')
+      .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label, arkham_is_contract')
+      .ilike('arkham_entity_name', `%${name}%`)
+      .limit(200)
+    return data2 || []
+  }
+  return data
+}
+
 export async function generateMetadata({ params }) {
   const name = decodeURIComponent(params.name)
   const stats = await fetchEntityStats(name)
@@ -495,6 +519,156 @@ function TopTokensCard({ tokens }) {
   )
 }
 
+// Map of common chain slugs to short display labels (matches what
+// tracked_address_universe stores from the harvest scripts).
+const CHAIN_SHORT = {
+  ethereum: 'ETH',
+  polygon: 'POLY',
+  bsc: 'BSC',
+  optimism: 'OP',
+  avalanche: 'AVAX',
+  arbitrum_one: 'ARB',
+  base: 'BASE',
+  bitcoin: 'BTC',
+  tron: 'TRX',
+  flare: 'FLR',
+  solana: 'SOL',
+  ton: 'TON',
+  dogecoin: 'DOGE',
+  zcash: 'ZEC',
+  hyperevm: 'HYPE',
+}
+
+function KnownWalletsCard({ wallets, name }) {
+  if (!wallets || wallets.length === 0) return null
+  // Group by chain so users can see multi-chain coverage at a glance.
+  const byChain = new Map()
+  for (const w of wallets) {
+    const key = w.chain || 'unknown'
+    if (!byChain.has(key)) byChain.set(key, [])
+    byChain.get(key).push(w)
+  }
+  const chains = Array.from(byChain.entries()).sort((a, b) => b[1].length - a[1].length)
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(135deg, #0d2134 0%, #112a40 100%)',
+        border: '1px solid rgba(54, 166, 186, 0.2)',
+        borderRadius: '16px',
+        padding: '1.25rem',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: '0.85rem',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            letterSpacing: '1px',
+            color: '#36a6ba',
+            textTransform: 'uppercase',
+          }}
+        >
+          Known Wallets
+        </div>
+        <div
+          style={{
+            fontSize: '0.7rem',
+            color: 'var(--text-secondary)',
+          }}
+          title="Entity-attributed addresses across all chains"
+        >
+          {wallets.length} addresses · {chains.length} chains
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        {chains.slice(0, 8).map(([chain, list]) => (
+          <div key={chain}>
+            <div
+              style={{
+                fontSize: '0.7rem',
+                color: 'var(--text-secondary)',
+                marginBottom: '0.3rem',
+                letterSpacing: '0.5px',
+              }}
+            >
+              {CHAIN_SHORT[chain] || chain.toUpperCase()} · {list.length}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              {list.slice(0, 6).map((w) => (
+                <a
+                  key={`${w.chain}-${w.address}`}
+                  href={`/whale/${encodeURIComponent(w.address)}`}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.4rem 0.6rem',
+                    background: 'rgba(54, 166, 186, 0.06)',
+                    border: '1px solid rgba(54, 166, 186, 0.15)',
+                    borderRadius: '8px',
+                    color: 'var(--text-primary)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <code
+                    title={w.address}
+                    style={{
+                      fontFamily: "'Courier New', monospace",
+                      fontSize: '0.78rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      minWidth: 0,
+                    }}
+                  >
+                    {truncateAddress(w.address)}
+                  </code>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      color: 'var(--text-secondary)',
+                      flexShrink: 0,
+                      maxWidth: '50%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {w.arkham_label || (w.arkham_is_contract ? 'contract' : '')}
+                  </span>
+                </a>
+              ))}
+              {list.length > 6 && (
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', paddingLeft: '0.6rem' }}>
+                  + {list.length - 6} more
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          marginTop: '0.75rem',
+          fontSize: '0.65rem',
+          color: 'var(--text-secondary)',
+          fontStyle: 'italic',
+        }}
+      >
+        Sourced from on-chain entity attribution data for {name}.
+      </div>
+    </div>
+  )
+}
+
 function AddressesCard({ addresses }) {
   return (
     <div
@@ -574,11 +748,12 @@ function AddressesCard({ addresses }) {
 export default async function EntityDetailPage({ params }) {
   const name = decodeURIComponent(params.name)
 
-  const [stats, recentTxs, topTokens, associatedAddresses] = await Promise.all([
+  const [stats, recentTxs, topTokens, associatedAddresses, knownWallets] = await Promise.all([
     fetchEntityStats(name),
     fetchRecentTxs(name),
     fetchTopTokens(name),
     fetchAssociatedAddresses(name),
+    fetchArkhamKnownWallets(name),
   ])
 
   const empty =
@@ -586,7 +761,8 @@ export default async function EntityDetailPage({ params }) {
     (stats.tx_count === 0 &&
       recentTxs.length === 0 &&
       topTokens.length === 0 &&
-      associatedAddresses.length === 0)
+      associatedAddresses.length === 0 &&
+      knownWallets.length === 0)
 
   if (empty) return <EntityNotFoundView name={name} />
 
@@ -769,9 +945,10 @@ export default async function EntityDetailPage({ params }) {
           </div>
 
           {/* RIGHT: Sidebar */}
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <TopTokensCard tokens={topTokens} />
             <AddressesCard addresses={associatedAddresses} />
+            <KnownWalletsCard wallets={knownWallets} name={name} />
           </div>
         </div>
 
