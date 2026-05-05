@@ -1,5 +1,5 @@
 {
-  "_doc": "Manifest of curated entities to upsert into Supabase. Edit this file and run `node scripts/sync-curated-from-manifest.mjs` to apply. Every address must have a verifiable public source (Etherscan name tag, Arkham public profile, mempool.space, or self-disclosed tweet/blog). Categories must be one of: person, company, government, protocol, celebrity (matches curated_entities_category_check).",
+  "_doc": "Manifest of curated entities to upsert into Supabase. Edit this file and run `node scripts/sync-curated-from-manifest.mjs` to apply. Every address must have a verifiable public source (Etherscan name tag, Arkham public profile, mempool.space, or self-disclosed tweet/blog). Categories must be one of: person, company, government, protocol, celebrity (matches curated_entities_category_check). Optional `arkham_slug` field: when present, scripts/arkham-enrich-curated.mjs will fetch /intelligence/entity/{arkham_slug} and populate arkham_* columns + harvest addresses into tracked_address_universe.",
   "_categoryAllowList": ["person", "company", "government", "protocol", "celebrity"],
   "entities": [
     {
@@ -61,6 +61,7 @@
     },
     {
       "slug": "okx",
+      "arkham_slug": "okx",
       "display_name": "OKX",
       "description": "Major centralized cryptocurrency exchange. One of the most active CEX wallet clusters on Ethereum.",
       "category": "company",
@@ -73,6 +74,7 @@
     },
     {
       "slug": "kucoin",
+      "arkham_slug": "kucoin",
       "display_name": "KuCoin",
       "description": "Major centralized exchange. Etherscan-tagged hot wallet cluster.",
       "category": "company",
@@ -85,6 +87,7 @@
     },
     {
       "slug": "crypto-com",
+      "arkham_slug": "crypto-com",
       "display_name": "Crypto.com",
       "description": "Crypto.com exchange and platform. Etherscan-tagged hot wallet.",
       "category": "company",
@@ -97,6 +100,7 @@
     },
     {
       "slug": "gate-io",
+      "arkham_slug": "gate-io",
       "display_name": "Gate.io",
       "description": "Gate.io centralized exchange. Etherscan-tagged hot wallet.",
       "category": "company",
@@ -108,6 +112,7 @@
     },
     {
       "slug": "htx-huobi",
+      "arkham_slug": "htx",
       "display_name": "HTX (Huobi)",
       "description": "HTX (formerly Huobi) centralized exchange, owned by Justin Sun. Etherscan-tagged hot wallet cluster.",
       "category": "company",
@@ -120,6 +125,7 @@
     },
     {
       "slug": "convex-finance",
+      "arkham_slug": "convex-finance",
       "display_name": "Convex Finance",
       "description": "Convex Finance — boosts Curve LP rewards via veCRV aggregation. Among the largest CRV holders.",
       "category": "protocol",
@@ -128,6 +134,63 @@
       "addresses": [
         { "address": "0xF403C135812408BFbE8713b5A23a04b3D48AAE31", "chain": "ethereum", "note": "Convex Finance: Booster — Etherscan name tag", "source": "https://etherscan.io/address/0xf403c135812408bfbe8713b5a23a04b3d48aae31", "verified": true }
       ]
-    }
+    },
+
+    { "slug": "binance",                "arkham_slug": "binance",                "display_name": "Binance",                       "category": "company",   "twitter_handle": "binance",       "is_featured": true,  "addresses": [] },
+    { "slug": "coinbase",               "arkham_slug": "coinbase",               "display_name": "Coinbase",                      "category": "company",   "twitter_handle": "coinbase",      "is_featured": true,  "addresses": [] },
+    { "slug": "bybit",                  "arkham_slug": "bybit",                  "display_name": "Bybit",                         "category": "company",   "twitter_handle": "Bybit_Official","is_featured": true,  "addresses": [] },
+    { "slug": "kraken",                 "arkham_slug": "kraken",                 "display_name": "Kraken",                        "category": "company",   "twitter_handle": "krakenfx",      "is_featured": true,  "addresses": [] },
+    { "slug": "bitfinex",               "arkham_slug": "bitfinex",               "display_name": "Bitfinex",                      "category": "company",   "twitter_handle": "bitfinex",      "is_featured": false, "addresses": [] },
+    { "slug": "gemini",                 "arkham_slug": "gemini",                 "display_name": "Gemini",                        "category": "company",   "twitter_handle": "Gemini",        "is_featured": false, "addresses": [] },
+    { "slug": "bitstamp",               "arkham_slug": "bitstamp",               "display_name": "Bitstamp",                      "category": "company",   "twitter_handle": "Bitstamp",      "is_featured": false, "addresses": [] },
+    { "slug": "mexc",                   "arkham_slug": "mexc",                   "display_name": "MEXC",                          "category": "company",   "twitter_handle": "MEXC_Official", "is_featured": false, "addresses": [] },
+
+    { "slug": "tether",                 "arkham_slug": "tether",                 "display_name": "Tether",                        "category": "company",   "twitter_handle": "Tether_to",     "is_featured": true,  "addresses": [] },
+    { "slug": "circle",                 "arkham_slug": "circle",                 "display_name": "Circle (USDC)",                 "category": "company",   "twitter_handle": "circle",        "is_featured": true,  "addresses": [] },
+    { "slug": "paxos",                  "arkham_slug": "paxos",                  "display_name": "Paxos",                         "category": "company",   "twitter_handle": "Paxos",         "is_featured": false, "addresses": [] },
+
+    { "slug": "jump-trading",           "arkham_slug": "jump-trading",           "display_name": "Jump Trading",                  "category": "company",   "twitter_handle": "jumptrading",   "is_featured": true,  "addresses": [] },
+    { "slug": "wintermute",             "arkham_slug": "wintermute",             "display_name": "Wintermute",                    "category": "company",   "twitter_handle": "wintermute_t",  "is_featured": true,  "addresses": [] },
+    { "slug": "alameda-research",       "arkham_slug": "alameda-research",       "display_name": "Alameda Research",              "category": "company",   "twitter_handle": null,            "is_featured": false, "addresses": [] },
+    { "slug": "jane-street",            "arkham_slug": "jane-street",            "display_name": "Jane Street",                   "category": "company",   "twitter_handle": "JaneStreet",    "is_featured": false, "addresses": [] },
+    { "slug": "dwf-labs",               "arkham_slug": "dwf-labs",               "display_name": "DWF Labs",                      "category": "company",   "twitter_handle": "DWFLabs",       "is_featured": false, "addresses": [] },
+    { "slug": "gsr",                    "arkham_slug": "gsr",                    "display_name": "GSR",                           "category": "company",   "twitter_handle": "GSR_io",        "is_featured": false, "addresses": [] },
+    { "slug": "cumberland",             "arkham_slug": "cumberland",             "display_name": "Cumberland",                    "category": "company",   "twitter_handle": "CumberlandSays","is_featured": false, "addresses": [] },
+
+    { "slug": "a16z-crypto",            "arkham_slug": "a16z",                   "display_name": "Andreessen Horowitz (a16z)",    "category": "company",   "twitter_handle": "a16z",          "is_featured": true,  "addresses": [] },
+    { "slug": "paradigm",               "arkham_slug": "paradigm",               "display_name": "Paradigm",                      "category": "company",   "twitter_handle": "paradigm",      "is_featured": true,  "addresses": [] },
+    { "slug": "multicoin-capital",      "arkham_slug": "multicoin-capital",      "display_name": "Multicoin Capital",             "category": "company",   "twitter_handle": "multicoincap",  "is_featured": false, "addresses": [] },
+    { "slug": "pantera-capital",        "arkham_slug": "pantera-capital",        "display_name": "Pantera Capital",               "category": "company",   "twitter_handle": "PanteraCapital","is_featured": false, "addresses": [] },
+    { "slug": "polychain-capital",      "arkham_slug": "polychain-capital",      "display_name": "Polychain Capital",             "category": "company",   "twitter_handle": "polychain",     "is_featured": false, "addresses": [] },
+    { "slug": "galaxy-digital",         "arkham_slug": "galaxy-digital",         "display_name": "Galaxy Digital",                "category": "company",   "twitter_handle": "GalaxyHQ",      "is_featured": false, "addresses": [] },
+
+    { "slug": "microstrategy",          "arkham_slug": "microstrategy",          "display_name": "MicroStrategy",                 "category": "company",   "twitter_handle": "MicroStrategy", "is_featured": true,  "addresses": [] },
+    { "slug": "blackrock",              "arkham_slug": "blackrock",              "display_name": "BlackRock",                     "category": "company",   "twitter_handle": "BlackRock",     "is_featured": true,  "addresses": [] },
+    { "slug": "fidelity",               "arkham_slug": "fidelity",               "display_name": "Fidelity",                      "category": "company",   "twitter_handle": "Fidelity",      "is_featured": false, "addresses": [] },
+    { "slug": "grayscale",              "arkham_slug": "grayscale",              "display_name": "Grayscale",                     "category": "company",   "twitter_handle": "Grayscale",     "is_featured": false, "addresses": [] },
+    { "slug": "robinhood",              "arkham_slug": "robinhood",              "display_name": "Robinhood",                     "category": "company",   "twitter_handle": "RobinhoodApp",  "is_featured": false, "addresses": [] },
+
+    { "slug": "vitalik-buterin",        "arkham_slug": "vitalik-buterin",        "display_name": "Vitalik Buterin",               "category": "person",    "twitter_handle": "VitalikButerin","is_featured": true,  "addresses": [] },
+    { "slug": "justin-sun",             "arkham_slug": "justin-sun",             "display_name": "Justin Sun",                    "category": "person",    "twitter_handle": "justinsuntron", "is_featured": false, "addresses": [] },
+    { "slug": "michael-saylor",         "arkham_slug": "michael-saylor",         "display_name": "Michael Saylor",                "category": "person",    "twitter_handle": "saylor",        "is_featured": false, "addresses": [] },
+    { "slug": "do-kwon",                "arkham_slug": "do-kwon",                "display_name": "Do Kwon",                       "category": "person",    "twitter_handle": null,            "is_featured": false, "addresses": [] },
+    { "slug": "sam-bankman-fried",      "arkham_slug": "sam-bankman-fried",      "display_name": "Sam Bankman-Fried",             "category": "person",    "twitter_handle": null,            "is_featured": false, "addresses": [] },
+    { "slug": "changpeng-zhao",         "arkham_slug": "changpeng-zhao",         "display_name": "Changpeng Zhao (CZ)",           "category": "person",    "twitter_handle": "cz_binance",    "is_featured": false, "addresses": [] },
+
+    { "slug": "lazarus-group",          "arkham_slug": "lazarus-group",          "display_name": "Lazarus Group (DPRK)",          "category": "government","twitter_handle": null,            "is_featured": true,  "addresses": [] },
+    { "slug": "ronin-bridge-exploiter", "arkham_slug": "ronin-bridge-exploiter", "display_name": "Ronin Bridge Exploiter",        "category": "person",    "twitter_handle": null,            "is_featured": false, "addresses": [] },
+    { "slug": "wormhole-exploiter",     "arkham_slug": "wormhole-exploiter",     "display_name": "Wormhole Exploiter",            "category": "person",    "twitter_handle": null,            "is_featured": false, "addresses": [] },
+
+    { "slug": "us-government",          "arkham_slug": "us-government",          "display_name": "US Government",                 "category": "government","twitter_handle": null,            "is_featured": true,  "addresses": [] },
+    { "slug": "fbi",                    "arkham_slug": "fbi",                    "display_name": "FBI",                           "category": "government","twitter_handle": "FBI",           "is_featured": false, "addresses": [] },
+    { "slug": "us-doj",                 "arkham_slug": "us-doj",                 "display_name": "US Department of Justice",      "category": "government","twitter_handle": "TheJusticeDept", "is_featured": false, "addresses": [] },
+
+    { "slug": "uniswap",                "arkham_slug": "uniswap",                "display_name": "Uniswap",                       "category": "protocol",  "twitter_handle": "Uniswap",       "is_featured": true,  "addresses": [] },
+    { "slug": "aave",                   "arkham_slug": "aave",                   "display_name": "Aave",                          "category": "protocol",  "twitter_handle": "aave",          "is_featured": true,  "addresses": [] },
+    { "slug": "lido",                   "arkham_slug": "lido",                   "display_name": "Lido",                          "category": "protocol",  "twitter_handle": "LidoFinance",   "is_featured": true,  "addresses": [] },
+    { "slug": "curve",                  "arkham_slug": "curve",                  "display_name": "Curve Finance",                 "category": "protocol",  "twitter_handle": "CurveFinance",  "is_featured": false, "addresses": [] },
+    { "slug": "makerdao",               "arkham_slug": "makerdao",               "display_name": "MakerDAO",                      "category": "protocol",  "twitter_handle": "MakerDAO",      "is_featured": false, "addresses": [] },
+    { "slug": "ethena",                 "arkham_slug": "ethena",                 "display_name": "Ethena",                        "category": "protocol",  "twitter_handle": "ethena_labs",   "is_featured": false, "addresses": [] },
+    { "slug": "ondo",                   "arkham_slug": "ondo",                   "display_name": "Ondo Finance",                  "category": "protocol",  "twitter_handle": "OndoFinance",   "is_featured": false, "addresses": [] }
   ]
 }

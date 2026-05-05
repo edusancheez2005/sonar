@@ -53,6 +53,18 @@ export async function GET(req, { params }) {
         data.entity_name = labels[0].entity_name
       }
     }
+    // Arkham fallback (tracked_address_universe). Pure DB lookup.
+    if (!data.entity_name) {
+      const { fetchArkhamLabels, formatArkhamDisplayName } = await import('@/lib/arkham/address-lookup')
+      const arkMap = await fetchArkhamLabels([address])
+      const rec = arkMap.get(address) || arkMap.get(String(address).toLowerCase())
+      const name = formatArkhamDisplayName(rec)
+      if (name) {
+        data.entity_name = name
+        if (rec?.entity_type) data.arkham_entity_type = rec.entity_type
+        if (rec?.entity_id)   data.arkham_entity_id   = rec.entity_id
+      }
+    }
     return NextResponse.json(
       { data },
       { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }

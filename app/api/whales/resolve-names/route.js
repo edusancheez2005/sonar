@@ -45,6 +45,29 @@ export async function GET(req) {
       }
     }
 
+    // Arkham fallback for any address not yet resolved.
+    const missing = addresses.filter(a => !names[a] || !names[a].entity_name)
+    if (missing.length > 0) {
+      try {
+        const { fetchArkhamLabels, formatArkhamDisplayName } = await import('@/lib/arkham/address-lookup')
+        const arkMap = await fetchArkhamLabels(missing)
+        for (const addr of missing) {
+          const rec = arkMap.get(addr) || arkMap.get(String(addr).toLowerCase())
+          if (!rec) continue
+          const display = formatArkhamDisplayName(rec)
+          names[addr] = {
+            entity_name: display,
+            label: rec.label || null,
+            address_type: rec.is_contract ? 'contract' : null,
+            category: rec.entity_type || null,
+            is_famous: false,
+          }
+        }
+      } catch (e) {
+        // Non-fatal: degrade silently if address-lookup unavailable.
+      }
+    }
+
     return NextResponse.json(
       { names },
       { headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=600' } }

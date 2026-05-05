@@ -92,6 +92,21 @@ export async function GET(req) {
         }
       }
     }
+
+    // Second-tier fallback: tracked_address_universe (Arkham-harvested,
+    // ~1.8k entity-attributed addresses across 15 chains). Pure DB lookup,
+    // zero outbound API calls.
+    const stillUnlabeled = (data || []).filter(w => !w.entity_name).map(w => w.address)
+    if (stillUnlabeled.length > 0) {
+      const { fetchArkhamLabels, formatArkhamDisplayName } = await import('@/lib/arkham/address-lookup')
+      const arkMap = await fetchArkhamLabels(stillUnlabeled)
+      for (const wallet of data) {
+        if (wallet.entity_name) continue
+        const rec = arkMap.get(wallet.address) || arkMap.get(String(wallet.address).toLowerCase())
+        const name = formatArkhamDisplayName(rec)
+        if (name) wallet.entity_name = name
+      }
+    }
   }
 
   const totalPages = Math.ceil((count || 0) / limit)
