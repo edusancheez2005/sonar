@@ -95,9 +95,17 @@ export async function GET(request: NextRequest) {
     const json = await res.json()
     const raw: any[] = Array.isArray(json?.data) ? json.data : []
 
-    const cleaned = raw.filter(
-      (r) => Number(r?.interactions_24h || 0) > 0 || Number(r?.galaxy_score || 0) > 0
-    )
+    // LunarCrush assigns galaxy_score=100 to many tiny / unranked tokens
+    // with effectively zero social activity, which would otherwise dominate
+    // a galaxy-score-sorted leaderboard. Require BOTH meaningful market cap
+    // AND non-trivial 24h interactions to qualify as "trending".
+    const MIN_MARKET_CAP = 50_000_000     // $50M floor — keeps it to real assets
+    const MIN_INTERACTIONS = 1_000        // basic social pulse
+    const cleaned = raw.filter((r) => {
+      const mc = Number(r?.market_cap || 0)
+      const ix = Number(r?.interactions_24h || 0)
+      return mc >= MIN_MARKET_CAP && ix >= MIN_INTERACTIONS
+    })
 
     const sorted = [...cleaned].sort((a, b) => {
       if (sort === 'alt_rank') {
