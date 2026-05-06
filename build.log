@@ -1,4 +1,17 @@
 
+> sonar-crypto-dashboard@0.1.0 prebuild
+> npm run test:engine
+
+
+> sonar-crypto-dashboard@0.1.0 test:engine
+> node --experimental-strip-types scripts/test-signal-engine.mjs
+
+(node:15944) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/app/lib/signalEngine.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[test-signal-engine] Ô£ô 95/95 cases matched golden
+
 > sonar-crypto-dashboard@0.1.0 build
 > next build
 
@@ -9,3 +22,238 @@
   - Environments: .env.local
 
    Creating an optimized production build ...
+ ÔÜá Compiled with warnings
+
+./node_modules/ox/_esm/tempo/internal/virtualMasterPool.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/ox/_esm/tempo/internal/virtualMasterPool.js
+./node_modules/ox/_esm/tempo/VirtualMaster.js
+./node_modules/ox/_esm/tempo/index.js
+./node_modules/viem/_esm/tempo/chainConfig.js
+./node_modules/viem/_esm/chains/definitions/tempo.js
+./node_modules/viem/_esm/chains/index.js
+./node_modules/wagmi/dist/esm/exports/chains.js
+./components/wallet/WalletProvider.jsx
+./app/components/ClientRoot.jsx
+
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/172) ...
+   Generating static pages (43/172) 
+   Generating static pages (86/172) 
+   Generating static pages (129/172) 
+ Ô£ô Generating static pages (172/172)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                         Size     First Load JS
+Ôöî Ôùï /                                               28.5 kB         229 kB
+Ôö£ Ôùï /_not-found                                     201 B          92.3 kB
+Ôö£ Ôùï /admin                                          1.01 kB         102 kB
+Ôö£ Ôùï /admin/arkham                                   2.76 kB         166 kB
+Ôö£ Ôùï /admin/arkham/entities                          2.52 kB         157 kB
+Ôö£ Ôùï /admin/calibration                              4.04 kB         158 kB
+Ôö£ Ôùï /admin/figures                                  5.38 kB         160 kB
+Ôö£ Ôùï /admin/figures/backfill                         5.66 kB         169 kB
+Ôö£ Ôùï /admin/sentiment-votes                          3.09 kB         170 kB
+Ôö£ Ôùï /ai-advisor                                     58 kB           264 kB
+Ôö£ Ôùï /ai-crypto-signals                              200 B          92.3 kB
+Ôö£ ãÆ /api/admin/arkham/entities                      0 B                0 B
+Ôö£ ãÆ /api/admin/arkham/stats                         0 B                0 B
+Ôö£ ãÆ /api/admin/calibration                          0 B                0 B
+Ôö£ ãÆ /api/admin/fetch-avatar                         0 B                0 B
+Ôö£ ãÆ /api/admin/figures                              0 B                0 B
+Ôö£ ãÆ /api/admin/figures/[slug]/addresses             0 B                0 B
+Ôö£ ãÆ /api/admin/sentiment-votes                      0 B                0 B
+Ôö£ ãÆ /api/alerts                                     0 B                0 B
+Ôö£ ãÆ /api/alerts/[id]                                0 B                0 B
+Ôö£ ãÆ /api/arkham/health                              0 B                0 B
+Ôö£ ãÆ /api/auth/signup                                0 B                0 B
+Ôö£ ãÆ /api/auth/test-invite                           0 B                0 B
+Ôö£ ãÆ /api/auth/wallet/link                           0 B                0 B
+Ôö£ ãÆ /api/auth/wallet/nonce                          0 B                0 B
+Ôö£ ãÆ /api/auth/wallet/verify                         0 B                0 B
+Ôö£ ãÆ /api/backtest/signal-validation                 0 B                0 B
+Ôö£ ãÆ /api/blog                                       0 B                0 B
+Ôö£ ãÆ /api/chat                                       0 B                0 B
+Ôö£ ãÆ /api/chat/quota                                 0 B                0 B
+Ôö£ ãÆ /api/chat/sessions                              0 B                0 B
+Ôö£ ãÆ /api/chat/sessions/[sessionId]                  0 B                0 B
+Ôö£ ãÆ /api/coingecko/market-chart                     0 B                0 B
+Ôö£ ãÆ /api/coingecko/ohlc                             0 B                0 B
+Ôö£ ãÆ /api/coingecko/token-image                      0 B                0 B
+Ôö£ ãÆ /api/coingecko/trending                         0 B                0 B
+Ôö£ ãÆ /api/contact                                    0 B                0 B
+Ôö£ ãÆ /api/cron/accuracy-watchdog                     0 B                0 B
+Ôö£ ãÆ /api/cron/aggregate-sentiment                   0 B                0 B
+Ôö£ ãÆ /api/cron/analyze-sentiment                     0 B                0 B
+Ôö£ ãÆ /api/cron/backtest-figures                      0 B                0 B
+Ôö£ ãÆ /api/cron/cache-derivatives                     0 B                0 B
+Ôö£ ãÆ /api/cron/calibrate-signals                     0 B                0 B
+Ôö£ ãÆ /api/cron/compute-signals                       0 B                0 B
+Ôö£ ãÆ /api/cron/evaluate-signals                      0 B                0 B
+Ôö£ ãÆ /api/cron/fetch-prices                          0 B                0 B
+Ôö£ ãÆ /api/cron/ingest-news                           0 B                0 B
+Ôö£ ãÆ /api/cron/ingest-social                         0 B                0 B
+Ôö£ ãÆ /api/cron/poll-tracked-addresses                0 B                0 B
+Ôö£ ãÆ /api/cron/refresh-wallets                       0 B                0 B
+Ôö£ ãÆ /api/cron/seo-article                           0 B                0 B
+Ôö£ ãÆ /api/cron/telegram-alerts                       0 B                0 B
+Ôö£ ãÆ /api/cron/weekly-insights                       0 B                0 B
+Ôö£ ãÆ /api/cron/weekly-top-wallets                    0 B                0 B
+Ôö£ ãÆ /api/cron/whale-whisper                         0 B                0 B
+Ôö£ ãÆ /api/dashboard/smart-money                      0 B                0 B
+Ôö£ ãÆ /api/dashboard/summary                          0 B                0 B
+Ôö£ ãÆ /api/dashboard/whale-whisper                    0 B                0 B
+Ôö£ ãÆ /api/debug/data                                 0 B                0 B
+Ôö£ ãÆ /api/debug/figure-backtests                     0 B                0 B
+Ôö£ ãÆ /api/feedback                                   0 B                0 B
+Ôö£ ãÆ /api/figures/submit                             0 B                0 B
+Ôö£ Ôùï /api/health                                     0 B                0 B
+Ôö£ ãÆ /api/health/algorithm                           0 B                0 B
+Ôö£ ãÆ /api/legal/data-removal-request                 0 B                0 B
+Ôö£ ãÆ /api/news/personalized                          0 B                0 B
+Ôö£ ãÆ /api/orca/token-analysis                        0 B                0 B
+Ôö£ ãÆ /api/portfolio/tokens                           0 B                0 B
+Ôö£ ãÆ /api/profile/delete                             0 B                0 B
+Ôö£ ãÆ /api/sentiment/vote                             0 B                0 B
+Ôö£ ãÆ /api/signals                                    0 B                0 B
+Ôö£ ãÆ /api/signals/accuracy                           0 B                0 B
+Ôö£ ãÆ /api/social/category                            0 B                0 B
+Ôö£ ãÆ /api/social/creators                            0 B                0 B
+Ôö£ ãÆ /api/social/feed                                0 B                0 B
+Ôö£ ãÆ /api/social/macro                               0 B                0 B
+Ôö£ ãÆ /api/social/trending-coins                      0 B                0 B
+Ôö£ ãÆ /api/social/voices                              0 B                0 B
+Ôö£ ãÆ /api/stripe/create-checkout-session             0 B                0 B
+Ôö£ ãÆ /api/stripe/portal                              0 B                0 B
+Ôö£ ãÆ /api/stripe/webhook                             0 B                0 B
+Ôö£ ãÆ /api/subscribe                                  0 B                0 B
+Ôö£ ãÆ /api/subscription/status                        0 B                0 B
+Ôö£ ãÆ /api/ticker                                     0 B                0 B
+Ôö£ ãÆ /api/token/comprehensive-data                   0 B                0 B
+Ôö£ ãÆ /api/token/meta                                 0 B                0 B
+Ôö£ ãÆ /api/token/news                                 0 B                0 B
+Ôö£ ãÆ /api/token/price                                0 B                0 B
+Ôö£ ãÆ /api/token/social                               0 B                0 B
+Ôö£ ãÆ /api/token/social-timeseries                    0 B                0 B
+Ôö£ ãÆ /api/tokens/leaderboard                         0 B                0 B
+Ôö£ ãÆ /api/trades                                     0 B                0 B
+Ôö£ ãÆ /api/trades/chains                              0 B                0 B
+Ôö£ ãÆ /api/v1/tokens/[symbol]/whale-activity          0 B                0 B
+Ôö£ ãÆ /api/v1/wallet/[address]/profile                0 B                0 B
+Ôö£ ãÆ /api/v1/whales/latest                           0 B                0 B
+Ôö£ ãÆ /api/v1/whales/signals                          0 B                0 B
+Ôö£ ãÆ /api/wallet-backtest/[address]                  0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker                             0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/[address]                   0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/[address]/counterparties    0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/[address]/holdings          0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/[address]/transactions      0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/backtest                    0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/consensus                   0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/early-movers                0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/follows                     0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/follows/[address]           0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/follows/feed                0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/heatmap                     0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/pods                        0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/search                      0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/signals                     0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/sparklines                  0 B                0 B
+Ôö£ ãÆ /api/wallet-tracker/trending-whales             0 B                0 B
+Ôö£ ãÆ /api/wallet-watchlist                           0 B                0 B
+Ôö£ ãÆ /api/wallet-watchlist/[id]                      0 B                0 B
+Ôö£ ãÆ /api/wallet-watchlist/[id]/addresses            0 B                0 B
+Ôö£ ãÆ /api/wallet-watchlist/[id]/addresses/[address]  0 B                0 B
+Ôö£ ãÆ /api/wallet/[address]/portfolio                 0 B                0 B
+Ôö£ ãÆ /api/wallet/[address]/scan                      0 B                0 B
+Ôö£ ãÆ /api/wallet/identities                          0 B                0 B
+Ôö£ ãÆ /api/wallet/personalize                         0 B                0 B
+Ôö£ ãÆ /api/watchlist                                  0 B                0 B
+Ôö£ ãÆ /api/watchlist/all                              0 B                0 B
+Ôö£ ãÆ /api/watchlist/count                            0 B                0 B
+Ôö£ ãÆ /api/watchlist/entities                         0 B                0 B
+Ôö£ ãÆ /api/watchlist/entity                           0 B                0 B
+Ôö£ ãÆ /api/whale-alerts                               0 B                0 B
+Ôö£ ãÆ /api/whale-alerts/sync                          0 B                0 B
+Ôö£ ãÆ /api/whale-index                                0 B                0 B
+Ôö£ ãÆ /api/whales/entities                            0 B                0 B
+Ôö£ ãÆ /api/whales/latest                              0 B                0 B
+Ôö£ ãÆ /api/whales/leaderboard                         0 B                0 B
+Ôö£ ãÆ /api/whales/patterns                            0 B                0 B
+Ôö£ ãÆ /api/whales/resolve-names                       0 B                0 B
+Ôö£ ãÆ /api/whales/timeseries                          0 B                0 B
+Ôö£ ãÆ /api/whales/top-7day                            0 B                0 B
+Ôö£ Ôùï /arkham-alternative                             200 B          92.3 kB
+Ôö£ ãÆ /auth/callback                                  0 B                0 B
+Ôö£ Ôùï /backtest                                       3.65 kB         142 kB
+Ôö£ Ôùï /bitcoin-whale-tracker                          149 B           156 kB
+Ôö£ Ôùï /blog                                           5.98 kB         153 kB
+Ôö£ ÔùÅ /blog/[slug]                                    41.7 kB         189 kB
+Ôö£   Ôö£ /blog/what-is-whale-tracking
+Ôö£   Ôö£ /blog/copy-whale-trades
+Ôö£   Ôö£ /blog/real-time-crypto-transactions
+Ôö£   Ôöö [+25 more paths]
+Ôö£ Ôùï /careers                                        5.78 kB         144 kB
+Ôö£ Ôùï /changelog                                      4.77 kB         155 kB
+Ôö£ Ôùï /community                                      401 B          92.5 kB
+Ôö£ Ôùï /contact                                        3.25 kB         142 kB
+Ôö£ Ôùï /dashboard                                      90.3 kB         305 kB
+Ôö£ ãÆ /entities                                       4.17 kB         171 kB
+Ôö£ ãÆ /entity/[name]                                  1.9 kB          156 kB
+Ôö£ Ôùï /ethereum-whale-tracker                         148 B           156 kB
+Ôö£ Ôùï /faq                                            7.22 kB         146 kB
+Ôö£ ãÆ /figure/[slug]                                  2.65 kB         161 kB
+Ôö£ ãÆ /figures                                        3.63 kB         170 kB
+Ôö£ ãÆ /figures/submit                                 5.35 kB         168 kB
+Ôö£ Ôùï /glossary                                       4.38 kB         180 kB
+Ôö£ ÔùÅ /glossary/[term]                                179 B           101 kB
+Ôö£   Ôö£ /glossary/whale
+Ôö£   Ôö£ /glossary/accumulation
+Ôö£   Ôö£ /glossary/distribution
+Ôö£   Ôöö [+60 more paths]
+Ôö£ Ôùï /help                                           3.56 kB         151 kB
+Ôö£ Ôùï /help/wallet-security                           5.8 kB          153 kB
+Ôö£ Ôùï /legal/data-removal-request                     1.85 kB          94 kB
+Ôö£ Ôùï /legal/dmca                                     201 B          92.3 kB
+Ôö£ Ôùï /nansen-alternative                             201 B          92.3 kB
+Ôö£ ãÆ /news                                           8.44 kB         218 kB
+Ôö£ Ôùï /personalize                                    12.5 kB         225 kB
+Ôö£ Ôùï /press                                          2.96 kB         141 kB
+Ôö£ Ôùï /pricing                                        401 B          92.5 kB
+Ôö£ Ôùï /privacy                                        8.38 kB         147 kB
+Ôö£ Ôùï /profile                                        11.3 kB         192 kB
+Ôö£ Ôùï /robots.txt                                     0 B                0 B
+Ôö£ Ôùï /sitemap.xml                                    0 B                0 B
+Ôö£ Ôùï /solana-whale-tracker                           149 B           156 kB
+Ôö£ Ôùï /statistics                                     8.16 kB         218 kB
+Ôö£ Ôùï /subscribe                                      9.34 kB         210 kB
+Ôö£ Ôùï /terms                                          9.11 kB         148 kB
+Ôö£ ãÆ /token/[symbol]                                 23.4 kB         238 kB
+Ôö£ ãÆ /tokens                                         897 B           155 kB
+Ôö£ Ôùï /trending                                       7.47 kB         222 kB
+Ôö£ ãÆ /tx/[hash]                                      1.43 kB         156 kB
+Ôö£ ãÆ /wallet-tracker                                 26.1 kB         241 kB
+Ôö£ ãÆ /wallet-tracker/[address]                       7.42 kB         188 kB
+Ôö£ ãÆ /watchlist                                      3.78 kB         170 kB
+Ôö£ Ôùï /whale-tracker                                  201 B          92.3 kB
+Ôö£ ãÆ /whale/[address]                                4.32 kB         218 kB
+Ôö£ Ôùï /whales                                         201 B          92.3 kB
+Ôö£ Ôùï /whales/entities                                4.51 kB         214 kB
+Ôöö ãÆ /whales/leaderboard                             897 B           155 kB
++ First Load JS shared by all                       92.1 kB
+  Ôö£ chunks/2117-2840bdcf19507498.js                 31.9 kB
+  Ôö£ chunks/fd9d1056-c84ab3640ce130e3.js             53.6 kB
+  Ôöö other shared chunks (total)                     6.59 kB
+
+
+ãÆ Middleware                                        26.7 kB
+
+Ôùï  (Static)   prerendered as static content
+ÔùÅ  (SSG)      prerendered as static HTML (uses getStaticProps)
+ãÆ  (Dynamic)  server-rendered on demand
+

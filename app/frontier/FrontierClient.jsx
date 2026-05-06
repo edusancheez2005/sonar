@@ -17,6 +17,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import styled, { keyframes } from 'styled-components'
 import { FONT_MONO } from '@/src/styles/fontStacks'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 // ─── PALETTE (matches src/views/Dashboard.js) ───────────────────────────────
 const COLORS = {
@@ -313,16 +314,34 @@ function Spark({ values, color = COLORS.cyan, height = 26 }) {
   )
 }
 
-function authHeaders() {
-  if (typeof window === 'undefined') return {}
+function authHeaders(jwt) {
+  const h = {}
+  if (jwt) h['Authorization'] = `Bearer ${jwt}`
+  if (typeof window === 'undefined') return h
   try {
     const tok = window.localStorage.getItem('adminLogin')
-    if (tok && tok.length > 10) return { 'x-sonar-admin': tok }
+    if (tok && tok.length > 10) h['x-sonar-admin'] = tok
   } catch {}
-  return {}
+  return h
 }
 
-function useLivePoll(url, intervalMs) {
+function useSupabaseJwt() {
+  const [jwt, setJwt] = useState(null)
+  useEffect(() => {
+    let cancelled = false
+    const sb = supabaseBrowser()
+    sb.auth.getSession().then(({ data }) => {
+      if (!cancelled) setJwt(data?.session?.access_token || null)
+    }).catch(() => {})
+    const { data: sub } = sb.auth.onAuthStateChange((_evt, session) => {
+      if (!cancelled) setJwt(session?.access_token || null)
+    })
+    return () => { cancelled = true; sub?.subscription?.unsubscribe?.() }
+  }, [])
+  return jwt
+}
+
+function useLivePoll(url, intervalMs, jwt) {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   useEffect(() => {
@@ -330,7 +349,7 @@ function useLivePoll(url, intervalMs) {
     let timer
     const tick = async () => {
       try {
-        const r = await fetch(url, { headers: authHeaders(), cache: 'no-store' })
+        const r = await fetch(url, { headers: authHeaders(jwt), cache: 'no-store', credentials: 'include' })
         if (!r.ok) throw new Error(`${r.status}`)
         const j = await r.json()
         if (!cancelled) {
@@ -346,7 +365,7 @@ function useLivePoll(url, intervalMs) {
     tick()
     return () => { cancelled = true; if (timer) clearTimeout(timer) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, intervalMs])
+  }, [url, intervalMs, jwt])
   return { data, error }
 }
 
@@ -361,9 +380,10 @@ const TYPE_CHIPS = [
 
 // ─── MAIN ──────────────────────────────────────────────────────────────────
 export default function FrontierClient() {
-  const { data: pulse } = useLivePoll('/api/frontier/pulse', 15000)
-  const { data: bridges } = useLivePoll('/api/frontier/bridges', 30000)
-  const { data: accuracy } = useLivePoll('/api/frontier/accuracy', 60000)
+  const jwt = useSupabaseJwt()
+  const { data: pulse } = useLivePoll('/api/frontier/pulse', 15000, jwt)
+  const { data: bridges } = useLivePoll('/api/frontier/bridges', 30000, jwt)
+  const { data: accuracy } = useLivePoll('/api/frontier/accuracy', 60000, jwt)
   const [filter, setFilter] = useState('all')
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
