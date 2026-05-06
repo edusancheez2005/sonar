@@ -34,7 +34,15 @@ const ALCHEMY_CHAIN_MAP = {
 
 const MAX_ADDRESSES = 200          // top-N per run; bumped later when stable
 const FROM_BLOCK_LOOKBACK = 50_000 // ~7 days on Ethereum at 12 s blocks
-const PRIORITY_ENTITY_TYPES = ['company', 'protocol', 'government']
+// Arkham entity_type values actually present in tracked_address_universe
+// today: cex, dex, fund, dex-aggregator, cdp, custodian, bridge,
+// crosschain-interoperability, blockchain-infra, derivatives. We poll
+// all of them — there are no 'person'-typed rows yet so no filter needed.
+const PRIORITY_ENTITY_TYPES = [
+  'cex', 'dex', 'dex-aggregator', 'fund', 'custodian',
+  'cdp', 'bridge', 'crosschain-interoperability', 'blockchain-infra',
+  'derivatives', 'company', 'protocol', 'government',
+]
 
 /**
  * Fetch the priority address slice. Companies / protocols / governments
