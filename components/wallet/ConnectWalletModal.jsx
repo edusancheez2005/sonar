@@ -258,91 +258,103 @@ const FooterLink = styled.a`
   &:hover { color: #00e5ff; text-decoration: underline; }
 `
 
-// ─── Educational "How it works" overlay ────────────────────────────────
-const HelpOverlay = styled(motion.div)`
-  position: absolute; inset: 0;
-  background: rgba(6, 10, 18, 0.78);
-  backdrop-filter: blur(10px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 22px;
-  z-index: 5;
-  border-radius: 18px;
-`
-const HelpCard = styled(motion.div)`
+// ─── Educational side-panel "speech bubble" ────────────────────────────
+// Sits to the right of the modal so the connect flow is never covered.
+// On narrow screens it stacks below the modal.
+const Stage = styled.div`
+  display: flex; align-items: flex-start; justify-content: center;
+  gap: 14px;
   width: 100%;
+  @media (max-width: 900px) { flex-direction: column; align-items: center; gap: 12px; }
+`
+const SideHelp = styled(motion.aside)`
+  width: 320px;
+  max-height: min(92vh, 760px);
+  overflow-y: auto;
+  margin-top: 12px;
   background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(8,12,20,0.95));
   border: 1px solid rgba(34, 211, 238, 0.22);
-  border-radius: 14px;
-  padding: 22px 22px 18px;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+  color: #e6edf7;
+  font-family: 'Inter', system-ui, sans-serif;
+  /* speech-bubble pointer aimed at the modal */
+  &::before {
+    content: '';
+    position: absolute;
+    left: -7px; top: 36px;
+    width: 14px; height: 14px;
+    background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(15,23,42,0.95));
+    border-left: 1px solid rgba(34, 211, 238, 0.22);
+    border-bottom: 1px solid rgba(34, 211, 238, 0.22);
+    transform: rotate(45deg);
+  }
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 6px; }
+  @media (max-width: 900px) {
+    width: min(560px, 96vw);
+    margin-top: 0;
+    &::before { display: none; }
+  }
 `
-const HelpHead = styled.div`
-  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+const SideClose = styled.button`
+  position: absolute; top: 10px; right: 10px;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  &:hover { color: #fff; background: rgba(255,255,255,0.08); }
+`
+const SideHead = styled.div`
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  padding-right: 32px;
 `
 const HelpBadge = styled.div`
-  width: 38px; height: 38px; border-radius: 11px;
+  width: 32px; height: 32px; border-radius: 9px;
   background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(124,58,237,0.18));
   border: 1px solid rgba(34,211,238,0.35);
   display: flex; align-items: center; justify-content: center;
   color: #22d3ee;
+  flex-shrink: 0;
 `
 const HelpTitle = styled.h4`
-  margin: 0; font-size: 16px; color: #f1f5f9; font-weight: 700; letter-spacing: -0.01em;
-  & + span { display: block; color: #94a3b8; font-size: 12.5px; margin-top: 2px; }
+  margin: 0; font-size: 14px; color: #f1f5f9; font-weight: 700; letter-spacing: -0.01em;
+  & + span { display: block; color: #94a3b8; font-size: 11.5px; margin-top: 2px; }
 `
 const StepRow = styled(motion.div)`
-  display: grid; grid-template-columns: 32px 1fr; gap: 12px;
-  padding: 10px 0;
+  display: grid; grid-template-columns: 26px 1fr; gap: 10px;
+  padding: 9px 0;
   border-top: 1px solid rgba(255,255,255,0.05);
   &:first-of-type { border-top: none; padding-top: 4px; }
 `
 const StepNum = styled.div`
-  width: 28px; height: 28px; border-radius: 50%;
+  width: 24px; height: 24px; border-radius: 50%;
   background: rgba(34,211,238,0.12);
   border: 1px solid rgba(34,211,238,0.4);
   color: #22d3ee;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 13px;
+  font-weight: 700; font-size: 12px;
 `
 const StepBody = styled.div`
-  color: #cbd5e1; font-size: 13px; line-height: 1.5;
+  color: #cbd5e1; font-size: 12.5px; line-height: 1.5;
   b { color: #f1f5f9; font-weight: 600; }
   .muted { color: #94a3b8; }
 `
-const HelpFlags = styled.div`
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  margin: 14px 0 4px;
-`
-const HelpFlag = styled.div`
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px; color: #cbd5e1;
-  padding: 8px 10px; border-radius: 9px;
-  background: rgba(34,211,238,0.05);
-  border: 1px solid rgba(34,211,238,0.18);
-  & svg { color: #34d399; flex-shrink: 0; }
-`
-const HelpDanger = styled(HelpFlag)`
+const HelpDanger = styled.div`
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
   background: rgba(255, 122, 144, 0.06);
-  border-color: rgba(255, 122, 144, 0.22);
+  border: 1px solid rgba(255, 122, 144, 0.22);
   color: #ffb3c1;
-  & svg { color: #f87171; }
-`
-const HelpActions = styled.div`
-  display: flex; gap: 10px; margin-top: 14px;
-`
-const HelpPrimary = styled.button`
-  flex: 1; padding: 10px 14px; border-radius: 10px;
-  background: linear-gradient(135deg, #22d3ee 0%, #2dd4bf 100%);
-  color: #061018; font-weight: 700; font-size: 13px;
-  border: none; cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  &:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(34,211,238,0.28); }
-`
-const HelpGhost = styled.button`
-  padding: 10px 14px; border-radius: 10px;
-  background: transparent; color: #cbd5e1; font-size: 13px;
-  border: 1px solid rgba(255,255,255,0.14); cursor: pointer;
-  &:hover { color: #fff; border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.04); }
+  font-size: 11.5px; line-height: 1.45;
+  & svg { color: #f87171; flex-shrink: 0; margin-top: 2px; }
 `
 const HelpLink = styled.button`
   background: none; border: none; padding: 0;
@@ -639,113 +651,20 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
-        <Panel
-          initial={{ y: 24, opacity: 0, scale: 0.97 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 14, opacity: 0, scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 280, damping: 26 }}
-          onClick={(e) => e.stopPropagation()}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="wallet-modal-title"
-        >
-          <CloseBtn type="button" onClick={onClose} aria-label="Close">{XIcon}</CloseBtn>
+        <Stage onClick={(e) => e.stopPropagation()}>
+          <Panel
+            initial={{ y: 24, opacity: 0, scale: 0.97 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 14, opacity: 0, scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="wallet-modal-title"
+          >
+            <CloseBtn type="button" onClick={onClose} aria-label="Close">{XIcon}</CloseBtn>
 
-          <AnimatePresence>
-            {showHelp && (
-              <HelpOverlay
-                key="help"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                onClick={dismissHelp}
-              >
-                <HelpCard
-                  initial={{ y: 14, scale: 0.96, opacity: 0 }}
-                  animate={{ y: 0, scale: 1, opacity: 1 }}
-                  exit={{ y: 8, scale: 0.98, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-                  onClick={(e) => e.stopPropagation()}
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="wallet-help-title"
-                >
-                  <HelpHead>
-                    <HelpBadge>{ShieldIcon}</HelpBadge>
-                    <div>
-                      <HelpTitle id="wallet-help-title">How wallet sign-in works</HelpTitle>
-                      <span>4 steps · less than a minute · no gas, no transactions</span>
-                    </div>
-                  </HelpHead>
-
-                  <StepRow initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 }}>
-                    <StepNum>1</StepNum>
-                    <StepBody>
-                      <b>Pick a wallet.</b> MetaMask, Rabby, Phantom, Backpack — anything you already use.{' '}
-                      <span className="muted">If nothing happens when you click MetaMask, the browser extension isn't installed or isn't allowed in this window.</span>
-                    </StepBody>
-                  </StepRow>
-
-                  <StepRow initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-                    <StepNum>2</StepNum>
-                    <StepBody>
-                      <b>Approve the connection.</b> Your wallet pops up and asks if Sonar can <i>see</i> your address.{' '}
-                      <span className="muted">This is permission to read — not to spend.</span>
-                    </StepBody>
-                  </StepRow>
-
-                  <StepRow initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
-                    <StepNum>3</StepNum>
-                    <StepBody>
-                      <b>Sign one short message.</b> Proves you own the address. Your wallet will literally show the text — no hex, no contract calls.{' '}
-                      <span className="muted">Costs nothing. Doesn't touch the blockchain.</span>
-                    </StepBody>
-                  </StepRow>
-
-                  <StepRow initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-                    <StepNum>4</StepNum>
-                    <StepBody>
-                      <b>You're in.</b> Sonar reorders signals, news and whale activity around the assets you actually hold.
-                    </StepBody>
-                  </StepRow>
-
-                  <HelpFlags>
-                    <HelpFlag>{CheckSm} No transaction approvals</HelpFlag>
-                    <HelpFlag>{CheckSm} No spend permissions</HelpFlag>
-                    <HelpFlag>{CheckSm} No seed phrase, ever</HelpFlag>
-                    <HelpFlag>{CheckSm} Disconnect anytime</HelpFlag>
-                  </HelpFlags>
-
-                  {!hasEvmInjected && (
-                    <HelpDanger style={{ marginTop: 10 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M12 8v5M12 16h.01" />
-                      </svg>
-                      <div>
-                        <b style={{ color: '#ffb3c1' }}>Heads up:</b>{' '}
-                        We can't see a browser wallet right now.{' '}
-                        {isIncognito
-                          ? 'You\'re likely in incognito — open chrome://extensions, find MetaMask, and toggle "Allow in Incognito".'
-                          : 'Install MetaMask (or another wallet extension) and reload, or use the Paste-address tab below for a view-only experience.'}
-                      </div>
-                    </HelpDanger>
-                  )}
-
-                  <HelpActions>
-                    <HelpPrimary type="button" onClick={dismissHelp}>Got it — let's connect</HelpPrimary>
-                    <HelpGhost type="button" onClick={() => { dismissHelp(); setTab('paste') }}>
-                      Or paste address only
-                    </HelpGhost>
-                  </HelpActions>
-                </HelpCard>
-              </HelpOverlay>
-            )}
-          </AnimatePresence>
-
-          <ScrollArea>
-            <Header>
+            <ScrollArea>
+              <Header>
               <Crest>{ShieldIcon}</Crest>
               <div>
                 <Title id="wallet-modal-title">Connect your wallet</Title>
@@ -910,7 +829,78 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
             <span>Sonar Tracker · informational only · not investment advice</span>
             <FooterLink href="/help/wallet-security" target="_blank" rel="noopener">How we keep you safe →</FooterLink>
           </Footer>
-        </Panel>
+          </Panel>
+
+          <AnimatePresence>
+            {showHelp && (
+              <SideHelp
+                key="side-help"
+                initial={{ opacity: 0, x: -8, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -6, scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                role="complementary"
+                aria-labelledby="wallet-help-title"
+              >
+                <SideClose type="button" onClick={dismissHelp} aria-label="Hide explanation">{XIcon}</SideClose>
+                <SideHead>
+                  <HelpBadge>{ShieldIcon}</HelpBadge>
+                  <div>
+                    <HelpTitle id="wallet-help-title">How wallet sign-in works</HelpTitle>
+                    <span>4 quick steps · no gas, no transactions</span>
+                  </div>
+                </SideHead>
+
+                <StepRow initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 }}>
+                  <StepNum>1</StepNum>
+                  <StepBody>
+                    <b>Pick a wallet.</b> MetaMask, Rabby, Phantom, Backpack — anything you already use.{' '}
+                    <span className="muted">If clicking MetaMask does nothing, the extension isn't installed or isn't allowed in this window.</span>
+                  </StepBody>
+                </StepRow>
+
+                <StepRow initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.10 }}>
+                  <StepNum>2</StepNum>
+                  <StepBody>
+                    <b>Approve the connection.</b> Your wallet asks if Sonar can <i>see</i> your address.{' '}
+                    <span className="muted">Permission to read — not to spend.</span>
+                  </StepBody>
+                </StepRow>
+
+                <StepRow initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
+                  <StepNum>3</StepNum>
+                  <StepBody>
+                    <b>Sign one short message.</b> Your wallet shows the literal text — no hex, no contract calls.{' '}
+                    <span className="muted">Costs nothing. Doesn't touch the blockchain.</span>
+                  </StepBody>
+                </StepRow>
+
+                <StepRow initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.20 }}>
+                  <StepNum>4</StepNum>
+                  <StepBody>
+                    <b>You're in.</b> For now this just authenticates you — personalized signals,
+                    news and whale activity around the assets you hold are coming soon.
+                  </StepBody>
+                </StepRow>
+
+                {!hasEvmInjected && (
+                  <HelpDanger>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 8v5M12 16h.01" />
+                    </svg>
+                    <div>
+                      <b style={{ color: '#ffb3c1' }}>No browser wallet detected.</b>{' '}
+                      {isIncognito
+                        ? 'You\'re likely in incognito — open chrome://extensions, find MetaMask, and toggle "Allow in Incognito".'
+                        : 'Install MetaMask (or another wallet extension) and reload, or use the Paste-address tab for view-only.'}
+                    </div>
+                  </HelpDanger>
+                )}
+              </SideHelp>
+            )}
+          </AnimatePresence>
+        </Stage>
       </Backdrop>
     </AnimatePresence>
   )
