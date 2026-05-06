@@ -318,6 +318,69 @@ const EmptyState = styled.div`
   letter-spacing: 0.5px;
 `
 
+// ─── SIGNALS PANEL ──────────────────────────────────────────────────────────
+const SignalGrid = styled.div`
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem;
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+`
+const SignalCard = styled.div`
+  background: rgba(0, 229, 255, 0.025);
+  border: 1px solid ${(p) => (p.$bull ? 'rgba(0,230,118,0.35)' : 'rgba(255,23,68,0.35)')};
+  border-left: 3px solid ${(p) => (p.$bull ? COLORS.green : COLORS.red)};
+  border-radius: 5px;
+  padding: 0.85rem 1rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  font-family: ${FONT_MONO};
+`
+const SignalHead = styled.div`
+  display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+`
+const SignalDir = styled.span`
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+  padding: 0.18rem 0.5rem; border-radius: 3px;
+  background: ${(p) => (p.$bull ? 'rgba(0,230,118,0.15)' : 'rgba(255,23,68,0.15)')};
+  color: ${(p) => (p.$bull ? COLORS.green : COLORS.red)};
+`
+const SignalToken = styled.span`
+  font-size: 1.05rem; font-weight: 700; color: ${COLORS.textPrimary};
+  letter-spacing: 0.5px;
+`
+const SignalConf = styled.div`
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.65rem; color: ${COLORS.textMuted}; letter-spacing: 1px;
+  .bar { width: 60px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: ${COLORS.cyan}; }
+  .pct { color: ${COLORS.cyan}; font-weight: 700; }
+`
+const SignalThesis = styled.p`
+  font-size: 0.78rem; line-height: 1.45; color: ${COLORS.textPrimary};
+  font-family: var(--font-sans, inherit); margin: 0; opacity: 0.93;
+`
+const SignalFoot = styled.div`
+  font-size: 0.62rem; letter-spacing: 0.8px; color: ${COLORS.textMuted};
+  display: flex; flex-wrap: wrap; gap: 0.6rem 1rem;
+  span b { color: ${COLORS.textPrimary}; font-weight: 600; }
+`
+
+// ─── ROTATION TABLE ─────────────────────────────────────────────────────────
+const RotTable = styled.table`
+  width: 100%; border-collapse: collapse; font-family: ${FONT_MONO};
+  font-size: 0.78rem;
+  th, td { padding: 0.55rem 0.75rem; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    color: ${COLORS.textMuted}; font-weight: 500; letter-spacing: 1px;
+    font-size: 0.62rem; text-transform: uppercase;
+    border-bottom: 1px solid ${COLORS.divider};
+  }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,0.025); }
+  tbody tr:hover { background: rgba(0,229,255,0.025); }
+  td.tok { color: ${COLORS.textPrimary}; font-weight: 700; }
+  td.kind { color: ${COLORS.textMuted}; font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase; }
+  td.pos { color: ${COLORS.green}; }
+  td.neg { color: ${COLORS.red}; }
+`
+
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 const usdFmt0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const usdFmt2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
@@ -452,6 +515,7 @@ const TYPE_CHIPS = [
 export default function FrontierClient() {
   const jwt = useSupabaseJwt()
   const { data: pulse } = useLivePoll('/api/frontier/pulse', 15000, jwt)
+  const { data: signals } = useLivePoll('/api/frontier/signals', 30000, jwt)
   const { data: bridges } = useLivePoll('/api/frontier/bridges', 30000, jwt)
   const { data: accuracy } = useLivePoll('/api/frontier/accuracy', 60000, jwt)
   const [filter, setFilter] = useState('all')
@@ -493,6 +557,63 @@ export default function FrontierClient() {
           </div>
           <BackLink href="/dashboard">← BACK TO DASHBOARD</BackLink>
         </HeaderBar>
+
+        {/* 0. Live Signals — turns flow into BUY/SELL calls */}
+        <Panel>
+          <PanelHead>
+            <span>🛰 Live Solana Signals · {signals?.windowHours || 4}h CEX flow read</span>
+            <span style={{ color: COLORS.textMuted }}>
+              {(signals?.signals || []).length} active · refresh 30s
+            </span>
+          </PanelHead>
+          <PanelBody>
+            {(signals?.signals || []).length === 0 ? (
+              <EmptyState>
+                No actionable signal yet — net CEX flow this window is below the
+                ${(signals?.minSignalUsd || 75000).toLocaleString()} threshold. Watching.
+              </EmptyState>
+            ) : (
+              <SignalGrid>
+                {signals.signals.map((s) => {
+                  const bull = s.direction === 'BULLISH'
+                  return (
+                    <SignalCard key={s.token} $bull={bull}>
+                      <SignalHead>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <SignalDir $bull={bull}>{bull ? '▲ BUY' : '▼ SELL'}</SignalDir>
+                          <SignalToken>{s.token}</SignalToken>
+                        </div>
+                        <SignalConf>
+                          <span>conf</span>
+                          <span className="bar"><span style={{ width: `${s.confidence}%` }} /></span>
+                          <span className="pct">{s.confidence}%</span>
+                        </SignalConf>
+                      </SignalHead>
+                      <SignalThesis>{s.thesis}</SignalThesis>
+                      <SignalFoot>
+                        <span>
+                          NET to CEX <b style={{ color: bull ? COLORS.green : COLORS.red }}>
+                            {s.netUsd >= 0 ? '+' : '−'}{fmtUsd(Math.abs(s.netUsd))}
+                          </b>
+                        </span>
+                        <span>IN <b>{fmtUsd(s.cexIn)}</b></span>
+                        <span>OUT <b>{fmtUsd(s.cexOut)}</b></span>
+                        <span>{s.distinctEntities} desks · n={s.sampleSize}</span>
+                      </SignalFoot>
+                      {s.contributors?.length > 0 && (
+                        <SignalFoot style={{ borderTop: `1px solid ${COLORS.divider}`, paddingTop: '0.45rem' }}>
+                          <span style={{ color: COLORS.textMuted }}>
+                            Top {s.contributorsLabel}: <b>{s.contributors.join(' · ')}</b>
+                          </span>
+                        </SignalFoot>
+                      )}
+                    </SignalCard>
+                  )
+                })}
+              </SignalGrid>
+            )}
+          </PanelBody>
+        </Panel>
 
         {/* 1. Hero tiles */}
         <TileGrid>
@@ -577,6 +698,54 @@ export default function FrontierClient() {
                   )
                 })}
               </MoverGrid>
+            )}
+          </PanelBody>
+        </Panel>
+
+        {/* 1c. Token Rotation — where money is actually moving */}
+        <Panel>
+          <PanelHead>
+            <span>🔄 Token Rotation · net CEX flow per asset</span>
+            <span style={{ color: COLORS.textMuted }}>
+              {(pulse?.rotation || []).length} tokens · + = into CEX (sell pressure) · − = withdrawn
+            </span>
+          </PanelHead>
+          <PanelBody style={{ padding: 0 }}>
+            {(pulse?.rotation || []).length === 0 ? (
+              <EmptyState>No priced token flow yet this window.</EmptyState>
+            ) : (
+              <RotTable>
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    <th>Kind</th>
+                    <th>Net 1h</th>
+                    <th>Net 4h</th>
+                    <th>Net 24h</th>
+                    <th>IN 24h</th>
+                    <th>OUT 24h</th>
+                    <th># Tx</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pulse.rotation.map((r) => {
+                    const cls = (v) => (v >= 0 ? 'pos' : 'neg')
+                    const sgn = (v) => (v >= 0 ? '+' : '−')
+                    return (
+                      <tr key={r.token}>
+                        <td className="tok">{r.token}</td>
+                        <td className="kind">{r.kind || '—'}</td>
+                        <td className={cls(r.net1h)}>{sgn(r.net1h)}{fmtUsd(Math.abs(r.net1h))}</td>
+                        <td className={cls(r.net4h)}>{sgn(r.net4h)}{fmtUsd(Math.abs(r.net4h))}</td>
+                        <td className={cls(r.net24h)}>{sgn(r.net24h)}{fmtUsd(Math.abs(r.net24h))}</td>
+                        <td>{fmtUsd(r.in24h)}</td>
+                        <td>{fmtUsd(r.out24h)}</td>
+                        <td>{fmtNum(r.count24h)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </RotTable>
             )}
           </PanelBody>
         </Panel>

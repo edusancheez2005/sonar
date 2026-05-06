@@ -178,6 +178,45 @@ export async function GET(req) {
     .sort((a, b) => Math.abs(b.netUsd) - Math.abs(a.netUsd))
     .slice(0, 8)
 
+  // Token rotation: net entity flow per token, bucketed 1h / 4h / 24h.
+  // Counts a transfer once. Sign convention: + = into tracked entities
+  // (mostly CEX hot wallets), − = out to self-custody / DeFi.
+  const ROT_MIN_USD = 1_000
+  const cut1h = now - 3_600_000
+  const cut4h = now - 4 * 3_600_000
+  const rotAgg = new Map()
+  for (const t of enrichedWindow) {
+    if (!t.token || !t.amountUsd || t.amountUsd <= 0) continue
+    if (t.tokenKind === 'stable' && t.amountUsd < TINY_USD_FLOOR) continue
+    if (t.amountUsd < 50) continue   // sub-$50 noise on non-stables
+    const ts = new Date(t.time).getTime()
+    const sign = t.direction === 'in' ? 1 : -1
+    const signed = sign * t.amountUsd
+    const cur = rotAgg.get(t.token) || {
+      token: t.token, kind: t.tokenKind,
+      in1h: 0, out1h: 0, net1h: 0,
+      in4h: 0, out4h: 0, net4h: 0,
+      in24h: 0, out24h: 0, net24h: 0,
+      count24h: 0,
+    }
+    if (sign > 0) cur.in24h += t.amountUsd; else cur.out24h += t.amountUsd
+    cur.net24h += signed
+    cur.count24h += 1
+    if (ts >= cut4h) {
+      if (sign > 0) cur.in4h += t.amountUsd; else cur.out4h += t.amountUsd
+      cur.net4h += signed
+    }
+    if (ts >= cut1h) {
+      if (sign > 0) cur.in1h += t.amountUsd; else cur.out1h += t.amountUsd
+      cur.net1h += signed
+    }
+    rotAgg.set(t.token, cur)
+  }
+  const rotation = Array.from(rotAgg.values())
+    .filter((r) => Math.abs(r.net24h) >= ROT_MIN_USD || Math.abs(r.net4h) >= ROT_MIN_USD)
+    .sort((a, b) => Math.abs(b.net24h) - Math.abs(a.net24h))
+    .slice(0, 12)
+
   const lastTransferAt = enrichedRecent[0]?.time || null
   const mode = enrichedRecent.length > 0 ? 'live' : 'ingesting'
   const dataFresh =
@@ -198,6 +237,7 @@ export async function GET(req) {
       },
       transfers,
       topMovers,
+      rotation,
       status: { dataFresh, lastTransferAt, mode, dustFloorUsd: DUST_USD_FLOOR },
       generatedAt: new Date().toISOString(),
     },
