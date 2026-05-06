@@ -394,47 +394,84 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
       return
     }
     setBusy(true)
+    // Hard safety: a stuck wallet popup or unresponsive RPC must never
+    // leave the button spinning forever. After 60s, surface an error so
+    // the user can retry.
+    let timeoutId
+    const timeoutPromise = new Promise((_, rej) => {
+      timeoutId = setTimeout(
+        () => rej(new Error('Sign-in timed out — open your wallet and approve the request, then try again.')),
+        60_000,
+      )
+    })
     try {
+      // Fast-path: if the user is already signed in (Supabase session exists)
+      // and the connected wallet matches their account, there's no need to
+      // re-sign. Just personalize + close. This is what causes the
+      // "Waiting for signature…" hang when a returning user re-opens the
+      // modal — the wallet popup never appears because the chain provider
+      // already resolved.
+      const sb = supabaseBrowser()
+      const { data: sess } = await sb.auth.getSession()
+      const existingAddr = sess?.session?.user?.user_metadata?.wallet_address
+        || sess?.session?.user?.user_metadata?.address
+      const connectedAddr =
+        tab === 'evm' ? wagmi.address?.toLowerCase()
+        : tab === 'solana' && typeof window !== 'undefined' && window.__sonarSolanaPublicKey
+          ? String(window.__sonarSolanaPublicKey).toLowerCase()
+          : null
+      if (sess?.session && existingAddr && connectedAddr && existingAddr.toLowerCase() === connectedAddr) {
+        const chain = tab === 'evm' ? 'ethereum' : 'solana'
+        setActiveWallet(connectedAddr, chain, true)
+        await personalize(connectedAddr, chain)
+        onSignedIn?.({ address: connectedAddr, chain, user: sess.session.user })
+        onClose?.()
+        return
+      }
+
       let address, chain, signature, message, nonce
-      if (tab === 'evm') {
-        if (!wagmi.address) throw new Error('Connect an EVM wallet first')
-        address = wagmi.address
-        chain = 'ethereum'
-        const nonceRes = await fetch('/api/auth/wallet/nonce', {
+      const work = (async () => {
+        if (tab === 'evm') {
+          if (!wagmi.address) throw new Error('Connect an EVM wallet first')
+          address = wagmi.address
+          chain = 'ethereum'
+          const nonceRes = await fetch('/api/auth/wallet/nonce', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ address, chain }),
+          })
+          const nj = await nonceRes.json()
+          if (!nonceRes.ok) throw new Error(nj?.error || 'nonce failed')
+          nonce = nj.nonce; message = nj.message
+          signature = await signMessageAsync({ message })
+        } else if (tab === 'solana') {
+          if (typeof window === 'undefined' || typeof window.__sonarSolanaSignIn !== 'function') {
+            throw new Error('Connect a Solana wallet first (Phantom / Solflare / Backpack)')
+          }
+          const r = await window.__sonarSolanaSignIn(att)
+          address = r.address; chain = r.chain; signature = r.signature
+          nonce = r.nonce; message = r.message
+        } else {
+          throw new Error('Connect a wallet first (paste-only does not create an account)')
+        }
+        const verifyRes = await fetch('/api/auth/wallet/verify', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ address, chain }),
+          body: JSON.stringify({
+            address, chain, signature, nonce, message,
+            over18: att.over18, acceptsTerms: att.terms, notSanctioned: att.sanctions,
+          }),
         })
-        const nj = await nonceRes.json()
-        if (!nonceRes.ok) throw new Error(nj?.error || 'nonce failed')
-        nonce = nj.nonce; message = nj.message
-        signature = await signMessageAsync({ message })
-      } else if (tab === 'solana') {
-        if (typeof window === 'undefined' || typeof window.__sonarSolanaSignIn !== 'function') {
-          throw new Error('Connect a Solana wallet first (Phantom / Solflare / Backpack)')
-        }
-        const r = await window.__sonarSolanaSignIn(att)
-        address = r.address; chain = r.chain; signature = r.signature
-        nonce = r.nonce; message = r.message
-      } else {
-        throw new Error('Connect a wallet first (paste-only does not create an account)')
-      }
-      const verifyRes = await fetch('/api/auth/wallet/verify', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          address, chain, signature, nonce, message,
-          over18: att.over18, acceptsTerms: att.terms, notSanctioned: att.sanctions,
-        }),
-      })
-      const vj = await verifyRes.json()
-      if (!verifyRes.ok) throw new Error(vj?.error || 'verify failed')
-      const sb = supabaseBrowser()
-      await sb.auth.setSession(vj.session)
-      setActiveWallet(address.toLowerCase(), chain, true)
-      await personalize(address.toLowerCase(), chain)
-      onSignedIn?.({ address: address.toLowerCase(), chain, user: vj.user })
-      onClose?.()
+        const vj = await verifyRes.json()
+        if (!verifyRes.ok) throw new Error(vj?.error || 'verify failed')
+        await sb.auth.setSession(vj.session)
+        setActiveWallet(address.toLowerCase(), chain, true)
+        await personalize(address.toLowerCase(), chain)
+        onSignedIn?.({ address: address.toLowerCase(), chain, user: vj.user })
+        onClose?.()
+      })()
+
+      await Promise.race([work, timeoutPromise])
     } catch (e) {
       const msg = e?.message || 'Sign-in failed'
       // Friendlier wording for wallet-cancellation
@@ -444,6 +481,7 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
         setErr(msg)
       }
     } finally {
+      if (timeoutId) clearTimeout(timeoutId)
       setBusy(false)
     }
   }
@@ -686,6 +724,8 @@ function SolanaInner({ adapter, showSignIn, setShowSignIn, onPaste }) {
   // Expose sign-in handler via window so the parent button can trigger it
   useEffect(() => {
     if (!connected || !publicKey || !signMessage) return
+    const addr58 = publicKey.toBase58()
+    window.__sonarSolanaPublicKey = addr58
     window.__sonarSolanaSignIn = async (att) => {
       const address = publicKey.toBase58()
       const nonceRes = await fetch('/api/auth/wallet/nonce', {
@@ -700,7 +740,10 @@ function SolanaInner({ adapter, showSignIn, setShowSignIn, onPaste }) {
       const signature = bs58.encode(sigBytes)
       return { address, chain: 'solana', signature, nonce: nj.nonce, message: nj.message, attestations: att }
     }
-    return () => { try { delete window.__sonarSolanaSignIn } catch {} }
+    return () => {
+      try { delete window.__sonarSolanaSignIn } catch {}
+      try { delete window.__sonarSolanaPublicKey } catch {}
+    }
   }, [connected, publicKey, signMessage])
 
   if (!connected) return null

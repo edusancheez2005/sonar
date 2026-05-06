@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import Link from 'next/link'
 import styled, { keyframes, css } from 'styled-components'
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion'
@@ -265,6 +265,97 @@ const GhostLink = styled(Link)`
   transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
   &:hover { border-color: rgba(34, 211, 238, 0.4); color: #fff; background: rgba(34, 211, 238, 0.05); }
 `
+
+// ─── Notify-me form ────────────────────────────────────────────────────
+const NotifyWrap = styled.form`
+  display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: stretch;
+  width: 100%; max-width: 520px;
+`
+const NotifyInput = styled.input`
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 12, 20, 0.55);
+  color: #f1f5f9;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  &::placeholder { color: #64748b; }
+  &:focus { border-color: rgba(34, 211, 238, 0.55); background: rgba(8, 12, 20, 0.85); }
+`
+const NotifyBtn = styled(motion.button)`
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.4rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #22d3ee 0%, #2dd4bf 100%);
+  color: #061018;
+  font-weight: 700; font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(34, 211, 238, 0.28); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+`
+const NotifyMsg = styled.div`
+  width: 100%;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: ${(p) => (p.$ok ? '#34d399' : '#f87171')};
+`
+
+function NotifyMeForm() {
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [ok, setOk] = useState(null)   // null | true | false
+  const [msg, setMsg] = useState('')
+
+  async function submit(e) {
+    e.preventDefault()
+    if (busy) return
+    const trimmed = email.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setOk(false); setMsg('Please enter a valid email address.')
+      return
+    }
+    setBusy(true); setOk(null); setMsg('')
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: trimmed, source: 'personalize-beta' }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(j?.error || 'Could not save your email — please try again.')
+      setOk(true)
+      setMsg("You're on the list. We'll email you the moment Personalize beta opens — no spam, just one notification.")
+      setEmail('')
+    } catch (err) {
+      setOk(false); setMsg(err?.message || 'Something went wrong.')
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <NotifyWrap onSubmit={submit} noValidate>
+      <NotifyInput
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        placeholder="you@email.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        aria-label="Email for Personalize beta notification"
+        disabled={busy}
+      />
+      <NotifyBtn type="submit" disabled={busy} whileTap={busy ? {} : { scale: 0.97 }}>
+        {busy ? 'Saving…' : ok ? '✓ You’re on the list' : 'Notify me when beta opens'}
+      </NotifyBtn>
+      {msg ? <NotifyMsg $ok={!!ok}>{msg}</NotifyMsg> : null}
+    </NotifyWrap>
+  )
+}
 
 const Section = styled.section`
   padding: 6rem 0;
@@ -742,7 +833,7 @@ export default function PersonalizePreview() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <PrimaryLink href="/subscribe">Join the waitlist</PrimaryLink>
+            <NotifyMeForm />
             <GhostLink href="/changelog">See what is shipping</GhostLink>
           </HeroCtas>
         </Hero>
