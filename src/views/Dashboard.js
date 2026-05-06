@@ -167,23 +167,6 @@ const OrcaNavBtn = styled(Link)`
   &:hover { background: rgba(0, 229, 255, 0.15); border-color: rgba(0, 229, 255, 0.3); }
 `
 
-// Frontier (Solana intelligence) nav pill — accent magenta to set it
-// apart from the cyan-heavy command bar so it actually gets clicked.
-const FrontierNavBtn = styled(Link)`
-  background: rgba(255, 45, 149, 0.08); border: 1px solid rgba(255, 45, 149, 0.25);
-  border-radius: 4px; padding: 0.25rem 0.65rem; color: #ff2d95;
-  font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: ${FONT_MONO};
-  transition: all 0.15s ease; display: flex; align-items: center; gap: 0.4rem;
-  text-decoration: none; letter-spacing: 0.5px;
-  &:hover { background: rgba(255, 45, 149, 0.18); border-color: rgba(255, 45, 149, 0.45); }
-  & .live {
-    background: rgba(0, 230, 118, 0.15); color: #00e676;
-    border: 1px solid rgba(0, 230, 118, 0.35);
-    font-size: 0.55rem; padding: 0.05rem 0.3rem; border-radius: 2px;
-    letter-spacing: 1.2px;
-  }
-`
-
 const CmdDivider = styled.span`color: rgba(0, 229, 255, 0.15); font-size: 0.9rem;`
 
 // ─── PREMIUM OVERLAY ────────────────────────────────────────────────────────
@@ -942,9 +925,6 @@ const Dashboard = ({ isPremium = false }) => {
             <OrcaNavBtn href="/ai-advisor" ref={orcaRef}>
               🐋 Ask ORCA
             </OrcaNavBtn>
-            <FrontierNavBtn href="/frontier" title="Solana-native whale intelligence">
-              ◇ Frontier <span className="live">LIVE</span>
-            </FrontierNavBtn>
             <TutorialBtn onClick={() => {
               localStorage.removeItem('sonar_tutorial_completed')
               setShowTutorial(true)
