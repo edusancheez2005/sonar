@@ -22,6 +22,11 @@ const TILES = [
     title: 'Sentiment Votes',
     body: 'Inspect raw user sentiment-vote rows.',
   },
+  {
+    href: '/admin/arkham',
+    title: 'Arkham Intelligence',
+    body: 'Monthly credit usage, projected month-end spend, per-endpoint breakdown, cache hit rate, recent errors, and last health ping.',
+  },
 ]
 
 export default function AdminIndex() {

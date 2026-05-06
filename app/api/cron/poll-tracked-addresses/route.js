@@ -6,8 +6,10 @@
  * to tracked_address_transfers. Powers the live "recent activity" feed
  * on entity pages and the wallet tracker.
  *
- * Tier 2 of the post-Arkham strategy: zero Arkham calls. Uses Alchemy
- * (EVM chains) only — Solana / BTC / Tron / others can be added later.
+ * Tier 2 of the post-Arkham strategy: zero Arkham calls. Alchemy
+ * powers EVM chains; Helius powers Solana (native SOL + SPL transfers,
+ * decoded server-side via the enhanced /v0/addresses endpoint).
+ * BTC / Tron / others can be added later.
  *
  * Scope: priority addresses first (companies + protocols + governments),
  * capped at MAX_ADDRESSES per run. Each address gets one Alchemy
@@ -19,6 +21,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { getEvmTransfers } from '@/lib/wallet/transfers'
+import { getSolanaTrackedTransfers } from '@/lib/wallet/sol-tracked-transfers'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 min — Vercel pro plan
@@ -31,6 +34,13 @@ const ALCHEMY_CHAIN_MAP = {
   // arbitrum_one / base / optimism not yet wired in transfers.ts; can
   // be added by extending ALCHEMY_NETWORKS there.
 }
+
+// Solana is polled via Helius. Cap rows we ask for per address per
+// run — Helius enhanced API returns up to 100 parsed txs.
+const SOLANA_CHAINS = new Set(['solana'])
+
+// Combined chain set the cron will load from tracked_address_universe.
+const SUPPORTED_CHAINS = [...Object.keys(ALCHEMY_CHAIN_MAP), ...SOLANA_CHAINS]
 
 const MAX_ADDRESSES = 200          // top-N per run; bumped later when stable
 const FROM_BLOCK_LOOKBACK = 50_000 // ~7 days on Ethereum at 12 s blocks
@@ -53,7 +63,7 @@ async function fetchPriorityAddresses() {
   const { data, error } = await supabaseAdmin
     .from('tracked_address_universe')
     .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label')
-    .in('chain', Object.keys(ALCHEMY_CHAIN_MAP))
+    .in('chain', SUPPORTED_CHAINS)
     .in('arkham_entity_type', PRIORITY_ENTITY_TYPES)
     .order('arkham_entity_name', { ascending: true })
     .limit(MAX_ADDRESSES)
@@ -75,18 +85,30 @@ async function getLastBlockMap(rows) {
   return out
 }
 
-async function pollAddress(row, lastBlock) {
+async function fetchTransfersForRow(row, lastBlock) {
+  if (SOLANA_CHAINS.has(row.chain)) {
+    return { transfers: await getSolanaTrackedTransfers(row.address), source: 'helius' }
+  }
   const backtestChain = ALCHEMY_CHAIN_MAP[row.chain]
-  if (!backtestChain) return { rows: 0, maxBlock: lastBlock, error: 'unsupported_chain' }
-
+  if (!backtestChain) {
+    const e = new Error('unsupported_chain'); e.unsupported = true; throw e
+  }
   // Always re-scan the trailing window so any reorg or missed page is
   // caught next run. The unique index handles dedupe.
   const fromBlock = Math.max(0, (lastBlock || 0) - 1000)
+  const transfers = await getEvmTransfers(row.address, backtestChain, fromBlock || 0, 'latest')
+  return { transfers, source: 'alchemy' }
+}
 
+async function pollAddress(row, lastBlock) {
   let transfers = []
+  let source = 'alchemy'
   try {
-    transfers = await getEvmTransfers(row.address, backtestChain, fromBlock || 0, 'latest')
+    const r = await fetchTransfersForRow(row, lastBlock)
+    transfers = r.transfers || []
+    source = r.source
   } catch (err) {
+    if (err?.unsupported) return { rows: 0, maxBlock: lastBlock, error: 'unsupported_chain' }
     return { rows: 0, maxBlock: lastBlock, error: String(err?.message || err).slice(0, 200) }
   }
   if (!transfers || transfers.length === 0) return { rows: 0, maxBlock: lastBlock, error: null }
@@ -106,7 +128,7 @@ async function pollAddress(row, lastBlock) {
     arkham_entity_name: row.arkham_entity_name,
     arkham_entity_type: row.arkham_entity_type,
     arkham_label: row.arkham_label,
-    source: 'alchemy',
+    source,
   }))
 
   // ON CONFLICT requires a real constraint name; we created a UNIQUE

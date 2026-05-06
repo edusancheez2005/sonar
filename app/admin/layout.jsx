@@ -23,6 +23,7 @@ const TABS = [
   { href: '/admin/calibration', label: 'Calibration' },
   { href: '/admin/figures', label: 'Figures' },
   { href: '/admin/sentiment-votes', label: 'Sentiment votes' },
+  { href: '/admin/arkham', label: 'Arkham' },
 ]
 
 export default function AdminLayout({ children }) {

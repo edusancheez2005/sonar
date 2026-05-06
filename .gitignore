@@ -43,3 +43,8 @@ LEGAL_AUDIT_*.md
 npm-install.log
 clientroot_good.txt
 
+
+# Arkham probe output (contains key prefix)
+scripts/arkham-probe.log
+scripts/arkham-probe2.log
+build.log
