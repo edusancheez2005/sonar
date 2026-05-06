@@ -519,8 +519,8 @@ export default function FrontierClient() {
             </TileSparkWrap>
           </Tile>
           <Tile>
-            <TileLabel>Bridge Inflows → SOL · 24h</TileLabel>
-            <TileValue $color={COLORS.amber}>{fmtNum(tiles?.bridgeIns24h)}</TileValue>
+            <TileLabel>Whale Moves ≥ ${((tiles?.whaleThresholdUsd) || 50000).toLocaleString()} · 24h</TileLabel>
+            <TileValue $color={COLORS.amber}>{fmtNum(tiles?.whaleMoves24h)}</TileValue>
             <TileSparkWrap />
           </Tile>
         </TileGrid>
@@ -624,7 +624,7 @@ export default function FrontierClient() {
                         <td>
                           <Link
                             href={`/whale/${encodeURIComponent(t.address)}`}
-                            style={{ color: COLORS.textPrimary, textDecoration: 'none' }}
+                            style={{ color: COLORS.textPrimary, textDecoration: 'none', marginRight: '0.5rem' }}
                           >
                             {t.entity || shortAddr(t.address)}
                           </Link>

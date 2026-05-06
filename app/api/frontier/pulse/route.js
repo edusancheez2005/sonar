@@ -126,6 +126,8 @@ export async function GET(req) {
   const sparkNetFlow = new Array(bucketCount).fill(0)
   let netFlowUsd24h = 0
   let bridgeIns24h = 0
+  let whaleMoves24h = 0      // count of single transfers >= WHALE_THRESHOLD_USD
+  const WHALE_THRESHOLD_USD = 50_000
   let transfers24h = 0
   for (const t of enrichedWindow) {
     transfers24h += 1
@@ -134,6 +136,7 @@ export async function GET(req) {
     if (t.direction === 'in' && t.counterparty && bridgeSet.has(t.counterparty)) {
       bridgeIns24h += 1
     }
+    if ((t.amountUsd || 0) >= WHALE_THRESHOLD_USD) whaleMoves24h += 1
     const hoursAgo = Math.floor((now - new Date(t.time).getTime()) / 3_600_000)
     if (hoursAgo >= 0 && hoursAgo < bucketCount) {
       const idx = bucketCount - 1 - hoursAgo
@@ -188,6 +191,8 @@ export async function GET(req) {
         transfers24h,
         netFlowUsd24h,
         bridgeIns24h,
+        whaleMoves24h,
+        whaleThresholdUsd: WHALE_THRESHOLD_USD,
         sparkTransfers,
         sparkNetFlow,
       },

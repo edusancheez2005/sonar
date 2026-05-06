@@ -62,26 +62,42 @@ function priceFor(tokenInfo, priceMap) {
   return priceMap.get(tokenInfo.symbol) || null
 }
 
-function buildOrcaNote({ entity, entityType, source, token, amountUsd }) {
+function buildOrcaNote({ entity, entityType, source, token, amountUsd, direction = 'in' }) {
   const e = entity || 'A tracked entity'
   const t = (entityType || '').toLowerCase()
   const tok = token || 'tokens'
+  const isStable = tok === 'USDC' || tok === 'USDT' || tok === 'USDH' || tok === 'PYUSD'
+  const isSol = tok === 'SOL'
   const usdStr = Number.isFinite(Number(amountUsd)) && Number(amountUsd) > 0
     ? `$${fmtAmount(amountUsd)} of `
     : ''
-  let context
-  if (t.includes('cex') || t.includes('custodian')) {
-    context = `is an exchange/custodian; inbound flow this size on Solana usually precedes user withdrawals or market-maker rebalancing`
-  } else if (t.includes('fund') || t === 'derivatives') {
-    context = `is a fund/desk; inbound rotations into SOL are typically deployed into DEX LPs or perps within hours`
-  } else if (t.includes('dex') || t.includes('aggregator')) {
-    context = `is a DEX venue; inbound stables typically reflect routing inventory rather than directional bets`
-  } else if (t.includes('bridge')) {
-    context = `is itself bridge infrastructure — flow may be transit, not destination`
+
+  // Token-specific narrative — stables, SOL, and majors each tell a
+  // different story so the cards don't all read the same.
+  let tokenAngle
+  if (isStable) {
+    tokenAngle = `Stables landing on Solana usually fund the next leg of an LP rotation, perp position, or whale buy within hours — watch what they purchase next.`
+  } else if (isSol) {
+    tokenAngle = `SOL inflows of this size to an exchange wallet are typically deposits ahead of selling pressure or new derivatives positioning.`
   } else {
-    context = `is a tracked on-chain entity; the rotation is a directional signal worth pairing with their next on-chain move`
+    tokenAngle = `${tok} inflows of this size are usually accumulation or treasury rebalancing rather than transit.`
   }
-  return `${e} ${context}. Just received ${usdStr}${tok} on Solana via ${source}.`
+
+  // Entity-type clause
+  let entityAngle
+  if (t.includes('cex') || t.includes('custodian')) {
+    entityAngle = `${e} is a centralized venue/custodian`
+  } else if (t.includes('fund') || t === 'derivatives') {
+    entityAngle = `${e} is a fund or trading desk`
+  } else if (t.includes('dex') || t.includes('aggregator')) {
+    entityAngle = `${e} is a DEX/aggregator`
+  } else if (t.includes('bridge')) {
+    entityAngle = `${e} is bridge infrastructure`
+  } else {
+    entityAngle = `${e} is a tracked on-chain entity`
+  }
+
+  return `${entityAngle}; just received ${usdStr}${tok} on Solana via ${source}. ${tokenAngle}`
 }
 
 export async function GET(req) {
@@ -140,9 +156,20 @@ export async function GET(req) {
       if (a.isBridgeProgram !== b.isBridgeProgram) return a.isBridgeProgram ? -1 : 1
       return b.usd - a.usd
     })
-    .slice(0, PANEL_LIMIT)
 
-  const events = candidates.map((r) => ({
+  // Dedupe by entity — keep only the largest event per entity so the
+  // panel doesn't fill with 8 near-identical Bitfinex top-up cards.
+  const seenEntity = new Set()
+  const deduped = []
+  for (const r of candidates) {
+    const key = r.arkham_entity_name || r.address
+    if (seenEntity.has(key)) continue
+    seenEntity.add(key)
+    deduped.push(r)
+    if (deduped.length >= PANEL_LIMIT) break
+  }
+
+  const events = deduped.map((r) => ({
     id: r.id,
     time: r.timestamp,
     entity: r.arkham_entity_name,
