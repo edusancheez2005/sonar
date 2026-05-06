@@ -212,8 +212,17 @@ export async function GET(request: Request) {
     // v10: wrapped in fetchWithRetry so a single transient timeout on a
     // Vercel cold boot doesn't fail the whole provider.
     const binancePriceFn = async () => {
+      // CACHE-1 (2026-05-06): explicit no-store. Next.js 14 wraps native
+      // fetch and applies its own caching layer; without this opt-out the
+      // very first cron call's response was cached at the framework level
+      // and re-served indefinitely, causing price_snapshots to freeze at
+      // a single value across hundreds of cron runs while reporting OK.
+      // Symptom: BTC stuck at $76876 for 6+ hours while live Binance was
+      // $81440. See diag-fetch-prices.mjs / audit-price-feed.mjs.
       const r = await fetch('https://data-api.binance.vision/api/v3/ticker/price', {
         signal: AbortSignal.timeout(10000),
+        cache: 'no-store',
+        next: { revalidate: 0 },
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       return (await r.json()) as { symbol: string; price: string }[]
@@ -241,6 +250,8 @@ export async function GET(request: Request) {
     const binance24Fn = async () => {
       const r = await fetch('https://data-api.binance.vision/api/v3/ticker/24hr', {
         signal: AbortSignal.timeout(15000),
+        cache: 'no-store',
+        next: { revalidate: 0 },
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       return (await r.json()) as any[]
@@ -279,6 +290,8 @@ export async function GET(request: Request) {
             {
               headers: { 'Accept': 'application/json', 'x-cg-pro-api-key': cgKey },
               signal: AbortSignal.timeout(15000),
+              cache: 'no-store',
+              next: { revalidate: 0 },
             }
           )
           if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -307,6 +320,47 @@ export async function GET(request: Request) {
         }
       }
     }
+
+    // CANARY-1 (2026-05-06): independent Coinbase cross-check on BTC/ETH/SOL.
+    // Even with cache: 'no-store' the providers above can return regionally
+    // stale data (CDN edge cache, geo-routed mirror, expired API key with
+    // graceful-degrade). If Binance and Coinbase disagree by >1% on a
+    // canary token, trust Coinbase, overwrite the value, and tag the
+    // health row so the operator sees it. If Coinbase itself is unreachable
+    // the canary is a no-op (we don't want a Coinbase outage to fail the cron).
+    const CANARY_TOKENS = ['BTC', 'ETH', 'SOL'] as const
+    const CANARY_DRIFT_TOL = 0.01 // 1%
+    const canaryReport: Record<string, { binance: number | null; coinbase: number | null; drift: number | null; action: string }> = {}
+    await Promise.all(CANARY_TOKENS.map(async (sym) => {
+      try {
+        const r = await fetch(`https://api.exchange.coinbase.com/products/${sym}-USD/ticker`, {
+          signal: AbortSignal.timeout(5000),
+          cache: 'no-store',
+          next: { revalidate: 0 },
+        })
+        if (!r.ok) {
+          canaryReport[sym] = { binance: livePrices[sym]?.price ?? null, coinbase: null, drift: null, action: 'cb_unreachable' }
+          return
+        }
+        const j = await r.json() as { price?: string }
+        const cb = j?.price ? parseFloat(j.price) : null
+        const ours = livePrices[sym]?.price ?? null
+        const drift = (cb && ours) ? Math.abs(cb - ours) / cb : null
+        if (cb && ours && drift !== null && drift > CANARY_DRIFT_TOL) {
+          // Override with Coinbase. Preserve volume/change from Binance.
+          livePrices[sym] = { ...(livePrices[sym] ?? {}), price: cb }
+          canaryReport[sym] = { binance: ours, coinbase: cb, drift, action: 'used_coinbase' }
+          errors.push(`canary: ${sym} primary=${ours} vs coinbase=${cb} drift=${(drift * 100).toFixed(2)}% — overrode with coinbase`)
+        } else if (cb && !ours) {
+          livePrices[sym] = { price: cb }
+          canaryReport[sym] = { binance: null, coinbase: cb, drift: null, action: 'cb_filled_gap' }
+        } else {
+          canaryReport[sym] = { binance: ours, coinbase: cb, drift, action: 'agreed' }
+        }
+      } catch (e) {
+        canaryReport[sym] = { binance: livePrices[sym]?.price ?? null, coinbase: null, drift: null, action: 'cb_error' }
+      }
+    }))
 
     // FETCH-2 fix: hard-fail if no provider produced a usable BTC. Without
     // this, the route used to return 200 with inserted=0 and downstream
@@ -406,6 +460,7 @@ export async function GET(request: Request) {
       inserted: totalInserted,
       tokens: TICKER_MAP.length,
       providers: providersTried,
+      canary: canaryReport,
       errors: errors.slice(0, 10),
     })
 
@@ -414,6 +469,7 @@ export async function GET(request: Request) {
       inserted: totalInserted,
       tokens: TICKER_MAP.length,
       providers: providersTried,
+      canary: canaryReport,
       errors: errors.length > 0 ? errors.slice(0, 10) : undefined
     })
 

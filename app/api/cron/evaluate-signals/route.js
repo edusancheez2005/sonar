@@ -281,6 +281,22 @@ export async function GET(req) {
           continue
         }
 
+        // EVAL-4 (2026-05-06): frozen-feed guard. If price_at_eval is bit-identical
+        // to price_at_signal AND BTC is also bit-identical between the two
+        // instants, the snapshot upstream is frozen — almost always a fetch-prices
+        // caching/stale-source bug, not a real "market did not move" event.
+        // Writing this row would mark the signal correct=null AND poison the
+        // alpha calculation (zero benchmark drift) for the duration of the freeze.
+        // Skip silently and let the caller fix the upstream feed.
+        // Symptom that motivated this: 2026-05-06 BTC stuck at $76876 for 6h
+        // because Next.js 14 fetch-cache returned the same body indefinitely.
+        const tokenFrozen = Number(currentPrice) === Number(sig.price_at_signal)
+        const btcFrozen = btcAtEval && btcAtSignalForSig && Number(btcAtEval) === Number(btcAtSignalForSig)
+        if (tokenFrozen && btcFrozen) {
+          skipped++
+          continue
+        }
+
         // Check if already evaluated for this window
         const { data: existing } = await supabaseAdmin
           .from('signal_outcomes')
