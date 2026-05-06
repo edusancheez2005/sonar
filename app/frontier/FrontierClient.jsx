@@ -193,6 +193,65 @@ const Chip = styled.button`
   &:hover { color: ${COLORS.cyan}; border-color: rgba(0,229,255,0.3); }
 `
 
+// Small inline pill rendered next to an entity name to identify its type
+// (cex / dex / fund / …). Visually separated so 'Coinbase' and 'cex'
+// don't run together as 'Coinbasecex'.
+const EntityChip = styled.span`
+  display: inline-block; margin-left: 0.45rem;
+  font-family: ${FONT_MONO}; font-size: 0.55rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 0.05rem 0.35rem; border-radius: 2px;
+  background: rgba(0, 229, 255, 0.08);
+  color: ${COLORS.cyan};
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  vertical-align: middle;
+`
+
+// ─── TOP MOVERS ─────────────────────────────────────────────────────────────
+const MoverGrid = styled.div`
+  display: flex; flex-direction: column; gap: 0.65rem;
+`
+const MoverRow = styled.div`
+  display: grid; grid-template-columns: 1.4fr 2fr 1fr; gap: 1rem;
+  align-items: center; padding: 0.75rem 0.9rem;
+  background: rgba(0, 229, 255, 0.025);
+  border: 1px solid ${COLORS.borderSubtle};
+  border-radius: 5px;
+  @media (max-width: 768px) { grid-template-columns: 1fr; gap: 0.5rem; }
+`
+const MoverLeft = styled.div`
+  display: flex; align-items: center; flex-wrap: wrap;
+  font-family: ${FONT_MONO};
+`
+const MoverName = styled.span`
+  font-size: 0.95rem; font-weight: 700; color: ${COLORS.textPrimary};
+`
+const MoverBars = styled.div`
+  display: grid; grid-template-columns: 90px 1fr; gap: 0.4rem 0.6rem;
+  align-items: center; font-family: ${FONT_MONO}; font-size: 0.65rem;
+`
+const MoverBarLabel = styled.span`
+  color: ${COLORS.textMuted}; letter-spacing: 0.5px; text-align: right;
+`
+const MoverBarTrack = styled.div`
+  height: 8px; background: rgba(255,255,255,0.04); border-radius: 2px;
+  overflow: hidden;
+`
+const MoverBarFill = styled.div`
+  height: 100%; border-radius: 2px;
+  transition: width 0.6s ease;
+`
+const MoverNet = styled.div`
+  display: flex; flex-direction: column; gap: 0.1rem; text-align: right;
+  font-family: ${FONT_MONO};
+  .lbl { font-size: 0.55rem; color: ${COLORS.textMuted}; letter-spacing: 1.5px; text-transform: uppercase; }
+  .val { font-size: 1.05rem; font-weight: 700;
+         color: ${(p) => (p.$pos ? COLORS.green : COLORS.red)};
+         text-shadow: 0 0 12px ${(p) => (p.$pos ? COLORS.green : COLORS.red) + '33'}; }
+  .tag { font-size: 0.55rem; letter-spacing: 1.5px; text-transform: uppercase;
+         color: ${(p) => (p.$pos ? COLORS.green : COLORS.red)}; opacity: 0.75; }
+`
+
 // ─── BRIDGE CARDS ───────────────────────────────────────────────────────────
 const CardGrid = styled.div`
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
@@ -267,7 +326,18 @@ const numFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 function fmtUsd(n) {
   if (n == null || !Number.isFinite(Number(n))) return '—'
   const v = Number(n)
+  if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`
+  if (Math.abs(v) >= 10_000) return `$${(v / 1_000).toFixed(1)}k`
   return Math.abs(v) >= 1000 ? usdFmt0.format(v) : usdFmt2.format(v)
+}
+function fmtAmount(n) {
+  if (n == null || !Number.isFinite(Number(n))) return '—'
+  const v = Number(n)
+  if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`
+  if (Math.abs(v) >= 10_000) return `${(v / 1_000).toFixed(1)}k`
+  if (Math.abs(v) >= 1) return v.toFixed(2)
+  if (Math.abs(v) >= 0.01) return v.toFixed(3)
+  return v.toExponential(1)
 }
 function fmtNum(n) {
   if (n == null || !Number.isFinite(Number(n))) return '—'
@@ -455,6 +525,62 @@ export default function FrontierClient() {
           </Tile>
         </TileGrid>
 
+        {/* 1b. Top Movers (24h) — aggregated entity flow */}
+        <Panel>
+          <PanelHead>
+            <span>📊 Top Movers · 24h · ranked by absolute USD net flow</span>
+            <span style={{ color: COLORS.textMuted }}>
+              {(pulse?.topMovers || []).length} entities · stable dust filtered
+            </span>
+          </PanelHead>
+          <PanelBody>
+            {(pulse?.topMovers || []).length === 0 ? (
+              <EmptyState>
+                Not enough priced flow yet — most entities are moving small or unpriced tokens this hour.
+              </EmptyState>
+            ) : (
+              <MoverGrid>
+                {pulse.topMovers.map((m) => {
+                  const isAccum = m.netUsd >= 0
+                  return (
+                    <MoverRow key={m.entity}>
+                      <MoverLeft>
+                        <MoverName>{m.entity}</MoverName>
+                        {m.entityType && <EntityChip>{m.entityType}</EntityChip>}
+                      </MoverLeft>
+                      <MoverBars>
+                        <MoverBarLabel>IN {fmtUsd(m.inUsd)}</MoverBarLabel>
+                        <MoverBarTrack>
+                          <MoverBarFill
+                            style={{
+                              width: `${Math.min(100, (m.inUsd / Math.max(m.inUsd, m.outUsd, 1)) * 100)}%`,
+                              background: COLORS.cyan,
+                            }}
+                          />
+                        </MoverBarTrack>
+                        <MoverBarLabel>OUT {fmtUsd(m.outUsd)}</MoverBarLabel>
+                        <MoverBarTrack>
+                          <MoverBarFill
+                            style={{
+                              width: `${Math.min(100, (m.outUsd / Math.max(m.inUsd, m.outUsd, 1)) * 100)}%`,
+                              background: COLORS.magenta,
+                            }}
+                          />
+                        </MoverBarTrack>
+                      </MoverBars>
+                      <MoverNet $pos={isAccum}>
+                        <span className="lbl">NET</span>
+                        <span className="val">{isAccum ? '+' : '−'}{fmtUsd(Math.abs(m.netUsd))}</span>
+                        <span className="tag">{isAccum ? 'ACCUMULATING' : 'DISTRIBUTING'}</span>
+                      </MoverNet>
+                    </MoverRow>
+                  )
+                })}
+              </MoverGrid>
+            )}
+          </PanelBody>
+        </Panel>
+
         {/* 2. SOL Whale Pulse */}
         <Panel>
           <PanelHead>
@@ -502,11 +628,7 @@ export default function FrontierClient() {
                           >
                             {t.entity || shortAddr(t.address)}
                           </Link>
-                          {t.entityType && (
-                            <span style={{ color: COLORS.textMuted, fontSize: '0.65rem', marginLeft: '0.4rem' }}>
-                              {t.entityType}
-                            </span>
-                          )}
+                          {t.entityType && <EntityChip>{t.entityType}</EntityChip>}
                         </td>
                         <td>
                           <DirBadge $dir={t.direction}>
@@ -514,8 +636,8 @@ export default function FrontierClient() {
                           </DirBadge>
                         </td>
                         <td>{t.token || '—'}</td>
-                        <td style={{ textAlign: 'right' }}>{fmtNum(t.amount)}</td>
-                        <td style={{ textAlign: 'right' }}>{fmtUsd(t.amountUsd)}</td>
+                        <td style={{ textAlign: 'right' }}>{fmtAmount(t.amount)}</td>
+                        <td style={{ textAlign: 'right', color: t.amountUsd >= 100000 ? COLORS.amber : COLORS.textPrimary, fontWeight: t.amountUsd >= 100000 ? 700 : 400 }}>{fmtUsd(t.amountUsd)}</td>
                         <td>
                           <a
                             href={`https://solscan.io/tx/${t.txHash}`}
