@@ -1,31 +1,38 @@
 /**
  * GET /api/frontier/bridges
  *
- * Returns the most recent "rotating into Solana" bridge events: tracked
- * entities receiving value via known Solana bridge programs in the last
- * 24h. Pairs with the bridge cards on /frontier.
+ * "Rotating Into Solana" — large inbound flows to tracked Solana
+ * entities from non-tracked counterparties in the last 24h.
  *
- * Detection rule: chain='solana' AND direction='in' AND counterparty IN
- * (known bridge addresses). The bridge map is hand-curated in
- * `app/frontier/bridges.js` — extending it is the only way to recognise
- * new bridges. PDAs are deliberately NOT matched.
+ * Why not strictly bridge-program detection? Helius's parsed-tx feed
+ * records the user wallet as `counterparty`, not the bridge program ID.
+ * The hand-curated BRIDGE_ADDRESSES set therefore matched zero rows in
+ * production. The actual bridge program shows up in tx instructions
+ * (out of scope for this read-path).
  *
- * ORCA explanation: a deterministic one-sentence summary is generated
- * from the row data (entity type + amount + bridge + token). We
- * intentionally avoid an OpenAI call on every page load — the existing
- * ORCA pipeline can be wired in by replacing buildOrcaNote() if needed.
+ * The pragmatic-and-honest substitute: surface the largest inbound USD
+ * events to tracked CEX/fund/derivatives wallets that didn't come from
+ * another tracked address. That captures fresh capital landing on
+ * Solana — bridges, OTC desks, freshly-funded sub-accounts — which is
+ * exactly what the panel set out to show.
+ *
+ * If a row's `counterparty` matches a known bridge program ID we still
+ * tag it explicitly (`bridge: 'Wormhole'` etc.) so when bridge-tx
+ * detection IS wired in later, the panel will pick it up automatically.
  */
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { BRIDGE_ADDRESSES, bridgeNameFor } from '@/app/frontier/bridges'
+import { resolveToken, ENRICHABLE_TICKERS } from '@/app/frontier/splTokens'
 import { isAuthorized } from '@/app/api/frontier/_auth'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const maxDuration = 15
 
-const BRIDGE_LIMIT = 12
+const PANEL_LIMIT = 9            // 3x3 card grid
 const LOOKBACK_HOURS = 24
+const MIN_EVENT_USD = 5_000      // dust floor — only show meaningful capital
 
 function fmtAmount(n) {
   if (!Number.isFinite(Number(n))) return ''
@@ -35,14 +42,27 @@ function fmtAmount(n) {
   return num.toFixed(2)
 }
 
-/**
- * Deterministic one-sentence note explaining the rotation. Designed to
- * read like an ORCA snippet without paying for OpenAI tokens. The first
- * clause names the entity type's typical behavior; the second clause
- * states the observed move. Swap with a real OpenAI call later if you
- * want LLM-generated copy here.
- */
-function buildOrcaNote({ entity, entityType, bridge, token, amountUsd }) {
+async function loadPriceMap() {
+  const tickers = Array.from(ENRICHABLE_TICKERS)
+  const { data } = await supabaseAdmin
+    .from('price_snapshots')
+    .select('ticker, price_usd, timestamp')
+    .in('ticker', tickers)
+    .order('timestamp', { ascending: false })
+    .limit(500)
+  const out = new Map()
+  for (const row of data || []) {
+    if (!out.has(row.ticker)) out.set(row.ticker, Number(row.price_usd) || 0)
+  }
+  return out
+}
+
+function priceFor(tokenInfo, priceMap) {
+  if (tokenInfo.priceUsd != null) return tokenInfo.priceUsd
+  return priceMap.get(tokenInfo.symbol) || null
+}
+
+function buildOrcaNote({ entity, entityType, source, token, amountUsd }) {
   const e = entity || 'A tracked entity'
   const t = (entityType || '').toLowerCase()
   const tok = token || 'tokens'
@@ -61,7 +81,7 @@ function buildOrcaNote({ entity, entityType, bridge, token, amountUsd }) {
   } else {
     context = `is a tracked on-chain entity; the rotation is a directional signal worth pairing with their next on-chain move`
   }
-  return `${e} ${context}. Just received ${usdStr}${tok} on Solana via ${bridge}.`
+  return `${e} ${context}. Just received ${usdStr}${tok} on Solana via ${source}.`
 }
 
 export async function GET(req) {
@@ -70,46 +90,88 @@ export async function GET(req) {
 
   const since = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString()
 
-  const { data, error } = await supabaseAdmin
-    .from('tracked_address_transfers')
-    .select('id, timestamp, address, direction, token_symbol, amount, amount_usd, tx_hash, counterparty, arkham_entity_name, arkham_entity_type, arkham_label')
-    .eq('chain', 'solana')
-    .eq('direction', 'in')
-    .in('counterparty', BRIDGE_ADDRESSES)
-    .gte('timestamp', since)
-    .order('timestamp', { ascending: false })
-    .limit(BRIDGE_LIMIT)
+  const [rowsRes, trackedRes, priceMap] = await Promise.all([
+    supabaseAdmin
+      .from('tracked_address_transfers')
+      .select('id, timestamp, address, direction, token_symbol, amount, amount_usd, tx_hash, counterparty, arkham_entity_name, arkham_entity_type, arkham_label')
+      .eq('chain', 'solana')
+      .eq('direction', 'in')
+      .gte('timestamp', since)
+      .order('timestamp', { ascending: false })
+      .limit(2000),
+    // Build a set of tracked Solana addresses so we can EXCLUDE intra-
+    // tracked transfers (Coinbase moving to its own hot wallet etc.)
+    supabaseAdmin
+      .from('tracked_address_universe')
+      .select('address')
+      .eq('chain', 'solana'),
+    loadPriceMap(),
+  ])
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (rowsRes.error) {
+    return NextResponse.json({ error: rowsRes.error.message }, { status: 500 })
   }
 
-  const events = (data || []).map((r) => {
-    const bridge = bridgeNameFor(r.counterparty) || 'Unknown bridge'
-    return {
-      id: r.id,
-      time: r.timestamp,
-      entity: r.arkham_entity_name,
-      entityType: r.arkham_entity_type,
-      label: r.arkham_label,
-      address: r.address,
-      bridge,
-      token: r.token_symbol,
-      amount: r.amount,
-      amountUsd: r.amount_usd,
-      txHash: r.tx_hash,
-      orca: buildOrcaNote({
-        entity: r.arkham_entity_name,
-        entityType: r.arkham_entity_type,
-        bridge,
-        token: r.token_symbol,
-        amountUsd: r.amount_usd,
-      }),
+  const trackedSet = new Set((trackedRes.data || []).map((r) => r.address))
+  const bridgeSet = new Set(BRIDGE_ADDRESSES)
+
+  // Enrich + score each row.
+  const enriched = (rowsRes.data || []).map((r) => {
+    const tokenInfo = resolveToken(r.token_symbol)
+    let usd = Number(r.amount_usd)
+    if (!Number.isFinite(usd) || usd <= 0) {
+      const price = priceFor(tokenInfo, priceMap)
+      const amt = Number(r.amount)
+      usd = (Number.isFinite(amt) && price) ? amt * price : 0
     }
+    const isBridgeProgram = bridgeSet.has(r.counterparty)
+    const sourceName = isBridgeProgram
+      ? (bridgeNameFor(r.counterparty) || 'Bridge')
+      : 'External wallet'
+    return { ...r, tokenInfo, usd, isBridgeProgram, sourceName }
   })
 
+  // Filter: meaningful USD + counterparty NOT in tracked set (= "external").
+  const candidates = enriched
+    .filter((r) => r.usd >= MIN_EVENT_USD)
+    .filter((r) => r.counterparty && !trackedSet.has(r.counterparty))
+    // Prefer bridge-tagged rows first, then by USD.
+    .sort((a, b) => {
+      if (a.isBridgeProgram !== b.isBridgeProgram) return a.isBridgeProgram ? -1 : 1
+      return b.usd - a.usd
+    })
+    .slice(0, PANEL_LIMIT)
+
+  const events = candidates.map((r) => ({
+    id: r.id,
+    time: r.timestamp,
+    entity: r.arkham_entity_name,
+    entityType: r.arkham_entity_type,
+    label: r.arkham_label,
+    address: r.address,
+    bridge: r.sourceName,           // kept name for backward UI compat
+    isBridgeProgram: r.isBridgeProgram,
+    token: r.tokenInfo.symbol,
+    amount: r.amount,
+    amountUsd: r.usd,
+    txHash: r.tx_hash,
+    counterparty: r.counterparty,
+    orca: buildOrcaNote({
+      entity: r.arkham_entity_name,
+      entityType: r.arkham_entity_type,
+      source: r.sourceName,
+      token: r.tokenInfo.symbol,
+      amountUsd: r.usd,
+    }),
+  }))
+
   return NextResponse.json(
-    { events, lookbackHours: LOOKBACK_HOURS, generatedAt: new Date().toISOString() },
+    {
+      events,
+      lookbackHours: LOOKBACK_HOURS,
+      minEventUsd: MIN_EVENT_USD,
+      generatedAt: new Date().toISOString(),
+    },
     { headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' } },
   )
 }

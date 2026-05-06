@@ -659,15 +659,15 @@ export default function FrontierClient() {
         {/* 3. Rotating Into Solana */}
         <Panel>
           <PanelHead>
-            <span>🌉 Rotating Into Solana · last 24h</span>
+            <span>🌉 Rotating Into Solana · large external inflows · last 24h</span>
             <span style={{ color: COLORS.textMuted }}>
-              {(bridges?.events || []).length} events · auto refresh 30s
+              {(bridges?.events || []).length} events · ≥${(bridges?.minEventUsd || 5000).toLocaleString()} · refresh 30s
             </span>
           </PanelHead>
           <PanelBody>
             {(bridges?.events || []).length === 0 ? (
               <EmptyState>
-                No tracked entities have rotated into Solana in the last 24h. Quiet markets.
+                No external inflows above the dust floor in the last 24h. Quiet markets.
               </EmptyState>
             ) : (
               <CardGrid>

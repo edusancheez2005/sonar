@@ -59,8 +59,8 @@ export async function GET(req) {
       .select('signal_type, active, acc_pct, sample_size, reason, triggered_at'),
     supabaseAdmin
       .from('accuracy_baseline')
-      .select('created_at')
-      .order('created_at', { ascending: false })
+      .select('measured_at')
+      .order('measured_at', { ascending: false })
       .limit(1),
   ])
 
@@ -88,7 +88,7 @@ export async function GET(req) {
     breakerState = anyTripped ? 'tripped' : 'all_active'
   }
 
-  const watchdogLastTick = baselineRes?.data?.[0]?.created_at || null
+  const watchdogLastTick = baselineRes?.data?.[0]?.measured_at || null
 
   return NextResponse.json(
     {
