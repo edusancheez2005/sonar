@@ -59,12 +59,14 @@ const CUSUM_LOOKBACK = 56  // ~14 days @ 6h/sample
 // to users. Breaker auto-clears once accuracy mean-reverts.
 //
 // Thresholds tuned from the 2026-05-04 BUY collapse: BUY ran at ~15-25%
-// accuracy for 8+ consecutive hourly buckets. SUPPRESS at <30% with n>=40
-// is ~3σ below coinflip — well past noise. CLEAR at >=45% leaves a 15pp
-// hysteresis band to prevent flapping.
+// accuracy for 8+ consecutive hourly buckets. SUPPRESS at <35% with n>=25
+// is still well past noise (binomial p<0.05 vs 50% coinflip at n=25, p<0.01
+// at n>=30). CLEAR at >=45% leaves a 10pp hysteresis band to prevent flapping.
+// 2026-05-06: lowered MIN_SAMPLES 40→25 and SUPPRESS 30→35 after May 6 BUY
+// regression sat at 5.1% on n=39 for 6h without tripping (n was 1 short of 40).
 const BREAKER_LOOKBACK_HOURS = 6
-const BREAKER_MIN_SAMPLES = 40
-const BREAKER_SUPPRESS_PCT = 30
+const BREAKER_MIN_SAMPLES = 25
+const BREAKER_SUPPRESS_PCT = 35
 const BREAKER_CLEAR_PCT = 45
 
 function shareOf(rows, type) {
