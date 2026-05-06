@@ -749,18 +749,6 @@ function IconHelp() {
   )
 }
 
-/** Frontier — radar/sonar pulse rings, our Solana-native intel beacon. */
-function IconFrontier() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="2" fill="currentColor" />
-      <circle cx="12" cy="12" r="5.5" stroke="currentColor" strokeWidth="1.4" opacity="0.7" />
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
-      <path d="M12 12 L20 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 /** Personalize — user silhouette with a small spark, signalling tailored UX. */
 function IconPersonalize() {
   return (
@@ -778,13 +766,6 @@ const APP_LINKS = [
     label: 'Dashboard',
     match: (p) => p === '/dashboard' || p?.startsWith('/dashboard/'),
     Icon: IconDashboard,
-  },
-  {
-    href: '/frontier',
-    label: 'Frontier',
-    match: (p) => p === '/frontier' || p?.startsWith('/frontier/'),
-    Icon: IconFrontier,
-    live: true,
   },
   {
     href: '/statistics',
@@ -1183,7 +1164,7 @@ export default function AppShell({ children, onLogout }) {
              * (top of this file). The badge disappears, behaviour stays
              * identical otherwise. No other changes needed here.
              * ──────────────────────────────────────────────────────────*/}
-            {APP_LINKS.map(({ href, label, match, Icon, soon, live }) => (
+            {APP_LINKS.map(({ href, label, match, Icon, soon }) => (
               <ShellRailItem
                 key={href}
                 $active={match(pathname)}
@@ -1194,8 +1175,8 @@ export default function AppShell({ children, onLogout }) {
               >
                 <NextLink
                   href={href}
-                  aria-label={soon ? `${label} — preview` : live ? `${label} — live` : label}
-                  title={railIconOnly ? (soon ? `${label} — preview` : live ? `${label} — live` : label) : undefined}
+                  aria-label={soon ? `${label} — preview` : label}
+                  title={railIconOnly ? (soon ? `${label} — preview` : label) : undefined}
                   onClick={() => setDrawerOpen(false)}
                 >
                   <span className="ico" aria-hidden>
@@ -1203,18 +1184,6 @@ export default function AppShell({ children, onLogout }) {
                   </span>
                   {!railIconOnly ? <span className="lab">{label}</span> : null}
                   {!railIconOnly && soon ? <span className="badge">Soon</span> : null}
-                  {!railIconOnly && live ? (
-                    <span
-                      className="badge"
-                      style={{
-                        color: '#00e676',
-                        background: 'rgba(0, 230, 118, 0.10)',
-                        borderColor: 'rgba(0, 230, 118, 0.35)',
-                      }}
-                    >
-                      Live
-                    </span>
-                  ) : null}
                 </NextLink>
               </ShellRailItem>
             ))}
