@@ -100,7 +100,12 @@ const Trust = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin: 6px 0 18px;
+  margin: 6px 0 8px;
+  & > button {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-top: 2px;
+  }
 `
 const TrustChip = styled.div`
   display: flex; align-items: center; gap: 8px;
@@ -253,6 +258,110 @@ const FooterLink = styled.a`
   &:hover { color: #00e5ff; text-decoration: underline; }
 `
 
+// ─── Educational "How it works" overlay ────────────────────────────────
+const HelpOverlay = styled(motion.div)`
+  position: absolute; inset: 0;
+  background: rgba(6, 10, 18, 0.78);
+  backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 22px;
+  z-index: 5;
+  border-radius: 18px;
+`
+const HelpCard = styled(motion.div)`
+  width: 100%;
+  background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(8,12,20,0.95));
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 14px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+`
+const HelpHead = styled.div`
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+`
+const HelpBadge = styled.div`
+  width: 38px; height: 38px; border-radius: 11px;
+  background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(124,58,237,0.18));
+  border: 1px solid rgba(34,211,238,0.35);
+  display: flex; align-items: center; justify-content: center;
+  color: #22d3ee;
+`
+const HelpTitle = styled.h4`
+  margin: 0; font-size: 16px; color: #f1f5f9; font-weight: 700; letter-spacing: -0.01em;
+  & + span { display: block; color: #94a3b8; font-size: 12.5px; margin-top: 2px; }
+`
+const StepRow = styled(motion.div)`
+  display: grid; grid-template-columns: 32px 1fr; gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  &:first-of-type { border-top: none; padding-top: 4px; }
+`
+const StepNum = styled.div`
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(34,211,238,0.12);
+  border: 1px solid rgba(34,211,238,0.4);
+  color: #22d3ee;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+`
+const StepBody = styled.div`
+  color: #cbd5e1; font-size: 13px; line-height: 1.5;
+  b { color: #f1f5f9; font-weight: 600; }
+  .muted { color: #94a3b8; }
+`
+const HelpFlags = styled.div`
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  margin: 14px 0 4px;
+`
+const HelpFlag = styled.div`
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: #cbd5e1;
+  padding: 8px 10px; border-radius: 9px;
+  background: rgba(34,211,238,0.05);
+  border: 1px solid rgba(34,211,238,0.18);
+  & svg { color: #34d399; flex-shrink: 0; }
+`
+const HelpDanger = styled(HelpFlag)`
+  background: rgba(255, 122, 144, 0.06);
+  border-color: rgba(255, 122, 144, 0.22);
+  color: #ffb3c1;
+  & svg { color: #f87171; }
+`
+const HelpActions = styled.div`
+  display: flex; gap: 10px; margin-top: 14px;
+`
+const HelpPrimary = styled.button`
+  flex: 1; padding: 10px 14px; border-radius: 10px;
+  background: linear-gradient(135deg, #22d3ee 0%, #2dd4bf 100%);
+  color: #061018; font-weight: 700; font-size: 13px;
+  border: none; cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  &:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(34,211,238,0.28); }
+`
+const HelpGhost = styled.button`
+  padding: 10px 14px; border-radius: 10px;
+  background: transparent; color: #cbd5e1; font-size: 13px;
+  border: 1px solid rgba(255,255,255,0.14); cursor: pointer;
+  &:hover { color: #fff; border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.04); }
+`
+const HelpLink = styled.button`
+  background: none; border: none; padding: 0;
+  color: #22d3ee; font-size: 12px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+  &:hover { color: #67e8f9; }
+`
+const TipBanner = styled(motion.div)`
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 171, 0, 0.07);
+  border: 1px solid rgba(255, 171, 0, 0.28);
+  color: #ffd591;
+  font-size: 12.5px; line-height: 1.45;
+  display: flex; gap: 10px; align-items: flex-start;
+  & svg { flex-shrink: 0; color: #ffab00; margin-top: 2px; }
+`
+
 /* ----------------- icons (no extra deps) */
 const ShieldIcon = (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -306,6 +415,9 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
     defaultAttestations.terms === true &&
     defaultAttestations.sanctions === true
   const [solanaAdapter, setSolanaAdapter] = useState(null)
+  const [showHelp, setShowHelp] = useState(false)
+  const [hasEvmInjected, setHasEvmInjected] = useState(true)
+  const [isIncognito, setIsIncognito] = useState(false)
 
   const wagmi = useAccount()
   const { signMessageAsync } = useSignMessage()
@@ -316,6 +428,37 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
   useEffect(() => {
     if (open && wagmi.isConnected && tab === 'evm') setShowSignIn(true)
   }, [open, wagmi.isConnected, tab])
+
+  // Detect environment quirks the first time the modal opens so we can
+  // explain why "click MetaMask, nothing happens" might occur (incognito
+  // without extension permission, no wallet installed, etc.)
+  useEffect(() => {
+    if (!open || typeof window === 'undefined') return
+    setHasEvmInjected(typeof window.ethereum !== 'undefined')
+    // Best-effort incognito sniff via storage quota (Chromium <120MB ≈ private)
+    try {
+      if (navigator.storage?.estimate) {
+        navigator.storage.estimate().then((est) => {
+          if (est && est.quota && est.quota < 120 * 1024 * 1024) setIsIncognito(true)
+        }).catch(() => {})
+      }
+    } catch {}
+  }, [open])
+
+  // Auto-show the educational overlay the first time a user opens the
+  // modal in this browser. Subsequent opens are silent (link still works).
+  useEffect(() => {
+    if (!open) return
+    try {
+      const seen = localStorage.getItem('sonar_wallet_help_seen')
+      if (!seen) setShowHelp(true)
+    } catch {}
+  }, [open])
+
+  function dismissHelp() {
+    setShowHelp(false)
+    try { localStorage.setItem('sonar_wallet_help_seen', '1') } catch {}
+  }
 
   // Lazy-load Solana adapter only when the Solana tab is opened.
   useEffect(() => {
@@ -508,6 +651,99 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
         >
           <CloseBtn type="button" onClick={onClose} aria-label="Close">{XIcon}</CloseBtn>
 
+          <AnimatePresence>
+            {showHelp && (
+              <HelpOverlay
+                key="help"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                onClick={dismissHelp}
+              >
+                <HelpCard
+                  initial={{ y: 14, scale: 0.96, opacity: 0 }}
+                  animate={{ y: 0, scale: 1, opacity: 1 }}
+                  exit={{ y: 8, scale: 0.98, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                  onClick={(e) => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="wallet-help-title"
+                >
+                  <HelpHead>
+                    <HelpBadge>{ShieldIcon}</HelpBadge>
+                    <div>
+                      <HelpTitle id="wallet-help-title">How wallet sign-in works</HelpTitle>
+                      <span>4 steps · less than a minute · no gas, no transactions</span>
+                    </div>
+                  </HelpHead>
+
+                  <StepRow initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 }}>
+                    <StepNum>1</StepNum>
+                    <StepBody>
+                      <b>Pick a wallet.</b> MetaMask, Rabby, Phantom, Backpack — anything you already use.{' '}
+                      <span className="muted">If nothing happens when you click MetaMask, the browser extension isn't installed or isn't allowed in this window.</span>
+                    </StepBody>
+                  </StepRow>
+
+                  <StepRow initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+                    <StepNum>2</StepNum>
+                    <StepBody>
+                      <b>Approve the connection.</b> Your wallet pops up and asks if Sonar can <i>see</i> your address.{' '}
+                      <span className="muted">This is permission to read — not to spend.</span>
+                    </StepBody>
+                  </StepRow>
+
+                  <StepRow initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
+                    <StepNum>3</StepNum>
+                    <StepBody>
+                      <b>Sign one short message.</b> Proves you own the address. Your wallet will literally show the text — no hex, no contract calls.{' '}
+                      <span className="muted">Costs nothing. Doesn't touch the blockchain.</span>
+                    </StepBody>
+                  </StepRow>
+
+                  <StepRow initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+                    <StepNum>4</StepNum>
+                    <StepBody>
+                      <b>You're in.</b> Sonar reorders signals, news and whale activity around the assets you actually hold.
+                    </StepBody>
+                  </StepRow>
+
+                  <HelpFlags>
+                    <HelpFlag>{CheckSm} No transaction approvals</HelpFlag>
+                    <HelpFlag>{CheckSm} No spend permissions</HelpFlag>
+                    <HelpFlag>{CheckSm} No seed phrase, ever</HelpFlag>
+                    <HelpFlag>{CheckSm} Disconnect anytime</HelpFlag>
+                  </HelpFlags>
+
+                  {!hasEvmInjected && (
+                    <HelpDanger style={{ marginTop: 10 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 8v5M12 16h.01" />
+                      </svg>
+                      <div>
+                        <b style={{ color: '#ffb3c1' }}>Heads up:</b>{' '}
+                        We can't see a browser wallet right now.{' '}
+                        {isIncognito
+                          ? 'You\'re likely in incognito — open chrome://extensions, find MetaMask, and toggle "Allow in Incognito".'
+                          : 'Install MetaMask (or another wallet extension) and reload, or use the Paste-address tab below for a view-only experience.'}
+                      </div>
+                    </HelpDanger>
+                  )}
+
+                  <HelpActions>
+                    <HelpPrimary type="button" onClick={dismissHelp}>Got it — let's connect</HelpPrimary>
+                    <HelpGhost type="button" onClick={() => { dismissHelp(); setTab('paste') }}>
+                      Or paste address only
+                    </HelpGhost>
+                  </HelpActions>
+                </HelpCard>
+              </HelpOverlay>
+            )}
+          </AnimatePresence>
+
           <ScrollArea>
             <Header>
               <Crest>{ShieldIcon}</Crest>
@@ -521,6 +757,9 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
               <TrustChip>{CheckSm} Read-only signature</TrustChip>
               <TrustChip>{CheckSm} Never asks for transactions</TrustChip>
               <TrustChip>{CheckSm} We never see your seed</TrustChip>
+              <HelpLink type="button" onClick={() => setShowHelp(true)} aria-label="How wallet sign-in works">
+                ⓘ How does this work?
+              </HelpLink>
             </Trust>
 
             <Tabs>
@@ -541,6 +780,27 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
                 <div>
                   <SectionLabel>Step 1 · Choose a wallet</SectionLabel>
                   <ConnectButton chainStatus="none" showBalance={false} accountStatus="address" />
+                  {!hasEvmInjected && (
+                    <TipBanner
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 9v4M12 17h.01" />
+                        <path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      </svg>
+                      <div>
+                        <b style={{ color: '#ffd591' }}>No browser wallet detected.</b>{' '}
+                        {isIncognito
+                          ? 'Incognito mode usually blocks extensions — enable "Allow in Incognito" for MetaMask in chrome://extensions, or use the Paste-address tab.'
+                          : 'Install MetaMask, Rabby or another browser wallet, then reload — or use the Paste-address tab to view-only without signing.'}
+                        {' '}
+                        <HelpLink type="button" onClick={() => setShowHelp(true)} style={{ marginLeft: 4 }}>
+                          Show me how →
+                        </HelpLink>
+                      </div>
+                    </TipBanner>
+                  )}
                   {wagmi.isConnected && (
                     <Row>
                       <Ghost type="button" onClick={() => disconnect()}>Disconnect</Ghost>
