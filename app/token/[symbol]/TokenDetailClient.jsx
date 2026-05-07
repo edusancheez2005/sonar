@@ -688,6 +688,10 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         const sb = supabaseBrowser()
         const { data: { session } } = await sb.auth.getSession()
         if (session?.user) {
+          // Admin emails always get premium UX (no paywalls).
+          const email = (session.user.email || '').toLowerCase().trim()
+          const { isAdmin } = await import('@/app/lib/adminConfig')
+          if (isAdmin(email)) { setIsPremium(true); return }
           const { data: profile } = await sb.from('profiles').select('plan').eq('id', session.user.id).single()
           const plan = profile?.plan
           setIsPremium(plan === 'premium' || plan === 'pro')

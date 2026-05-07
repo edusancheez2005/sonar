@@ -19,17 +19,24 @@ export default function RequirePremiumClient({ children }) {
           return
         }
         
-          // Check actual premium status from profiles table
-          const { data: profile, error: profileError } = await sb
-            .from('profiles')
-            .select('plan')
-            .eq('id', session.user.id)
-            .single()
-          
-          const plan = profile?.plan
-          const premium = plan === 'premium' || plan === 'pro'
-          
-          if (!cancelled) setIsPremium(premium)
+          // Admin emails always pass the premium gate.
+          const email = (session.user.email || '').toLowerCase().trim()
+          const { isAdmin } = await import('@/app/lib/adminConfig')
+          if (isAdmin(email)) {
+            if (!cancelled) setIsPremium(true)
+          } else {
+            // Check actual premium status from profiles table
+            const { data: profile, error: profileError } = await sb
+              .from('profiles')
+              .select('plan')
+              .eq('id', session.user.id)
+              .single()
+            
+            const plan = profile?.plan
+            const premium = plan === 'premium' || plan === 'pro'
+            
+            if (!cancelled) setIsPremium(premium)
+          }
       } finally {
         if (!cancelled) setChecked(true)
       }

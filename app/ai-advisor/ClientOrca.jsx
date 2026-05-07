@@ -521,7 +521,16 @@ export default function ClientOrca() {
       if (res.ok) {
         const data = await res.json()
         setServerQuota(data)
-        setIsPremium(data.plan === 'premium' || data.plan === 'pro' || data.plan === 'unlimited')
+        // Admin emails always count as premium for UI gating.
+        let adminOverride = false
+        try {
+          const sb = supabaseBrowser()
+          const { data: sessionData } = await sb.auth.getSession()
+          const email = (sessionData?.session?.user?.email || '').toLowerCase().trim()
+          const { isAdmin } = await import('@/app/lib/adminConfig')
+          adminOverride = isAdmin(email)
+        } catch {}
+        setIsPremium(adminOverride || data.plan === 'premium' || data.plan === 'pro' || data.plan === 'unlimited')
       }
     } catch (err) {
       console.error('Failed to fetch quota:', err)
