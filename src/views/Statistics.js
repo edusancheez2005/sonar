@@ -8,7 +8,9 @@ import dynamic from 'next/dynamic'
 
 const TokenIcon = dynamic(() => import('@/components/TokenIcon'), { ssr: false })
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
-import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
+
+const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
+const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
 const COLORS = {
   cyan: '#00e5ff', green: '#00e676', red: '#ff1744', amber: '#ffab00',
   textPrimary: '#e0e6ed', textMuted: '#5a6a7a',
@@ -48,12 +50,12 @@ const PageTitle = styled.div`
   align-items: center;
   gap: 1rem;
   margin-bottom: 1.5rem;
-  font-family: ${FONT_MONO};
+  font-family: ${MONO_FONT};
   flex-wrap: wrap;
 `
 
 const TitleText = styled.h1`
-  font-family: ${FONT_MONO};
+  font-family: ${MONO_FONT};
   font-size: 0.9rem;
   font-weight: 700;
   color: ${COLORS.cyan};
@@ -66,7 +68,7 @@ const TitleText = styled.h1`
 const LiveDot = styled.span`
   display: inline-flex; align-items: center; gap: 0.4rem;
   font-size: 0.7rem; font-weight: 600; color: ${COLORS.green};
-  text-transform: uppercase; letter-spacing: 1px; font-family: ${FONT_MONO};
+  text-transform: uppercase; letter-spacing: 1px; font-family: ${MONO_FONT};
   &::before {
     content: ''; width: 7px; height: 7px; border-radius: 50%;
     background: ${COLORS.green}; animation: ${pulseGlow} 2s ease-in-out infinite;
@@ -99,7 +101,7 @@ const Field = styled.div`
     font-weight: 600;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    font-family: ${FONT_SANS};
+    font-family: ${SANS_FONT};
     padding-left: 0.1rem;
   }
 `;
@@ -113,7 +115,7 @@ const PillInput = styled.input`
   outline: none;
   transition: border-color 0.15s ease;
   font-size: 0.85rem;
-  font-family: ${FONT_MONO};
+  font-family: ${MONO_FONT};
   height: 36px;
   &::placeholder { color: ${COLORS.textMuted}; opacity: 0.5; }
   &:focus { border-color: ${COLORS.cyan}; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.08); }
@@ -129,7 +131,7 @@ const PillSelect = styled.select`
   outline: none;
   transition: border-color 0.15s ease;
   font-size: 0.85rem;
-  font-family: ${FONT_MONO};
+  font-family: ${MONO_FONT};
   height: 36px;
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20'%3E%3Cpath fill='%2300e5ff' d='M5.5 7l4.5 6 4.5-6z'/%3E%3C/svg%3E");
@@ -159,7 +161,7 @@ const Presets = styled.div`
     padding: 0.4rem 0.85rem;
     font-weight: 600;
     font-size: 0.75rem;
-    font-family: ${FONT_MONO};
+    font-family: ${MONO_FONT};
     cursor: pointer;
     transition: all 0.15s ease;
     
@@ -181,7 +183,7 @@ const GhostButton = styled.button`
   padding: 0.4rem 0.85rem;
   font-weight: 600;
   font-size: 0.75rem;
-  font-family: ${FONT_MONO};
+  font-family: ${MONO_FONT};
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex; align-items: center; gap: 0.4rem;
@@ -194,12 +196,12 @@ const GhostButton = styled.button`
 
 const DataTable = styled.div`
   width: 100%; overflow-x: auto;
-  table { width: 100%; border-collapse: collapse; font-family: ${FONT_MONO}; }
+  table { width: 100%; border-collapse: collapse; font-family: ${MONO_FONT}; }
   thead th {
     padding: 0.75rem 1rem; text-align: left; font-size: 0.7rem; font-weight: 600;
     color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 1px;
     border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
-    white-space: nowrap; font-family: ${FONT_SANS};
+    white-space: nowrap; font-family: ${SANS_FONT};
   }
   thead th.right { text-align: right; }
   tbody tr {
@@ -222,7 +224,7 @@ const Badge = styled.span`
   border-radius: 4px;
   font-weight: 600;
   font-size: 0.7rem;
-  font-family: ${FONT_MONO};
+  font-family: ${MONO_FONT};
   text-transform: uppercase;
   letter-spacing: 0.5px;
   
@@ -239,7 +241,7 @@ const Pagination = styled.div`
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid ${COLORS.borderSubtle};
-  font-family: ${FONT_MONO};
+  font-family: ${MONO_FONT};
   font-size: 0.8rem;
   color: ${COLORS.textMuted};
 `;
@@ -394,13 +396,20 @@ export default function Statistics() {
         const sb = supabaseBrowser()
         const { data: { session } } = await sb.auth.getSession()
         if (session?.user) {
-          const { data: profile } = await sb
-            .from('profiles')
-            .select('plan')
-            .eq('id', session.user.id)
-            .single()
-          const plan = profile?.plan
-          setIsPremium(plan === 'premium' || plan === 'pro')
+          // Admin emails always get premium UX (no paywalls).
+          const email = (session.user.email || '').toLowerCase().trim()
+          const { isAdmin } = await import('@/app/lib/adminConfig')
+          if (isAdmin(email)) {
+            setIsPremium(true)
+          } else {
+            const { data: profile } = await sb
+              .from('profiles')
+              .select('plan')
+              .eq('id', session.user.id)
+              .single()
+            const plan = profile?.plan
+            setIsPremium(plan === 'premium' || plan === 'pro')
+          }
         }
       } catch (err) {
         console.error('Error checking premium status:', err)
@@ -439,22 +448,22 @@ export default function Statistics() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-              <span style={{ fontFamily: FONT_MONO, fontSize: '0.8rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', textTransform: 'uppercase' }}>WHALE WHISPER</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', textTransform: 'uppercase' }}>WHALE WHISPER</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <span style={{
                 padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700,
-                fontFamily: FONT_MONO, letterSpacing: '0.5px', textTransform: 'uppercase',
+                fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.5px', textTransform: 'uppercase',
                 background: whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.1)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.1)' : 'rgba(0,229,255,0.06)',
                 color: whisperData.market_bias === 'bullish' ? '#00e676' : whisperData.market_bias === 'bearish' ? '#ff1744' : '#00e5ff',
                 border: `1px solid ${whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.2)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.2)' : 'rgba(0,229,255,0.1)'}`,
               }}>{whisperData.market_bias === 'bullish' ? 'NET INFLOW' : whisperData.market_bias === 'bearish' ? 'NET OUTFLOW' : 'BALANCED'}</span>
-              <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: FONT_MONO }}>{whisperData.confidence}%</span>
-              <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: FONT_MONO }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{whisperData.confidence}%</span>
+              <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
           {/* Narrative with highlighted keywords and staggered paragraphs */}
-          <div style={{ fontFamily: FONT_MONO, fontSize: '0.78rem', lineHeight: 1.75, color: '#c0cad6' }}>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', lineHeight: 1.75, color: '#c0cad6' }}>
             {whisperData.narrative.split('\n\n').filter(Boolean).map((para, idx) => (
               <motion.p key={idx} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.15 + idx * 0.2 }}
                 style={{ margin: idx > 0 ? '0.75rem 0 0' : 0, padding: '0.5rem 0.75rem', borderLeft: `2px solid ${idx === 0 ? 'rgba(0,229,255,0.3)' : idx === whisperData.narrative.split('\n\n').filter(Boolean).length - 1 ? (whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.4)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.4)' : 'rgba(0,229,255,0.3)') : 'rgba(255,255,255,0.06)'}`, borderRadius: '0 4px 4px 0', background: idx === 0 ? 'rgba(0,229,255,0.02)' : 'transparent' }}
@@ -482,7 +491,7 @@ export default function Statistics() {
           </div>
           {whisperData.summary && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-              style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.72rem', color: '#5a6a7a', fontFamily: FONT_SANS, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
               {whisperData.summary}
             </motion.div>
@@ -594,7 +603,7 @@ export default function Statistics() {
                 <div style={{
                   textAlign: 'center', padding: '1rem', marginTop: '0.5rem',
                   background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${COLORS.borderSubtle}`,
-                  borderRadius: '4px', fontFamily: FONT_SANS, fontSize: '0.8rem', color: COLORS.textMuted
+                  borderRadius: '4px', fontFamily: SANS_FONT, fontSize: '0.8rem', color: COLORS.textMuted
                 }}>
                   Showing 50 of {total.toLocaleString()} transactions.
                   <a href="/subscribe" style={{ color: COLORS.cyan, marginLeft: '0.4rem', fontWeight: 600, textDecoration: 'underline' }}>
@@ -604,7 +613,7 @@ export default function Statistics() {
               )}
               <Pagination>
                 <GhostButton type="button" onClick={()=>fetchTrades(Math.max(1, page-1))}>← PREV</GhostButton>
-                <span style={{ fontFamily: FONT_MONO }}>Page {page} · {total.toLocaleString()} txns</span>
+                <span style={{ fontFamily: MONO_FONT }}>Page {page} · {total.toLocaleString()} txns</span>
                 <GhostButton type="button" onClick={()=>fetchTrades(page+1)}>NEXT →</GhostButton>
               </Pagination>
             </>
