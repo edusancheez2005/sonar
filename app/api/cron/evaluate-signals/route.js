@@ -68,9 +68,14 @@ export async function GET(req) {
 
     // 1. PRIMARY: data-api.binance.vision bulk ticker
     try {
+      // CRITICAL: cache: 'no-store' + revalidate: 0 forces Next.js to bypass
+      // its built-in fetch cache. Without this, the May 6 frozen-feed
+      // response (BTC=$76,876) was served to ~47% of evaluator runs for
+      // 4+ days post-fix, manufacturing a phantom SELL edge. Same bug we
+      // fixed in fetch-prices/route.ts on 2026-05-06; missed this one.
       const r = await fetch(
         'https://data-api.binance.vision/api/v3/ticker/price',
-        { signal: AbortSignal.timeout(10000) }
+        { signal: AbortSignal.timeout(10000), cache: 'no-store', next: { revalidate: 0 } }
       )
       if (r.ok) {
         const all = await r.json()
@@ -118,7 +123,7 @@ export async function GET(req) {
         try {
           const cgRes = await fetch(
             `https://pro-api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
-            { headers: { 'x-cg-pro-api-key': cgKey }, signal: AbortSignal.timeout(15000) }
+            { headers: { 'x-cg-pro-api-key': cgKey }, signal: AbortSignal.timeout(15000), cache: 'no-store', next: { revalidate: 0 } }
           )
           if (cgRes.ok) {
             const data = await cgRes.json()
