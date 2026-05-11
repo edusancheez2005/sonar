@@ -29,7 +29,7 @@ function formatPrice(p) {
 
 async function fetchOne(pair) {
   try {
-    const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${pair.symbol}`)
+    const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${pair.symbol}`, { cache: 'no-store', next: { revalidate: 0 } })
     if (!res.ok) return null
     const t = await res.json()
     const price = parseFloat(t.lastPrice)

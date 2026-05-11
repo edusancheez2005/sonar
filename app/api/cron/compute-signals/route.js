@@ -68,12 +68,11 @@ export async function GET(req) {
       }
     }
 
-    // Market regime: fetch BTC 24h + 6h change and classify regime.
-    // The regime gate (in computeSignalForToken) raises the BUY threshold
-    // and lowers the SELL threshold in bear regimes (and mirror in bull),
-    // ensuring directional signals don't fight the macro tape.
+    // Market beta: fetch BTC 24h change to detect broad market regime
+    // When BTC is down >2%, dampen BUY signals (market headwind)
+    // When BTC is up >2%, dampen SELL signals (market tailwind)
     const btcBeta = await fetchMarketBeta()
-    console.log(`[SignalEngine] Market regime: ${btcBeta.regime} (BTC 24h=${btcBeta.btc24hChange?.toFixed(2)}% 6h=${btcBeta.btc6hChange?.toFixed(2)}%)`)
+    console.log(`[SignalEngine] Market beta: BTC 24h = ${btcBeta.btc24hChange?.toFixed(2)}%`)
 
     // Load per-token calibration once per run. Tokens missing from this map
     // (e.g. brand-new symbols with no outcome history) fall through to the
@@ -472,76 +471,34 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}, calibration = nu
     snapshot,
   })
 
-  // ─── Regime-graded asymmetric label gate (2026-05-06) ──────────────────
-  //
-  // ROOT CAUSE addressed: on May 6 the engine emitted 87% BUYs into a bear
-  // tape and accuracy collapsed to 5%. The previous market-beta block was too
-  // weak (penalty cap 20 on rawScore = ~10 score points; ignored anything
-  // above btc24h>-1%). This replaces it with a regime classifier and
-  // asymmetric thresholds: in bear regimes the BUY bar is RAISED and the SELL
-  // bar is LOWERED so directional signals match the macro tape; mirror in
-  // bull regimes. Score values are NOT modified — only label assignment —
-  // so audit/IC analysis continues to see the engine's raw conviction.
-  //
-  // Thresholds (score is 0..100; engine defaults: BUY≥58, STRONG BUY≥72,
-  //                                              SELL≤42, STRONG SELL≤28):
-  //
-  //   bear_strong: BUY 58→72, STRONG_BUY 72→85, SELL 42→48, STRONG_SELL 28→34
-  //   bear_mild:   BUY 58→65, STRONG_BUY 72→78, SELL 42→45, STRONG_SELL 28→31
-  //   chop:        unchanged
-  //   bull_mild:   SELL 42→35, STRONG_SELL 28→22, BUY 58→55, STRONG_BUY 72→69
-  //   bull_strong: SELL 42→28, STRONG_SELL 28→15, BUY 58→48, STRONG_BUY 72→65
-  //
-  // BTC and WBTC bypass the gate (they ARE the regime).
-  const regime = btcBeta.regime || 'chop'
-  if (regime !== 'chop' && tokenSymbol !== 'BTC' && tokenSymbol !== 'WBTC') {
-    const score = signal.score
-    const conf = signal.confidence
-    let buyT = 58, sBuyT = 72, sellT = 42, sStrongSellT = 28
-    if (regime === 'bear_strong') { buyT = 72; sBuyT = 85; sellT = 48; sStrongSellT = 34 }
-    else if (regime === 'bear_mild') { buyT = 65; sBuyT = 78; sellT = 45; sStrongSellT = 31 }
-    else if (regime === 'bull_mild') { buyT = 55; sBuyT = 69; sellT = 35; sStrongSellT = 22 }
-    else if (regime === 'bull_strong') { buyT = 48; sBuyT = 65; sellT = 28; sStrongSellT = 15 }
+  // Market beta adjustment: dampen signals that fight the broad market trend
+  // This is a quant-standard risk adjustment — individual signals should account for market regime
+  const btc24h = btcBeta.btc24hChange || 0
+  if (tokenSymbol !== 'BTC' && tokenSymbol !== 'WBTC') {
+    const isBullish = signal.signal === 'STRONG BUY' || signal.signal === 'BUY'
+    const isBearish = signal.signal === 'STRONG SELL' || signal.signal === 'SELL'
 
-    let regimeLabel
-    if (conf < 15) regimeLabel = 'NEUTRAL'
-    else if (score >= sBuyT) regimeLabel = 'STRONG BUY'
-    else if (score >= buyT) regimeLabel = 'BUY'
-    else if (score <= sStrongSellT) regimeLabel = 'STRONG SELL'
-    else if (score <= sellT) regimeLabel = 'SELL'
-    else regimeLabel = 'NEUTRAL'
-
-    if (regimeLabel !== signal.signal) {
-      const wasBullish = signal.signal === 'BUY' || signal.signal === 'STRONG BUY'
-      const wasBearish = signal.signal === 'SELL' || signal.signal === 'STRONG SELL'
-      const becameNeutral = regimeLabel === 'NEUTRAL'
-      const becameBullish = regimeLabel === 'BUY' || regimeLabel === 'STRONG BUY'
-      const becameBearish = regimeLabel === 'SELL' || regimeLabel === 'STRONG SELL'
-      // Only apply gate when it MOVES IN THE REGIME-RIGHT DIRECTION:
-      //   bear: suppress bullish, allow bearish to upgrade.
-      //   bull: suppress bearish, allow bullish to upgrade.
-      const isBear = regime === 'bear_mild' || regime === 'bear_strong'
-      const isBull = regime === 'bull_mild' || regime === 'bull_strong'
-      const apply =
-        (isBear && (wasBullish && (becameNeutral || becameBearish))) ||
-        (isBear && (signal.signal === 'NEUTRAL' && becameBearish)) ||
-        (isBull && (wasBearish && (becameNeutral || becameBullish))) ||
-        (isBull && (signal.signal === 'NEUTRAL' && becameBullish))
-
-      if (apply) {
-        signal.original_signal_pre_regime = signal.signal
-        signal.signal = regimeLabel
-        signal.regime = regime
-        signal.traps = [...(signal.traps || []), {
-          type: 'Regime Gate',
-          severity: regime === 'bear_strong' || regime === 'bull_strong' ? 'HIGH' : 'MEDIUM',
-          description: `${regime}: BTC 24h ${btcBeta.btc24hChange?.toFixed(1)}% / 6h ${btcBeta.btc6hChange?.toFixed(1)}% — relabeled ${signal.original_signal_pre_regime}→${regimeLabel} (BUY≥${buyT}, SELL≤${sellT})`,
-        }]
-      }
+    // v3: Market down >1% and signal is BUY → apply headwind penalty (lowered from 2%)
+    // Alts bleed 2-3x harder than BTC, so even a -1% BTC move is significant
+    if (btc24h < -1 && isBullish) {
+      const penalty = Math.min(20, Math.abs(btc24h) * 3)
+      signal.rawScore = Math.max(-100, (signal.rawScore || 0) - penalty)
+      signal.score = Math.round(Math.max(0, Math.min(100, (signal.rawScore + 100) / 2)))
+      // v7: Use engine thresholds (58/72) not ad-hoc values
+      if (signal.score < 58) signal.signal = 'NEUTRAL'
+      else if (signal.score < 72) signal.signal = 'BUY'
+      signal.traps = [...(signal.traps || []), { type: 'Market Headwind', severity: 'MEDIUM', adjustment: -Math.round(penalty), description: `BTC down ${btc24h.toFixed(1)}% - market headwind dampens bullish signals` }]
     }
-    signal.regime = regime
-  } else {
-    signal.regime = regime
+
+    // v3: Market up >1% and signal is SELL → apply tailwind dampening
+    if (btc24h > 1 && isBearish) {
+      const boost = Math.min(15, btc24h * 2)
+      signal.rawScore = Math.min(100, (signal.rawScore || 0) + boost)
+      signal.score = Math.round(Math.max(0, Math.min(100, (signal.rawScore + 100) / 2)))
+      // v7: Use engine thresholds (42/28) not ad-hoc values
+      if (signal.score > 42) signal.signal = 'NEUTRAL'
+      else if (signal.score > 28) signal.signal = 'SELL'
+    }
   }
 
   // Record price at signal time for accuracy tracking
@@ -582,84 +539,38 @@ async function fetchPriceHistory(tokenSymbol) {
 }
 
 /**
- * Fetch BTC 24h change + 6h trend and classify market regime.
- *
- * Regime classification (2026-05-06):
- *   bear_strong: btc24h <= -3%  OR  btc6h <= -1.5%
- *   bear_mild:   btc24h <= -1%  OR  btc6h <= -0.5%
- *   chop:        otherwise
- *   bull_mild:   btc24h >= +1%  OR  btc6h >= +0.5%
- *   bull_strong: btc24h >= +3%  OR  btc6h >= +1.5%
- *
- * The 6h trend catches persistent regression even when 24h is flat
- * (e.g. recovered overnight then dumping all morning — exactly the
- * May 6 BUY-collapse profile). 24h alone is too lagging for a 15-min
- * compute cron in fast-moving regimes.
+ * Fetch BTC 24h change as a market regime indicator.
+ * v7: Use Binance 24hr ticker (always fresh) with Supabase fallback.
  */
 async function fetchMarketBeta() {
-  let btc24hChange = 0
-  let btc6hChange = 0
-
-  // 24h: Binance live ticker (preferred)
   try {
+    // Try Binance first (always live)
+    // CRITICAL: cache:'no-store' — Next.js wraps fetch() and caches GET
+    // responses by default. Without this, BTC 24h regime read freezes.
     const res = await fetch(
       'https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT',
-      { signal: AbortSignal.timeout(8000) }
+      { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } }
     )
     if (res.ok) {
       const d = await res.json()
-      btc24hChange = parseFloat(d.priceChangePercent) || 0
+      return { btc24hChange: parseFloat(d.priceChangePercent) || 0 }
     }
   } catch {}
 
-  // Supabase fallback for 24h
-  if (btc24hChange === 0) {
-    try {
-      const { data } = await supabaseAdmin
-        .from('price_snapshots')
-        .select('price_change_24h')
-        .eq('ticker', 'BTC')
-        .order('timestamp', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      btc24hChange = data?.price_change_24h || 0
-    } catch {}
-  }
-
-  // 6h trend: derive from price_snapshots
+  // Fallback to Supabase
   try {
-    const sixHrAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
-    const [{ data: latest }, { data: past }] = await Promise.all([
-      supabaseAdmin
-        .from('price_snapshots')
-        .select('price_usd, timestamp')
-        .eq('ticker', 'BTC')
-        .order('timestamp', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabaseAdmin
-        .from('price_snapshots')
-        .select('price_usd, timestamp')
-        .eq('ticker', 'BTC')
-        .lte('timestamp', sixHrAgo)
-        .order('timestamp', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ])
-    if (latest?.price_usd && past?.price_usd) {
-      btc6hChange = ((latest.price_usd - past.price_usd) / past.price_usd) * 100
-    }
-  } catch {}
+    const { data } = await supabaseAdmin
+      .from('price_snapshots')
+      .select('price_change_24h')
+      .eq('ticker', 'BTC')
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-  // Classify regime — take the WORSE of (24h, 6h) for bear, BETTER for bull.
-  // This makes the regime gate trip on whichever timeframe is more alarming.
-  let regime = 'chop'
-  if (btc24hChange <= -3 || btc6hChange <= -1.5) regime = 'bear_strong'
-  else if (btc24hChange <= -1 || btc6hChange <= -0.5) regime = 'bear_mild'
-  else if (btc24hChange >= 3 || btc6hChange >= 1.5) regime = 'bull_strong'
-  else if (btc24hChange >= 1 || btc6hChange >= 0.5) regime = 'bull_mild'
-
-  return { btc24hChange, btc6hChange, regime }
+    return { btc24hChange: data?.price_change_24h || 0 }
+  } catch {
+    return { btc24hChange: 0 }
+  }
 }
 
 
@@ -828,7 +739,7 @@ async function fetchPriceData(tokenSymbol) {
   try {
     const res = await fetch(
       `https://api.binance.com/api/v3/ticker/24hr?symbol=${pair}`,
-      { signal: AbortSignal.timeout(10000) }
+      { signal: AbortSignal.timeout(10000), cache: 'no-store', next: { revalidate: 0 } }
     )
 
     if (!res.ok) return null
@@ -866,11 +777,15 @@ async function fetchBinanceLivePrice(tokenSymbol) {
 
   try {
     // Fetch live price + rolling window changes in parallel
+    // CRITICAL: cache:'no-store' on every fetch — these feed the momentum
+    // tier (30% weight). Cached responses freeze 1h/6h/4h-kline reads and
+    // poison the signal SCORE (not just outcomes). Same root cause as the
+    // 2026-05-06 fetch-prices bug and the 2026-05-11 evaluator bug.
     const [priceRes, change1hRes, change6hRes, klinesRes] = await Promise.allSettled([
-      fetch(`https://data-api.binance.vision/api/v3/ticker/price?symbol=${pair}`, { signal: AbortSignal.timeout(8000) }),
-      fetch(`https://data-api.binance.vision/api/v3/ticker?symbol=${pair}&windowSize=1h`, { signal: AbortSignal.timeout(8000) }),
-      fetch(`https://data-api.binance.vision/api/v3/ticker?symbol=${pair}&windowSize=6h`, { signal: AbortSignal.timeout(8000) }),
-      fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=4h&limit=6`, { signal: AbortSignal.timeout(8000) }),
+      fetch(`https://data-api.binance.vision/api/v3/ticker/price?symbol=${pair}`, { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } }),
+      fetch(`https://data-api.binance.vision/api/v3/ticker?symbol=${pair}&windowSize=1h`, { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } }),
+      fetch(`https://data-api.binance.vision/api/v3/ticker?symbol=${pair}&windowSize=6h`, { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } }),
+      fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=4h&limit=6`, { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } }),
     ])
 
     let price = null

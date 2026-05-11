@@ -28,7 +28,7 @@ export async function GET() {
     // Get spot prices
     let priceMap = {}
     try {
-      const res = await fetch('https://data-api.binance.vision/api/v3/ticker/24hr', { signal: AbortSignal.timeout(8000) })
+      const res = await fetch('https://data-api.binance.vision/api/v3/ticker/24hr', { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } })
       if (res.ok) {
         const tickers = await res.json()
         for (const t of tickers) {

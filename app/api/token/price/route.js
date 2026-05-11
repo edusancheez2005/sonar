@@ -72,17 +72,20 @@ export async function GET(req) {
     const cgId = COINGECKO_IDS[symbol] || symbol.toLowerCase()
 
     // Fetch Binance price data + CoinGecko metadata in parallel
+    // CRITICAL: cache:'no-store' on Binance fetches — user-facing prices
+    // must be live, not Next.js fetch-cached.
     const [ticker24hRes, klines7dRes, klines30dRes, cgRes] = await Promise.all([
       fetch(`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${pair}`, {
-        signal: AbortSignal.timeout(8000)
+        signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 }
       }).catch(() => null),
       fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1d&limit=7`, {
-        signal: AbortSignal.timeout(8000)
+        signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 }
       }).catch(() => null),
       fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1d&limit=30`, {
-        signal: AbortSignal.timeout(8000)
+        signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 }
       }).catch(() => null),
       // CoinGecko free tier — metadata only (market cap, supply, ATH/ATL, links)
+      // 5min revalidate is FINE here — metadata, not price.
       fetch(
         `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=true&developer_data=true`,
         { signal: AbortSignal.timeout(8000), next: { revalidate: 300 } }

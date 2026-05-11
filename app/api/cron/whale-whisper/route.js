@@ -65,10 +65,10 @@ export async function GET(req) {
       const symbol = `${token}USDT`
       try {
         const [fundingRes, lsRes, topRes, takerRes] = await Promise.all([
-          fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol}&limit=1`, { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`https://fapi.binance.com/futures/data/takerlongshortRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol}&limit=1`, { signal: AbortSignal.timeout(5000), cache: 'no-store', next: { revalidate: 0 } }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000), cache: 'no-store', next: { revalidate: 0 } }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000), cache: 'no-store', next: { revalidate: 0 } }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`https://fapi.binance.com/futures/data/takerlongshortRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000), cache: 'no-store', next: { revalidate: 0 } }).then(r => r.ok ? r.json() : []).catch(() => []),
         ])
 
         derivData[token] = {
@@ -83,7 +83,7 @@ export async function GET(req) {
     // 4. Fetch 24h price changes
     const priceData = {}
     try {
-      const res = await fetch('https://data-api.binance.vision/api/v3/ticker/24hr', { signal: AbortSignal.timeout(8000) })
+      const res = await fetch('https://data-api.binance.vision/api/v3/ticker/24hr', { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } })
       if (res.ok) {
         const tickers = await res.json()
         for (const t of tickers) {

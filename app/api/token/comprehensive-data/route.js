@@ -169,18 +169,18 @@ export async function GET(req) {
     try {
       const [ticker24hRes, klines7dRes, klines30dRes, cgRes] = await Promise.all([
         fetch(`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${pair}`, {
-          signal: AbortSignal.timeout(8000)
+          signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 }
         }).catch(() => null),
         fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1d&limit=7`, {
-          signal: AbortSignal.timeout(8000)
+          signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 }
         }).catch(() => null),
         fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1d&limit=30`, {
-          signal: AbortSignal.timeout(8000)
+          signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 }
         }).catch(() => null),
         cgId
           ? fetch(
               `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true`,
-              { signal: AbortSignal.timeout(8000) }
+              { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } }
             ).catch(() => null)
           : Promise.resolve(null),
       ])

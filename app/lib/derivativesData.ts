@@ -176,7 +176,9 @@ export async function fetchDerivativesData(
 }
 
 async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<any> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
+  // CRITICAL: cache:'no-store' — Next.js fetch-cache would freeze derivatives
+  // (funding rate, long/short ratios) which feed the deriv tier (25% weight).
+  const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), cache: 'no-store', next: { revalidate: 0 } })
   if (!res.ok) return null
   return res.json()
 }
