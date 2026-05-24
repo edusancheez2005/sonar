@@ -331,6 +331,40 @@ export async function POST(request: Request) {
           console.warn('[orchestrator] trace persist failed', traceErr)
         }
 
+        // Fire-and-forget memory extractor (§4.G). Runs after the response is
+        // computed; we do NOT await it so the user reply ships immediately.
+        // The extractor itself never throws — but we wrap defensively anyway.
+        if (out.intent !== 'compliance_decline' && out.text) {
+          try {
+            const { extractMemoryFacts } = await import('@/lib/orca/memory/extractor')
+            void extractMemoryFacts({
+              userId,
+              userMessage: message,
+              orcaResponse: out.text,
+              supabase,
+              model: {
+                extractCall: async (sys, usr) => {
+                  const r = await ai.chat.completions.create({
+                    model: miniModel,
+                    messages: [
+                      { role: 'system', content: sys },
+                      { role: 'user', content: usr },
+                    ],
+                    temperature: 0,
+                    max_tokens: 400,
+                    response_format: { type: 'json_object' } as any,
+                  })
+                  return r.choices[0]?.message?.content ?? ''
+                },
+              },
+            }).catch((extractErr) => {
+              console.warn('[orca/memory/extractor] background failure', extractErr)
+            })
+          } catch (importErr) {
+            console.warn('[orca/memory/extractor] import failed', importErr)
+          }
+        }
+
         return NextResponse.json({
           response: out.text,
           intent: out.intent,
