@@ -1,0 +1,18 @@
+{
+  "hypothesis": "H9 — 24h BUY win-rate CI",
+  "window_start": "2026-05-11T10:00:00Z",
+  "eval_window": "24h",
+  "signal_types": [
+    "BUY",
+    "STRONG BUY"
+  ],
+  "n": 159,
+  "wins": 9,
+  "win_rate": 0.05660377358490566,
+  "ci_95": {
+    "lower": 0.026206486181085797,
+    "upper": 0.10473013109612536
+  },
+  "verdict": "PASS",
+  "summary": "BUY 24h win=5.7% n=159, 95% CI upper=10.5% < 30%"
+}

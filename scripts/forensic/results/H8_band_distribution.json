@@ -1,0 +1,15 @@
+{
+  "hypothesis": "H8 — STRONG band distribution",
+  "window_start": "2026-05-11T10:00:00Z",
+  "n_signals": 1615,
+  "distribution": {
+    "BUY": 161,
+    "SELL": 1406,
+    "STRONG SELL": 48
+  },
+  "strong_buy_share": 0,
+  "strong_sell_share": 0.029721362229102165,
+  "strong_combined_share": 0.029721362229102165,
+  "verdict": "PASS",
+  "summary": "STRONG combined share = 2.97% < 5% (n=1615) — tanh saturation confirmed"
+}

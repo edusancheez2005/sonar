@@ -505,7 +505,70 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}, calibration = nu
   signal.price_at_signal = priceData?.current_price || null
   signal.market_cap = priceData?.market_cap || null
 
+  // PR-1b (2026-05-24): capture FamilyInput-shaped snapshot for §4.F backtest
+  // harness. See docs/SCHEMA_GAP_4F.md. Stored on token_signals.snapshot_inputs.
+  // The 30d trailing stats (net_flow_abs_mean_30d / _std_30d) are intentionally
+  // omitted here — the harness computes them from the rolling history of these
+  // snapshots, NOT at write-time, to avoid persisting a moving window that
+  // can't be recomputed deterministically later.
+  signal.snapshot_inputs = buildSnapshotInputs({ transactions, sentimentData, priceChanges })
+
   return signal
+}
+
+/**
+ * Build the FamilyInput-shaped snapshot (subset) from raw inputs at signal
+ * emission time. See lib/signal-research/families.ts for the full shape.
+ *
+ * Sign convention (matches FamilyInput):
+ *   - whale_inflow_usd  = sum(usd_value) of SELL-classified txs (distribution
+ *                          to exchanges → bearish)
+ *   - whale_outflow_usd = sum(usd_value) of BUY-classified txs (accumulation
+ *                          from exchanges → bullish)
+ *   - net_whale_flow_usd = inflow - outflow  (positive = net distribution)
+ *
+ * Trailing 24h window only (the fetcher pulls 48h for prev-period comparison
+ * at tier1; we re-filter to 24h here for the snapshot).
+ *
+ * Returns NULL fields where source data is missing — the harness skips rows
+ * with NULLs rather than imputing.
+ */
+function buildSnapshotInputs({ transactions, sentimentData, priceChanges }) {
+  const now = Date.now()
+  const day = 24 * 60 * 60 * 1000
+
+  let inflow = 0
+  let outflow = 0
+  let txCount = 0
+  for (const tx of (transactions || [])) {
+    if (!tx || !tx.timestamp || !tx.usd_value) continue
+    if (now - new Date(tx.timestamp).getTime() > day) continue
+    const side = (tx.classification || '').toUpperCase()
+    const usd = Number(tx.usd_value) || 0
+    if (side === 'SELL') { inflow += usd; txCount++ }
+    else if (side === 'BUY') { outflow += usd; txCount++ }
+  }
+  const hasTx = txCount > 0
+  const netFlow = hasTx ? (inflow - outflow) : null
+
+  return {
+    schema_version: 1,
+    captured_at: new Date().toISOString(),
+    net_whale_flow_usd: netFlow,
+    whale_inflow_usd: hasTx ? inflow : null,
+    whale_outflow_usd: hasTx ? outflow : null,
+    whale_tx_count_24h: txCount,
+    // 30d trailing stats omitted — see header comment.
+    net_flow_abs_mean_30d: null,
+    net_flow_abs_std_30d: null,
+    price_change_pct_24h: Number.isFinite(priceChanges?.change_24h) ? priceChanges.change_24h : null,
+    price_change_pct_7d: Number.isFinite(priceChanges?.change_7d) ? priceChanges.change_7d : null,
+    sentiment_composite: Number.isFinite(sentimentData?.score) ? sentimentData.score : null,
+    sentiment_sample_count: Number.isFinite(sentimentData?.count) ? sentimentData.count : null,
+    // News fields not yet wired at this layer — left null for forward compat.
+    news_cluster_count_24h: null,
+    dominant_factor_sign: null,
+  }
 }
 
 /**
@@ -938,6 +1001,10 @@ async function storeSignal(signal) {
     traps: signal.traps,
     tier1_factors: signal.tiers?.tier1?.factors || {},
     computed_at: signal.timestamp,
+    // PR-1b (2026-05-24): §4.F backtest harness inputs. See
+    // docs/SCHEMA_GAP_4F.md and migration
+    // supabase/migrations/20260602_token_signals_snapshot_inputs.sql.
+    snapshot_inputs: signal.snapshot_inputs || null,
   }
 
   const { error } = await supabaseAdmin
