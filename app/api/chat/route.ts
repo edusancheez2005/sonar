@@ -10,6 +10,8 @@ import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extra
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
+import { runOrchestrator } from '@/lib/orca/orchestrator/runOrchestrator'
+import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -246,7 +248,101 @@ export async function POST(request: Request) {
     
     // Extract ticker from message
     let tickerResult = extractTicker(message)
-    
+
+    // -------------------------------------------------------------------------
+    // ORCA Orchestration v2 (§4.C of ORCA_COPILOT_BUILD_PROMPT.md).
+    // Behind a feature flag. When false, fall through to the legacy single-
+    // prompt path immediately below. When true, run the four-stage pipeline
+    // (router → planner → tools → writer → guardrails) and persist the trace.
+    // -------------------------------------------------------------------------
+    if (process.env.ORCA_ORCHESTRATION_V2 === 'true') {
+      try {
+        const v2Body = body as { history?: ChatTurn[]; confirm?: { calls?: ToolCall[] } }
+        const chatHistory: ChatTurn[] = Array.isArray(v2Body.history)
+          ? v2Body.history
+              .filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string')
+              .slice(-12)
+          : []
+        const confirmedWriteCalls: ToolCall[] = Array.isArray(v2Body.confirm?.calls)
+          ? v2Body.confirm!.calls!.filter((c) => c && typeof c.tool === 'string')
+          : []
+        const userConfirmed = confirmedWriteCalls.length > 0
+
+        let profile: UserProfileSnapshot | null = null
+        try {
+          const { data } = await supabase
+            .from('user_profile')
+            .select('user_id, experience_level, primary_goal, risk_tolerance, time_horizon, preferred_chains')
+            .eq('user_id', userId)
+            .maybeSingle()
+          if (data) profile = data as UserProfileSnapshot
+        } catch (profileErr) {
+          console.warn('[orchestrator] could not load user_profile', profileErr)
+        }
+
+        const { client: ai, model: aiModel, miniModel } = getAIClient()
+        const out = await runOrchestrator(
+          { message, userId, chatHistory, profile, userConfirmed, confirmedWriteCalls },
+          {
+            supabase,
+            model: {
+              routerCall: async (sys, usr) => {
+                const r = await ai.chat.completions.create({
+                  model: miniModel,
+                  messages: [
+                    { role: 'system', content: sys },
+                    { role: 'user', content: usr },
+                  ],
+                  temperature: 0,
+                  max_tokens: 400,
+                  response_format: { type: 'json_object' } as any,
+                })
+                return r.choices[0]?.message?.content ?? ''
+              },
+              writerCall: async (sys, usr) => {
+                const r = await ai.chat.completions.create({
+                  model: aiModel,
+                  messages: [
+                    { role: 'system', content: sys },
+                    { role: 'user', content: usr },
+                  ],
+                  temperature: 0.5,
+                  max_tokens: 2000,
+                })
+                return r.choices[0]?.message?.content ?? ''
+              },
+            },
+          }
+        )
+
+        // Persist trace. Failures here MUST NOT block the user response.
+        try {
+          const messageId = `${userId}-${Date.now()}`
+          const rows = out.trace.map((evt) => ({
+            user_id: userId,
+            message_id: messageId,
+            stage: evt.stage,
+            payload: evt.payload,
+            latency_ms: evt.latency_ms ?? null,
+            model: evt.model ?? null,
+          }))
+          await supabase.from('orca_traces').insert(rows)
+        } catch (traceErr) {
+          console.warn('[orchestrator] trace persist failed', traceErr)
+        }
+
+        return NextResponse.json({
+          response: out.text,
+          intent: out.intent,
+          orchestrator: 'v2',
+        })
+      } catch (orchErr) {
+        console.error('[orchestrator] v2 path failed, falling back to v1', orchErr)
+        // Fall through to v1 path below.
+      }
+    }
+
+
     // If no ticker found, try to get last ticker from chat history (for follow-up questions)
     if (!tickerResult.ticker) {
       console.log('📝 No ticker found, checking chat history for context...')
