@@ -29,7 +29,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -49,7 +49,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Node 22.6+ required for --experimental-strip-types (TypeScript
+          # source import in scripts/test-signal-engine.mjs). Node 20 fails
+          # with exit 9 "Invalid Argument" on the unknown flag.
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
