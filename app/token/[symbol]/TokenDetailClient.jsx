@@ -1040,6 +1040,8 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>/100</span>
               <span>{scoreInfo.label}</span>
             </div>
+            {/* Experimental research-context badge (Workstream A demote, n=4,465). */}
+            <ExperimentalBadge />
             {/* Watchlist Star */}
             <button
               onClick={toggleWatchlist}
