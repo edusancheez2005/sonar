@@ -128,6 +128,8 @@ export default function PersonalCopilotPanel({
   client,
   fetchImpl,
   focusTicker = '',
+  seedMessage = '',
+  onSeedConsumed,
 }) {
   const greeting = useMemo(
     () => pickCopilotGreeting({ experience: experienceLevel, tickers }),
@@ -157,6 +159,15 @@ export default function PersonalCopilotPanel({
       threadRef.current.scrollTop = threadRef.current.scrollHeight
     }
   }, [messages])
+
+  // Parent surfaces (e.g. "Ask ORCA" on a watchlist row) push a seed
+  // message into the input. We only overwrite when the user has not yet
+  // typed something they care about.
+  useEffect(() => {
+    if (!seedMessage) return
+    setDraft((prev) => (prev && prev.trim().length > 0 ? prev : seedMessage))
+    if (typeof onSeedConsumed === 'function') onSeedConsumed()
+  }, [seedMessage, onSeedConsumed])
 
   async function onSubmit(e) {
     e.preventDefault()

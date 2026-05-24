@@ -1,27 +1,26 @@
 'use client'
 /**
- * PersonalDashboardClient
+ * PersonalDashboardClient \u2014 W4 redesign (3-band grid)
  * =============================================================================
- * Personal Dashboard shell (§4.D of ORCA_COPILOT_BUILD_PROMPT.md). Hosts
- * four panels:
- *   - A: WatchlistPanel
- *   - B: PersonalCopilotPanel
- *   - C: Filtered Signals (live — production token_signals filtered by profile)
- *   - D: Trading (placeholder — locked decision §7.4)
+ * Bands (top \u2192 bottom):
+ *   1. PulseStrip       (4 compact tiles, refreshes every 6s)
+ *   2. Main             60/40 grid:
+ *                         left   \u2014 tabbed Watchlist | Wallets | Signals
+ *                         right  \u2014 sticky CopilotPane (legacy panel for now;
+ *                                  W5 swaps in CopilotPane with context chip)
+ *   3. Tray             (collapsed by default; full Tray ships in W5)
  *
- * Per spec, this route MUST NOT replace or restyle the global dashboard.
- * It is an additional surface reachable via the header "Personal →" link
- * once the user has a profile row.
- *
- * No personal data is server-side rendered. The panels load client-side
- * after Supabase auth resolves.
+ * Compliance: no buy/sell/hold verbs in the shell. The Trading drawer
+ * (locked to "coming soon" per parent doc §7.4) keeps its existing copy.
  */
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import RequirePremiumClient from '../RequirePremiumClient'
-import WatchlistPanel from '@/components/personal/WatchlistPanel'
-import FilteredSignalsPanel from '@/components/personal/FilteredSignalsPanel'
+import PulseStrip from '@/components/personal/PulseStrip'
+import WatchlistTab from '@/components/personal/WatchlistTab'
+import WalletsTab from '@/components/personal/WalletsTab'
+import SignalsTab from '@/components/personal/SignalsTab'
 import PersonalCopilotPanel from '@/components/orca/PersonalCopilotPanel'
 import TradingComingSoon from '@/components/trading/TradingComingSoon'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
@@ -38,7 +37,7 @@ const TopBar = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 `
 
@@ -63,37 +62,89 @@ const BackLink = styled(Link)`
   &:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
 `
 
-const Grid = styled.div`
+const MainGrid = styled.div`
   display: grid;
   gap: 18px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
 
-  @media (max-width: 900px) {
+  @media (max-width: 1000px) {
     grid-template-columns: 1fr;
   }
 `
 
-const PlaceholderCard = styled.section`
+const Card = styled.section`
   background: rgba(13, 20, 33, 0.6);
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   padding: 20px 22px;
-  color: #8896a6;
 `
 
-const PlaceholderTitle = styled.h2`
-  margin: 0 0 8px;
-  font-size: 15px;
+const TabBar = styled.div`
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 16px;
+`
+
+const TabBtn = styled.button`
+  background: transparent;
+  border: 0;
+  color: ${(p) => (p.$active ? '#00e5ff' : '#8896a6')};
+  border-bottom: 2px solid ${(p) => (p.$active ? '#00e5ff' : 'transparent')};
+  padding: 8px 12px;
+  font-size: 12px;
   font-weight: 600;
-  color: #e0e6ed;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  &:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
 `
 
-const PlaceholderBody = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
+const StickyCol = styled.div`
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 `
+
+const TrayBar = styled.div`
+  margin-top: 18px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 14px;
+`
+
+const TrayBtn = styled.button`
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #8896a6;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  &:hover { border-color: rgba(0, 229, 255, 0.4); color: #00e5ff; }
+  &:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
+`
+
+const TrayDrawer = styled.div`
+  margin-top: 12px;
+  background: rgba(13, 20, 33, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 18px 20px;
+`
+
+const TABS = [
+  { key: 'watchlist', label: 'Watchlist' },
+  { key: 'wallets', label: 'Wallets' },
+  { key: 'signals', label: 'Signals' },
+]
 
 export default function PersonalDashboardClient() {
   return (
@@ -106,6 +157,10 @@ export default function PersonalDashboardClient() {
 function PersonalShell() {
   const [profile, setProfile] = useState({ status: 'loading', data: null })
   const [tickers, setTickers] = useState([])
+  const [activeTab, setActiveTab] = useState('watchlist')
+  const [focusTicker, setFocusTicker] = useState('')
+  const [seed, setSeed] = useState('')
+  const [trayOpen, setTrayOpen] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -126,7 +181,6 @@ function PersonalShell() {
           .maybeSingle()
         if (!cancelled) setProfile({ status: 'ready', data: data ?? null })
 
-        // Lightweight ticker pull so the copilot greeting can name them.
         const token = sessionData?.session?.access_token
         if (token) {
           try {
@@ -141,8 +195,7 @@ function PersonalShell() {
               if (!cancelled) setTickers(ts)
             }
           } catch {
-            // The WatchlistPanel will surface its own error state; nothing
-            // to do for the greeting hint in that case.
+            // The tabs surface their own error states.
           }
         }
       } catch {
@@ -151,10 +204,21 @@ function PersonalShell() {
     }
 
     loadProfile()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
+
+  function handleAskOrcaTicker(ticker) {
+    const t = String(ticker || '').toUpperCase()
+    if (!t) return
+    setFocusTicker(t)
+    setSeed(`explain why $${t} moved today`)
+  }
+
+  function handleAskOrcaWallet(address, chain, label) {
+    if (!address) return
+    const shown = label || address
+    setSeed(`what has the wallet ${shown} (${chain || 'unknown chain'}) been doing this week?`)
+  }
 
   const experience = profile.data?.experience_level ?? null
 
@@ -167,21 +231,85 @@ function PersonalShell() {
             Tuned to your watchlist. The global dashboard is unchanged and still your default view.
           </HeaderNote>
         </div>
-        <BackLink href="/dashboard">← Back to global dashboard</BackLink>
+        <BackLink href="/dashboard">\u2190 Back to global dashboard</BackLink>
       </TopBar>
 
-      <Grid>
-        <WatchlistPanel />
-        <PersonalCopilotPanel
-          experienceLevel={experience}
-          tickers={tickers}
-        />
-        <FilteredSignalsPanel />
-        <PlaceholderCard aria-labelledby="trading-panel-title">
-          <PlaceholderTitle id="trading-panel-title">Trading</PlaceholderTitle>
+      <PulseStrip />
+
+      <MainGrid>
+        <Card aria-label="Your portfolio surfaces">
+          <TabBar role="tablist">
+            {TABS.map((t) => (
+              <TabBtn
+                key={t.key}
+                role="tab"
+                aria-selected={activeTab === t.key}
+                $active={activeTab === t.key}
+                onClick={() => setActiveTab(t.key)}
+                data-testid={`tab-${t.key}`}
+              >
+                {t.label}
+              </TabBtn>
+            ))}
+          </TabBar>
+
+          {activeTab === 'watchlist' && (
+            <WatchlistTab onAskOrca={handleAskOrcaTicker} />
+          )}
+          {activeTab === 'wallets' && (
+            <WalletsTab onAskOrca={handleAskOrcaWallet} />
+          )}
+          {activeTab === 'signals' && (
+            <SignalsTab />
+          )}
+        </Card>
+
+        <StickyCol>
+          <PersonalCopilotPanel
+            experienceLevel={experience}
+            tickers={tickers}
+            focusTicker={focusTicker}
+            seedMessage={seed}
+            onSeedConsumed={() => setSeed('')}
+          />
+        </StickyCol>
+      </MainGrid>
+
+      <TrayBar role="toolbar" aria-label="Drawers">
+        <TrayBtn
+          type="button"
+          data-testid="tray-trading"
+          aria-expanded={trayOpen === 'trading'}
+          onClick={() => setTrayOpen(trayOpen === 'trading' ? null : 'trading')}
+        >
+          Trading
+        </TrayBtn>
+        <TrayBtn
+          type="button"
+          data-testid="tray-memory"
+          aria-expanded={trayOpen === 'memory'}
+          onClick={() => setTrayOpen(trayOpen === 'memory' ? null : 'memory')}
+        >
+          Memory
+        </TrayBtn>
+      </TrayBar>
+
+      {trayOpen === 'trading' && (
+        <TrayDrawer role="region" aria-label="Trading drawer">
           <TradingComingSoon variant="panel" />
-        </PlaceholderCard>
-      </Grid>
+        </TrayDrawer>
+      )}
+      {trayOpen === 'memory' && (
+        <TrayDrawer role="region" aria-label="Memory drawer">
+          <p style={{ margin: 0, fontSize: 13, color: '#8896a6', lineHeight: 1.55 }}>
+            Manage the facts ORCA has saved about you at{' '}
+            <Link href="/dashboard/personal/memory" style={{ color: '#00e5ff' }}>
+              /dashboard/personal/memory
+            </Link>
+            . You can delete any single fact or wipe the whole memory.
+          </p>
+        </TrayDrawer>
+      )}
     </Page>
   )
 }

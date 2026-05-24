@@ -1,0 +1,245 @@
+'use client'
+/**
+ * PulseStrip \u2014 W4 §3.2 of ORCA_AGENTIC_REDESIGN_PROMPT.md
+ * =============================================================================
+ * Four compact tiles across the top of /dashboard/personal:
+ *   1. Movers      \u2014 top tickers by abs(24h %) on the user's watchlist.
+ *   2. Whales      \u2014 user tickers with non-flat whale net flow direction.
+ *   3. News        \u2014 user tickers with a latest headline.
+ *   4. Macro pin   \u2014 today's macro reminder (static, locked text).
+ *
+ * Data source: /api/personal/watchlist (already bearer-protected). We
+ * refetch every 6 s so the strip feels live without hammering the API.
+ *
+ * Empty states: each tile owns its own. We never render a placeholder
+ * row \u2014 if the source has nothing for that tile, the tile says so in
+ * one sentence with the right CTA (which is always "ask ORCA" \u2014 we
+ * never tell the user to buy or sell).
+ */
+import { useEffect, useRef, useState } from 'react'
+import styled from 'styled-components'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+
+const REFRESH_MS = 6000
+const MOVERS_MAX = 3
+const WHALES_MAX = 3
+const NEWS_MAX = 2
+
+const Strip = styled.section`
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const Tile = styled.article`
+  background: rgba(13, 20, 33, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 110px;
+`
+
+const TileLabel = styled.span`
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b7a8c;
+`
+
+const TileBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #e0e6ed;
+`
+
+const MoverLine = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+`
+
+const Tkr = styled.span`
+  font-weight: 600;
+  color: #e0e6ed;
+`
+
+const Pct = styled.span`
+  color: ${(p) => (p.$v > 0 ? '#4ade80' : p.$v < 0 ? '#ff7a7a' : '#8896a6')};
+  font-weight: 600;
+  font-size: 12px;
+`
+
+const Pip = styled.span`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${(p) =>
+    p.$d === 'up' ? '#4ade80'
+    : p.$d === 'down' ? '#ff7a7a'
+    : '#6b7a8c'};
+`
+
+const Headline = styled.p`
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #8896a6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`
+
+const Empty = styled.p`
+  margin: 0;
+  font-size: 12px;
+  color: #8896a6;
+  line-height: 1.45;
+`
+
+const MacroPin = styled.div`
+  font-size: 12px;
+  color: #e0e6ed;
+  line-height: 1.5;
+`
+
+function fmtPct(n) {
+  if (n === null || n === undefined || !Number.isFinite(n)) return '\u2014'
+  const s = n >= 0 ? '+' : ''
+  return `${s}${n.toFixed(2)}%`
+}
+
+export default function PulseStrip({ client, fetchImpl, macroText }) {
+  const [items, setItems] = useState([])
+  const [status, setStatus] = useState('loading')
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const sb = client ?? supabaseBrowser()
+    const doFetch = fetchImpl ?? fetch
+
+    async function load() {
+      try {
+        const { data } = await sb.auth.getSession()
+        const token = data?.session?.access_token
+        if (!token) {
+          if (!cancelled) setStatus('unauth')
+          return
+        }
+        const res = await doFetch('/api/personal/watchlist', {
+          headers: { authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) {
+          if (!cancelled) setStatus('error')
+          return
+        }
+        const body = await res.json()
+        if (cancelled) return
+        const list = Array.isArray(body?.items) ? body.items : []
+        setItems(list)
+        setStatus('ready')
+      } catch {
+        if (!cancelled) setStatus('error')
+      }
+    }
+
+    load()
+    timerRef.current = setInterval(load, REFRESH_MS)
+    return () => {
+      cancelled = true
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [client, fetchImpl])
+
+  const movers = [...items]
+    .filter((it) => Number.isFinite(it?.change_24h))
+    .sort((a, b) => Math.abs(b.change_24h) - Math.abs(a.change_24h))
+    .slice(0, MOVERS_MAX)
+
+  const whales = items
+    .filter((it) => it?.net_flow_direction && it.net_flow_direction !== 'flat')
+    .slice(0, WHALES_MAX)
+
+  const newsItems = items.filter((it) => it?.latest_headline).slice(0, NEWS_MAX)
+
+  return (
+    <Strip data-testid="pulse-strip" aria-label="Personal pulse">
+      <Tile data-testid="pulse-tile-movers">
+        <TileLabel>Watchlist movers</TileLabel>
+        <TileBody>
+          {status === 'loading' && <Empty>Loading.</Empty>}
+          {status === 'unauth' && <Empty>Sign in to see your movers.</Empty>}
+          {status === 'error' && <Empty>Could not load. Retry shortly.</Empty>}
+          {status === 'ready' && movers.length === 0 && (
+            <Empty>No movers on your list right now.</Empty>
+          )}
+          {status === 'ready' && movers.map((m) => (
+            <MoverLine key={m.ticker}>
+              <Tkr>{m.ticker}</Tkr>
+              <Pct $v={m.change_24h}>{fmtPct(m.change_24h)}</Pct>
+            </MoverLine>
+          ))}
+        </TileBody>
+      </Tile>
+
+      <Tile data-testid="pulse-tile-whales">
+        <TileLabel>Whale flow on your tickers</TileLabel>
+        <TileBody>
+          {status === 'loading' && <Empty>Loading.</Empty>}
+          {status === 'ready' && whales.length === 0 && (
+            <Empty>No notable whale flow yet today.</Empty>
+          )}
+          {status === 'ready' && whales.map((w) => (
+            <MoverLine key={w.ticker}>
+              <Tkr>{w.ticker}</Tkr>
+              <span><Pip $d={w.net_flow_direction} /> {w.net_flow_direction}</span>
+            </MoverLine>
+          ))}
+        </TileBody>
+      </Tile>
+
+      <Tile data-testid="pulse-tile-news">
+        <TileLabel>Articles ORCA flagged</TileLabel>
+        <TileBody>
+          {status === 'loading' && <Empty>Loading.</Empty>}
+          {status === 'ready' && newsItems.length === 0 && (
+            <Empty>Nothing newsworthy on your tickers.</Empty>
+          )}
+          {status === 'ready' && newsItems.map((n) => (
+            <div key={n.ticker}>
+              <Tkr>{n.ticker}</Tkr>
+              <Headline>{n.latest_headline}</Headline>
+            </div>
+          ))}
+        </TileBody>
+      </Tile>
+
+      <Tile data-testid="pulse-tile-macro">
+        <TileLabel>Macro pin</TileLabel>
+        <TileBody>
+          <MacroPin>
+            {macroText ||
+              'Macro backdrop unchanged \u2014 ask ORCA "what changed in macro today" for the latest read.'}
+          </MacroPin>
+        </TileBody>
+      </Tile>
+    </Strip>
+  )
+}
