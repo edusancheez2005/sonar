@@ -18,9 +18,9 @@ const ROUTER_SYSTEM_PROMPT = `You are the routing layer of an AI crypto research
 
 Output JSON with EXACTLY these fields and types:
 {
-  "intent": one of "overview" | "explainer" | "data_query" | "followup" | "personal" | "compliance_decline",
+  "intent": one of "overview" | "explainer" | "data_query" | "followup" | "personal" | "compliance_decline" | "wallet_lookup" | "article_explain" | "signal_explain",
   "tickers": array of uppercase ticker symbols mentioned or strongly implied (e.g. "BTC","ETH"),
-  "entities": array of named entities (people, funds, exchanges, protocols),
+  "entities": array of named entities (people, funds, exchanges, protocols, wallet addresses),
   "datapoints": array drawn from "price","whales","news","social","macro","portfolio",
   "persona_hint": one of "new","intermediate","advanced", or null if unclear,
   "confidence": a float in [0,1] reflecting how sure you are of the intent
@@ -33,6 +33,9 @@ Intent guidance:
 - followup: short message that obviously continues the prior turn ("and 7d?", "why?").
 - personal: explicitly about the user's holdings, watchlist or alerts.
 - compliance_decline: explicit request for buy/sell/will/predict advice. The downstream layer will issue a non-advice decline.
+- wallet_lookup: user asks about a specific wallet, address, or named-entity wallet ("what is 0x... doing", "show me Binance hot wallet activity"). Put the address(es) or entity name in entities[].
+- article_explain: user references a specific news article and asks ORCA to explain or contextualise it ("explain this headline", "what does this article mean for BTC").
+- signal_explain: user asks ORCA to explain a specific Sonar signal ("why is SOL flagged STRONG BUY", "explain the current signal on ETH"). Put the ticker in tickers[].
 
 Return ONLY the JSON object. No prose, no markdown.`
 
@@ -116,6 +119,9 @@ const VALID_INTENTS: Intent[] = [
   'followup',
   'personal',
   'compliance_decline',
+  'wallet_lookup',
+  'article_explain',
+  'signal_explain',
 ]
 function coerceIntent(v: unknown): Intent {
   return VALID_INTENTS.includes(v as Intent) ? (v as Intent) : 'overview'

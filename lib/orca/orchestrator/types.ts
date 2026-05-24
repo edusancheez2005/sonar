@@ -11,6 +11,10 @@ export type Intent =
   | 'followup'
   | 'personal'
   | 'compliance_decline'
+  // W3 — agentic intents for the personal copilot.
+  | 'wallet_lookup'
+  | 'article_explain'
+  | 'signal_explain'
 
 export type Datapoint =
   | 'price'
@@ -55,6 +59,11 @@ export type ToolName =
   | 'getSignalHistory'
   | 'explainMacroFactor'
   | 'getOrcaMemory'
+  // W3 — agentic read-only tools.
+  | 'getWalletActivity'
+  | 'getArticleContext'
+  | 'getSignalContext'
+  | 'findTrackedWallets'
   // write-tools — only callable when the request carries an explicit
   // user-confirmation event (see planner.ts guard).
   | 'addToWatchlist'

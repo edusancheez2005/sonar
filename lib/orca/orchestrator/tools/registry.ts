@@ -11,6 +11,10 @@ import { run as runGetWhaleFlows } from './getWhaleFlows'
 import { run as runGetNews } from './getNews'
 import { run as runGetSocial } from './getSocial'
 import { run as runExplainMacroFactor } from './explainMacroFactor'
+import { run as runGetWalletActivity } from './getWalletActivity'
+import { run as runGetArticleContext } from './getArticleContext'
+import { run as runGetSignalContext } from './getSignalContext'
+import { run as runFindTrackedWallets } from './findTrackedWallets'
 import {
   runGetUserHoldings,
   runGetUserWatchlist,
@@ -32,6 +36,10 @@ export const READ_ONLY_TOOLS = new Set<ToolName>([
   'getSignalHistory',
   'explainMacroFactor',
   'getOrcaMemory',
+  'getWalletActivity',
+  'getArticleContext',
+  'getSignalContext',
+  'findTrackedWallets',
 ])
 
 export async function executeTool(
@@ -56,6 +64,14 @@ export async function executeTool(
       return runGetOrcaMemory(call.args as any, supabase, now)
     case 'explainMacroFactor':
       return runExplainMacroFactor(call.args as any, supabase, now)
+    case 'getWalletActivity':
+      return runGetWalletActivity(call.args as any, supabase, now)
+    case 'getArticleContext':
+      return runGetArticleContext(call.args as any, supabase, now)
+    case 'getSignalContext':
+      return runGetSignalContext(call.args as any, supabase, now)
+    case 'findTrackedWallets':
+      return runFindTrackedWallets(call.args as any, supabase, now)
     case 'getSignalHistory':
       // Placeholder — will land with §4.F signal research.
       return {

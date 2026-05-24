@@ -21,6 +21,9 @@ import { renderDataQueryPrompt } from './data_query'
 import { renderFollowupPrompt } from './followup'
 import { renderPersonalPrompt } from './personal'
 import { renderComplianceDeclinePrompt } from './compliance_decline'
+import { renderWalletLookupPrompt } from './wallet_lookup'
+import { renderArticleExplainPrompt } from './article_explain'
+import { renderSignalExplainPrompt } from './signal_explain'
 
 export type { RenderArgs } from './types'
 export {
@@ -30,6 +33,9 @@ export {
   renderFollowupPrompt,
   renderPersonalPrompt,
   renderComplianceDeclinePrompt,
+  renderWalletLookupPrompt,
+  renderArticleExplainPrompt,
+  renderSignalExplainPrompt,
 }
 
 export function selectRenderer(intent: Intent): (a: RenderArgs) => string {
@@ -46,6 +52,12 @@ export function selectRenderer(intent: Intent): (a: RenderArgs) => string {
       return renderPersonalPrompt
     case 'compliance_decline':
       return renderComplianceDeclinePrompt
+    case 'wallet_lookup':
+      return renderWalletLookupPrompt
+    case 'article_explain':
+      return renderArticleExplainPrompt
+    case 'signal_explain':
+      return renderSignalExplainPrompt
     default: {
       const _exhaustive: never = intent
       throw new Error(`unknown intent: ${String(_exhaustive)}`)
