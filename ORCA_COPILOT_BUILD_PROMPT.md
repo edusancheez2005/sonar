@@ -917,6 +917,20 @@ These decisions are now binding inputs to every sub-prompt below. If a future st
 
 ## 8. Build Log (filled in as steps ship)
 
-| Step | Branch | PR | Status | Notes |
+| Step | Branch | Commit | Status | Notes |
 |---|---|---|---|---|
-| 4.0 Vitest bootstrap | `feat/orca-copilot-1-vitest` | — | in progress | — |
+| 4.prep Intent routing + build doc | `feat/orca-copilot-0-prep` | `8fd3ef3` | shipped | doc baseline |
+| 4.0 Vitest bootstrap | `feat/orca-copilot-1-vitest` | `8c51f7e` | shipped | vitest 2.1.9 + RTL 16 |
+| 4.B Migration (4 tables) | `feat/orca-copilot-2-migration` | `f9bb6e8` | shipped | user_profile, orca_memory, user_holdings, user_watchlist |
+| 4.A Onboarding flow | `feat/orca-copilot-3-onboarding` | `a024175` | shipped | 5-step modal + gate hook |
+| 4.D Personal dash A+B | `feat/orca-copilot-4-personal-dash` | `76048a6` | shipped | WatchlistPanel + PersonalCopilotPanel |
+| 4.C Orchestration v2 | `feat/orca-copilot-5-orchestration` | `da14525` | shipped | router/planner/guardrails/tools/traces, gated by ORCA_ORCHESTRATION_V2 |
+| 4.E Per-intent renderers | `feat/orca-copilot-6-renderers` | `f8bfeec` | shipped | overview/personal/explainer/data_query/followup/compliance_decline |
+| 4.G Memory extractor | `feat/orca-copilot-7-memory` | `70865c0` | shipped | PII pre-filter + daily cap + GDPR delete endpoint |
+| 4.H Trading coming-soon | `feat/orca-copilot-8-trading-soon` | `2bc6983` | shipped | /trading page + dashboard panel D; no form |
+| 4.F Signal research kit | `feat/orca-copilot-9-signal-research` | `f523019` | shipped (research-only) | 3 candidate families + harness + design doc; no live promotion |
+| 4.D Panel C filtered signals | `feat/orca-copilot-10-panel-c` | `05b130f` | shipped | /api/personal/signals + FilteredSignalsPanel; reads production token_signals |
+
+**Test baseline at end of build:** 241 passing across 22 vitest suites.
+
+**Branches are local only — nothing has been pushed.** The full chain can be reviewed by walking the branches above in order.
