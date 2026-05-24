@@ -12,8 +12,8 @@ describe('20260601_signal_research_results.sql', () => {
     expect(SQL).toMatch(/CREATE TABLE IF NOT EXISTS public\.signal_research_results/)
   })
 
-  it('constrains window to the three supported buckets', () => {
-    expect(SQL).toMatch(/window\s+text NOT NULL CHECK \(window IN \('24h', '3d', '7d'\)\)/)
+  it('constrains window_label to the three supported buckets', () => {
+    expect(SQL).toMatch(/window_label\s+text NOT NULL CHECK \(window_label IN \('24h', '3d', '7d'\)\)/)
   })
 
   it('constrains win_rate to [0,1] when not null', () => {
@@ -26,9 +26,9 @@ describe('20260601_signal_research_results.sql', () => {
     expect(SQL).not.toMatch(/CREATE POLICY[\s\S]*FOR SELECT[\s\S]*anon/i)
   })
 
-  it('indexes (signal_name, window, tested_at DESC) for lookups', () => {
+  it('indexes (signal_name, window_label, tested_at DESC) for lookups', () => {
     expect(SQL).toMatch(/idx_signal_research_results_name_window/)
-    expect(SQL).toMatch(/signal_name, window, tested_at DESC/)
+    expect(SQL).toMatch(/signal_name, window_label, tested_at DESC/)
   })
 
   it('defaults clean_only to true', () => {

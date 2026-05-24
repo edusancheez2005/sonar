@@ -114,7 +114,7 @@ The §4.F prompt lists two more candidates:
 CREATE TABLE public.signal_research_results (
   id                    bigserial PRIMARY KEY,
   signal_name           text NOT NULL,
-  window                text NOT NULL,  -- '24h' | '3d' | '7d'
+  window_label          text NOT NULL,  -- '24h' | '3d' | '7d' (named *_label because `window` is a Postgres reserved word)
   n_samples             integer NOT NULL,
   win_rate              numeric,
   avg_pct               numeric,

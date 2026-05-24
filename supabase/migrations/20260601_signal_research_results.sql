@@ -16,7 +16,8 @@
 CREATE TABLE IF NOT EXISTS public.signal_research_results (
   id                    bigserial PRIMARY KEY,
   signal_name           text NOT NULL,
-  window                text NOT NULL CHECK (window IN ('24h', '3d', '7d')),
+  -- Named `window_label` because `window` is a reserved word in PostgreSQL.
+  window_label          text NOT NULL CHECK (window_label IN ('24h', '3d', '7d')),
   n_samples             integer NOT NULL CHECK (n_samples >= 0),
   win_rate              numeric CHECK (win_rate IS NULL OR (win_rate >= 0 AND win_rate <= 1)),
   avg_pct               numeric,
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.signal_research_results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_signal_research_results_name_window
-  ON public.signal_research_results (signal_name, window, tested_at DESC);
+  ON public.signal_research_results (signal_name, window_label, tested_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_signal_research_results_tested_at
   ON public.signal_research_results (tested_at DESC);

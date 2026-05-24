@@ -115,7 +115,7 @@ async function main() {
       )
       rowsToInsert.push({
         signal_name: name,
-        window: w,
+        window_label: w,
         n_samples: summary.n_samples,
         win_rate: summary.win_rate,
         avg_pct: summary.avg_pct,
