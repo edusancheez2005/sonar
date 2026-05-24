@@ -1,0 +1,11 @@
+{
+  "hypothesis": "H3 — Tier 5 sign flip",
+  "window_start": "2026-05-11T10:00:00Z",
+  "verdict": "INCONCLUSIVE",
+  "summary": "tier5_score not persisted as a column on token_signals; would require schema change or top_factors JSON parsing pass to execute. Deferred — see H3 header docstring for remediation paths.",
+  "data_gap": true,
+  "remediation": [
+    "Option A: ALTER TABLE token_signals ADD COLUMN tier5_score NUMERIC, tier5_confidence NUMERIC; backfill from top_factors.",
+    "Option B: parse top_factors JSONB inline (works only for rows where Derivatives factor exists)."
+  ]
+}

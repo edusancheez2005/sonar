@@ -140,6 +140,57 @@ export function stdev(arr) {
 }
 
 /**
+ * Average-rank conversion (Spearman convention — ties get the average rank).
+ * Returns a new array of the same length, 1-indexed ranks.
+ */
+export function ranks(arr) {
+  const indexed = arr.map((v, i) => ({ v, i }))
+  indexed.sort((a, b) => a.v - b.v)
+  const out = new Array(arr.length)
+  let i = 0
+  while (i < indexed.length) {
+    let j = i
+    while (j + 1 < indexed.length && indexed[j + 1].v === indexed[i].v) j++
+    const avgRank = (i + j) / 2 + 1
+    for (let k = i; k <= j; k++) out[indexed[k].i] = avgRank
+    i = j + 1
+  }
+  return out
+}
+
+/**
+ * Spearman rank correlation between two parallel numeric arrays.
+ * Filters element-wise to pairs where both values are finite. Returns
+ * null when fewer than 3 finite pairs remain or when either ranked
+ * vector has zero variance (all-tie case).
+ */
+export function spearman(xs, ys) {
+  if (xs.length !== ys.length) throw new Error('spearman: length mismatch')
+  const xClean = []
+  const yClean = []
+  for (let i = 0; i < xs.length; i++) {
+    if (Number.isFinite(xs[i]) && Number.isFinite(ys[i])) {
+      xClean.push(xs[i])
+      yClean.push(ys[i])
+    }
+  }
+  const n = xClean.length
+  if (n < 3) return null
+  const rx = ranks(xClean)
+  const ry = ranks(yClean)
+  const mx = mean(rx), my = mean(ry)
+  let num = 0, dx2 = 0, dy2 = 0
+  for (let i = 0; i < n; i++) {
+    const a = rx[i] - mx, b = ry[i] - my
+    num += a * b
+    dx2 += a * a
+    dy2 += b * b
+  }
+  if (dx2 === 0 || dy2 === 0) return null
+  return num / Math.sqrt(dx2 * dy2)
+}
+
+/**
  * Exact (Clopper–Pearson) binomial 95% CI without a numeric beta dep.
  * Bisects the incomplete beta via a 50-iter binary search on the
  * regularised incomplete beta computed by series — accurate to ~1e-6

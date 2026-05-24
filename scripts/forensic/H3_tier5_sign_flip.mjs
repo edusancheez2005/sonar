@@ -1,28 +1,46 @@
 #!/usr/bin/env node
 /**
- * H3 — Tier 5 (derivatives) flipped sign post-2026-04-01
+ * H3 — Tier 5 (derivatives) sign-flip after 2026-04-01
  *
- * Hypothesis: the derivatives tier's IC sign changed between the pre and
- * post regime split, indicating the upstream funding/OI feed changed
- * sign convention or vendor.
+ * Hypothesis: ρ(tier5_score, alpha_24h) has the opposite sign before vs
+ * after 2026-04-01, suggesting a derivatives-data ingestion or sign-convention
+ * change broke the engine.
  *
- * Method:
- *   1. Split signal_outcomes into pre (signal_time < 2026-04-01) and post
- *      (signal_time >= 2026-04-01) cohorts.
- *   2. Compute Spearman ρ(tier5_score → alpha_24h) within each cohort.
- *   3. Compare.
+ * DATA-GAP FINDING:
+ *   token_signals does NOT persist tier5_score as a separate column.
+ *   Available tier columns: tier1..tier4 _score / _confidence.
+ *   Tier 5 (derivatives) IS computed in compute-signals/route.js but is
+ *   folded into the composite `score` directly (weight 0.3) and only the
+ *   per-name contribution survives in `top_factors` JSONB as
+ *   {name:'Derivatives', score, weight, contribution}.
  *
- * NOTE: tier5 (derivatives) only present when derivatives data is available
- * (cron `cache-derivatives` writes the inputs). Many rows may have null t5.
- * Filter those out.
+ * To execute H3 properly, one of:
+ *   (a) extend token_signals with tier5_score / tier5_confidence columns
+ *       and backfill from top_factors,
+ *   (b) parse top_factors JSON to extract Derivatives.score per row (works
+ *       for forward data only — older rows may not have it).
  *
- * PASS: |ρ_pre − ρ_post| > 0.2 AND signs differ → quarantine T5 or flip it.
- * KILL: |ρ_pre − ρ_post| < 0.05                 → no regime break in T5.
- * INCONCLUSIVE: in between, or n_per_cohort < 100.
+ * Verdict: INCONCLUSIVE (data-gap) — record and move on.
  *
- * STATUS: STUB.
  * Read-only.
  */
 
-console.error('[H3] STUB')
-process.exit(2)
+import { writeResult, appendFinding, FORENSIC_WINDOW_START } from './_lib.mjs'
+
+const HYPOTHESIS = 'H3 — Tier 5 sign flip'
+const verdict = 'INCONCLUSIVE'
+const summary = 'tier5_score not persisted as a column on token_signals; would require schema change or top_factors JSON parsing pass to execute. Deferred — see H3 header docstring for remediation paths.'
+
+writeResult('H3_tier5_sign_flip', {
+  hypothesis: HYPOTHESIS,
+  window_start: FORENSIC_WINDOW_START,
+  verdict,
+  summary,
+  data_gap: true,
+  remediation: [
+    'Option A: ALTER TABLE token_signals ADD COLUMN tier5_score NUMERIC, tier5_confidence NUMERIC; backfill from top_factors.',
+    'Option B: parse top_factors JSONB inline (works only for rows where Derivatives factor exists).',
+  ],
+})
+appendFinding({ hypothesis: HYPOTHESIS, verdict, summary, resultsFile: 'results/H3_tier5_sign_flip.json' })
+console.log(`[H3] ${verdict} — ${summary}`)

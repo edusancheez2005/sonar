@@ -1,0 +1,10 @@
+{
+  "hypothesis": "H5 — Drop Tier 3",
+  "window_start": "2026-05-11T10:00:00Z",
+  "n": 1592,
+  "rho_baseline": -0.14120390123809326,
+  "rho_drop_tier3": -0.2821036625681223,
+  "delta_rho_abs": 0.14089976133002904,
+  "verdict": "KILL",
+  "summary": "|Δρ|=0.1409 > 0.03 (ρ_base=-0.1412 ρ_dropT3=-0.2821 n=1592) — T3 carries info"
+}

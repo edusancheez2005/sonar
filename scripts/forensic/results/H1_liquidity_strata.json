@@ -1,0 +1,42 @@
+{
+  "hypothesis": "H1 — Liquidity strata",
+  "window_start": "2026-05-11T10:00:00Z",
+  "n": 1202,
+  "market_cap_cuts": [
+    300678728.386544,
+    814441846.700295,
+    4723609955.80705,
+    4880704545.93272
+  ],
+  "quintile_buckets": [
+    {
+      "quintile": 1,
+      "n": 241,
+      "mean_alpha_norm": 0.23958506224066375
+    },
+    {
+      "quintile": 2,
+      "n": 240,
+      "mean_alpha_norm": -0.010458333333333462
+    },
+    {
+      "quintile": 3,
+      "n": 241,
+      "mean_alpha_norm": -0.43402489626556007
+    },
+    {
+      "quintile": 4,
+      "n": 240,
+      "mean_alpha_norm": 0.5579166666666667
+    },
+    {
+      "quintile": 5,
+      "n": 240,
+      "mean_alpha_norm": 0.42058333333333364
+    }
+  ],
+  "top2_mean_alpha_norm": 0.4892500000000003,
+  "spread_pp": 0.9919415629322268,
+  "verdict": "PASS",
+  "summary": "top-2 quintile mean α_norm=0.49pp ≥ -2.0 (per-quintile means: 0.2, -0.0, -0.4, 0.6, 0.4)"
+}

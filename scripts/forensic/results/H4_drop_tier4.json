@@ -1,0 +1,10 @@
+{
+  "hypothesis": "H4 — Drop Tier 4",
+  "window_start": "2026-05-11T10:00:00Z",
+  "n": 1592,
+  "rho_baseline": -0.14120390123809326,
+  "rho_drop_tier4": -0.25600680482340077,
+  "delta_rho_abs": 0.11480290358530751,
+  "verdict": "KILL",
+  "summary": "|Δρ|=0.1148 > 0.03 (ρ_base=-0.1412 ρ_dropT4=-0.2560 n=1592) — T4 carries info"
+}

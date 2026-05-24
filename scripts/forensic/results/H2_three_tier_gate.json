@@ -1,0 +1,13 @@
+{
+  "hypothesis": "H2 — 3-tier sign-agreement gate",
+  "window_start": "2026-05-11T10:00:00Z",
+  "n_buy": 159,
+  "n_sell": 1433,
+  "n_agree": 348,
+  "n_disagree": 1244,
+  "mean_alpha_norm_agree": -0.4198850574712645,
+  "mean_alpha_norm_disagree": -12.140426045016072,
+  "lift_pp": 11.720540987544808,
+  "verdict": "PASS",
+  "summary": "3-tier-agree lifts mean α_norm by 11.72pp (agree=-0.42, disagree=-12.14, n_a=348, n_d=1244)"
+}
