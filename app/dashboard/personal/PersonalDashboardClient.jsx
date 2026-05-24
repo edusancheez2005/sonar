@@ -21,8 +21,8 @@ import PulseStrip from '@/components/personal/PulseStrip'
 import WatchlistTab from '@/components/personal/WatchlistTab'
 import WalletsTab from '@/components/personal/WalletsTab'
 import SignalsTab from '@/components/personal/SignalsTab'
-import PersonalCopilotPanel from '@/components/orca/PersonalCopilotPanel'
-import TradingComingSoon from '@/components/trading/TradingComingSoon'
+import CopilotPane from '@/components/personal/CopilotPane'
+import Tray from '@/components/personal/Tray'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const Page = styled.main`
@@ -109,37 +109,6 @@ const StickyCol = styled.div`
   gap: 16px;
 `
 
-const TrayBar = styled.div`
-  margin-top: 18px;
-  display: flex;
-  gap: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 14px;
-`
-
-const TrayBtn = styled.button`
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #8896a6;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  &:hover { border-color: rgba(0, 229, 255, 0.4); color: #00e5ff; }
-  &:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
-`
-
-const TrayDrawer = styled.div`
-  margin-top: 12px;
-  background: rgba(13, 20, 33, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 18px 20px;
-`
-
 const TABS = [
   { key: 'watchlist', label: 'Watchlist' },
   { key: 'wallets', label: 'Wallets' },
@@ -158,8 +127,7 @@ function PersonalShell() {
   const [profile, setProfile] = useState({ status: 'loading', data: null })
   const [tickers, setTickers] = useState([])
   const [activeTab, setActiveTab] = useState('watchlist')
-  const [focusTicker, setFocusTicker] = useState('')
-  const [seed, setSeed] = useState('')
+  const [focus, setFocus] = useState(null) // { type: 'ticker'|'wallet', value, label }
   const [trayOpen, setTrayOpen] = useState(null)
 
   useEffect(() => {
@@ -210,14 +178,16 @@ function PersonalShell() {
   function handleAskOrcaTicker(ticker) {
     const t = String(ticker || '').toUpperCase()
     if (!t) return
-    setFocusTicker(t)
-    setSeed(`explain why $${t} moved today`)
+    setFocus({ type: 'ticker', value: t, label: `$${t}` })
   }
 
   function handleAskOrcaWallet(address, chain, label) {
     if (!address) return
-    const shown = label || address
-    setSeed(`what has the wallet ${shown} (${chain || 'unknown chain'}) been doing this week?`)
+    setFocus({
+      type: 'wallet',
+      value: address,
+      label: `${label || address.slice(0, 10) + '\u2026'} (${chain || 'unknown'})`,
+    })
   }
 
   const experience = profile.data?.experience_level ?? null
@@ -265,51 +235,16 @@ function PersonalShell() {
         </Card>
 
         <StickyCol>
-          <PersonalCopilotPanel
+          <CopilotPane
             experienceLevel={experience}
             tickers={tickers}
-            focusTicker={focusTicker}
-            seedMessage={seed}
-            onSeedConsumed={() => setSeed('')}
+            focus={focus}
+            onClearFocus={() => setFocus(null)}
           />
         </StickyCol>
       </MainGrid>
 
-      <TrayBar role="toolbar" aria-label="Drawers">
-        <TrayBtn
-          type="button"
-          data-testid="tray-trading"
-          aria-expanded={trayOpen === 'trading'}
-          onClick={() => setTrayOpen(trayOpen === 'trading' ? null : 'trading')}
-        >
-          Trading
-        </TrayBtn>
-        <TrayBtn
-          type="button"
-          data-testid="tray-memory"
-          aria-expanded={trayOpen === 'memory'}
-          onClick={() => setTrayOpen(trayOpen === 'memory' ? null : 'memory')}
-        >
-          Memory
-        </TrayBtn>
-      </TrayBar>
-
-      {trayOpen === 'trading' && (
-        <TrayDrawer role="region" aria-label="Trading drawer">
-          <TradingComingSoon variant="panel" />
-        </TrayDrawer>
-      )}
-      {trayOpen === 'memory' && (
-        <TrayDrawer role="region" aria-label="Memory drawer">
-          <p style={{ margin: 0, fontSize: 13, color: '#8896a6', lineHeight: 1.55 }}>
-            Manage the facts ORCA has saved about you at{' '}
-            <Link href="/dashboard/personal/memory" style={{ color: '#00e5ff' }}>
-              /dashboard/personal/memory
-            </Link>
-            . You can delete any single fact or wipe the whole memory.
-          </p>
-        </TrayDrawer>
-      )}
+      <Tray open={trayOpen} onChange={setTrayOpen} />
     </Page>
   )
 }
