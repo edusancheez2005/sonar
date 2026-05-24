@@ -544,7 +544,7 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}, calibration = nu
   // omitted here — the harness computes them from the rolling history of these
   // snapshots, NOT at write-time, to avoid persisting a moving window that
   // can't be recomputed deterministically later.
-  signal.snapshot_inputs = buildSnapshotInputs({ transactions, sentimentData, priceChanges })
+  signal.snapshot_inputs = buildSnapshotInputs({ transactions, sentimentData, priceChanges, btcBeta, derivativesData })
 
   return signal
 }
@@ -566,7 +566,7 @@ async function computeSignalForToken(tokenSymbol, btcBeta = {}, calibration = nu
  * Returns NULL fields where source data is missing — the harness skips rows
  * with NULLs rather than imputing.
  */
-function buildSnapshotInputs({ transactions, sentimentData, priceChanges }) {
+function buildSnapshotInputs({ transactions, sentimentData, priceChanges, btcBeta, derivativesData }) {
   const now = Date.now()
   const day = 24 * 60 * 60 * 1000
 
@@ -585,7 +585,7 @@ function buildSnapshotInputs({ transactions, sentimentData, priceChanges }) {
   const netFlow = hasTx ? (inflow - outflow) : null
 
   return {
-    schema_version: 1,
+    schema_version: 2,
     captured_at: new Date().toISOString(),
     net_whale_flow_usd: netFlow,
     whale_inflow_usd: hasTx ? inflow : null,
@@ -601,6 +601,14 @@ function buildSnapshotInputs({ transactions, sentimentData, priceChanges }) {
     // News fields not yet wired at this layer — left null for forward compat.
     news_cluster_count_24h: null,
     dominant_factor_sign: null,
+    // Schema v2 (2026-05-24): added for Families D/F. funding_rate is the
+    // current 8h decimal rate (e.g. 0.0001 = 0.01% per 8h). btc_change_pct_24h
+    // is the trailing-24h BTC return in percent. Both null when source
+    // unavailable so the harness skips rather than imputes.
+    funding_rate: (derivativesData?.available && Number.isFinite(derivativesData?.fundingRate))
+      ? derivativesData.fundingRate
+      : null,
+    btc_change_pct_24h: Number.isFinite(btcBeta?.btc24hChange) ? btcBeta.btc24hChange : null,
   }
 }
 

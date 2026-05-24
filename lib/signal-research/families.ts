@@ -38,6 +38,11 @@ export interface FamilyInput {
   // dominant_factor_sign).
   news_cluster_count_24h: number | null
   dominant_factor_sign: 1 | -1 | 0 | null
+  // Derivatives — current 8h funding rate as a decimal (e.g. 0.0001 = 0.01%
+  // per 8h ≈ 11% annualised). Positive = longs paying shorts.
+  funding_rate: number | null
+  // BTC 24h price change in % — used by relative-strength families.
+  btc_change_pct_24h: number | null
   // Quality flag from signal_outcomes — we ALWAYS skip suspect rows.
   suspect: boolean
 }
@@ -168,6 +173,141 @@ export function familyC_sentimentCompression(input: FamilyInput): FamilyOutput {
 }
 
 /**
+ * Family D — Funding-Rate Extreme (perp crowding fade)
+ * --------------------------------------------------------------------------
+ * Persistent positive funding (longs paying shorts at >0.02% per 8h, i.e.
+ * ≥~22% annualised) signals over-crowded long positioning on perps. Classic
+ * crypto edge: fade the crowd.
+ *
+ *   Trigger A: funding_rate > +FAMILY_D_THRESHOLD  → 'short'
+ *   Trigger B: funding_rate < -FAMILY_D_THRESHOLD  → 'long'
+ *
+ * Magnitude = |funding_rate| / FAMILY_D_THRESHOLD (multiples-of-threshold).
+ *
+ * Caveat: extreme funding regimes can persist for days in strong trends;
+ * this predicate fires on the *condition*, not the *turn*. The harness
+ * measures whether forward 24h alpha is in the fade direction often enough.
+ */
+export const FAMILY_D_THRESHOLD = 0.0002 // 0.02% per 8h ≈ 21.9% annualised
+
+export function familyD_fundingExtreme(input: FamilyInput): FamilyOutput {
+  if (input.suspect) return { direction: null, magnitude: 0, reason: 'suspect=true' }
+  const fr = input.funding_rate
+  if (fr == null) return { direction: null, magnitude: 0, reason: 'missing funding_rate' }
+  if (Math.abs(fr) < FAMILY_D_THRESHOLD) {
+    return { direction: null, magnitude: 0, reason: `|fr|=${(fr * 100).toFixed(4)}% below threshold` }
+  }
+  const direction: SignalDirection = fr > 0 ? 'short' : 'long'
+  return {
+    direction,
+    magnitude: Math.abs(fr) / FAMILY_D_THRESHOLD,
+    reason: `funding=${(fr * 100).toFixed(4)}%/8h (${(fr * 3 * 365 * 100).toFixed(1)}% annualised)`,
+  }
+}
+
+/**
+ * Family E — News-event Drift (initial-reaction underreaction)
+ * --------------------------------------------------------------------------
+ * Hypothesis: when a clustered news event hits with strong sentiment but the
+ * 24h price has barely moved in either direction, the market is under-
+ * reacting and the news direction provides 24h drift.
+ *
+ * Inputs required:
+ *   news_cluster_count_24h ≥ FAMILY_E_MIN_CLUSTER
+ *   |sentiment_composite|  ≥ FAMILY_E_MIN_SENTIMENT
+ *   |price_change_pct_24h| ≤ FAMILY_E_MAX_PRICE_REACTION
+ *   dominant_factor_sign  ∈ {+1, -1}
+ *
+ * Direction = sign(dominant_factor_sign) → 'long' if +1, 'short' if -1.
+ *
+ * Note: until the news pipeline populates `news_cluster_count_24h` /
+ * `dominant_factor_sign` on snapshot_inputs (currently null), this predicate
+ * is inert by construction and skipped by the harness. See FORENSIC_SUMMARY
+ * "Open backlog".
+ */
+export const FAMILY_E_MIN_CLUSTER = 3
+export const FAMILY_E_MIN_SENTIMENT = 0.3
+export const FAMILY_E_MAX_PRICE_REACTION = 2
+
+export function familyE_newsEventDrift(input: FamilyInput): FamilyOutput {
+  if (input.suspect) return { direction: null, magnitude: 0, reason: 'suspect=true' }
+  const n = input.news_cluster_count_24h
+  const sent = input.sentiment_composite
+  const price = input.price_change_pct_24h
+  const sign = input.dominant_factor_sign
+  if (n == null || sent == null || price == null || sign == null) {
+    return { direction: null, magnitude: 0, reason: 'missing inputs' }
+  }
+  if (n < FAMILY_E_MIN_CLUSTER) {
+    return { direction: null, magnitude: 0, reason: `cluster=${n} below threshold` }
+  }
+  if (Math.abs(sent) < FAMILY_E_MIN_SENTIMENT) {
+    return { direction: null, magnitude: 0, reason: `|sentiment|=${Math.abs(sent).toFixed(2)} below threshold` }
+  }
+  if (Math.abs(price) > FAMILY_E_MAX_PRICE_REACTION) {
+    return { direction: null, magnitude: 0, reason: `price already reacted (${price.toFixed(2)}%)` }
+  }
+  if (sign !== 1 && sign !== -1) {
+    return { direction: null, magnitude: 0, reason: 'dominant_factor_sign is zero / undefined' }
+  }
+  const direction: SignalDirection = sign === 1 ? 'long' : 'short'
+  return {
+    direction,
+    magnitude: n * Math.abs(sent),
+    reason: `cluster=${n} sentiment=${sent.toFixed(2)} price24h=${price.toFixed(2)}%`,
+  }
+}
+
+/**
+ * Family F — BTC-Rotation (alt relative-strength break)
+ * --------------------------------------------------------------------------
+ * Hypothesis: when BTC makes a decisive 24h move AND the alt moves in the
+ * opposite direction by a meaningful margin, the alt's relative strength /
+ * weakness tends to persist for another 24h.
+ *
+ *   relative = price_change_pct_24h − btc_change_pct_24h
+ *
+ *   Trigger A: btc_change_pct_24h > +FAMILY_F_BTC_MOVE_PCT
+ *               AND relative < -FAMILY_F_REL_MOVE_PCT      → 'short'   (alt weakness)
+ *   Trigger B: btc_change_pct_24h < -FAMILY_F_BTC_MOVE_PCT
+ *               AND relative > +FAMILY_F_REL_MOVE_PCT      → 'long'    (alt strength)
+ *
+ * Magnitude = |relative| / FAMILY_F_REL_MOVE_PCT.
+ *
+ * Excludes BTC/WBTC at the harness layer (relative to self is degenerate).
+ */
+export const FAMILY_F_BTC_MOVE_PCT = 3
+export const FAMILY_F_REL_MOVE_PCT = 5
+
+export function familyF_btcRotation(input: FamilyInput): FamilyOutput {
+  if (input.suspect) return { direction: null, magnitude: 0, reason: 'suspect=true' }
+  const price = input.price_change_pct_24h
+  const btc = input.btc_change_pct_24h
+  if (price == null || btc == null) {
+    return { direction: null, magnitude: 0, reason: 'missing inputs' }
+  }
+  if (Math.abs(btc) < FAMILY_F_BTC_MOVE_PCT) {
+    return { direction: null, magnitude: 0, reason: `BTC move ${btc.toFixed(2)}% below threshold` }
+  }
+  const relative = price - btc
+  if (btc > 0 && relative < -FAMILY_F_REL_MOVE_PCT) {
+    return {
+      direction: 'short',
+      magnitude: Math.abs(relative) / FAMILY_F_REL_MOVE_PCT,
+      reason: `BTC=+${btc.toFixed(2)}% alt=${price.toFixed(2)}% rel=${relative.toFixed(2)}% (alt weakness)`,
+    }
+  }
+  if (btc < 0 && relative > FAMILY_F_REL_MOVE_PCT) {
+    return {
+      direction: 'long',
+      magnitude: Math.abs(relative) / FAMILY_F_REL_MOVE_PCT,
+      reason: `BTC=${btc.toFixed(2)}% alt=+${price.toFixed(2)}% rel=+${relative.toFixed(2)}% (alt strength)`,
+    }
+  }
+  return { direction: null, magnitude: 0, reason: `rel=${relative.toFixed(2)}% does not exceed threshold` }
+}
+
+/**
  * Dispatcher used by the backtest script. Returns one row per family per
  * historical snapshot. The backtest then joins each fired signal to the
  * forward return at the requested window (24h / 3d / 7d) from
@@ -177,6 +317,9 @@ export const SIGNAL_FAMILIES = {
   whale_flow_divergence: familyA_whaleFlowDivergence,
   exchange_imbalance: familyB_exchangeImbalance,
   sentiment_compression: familyC_sentimentCompression,
+  funding_extreme: familyD_fundingExtreme,
+  news_event_drift: familyE_newsEventDrift,
+  btc_rotation: familyF_btcRotation,
 } as const
 
 export type SignalFamilyName = keyof typeof SIGNAL_FAMILIES
@@ -188,5 +331,8 @@ export function evaluateAllFamilies(
     whale_flow_divergence: familyA_whaleFlowDivergence(input),
     exchange_imbalance: familyB_exchangeImbalance(input),
     sentiment_compression: familyC_sentimentCompression(input),
+    funding_extreme: familyD_fundingExtreme(input),
+    news_event_drift: familyE_newsEventDrift(input),
+    btc_rotation: familyF_btcRotation(input),
   }
 }

@@ -3,12 +3,19 @@ import {
   familyA_whaleFlowDivergence,
   familyB_exchangeImbalance,
   familyC_sentimentCompression,
+  familyD_fundingExtreme,
+  familyE_newsEventDrift,
+  familyF_btcRotation,
   evaluateAllFamilies,
   FAMILY_A_MIN_DIVERGENCE_USD,
   FAMILY_A_MIN_PRICE_MOVE_PCT,
   FAMILY_B_Z_THRESHOLD,
   FAMILY_C_SENTIMENT_THRESHOLD,
   FAMILY_C_PRICE_FLAT_PCT,
+  FAMILY_D_THRESHOLD,
+  FAMILY_E_MIN_CLUSTER,
+  FAMILY_F_BTC_MOVE_PCT,
+  FAMILY_F_REL_MOVE_PCT,
   type FamilyInput,
 } from '../../lib/signal-research/families'
 
@@ -23,6 +30,8 @@ const base: FamilyInput = {
   sentiment_composite: null,
   news_cluster_count_24h: null,
   dominant_factor_sign: null,
+  funding_rate: null,
+  btc_change_pct_24h: null,
   suspect: false,
 }
 
@@ -206,7 +215,104 @@ describe('evaluateAllFamilies', () => {
   it('returns one entry per family with stable keys', () => {
     const out = evaluateAllFamilies({ ...base, suspect: true })
     expect(Object.keys(out).sort()).toEqual(
-      ['exchange_imbalance', 'sentiment_compression', 'whale_flow_divergence'].sort()
+      [
+        'btc_rotation',
+        'exchange_imbalance',
+        'funding_extreme',
+        'news_event_drift',
+        'sentiment_compression',
+        'whale_flow_divergence',
+      ].sort()
     )
+  })
+})
+
+describe('familyD — funding-rate extreme', () => {
+  it('fires SHORT when funding is strongly positive (crowded longs)', () => {
+    const out = familyD_fundingExtreme({ ...base, funding_rate: FAMILY_D_THRESHOLD * 2 })
+    expect(out.direction).toBe('short')
+    expect(out.magnitude).toBeCloseTo(2)
+  })
+  it('fires LONG when funding is strongly negative (crowded shorts)', () => {
+    const out = familyD_fundingExtreme({ ...base, funding_rate: -FAMILY_D_THRESHOLD * 1.5 })
+    expect(out.direction).toBe('long')
+  })
+  it('does NOT fire below threshold', () => {
+    const out = familyD_fundingExtreme({ ...base, funding_rate: FAMILY_D_THRESHOLD * 0.5 })
+    expect(out.direction).toBeNull()
+  })
+  it('skips when funding_rate missing', () => {
+    expect(familyD_fundingExtreme({ ...base }).direction).toBeNull()
+  })
+})
+
+describe('familyE — news-event drift', () => {
+  it('fires LONG when bullish news cluster hits and price has not reacted', () => {
+    const out = familyE_newsEventDrift({
+      ...base,
+      news_cluster_count_24h: FAMILY_E_MIN_CLUSTER,
+      sentiment_composite: 0.5,
+      price_change_pct_24h: 0.5,
+      dominant_factor_sign: 1,
+    })
+    expect(out.direction).toBe('long')
+  })
+  it('fires SHORT when bearish news cluster hits and price has not reacted', () => {
+    const out = familyE_newsEventDrift({
+      ...base,
+      news_cluster_count_24h: 5,
+      sentiment_composite: -0.6,
+      price_change_pct_24h: -1,
+      dominant_factor_sign: -1,
+    })
+    expect(out.direction).toBe('short')
+  })
+  it('does NOT fire when price has already moved beyond reaction threshold', () => {
+    const out = familyE_newsEventDrift({
+      ...base,
+      news_cluster_count_24h: 5,
+      sentiment_composite: 0.6,
+      price_change_pct_24h: 10,
+      dominant_factor_sign: 1,
+    })
+    expect(out.direction).toBeNull()
+  })
+  it('is inert when news fields are null (forward-compat with current writer)', () => {
+    expect(familyE_newsEventDrift({ ...base }).direction).toBeNull()
+  })
+})
+
+describe('familyF — BTC rotation', () => {
+  it('fires SHORT when BTC rallies but alt lags badly', () => {
+    const out = familyF_btcRotation({
+      ...base,
+      btc_change_pct_24h: FAMILY_F_BTC_MOVE_PCT + 1,
+      price_change_pct_24h: -3,
+    })
+    expect(out.direction).toBe('short')
+  })
+  it('fires LONG when BTC drops but alt holds up strongly', () => {
+    const out = familyF_btcRotation({
+      ...base,
+      btc_change_pct_24h: -(FAMILY_F_BTC_MOVE_PCT + 1),
+      price_change_pct_24h: 3,
+    })
+    expect(out.direction).toBe('long')
+  })
+  it('does NOT fire when BTC move is below threshold', () => {
+    const out = familyF_btcRotation({
+      ...base,
+      btc_change_pct_24h: FAMILY_F_BTC_MOVE_PCT - 0.1,
+      price_change_pct_24h: -20,
+    })
+    expect(out.direction).toBeNull()
+  })
+  it('does NOT fire when alt moves with BTC (no relative break)', () => {
+    const out = familyF_btcRotation({
+      ...base,
+      btc_change_pct_24h: 5,
+      price_change_pct_24h: 4,
+    })
+    expect(out.direction).toBeNull()
   })
 })
