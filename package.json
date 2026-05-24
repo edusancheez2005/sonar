@@ -45,6 +45,10 @@
   "scripts": {
     "dev": "next dev",
     "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
     "test:engine": "node --experimental-strip-types scripts/test-signal-engine.mjs",
     "regenerate-golden": "node --experimental-strip-types scripts/regenerate-golden.mjs",
     "prebuild": "npm run test:engine",
@@ -70,9 +74,18 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "19.1.9",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/ui": "^2.1.9",
     "dotenv": "^17.4.2",
     "eslint-config-next": "^15.4.6",
-    "typescript": "5.9.3"
+    "jsdom": "^25.0.1",
+    "typescript": "5.9.3",
+    "vitest": "^2.1.9"
   }
 }
