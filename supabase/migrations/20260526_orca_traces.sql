@@ -32,6 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_orca_traces_message
 
 ALTER TABLE public.orca_traces ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS orca_traces_select_own ON public.orca_traces;
 CREATE POLICY orca_traces_select_own
   ON public.orca_traces FOR SELECT
   USING (auth.uid() = user_id);
@@ -39,6 +40,7 @@ CREATE POLICY orca_traces_select_own
 -- Writes are performed by the server using the service role, which bypasses
 -- RLS. We still install an explicit policy so that if a future code path
 -- ever uses an authenticated client to insert, only self-insert is allowed.
+DROP POLICY IF EXISTS orca_traces_insert_own ON public.orca_traces;
 CREATE POLICY orca_traces_insert_own
   ON public.orca_traces FOR INSERT
   WITH CHECK (auth.uid() = user_id);

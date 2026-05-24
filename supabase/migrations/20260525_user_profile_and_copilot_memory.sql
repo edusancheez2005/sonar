@@ -43,19 +43,23 @@ CREATE TABLE IF NOT EXISTS public.user_profile (
 
 ALTER TABLE public.user_profile ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS user_profile_select_own ON public.user_profile;
 CREATE POLICY user_profile_select_own
   ON public.user_profile FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_profile_insert_own ON public.user_profile;
 CREATE POLICY user_profile_insert_own
   ON public.user_profile FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_profile_update_own ON public.user_profile;
 CREATE POLICY user_profile_update_own
   ON public.user_profile FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_profile_delete_own ON public.user_profile;
 CREATE POLICY user_profile_delete_own
   ON public.user_profile FOR DELETE
   USING (auth.uid() = user_id);
@@ -96,19 +100,23 @@ CREATE INDEX IF NOT EXISTS idx_user_holdings_user_ticker
 
 ALTER TABLE public.user_holdings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS user_holdings_select_own ON public.user_holdings;
 CREATE POLICY user_holdings_select_own
   ON public.user_holdings FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_holdings_insert_own ON public.user_holdings;
 CREATE POLICY user_holdings_insert_own
   ON public.user_holdings FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_holdings_update_own ON public.user_holdings;
 CREATE POLICY user_holdings_update_own
   ON public.user_holdings FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_holdings_delete_own ON public.user_holdings;
 CREATE POLICY user_holdings_delete_own
   ON public.user_holdings FOR DELETE
   USING (auth.uid() = user_id);
@@ -129,19 +137,23 @@ CREATE INDEX IF NOT EXISTS idx_user_watchlist_user
 
 ALTER TABLE public.user_watchlist ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS user_watchlist_select_own ON public.user_watchlist;
 CREATE POLICY user_watchlist_select_own
   ON public.user_watchlist FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_watchlist_insert_own ON public.user_watchlist;
 CREATE POLICY user_watchlist_insert_own
   ON public.user_watchlist FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_watchlist_update_own ON public.user_watchlist;
 CREATE POLICY user_watchlist_update_own
   ON public.user_watchlist FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS user_watchlist_delete_own ON public.user_watchlist;
 CREATE POLICY user_watchlist_delete_own
   ON public.user_watchlist FOR DELETE
   USING (auth.uid() = user_id);
@@ -166,19 +178,23 @@ CREATE INDEX IF NOT EXISTS idx_orca_memory_user_expires
 
 ALTER TABLE public.orca_memory ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS orca_memory_select_own ON public.orca_memory;
 CREATE POLICY orca_memory_select_own
   ON public.orca_memory FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS orca_memory_insert_own ON public.orca_memory;
 CREATE POLICY orca_memory_insert_own
   ON public.orca_memory FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS orca_memory_update_own ON public.orca_memory;
 CREATE POLICY orca_memory_update_own
   ON public.orca_memory FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS orca_memory_delete_own ON public.orca_memory;
 CREATE POLICY orca_memory_delete_own
   ON public.orca_memory FOR DELETE
   USING (auth.uid() = user_id);
