@@ -1,33 +1,52 @@
 #!/usr/bin/env node
 /**
- * H12 — Tier 1 reads stablecoin flows with wrong sign
+ * H12 — Stablecoin-vs-native flow sign asymmetry
  *
- * Hypothesis: when the whale transaction's token is a stablecoin (USDT,
- * USDC, DAI, etc.), the Tier 1 net-flow → directional-bias mapping has the
- * opposite sign vs the native-coin case. A stablecoin INFLOW to a CEX is
- * bearish (deposits to sell), while a native-coin INFLOW to a CEX is also
- * bearish — but the engine may currently treat them symmetrically as
- * BULLISH on the "net flow" axis without accounting for asset class.
+ * Hypothesis: SELL signals driven by stablecoin outflows have different
+ * forward-alpha behaviour than SELL signals driven by native-asset outflows
+ * (e.g. WBTC, WETH flows out of CEX).
  *
- * Method:
- *   1. Join signal_outcomes to token_signals.tier1_factors (JSONB; carries
- *      stablecoin vs native segmentation in dexBuyVol/dexSellVol fields per
- *      repo memory: signal-engine 2026-04-30 fix).
- *   2. Stratify by whether the underlying signal's primary flow asset was
- *      stablecoin or native.
- *   3. Compute Spearman ρ(tier1_score → alpha_24h) per stratum.
+ * DATA-GAP FINDING:
+ *   token_signals.tier1_factors JSONB contains aggregate flow metrics
+ *   (buys, sells, buyVol, sellVol, netFlow, cexBuyVol, cexSellVol,
+ *    weightedFlowSignal, velocitySignal, volumeChangeVsPrev,
+ *    largeTxBuyVol, largeTxSellVol, uniqueWhales, recent3h volumes,
+ *    buyRatio) but does NOT carry stablecoin-vs-native breakdown.
  *
- * PASS: stable-stratum ρ and native-stratum ρ have OPPOSITE SIGNS (clear
- *        mis-routing). Add `flow_asset_class` term to T1.
- * KILL: same sign in both strata → T1 sign convention is OK; the broken
- *        signal lives elsewhere.
- * INCONCLUSIVE: one stratum n < 100.
+ *   The raw classification lives at the transaction level (`transactions`
+ *   table — from_addr / to_addr / token_symbol). Stratifying H12 properly
+ *   requires either:
+ *     (a) extending compute-signals/route.js to write
+ *         stablecoinSellVol / nativeSellVol into tier1_factors going
+ *         forward (PR-1c style addition),
+ *     (b) running a one-off backfill that walks every signal's contributing
+ *         transactions and tags stablecoin-flow share, then joining to
+ *         signal_outcomes.
  *
- * STATUS: STUB. Need to first inspect what tier1_factors actually carries
- * per-token in production — the schema isn't 1:1 with the codepath comments.
+ *   Both are >2h of work and produce only future-data results until
+ *   backfill completes.
+ *
+ * Verdict: INCONCLUSIVE (data-gap) — record and defer to PR-1c.
  *
  * Read-only.
  */
 
-console.error('[H12] STUB')
-process.exit(2)
+import { writeResult, appendFinding, FORENSIC_WINDOW_START } from './_lib.mjs'
+
+const HYPOTHESIS = 'H12 — Stablecoin-vs-native sign asymmetry'
+const verdict = 'INCONCLUSIVE'
+const summary = 'tier1_factors does not carry stablecoin/native flow breakdown. Requires PR-1c (writer extension) or transaction-level backfill — see H12 header for remediation paths.'
+
+writeResult('H12_stablecoin_sign', {
+  hypothesis: HYPOTHESIS,
+  window_start: FORENSIC_WINDOW_START,
+  verdict,
+  summary,
+  data_gap: true,
+  remediation: [
+    'PR-1c: extend compute-signals tier1_factors writer to include stablecoinSellVol / nativeSellVol / stablecoinShare. Wait 4 weeks for data, then implement H12 properly.',
+    'Backfill: walk transactions table per signal_id, classify token_symbol as stablecoin (USDT/USDC/DAI/BUSD/TUSD/FDUSD/PYUSD) or native, aggregate to per-signal share.',
+  ],
+})
+appendFinding({ hypothesis: HYPOTHESIS, verdict, summary, resultsFile: 'results/H12_stablecoin_sign.json' })
+console.log(`[H12] ${verdict} — ${summary}`)

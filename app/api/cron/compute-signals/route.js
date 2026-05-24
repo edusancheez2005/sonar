@@ -128,6 +128,39 @@ export async function GET(req) {
           ]
         }
 
+        // 3-tier sign-agreement gate (forensic finding H2, 2026-05-24):
+        // On 1,592 paired 24h outcomes since the post-fix window, signals
+        // where sign(T1) ≠ sign(T2) ≠ sign(T3) had mean direction-normalised
+        // alpha of −12.14 pp (n=1,244) vs −0.42 pp (n=348) for signals where
+        // all three agree. Result: gate filters out the noisy 78% of
+        // emissions while keeping the survivors near break-even.
+        // Applied AFTER circuit breaker so circuit suppression still wins.
+        if (signal.signal !== 'NEUTRAL') {
+          const t1 = Number(signal.tiers?.tier1?.score) || 0
+          const t2 = Number(signal.tiers?.tier2?.score) || 0
+          const t3 = Number(signal.tiers?.tier3?.score) || 0
+          const isDirectional = signal.signal === 'BUY' || signal.signal === 'STRONG BUY'
+            || signal.signal === 'SELL' || signal.signal === 'STRONG SELL'
+          if (isDirectional) {
+            const wantBullish = signal.signal === 'BUY' || signal.signal === 'STRONG BUY'
+            const agreeBullish = t1 > 0 && t2 > 0 && t3 > 0
+            const agreeBearish = t1 < 0 && t2 < 0 && t3 < 0
+            const agrees = wantBullish ? agreeBullish : agreeBearish
+            if (!agrees) {
+              signal.original_signal = signal.original_signal || signal.signal
+              signal.signal = 'NEUTRAL'
+              signal.traps = [
+                ...(signal.traps || []),
+                {
+                  type: '3-Tier Disagreement',
+                  severity: 'MEDIUM',
+                  description: `Tier 1/2/3 scores do not all agree with ${signal.original_signal} direction (T1=${t1.toFixed(0)}, T2=${t2.toFixed(0)}, T3=${t3.toFixed(0)}). Forensic H2: such signals average −12pp 24h alpha vs −0.4pp when tiers agree.`,
+                },
+              ]
+            }
+          }
+        }
+
         results.push(signal)
 
         // Store in token_signals table

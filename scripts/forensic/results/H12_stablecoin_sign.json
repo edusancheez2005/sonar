@@ -1,0 +1,11 @@
+{
+  "hypothesis": "H12 — Stablecoin-vs-native sign asymmetry",
+  "window_start": "2026-05-11T10:00:00Z",
+  "verdict": "INCONCLUSIVE",
+  "summary": "tier1_factors does not carry stablecoin/native flow breakdown. Requires PR-1c (writer extension) or transaction-level backfill — see H12 header for remediation paths.",
+  "data_gap": true,
+  "remediation": [
+    "PR-1c: extend compute-signals tier1_factors writer to include stablecoinSellVol / nativeSellVol / stablecoinShare. Wait 4 weeks for data, then implement H12 properly.",
+    "Backfill: walk transactions table per signal_id, classify token_symbol as stablecoin (USDT/USDC/DAI/BUSD/TUSD/FDUSD/PYUSD) or native, aggregate to per-signal share."
+  ]
+}
