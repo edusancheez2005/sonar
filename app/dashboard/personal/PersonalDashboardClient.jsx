@@ -6,7 +6,7 @@
  * four panels:
  *   - A: WatchlistPanel
  *   - B: PersonalCopilotPanel
- *   - C: Filtered Signals (placeholder — depends on Step 4.F)
+ *   - C: Filtered Signals (live — production token_signals filtered by profile)
  *   - D: Trading (placeholder — locked decision §7.4)
  *
  * Per spec, this route MUST NOT replace or restyle the global dashboard.
@@ -21,6 +21,7 @@ import Link from 'next/link'
 import styled from 'styled-components'
 import RequirePremiumClient from '../RequirePremiumClient'
 import WatchlistPanel from '@/components/personal/WatchlistPanel'
+import FilteredSignalsPanel from '@/components/personal/FilteredSignalsPanel'
 import PersonalCopilotPanel from '@/components/orca/PersonalCopilotPanel'
 import TradingComingSoon from '@/components/trading/TradingComingSoon'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
@@ -175,12 +176,7 @@ function PersonalShell() {
           experienceLevel={experience}
           tickers={tickers}
         />
-        <PlaceholderCard aria-labelledby="signals-panel-title">
-          <PlaceholderTitle id="signals-panel-title">Filtered signals</PlaceholderTitle>
-          <PlaceholderBody>
-            Coming next. Signals scored against your risk tolerance and time horizon will appear here once the research engine is live.
-          </PlaceholderBody>
-        </PlaceholderCard>
+        <FilteredSignalsPanel />
         <PlaceholderCard aria-labelledby="trading-panel-title">
           <PlaceholderTitle id="trading-panel-title">Trading</PlaceholderTitle>
           <TradingComingSoon variant="panel" />
