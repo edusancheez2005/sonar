@@ -3,17 +3,17 @@ import HomeClient from './HomeClient'
 
 export const metadata = {
   title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
-  description: 'Track crypto whale transactions in real-time across 10+ blockchains. AI-powered signals from ORCA 2.0. Institutional-grade analytics for $7.99/month. 700+ traders trust Sonar.',
+  description: 'Track crypto whale transactions in real-time across 10+ blockchains. On-chain analytics and ORCA 2.0 research assistant. $7.99/month. Not investment advice.',
   keywords: [
-    'crypto tracker', 'whale wallet tracker', 'crypto whale tracker', 'crypto predictor algorithm',
+    'crypto tracker', 'whale wallet tracker', 'crypto whale tracker',
     'whale transaction tracker', 'real time whale alerts', 'crypto intelligence platform',
-    'ai crypto signals', 'on chain analytics', 'sonar tracker', 'orca ai crypto',
-    'best whale tracking tool', 'crypto trading signals', 'blockchain analytics tool', 'whale movement tracker'
+    'on chain analytics', 'sonar tracker', 'orca ai crypto',
+    'best whale tracking tool', 'blockchain analytics tool', 'whale movement tracker'
   ],
   alternates: { canonical: 'https://www.sonartracker.io' },
   openGraph: {
     title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
-    description: 'Track crypto whale transactions in real-time. AI-powered signals, institutional-grade analytics. 700+ traders trust Sonar.',
+    description: 'Track crypto whale transactions in real-time. On-chain analytics and ORCA research assistant. Not investment advice.',
     url: 'https://www.sonartracker.io',
     type: 'website',
     images: [{ url: '/screenshots/stats-dashboard.png', width: 1200, height: 630, alt: 'Sonar Tracker Dashboard' }],
@@ -21,7 +21,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
-    description: 'Track whale transactions in real-time. AI signals from ORCA 2.0. $7.99/month.',
+    description: 'Track whale transactions in real-time. ORCA 2.0 research assistant. $7.99/month.',
     images: ['/screenshots/stats-dashboard.png'],
   },
 }
@@ -42,7 +42,7 @@ function FaqJsonLd() {
             name: 'What is Sonar Tracker and how does it help crypto traders?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Sonar Tracker is a professional-grade cryptocurrency analytics platform that specializes in real-time whale transaction monitoring, token leaderboards, and comprehensive on-chain insights. Our AI-powered system tracks institutional trading patterns across major blockchains including Ethereum, BSC, Polygon, and others. Traders use our platform to identify whale movements, monitor market sentiment, and make data-driven trading decisions with institutional-grade analytics.'
+              text: 'Sonar Tracker is a cryptocurrency analytics platform focused on real-time whale transaction monitoring, token leaderboards, and on-chain insights. The system tracks large-holder trading patterns across major blockchains including Ethereum, BSC, Polygon, and others. Users browse whale movements and market context as descriptive data for their own research. Sonar does not provide investment advice or trading recommendations.'
             },
           },
           {
@@ -66,7 +66,7 @@ function FaqJsonLd() {
             name: 'Do I need to create an account to use Sonar Tracker?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'You can browse all public pages including Statistics, News, whale leaderboards, and general market data without creating an account. However, creating a free account unlocks powerful features like personalized dashboards, custom alert thresholds, saved filters, portfolio tracking, and access to our AI-powered insights and trading recommendations. Premium features may be introduced in the future, but the core analytics will always remain free for individual traders.'
+              text: 'You can browse all public pages including Statistics, News, whale leaderboards, and general market data without creating an account. Creating a free account unlocks personalized dashboards, custom alert thresholds, saved filters, portfolio tracking, and access to the ORCA research assistant. Premium features may be introduced in the future, but the core analytics will always remain free for individual users. Sonar provides descriptive data, not investment advice.'
             },
           },
           {
@@ -74,7 +74,7 @@ function FaqJsonLd() {
             name: 'Is Sonar Tracker data real-time and how accurate is it?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Sonar Tracker provides near real-time data for whale transactions. Our ingestion pipeline updates every 15 minutes across all supported blockchains, and the UI refreshes automatically with the latest data. We employ a multi-phase AI analysis engine that includes pattern recognition, whale behavior analysis, transaction clustering, risk assessment, market sentiment analysis, volume correlation, and temporal analysis. Note: Sonar provides data and analytics, not financial advice. Past performance of signals does not guarantee future results.'
+              text: 'Sonar Tracker provides near real-time data for whale transactions. The ingestion pipeline updates every 15 minutes across supported blockchains and the UI refreshes automatically. The platform aggregates on-chain transactions, public news, and social metrics into descriptive views. Sonar does not provide financial advice or trade recommendations. Past performance of any displayed metric does not guarantee future results.'
             },
           },
           {
@@ -82,7 +82,7 @@ function FaqJsonLd() {
             name: 'What makes Sonar Tracker different from other crypto analytics platforms?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Sonar Tracker stands out with our proprietary 8-phase AI analysis pipeline that goes beyond simple transaction monitoring. We provide institutional-grade insights including advanced pattern recognition algorithms, sophisticated whale behavior analysis, intelligent transaction clustering, comprehensive risk assessment models, real-time market sentiment analysis, volume correlation studies, temporal analysis for trend identification, and predictive modeling for market forecasting. Unlike basic platforms, we offer professional-grade tools used by hedge funds and institutional traders, all wrapped in an intuitive interface accessible to retail traders.'
+              text: 'Sonar Tracker differs from typical block explorers by combining real-time whale transaction monitoring with curated news context and an LLM-based research assistant (ORCA). The platform surfaces descriptive on-chain data — transaction sizes, net flows, sentiment scores, social engagement — in an interface designed for individual users. Sonar is not a trading service and does not provide investment advice or guarantee any outcome.'
             },
           },
           {
@@ -106,7 +106,7 @@ function FaqJsonLd() {
             name: 'Can Sonar Tracker help me identify market manipulation or wash trading?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Yes, our advanced AI algorithms are specifically designed to detect potential market manipulation patterns and suspicious trading activities. We analyze transaction patterns, wallet behaviors, and market correlations to identify: 1) Wash trading schemes, 2) Pump-and-dump operations, 3) Spoofing attempts, 4) Layering strategies, 5) Whale manipulation tactics. Our risk assessment models flag unusual activity with confidence scores, and our temporal analysis can detect coordinated buying/selling patterns across multiple wallets. This information is crucial for traders to avoid manipulated markets and make informed investment decisions.'
+              text: 'Sonar surfaces several heuristics that may flag suspicious trading activity, including wash-trading patterns, coordinated wallet behaviour, and unusual volume clustering. These are descriptive observations, not verdicts. Users can review the underlying transactions themselves on each token page. The flags are informational; Sonar does not provide investment advice and does not guarantee that flagged or unflagged activity reflects real-world manipulation.'
             },
           },
           {

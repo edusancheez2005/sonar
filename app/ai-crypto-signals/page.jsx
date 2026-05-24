@@ -1,7 +1,7 @@
 export const metadata = {
   title: 'AI Crypto Market Analysis — Powered by ORCA',
-  description: 'AI-powered crypto market analysis from ORCA 2.0. Analyses whale movements, news sentiment, and on-chain data. Informational data analysis tool only — not financial advice.',
-  keywords: 'ai crypto analysis, crypto market intelligence, crypto analytics ai, on-chain ai tool, crypto intelligence ai, ai market analysis, orca ai crypto',
+  description: 'AI-powered crypto market analysis from ORCA 2.0. Analyzes whale movements, news sentiment, and on-chain data to provide market insights. Not financial advice.',
+  keywords: 'ai crypto analysis, crypto market intelligence, crypto analytics ai, ai crypto advisor, crypto intelligence ai, ai market analysis, orca ai crypto',
   alternates: { canonical: 'https://www.sonartracker.io/ai-crypto-signals' },
   openGraph: {
     title: 'AI Crypto Market Analysis — ORCA by Sonar Tracker',
@@ -15,11 +15,11 @@ const faqSchema = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
-    { '@type': 'Question', name: 'What is ORCA 2.0?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA 2.0 is Sonar Tracker\'s automated AI data-analysis tool that summarises public on-chain transactions, news articles, and social sentiment data. It presents factual observations about observed market patterns. It is not an advisor and does not provide investment advice.' } },
-    { '@type': 'Question', name: 'What does ORCA actually output?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA outputs plain-English summaries of public data: whale transactions, price momentum, volume patterns, and news sentiment. It does not predict prices and does not recommend buying, selling, or holding any asset. All investment decisions must be made independently with a licensed adviser.' } },
+    { '@type': 'Question', name: 'What is ORCA 2.0?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA 2.0 is Sonar Tracker\'s AI research assistant. It summarises public on-chain transactions, news articles, and social sentiment in plain English. ORCA is an information tool, not a financial adviser, and does not issue buy or sell recommendations.' } },
+    { '@type': 'Question', name: 'Does ORCA give signals or recommendations?', acceptedAnswer: { '@type': 'Answer', text: 'No. ORCA describes what public data currently shows. It does not issue buy, sell, or hold recommendations and does not predict future prices. Sonar\'s internal composite score is currently suppressed by its own accuracy gates following a 2026-05-11 measurement window in which no directional edge was observed. Raw per-window outcomes are published at /api/signals/accuracy.' } },
     { '@type': 'Question', name: 'What data does ORCA analyze?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA processes real-time whale transactions across 10+ blockchains, AI-curated crypto news with sentiment scoring, social media signals, real-time price and volume data from Binance, derivatives data (funding rates, open interest, taker volume), and historical whale behavior patterns.' } },
     { '@type': 'Question', name: 'How much does ORCA cost?', acceptedAnswer: { '@type': 'Answer', text: 'ORCA 2.0 is included with Sonar Tracker Pro at $7.99/month. Pro users get 10 AI analysis prompts per day. No additional charges.' } },
-    { '@type': 'Question', name: 'Can I ask ORCA about specific tokens?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Ask ORCA about any specific token and it will summarise current whale activity, recent price movements, and sentiment from news and social media, with supporting data. ORCA does not recommend buying, selling, or holding any asset.' } },
+    { '@type': 'Question', name: 'Can I ask ORCA about specific tokens?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Ask ORCA about any specific token and it will summarise current whale activity, recent price movements, and sentiment from news and social media, with supporting data. ORCA will not tell you whether to buy, sell, or hold any asset.' } },
   ]
 }
 
@@ -27,7 +27,7 @@ export default function AiCryptoSignalsPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <div style={{ minHeight: '100vh', background: '#0a1621', color: '#e8edf2', fontFamily: 'var(--font-sans)' }}>
+      <div style={{ minHeight: '100vh', background: '#0a1621', color: '#e8edf2', fontFamily: "'Inter', -apple-system, sans-serif" }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '8rem 2rem 4rem' }}>
           {/* Hero */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -47,7 +47,7 @@ export default function AiCryptoSignalsPage() {
             <strong style={{ color: '#ffab00' }}>Disclaimer:</strong> Sonar provides on-chain data analysis and market intelligence for informational purposes only. Nothing on this platform constitutes financial advice, investment recommendations, or solicitation to buy or sell any cryptocurrency. Past performance does not guarantee future results. Always do your own research. Trading cryptocurrencies involves substantial risk of loss.
           </div>
           <div style={{ padding: '0.75rem 1rem', background: 'rgba(155,89,182,0.06)', border: '1px solid rgba(155,89,182,0.25)', borderRadius: '8px', marginBottom: '2.5rem', fontSize: '0.78rem', color: '#bbb', lineHeight: 1.6 }}>
-            <strong style={{ color: '#9b59b6' }}>Signal performance (BETA):</strong> Our directional signal engine is in active calibration. We publish raw outcomes via <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 5px', borderRadius: '4px' }}>/api/signals/accuracy</code> with sample sizes and binomial p-values — no cherry-picking. Headline accuracy fluctuates with market regime; treat any single-token "100% accuracy" stat with n &lt; 30 as noise, not skill.
+            <strong style={{ color: '#9b59b6' }}>Signal performance (suppressed):</strong> The internal composite is currently non-actionable. On n=4,465 outcomes evaluated since the 2026-05-11 cache fix, no horizon×side cell showed a positive net return after fees, and both internal circuit breakers tripped. Raw per-window outcomes are still published at <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 5px', borderRadius: '4px' }}>/api/signals/accuracy</code> for transparency. The replacement system — a multi-strategy quant ensemble — is described in PROMPT_SIGNAL_EXECUTION.md and is in pre-shadow build phase.
           </div>
           <a href="/subscribe" style={{ display: 'inline-block', padding: '0.9rem 2rem', borderRadius: '8px', background: 'linear-gradient(90deg, #9b59b6, #f1c40f)', color: '#0a1621', fontWeight: 700, textDecoration: 'none', fontSize: '1rem', marginBottom: '4rem' }}>Get ORCA Access — $7.99/mo</a>
 
@@ -57,7 +57,7 @@ export default function AiCryptoSignalsPage() {
             {[
               { step: '1', title: 'Data Ingestion', desc: 'ORCA processes millions of whale transactions, news articles, and social signals in real-time across all major blockchains.' },
               { step: '2', title: 'AI Analysis', desc: 'Pattern recognition, sentiment scoring, volume correlation, and whale behavior analysis run in parallel across 8 analysis phases.' },
-              { step: '3', title: 'Clear Summary', desc: 'You get a plain-English summary: what happened on-chain, with supporting data and historical context. Informational only — not a price prediction.' },
+              { step: '3', title: 'Plain-English Summary', desc: 'You get a plain-English description of what the public data shows — the transactions, the headlines, the sentiment readings — with sources you can verify. ORCA does not tell you what to buy or sell.' },
             ].map((item, i) => (
               <div key={i} style={{ background: 'rgba(13,33,52,0.6)', border: '1px solid rgba(155,89,182,0.2)', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(155,89,182,0.2)', border: '2px solid #9b59b6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontWeight: 700, color: '#9b59b6' }}>{item.step}</div>
@@ -72,13 +72,13 @@ export default function AiCryptoSignalsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '4rem' }}>
             {[
               'Real-time whale transactions across 10+ chains',
-              'Inflow/outflow classification with magnitude scores',
-              'AI-curated news with market relevance scoring',
+              'Transaction-side classification (inflow / outflow / transfer / DEFI)',
+              'AI-curated news with market impact context',
               'Social sentiment from crypto communities',
               'Price momentum and volume patterns',
               'Historical whale behavior for each token',
               'Exchange inflow/outflow trends',
-              'Risk and manipulation detection signals',
+              'Wash-trading and unusual-activity heuristics',
             ].map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'rgba(13,33,52,0.4)', borderRadius: '8px' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#2ecc71" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -100,8 +100,8 @@ export default function AiCryptoSignalsPage() {
 
           {/* CTA */}
           <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1rem' }}>Trade with intelligence, not guesswork.</h2>
-            <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>10 AI prompts per day. Real-time whale data. Clear signals. $7.99/month.</p>
+            <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1rem' }}>Research with better context.</h2>
+            <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>10 ORCA prompts per day. Real-time whale data. Plain-English summaries. $7.99/month.</p>
             <a href="/subscribe" style={{ display: 'inline-block', padding: '1rem 2.5rem', borderRadius: '8px', background: 'linear-gradient(90deg, #9b59b6, #f1c40f)', color: '#0a1621', fontWeight: 700, textDecoration: 'none', fontSize: '1.1rem' }}>Start Free — Get ORCA Access</a>
           </div>
         </div>

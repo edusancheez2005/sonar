@@ -8,6 +8,7 @@ import { calculateEnhancedSentiment } from '@/app/lib/sentimentAlgorithm'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import PremiumGate from '@/components/PremiumGate'
 import TokenIcon from '@/components/TokenIcon'
+import ExperimentalBadge from '@/components/ExperimentalBadge'
 import { SkeletonMetrics } from '@/components/SkeletonLoader'
 import { calculateTokenScore, getScoreLabel } from '@/app/lib/tokenScore'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
@@ -1971,8 +1972,9 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                     <SentimentBadge $color={orcaAnalysis.sentiment === 'NET INFLOW' ? '#2ecc71' : orcaAnalysis.sentiment === 'NET OUTFLOW' ? '#e74c3c' : '#f39c12'}>
                       <span style={{ marginRight: '0.5rem' }}>●</span>{orcaAnalysis.sentiment}
                     </SentimentBadge>
-                    <span style={{ color: 'var(--text-secondary)' }}>
+                    <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                       Signal: <strong style={{ color: 'var(--primary)' }}>{orcaAnalysis.signal}</strong>
+                      <ExperimentalBadge />
                     </span>
                   </div>
 

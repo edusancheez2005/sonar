@@ -4,14 +4,21 @@ import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 export const dynamic = 'force-dynamic'
 
 // ─── Signal-quality kill switch ──────────────────────────────────────────
-// As of 2026-04-20 the signal engine has 0/116 directional accuracy on BUY
-// signals over the last 30 days (p ≈ 0). Until the root cause is found
-// (Tier 1 sign inversion vs regime tag-along) we mute BUY signals at the
-// API boundary so the UI cannot show inverse-predictive recommendations.
-// SELL signals are also regime-biased but at least directionally correct
-// in current data; they pass through with a downstream BETA disclaimer.
+// Updated 2026-05-24 (Workstream A demote, PROMPT_SIGNAL_EXECUTION.md §2).
+// Post-2026-05-11 frozen-cache fix, n=4,465 evaluated outcomes show every
+// horizon×side cell is negative-net:
+//   1h  BUY  n=145   win=42.1%  net=-0.24%
+//   1h  SELL n=1,212 win=49.3%  net=-0.12%
+//   6h  BUY  n=160   win=31.2%  net=-0.82%
+//   6h  SELL n=1,311 win=46.8%  net=-0.37%
+//   24h BUY  n=159   win= 5.0%  net=-3.80%   ← anti-selection
+//   24h SELL n=1,344 win=50.5%  net=-10.65%  ← lost during SELL tailwind
+// Both circuit breakers are tripped; engine correctly self-suppresses to
+// NEUTRAL. The composite has no measured alpha and is exposed via this
+// API only as non-actionable research context with `actionable: false`.
 //
-// Flip this to false once the IC audit + signal rebuild lands.
+// Flip back to false only when Workstream C ensemble produces a
+// promotion-eligible strategy that passes Gate C-9 (see prompt §4.4).
 const HIDE_BULLISH_SIGNALS = true
 const BULLISH = new Set(['BUY', 'STRONG BUY'])
 
@@ -21,6 +28,10 @@ const BULLISH = new Set(['BUY', 'STRONG BUY'])
 // render the neutral inflow/outflow vocabulary instead, to avoid the
 // FCA RAO Art. 53 / SEC IA Act §202(a)(11) / MiFID II Art. 4(1)(4)
 // "investment recommendation" trigger. See LEGAL_AUDIT_2026-04-21.md.
+// PROMPT_SIGNAL_EXECUTION.md §2.2 proposed BULLISH/BEARISH context wording,
+// but that regresses the legal posture; we keep INFLOW/OUTFLOW and instead
+// satisfy the Opus memo via the `actionable:false` field and the UI-side
+// experimental badge + methodology tooltip (see components/ExperimentalBadge.jsx).
 const SIGNAL_DISPLAY_LABEL = {
   'STRONG BUY': 'STRONG INFLOW',
   'BUY': 'INFLOW',
@@ -28,6 +39,12 @@ const SIGNAL_DISPLAY_LABEL = {
   'SELL': 'OUTFLOW',
   'STRONG SELL': 'STRONG OUTFLOW',
 }
+
+const METHODOLOGY_COPY =
+  "Sonar's composite aggregates whale flow, momentum, derivatives positioning, " +
+  'and sentiment into a contextual score. It is a research tool, not investment ' +
+  'advice. Historical accuracy has been mixed; use as input to your own analysis, ' +
+  'not as a trade trigger.'
 
 function neutralize(row) {
   if (!row) return row
@@ -37,6 +54,8 @@ function neutralize(row) {
   return {
     ...muted,
     display_label: SIGNAL_DISPLAY_LABEL[muted.signal] || 'NEUTRAL',
+    actionable: false,
+    experimental: true,
   }
 }
 
@@ -118,7 +137,12 @@ export async function GET(req) {
     return NextResponse.json({
       signals: deduped,
       count: deduped.length,
-      muted: HIDE_BULLISH_SIGNALS ? 'Bullish signals are temporarily muted while the model is recalibrated. See /api/signals/accuracy.' : null,
+      actionable: false,
+      experimental: true,
+      methodology: METHODOLOGY_COPY,
+      muted: HIDE_BULLISH_SIGNALS
+        ? 'Composite signals are non-actionable research context. Post-2026-05-11 measurement (n=4,465) shows both circuit breakers tripped; the engine has no measured alpha and is being replaced (see PROMPT_SIGNAL_EXECUTION.md, Workstream C). Raw outcomes published via /api/signals/accuracy.'
+        : null,
     })
   } catch (err) {
     console.error('[Signals API] Error:', err)

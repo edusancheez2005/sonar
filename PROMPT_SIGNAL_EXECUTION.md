@@ -262,11 +262,24 @@ Once any strategy passes Gate C-9:
 
 ## 6. What success looks like
 
-By end of Day 28 the founder has:
-1. A live production UI with no actionable BUY/SELL surface anywhere — the signal product is honestly framed as research context.
-2. A signed-off `FINDINGS_SUMMARY.md` saying which tiers were deleted, which were recalibrated, which were unsalvageable — the engine's autopsy.
-3. A live-shadow `SONAR-CSM-1W` running every Monday, with 3–4 data points of live-vs-backtest tracking and a clear promote/extend/kill verdict.
-4. An ORCA narrative that lands cleanly for YC / KSA: *"We discovered our signal engine had no measured alpha, demoted it within 48 hours, ran a 5-day forensic, and replaced it with a properly-cited factor strategy that ORCA explains in plain English. ORCA is the product; the signals are the substrate."*
+By end of week 28 the founder has:
+1. A live production UI with no actionable BUY/SELL surface anywhere — the legacy composite is honestly framed as research context.
+2. A signed-off `FINDINGS_SUMMARY.md` saying which tiers were deleted, recalibrated, or unsalvageable — the engine's autopsy.
+3. **The SONAR multi-strategy ensemble** running live in shadow: 1–3 surviving strategies (S-1 momentum / S-2 Kalman pairs / S-3 PCA residuals) optionally gated by S-4 HMM regime filter, with ≥ 8 weeks of measured live performance.
+4. A `/quant` dashboard surfacing live Sharpe, drawdown, current positions, and tracking error vs backtest.
+5. An ORCA narrative that lands cleanly for any investor conversation: *"We discovered our original signal heuristic had no measured alpha. We demoted it within 48 hours, ran a 5-day forensic, then spent 16 weeks building a peer-reviewed multi-strategy quant ensemble. The system has been running live in shadow for 8+ weeks at an ensemble Sharpe of X.XX with max drawdown Y%. Methodology and live performance are public. ORCA is the explanation layer; the strategies are the substrate."*
+
+## 6.1 Honest probability table
+
+| Outcome at week 28 | Subjective probability | What it means |
+|---|---|---|
+| All 3 strategies survive backtest, walk-forward, and shadow | ~10% | Best case. Promote ensemble. Real product. |
+| 2 of 3 survive shadow | ~25% | Good case. Promote ensemble of 2. Still real product. |
+| 1 of 3 survives shadow | ~30% | Acceptable. Promote single strategy. Modest product. |
+| 0 survive | ~25% | Verdict: published edges have decayed in this universe. Signals stay demoted permanently. Pivot product narrative fully to ORCA + whale-tracking. |
+| Walk-forward never passes (overfit kill) | ~10% | Same as 0-survive: permanent demote. |
+
+Combined: ~65% chance at least one strategy makes it to live promotion. This is dramatically better odds than "fix the existing composite," which is ~0%. It is dramatically worse odds than "build a magic bot," which is 0% for everyone, including hedge funds.
 
 ---
 
