@@ -47,6 +47,22 @@ async function main() {
 
   console.log(`[backtest] fetching clean outcomes since ${sinceIso}`)
 
+  // SCHEMA GUARD — see docs/SCHEMA_GAP_4F.md.
+  // The harness assumes signal_outcomes carries return_24h/3d/7d AND a
+  // snapshot_inputs JSONB. The real schema has neither (price_change_pct
+  // keyed by eval_window, no snapshot_inputs anywhere). Until PR-1 and
+  // PR-2 from SCHEMA_GAP_4F.md land, this script cannot produce honest
+  // results — fail fast rather than silently insert zero-sample rows.
+  console.error('[backtest] BLOCKED on schema gap — see docs/SCHEMA_GAP_4F.md')
+  console.error('  signal_outcomes lacks return_24h / return_3d / return_7d')
+  console.error('  signal_outcomes lacks snapshot_inputs (engine inputs are not persisted)')
+  console.error('  Required: PR-1 (capture snapshot_inputs on token_signals)')
+  console.error('  Required: PR-2 (rewrite harness against real schema)')
+  console.error('  Required: PR-3 (wait ≥4 weeks for n≥200 clean samples)')
+  process.exit(3)
+
+  // eslint-disable-next-line no-unreachable -- retained for the post-PR-2 rewrite
+
   const { data: outcomes, error: outErr } = await sb
     .from('signal_outcomes')
     .select(
