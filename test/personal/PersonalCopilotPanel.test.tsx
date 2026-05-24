@@ -129,4 +129,80 @@ describe('PersonalCopilotPanel', () => {
     const text = screen.getByTestId('copilot-message-assistant-0').textContent || ''
     expect(/\p{Extended_Pictographic}/u.test(text)).toBe(false)
   })
+
+  it('surfaces a timeout-specific message when the chat API returns 504', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 504 })
+    render(
+      <PersonalCopilotPanel
+        experienceLevel="intermediate"
+        tickers={['BTC']}
+        client={makeClient('tok')}
+        fetchImpl={fetchImpl}
+      />
+    )
+    await userEvent.type(screen.getByTestId('copilot-input'), 'why is btc moving')
+    await userEvent.click(screen.getByTestId('copilot-send'))
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toMatch(/took too long/i)
+    })
+  })
+
+  it('surfaces a rate-limit message when the chat API returns 429', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 429 })
+    render(
+      <PersonalCopilotPanel
+        experienceLevel="intermediate"
+        tickers={['BTC']}
+        client={makeClient('tok')}
+        fetchImpl={fetchImpl}
+      />
+    )
+    await userEvent.type(screen.getByTestId('copilot-input'), 'hi')
+    await userEvent.click(screen.getByTestId('copilot-send'))
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toMatch(/chat limit/i)
+    })
+  })
+
+  it('renders an actionable message when fetch itself rejects (no generic "Network error")', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    render(
+      <PersonalCopilotPanel
+        experienceLevel="intermediate"
+        tickers={['BTC']}
+        client={makeClient('tok')}
+        fetchImpl={fetchImpl}
+      />
+    )
+    await userEvent.type(screen.getByTestId('copilot-input'), 'hi')
+    await userEvent.click(screen.getByTestId('copilot-send'))
+    await waitFor(() => {
+      const text = screen.getByRole('alert').textContent || ''
+      expect(text).toMatch(/did not complete|offline/i)
+      expect(text).not.toMatch(/network error talking to orca/i)
+    })
+  })
+
+  it('forwards focusTicker into the request body when supplied', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ response: 'ok' }),
+    })
+    render(
+      <PersonalCopilotPanel
+        experienceLevel="intermediate"
+        tickers={['ETH']}
+        focusTicker="ETH"
+        client={makeClient('tok')}
+        fetchImpl={fetchImpl}
+      />
+    )
+    await userEvent.type(screen.getByTestId('copilot-input'), 'explain')
+    await userEvent.click(screen.getByTestId('copilot-send'))
+    await waitFor(() => {
+      const call = fetchImpl.mock.calls[0]
+      const body = JSON.parse(call[1].body)
+      expect(body.focus_ticker).toBe('ETH')
+    })
+  })
 })

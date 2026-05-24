@@ -127,6 +127,7 @@ export default function PersonalCopilotPanel({
   tickers = [],
   client,
   fetchImpl,
+  focusTicker = '',
 }) {
   const greeting = useMemo(
     () => pickCopilotGreeting({ experience: experienceLevel, tickers }),
@@ -184,10 +185,18 @@ export default function PersonalCopilotPanel({
           'content-type': 'application/json',
           authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, focus_ticker: focusTicker || undefined }),
       })
       if (!res.ok) {
-        setError(`ORCA could not respond (HTTP ${res.status}).`)
+        if (res.status === 504 || res.status === 408) {
+          setError('That took too long to compute. Try again in a moment.')
+        } else if (res.status === 401) {
+          setError('Session expired. Refresh the page to sign back in.')
+        } else if (res.status === 429) {
+          setError("You've hit today's chat limit. It resets at midnight UTC.")
+        } else {
+          setError(`ORCA could not respond (HTTP ${res.status}).`)
+        }
         setSending(false)
         return
       }
@@ -205,7 +214,15 @@ export default function PersonalCopilotPanel({
       }
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
     } catch (err) {
-      setError('Network error talking to ORCA.')
+      // Browser surfaces Vercel function timeouts as a TypeError on fetch.
+      // Distinguish a genuine offline state from a server-side timeout so the
+      // user gets actionable copy instead of the generic "Network error".
+      const offline = typeof navigator !== 'undefined' && navigator && navigator.onLine === false
+      setError(
+        offline
+          ? 'You appear to be offline. Reconnect and try again.'
+          : 'The request did not complete. ORCA may be busy — try again in a few seconds.'
+      )
     } finally {
       setSending(false)
     }

@@ -14,6 +14,13 @@ import { runOrchestrator } from '@/lib/orca/orchestrator/runOrchestrator'
 import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
 
 export const dynamic = 'force-dynamic'
+// Vercel function timeout. The legacy v1 path fans out to multiple upstream
+// APIs (Binance + CG + LunarCrush + news + whale alerts) and Grok-4-fast can
+// take 20-40s for a 1,500-word note. The default 10s cap was surfacing to the
+// browser as "Network error talking to ORCA" in PersonalCopilotPanel. Set to
+// 60s — supported on Vercel Pro. If you are on Hobby, lower to 60 here AND in
+// the Vercel dashboard (Hobby maxes at 60s on Node runtime as of 2026-05).
+export const maxDuration = 60
 
 // Use Grok (xAI) as primary AI, fallback to OpenAI if no xAI key.
 // Model selection prioritises the largest context window available so the
