@@ -51,6 +51,7 @@
     "test:coverage": "vitest run --coverage",
     "test:engine": "node --experimental-strip-types scripts/test-signal-engine.mjs",
     "regenerate-golden": "node --experimental-strip-types scripts/regenerate-golden.mjs",
+    "backtest:signals": "node --experimental-strip-types scripts/backtest-signals.mjs",
     "prebuild": "npm run test:engine",
     "build": "next build",
     "lint": "next lint"
