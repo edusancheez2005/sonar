@@ -22,6 +22,7 @@ import styled from 'styled-components'
 import RequirePremiumClient from '../RequirePremiumClient'
 import WatchlistPanel from '@/components/personal/WatchlistPanel'
 import PersonalCopilotPanel from '@/components/orca/PersonalCopilotPanel'
+import TradingComingSoon from '@/components/trading/TradingComingSoon'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const Page = styled.main`
@@ -182,9 +183,7 @@ function PersonalShell() {
         </PlaceholderCard>
         <PlaceholderCard aria-labelledby="trading-panel-title">
           <PlaceholderTitle id="trading-panel-title">Trading</PlaceholderTitle>
-          <PlaceholderBody>
-            Trading is not part of SONAR today. This panel is reserved for a future opt-in product. Nothing here is a recommendation or a trading service.
-          </PlaceholderBody>
+          <TradingComingSoon variant="panel" />
         </PlaceholderCard>
       </Grid>
     </Page>
