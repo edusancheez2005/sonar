@@ -4,6 +4,11 @@ import ClientRoot from './components/ClientRoot'
 import StyledComponentsRegistry from './components/StyledComponentsRegistry'
 import Breadcrumbs from './components/Breadcrumbs'
 import ConsentGatedScripts from './components/ConsentGatedScripts'
+// v4 §4.2: ORCA Drawer mounts once at the root so any leaf component can
+// pop it via useOrcaDrawer().open(focus, seed). The Provider must wrap
+// the entire app so the imperative API is always available.
+import { OrcaDrawerProvider } from '../components/orca/useOrcaDrawer'
+import OrcaDrawer from '../components/orca/OrcaDrawer'
 
 // Imported here (root layout) so it ships in the main always-loaded CSS
 // bundle rather than a per-route chunk. Avoids 'Loading CSS chunk failed'
@@ -328,7 +333,10 @@ export default function RootLayout({ children }) {
             the GDPR-safe default. */}
 
         <StyledComponentsRegistry>
-          <ClientRoot>{children}</ClientRoot>
+          <OrcaDrawerProvider>
+            <ClientRoot>{children}</ClientRoot>
+            <OrcaDrawer />
+          </OrcaDrawerProvider>
         </StyledComponentsRegistry>
         <ConsentGatedScripts />
         <AnalyticsGate />
