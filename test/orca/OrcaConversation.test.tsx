@@ -502,4 +502,47 @@ describe('OrcaConversation — atom', () => {
       }
     })
   })
+
+  describe('SSE streaming (legacy v1 brain)', () => {
+    function sseResponse(events: any[]) {
+      const enc = new TextEncoder()
+      let i = 0
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: (k: string) => (k.toLowerCase() === 'content-type' ? 'text/event-stream' : null) },
+        body: {
+          getReader: () => ({
+            read: async () => {
+              if (i >= events.length) return { done: true, value: undefined }
+              const evt = events[i++]
+              const chunk = enc.encode(`data: ${JSON.stringify(evt)}\n\n`)
+              return { done: false, value: chunk }
+            },
+          }),
+        },
+      } as any
+    }
+
+    it('renders stage progress and final reply from an SSE stream', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(
+        sseResponse([
+          { type: 'status', step: 'news', message: 'Fetching news from 3 sources' },
+          { type: 'status', step: 'price', message: 'Fetching price data' },
+          {
+            type: 'complete',
+            response: 'BTC is consolidating around 60k.',
+            ticker: 'BTC',
+            data: { price: { last: 60000 } },
+          },
+        ])
+      )
+      render(<OrcaConversation client={makeClient('tok')} fetchImpl={fetchImpl} />)
+      await userEvent.type(screen.getByTestId('orca-conv-input'), 'btc?')
+      await userEvent.click(screen.getByTestId('orca-conv-send'))
+      await waitFor(() => {
+        expect(screen.getByText(/consolidating around 60k/i)).toBeInTheDocument()
+      })
+    })
+  })
 })

@@ -213,6 +213,38 @@ const ErrorLine = styled.p`
   align-self: flex-start;
 `
 
+// v4-bis: live stage progress for the legacy v1 SSE path.
+const StageList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  align-self: flex-start;
+  max-width: var(--conv-bubble-max);
+  background: ${tokens.surface.panel};
+  border: 1px solid ${tokens.surface.border};
+  border-radius: ${tokens.radius.md}px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: ${tokens.textMuted};
+`
+
+const StageItem = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: ${(p) => (p.$done ? tokens.textMuted : tokens.text)};
+  &::before {
+    content: ${(p) => (p.$done ? "'\\2713'" : "'\\25CB'")};
+    color: ${(p) => (p.$done ? tokens.accent : tokens.textLabel)};
+    font-size: 11px;
+    width: 12px;
+    display: inline-block;
+    text-align: center;
+  }
+`
+
 const Form = styled.form`
   display: flex;
   gap: 10px;
@@ -359,6 +391,10 @@ export default function OrcaConversation({
   const [pendingConfirm, setPendingConfirm] = useState(null)
   const [followUps, setFollowUps] = useState([])
   const [sources, setSources] = useState([])
+  // v4-bis: real-time SSE stage tracking (legacy /api/chat streams progress
+  // events while the v1 path fans out to whales, sentiment, news, charts).
+  // Each stage is { step, message, done }. Reset on every new turn.
+  const [stages, setStages] = useState([])
   const threadRef = useRef(null)
 
   // Count user turns for `maxTurns` enforcement (mini variant).
@@ -430,6 +466,81 @@ export default function OrcaConversation({
         setError(statusToError(res.status))
         return false
       }
+
+      // v4-bis: legacy v1 ticker analysis streams SSE — render the named
+      // stages live (Scanning whale transactions, Fetching news ...) and
+      // commit the final assistant message on the 'complete' event. When
+      // ORCA_ORCHESTRATION_V2=false on Vercel this is the dominant path.
+      const contentType = (res.headers && typeof res.headers.get === 'function'
+        ? res.headers.get('content-type')
+        : '') || ''
+      if (contentType.includes('text/event-stream') && res.body && typeof res.body.getReader === 'function') {
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let final = null
+        let streamErr = null
+        try {
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            const parts = buffer.split('\n\n')
+            buffer = parts.pop() || ''
+            for (const part of parts) {
+              const line = part.trim()
+              if (!line.startsWith('data: ')) continue
+              let evt
+              try {
+                evt = JSON.parse(line.slice(6))
+              } catch {
+                continue
+              }
+              if (evt.type === 'status') {
+                setStages((prev) => {
+                  // Mark all prior stages done, append the new one as active.
+                  if (prev.some((s) => s.step === evt.step)) return prev
+                  const next = prev.map((s) => ({ ...s, done: true }))
+                  next.push({
+                    step: String(evt.step || ''),
+                    message: String(evt.message || evt.step || ''),
+                    done: false,
+                  })
+                  return next
+                })
+              } else if (evt.type === 'complete') {
+                final = evt
+              } else if (evt.type === 'error') {
+                streamErr = String(evt.message || 'Stream failed')
+              }
+            }
+          }
+        } catch (err) {
+          streamErr = (err && err.message) || 'Stream interrupted'
+        }
+        if (streamErr) {
+          setError(streamErr)
+          setStages([])
+          return false
+        }
+        const reply = final && typeof final.response === 'string' ? final.response : null
+        if (!reply) {
+          setError('Empty response from ORCA.')
+          setStages([])
+          return false
+        }
+        const assistantMsg = { role: 'assistant', content: reply }
+        if (final.ticker) assistantMsg.ticker = String(final.ticker)
+        if (final.data && typeof final.data === 'object') assistantMsg.data = final.data
+        setMessages((prev) => [...prev, assistantMsg])
+        setPendingConfirm(null)
+        setFollowUps([])
+        setSources([])
+        setStages([])
+        return true
+      }
+
       let body
       try {
         body = await res.json()
@@ -475,6 +586,7 @@ export default function OrcaConversation({
       setDraft('')
       setPendingConfirm(null)
       setFollowUps([])
+      setStages([])
       setMessages((prev) => [...prev, { role: 'user', content: text }])
       try {
         await postChat({ messageText: text })
@@ -664,6 +776,15 @@ export default function OrcaConversation({
               </FollowChip>
             ))}
           </FollowUps>
+        )}
+        {sending && stages.length > 0 && (
+          <StageList data-testid="orca-conv-stages" aria-label="ORCA progress">
+            {stages.map((s) => (
+              <StageItem key={s.step} $done={s.done} data-step={s.step}>
+                {s.message}
+              </StageItem>
+            ))}
+          </StageList>
         )}
         {sending && <SonarPulse />}
         {error && <ErrorLine role="alert">{error}</ErrorLine>}
