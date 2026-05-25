@@ -499,7 +499,30 @@ export default function OrcaConversation({
     setPendingConfirm(null)
     setMessages((prev) => [...prev, { role: 'user', content: `Confirmed: ${label}` }])
     try {
-      await postChat({ messageText: label, confirmPayload: { calls } })
+      const ok = await postChat({ messageText: label, confirmPayload: { calls } })
+      // v4 fix: when a write confirm round-trip succeeds, notify any open
+      // dashboard panels so they refetch instead of showing stale state.
+      // The actual DB row is written server-side; without this signal the
+      // user only sees the change after a hard page reload.
+      if (ok && typeof window !== 'undefined') {
+        const watchlistTickers = []
+        for (const c of calls) {
+          if (!c || typeof c.tool !== 'string') continue
+          if (c.tool === 'addToWatchlist' || c.tool === 'removeFromWatchlist') {
+            const t = c?.args?.ticker
+            if (typeof t === 'string' && t.trim()) {
+              watchlistTickers.push(t.trim().toUpperCase())
+            }
+          }
+        }
+        if (watchlistTickers.length > 0) {
+          window.dispatchEvent(
+            new CustomEvent('orca:watchlist-changed', {
+              detail: { tickers: watchlistTickers },
+            })
+          )
+        }
+      }
     } finally {
       setSending(false)
     }

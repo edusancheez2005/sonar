@@ -11,7 +11,7 @@
  *
  * We do NOT delete WatchlistPanel; this is a tab variant of the same data.
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
@@ -129,39 +129,52 @@ function fmtPct(n) {
 
 export default function WatchlistTab({ client, fetchImpl, onAskOrca }) {
   const [state, setState] = useState({ status: 'loading', items: [], error: null })
+  const cancelledRef = useRef(false)
 
-  useEffect(() => {
-    let cancelled = false
+  const load = useCallback(async () => {
     const sb = client ?? supabaseBrowser()
     const doFetch = fetchImpl ?? fetch
+    try {
+      const { data: sessionData } = await sb.auth.getSession()
+      const token = sessionData?.session?.access_token
+      if (!token) {
+        if (!cancelledRef.current) setState({ status: 'unauth', items: [], error: null })
+        return
+      }
+      const res = await doFetch('/api/personal/watchlist', {
+        headers: { authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        if (!cancelledRef.current) setState({ status: 'error', items: [], error: `HTTP ${res.status}` })
+        return
+      }
+      const body = await res.json()
+      if (cancelledRef.current) return
+      const items = Array.isArray(body?.items) ? body.items : []
+      setState({ status: 'ready', items, error: null })
+    } catch {
+      if (!cancelledRef.current) setState({ status: 'error', items: [], error: 'network' })
+    }
+  }, [client, fetchImpl])
 
-    async function load() {
-      try {
-        const { data: sessionData } = await sb.auth.getSession()
-        const token = sessionData?.session?.access_token
-        if (!token) {
-          if (!cancelled) setState({ status: 'unauth', items: [], error: null })
-          return
-        }
-        const res = await doFetch('/api/personal/watchlist', {
-          headers: { authorization: `Bearer ${token}` },
-        })
-        if (!res.ok) {
-          if (!cancelled) setState({ status: 'error', items: [], error: `HTTP ${res.status}` })
-          return
-        }
-        const body = await res.json()
-        if (cancelled) return
-        const items = Array.isArray(body?.items) ? body.items : []
-        setState({ status: 'ready', items, error: null })
-      } catch {
-        if (!cancelled) setState({ status: 'error', items: [], error: 'network' })
+  useEffect(() => {
+    cancelledRef.current = false
+    load()
+    // v4 fix: refetch when ORCA reports a successful watchlist write so the
+    // panel does not show stale state until the next hard reload.
+    function onWatchlistChanged() {
+      load()
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('orca:watchlist-changed', onWatchlistChanged)
+    }
+    return () => {
+      cancelledRef.current = true
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('orca:watchlist-changed', onWatchlistChanged)
       }
     }
-
-    load()
-    return () => { cancelled = true }
-  }, [client, fetchImpl])
+  }, [load])
 
   return (
     <Wrap data-testid="watchlist-tab" aria-labelledby="watchlist-tab-title">

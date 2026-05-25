@@ -199,6 +199,32 @@ describe('OrcaConversation — atom', () => {
       )
     })
 
+    it('dispatches orca:watchlist-changed after a successful watchlist Confirm', async () => {
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(
+          okResponse({
+            response: "I'll add $BTC to your watchlist.",
+            confirm: { label: 'Add BTC to watchlist', calls: [{ tool: 'addToWatchlist', args: { ticker: 'btc' } }] },
+          })
+        )
+        .mockResolvedValueOnce(okResponse({ response: 'Added BTC to your watchlist.' }))
+      const handler = vi.fn()
+      window.addEventListener('orca:watchlist-changed', handler as any)
+      try {
+        render(<OrcaConversation client={makeClient('tok')} fetchImpl={fetchImpl} />)
+        await userEvent.type(screen.getByTestId('orca-conv-input'), 'add btc to my watchlist')
+        await userEvent.click(screen.getByTestId('orca-conv-send'))
+        await waitFor(() => expect(screen.getByTestId('orca-conv-confirm')).toBeInTheDocument())
+        await userEvent.click(screen.getByTestId('orca-conv-confirm'))
+        await waitFor(() => expect(handler).toHaveBeenCalledTimes(1))
+        const evt = handler.mock.calls[0][0] as CustomEvent
+        expect(evt.detail).toEqual({ tickers: ['BTC'] })
+      } finally {
+        window.removeEventListener('orca:watchlist-changed', handler as any)
+      }
+    })
+
     it('Cancel click renders a "nothing was changed" message and does NOT re-POST', async () => {
       const fetchImpl = vi.fn().mockResolvedValue(
         okResponse({
