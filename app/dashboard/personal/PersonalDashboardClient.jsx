@@ -1,17 +1,17 @@
 'use client'
 /**
- * PersonalDashboardClient \u2014 W4 redesign (3-band grid)
+ * PersonalDashboardClient — v4 unified ORCA dashboard
  * =============================================================================
- * Bands (top \u2192 bottom):
+ * Bands (top → bottom):
  *   1. PulseStrip       (4 compact tiles, refreshes every 6s)
  *   2. Main             60/40 grid:
- *                         left   \u2014 tabbed Watchlist | Wallets | Signals
- *                         right  \u2014 sticky CopilotPane (legacy panel for now;
- *                                  W5 swaps in CopilotPane with context chip)
- *   3. Tray             (collapsed by default; full Tray ships in W5)
+ *                         left   — tabbed Watchlist | Wallets | Signals
+ *                         right  — sticky OrcaMini (v4 §4.5 Mini surface)
  *
- * Compliance: no buy/sell/hold verbs in the shell. The Trading drawer
- * (locked to "coming soon" per parent doc §7.4) keeps its existing copy.
+ * Compliance: no buy/sell/hold verbs in the shell. The legacy Tray (Trading
+ * coming-soon panel + Memory drawer) has been retired per v4 §6 cleanup.
+ * Trading remains reachable at /trading; Memory becomes a header link inside
+ * ORCA Studio.
  */
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -21,9 +21,7 @@ import PulseStrip from '@/components/personal/PulseStrip'
 import WatchlistTab from '@/components/personal/WatchlistTab'
 import WalletsTab from '@/components/personal/WalletsTab'
 import SignalsTab from '@/components/personal/SignalsTab'
-import CopilotPane from '@/components/personal/CopilotPane'
 import OrcaMini from '@/components/orca/OrcaMini'
-import Tray from '@/components/personal/Tray'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const Page = styled.main`
@@ -129,7 +127,6 @@ function PersonalShell() {
   const [tickers, setTickers] = useState([])
   const [activeTab, setActiveTab] = useState('watchlist')
   const [focus, setFocus] = useState(null) // { type: 'ticker'|'wallet', value, label }
-  const [trayOpen, setTrayOpen] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -242,8 +239,6 @@ function PersonalShell() {
           <OrcaMini focus={focus} />
         </StickyCol>
       </MainGrid>
-
-      <Tray open={trayOpen} onChange={setTrayOpen} />
     </Page>
   )
 }

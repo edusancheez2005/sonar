@@ -46,6 +46,13 @@ const nextConfig = {
         destination: '/subscribe',
         permanent: true,
       },
+      {
+        // v4 §6 cleanup: the legacy /ai-advisor surface is replaced by /orca
+        // (ORCA Studio). Permanent redirect preserves inbound links + SEO.
+        source: '/ai-advisor',
+        destination: '/orca',
+        permanent: true,
+      },
     ]
   },
   async headers() {

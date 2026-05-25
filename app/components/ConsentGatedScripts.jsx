@@ -65,6 +65,7 @@ export default function ConsentGatedScripts() {
             const pageType = window.location.pathname.includes('/dashboard') ? 'dashboard' :
                            window.location.pathname.includes('/statistics') ? 'statistics' :
                            window.location.pathname.includes('/news') ? 'news' :
+                           window.location.pathname.includes('/orca') ? 'orca' :
                            window.location.pathname.includes('/ai-advisor') ? 'ai_advisor' :
                            window.location.pathname === '/' ? 'homepage' : 'other';
 

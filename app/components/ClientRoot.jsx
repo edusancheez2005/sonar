@@ -23,7 +23,7 @@ const WALLET_ROUTES = ['/dashboard', '/personalize', '/profile', '/wallet-tracke
 
 export default function ClientRoot({ children }) {
   const pathname = usePathname()
-  const hideFeedback = pathname === '/ai-advisor'
+  const hideFeedback = pathname === '/orca' || pathname === '/ai-advisor'
   const isLandingPage = pathname === '/'
   const useLegacyTopNav = process.env.NEXT_PUBLIC_LEGACY_TOP_NAV === '1'
   const inShell = !isLandingPage && !useLegacyTopNav

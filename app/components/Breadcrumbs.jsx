@@ -11,6 +11,7 @@ const segmentNames = {
   'news': 'News',
   'trending': 'Trending',
   'ai-advisor': 'AI Advisor',
+  'orca': 'ORCA',
   'ai-crypto-signals': 'AI Crypto Signals',
   'whale-tracker': 'Whale Tracker',
   'nansen-alternative': 'Nansen Alternative',
