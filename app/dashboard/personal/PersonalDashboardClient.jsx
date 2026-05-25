@@ -22,6 +22,7 @@ import WatchlistTab from '@/components/personal/WatchlistTab'
 import WalletsTab from '@/components/personal/WalletsTab'
 import SignalsTab from '@/components/personal/SignalsTab'
 import CopilotPane from '@/components/personal/CopilotPane'
+import OrcaMini from '@/components/orca/OrcaMini'
 import Tray from '@/components/personal/Tray'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
@@ -235,12 +236,10 @@ function PersonalShell() {
         </Card>
 
         <StickyCol>
-          <CopilotPane
-            experienceLevel={experience}
-            tickers={tickers}
-            focus={focus}
-            onClearFocus={() => setFocus(null)}
-          />
+          {/* v4 §4.5: the Mini surface replaces the legacy CopilotPane.
+              The OrcaConversation atom is shared with Drawer + Studio so
+              threads continue seamlessly across surfaces. */}
+          <OrcaMini focus={focus} />
         </StickyCol>
       </MainGrid>
 
