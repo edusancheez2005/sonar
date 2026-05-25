@@ -44,6 +44,7 @@ export default defineConfig({
       'scripts/**',
       'dist/**',
       'build/**',
+      'test/e2e/**',
     ],
     coverage: {
       provider: 'v8',
