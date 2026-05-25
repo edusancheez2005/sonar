@@ -141,6 +141,9 @@ const Sources = styled.div`
 `
 
 const SourcePill = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: ${tokens.textMuted};
   background: ${tokens.surface.panel};
@@ -149,6 +152,37 @@ const SourcePill = styled.a`
   padding: 3px 9px;
   text-decoration: none;
   &:hover { color: ${tokens.accent}; border-color: ${tokens.surface.borderActive}; }
+  img {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    display: block;
+  }
+`
+
+const Disclosure = styled.details`
+  margin-top: 6px;
+  font-size: 11px;
+  color: ${tokens.textLabel};
+  summary {
+    cursor: pointer;
+    list-style: none;
+    color: ${tokens.textMuted};
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '\\2139'; opacity: 0.8; }
+  &[open] summary::after { content: '\\25B4'; margin-left: 4px; }
+  &:not([open]) summary::after { content: '\\25BE'; margin-left: 4px; }
+  p {
+    margin: 6px 0 0;
+    line-height: 1.5;
+    color: ${tokens.textLabel};
+    white-space: pre-wrap;
+  }
 `
 
 const ConfirmRow = styled.div`
@@ -238,6 +272,55 @@ function extractReply(body) {
   if (typeof body.response === 'string' && body.response.trim()) return body.response
   if (typeof body.message === 'string' && body.message.trim()) return body.message
   return null
+}
+
+// v4 §2.2 #3 — split the standard MANDATORY_DISCLAIMER tail off an assistant
+// message so it can render as a fold instead of as a 4-line paragraph.
+// The disclaimer block is delimited by lines of '---' (see
+// lib/orca/shared-rules.ts → MANDATORY_DISCLAIMER).
+const DISCLAIMER_TAIL = /\n?-{3,}\s*\n([\s\S]*?)\n-{3,}\s*$/
+export function splitDisclaimer(content) {
+  if (typeof content !== 'string') return { body: '', disclaimer: null }
+  const match = content.match(DISCLAIMER_TAIL)
+  if (!match) return { body: content, disclaimer: null }
+  const disclaimer = match[1].trim()
+  const body = content.slice(0, match.index).trimEnd()
+  return { body, disclaimer }
+}
+
+// v4 §2.2 #8 — favicon resolver for source pills. Uses Google's S2 service
+// (publicly available, no API key, no scraping). Returns null for sources
+// without a parsable hostname so the pill still renders as text.
+export function faviconFor(url) {
+  try {
+    const host = new URL(url).hostname
+    if (!host) return null
+    return `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(host)}`
+  } catch {
+    return null
+  }
+}
+
+// v4 §2.2 #8 — click telemetry for source cards. Spec allows click-tracking,
+// disallows scraping. We dispatch a CustomEvent on window so downstream
+// analytics can subscribe without coupling this component to a pipeline.
+function emitSourceClick(source, index) {
+  if (typeof window === 'undefined') return
+  try {
+    window.dispatchEvent(
+      new CustomEvent('orca:source-click', {
+        detail: {
+          index,
+          url: typeof source === 'string' ? source : source?.url || null,
+          label: typeof source === 'string' ? null : source?.label || null,
+          kind: typeof source === 'string' ? null : source?.kind || null,
+          ts: Date.now(),
+        },
+      })
+    )
+  } catch {
+    // never block the user's navigation on a telemetry failure
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -435,6 +518,30 @@ export default function OrcaConversation({
     await submitMessage(text)
   }
 
+  // v4 §2.2 #4 — one-key follow-ups. Number keys 1 / 2 / 3 select the
+  // matching follow-up chip. Skipped while typing in an input/textarea so we
+  // don't hijack the user's draft.
+  useEffect(() => {
+    if (!followUps.length || pendingConfirm || sending) return
+    function onKey(e) {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      const target = e.target
+      if (target && typeof target.tagName === 'string') {
+        const tag = target.tagName.toUpperCase()
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
+      }
+      const idx = ['1', '2', '3'].indexOf(e.key)
+      if (idx === -1) return
+      const chip = followUps[idx]
+      if (!chip) return
+      e.preventDefault()
+      onFollowUp(typeof chip === 'string' ? chip : chip.text)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followUps, pendingConfirm, sending])
+
   return (
     <Wrap $variant={variant} className={className} aria-label="ORCA conversation">
       <Thread
@@ -448,27 +555,55 @@ export default function OrcaConversation({
             Pinned: {focus.label || focus.value}
           </FocusChip>
         )}
-        {messages.map((m, i) => (
-          <Bubble
-            key={i}
-            $role={m.role}
-            data-testid={`orca-conv-message-${m.role}-${i}`}
-          >
-            {m.content}
-          </Bubble>
-        ))}
+        {messages.map((m, i) => {
+          if (m.role !== 'assistant') {
+            return (
+              <Bubble
+                key={i}
+                $role={m.role}
+                data-testid={`orca-conv-message-${m.role}-${i}`}
+              >
+                {m.content}
+              </Bubble>
+            )
+          }
+          const { body, disclaimer } = splitDisclaimer(m.content)
+          return (
+            <Bubble
+              key={i}
+              $role={m.role}
+              data-testid={`orca-conv-message-${m.role}-${i}`}
+            >
+              {body}
+              {disclaimer && (
+                <Disclosure data-testid={`orca-conv-disclaimer-${i}`}>
+                  <summary aria-label="Disclaimer">Disclaimer</summary>
+                  <p>{disclaimer}</p>
+                </Disclosure>
+              )}
+            </Bubble>
+          )
+        })}
         {sources.length > 0 && (
           <Sources data-testid="orca-conv-sources">
-            {sources.map((s, i) => (
-              <SourcePill
-                key={i}
-                href={typeof s === 'string' ? s : s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {typeof s === 'string' ? s : s.label || s.url}
-              </SourcePill>
-            ))}
+            {sources.map((s, i) => {
+              const url = typeof s === 'string' ? s : s.url
+              const label = typeof s === 'string' ? s : s.label || s.url
+              const fav = faviconFor(url)
+              return (
+                <SourcePill
+                  key={i}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid={`orca-conv-source-${i}`}
+                  onClick={() => emitSourceClick(s, i)}
+                >
+                  {fav && <img src={fav} alt="" loading="lazy" />}
+                  <span>{label}</span>
+                </SourcePill>
+              )
+            })}
           </Sources>
         )}
         {pendingConfirm && (

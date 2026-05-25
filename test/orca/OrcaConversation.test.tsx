@@ -350,4 +350,130 @@ describe('OrcaConversation — atom', () => {
     const text = wrap.textContent || ''
     expect(/\p{Extended_Pictographic}/u.test(text)).toBe(false)
   })
+
+  // v4 §6 branch #10 (polish) -----------------------------------------------
+
+  describe('disclaimer fold', () => {
+    it('hides the MANDATORY_DISCLAIMER text behind a collapsed fold', () => {
+      const body = 'BTC moved 2 percent in the last hour.'
+      const disclaimerText =
+        'This output is an automated summary of public data for informational and educational purposes only.'
+      const content = `${body}\n\n---\n${disclaimerText}\n---`
+      render(
+        <OrcaConversation
+          client={makeClient()}
+          fetchImpl={vi.fn()}
+          seedMessages={[{ role: 'assistant', content }]}
+        />
+      )
+      const bubble = screen.getByTestId('orca-conv-message-assistant-0')
+      expect(bubble.textContent).toContain(body)
+      // Disclaimer body is in the DOM (inside <details>) but not visible until expanded.
+      const fold = screen.getByTestId('orca-conv-disclaimer-0')
+      expect(fold).toBeInTheDocument()
+      expect(fold.hasAttribute('open')).toBe(false)
+      expect(screen.getByText('Disclaimer')).toBeInTheDocument()
+    })
+
+    it('leaves messages without a disclaimer untouched', () => {
+      render(
+        <OrcaConversation
+          client={makeClient()}
+          fetchImpl={vi.fn()}
+          seedMessages={[{ role: 'assistant', content: 'No disclaimer here.' }]}
+        />
+      )
+      expect(screen.queryByTestId('orca-conv-disclaimer-0')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('follow-up keyboard shortcuts', () => {
+    it('selects the first follow-up chip when "1" is pressed', async () => {
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(
+          okResponse({
+            response: 'reply one',
+            follow_ups: ['Tell me more', 'Show whales', 'Latest news'],
+          })
+        )
+        .mockResolvedValueOnce(okResponse({ response: 'reply two' }))
+      render(<OrcaConversation client={makeClient('tok')} fetchImpl={fetchImpl} />)
+      await userEvent.type(screen.getByTestId('orca-conv-input'), 'first')
+      await userEvent.click(screen.getByTestId('orca-conv-send'))
+      await waitFor(() =>
+        expect(screen.getByTestId('orca-conv-followups')).toBeInTheDocument()
+      )
+      // Blur the input first so the keydown listener engages.
+      ;(document.activeElement as HTMLElement | null)?.blur()
+      await userEvent.keyboard('1')
+      await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+      const body = JSON.parse(fetchImpl.mock.calls[1][1].body)
+      expect(body.message).toBe('Tell me more')
+    })
+
+    it('does not hijack number keys while the input is focused', async () => {
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(
+          okResponse({
+            response: 'reply one',
+            follow_ups: ['Tell me more'],
+          })
+        )
+      render(<OrcaConversation client={makeClient('tok')} fetchImpl={fetchImpl} />)
+      const input = screen.getByTestId('orca-conv-input') as HTMLInputElement
+      await userEvent.type(input, 'first')
+      await userEvent.click(screen.getByTestId('orca-conv-send'))
+      await waitFor(() =>
+        expect(screen.getByTestId('orca-conv-followups')).toBeInTheDocument()
+      )
+      input.focus()
+      await userEvent.keyboard('1')
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(input.value).toContain('1')
+    })
+  })
+
+  describe('source-strip favicons and telemetry', () => {
+    it('renders a favicon img next to each source pill and emits orca:source-click on click', async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(
+        okResponse({
+          response: 'BTC update.',
+          sources: [
+            { label: 'CoinGecko', url: 'https://www.coingecko.com/btc' },
+            { label: 'Etherscan', url: 'https://etherscan.io/tx/0xabc' },
+          ],
+        })
+      )
+      const events: any[] = []
+      const handler = (e: Event) => events.push((e as CustomEvent).detail)
+      window.addEventListener('orca:source-click', handler)
+      try {
+        render(<OrcaConversation client={makeClient('tok')} fetchImpl={fetchImpl} />)
+        await userEvent.type(screen.getByTestId('orca-conv-input'), 'btc')
+        await userEvent.click(screen.getByTestId('orca-conv-send'))
+        await waitFor(() => screen.getByTestId('orca-conv-sources'))
+        const pill0 = screen.getByTestId('orca-conv-source-0')
+        const pill1 = screen.getByTestId('orca-conv-source-1')
+        expect(pill0.querySelector('img')?.getAttribute('src')).toMatch(
+          /google\.com\/s2\/favicons.*coingecko\.com/
+        )
+        expect(pill1.querySelector('img')?.getAttribute('src')).toMatch(
+          /google\.com\/s2\/favicons.*etherscan\.io/
+        )
+        // Prevent default so jsdom doesn't try to navigate.
+        pill0.addEventListener('click', (e) => e.preventDefault(), { once: true })
+        await userEvent.click(pill0)
+        expect(events.length).toBe(1)
+        expect(events[0]).toMatchObject({
+          index: 0,
+          url: 'https://www.coingecko.com/btc',
+          label: 'CoinGecko',
+        })
+      } finally {
+        window.removeEventListener('orca:source-click', handler)
+      }
+    })
+  })
 })
