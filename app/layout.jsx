@@ -9,6 +9,10 @@ import ConsentGatedScripts from './components/ConsentGatedScripts'
 // the entire app so the imperative API is always available.
 import { OrcaDrawerProvider } from '../components/orca/useOrcaDrawer'
 import OrcaDrawer from '../components/orca/OrcaDrawer'
+// v4 §4.3: Cmd+K / floating-button launcher. Lives next to the Drawer so
+// keyboard chords and the FAB are always available (auto-hides on /auth,
+// /orca, and any page that opts out).
+import OrcaLauncher from '../components/orca/OrcaLauncher'
 
 // Imported here (root layout) so it ships in the main always-loaded CSS
 // bundle rather than a per-route chunk. Avoids 'Loading CSS chunk failed'
@@ -336,6 +340,7 @@ export default function RootLayout({ children }) {
           <OrcaDrawerProvider>
             <ClientRoot>{children}</ClientRoot>
             <OrcaDrawer />
+            <OrcaLauncher />
           </OrcaDrawerProvider>
         </StyledComponentsRegistry>
         <ConsentGatedScripts />
