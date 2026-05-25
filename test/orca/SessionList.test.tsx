@@ -163,4 +163,134 @@ describe('SessionList', () => {
     )
     expect(fetchImpl).not.toHaveBeenCalled()
   })
+
+  // v4 §6 branch #9 (history) -------------------------------------------------
+
+  function listFetch(sessions: any[]) {
+    return vi.fn(async (url: string, init?: any) => {
+      if (url.startsWith('/api/orca/sessions?')) return ok({ sessions }) as any
+      if (init?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) }) as any
+      }
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) }) as any
+    })
+  }
+
+  it('filters rows by the search query (case-insensitive substring)', async () => {
+    const client = mockClient()
+    const fetchImpl = listFetch([
+      { id: 'a', title: 'BTC outlook', updated_at: new Date().toISOString() },
+      { id: 'b', title: 'ETH gas tonight', updated_at: new Date().toISOString() },
+      { id: 'c', title: 'SOL whales', updated_at: new Date().toISOString() },
+    ])
+    render(
+      <SessionList
+        activeSessionId={null}
+        onSelect={() => {}}
+        onNew={() => {}}
+        client={client as any}
+        fetchImpl={fetchImpl as any}
+      />
+    )
+    await screen.findByTestId('orca-session-row-a')
+    await userEvent.type(screen.getByTestId('orca-session-search'), 'eth')
+    await waitFor(() =>
+      expect(screen.queryByTestId('orca-session-row-a')).not.toBeInTheDocument()
+    )
+    expect(screen.getByTestId('orca-session-row-b')).toBeInTheDocument()
+    expect(screen.queryByTestId('orca-session-row-c')).not.toBeInTheDocument()
+  })
+
+  it('renames a session on Enter and PATCHes /api/orca/sessions/{id}', async () => {
+    const client = mockClient()
+    const fetchImpl = listFetch([
+      { id: 'r1', title: 'old title', updated_at: new Date().toISOString() },
+    ])
+    render(
+      <SessionList
+        activeSessionId="r1"
+        onSelect={() => {}}
+        onNew={() => {}}
+        client={client as any}
+        fetchImpl={fetchImpl as any}
+      />
+    )
+    await screen.findByTestId('orca-session-rename-r1')
+    await userEvent.click(screen.getByTestId('orca-session-rename-r1'))
+    const input = await screen.findByTestId('orca-session-rename-input-r1')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'new title{Enter}')
+
+    await waitFor(() => {
+      const patchCall = (fetchImpl.mock.calls as any[]).find(
+        ([url, init]) => url === '/api/orca/sessions/r1' && init?.method === 'PATCH'
+      )
+      expect(patchCall).toBeTruthy()
+      const body = JSON.parse(patchCall[1].body)
+      expect(body).toEqual({ title: 'new title' })
+    })
+    await waitFor(() =>
+      expect(screen.getByText('new title')).toBeInTheDocument()
+    )
+  })
+
+  it('cancels rename on Escape and does not PATCH', async () => {
+    const client = mockClient()
+    const fetchImpl = listFetch([
+      { id: 'r2', title: 'keep me', updated_at: new Date().toISOString() },
+    ])
+    render(
+      <SessionList
+        activeSessionId="r2"
+        onSelect={() => {}}
+        onNew={() => {}}
+        client={client as any}
+        fetchImpl={fetchImpl as any}
+      />
+    )
+    await screen.findByTestId('orca-session-rename-r2')
+    await userEvent.click(screen.getByTestId('orca-session-rename-r2'))
+    const input = await screen.findByTestId('orca-session-rename-input-r2')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'discarded{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByTestId('orca-session-rename-input-r2')).not.toBeInTheDocument()
+    )
+    expect(screen.getByText('keep me')).toBeInTheDocument()
+    const patchCall = (fetchImpl.mock.calls as any[]).find(
+      ([, init]) => init?.method === 'PATCH'
+    )
+    expect(patchCall).toBeFalsy()
+  })
+
+  it('archives a session optimistically and PATCHes { archived: true }', async () => {
+    const client = mockClient()
+    const fetchImpl = listFetch([
+      { id: 'k1', title: 'kept', updated_at: new Date().toISOString() },
+      { id: 'k2', title: 'doomed', updated_at: new Date().toISOString() },
+    ])
+    render(
+      <SessionList
+        activeSessionId="k1"
+        onSelect={() => {}}
+        onNew={() => {}}
+        client={client as any}
+        fetchImpl={fetchImpl as any}
+      />
+    )
+    await screen.findByTestId('orca-session-row-k2')
+    await userEvent.click(screen.getByTestId('orca-session-archive-k2'))
+    await waitFor(() =>
+      expect(screen.queryByTestId('orca-session-row-k2')).not.toBeInTheDocument()
+    )
+    expect(screen.getByTestId('orca-session-row-k1')).toBeInTheDocument()
+    await waitFor(() => {
+      const patchCall = (fetchImpl.mock.calls as any[]).find(
+        ([url, init]) => url === '/api/orca/sessions/k2' && init?.method === 'PATCH'
+      )
+      expect(patchCall).toBeTruthy()
+      const body = JSON.parse(patchCall[1].body)
+      expect(body).toEqual({ archived: true })
+    })
+  })
 })
