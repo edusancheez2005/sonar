@@ -122,6 +122,31 @@ const Send = styled.button`
   &:hover:not(:disabled) { filter: brightness(1.1); }
 `
 
+// v4 §5.4: Confirm/Cancel row rendered when the orchestrator returns a
+// `confirm` payload (fastWrites short-circuit). Clicking Confirm POSTs
+// `{confirm:{calls}}` back so the planner actually executes the write.
+const ConfirmRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: 2px;
+`
+
+const ConfirmBtn = styled.button`
+  background: ${(p) => (p.$primary ? 'rgba(0, 229, 255, 0.18)' : 'transparent')};
+  border: 1px solid ${(p) => (p.$primary ? 'rgba(0, 229, 255, 0.55)' : 'rgba(255, 255, 255, 0.12)')};
+  color: ${(p) => (p.$primary ? '#00e5ff' : '#8896a6')};
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+  &:hover:not(:disabled) { filter: brightness(1.12); }
+`
+
 export default function PersonalCopilotPanel({
   experienceLevel,
   tickers = [],
@@ -142,6 +167,9 @@ export default function PersonalCopilotPanel({
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
+  // Pending confirmation surfaced by the orchestrator (v4 §5.1).
+  // Shape: { label, calls } from runOrchestrator's `confirm` payload.
+  const [pendingConfirm, setPendingConfirm] = useState(null)
   const threadRef = useRef(null)
 
   // Refresh the seeded greeting if the user's profile or watchlist changes
@@ -169,74 +197,123 @@ export default function PersonalCopilotPanel({
     if (typeof onSeedConsumed === 'function') onSeedConsumed()
   }, [seedMessage, onSeedConsumed])
 
-  async function onSubmit(e) {
-    e.preventDefault()
-    const text = draft.trim()
-    if (!text || sending) return
-
+  /**
+   * Shared POST helper. Sends `{message, focus_ticker, confirm?}` to /api/chat
+   * and pushes the assistant reply into `messages`. Surfaces an `confirm`
+   * payload via `setPendingConfirm` when the server returns one.
+   *
+   * Returns true on success, false on any handled failure.
+   */
+  async function postChat({ messageText, confirmPayload }) {
     const sb = client ?? supabaseBrowser()
     const doFetch = fetchImpl ?? fetch
 
-    setSending(true)
-    setError(null)
-    setDraft('')
-    setMessages((prev) => [...prev, { role: 'user', content: text }])
+    const { data: sessionData } = await sb.auth.getSession()
+    const token = sessionData?.session?.access_token
+    if (!token) {
+      setError('Sign in to chat with ORCA.')
+      return false
+    }
+    const requestBody = { message: messageText, focus_ticker: focusTicker || undefined }
+    if (confirmPayload) requestBody.confirm = confirmPayload
 
+    let res
     try {
-      const { data: sessionData } = await sb.auth.getSession()
-      const token = sessionData?.session?.access_token
-      if (!token) {
-        setError('Sign in to chat with ORCA.')
-        setSending(false)
-        return
-      }
-      const res = await doFetch('/api/chat', {
+      res = await doFetch('/api/chat', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: text, focus_ticker: focusTicker || undefined }),
+        body: JSON.stringify(requestBody),
       })
-      if (!res.ok) {
-        if (res.status === 504 || res.status === 408) {
-          setError('That took too long to compute. Try again in a moment.')
-        } else if (res.status === 401) {
-          setError('Session expired. Refresh the page to sign back in.')
-        } else if (res.status === 429) {
-          setError("You've hit today's chat limit. It resets at midnight UTC.")
-        } else {
-          setError(`ORCA could not respond (HTTP ${res.status}).`)
-        }
-        setSending(false)
-        return
-      }
-      const body = await res.json()
-      const reply =
-        typeof body?.response === 'string'
-          ? body.response
-          : typeof body?.message === 'string'
-          ? body.message
-          : null
-      if (!reply) {
-        setError('Empty response from ORCA.')
-        setSending(false)
-        return
-      }
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
     } catch (err) {
-      // Browser surfaces Vercel function timeouts as a TypeError on fetch.
-      // Distinguish a genuine offline state from a server-side timeout so the
-      // user gets actionable copy instead of the generic "Network error".
-      const offline = typeof navigator !== 'undefined' && navigator && navigator.onLine === false
+      const offline =
+        typeof navigator !== 'undefined' && navigator && navigator.onLine === false
       setError(
         offline
           ? 'You appear to be offline. Reconnect and try again.'
           : 'The request did not complete. ORCA may be busy — try again in a few seconds.'
       )
+      return false
+    }
+
+    if (!res.ok) {
+      if (res.status === 504 || res.status === 408) {
+        setError('That took too long to compute. Try again in a moment.')
+      } else if (res.status === 401) {
+        setError('Session expired. Refresh the page to sign back in.')
+      } else if (res.status === 429) {
+        setError("You've hit today's chat limit. It resets at midnight UTC.")
+      } else {
+        setError(`ORCA could not respond (HTTP ${res.status}).`)
+      }
+      return false
+    }
+    const body = await res.json()
+    const reply =
+      typeof body?.response === 'string'
+        ? body.response
+        : typeof body?.message === 'string'
+        ? body.message
+        : null
+    if (!reply) {
+      setError('Empty response from ORCA.')
+      return false
+    }
+    setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+    // v4 §5.1 — surface Confirm/Cancel buttons if the orchestrator asked for them.
+    if (body && body.confirm && Array.isArray(body.confirm.calls) && body.confirm.calls.length > 0) {
+      setPendingConfirm({
+        label: typeof body.confirm.label === 'string' ? body.confirm.label : 'Confirm',
+        calls: body.confirm.calls,
+      })
+    } else {
+      setPendingConfirm(null)
+    }
+    return true
+  }
+
+  async function onSubmit(e) {
+    e.preventDefault()
+    const text = draft.trim()
+    if (!text || sending) return
+
+    setSending(true)
+    setError(null)
+    setDraft('')
+    // A fresh user message invalidates any pending confirm.
+    setPendingConfirm(null)
+    setMessages((prev) => [...prev, { role: 'user', content: text }])
+    try {
+      await postChat({ messageText: text })
     } finally {
       setSending(false)
     }
+  }
+
+  async function onConfirmAction() {
+    if (!pendingConfirm || sending) return
+    setSending(true)
+    setError(null)
+    const label = pendingConfirm.label
+    const calls = pendingConfirm.calls
+    setPendingConfirm(null)
+    setMessages((prev) => [...prev, { role: 'user', content: `Confirmed: ${label}` }])
+    try {
+      await postChat({ messageText: label, confirmPayload: { calls } })
+    } finally {
+      setSending(false)
+    }
+  }
+
+  function onCancelAction() {
+    if (sending) return
+    setPendingConfirm(null)
+    setMessages((prev) => [
+      ...prev,
+      { role: 'assistant', content: 'Cancelled. Nothing was changed.' },
+    ])
   }
 
   return (
@@ -251,6 +328,28 @@ export default function PersonalCopilotPanel({
             {m.content}
           </Bubble>
         ))}
+        {pendingConfirm && (
+          <ConfirmRow data-testid="copilot-confirm-row">
+            <ConfirmBtn
+              type="button"
+              $primary
+              disabled={sending}
+              onClick={onConfirmAction}
+              data-testid="copilot-confirm"
+              aria-label={pendingConfirm.label}
+            >
+              Confirm
+            </ConfirmBtn>
+            <ConfirmBtn
+              type="button"
+              disabled={sending}
+              onClick={onCancelAction}
+              data-testid="copilot-cancel"
+            >
+              Cancel
+            </ConfirmBtn>
+          </ConfirmRow>
+        )}
         {error && <ErrorLine role="alert">{error}</ErrorLine>}
       </Thread>
       <Form onSubmit={onSubmit}>

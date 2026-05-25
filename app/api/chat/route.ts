@@ -372,10 +372,32 @@ export async function POST(request: Request) {
           }
         }
 
+        // v4 §5.3: machine-grep-able single-line metric so we can spot
+        // tool timeouts and fast-write fires in Vercel logs at a glance.
+        try {
+          const toolEvents = out.trace.filter((e) => e.stage === 'tool')
+          const failures = toolEvents.filter((e: any) => e.payload?.ok === false)
+          const totalLatency = out.trace.reduce((acc, e) => acc + (e.latency_ms ?? 0), 0)
+          console.log(
+            '[orca_metrics]',
+            JSON.stringify({
+              intent: out.intent,
+              confirm: Boolean(out.confirm),
+              user_confirmed: Boolean(userConfirmed),
+              tools: toolEvents.length,
+              tool_failures: failures.length,
+              total_latency_ms: totalLatency,
+            })
+          )
+        } catch {
+          /* metrics are best-effort */
+        }
+
         return NextResponse.json({
           response: out.text,
           intent: out.intent,
           orchestrator: 'v2',
+          ...(out.confirm ? { confirm: out.confirm } : {}),
         })
       } catch (orchErr) {
         console.error('[orchestrator] v2 path failed, falling back to v1', orchErr)

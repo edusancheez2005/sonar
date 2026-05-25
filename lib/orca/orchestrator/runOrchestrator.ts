@@ -12,10 +12,12 @@
 import { COMPLIANCE_DECLINE_RESPONSE, applyGuardrails } from './guardrails'
 import { planToolCalls } from './planner'
 import { routeMessage } from './router'
+import { detectFastWrite } from './fastWrites'
 import { selectRenderer } from '../renderers'
 import { executeTool } from './tools/registry'
 import type {
   ChatTurn,
+  Intent,
   ModelClient,
   OrchestratorOutput,
   SupabaseLike,
@@ -47,12 +49,64 @@ export interface RunOrchestratorDeps {
 
 const WRITE_TOOLS = new Set(['addToWatchlist', 'removeFromWatchlist', 'setUserAlert'])
 
+/**
+ * Per-tool execution budget. v4 §5.2: nothing the orchestrator awaits is
+ * allowed to block longer than this. The chat route maxDuration is 60s; we
+ * leave generous headroom for the writer LLM call.
+ */
+const TOOL_TIMEOUT_MS = 8000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`tool_timeout:${label}:${ms}ms`))
+    }, ms)
+    promise.then(
+      (v) => {
+        clearTimeout(timer)
+        resolve(v)
+      },
+      (err) => {
+        clearTimeout(timer)
+        reject(err)
+      }
+    )
+  })
+}
+
 export async function runOrchestrator(
   input: RunOrchestratorInput,
   deps: RunOrchestratorDeps
 ): Promise<OrchestratorOutput> {
   const now = deps.now ?? (() => new Date())
   const trace: TraceEvent[] = []
+
+  // --- Stage 0: deterministic write fast-path (v4 §5.1) ---------------------
+  // If the user explicitly typed "add BTC to watchlist", we skip the LLM
+  // router entirely, emit short prose plus a confirm payload, and let the
+  // client surface Confirm/Cancel. The actual write runs on the NEXT turn
+  // when the client echoes `confirm.calls` back to us. This keeps the
+  // first turn at sub-250ms and avoids the writer-prose-then-confirm loop
+  // that previously hid the action from the user entirely.
+  //
+  // We bypass this path when `userConfirmed === true` so the second turn
+  // (the actual write) is allowed to proceed through the planner.
+  if (!input.userConfirmed) {
+    const fast = detectFastWrite(input.message)
+    if (fast) {
+      trace.push({
+        stage: 'router',
+        payload: { intent: 'personal', fast_write: true, label: fast.confirm.label },
+        latency_ms: 0,
+      })
+      return {
+        text: fast.prose,
+        intent: 'personal' as Intent,
+        trace,
+        confirm: fast.confirm,
+      }
+    }
+  }
 
   // --- Stage 1: route -------------------------------------------------------
   const tRouter = Date.now()
@@ -84,7 +138,14 @@ export async function runOrchestrator(
     userConfirmed: input.userConfirmed,
   })
   const writeCalls = input.userConfirmed
-    ? (input.confirmedWriteCalls ?? []).filter((c) => WRITE_TOOLS.has(c.tool))
+    ? (input.confirmedWriteCalls ?? [])
+        .filter((c) => WRITE_TOOLS.has(c.tool))
+        // Inject the verified userId server-side. Clients echo {tool,args}
+        // from a previous orchestrator confirm payload that contains only
+        // {ticker}; the write tools require userId and the planner does
+        // not see this list, so we attach it here. NEVER trust client-
+        // supplied userId.
+        .map((c) => ({ ...c, args: { ...c.args, userId: input.userId } }))
     : []
   const allCalls: ToolCall[] = [...readCalls, ...writeCalls]
   trace.push({
@@ -96,7 +157,22 @@ export async function runOrchestrator(
   const toolResults: Array<{ call: ToolCall; result: ToolResult }> = await Promise.all(
     allCalls.map(async (call) => {
       const tTool = Date.now()
-      const result = await executeTool(call, deps.supabase, now)
+      let result: ToolResult
+      try {
+        result = await withTimeout(
+          executeTool(call, deps.supabase, now),
+          TOOL_TIMEOUT_MS,
+          call.tool
+        )
+      } catch (err: any) {
+        result = {
+          ok: false,
+          data: null,
+          source: 'timeout',
+          fetched_at: now().toISOString(),
+          error: err?.message ?? 'tool_failed',
+        }
+      }
       trace.push({
         stage: 'tool',
         payload: { tool: call.tool, ok: result.ok, source: result.source, args: redactArgs(call.args), error: result.error ?? null },

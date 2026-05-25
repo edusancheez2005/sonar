@@ -119,6 +119,16 @@ export interface OrchestratorOutput {
   text: string
   intent: Intent
   trace: TraceEvent[]
+  /**
+   * When present, the route handler should surface a Confirm/Cancel UI to
+   * the user. On confirm the client POSTs `{confirm:{calls}}` back to /api/chat
+   * and the planner executes those (already-validated) write tool calls.
+   * v4 §5.1 (fastWrites short-circuit).
+   */
+  confirm?: {
+    label: string
+    calls: ToolCall[]
+  }
 }
 
 export interface TraceEvent {
