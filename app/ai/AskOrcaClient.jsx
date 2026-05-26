@@ -61,8 +61,8 @@ const fadeIn = keyframes`
 `
 
 const Shell = styled.div`
-  min-height: calc(100vh - 80px);
-  background: ${colors.bgDark};
+  min-height: ${({ $embedded }) => ($embedded ? '0' : 'calc(100vh - 80px)')};
+  background: ${({ $embedded }) => ($embedded ? 'transparent' : colors.bgDark)};
   color: ${colors.textPrimary};
   font-family: ${FONT_SANS};
   display: flex;
@@ -508,11 +508,19 @@ function SparkChart({ prices, authoritativeChange, title, id, height = 60, compa
   )
 }
 
-export default function AskOrcaClient() {
+export default function AskOrcaClient({
+  ticker: tickerProp,
+  wallet: walletProp,
+  initialQ: initialQProp,
+  embedded = false,
+} = {}) {
   const searchParams = useSearchParams()
-  const ticker = searchParams?.get('ticker') || null
-  const wallet = searchParams?.get('wallet') || null
-  const initialQ = searchParams?.get('q') || ''
+  // Props win over URL params so the drawer (which has no URL of its own)
+  // can still set context. URL params are still honoured on the standalone
+  // /ai page.
+  const ticker = tickerProp || searchParams?.get('ticker') || null
+  const wallet = walletProp || searchParams?.get('wallet') || null
+  const initialQ = initialQProp || searchParams?.get('q') || ''
 
   const [session, setSession] = useState(null)
   const [messages, setMessages] = useState([])
@@ -562,7 +570,10 @@ export default function AskOrcaClient() {
     const question = (rawQuestion || '').trim()
     if (!question) return
     if (!session) {
-      window.location.href = `/auth/signin?redirect=/ai`
+      const redirectTo = typeof window !== 'undefined'
+        ? window.location.pathname + window.location.search
+        : '/ai'
+      window.location.href = `/auth/signin?redirect=${encodeURIComponent(redirectTo)}`
       return
     }
     setError(null)
@@ -759,7 +770,7 @@ export default function AskOrcaClient() {
   const showHero = messages.length === 0
 
   return (
-    <Shell>
+    <Shell $embedded={embedded}>
       {showHero ? (
         <HeroWrap>
           <Eyebrow>Ask ORCA</Eyebrow>

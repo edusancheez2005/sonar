@@ -19,6 +19,13 @@ const WalletProvider = dynamic(() => import('@/components/wallet/WalletProvider'
   ssr: false,
 })
 
+// OrcaDrawer (Stage D): floating "Ask ORCA" pill + slide-in chat. The
+// component itself decides whether to render (hidden on /ai, /ai-advisor,
+// landing, auth, legal). Lazy-loaded to keep the initial bundle lean.
+const OrcaDrawer = dynamic(() => import('@/components/orca/OrcaDrawer'), {
+  ssr: false,
+})
+
 const WALLET_ROUTES = ['/dashboard', '/personalize', '/profile', '/wallet-tracker', '/watchlist', '/whale']
 
 export default function ClientRoot({ children }) {
@@ -53,6 +60,7 @@ export default function ClientRoot({ children }) {
       )}
       {!hideFeedback && <FeedbackWidget hideTrigger={inShell} />}
       <CookieConsent />
+      <OrcaDrawer />
     </StyleSheetManager>
   )
 
