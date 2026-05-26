@@ -1,0 +1,218 @@
+/**
+ * ORCA personalisation context loader + system-prompt block builder.
+ * =============================================================================
+ * Stage E (2026-05-26). Surfaces a short, neutral personalisation block that
+ * the v1 chat path prepends to ORCA_SYSTEM_PROMPT before each turn. Two
+ * sources combine:
+ *
+ *   1. `user_profile`  — onboarding answers (experience, goal, risk, time
+ *                        horizon, preferred chains).
+ *   2. `orca_memory`   — durable facts the extractor learned from prior
+ *                        conversations (paraphrased, PII-scrubbed; see
+ *                        lib/orca/memory/extractor.ts).
+ *
+ * Design rules (locked, do not relax without re-review):
+ *   - The block is ADDITIVE context only. It MUST NOT relax any of the
+ *     ORCA_SYSTEM_PROMPT hard rules (no buy/sell/price-target verbs).
+ *   - It is short — capped at 8 memory facts, single block of prose.
+ *   - All errors swallowed: returns `null`/empty rather than throwing, so a
+ *     personalisation failure can never break the chat reply.
+ *   - The helper has zero dependency on any specific Supabase client type —
+ *     it accepts a minimal `from(table).select().eq()` shape and tolerates
+ *     missing fields. This keeps it test-friendly and reusable across the
+ *     v1 SSE path, the conversational fallback, and the v2 orchestrator.
+ */
+
+export interface UserProfileLite {
+  experience_level?: string | null
+  primary_goal?: string | null
+  risk_tolerance?: string | null
+  time_horizon?: string | null
+  preferred_chains?: string[] | null
+}
+
+export interface MemoryFact {
+  fact: string
+  confidence?: number | null
+  created_at?: string | null
+  expires_at?: string | null
+}
+
+export interface PersonalizationContext {
+  profile: UserProfileLite | null
+  memories: MemoryFact[]
+}
+
+const MAX_MEMORY_FACTS = 8
+const MAX_FACT_LEN_INLINE = 200
+
+// Minimal supabase-like shape. We deliberately do NOT import the real client
+// type to keep this helper unit-testable with a plain mock.
+type SbLike = {
+  from: (table: string) => {
+    select: (cols: string) => {
+      eq: (col: string, val: any) => any
+    }
+  }
+}
+
+/**
+ * Load the user's profile row + most-recent non-expired memory facts.
+ * Never throws. Missing tables / RLS denial → empty context.
+ */
+export async function loadPersonalizationContext(
+  supabase: SbLike,
+  userId: string,
+  now: () => Date = () => new Date()
+): Promise<PersonalizationContext> {
+  const empty: PersonalizationContext = { profile: null, memories: [] }
+  if (!userId || typeof userId !== 'string') return empty
+
+  let profile: UserProfileLite | null = null
+  try {
+    const q = supabase
+      .from('user_profile')
+      .select('experience_level, primary_goal, risk_tolerance, time_horizon, preferred_chains')
+      .eq('user_id', userId)
+    const { data } = await (typeof (q as any).maybeSingle === 'function'
+      ? (q as any).maybeSingle()
+      : (q as any).single().catch(() => ({ data: null })))
+    if (data && typeof data === 'object') {
+      profile = data as UserProfileLite
+    }
+  } catch (err) {
+    console.warn('[orca/personalization] profile load failed', err)
+  }
+
+  let memories: MemoryFact[] = []
+  try {
+    const nowIso = now().toISOString()
+    let q: any = supabase
+      .from('orca_memory')
+      .select('fact, confidence, created_at, expires_at')
+      .eq('user_id', userId)
+    if (typeof q.or === 'function') {
+      q = q.or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+    }
+    if (typeof q.order === 'function') {
+      q = q.order('created_at', { ascending: false })
+    }
+    if (typeof q.limit === 'function') {
+      q = q.limit(MAX_MEMORY_FACTS)
+    }
+    const { data } = await q
+    if (Array.isArray(data)) {
+      memories = data
+        .filter((r: any) => r && typeof r.fact === 'string' && r.fact.trim().length > 0)
+        .slice(0, MAX_MEMORY_FACTS)
+        .map((r: any) => ({
+          fact: String(r.fact).slice(0, MAX_FACT_LEN_INLINE),
+          confidence: typeof r.confidence === 'number' ? r.confidence : null,
+          created_at: r.created_at ?? null,
+          expires_at: r.expires_at ?? null,
+        }))
+    }
+  } catch (err) {
+    console.warn('[orca/personalization] memory load failed', err)
+  }
+
+  return { profile, memories }
+}
+
+const EXPERIENCE_LABEL: Record<string, string> = {
+  new: 'a beginner — define jargon on first use',
+  intermediate: 'an intermediate crypto user — assume familiarity with common DeFi/onchain terms',
+  advanced: 'an advanced crypto user — skip basic definitions, lead with the data',
+}
+
+const HORIZON_LABEL: Record<string, string> = {
+  intraday: 'an intraday horizon (lead with 1h and 24h windows)',
+  swing: 'a multi-day swing horizon (lead with 24h and 7d windows)',
+  position: 'a multi-week position horizon (lead with 7d and 30d windows)',
+  long_term: 'a long-term horizon (lead with 30d and macro context)',
+}
+
+const RISK_LABEL: Record<string, string> = {
+  conservative: 'a conservative risk posture — flag volatility and drawdowns prominently',
+  balanced: 'a balanced risk posture',
+  aggressive: 'an aggressive risk posture — they have asked for blunt, dense data, no softening',
+}
+
+const GOAL_LABEL: Record<string, string> = {
+  learn: 'is here to learn — favour explanations',
+  track: 'is here to track positions and the broader market',
+  research: 'is here to do research — be exhaustive with sources and numbers',
+  trade: 'is here to follow live market structure',
+}
+
+function describeProfile(profile: UserProfileLite | null): string | null {
+  if (!profile) return null
+  const lines: string[] = []
+  if (profile.experience_level && EXPERIENCE_LABEL[profile.experience_level]) {
+    lines.push(`Calibrate to ${EXPERIENCE_LABEL[profile.experience_level]}.`)
+  }
+  if (profile.time_horizon && HORIZON_LABEL[profile.time_horizon]) {
+    lines.push(`User trades on ${HORIZON_LABEL[profile.time_horizon]}.`)
+  }
+  if (profile.risk_tolerance && RISK_LABEL[profile.risk_tolerance]) {
+    lines.push(`User has ${RISK_LABEL[profile.risk_tolerance]}.`)
+  }
+  if (profile.primary_goal && GOAL_LABEL[profile.primary_goal]) {
+    lines.push(`User ${GOAL_LABEL[profile.primary_goal]}.`)
+  }
+  if (Array.isArray(profile.preferred_chains) && profile.preferred_chains.length > 0) {
+    const chains = profile.preferred_chains
+      .filter((c) => typeof c === 'string' && c.trim().length > 0)
+      .slice(0, 6)
+    if (chains.length > 0) {
+      lines.push(`Preferred chains: ${chains.join(', ')}.`)
+    }
+  }
+  return lines.length > 0 ? lines.join(' ') : null
+}
+
+/**
+ * Build the personalisation block prepended to ORCA_SYSTEM_PROMPT. Returns
+ * an empty string when there is nothing useful to add. The block is wrapped
+ * with explicit guard rails reminding the model not to violate the existing
+ * ORCA hard rules (no buy/sell, no price targets) even when personalising.
+ */
+export function buildPersonalizationBlock(
+  profile: UserProfileLite | null,
+  memories: MemoryFact[]
+): string {
+  const profileLine = describeProfile(profile)
+  const factLines = (memories || [])
+    .map((m) => (m && typeof m.fact === 'string' ? m.fact.trim() : ''))
+    .filter((s) => s.length > 0)
+    .slice(0, MAX_MEMORY_FACTS)
+
+  if (!profileLine && factLines.length === 0) return ''
+
+  const parts: string[] = []
+  parts.push('## USER PERSONALISATION (additive context — do NOT relax the HARD RULES below)')
+  if (profileLine) {
+    parts.push(profileLine)
+  }
+  if (factLines.length > 0) {
+    parts.push('Durable facts ORCA has learned from prior conversations with this user (paraphrased, PII-scrubbed):')
+    for (const f of factLines) {
+      parts.push(`- ${f.slice(0, MAX_FACT_LEN_INLINE)}`)
+    }
+  }
+  parts.push(
+    'Use this context to calibrate tone, time-horizon emphasis, and chain coverage only. It does not unlock any directional verbs, target prices, or forecasts — the ROLE, HARD RULES, WHAT YOU CAN DO, and RESPONSE FORMAT sections below take absolute precedence.'
+  )
+
+  return parts.join('\n\n')
+}
+
+export const __internals = {
+  MAX_MEMORY_FACTS,
+  MAX_FACT_LEN_INLINE,
+  EXPERIENCE_LABEL,
+  HORIZON_LABEL,
+  RISK_LABEL,
+  GOAL_LABEL,
+  describeProfile,
+}

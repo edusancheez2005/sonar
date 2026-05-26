@@ -26,6 +26,16 @@ const OrcaDrawer = dynamic(() => import('@/components/orca/OrcaDrawer'), {
   ssr: false,
 })
 
+// OnboardingGate (Stage E): mounts the personalisation wizard for signed-in
+// users without a complete user_profile row. Already mounted inside
+// DashboardWrapper; we skip remount on /dashboard/* to avoid duplicate
+// modals. Hidden on landing + auth + legal surfaces.
+const OnboardingGate = dynamic(() => import('@/components/onboarding/OnboardingGate'), {
+  ssr: false,
+})
+
+const ONBOARDING_HIDE_PREFIXES = ['/dashboard', '/auth', '/legal', '/privacy', '/terms', '/subscribe']
+
 const WALLET_ROUTES = ['/dashboard', '/personalize', '/profile', '/wallet-tracker', '/watchlist', '/whale']
 
 export default function ClientRoot({ children }) {
@@ -35,6 +45,10 @@ export default function ClientRoot({ children }) {
   const useLegacyTopNav = process.env.NEXT_PUBLIC_LEGACY_TOP_NAV === '1'
   const inShell = !isLandingPage && !useLegacyTopNav
   const needsWallet = pathname && WALLET_ROUTES.some((r) => pathname.startsWith(r))
+  const showOnboarding =
+    !isLandingPage &&
+    pathname &&
+    !ONBOARDING_HIDE_PREFIXES.some((p) => pathname.startsWith(p))
 
   const shell = (
     <StyleSheetManager shouldForwardProp={(propName, target) => {
@@ -61,6 +75,7 @@ export default function ClientRoot({ children }) {
       {!hideFeedback && <FeedbackWidget hideTrigger={inShell} />}
       <CookieConsent />
       <OrcaDrawer />
+      {showOnboarding && <OnboardingGate />}
     </StyleSheetManager>
   )
 

@@ -18,6 +18,8 @@ import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
 import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
 import { detectFastWrite, sanitiseConfirmCalls, type WriteCall } from '@/lib/orca/orchestrator/fastWrites'
 import { runAddToWatchlist, runRemoveFromWatchlist } from '@/lib/orca/orchestrator/tools/writeTools'
+import { loadPersonalizationContext, buildPersonalizationBlock } from '@/lib/orca/memory/personalization'
+import { extractMemoryFacts } from '@/lib/orca/memory/extractor'
 
 export const dynamic = 'force-dynamic'
 // Vercel function timeout. The legacy v1 path fans out to multiple upstream
@@ -818,13 +820,22 @@ export async function POST(request: Request) {
     if (!tickerResult.ticker) {
       // Handle non-crypto queries with a conversational response
       const { client: ai, miniModel } = getAIClient()
-      
-      const completion = await ai.chat.completions.create({
-        model: miniModel,
-        messages: [
-          {
-            role: 'system',
-            content: `You are ORCA AI, a professional crypto intelligence assistant. The user sent a message that doesn't mention a specific cryptocurrency. Respond conversationally and guide them to ask about a crypto asset. 
+
+      // Stage E (2026-05-26): inject personalisation block (profile + memory)
+      // so even the conversational fallback knows the user's experience
+      // level / horizon / chain preferences. Kill switch:
+      // ORCA_PERSONALIZATION=false.
+      let convPersonalization = ''
+      if (process.env.ORCA_PERSONALIZATION !== 'false') {
+        try {
+          const ctx = await loadPersonalizationContext(supabase as any, userId)
+          convPersonalization = buildPersonalizationBlock(ctx.profile, ctx.memories)
+        } catch (persErr) {
+          console.warn('[personalization] conv-path load failed', persErr)
+        }
+      }
+
+      const convSystem = `You are ORCA AI, a professional crypto intelligence assistant. The user sent a message that doesn't mention a specific cryptocurrency. Respond conversationally and guide them to ask about a crypto asset. 
             
 Examples:
 - If they say "hi" or "hello": Greet them warmly and ask what crypto they want to learn about
@@ -832,6 +843,16 @@ Examples:
 - Be friendly, concise (2-3 sentences max), and helpful. No emojis.
 
 Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP, ADA, XRP, AVAX, DOT, MATIC, and 200+ more tokens.`
+      const convFullSystem = convPersonalization
+        ? `${convPersonalization}\n\n${convSystem}`
+        : convSystem
+
+      const completion = await ai.chat.completions.create({
+        model: miniModel,
+        messages: [
+          {
+            role: 'system',
+            content: convFullSystem
           },
           {
             role: 'user',
@@ -902,12 +923,26 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           send({ type: 'status', step: 'ai_thinking', message: 'ORCA analyzing all signals...' })
 
           // Call Grok/GPT AI
-          const { client: ai, model: aiModel, provider } = getAIClient()
+          const { client: ai, model: aiModel, miniModel, provider } = getAIClient()
+
+          // Stage E (2026-05-26): load + inject personalisation block. Done
+          // INSIDE the stream so it cannot delay the first SSE status frame.
+          // Kill switch: ORCA_PERSONALIZATION=false.
+          let sysPrompt = ORCA_SYSTEM_PROMPT
+          if (process.env.ORCA_PERSONALIZATION !== 'false') {
+            try {
+              const ctx = await loadPersonalizationContext(supabase as any, userId)
+              const block = buildPersonalizationBlock(ctx.profile, ctx.memories)
+              if (block) sysPrompt = `${block}\n\n${ORCA_SYSTEM_PROMPT}`
+            } catch (persErr) {
+              console.warn('[personalization] ticker-path load failed', persErr)
+            }
+          }
 
           const requestBody: any = {
             model: aiModel,
             messages: [
-              { role: 'system', content: ORCA_SYSTEM_PROMPT },
+              { role: 'system', content: sysPrompt },
               { role: 'user', content: gptContext }
             ],
             temperature: 0.6,
@@ -944,6 +979,40 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           ])
 
           console.log(`✅ Response generated for ${ticker} in ${Date.now() - startTime}ms`)
+
+          // Stage E: fire-and-forget memory extractor on the same
+          // (userMessage, orcaResponse) pair the v2 orchestrator path uses.
+          // Runs AFTER the response is computed and is never awaited; the
+          // extractor itself swallows all errors. Skipped when ORCA_MEMORY=false.
+          if (process.env.ORCA_MEMORY !== 'false') {
+            try {
+              void extractMemoryFacts({
+                userId,
+                userMessage: message,
+                orcaResponse,
+                supabase: supabase as any,
+                model: {
+                  extractCall: async (sys, usr) => {
+                    const r = await ai.chat.completions.create({
+                      model: miniModel,
+                      messages: [
+                        { role: 'system', content: sys },
+                        { role: 'user', content: usr },
+                      ],
+                      temperature: 0,
+                      max_tokens: 400,
+                      response_format: { type: 'json_object' } as any,
+                    })
+                    return r.choices[0]?.message?.content ?? ''
+                  },
+                },
+              }).catch((extractErr) => {
+                console.warn('[orca/memory/extractor] background failure', extractErr)
+              })
+            } catch (importErr) {
+              console.warn('[orca/memory/extractor] launch failed', importErr)
+            }
+          }
 
           // Send complete response with all data
           send({
