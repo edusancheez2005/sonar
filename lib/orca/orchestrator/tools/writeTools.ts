@@ -9,6 +9,12 @@
  *
  * Kept here for symmetry with the read tools and so tests can exercise
  * the contract.
+ *
+ * STAGE B.1 unification (2026-05-26): writes go to the canonical
+ * `user_watchlists` table (plural, column `symbol`) so ORCA-added entries
+ * appear in the same place as token-page "+ Watchlist" additions and the
+ * personal Watchlist tab. Public function signatures still accept
+ * `ticker` for back-compat with callers.
  */
 import type { SupabaseLike, ToolResult } from '../types'
 
@@ -35,18 +41,18 @@ export async function runAddToWatchlist(
   const userId = cleanUserId(args.userId)
   const ticker = cleanTicker(args.ticker)
   if (!userId || !ticker) {
-    return { ok: false, data: null, source: 'user_watchlist', fetched_at, error: 'invalid_args' }
+    return { ok: false, data: null, source: 'user_watchlists', fetched_at, error: 'invalid_args' }
   }
   try {
     const { error } = await supabase
-      .from('user_watchlist')
-      .upsert({ user_id: userId, ticker }, { onConflict: 'user_id,ticker' })
+      .from('user_watchlists')
+      .upsert({ user_id: userId, symbol: ticker }, { onConflict: 'user_id,symbol' })
     if (error) {
-      return { ok: false, data: null, source: 'user_watchlist', fetched_at, error: String(error?.message || 'write_failed') }
+      return { ok: false, data: null, source: 'user_watchlists', fetched_at, error: String(error?.message || 'write_failed') }
     }
-    return { ok: true, data: { ticker, added: true }, source: 'user_watchlist', fetched_at }
+    return { ok: true, data: { ticker, added: true }, source: 'user_watchlists', fetched_at }
   } catch (err: any) {
-    return { ok: false, data: null, source: 'user_watchlist', fetched_at, error: err?.message ?? 'write_failed' }
+    return { ok: false, data: null, source: 'user_watchlists', fetched_at, error: err?.message ?? 'write_failed' }
   }
 }
 
@@ -59,20 +65,20 @@ export async function runRemoveFromWatchlist(
   const userId = cleanUserId(args.userId)
   const ticker = cleanTicker(args.ticker)
   if (!userId || !ticker) {
-    return { ok: false, data: null, source: 'user_watchlist', fetched_at, error: 'invalid_args' }
+    return { ok: false, data: null, source: 'user_watchlists', fetched_at, error: 'invalid_args' }
   }
   try {
     const { error } = await supabase
-      .from('user_watchlist')
+      .from('user_watchlists')
       .delete()
       .eq('user_id', userId)
-      .eq('ticker', ticker)
+      .eq('symbol', ticker)
     if (error) {
-      return { ok: false, data: null, source: 'user_watchlist', fetched_at, error: String(error?.message || 'write_failed') }
+      return { ok: false, data: null, source: 'user_watchlists', fetched_at, error: String(error?.message || 'write_failed') }
     }
-    return { ok: true, data: { ticker, removed: true }, source: 'user_watchlist', fetched_at }
+    return { ok: true, data: { ticker, removed: true }, source: 'user_watchlists', fetched_at }
   } catch (err: any) {
-    return { ok: false, data: null, source: 'user_watchlist', fetched_at, error: err?.message ?? 'write_failed' }
+    return { ok: false, data: null, source: 'user_watchlists', fetched_at, error: err?.message ?? 'write_failed' }
   }
 }
 

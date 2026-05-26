@@ -68,28 +68,31 @@ export async function runGetUserWatchlist(
   const fetched_at = now().toISOString()
   const userId = cleanUserId(args.userId)
   if (!userId) {
-    return { ok: false, data: null, source: 'user_watchlist', fetched_at, error: 'invalid_user' }
+    return { ok: false, data: null, source: 'user_watchlists', fetched_at, error: 'invalid_user' }
   }
   try {
+    // STAGE B.1 (2026-05-26): read from canonical `user_watchlists` table
+    // (plural, column `symbol`). Token-page additions land here; the old
+    // `user_watchlist` (singular, column `ticker`) is now orphaned legacy.
     const { data } = await supabase
-      .from('user_watchlist')
-      .select('ticker')
+      .from('user_watchlists')
+      .select('symbol')
       .eq('user_id', userId)
     return {
       ok: true,
       data: {
         tickers: (Array.isArray(data) ? data : [])
-          .map((r: any) => String(r?.ticker ?? '').toUpperCase())
+          .map((r: any) => String(r?.symbol ?? '').toUpperCase())
           .filter(Boolean),
       },
-      source: 'user_watchlist',
+      source: 'user_watchlists',
       fetched_at,
     }
   } catch (err: any) {
     return {
       ok: false,
       data: null,
-      source: 'user_watchlist',
+      source: 'user_watchlists',
       fetched_at,
       error: err?.message ?? 'query_failed',
     }

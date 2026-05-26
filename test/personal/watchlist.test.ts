@@ -44,7 +44,7 @@ describe('getUserTickers', () => {
   it('merges holdings + watchlist with holdings taking precedence', async () => {
     const sb = makeSupabase({
       user_holdings: { data: [{ ticker: 'BTC' }, { ticker: 'eth' }] },
-      user_watchlist: { data: [{ ticker: 'ETH' }, { ticker: 'SOL' }] },
+      user_watchlists: { data: [{ symbol: 'ETH' }, { symbol: 'SOL' }] },
     })
     const out = await getUserTickers('user-1', sb)
     expect(out).toHaveLength(3)
@@ -65,7 +65,7 @@ describe('getUserTickers', () => {
           { ticker: 'BAD<TAG>' },
         ],
       },
-      user_watchlist: { data: [] },
+      user_watchlists: { data: [] },
     })
     const out = await getUserTickers('user-1', sb)
     expect(out.map((x) => x.ticker)).toEqual(['BTC'])

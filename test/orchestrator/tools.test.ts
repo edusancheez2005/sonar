@@ -119,11 +119,14 @@ describe('executeTool: user-scoped tools', () => {
   it('returns watchlist tickers uppercased', async () => {
     const r = await executeTool(
       { tool: 'getUserWatchlist', args: { userId: 'user-1234' } },
-      stubSupabase({ user_watchlist: { data: [{ ticker: 'btc' }, { ticker: 'eth' }] } }),
+      // Stage B.1 unification: canonical table is `user_watchlists` (plural)
+      // with column `symbol`.
+      stubSupabase({ user_watchlists: { data: [{ symbol: 'btc' }, { symbol: 'eth' }] } }),
       now
     )
     expect(r.ok).toBe(true)
     expect((r.data as any).tickers).toEqual(['BTC', 'ETH'])
+    expect(r.source).toBe('user_watchlists')
   })
 })
 

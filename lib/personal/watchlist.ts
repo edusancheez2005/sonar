@@ -39,7 +39,16 @@ interface SupabaseLike {
 const WHALE_NET_FLOW_FLAT_THRESHOLD_USD = 100_000;
 
 /**
- * Read a user's combined tickers from user_holdings and user_watchlist.
+ * Read a user's combined tickers from user_holdings and user_watchlists.
+ *
+ * STAGE B.1 unification (2026-05-26): we now read from `user_watchlists`
+ * (plural, column `symbol`) — the same table the token-page "+ Watchlist"
+ * button writes to via /api/watchlist. Previously this read from
+ * `user_watchlist` (singular, column `ticker`), so additions made on token
+ * pages never appeared in the personal Watchlist tab.
+ *
+ * The boundary maps `symbol` → internal `ticker` so callers don't change.
+ *
  * Deduplicates with holdings taking precedence over watchlist for the source label.
  */
 export async function getUserTickers(
@@ -50,7 +59,7 @@ export async function getUserTickers(
 
   const [holdingsRes, watchlistRes] = await Promise.all([
     supabase.from('user_holdings').select('ticker').eq('user_id', userId),
-    supabase.from('user_watchlist').select('ticker').eq('user_id', userId),
+    supabase.from('user_watchlists').select('symbol').eq('user_id', userId),
   ]);
 
   const map = new Map<string, TickerSource>();
@@ -59,8 +68,8 @@ export async function getUserTickers(
     const t = normaliseTicker(row.ticker);
     if (t) map.set(t, 'holding');
   }
-  for (const row of (watchlistRes?.data ?? []) as Array<{ ticker: string }>) {
-    const t = normaliseTicker(row.ticker);
+  for (const row of (watchlistRes?.data ?? []) as Array<{ symbol: string }>) {
+    const t = normaliseTicker(row.symbol);
     if (t && !map.has(t)) map.set(t, 'watchlist');
   }
 
