@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
 import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
+import { pickStageARoute } from '@/lib/orca/route-dispatch'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
@@ -466,8 +467,15 @@ export async function POST(request: Request) {
         )
         console.log(`🧭 router → intent=${decision.intent} conf=${decision.confidence.toFixed(2)} tickers=[${decision.tickers.join(',')}] entities=[${decision.entities.slice(0,3).join(',')}] (${Date.now() - routerStart}ms)`)
 
+        const stageARoute = pickStageARoute({
+          intent: decision.intent,
+          tickers: decision.tickers,
+          confidence: decision.confidence,
+        })
+        console.log(`🧭 stage-a dispatch → ${stageARoute.kind}`)
+
         // Compliance decline short-circuit.
-        if (decision.intent === 'compliance_decline') {
+        if (stageARoute.kind === 'compliance_decline') {
           return NextResponse.json({
             response: COMPLIANCE_DECLINE_RESPONSE,
             type: 'compliance_decline',
@@ -475,22 +483,17 @@ export async function POST(request: Request) {
           })
         }
 
-        // If the router caught a ticker the regex missed, hand off to v1.
-        if (decision.tickers.length > 0) {
-          const t = decision.tickers[0]
-          console.log(`🧭 router recovered ticker ${t} → handing to v1 path`)
-          tickerResult = {
-            ticker: t,
-            confidence: Math.max(0.6, decision.confidence),
-            normalized: t,
-            originalMatch: 'router',
-          }
-        } else if (
-          decision.intent === 'wallet_lookup' ||
-          decision.intent === 'article_explain' ||
-          decision.intent === 'data_query' ||
-          decision.intent === 'signal_explain'
-        ) {
+        // Intent-first dispatch (2026-05-26 patch).
+        //
+        // The router may return BOTH a non-overview intent AND incidental
+        // tickers (e.g. an article URL about "uniswap" → intent:
+        // article_explain, tickers: ['UNI']). When that happens we must NOT
+        // fall back to the v1 ticker research note — the user did not ask
+        // about UNI, they asked us to explain an article. So intent wins
+        // first; tickers are only used to recover a missed token_overview
+        // when the router's intent is `overview` or `unknown`.
+
+        if (stageARoute.kind === 'orchestrator') {
           // Non-ticker intent with its own renderer — run the orchestrator
           // for THIS turn only and wrap in SSE so the UI gets parity with
           // v1's loading-stage display. The orchestrator's `personal` and
@@ -618,6 +621,17 @@ export async function POST(request: Request) {
               'Connection': 'keep-alive',
             },
           })
+        } else if (stageARoute.kind === 'v1_with_ticker') {
+          // Overview / unknown / personal intent but router caught a ticker
+          // the regex missed (e.g. "ondo doing well today?"). Hand off to
+          // the v1 long-form research note path with the recovered ticker.
+          console.log(`🧭 router recovered ticker ${stageARoute.ticker} → handing to v1 path`)
+          tickerResult = {
+            ticker: stageARoute.ticker,
+            confidence: stageARoute.confidence,
+            normalized: stageARoute.ticker,
+            originalMatch: 'router',
+          }
         }
         // For overview / explainer / followup / personal with no ticker:
         // fall through to the legacy paths below.
