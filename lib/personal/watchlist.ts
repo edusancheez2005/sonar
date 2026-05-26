@@ -178,10 +178,14 @@ async function readLatestHeadline(
   ticker: string,
   supabase: SupabaseLike
 ): Promise<string | null> {
+  // Canonical news table is `news_items` with a single `ticker` column
+  // (see app/api/news/personalized/route.ts). The previous query against
+  // `news_articles.related_tickers` returned 0 rows because that table is
+  // not maintained by the news pipeline.
   const { data } = await supabase
-    .from('news_articles')
+    .from('news_items')
     .select('title')
-    .ilike('related_tickers', `%${ticker}%`)
+    .eq('ticker', ticker.toUpperCase())
     .order('published_at', { ascending: false })
     .limit(1);
   const row = Array.isArray(data) ? data[0] : null;
