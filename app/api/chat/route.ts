@@ -20,6 +20,7 @@ import { detectFastWrite, sanitiseConfirmCalls, type WriteCall } from '@/lib/orc
 import { runAddToWatchlist, runRemoveFromWatchlist } from '@/lib/orca/orchestrator/tools/writeTools'
 import { loadPersonalizationContext, buildPersonalizationBlock } from '@/lib/orca/memory/personalization'
 import { extractMemoryFacts } from '@/lib/orca/memory/extractor'
+import { waitUntil } from '@vercel/functions'
 
 export const dynamic = 'force-dynamic'
 // Vercel function timeout. The legacy v1 path fans out to multiple upstream
@@ -516,14 +517,12 @@ export async function POST(request: Request) {
         }
 
         // Memory extractor (§4.G). Runs after the response is computed.
-        // IMPORTANT: we MUST await this on Vercel serverless — fire-and-forget
-        // promises are aborted when the function returns, so background work
-        // never runs. Latency cost is one mini-model call (~1-2s), which the
-        // user only sees after the SSE/JSON payload has already shipped.
+        // Wrapped in waitUntil() so Vercel keeps the function alive for the
+        // background LLM+insert without blocking the user response.
         if (out.intent !== 'compliance_decline' && out.text) {
           try {
             const { extractMemoryFacts } = await import('@/lib/orca/memory/extractor')
-            await extractMemoryFacts({
+            waitUntil(extractMemoryFacts({
               userId,
               userMessage: message,
               orcaResponse: out.text,
@@ -545,7 +544,7 @@ export async function POST(request: Request) {
               },
             }).catch((extractErr) => {
               console.warn('[orca/memory/extractor] background failure', extractErr)
-            })
+            }))
           } catch (importErr) {
             console.warn('[orca/memory/extractor] import failed', importErr)
           }
@@ -750,7 +749,7 @@ export async function POST(request: Request) {
                   out.text
                 ) {
                   try {
-                    await extractMemoryFacts({
+                    waitUntil(extractMemoryFacts({
                       userId,
                       userMessage: message,
                       orcaResponse: out.text,
@@ -779,7 +778,7 @@ export async function POST(request: Request) {
                       })
                       .catch((extractErr) => {
                         console.warn('[orca/memory/extractor] stage-a background failure', extractErr)
-                      })
+                      }))
                   } catch (launchErr) {
                     console.warn('[orca/memory/extractor] stage-a launch failed', launchErr)
                   }
@@ -915,12 +914,11 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
         "Hey! I'm ORCA, your crypto intelligence assistant. I analyze crypto using whale data, sentiment, social insights, and price trends. Which coin do you want me to check out? Try asking about BTC, ETH, SOL, STRK, SHIB, PEPE, LINK, UNI, or any other crypto!"
 
       // Stage E (2026-05-26): memory extractor on the conversational
-      // fallback path. AWAITED — fire-and-forget is unsafe on Vercel
-      // serverless because the function can be terminated before the
-      // promise runs, leaving orca_memory empty.
+      // fallback path. waitUntil() so Vercel keeps the function alive for
+      // the background work without blocking the user response.
       if (process.env.ORCA_MEMORY !== 'false' && userId && aiResponse) {
         try {
-          await extractMemoryFacts({
+          waitUntil(extractMemoryFacts({
             userId,
             userMessage: message,
             orcaResponse: aiResponse,
@@ -949,7 +947,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             })
             .catch((extractErr) => {
               console.warn('[orca/memory/extractor] conv-path background failure', extractErr)
-            })
+            }))
         } catch (launchErr) {
           console.warn('[orca/memory/extractor] conv-path launch failed', launchErr)
         }
@@ -1069,14 +1067,13 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
 
           console.log(`✅ Response generated for ${ticker} in ${Date.now() - startTime}ms`)
 
-          // Stage E: memory extractor on the ticker SSE path. AWAITED so
-          // Vercel doesn't kill the function before the background work
-          // runs. The SSE 'complete' frame has already been flushed to the
-          // client by this point, so latency is invisible to the user.
+          // Stage E: memory extractor on the ticker SSE path. Wrapped in
+          // waitUntil() so Vercel keeps the function alive for the background
+          // LLM+insert without extending the user-visible response time.
           // Skipped when ORCA_MEMORY=false.
           if (process.env.ORCA_MEMORY !== 'false') {
             try {
-              await extractMemoryFacts({
+              waitUntil(extractMemoryFacts({
                 userId,
                 userMessage: message,
                 orcaResponse,
@@ -1105,7 +1102,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
                 })
                 .catch((extractErr) => {
                   console.warn('[orca/memory/extractor] background failure', extractErr)
-                })
+                }))
             } catch (importErr) {
               console.warn('[orca/memory/extractor] launch failed', importErr)
             }
