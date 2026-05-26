@@ -25,9 +25,11 @@ const MOVERS_MAX = 3
 const WHALES_MAX = 3
 const NEWS_MAX = 2
 
+const MONO = "'JetBrains Mono', 'Fira Code', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace"
+
 const Strip = styled.section`
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 18px;
 
@@ -40,21 +42,36 @@ const Strip = styled.section`
 `
 
 const Tile = styled.article`
-  background: rgba(13, 20, 33, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 12px 14px;
+  position: relative;
+  background: linear-gradient(180deg, rgba(13,20,33,0.78) 0%, rgba(8,14,24,0.78) 100%);
+  border: 1px solid rgba(0,229,255,0.10);
+  border-radius: 4px;
+  padding: 12px 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 110px;
+  min-height: 118px;
+  transition: border-color 140ms ease, transform 140ms ease;
+  &:hover {
+    border-color: rgba(0,229,255,0.35);
+    transform: translateY(-1px);
+  }
+  &::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(180deg, #00e5ff 0%, transparent 100%);
+    opacity: 0.55;
+  }
 `
 
 const TileLabel = styled.span`
   font-size: 10px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6b7a8c;
+  color: rgba(0,229,255,0.75);
+  font-family: ${MONO};
+  font-weight: 600;
+  &::before { content: '▸ '; opacity: 0.6; }
 `
 
 const TileBody = styled.div`
@@ -74,14 +91,18 @@ const MoverLine = styled.div`
 `
 
 const Tkr = styled.span`
-  font-weight: 600;
+  font-weight: 700;
   color: #e0e6ed;
+  font-family: ${MONO};
+  letter-spacing: 0.04em;
 `
 
 const Pct = styled.span`
   color: ${(p) => (p.$v > 0 ? '#4ade80' : p.$v < 0 ? '#ff7a7a' : '#8896a6')};
-  font-weight: 600;
+  font-weight: 700;
   font-size: 12px;
+  font-family: ${MONO};
+  font-variant-numeric: tabular-nums;
 `
 
 const Pip = styled.span`
@@ -115,8 +136,10 @@ const Empty = styled.p`
 
 const MacroPin = styled.div`
   font-size: 12px;
-  color: #e0e6ed;
-  line-height: 1.5;
+  color: #cfd6df;
+  line-height: 1.55;
+  font-family: ${MONO};
+  &::before { content: '$ '; color: rgba(0,229,255,0.55); font-weight: 700; }
 `
 
 function fmtPct(n) {

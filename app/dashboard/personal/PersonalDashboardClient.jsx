@@ -25,40 +25,89 @@ import CopilotPane from '@/components/personal/CopilotPane'
 import Tray from '@/components/personal/Tray'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
+const MONO = "'JetBrains Mono', 'Fira Code', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace"
+
 const Page = styled.main`
   max-width: 1320px;
   margin: 0 auto;
-  padding: 28px 24px 60px;
+  padding: 24px 20px 60px;
   color: #e0e6ed;
+  background-image:
+    radial-gradient(1200px 600px at 50% -200px, rgba(0,229,255,0.06), transparent 60%),
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: auto, 40px 40px, 40px 40px;
+  min-height: 100vh;
 `
 
 const TopBar = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed rgba(0,229,255,0.18);
 `
 
 const Heading = styled.h1`
   margin: 0;
-  font-size: 22px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #00e5ff;
+  font-family: ${MONO};
+  &::before { content: '[ '; color: rgba(0,229,255,0.55); }
+  &::after  { content: ' ]'; color: rgba(0,229,255,0.55); }
 `
 
 const HeaderNote = styled.p`
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #8896a6;
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #6b7a8c;
+  font-family: ${MONO};
+  &::before { content: '> '; color: rgba(0,229,255,0.5); }
+`
+
+const StatusRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: ${MONO};
+  font-size: 11px;
+  color: #6b7a8c;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+`
+
+const LiveDot = styled.span`
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00e676;
+  box-shadow: 0 0 8px #00e676, 0 0 14px rgba(0,230,118,0.4);
+  animation: pulse 1.6s ease-in-out infinite;
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
 `
 
 const BackLink = styled(Link)`
-  font-size: 13px;
+  font-size: 11px;
   color: #00e5ff;
   text-decoration: none;
-  &:hover { text-decoration: underline; }
+  font-family: ${MONO};
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border: 1px solid rgba(0,229,255,0.25);
+  border-radius: 4px;
+  transition: all 120ms ease;
+  &:hover { background: rgba(0,229,255,0.08); border-color: #00e5ff; }
   &:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
 `
 
@@ -73,31 +122,54 @@ const MainGrid = styled.div`
 `
 
 const Card = styled.section`
-  background: rgba(13, 20, 33, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 20px 22px;
+  position: relative;
+  background: linear-gradient(180deg, rgba(13,20,33,0.78) 0%, rgba(8,14,24,0.78) 100%);
+  border: 1px solid rgba(0,229,255,0.12);
+  border-radius: 6px;
+  padding: 18px 20px;
+  box-shadow: 0 0 0 1px rgba(0,229,255,0.04), inset 0 1px 0 rgba(255,255,255,0.03);
+  &::before {
+    content: '';
+    position: absolute; left: -1px; top: -1px; right: -1px; height: 2px;
+    background: linear-gradient(90deg, transparent, #00e5ff 50%, transparent);
+    opacity: 0.6;
+  }
+  &::after {
+    content: '┌┐              ┌┐';
+    position: absolute; top: 4px; left: 8px; right: 8px;
+    font-family: ${MONO};
+    font-size: 10px;
+    color: rgba(0,229,255,0.25);
+    display: flex; justify-content: space-between;
+    pointer-events: none;
+  }
 `
 
 const TabBar = styled.div`
   display: flex;
-  gap: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 2px;
+  border-bottom: 1px solid rgba(0,229,255,0.12);
   margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
 `
 
 const TabBtn = styled.button`
-  background: transparent;
+  background: ${(p) => (p.$active ? 'rgba(0,229,255,0.08)' : 'transparent')};
   border: 0;
-  color: ${(p) => (p.$active ? '#00e5ff' : '#8896a6')};
+  color: ${(p) => (p.$active ? '#00e5ff' : '#6b7a8c')};
   border-bottom: 2px solid ${(p) => (p.$active ? '#00e5ff' : 'transparent')};
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  font-family: ${MONO};
   cursor: pointer;
+  transition: all 100ms ease;
+  &:hover { color: #00e5ff; background: rgba(0,229,255,0.05); }
   &:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
+  &::before { content: '${(p) => (p.$active ? '▸ ' : '')}'; }
 `
 
 const StickyCol = styled.div`
@@ -196,12 +268,16 @@ function PersonalShell() {
     <Page>
       <TopBar>
         <div>
-          <Heading>Personal dashboard</Heading>
+          <Heading>Personal terminal</Heading>
           <HeaderNote>
-            Tuned to your watchlist. The global dashboard is unchanged and still your default view.
+            Live feed scoped to your watchlist. Global view is unchanged.
           </HeaderNote>
         </div>
-        <BackLink href="/dashboard">\u2190 Back to global dashboard</BackLink>
+        <StatusRow>
+          <span><LiveDot /> &nbsp;LIVE</span>
+          <span>{tickers.length} TRACKED</span>
+          <BackLink href="/dashboard">← GLOBAL</BackLink>
+        </StatusRow>
       </TopBar>
 
       <PulseStrip />
