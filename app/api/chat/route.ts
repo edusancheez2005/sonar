@@ -737,6 +737,52 @@ export async function POST(request: Request) {
                   })(),
                 ]).catch((logErr) => console.warn('[stage-a] post-write log failed', logErr))
 
+                // Stage E (2026-05-26): fire-and-forget memory extractor on
+                // the Stage A orchestrator SSE branch too. Without this,
+                // every non-token_overview intent (personal, data_query,
+                // wallet_lookup, article_explain, signal_explain) bypassed
+                // memory capture entirely.
+                if (
+                  process.env.ORCA_MEMORY !== 'false' &&
+                  out.intent !== 'compliance_decline' &&
+                  out.text
+                ) {
+                  try {
+                    void extractMemoryFacts({
+                      userId,
+                      userMessage: message,
+                      orcaResponse: out.text,
+                      supabase: supabase as any,
+                      model: {
+                        extractCall: async (sys, usr) => {
+                          const r = await ai.chat.completions.create({
+                            model: miniModel,
+                            messages: [
+                              { role: 'system', content: sys },
+                              { role: 'user', content: usr },
+                            ],
+                            temperature: 0,
+                            max_tokens: 400,
+                            response_format: { type: 'json_object' } as any,
+                          })
+                          return r.choices[0]?.message?.content ?? ''
+                        },
+                      },
+                    })
+                      .then((res) => {
+                        console.log(
+                          `[orca/memory/extractor] stage-a path intent=${out.intent} user=${userId} inserted=${res.inserted}` +
+                            (res.skipped_reason ? ` skipped_reason=${res.skipped_reason}` : '')
+                        )
+                      })
+                      .catch((extractErr) => {
+                        console.warn('[orca/memory/extractor] stage-a background failure', extractErr)
+                      })
+                  } catch (launchErr) {
+                    console.warn('[orca/memory/extractor] stage-a launch failed', launchErr)
+                  }
+                }
+
                 send({
                   type: 'complete',
                   success: true,
