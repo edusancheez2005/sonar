@@ -764,8 +764,14 @@ const APP_LINKS = [
   {
     href: '/dashboard',
     label: 'Dashboard',
-    match: (p) => p === '/dashboard' || p?.startsWith('/dashboard/'),
+    match: (p) => p === '/dashboard' || (p?.startsWith('/dashboard/') && !p?.startsWith('/dashboard/personal')),
     Icon: IconDashboard,
+  },
+  {
+    href: '/dashboard/personal',
+    label: 'Personal',
+    match: (p) => p === '/dashboard/personal' || p?.startsWith('/dashboard/personal/'),
+    Icon: IconPersonalize,
   },
   {
     href: '/statistics',
