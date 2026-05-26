@@ -515,13 +515,15 @@ export async function POST(request: Request) {
           console.warn('[orchestrator] trace persist failed', traceErr)
         }
 
-        // Fire-and-forget memory extractor (§4.G). Runs after the response is
-        // computed; we do NOT await it so the user reply ships immediately.
-        // The extractor itself never throws — but we wrap defensively anyway.
+        // Memory extractor (§4.G). Runs after the response is computed.
+        // IMPORTANT: we MUST await this on Vercel serverless — fire-and-forget
+        // promises are aborted when the function returns, so background work
+        // never runs. Latency cost is one mini-model call (~1-2s), which the
+        // user only sees after the SSE/JSON payload has already shipped.
         if (out.intent !== 'compliance_decline' && out.text) {
           try {
             const { extractMemoryFacts } = await import('@/lib/orca/memory/extractor')
-            void extractMemoryFacts({
+            await extractMemoryFacts({
               userId,
               userMessage: message,
               orcaResponse: out.text,
@@ -748,7 +750,7 @@ export async function POST(request: Request) {
                   out.text
                 ) {
                   try {
-                    void extractMemoryFacts({
+                    await extractMemoryFacts({
                       userId,
                       userMessage: message,
                       orcaResponse: out.text,
@@ -912,13 +914,13 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
       const aiResponse = completion.choices[0]?.message?.content || 
         "Hey! I'm ORCA, your crypto intelligence assistant. I analyze crypto using whale data, sentiment, social insights, and price trends. Which coin do you want me to check out? Try asking about BTC, ETH, SOL, STRK, SHIB, PEPE, LINK, UNI, or any other crypto!"
 
-      // Stage E (2026-05-26): fire-and-forget memory extractor on the
-      // conversational fallback path too. Previously this only ran on the
-      // ticker SSE path, which meant generic chats ("give me a market
-      // update", "i mostly trade on solana") never wrote to orca_memory.
+      // Stage E (2026-05-26): memory extractor on the conversational
+      // fallback path. AWAITED — fire-and-forget is unsafe on Vercel
+      // serverless because the function can be terminated before the
+      // promise runs, leaving orca_memory empty.
       if (process.env.ORCA_MEMORY !== 'false' && userId && aiResponse) {
         try {
-          void extractMemoryFacts({
+          await extractMemoryFacts({
             userId,
             userMessage: message,
             orcaResponse: aiResponse,
@@ -1067,13 +1069,14 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
 
           console.log(`✅ Response generated for ${ticker} in ${Date.now() - startTime}ms`)
 
-          // Stage E: fire-and-forget memory extractor on the same
-          // (userMessage, orcaResponse) pair the v2 orchestrator path uses.
-          // Runs AFTER the response is computed and is never awaited; the
-          // extractor itself swallows all errors. Skipped when ORCA_MEMORY=false.
+          // Stage E: memory extractor on the ticker SSE path. AWAITED so
+          // Vercel doesn't kill the function before the background work
+          // runs. The SSE 'complete' frame has already been flushed to the
+          // client by this point, so latency is invisible to the user.
+          // Skipped when ORCA_MEMORY=false.
           if (process.env.ORCA_MEMORY !== 'false') {
             try {
-              void extractMemoryFacts({
+              await extractMemoryFacts({
                 userId,
                 userMessage: message,
                 orcaResponse,
