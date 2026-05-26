@@ -142,6 +142,10 @@ export default function PersonalCopilotPanel({
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
+  // When the server returns { confirm: { label, calls } } from a fastWrite
+  // detection, we stash it here and let the next user reply of "yes"/"no"
+  // either execute the calls (confirm trip) or discard them.
+  const [pendingConfirm, setPendingConfirm] = useState(null)
   const threadRef = useRef(null)
 
   // Refresh the seeded greeting if the user's profile or watchlist changes
@@ -182,6 +186,13 @@ export default function PersonalCopilotPanel({
     setDraft('')
     setMessages((prev) => [...prev, { role: 'user', content: text }])
 
+    // If we have a pending confirm and the user replied yes/no, short-circuit
+    // the model entirely and either execute the write or cancel it.
+    const yesRe = /^(y|yes|yep|yeah|sure|ok|okay|confirm|do it|go|please)\b/i
+    const noRe  = /^(n|no|nope|cancel|abort|stop|nevermind|never mind|don't|do not)\b/i
+    const isYes = pendingConfirm && yesRe.test(text)
+    const isNo  = pendingConfirm && noRe.test(text)
+
     try {
       const { data: sessionData } = await sb.auth.getSession()
       const token = sessionData?.session?.access_token
@@ -190,13 +201,25 @@ export default function PersonalCopilotPanel({
         setSending(false)
         return
       }
+
+      if (isNo) {
+        setPendingConfirm(null)
+        setMessages((prev) => [...prev, { role: 'assistant', content: 'Cancelled.' }])
+        setSending(false)
+        return
+      }
+
+      const reqBody = isYes
+        ? { message: pendingConfirm.label, confirm: { calls: pendingConfirm.calls } }
+        : { message: text, focus_ticker: focusTicker || undefined }
+
       const res = await doFetch('/api/chat', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: text, focus_ticker: focusTicker || undefined }),
+        body: JSON.stringify(reqBody),
       })
       if (!res.ok) {
         if (res.status === 504 || res.status === 408) {
@@ -224,6 +247,23 @@ export default function PersonalCopilotPanel({
         return
       }
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+
+      // Update pending-confirm state from the server response.
+      if (body?.confirm && Array.isArray(body.confirm.calls) && body.confirm.calls.length > 0) {
+        setPendingConfirm({
+          label: typeof body.confirm.label === 'string' ? body.confirm.label : reply,
+          calls: body.confirm.calls,
+        })
+      } else {
+        setPendingConfirm(null)
+      }
+
+      // After a successful watchlist write, tell tabs/strips to refetch.
+      if (isYes && typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new CustomEvent('orca:watchlist-changed'))
+        } catch { /* ignore */ }
+      }
     } catch (err) {
       // Browser surfaces Vercel function timeouts as a TypeError on fetch.
       // Distinguish a genuine offline state from a server-side timeout so the

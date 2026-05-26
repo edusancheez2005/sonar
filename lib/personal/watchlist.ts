@@ -179,16 +179,23 @@ async function readLatestHeadline(
   supabase: SupabaseLike
 ): Promise<string | null> {
   // Canonical news table is `news_items` with a single `ticker` column
-  // (see app/api/news/personalized/route.ts). The previous query against
-  // `news_articles.related_tickers` returned 0 rows because that table is
-  // not maintained by the news pipeline.
+  // (see app/api/news/personalized/route.ts). Pull a few candidates so we
+  // can skip junk titles ("Untitled", < 15 chars, non-latin scripts).
   const { data } = await supabase
     .from('news_items')
     .select('title')
     .eq('ticker', ticker.toUpperCase())
     .order('published_at', { ascending: false })
-    .limit(1);
-  const row = Array.isArray(data) ? data[0] : null;
-  if (!row || typeof row.title !== 'string') return null;
-  return row.title.trim();
+    .limit(8);
+  if (!Array.isArray(data)) return null;
+  const nonLatinBlock = /[\u0400-\u04FF\u0600-\u06FF\u0980-\u09FF\u0A00-\u0A7F\u0B80-\u0BFF\u0C00-\u0C7F\u0D00-\u0D7F\u1100-\u11FF\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/;
+  for (const row of data) {
+    const t = typeof row?.title === 'string' ? row.title.trim() : '';
+    if (!t) continue;
+    if (t.toLowerCase() === 'untitled') continue;
+    if (t.length < 15) continue;
+    if (nonLatinBlock.test(t)) continue;
+    return t;
+  }
+  return null;
 }
