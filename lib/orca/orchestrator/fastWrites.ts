@@ -93,12 +93,35 @@ function pickTickerFromTail(tail: string): string | null {
   return normaliseTicker(first)
 }
 
-export function detectFastWrite(message: string): FastWriteDetection | null {
+// Pronoun-style tails that the user means as "the ticker we were just
+// discussing". Triggers the contextTicker fallback when the tail starts
+// with one of these AND the message mentions watchlist.
+const PRONOUN_TAIL_RE = /^\s*(it|this|that|them|these|those)\b/i
+
+export interface DetectFastWriteOptions {
+  /**
+   * Optional ticker resolved from prior conversation context (e.g. the
+   * most-recently-discussed token in this session). When the user says
+   * "add it to my watchlist" with no explicit ticker, the detector will
+   * resolve "it" to this value.
+   */
+  contextTicker?: string | null
+}
+
+export function detectFastWrite(
+  message: string,
+  opts: DetectFastWriteOptions = {}
+): FastWriteDetection | null {
   if (typeof message !== 'string') return null
   const msg = message.trim()
   if (!msg) return null
   // Hard cap: long messages are unlikely to be one-shot write commands.
   if (msg.length > 200) return null
+
+  const isExplicitWatchlist = /\bwatch\s*list\b|\bwatchlist\b/i.test(msg)
+  const contextTicker = opts.contextTicker
+    ? normaliseTicker(opts.contextTicker)
+    : null
 
   // Try REMOVE first — some remove verbs ("stop watching") share a substring
   // with add verbs ("watch") and we want the longer phrase to win.
@@ -108,7 +131,11 @@ export function detectFastWrite(message: string): FastWriteDetection | null {
   )
   const removeMatch = msg.match(removeRe)
   if (removeMatch) {
-    const ticker = pickTickerFromTail(removeMatch[1] || '')
+    const tail = removeMatch[1] || ''
+    let ticker = pickTickerFromTail(tail)
+    if (!ticker && contextTicker && isExplicitWatchlist && PRONOUN_TAIL_RE.test(tail)) {
+      ticker = contextTicker
+    }
     if (ticker) {
       return {
         calls: [{ tool: 'removeFromWatchlist', args: { ticker } }],
@@ -127,12 +154,14 @@ export function detectFastWrite(message: string): FastWriteDetection | null {
     // Guard: require explicit watchlist context for the more generic
     // verbs ("save", "put", "pin", "follow") to avoid false positives like
     // "save my work" or "put it on hold".
-    const isExplicitWatchlist = /\bwatch\s*list\b|\bwatchlist\b/i.test(msg)
     const verb = (addMatch[0].match(new RegExp(verbAlternation(ADD_VERBS), 'i')) || [''])[0].toLowerCase()
     const generic = /^(save|put|follow|pin)$/.test(verb.trim())
     if (generic && !isExplicitWatchlist) return null
 
-    const ticker = pickTickerFromTail(tail)
+    let ticker = pickTickerFromTail(tail)
+    if (!ticker && contextTicker && isExplicitWatchlist && PRONOUN_TAIL_RE.test(tail)) {
+      ticker = contextTicker
+    }
     if (ticker) {
       return {
         calls: [{ tool: 'addToWatchlist', args: { ticker } }],

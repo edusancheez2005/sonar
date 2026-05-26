@@ -358,7 +358,25 @@ export async function POST(request: Request) {
       }
 
       // --- Trip 1: DETECT and emit confirm event ---------------------------
-      const detection = detectFastWrite(message)
+      // Resolve a context ticker from prior chat_history so utterances like
+      // "add it to my watchlist" pick up the most-recently-discussed token.
+      let contextTicker: string | null = null
+      try {
+        const { data: lastChat } = await supabase
+          .from('chat_history')
+          .select('tickers_mentioned')
+          .eq('user_id', userId)
+          .not('tickers_mentioned', 'is', null)
+          .order('timestamp', { ascending: false })
+          .limit(1)
+          .single()
+        if (lastChat?.tickers_mentioned?.length) {
+          contextTicker = String(lastChat.tickers_mentioned[0] || '') || null
+        }
+      } catch {
+        // No prior history is fine; pronoun fallback simply won't trigger.
+      }
+      const detection = detectFastWrite(message, { contextTicker })
       if (detection) {
         const encoder = new TextEncoder()
         const stream = new ReadableStream({

@@ -95,6 +95,37 @@ describe('detectFastWrite — remove patterns', () => {
   })
 })
 
+describe('detectFastWrite — pronoun + contextTicker fallback', () => {
+  it('resolves "add it to my watchlist" using contextTicker', () => {
+    expect(detectFastWrite('can you add it to my watchlist', { contextTicker: 'BTC' })).toEqual({
+      calls: [{ tool: 'addToWatchlist', args: { ticker: 'BTC' } }],
+      label: 'Add BTC to your watchlist?',
+    })
+  })
+
+  it('resolves "remove this from my watchlist" using contextTicker', () => {
+    expect(detectFastWrite('remove this from my watchlist', { contextTicker: 'eth' })).toEqual({
+      calls: [{ tool: 'removeFromWatchlist', args: { ticker: 'ETH' } }],
+      label: 'Remove ETH from your watchlist?',
+    })
+  })
+
+  it('does NOT fallback when no contextTicker is given', () => {
+    expect(detectFastWrite('add it to my watchlist')).toBeNull()
+  })
+
+  it('does NOT fallback when message lacks watchlist context', () => {
+    expect(detectFastWrite('add it to the list', { contextTicker: 'BTC' })).toBeNull()
+  })
+
+  it('still prefers an explicit ticker over the contextTicker', () => {
+    expect(detectFastWrite('add SOL to my watchlist', { contextTicker: 'BTC' })).toEqual({
+      calls: [{ tool: 'addToWatchlist', args: { ticker: 'SOL' } }],
+      label: 'Add SOL to your watchlist?',
+    })
+  })
+})
+
 describe('detectFastWrite — non-matches', () => {
   it('returns null for empty / whitespace input', () => {
     expect(detectFastWrite('')).toBeNull()
