@@ -11,6 +11,8 @@ import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
 import { runOrchestrator } from '@/lib/orca/orchestrator/runOrchestrator'
+import { routeMessage } from '@/lib/orca/orchestrator/router'
+import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
 import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
 
 export const dynamic = 'force-dynamic'
@@ -385,6 +387,219 @@ export async function POST(request: Request) {
 
 
     // If no ticker found, try to get last ticker from chat history (for follow-up questions)
+    // -------------------------------------------------------------------------
+    // STAGE A — Intent routing bridge (2026-05-26).
+    // Behind env flag ORCA_INTENT_ROUTING (default ON; set to 'false' to kill).
+    //
+    // Goal: stop the v1 chat from defaulting to the last-mentioned ticker
+    // (typically BTC) when the user actually asked about a wallet, an
+    // article, or a non-ticker data query. We run the v4 router (mini-LLM,
+    // strict JSON) ONLY when v1's ticker extractor came up empty.
+    //
+    // Outcomes:
+    //   - router finds a ticker we missed   → use it for v1 SSE path (KEEPS
+    //                                          ORCA_SYSTEM_PROMPT + chart).
+    //   - intent === 'compliance_decline'    → return hardcoded decline JSON.
+    //   - intent ∈ {wallet_lookup, article_explain, data_query,
+    //              signal_explain}           → run orchestrator AND wrap in
+    //                                          SSE so ClientOrca renders the
+    //                                          live progress stream like v1.
+    //   - everything else                    → fall through to the legacy
+    //                                          history-fallback + conversational
+    //                                          path below (no behaviour change).
+    //
+    // We deliberately DO NOT route `personal` or `overview` through the
+    // orchestrator here — those would invoke renderPersonalPrompt which the
+    // 2026-05-25 rebuild brief flagged as the killer (short peer-chat
+    // answers instead of the v1 long-form research note).
+    // -------------------------------------------------------------------------
+    const intentRoutingEnabled = process.env.ORCA_INTENT_ROUTING !== 'false'
+    if (!tickerResult.ticker && intentRoutingEnabled) {
+      console.log('🧭 No ticker found — running intent router...')
+      try {
+        const { client: ai, miniModel, model: aiModel } = getAIClient()
+        const routerStart = Date.now()
+        const decision = await routeMessage(
+          { message, userId, chatHistory: [] },
+          {
+            routerCall: async (sys, usr) => {
+              const r = await ai.chat.completions.create({
+                model: miniModel,
+                messages: [
+                  { role: 'system', content: sys },
+                  { role: 'user', content: usr },
+                ],
+                temperature: 0,
+                max_tokens: 400,
+                response_format: { type: 'json_object' } as any,
+              })
+              return r.choices[0]?.message?.content ?? ''
+            },
+            writerCall: async () => '',
+          }
+        )
+        console.log(`🧭 router → intent=${decision.intent} conf=${decision.confidence.toFixed(2)} tickers=[${decision.tickers.join(',')}] entities=[${decision.entities.slice(0,3).join(',')}] (${Date.now() - routerStart}ms)`)
+
+        // Compliance decline short-circuit.
+        if (decision.intent === 'compliance_decline') {
+          return NextResponse.json({
+            response: COMPLIANCE_DECLINE_RESPONSE,
+            type: 'compliance_decline',
+            intent: decision.intent,
+          })
+        }
+
+        // If the router caught a ticker the regex missed, hand off to v1.
+        if (decision.tickers.length > 0) {
+          const t = decision.tickers[0]
+          console.log(`🧭 router recovered ticker ${t} → handing to v1 path`)
+          tickerResult = {
+            ticker: t,
+            confidence: Math.max(0.6, decision.confidence),
+            normalized: t,
+            originalMatch: 'router',
+          }
+        } else if (
+          decision.intent === 'wallet_lookup' ||
+          decision.intent === 'article_explain' ||
+          decision.intent === 'data_query' ||
+          decision.intent === 'signal_explain'
+        ) {
+          // Non-ticker intent with its own renderer — run the orchestrator
+          // for THIS turn only and wrap in SSE so the UI gets parity with
+          // v1's loading-stage display. The orchestrator's `personal` and
+          // `overview` paths are deliberately excluded (see comment above).
+          const stageLabel: Record<string, string> = {
+            wallet_lookup: 'Looking up wallet activity',
+            article_explain: 'Fetching article context',
+            data_query: 'Running data query',
+            signal_explain: 'Loading Sonar signal context',
+          }
+
+          const encoder = new TextEncoder()
+          const stream = new ReadableStream({
+            async start(controller) {
+              const send = (payload: Record<string, any>) => {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
+              }
+              try {
+                send({ type: 'status', step: 'router', message: `Routing: ${decision.intent.replace(/_/g, ' ')}` })
+                send({ type: 'status', step: 'tools', message: stageLabel[decision.intent] || 'Gathering data' })
+
+                let profile: UserProfileSnapshot | null = null
+                try {
+                  const { data } = await supabase
+                    .from('user_profile')
+                    .select('user_id, experience_level, primary_goal, risk_tolerance, time_horizon, preferred_chains')
+                    .eq('user_id', userId)
+                    .maybeSingle()
+                  if (data) profile = data as UserProfileSnapshot
+                } catch (profileErr) {
+                  console.warn('[stage-a] profile load failed', profileErr)
+                }
+
+                const out = await runOrchestrator(
+                  { message, userId, chatHistory: [], profile },
+                  {
+                    supabase,
+                    model: {
+                      routerCall: async () => JSON.stringify({
+                        intent: decision.intent,
+                        tickers: decision.tickers,
+                        entities: decision.entities,
+                        datapoints: decision.datapoints,
+                        persona_hint: decision.persona_hint,
+                        confidence: decision.confidence,
+                      }),
+                      writerCall: async (sys, usr) => {
+                        send({ type: 'status', step: 'ai_thinking', message: 'ORCA writing response...' })
+                        const r = await ai.chat.completions.create({
+                          model: aiModel,
+                          messages: [
+                            { role: 'system', content: sys },
+                            { role: 'user', content: usr },
+                          ],
+                          temperature: 0.5,
+                          max_tokens: 3000,
+                        })
+                        return r.choices[0]?.message?.content ?? ''
+                      },
+                    },
+                  }
+                )
+
+                // Increment quota + persist trace + log chat (non-blocking).
+                Promise.all([
+                  incrementQuota(userId, supabaseUrl, supabaseKey),
+                  supabase.from('chat_history').insert({
+                    user_id: userId,
+                    session_id: session_id || null,
+                    user_message: message,
+                    orca_response: out.text,
+                    tokens_used: 0,
+                    model: aiModel,
+                    tickers_mentioned: decision.tickers,
+                    data_sources_used: { intent: out.intent },
+                    response_time_ms: Date.now() - startTime,
+                  }),
+                  (async () => {
+                    try {
+                      const messageId = `${userId}-${Date.now()}`
+                      const rows = out.trace.map((evt) => ({
+                        user_id: userId,
+                        message_id: messageId,
+                        stage: evt.stage,
+                        payload: evt.payload,
+                        latency_ms: evt.latency_ms ?? null,
+                        model: evt.model ?? null,
+                      }))
+                      await supabase.from('orca_traces').insert(rows)
+                    } catch (traceErr) {
+                      console.warn('[stage-a] trace persist failed', traceErr)
+                    }
+                  })(),
+                ]).catch((logErr) => console.warn('[stage-a] post-write log failed', logErr))
+
+                send({
+                  type: 'complete',
+                  success: true,
+                  response: out.text,
+                  intent: out.intent,
+                  data: null,
+                  quota: {
+                    used: quotaStatus.used + 1,
+                    limit: quotaStatus.limit,
+                    remaining: Math.max(0, quotaStatus.remaining - 1),
+                    plan: quotaStatus.plan,
+                  },
+                  metadata: { response_time_ms: Date.now() - startTime },
+                })
+              } catch (streamErr) {
+                console.error('[stage-a] orchestrator SSE error', streamErr)
+                send({
+                  type: 'error',
+                  message: streamErr instanceof Error ? streamErr.message : 'Unknown error',
+                })
+              }
+              controller.close()
+            },
+          })
+
+          return new Response(stream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            },
+          })
+        }
+        // For overview / explainer / followup / personal with no ticker:
+        // fall through to the legacy paths below.
+      } catch (routerErr) {
+        console.warn('[stage-a] router pass failed, falling back to v1 history path', routerErr)
+      }
+    }
+
     if (!tickerResult.ticker) {
       console.log('📝 No ticker found, checking chat history for context...')
       
