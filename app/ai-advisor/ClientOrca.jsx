@@ -667,6 +667,101 @@ export default function ClientOrca() {
     }
   }, [loading])
 
+  /**
+   * Stage B.2 — handle Confirm / Cancel on a fast-write prompt.
+   * On Confirm: re-POST /api/chat with `confirm: { calls }`; the server
+   * executes the writeTools and streams a `complete` event back. On
+   * success we dispatch a `orca:watchlist-changed` window event so any
+   * subscriber (personal Watchlist tab, token-page star button) can
+   * refresh in place without a full reload.
+   */
+  const handleConfirmWrite = async (messageId, accept) => {
+    if (!session) return
+    const targetMsg = messages.find(m => m.id === messageId)
+    if (!targetMsg || !targetMsg.confirmPending) return
+    const { calls, question } = targetMsg.confirmPending
+
+    if (!accept) {
+      setMessages(prev => prev.map(m => m.id === messageId
+        ? { ...m, confirmPending: null, content: 'Cancelled.', timestamp: new Date() }
+        : m
+      ))
+      return
+    }
+
+    // Mark as executing so the buttons disable.
+    setMessages(prev => prev.map(m => m.id === messageId
+      ? { ...m, confirmPending: { ...m.confirmPending, executing: true } }
+      : m
+    ))
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          message: question,
+          session_id: currentSessionId,
+          confirm: { calls },
+        }),
+      })
+
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('text/event-stream')) {
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let finalText = ''
+        let success = false
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const parts = buffer.split('\n\n')
+          buffer = parts.pop()
+          for (const part of parts) {
+            const line = part.trim()
+            if (!line.startsWith('data: ')) continue
+            try {
+              const event = JSON.parse(line.slice(6))
+              if (event.type === 'complete') {
+                finalText = event.response || ''
+                success = !!event.success
+                if (event.quota) setQuota(event.quota)
+              } else if (event.type === 'error') {
+                throw new Error(event.error || 'Write failed')
+              }
+            } catch (parseErr) {
+              if (parseErr instanceof SyntaxError) continue
+              throw parseErr
+            }
+          }
+        }
+        setMessages(prev => prev.map(m => m.id === messageId
+          ? { ...m, confirmPending: null, content: finalText || 'Done.', timestamp: new Date() }
+          : m
+        ))
+        if (success) {
+          try {
+            window.dispatchEvent(new CustomEvent('orca:watchlist-changed'))
+          } catch (_) {}
+        }
+      } else {
+        const data = await response.json()
+        throw new Error(data?.error || 'Unexpected response')
+      }
+    } catch (err) {
+      console.error('[ClientOrca] confirm-write failed', err)
+      setMessages(prev => prev.map(m => m.id === messageId
+        ? { ...m, confirmPending: null, content: `Sorry, that did not go through: ${err.message}` , timestamp: new Date() }
+        : m
+      ))
+    }
+  }
+
   const handleSubmit = async (e, exampleQuery = null) => {
     if (e) e.preventDefault()
     
@@ -740,6 +835,22 @@ export default function ClientOrca() {
                   if (prev.some(s => s.step === event.step)) return prev
                   return [...prev, { step: event.step, message: event.message, detail: event.detail || '' }]
                 })
+              } else if (event.type === 'confirm') {
+                // Stage B.2 — fast-write confirm/cancel prompt.
+                // Append an assistant message that renders inline
+                // Confirm/Cancel buttons instead of free-text content.
+                const confirmMessage = {
+                  id: (Date.now() + 1).toString(),
+                  role: 'assistant',
+                  content: '',
+                  confirmPending: {
+                    label: event.label,
+                    calls: event.calls,
+                    question,
+                  },
+                  timestamp: new Date(),
+                }
+                setMessages(prev => [...prev, confirmMessage])
               } else if (event.type === 'complete') {
                 const orcaMessage = {
                   id: (Date.now() + 1).toString(),
@@ -974,6 +1085,59 @@ export default function ClientOrca() {
                   <MessageText $isUser={message.role === 'user'}>
                     {message.role === 'user' ? (
                       message.content
+                    ) : message.confirmPending ? (
+                      <div style={{
+                        padding: '1rem 1.1rem',
+                        background: colors.bgCard,
+                        borderRadius: '10px',
+                        border: `1px solid ${colors.borderLight}`,
+                      }}>
+                        <div style={{
+                          fontSize: '0.95rem',
+                          color: colors.textPrimary,
+                          marginBottom: '0.85rem',
+                          lineHeight: 1.45,
+                        }}>
+                          {message.confirmPending.label}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmWrite(message.id, true)}
+                            disabled={!!message.confirmPending.executing}
+                            style={{
+                              background: `linear-gradient(135deg, ${colors.primary} 0%, #00b8d4 100%)`,
+                              color: '#0a0e17',
+                              border: 'none',
+                              padding: '0.55rem 1.1rem',
+                              borderRadius: '8px',
+                              fontWeight: 600,
+                              fontSize: '0.9rem',
+                              cursor: message.confirmPending.executing ? 'not-allowed' : 'pointer',
+                              opacity: message.confirmPending.executing ? 0.6 : 1,
+                            }}
+                          >
+                            {message.confirmPending.executing ? 'Working…' : 'Confirm'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmWrite(message.id, false)}
+                            disabled={!!message.confirmPending.executing}
+                            style={{
+                              background: 'transparent',
+                              color: colors.textSecondary,
+                              border: `1px solid ${colors.borderLight}`,
+                              padding: '0.55rem 1.1rem',
+                              borderRadius: '8px',
+                              fontWeight: 500,
+                              fontSize: '0.9rem',
+                              cursor: message.confirmPending.executing ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     ) : message.isRateLimited ? (
                       <div style={{ 
                         padding: '1.25rem', 

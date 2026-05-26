@@ -717,6 +717,12 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
       } catch {}
     }
     checkWatchlist()
+    // Stage B.2 — refresh when ORCA chat adds/removes this ticker via fast-write.
+    if (typeof window !== 'undefined') {
+      const handler = () => { checkWatchlist() }
+      window.addEventListener('orca:watchlist-changed', handler)
+      return () => window.removeEventListener('orca:watchlist-changed', handler)
+    }
   }, [symbol])
 
   // Fetch whale patterns

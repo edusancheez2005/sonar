@@ -16,6 +16,8 @@ import { runOrchestrator } from '@/lib/orca/orchestrator/runOrchestrator'
 import { routeMessage } from '@/lib/orca/orchestrator/router'
 import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
 import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
+import { detectFastWrite, sanitiseConfirmCalls, type WriteCall } from '@/lib/orca/orchestrator/fastWrites'
+import { runAddToWatchlist, runRemoveFromWatchlist } from '@/lib/orca/orchestrator/tools/writeTools'
 
 export const dynamic = 'force-dynamic'
 // Vercel function timeout. The legacy v1 path fans out to multiple upstream
@@ -256,7 +258,133 @@ export async function POST(request: Request) {
         { status: 429 }
       )
     }
-    
+
+    // -------------------------------------------------------------------------
+    // STAGE B.2 (2026-05-26) — fast-write Confirm/Cancel flow.
+    //
+    // Intercept simple watchlist mutation utterances ("add SOL to my
+    // watchlist", "unwatch BTC", etc.) BEFORE the router and writer LLMs are
+    // invoked. Two trips:
+    //   1. POST without `confirm` → server emits SSE `confirm` event with
+    //      `{ label, calls }`. Client renders Confirm/Cancel buttons.
+    //   2. POST with `confirm: { calls }` → server re-validates calls,
+    //      executes writeTools (userId pinned from verified JWT per HARD
+    //      RULE #4), and emits SSE `complete` with a plain-English summary.
+    //
+    // Both trips are cheap: they do not call any AI model and they do not
+    // consume the user's daily rate-limit quota (we passed the rate-limit
+    // check above but never call `incrementQuota` on this path — these are
+    // mechanical writes, not chat turns).
+    //
+    // Kill switch: set `ORCA_FAST_WRITES=false` to disable and route all
+    // watchlist commands through the legacy / orchestrator path.
+    // -------------------------------------------------------------------------
+    if (process.env.ORCA_FAST_WRITES !== 'false') {
+      const fwBody = body as { confirm?: { calls?: unknown } }
+
+      // --- Trip 2: EXECUTE confirmed calls ---------------------------------
+      if (fwBody.confirm && fwBody.confirm.calls !== undefined) {
+        const confirmedCalls = sanitiseConfirmCalls(fwBody.confirm.calls)
+        if (!confirmedCalls) {
+          return NextResponse.json(
+            { error: 'Invalid confirm payload' },
+            { status: 400 }
+          )
+        }
+        const encoder = new TextEncoder()
+        const stream = new ReadableStream({
+          async start(controller) {
+            const send = (payload: any) => {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
+            }
+            try {
+              const results: Array<{ ticker: string; tool: WriteCall['tool']; ok: boolean; error?: string }> = []
+              for (const call of confirmedCalls) {
+                const fn = call.tool === 'addToWatchlist' ? runAddToWatchlist : runRemoveFromWatchlist
+                const r = await fn({ userId, ticker: call.args.ticker }, supabase as any)
+                results.push({
+                  ticker: call.args.ticker,
+                  tool: call.tool,
+                  ok: r.ok,
+                  error: r.ok ? undefined : (r.error || 'write_failed'),
+                })
+              }
+              const added = results.filter(r => r.ok && r.tool === 'addToWatchlist').map(r => r.ticker)
+              const removed = results.filter(r => r.ok && r.tool === 'removeFromWatchlist').map(r => r.ticker)
+              const failed = results.filter(r => !r.ok)
+              const parts: string[] = []
+              if (added.length) parts.push(`Added ${added.join(', ')} to your watchlist.`)
+              if (removed.length) parts.push(`Removed ${removed.join(', ')} from your watchlist.`)
+              if (failed.length) parts.push(`Could not update ${failed.map(f => f.ticker).join(', ')} (${failed[0].error || 'error'}).`)
+              const text = parts.length > 0 ? parts.join(' ') : 'No changes were made.'
+
+              // Persist a chat_history row for parity with the legacy path.
+              try {
+                await supabase.from('chat_history').insert({
+                  user_id: userId,
+                  session_id: session_id || null,
+                  question: message,
+                  response: text,
+                  ticker: null,
+                  context_used: { intent: 'watchlist_write', writeResults: results },
+                })
+              } catch (persistErr) {
+                console.warn('[fastWrites] chat_history insert failed', persistErr)
+              }
+
+              send({
+                type: 'complete',
+                success: failed.length === 0,
+                response: text,
+                intent: 'watchlist_write',
+                writeResults: results,
+                quota: quotaStatus,
+              })
+            } catch (err: any) {
+              console.error('[fastWrites] execute error', err)
+              send({ type: 'error', error: err?.message || 'fast_write_execute_failed' })
+            } finally {
+              controller.close()
+            }
+          },
+        })
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+          },
+        })
+      }
+
+      // --- Trip 1: DETECT and emit confirm event ---------------------------
+      const detection = detectFastWrite(message)
+      if (detection) {
+        const encoder = new TextEncoder()
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: 'confirm',
+                  label: detection.label,
+                  calls: detection.calls,
+                })}\n\n`
+              )
+            )
+            controller.close()
+          },
+        })
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+          },
+        })
+      }
+    }
+
     // Extract ticker from message
     let tickerResult = extractTicker(message)
 
