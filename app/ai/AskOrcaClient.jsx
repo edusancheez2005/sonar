@@ -33,6 +33,26 @@ const colors = {
   textMuted: '#5a6a7a',
   borderLight: 'rgba(0, 229, 255, 0.10)',
   borderSubtle: 'rgba(255, 255, 255, 0.06)',
+  sentimentBull: '#00e676',
+  sentimentBear: '#ff1744',
+  sentimentNeutral: '#ffab00',
+}
+
+// ---- Formatters (mirrors v1 ClientOrca) ----------------------------------
+function formatPrice(price) {
+  if (!price) return '$0.00'
+  if (price >= 1) return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  if (price >= 0.01) return `$${price.toFixed(4)}`
+  return `$${price.toFixed(8)}`
+}
+function formatCompact(n) {
+  const num = Number(n || 0)
+  const abs = Math.abs(num)
+  if (abs >= 1e12) return `$${(num/1e12).toFixed(2)}T`
+  if (abs >= 1e9) return `$${(num/1e9).toFixed(2)}B`
+  if (abs >= 1e6) return `$${(num/1e6).toFixed(2)}M`
+  if (abs >= 1e3) return `$${(num/1e3).toFixed(2)}K`
+  return `$${Math.round(num)}`
 }
 
 const fadeIn = keyframes`
@@ -282,6 +302,212 @@ const Disclaimer = styled.div`
   padding: 0.5rem 1rem 1rem;
 `
 
+// ---- TokenDataCard (ported from v1 ClientOrca) ---------------------------
+// Renders KPI row + 24h chart + 7d chart + whale/social row beneath the
+// assistant's markdown answer when `message.data.price` is present.
+function TokenDataCard({ message }) {
+  const data = message.data
+  if (!data || !data.price) return null
+  const showWhaleRow = (
+    (data.whale_summary && (data.whale_summary.transactions > 0 || Math.abs(data.whale_summary.net_flow || 0) > 0)) ||
+    (data.lunarcrush && (data.lunarcrush.galaxy_score > 0 || data.lunarcrush.alt_rank > 0)) ||
+    data.price.ath_distance != null
+  )
+  const kpiCell = { textAlign: 'center' }
+  const kpiLabel = { fontSize: '0.55rem', color: colors.textMuted, fontFamily: FONT_SANS, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }
+  const kpiVal = { fontSize: '0.95rem', fontWeight: 800, fontFamily: FONT_MONO, color: colors.textPrimary }
+
+  return (
+    <div style={{ marginTop: '0.9rem' }}>
+      {/* Token header */}
+      {message.ticker && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: colors.textPrimary, fontFamily: FONT_MONO, letterSpacing: '1px' }}>
+              {message.ticker}
+            </span>
+            {data.price.current > 0 && (
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: colors.primary, fontFamily: FONT_MONO }}>
+                {formatPrice(data.price.current)}
+              </span>
+            )}
+            {data.price.change_24h != null && (
+              <span style={{
+                fontSize: '0.75rem', fontWeight: 700, fontFamily: FONT_MONO,
+                color: data.price.change_24h >= 0 ? colors.sentimentBull : colors.sentimentBear,
+                padding: '0.15rem 0.35rem', borderRadius: '3px',
+                background: data.price.change_24h >= 0 ? 'rgba(0, 230, 118, 0.08)' : 'rgba(255, 23, 68, 0.08)',
+              }}>
+                {data.price.change_24h >= 0 ? '▲' : '▼'} {Math.abs(data.price.change_24h).toFixed(2)}%
+              </span>
+            )}
+          </div>
+          <a href={`/token/${encodeURIComponent(message.ticker)}?sinceHours=24`} style={{
+            fontSize: '0.7rem', fontFamily: FONT_MONO, fontWeight: 600,
+            color: colors.primary, textDecoration: 'none',
+            padding: '0.25rem 0.6rem', borderRadius: '4px',
+            border: `1px solid ${colors.borderLight}`,
+          }}>
+            VIEW CHART →
+          </a>
+        </div>
+      )}
+
+      <div style={{
+        background: 'rgba(0, 229, 255, 0.02)', border: `1px solid ${colors.borderLight}`,
+        borderRadius: '6px', padding: '0.65rem 0.8rem',
+      }}>
+        {/* KPI Row */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+          gap: '0.5rem', marginBottom: '0.7rem',
+        }}>
+          <div style={kpiCell}>
+            <div style={kpiLabel}>Price</div>
+            <div style={kpiVal}>{formatPrice(data.price.current)}</div>
+          </div>
+          {data.price.change_24h != null && (
+            <div style={kpiCell}>
+              <div style={kpiLabel}>24h</div>
+              <div style={{ ...kpiVal, color: data.price.change_24h >= 0 ? colors.sentimentBull : colors.sentimentBear }}>
+                {data.price.change_24h >= 0 ? '+' : ''}{data.price.change_24h.toFixed(2)}%
+              </div>
+            </div>
+          )}
+          {data.price.market_cap > 0 && (
+            <div style={kpiCell}>
+              <div style={kpiLabel}>MCap</div>
+              <div style={kpiVal}>{formatCompact(data.price.market_cap)}</div>
+            </div>
+          )}
+          {data.price.volume_24h > 0 && (
+            <div style={kpiCell}>
+              <div style={kpiLabel}>Volume</div>
+              <div style={kpiVal}>{formatCompact(data.price.volume_24h)}</div>
+            </div>
+          )}
+          {data.sentiment && (
+            <div style={kpiCell}>
+              <div style={kpiLabel}>Sentiment</div>
+              <div style={{ ...kpiVal, color: data.sentiment.score > 0.2 ? colors.sentimentBull : data.sentiment.score < -0.2 ? colors.sentimentBear : colors.sentimentNeutral }}>
+                {data.sentiment.score > 0.2 ? 'Bullish' : data.sentiment.score < -0.2 ? 'Bearish' : 'Neutral'}
+              </div>
+            </div>
+          )}
+          {data.social?.sentiment_pct && (
+            <div style={kpiCell}>
+              <div style={kpiLabel}>Social</div>
+              <div style={{ ...kpiVal, color: colors.primary }}>{data.social.sentiment_pct}%</div>
+            </div>
+          )}
+        </div>
+
+        {/* 24h chart */}
+        {Array.isArray(data.sparkline_24h) && data.sparkline_24h.length > 5 && (
+          <SparkChart prices={data.sparkline_24h} authoritativeChange={data.price.change_24h} title="24H PRICE CHART" id={`24-${message.id}`} height={80} />
+        )}
+
+        {/* 7d chart */}
+        {Array.isArray(data.sparkline_7d) && data.sparkline_7d.length > 5 && (
+          <SparkChart prices={data.sparkline_7d} title="7D PRICE CHART" id={`7d-${message.id}`} height={60} compact />
+        )}
+
+        {/* Whale + LunarCrush row */}
+        {showWhaleRow && (
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
+            paddingTop: '0.6rem', borderTop: `1px solid ${colors.borderLight}`, marginTop: '0.4rem',
+          }}>
+            {data.whale_summary && (data.whale_summary.transactions > 0 || Math.abs(data.whale_summary.net_flow || 0) > 0) && (
+              <>
+                <span style={{ fontSize: '0.65rem', fontFamily: FONT_MONO, color: data.whale_summary.net_flow >= 0 ? colors.sentimentBull : colors.sentimentBear, padding: '0.15rem 0.4rem', borderRadius: '3px', background: data.whale_summary.net_flow >= 0 ? 'rgba(0, 230, 118, 0.06)' : 'rgba(255, 23, 68, 0.06)', border: `1px solid ${data.whale_summary.net_flow >= 0 ? 'rgba(0, 230, 118, 0.1)' : 'rgba(255, 23, 68, 0.1)'}` }}>
+                  WHALE: {data.whale_summary.net_flow >= 0 ? '+' : ''}{formatCompact(data.whale_summary.net_flow)}
+                </span>
+                <span style={{ fontSize: '0.65rem', fontFamily: FONT_MONO, color: colors.textMuted, padding: '0.15rem 0.4rem', borderRadius: '3px', border: `1px solid ${colors.borderLight}` }}>
+                  {data.whale_summary.transactions} TXN ({data.whale_summary.buy_sell_ratio})
+                </span>
+              </>
+            )}
+            {data.lunarcrush?.galaxy_score > 0 && (
+              <span style={{ fontSize: '0.65rem', fontFamily: FONT_MONO, color: data.lunarcrush.galaxy_score >= 60 ? colors.sentimentBull : data.lunarcrush.galaxy_score >= 40 ? colors.sentimentNeutral : colors.sentimentBear, padding: '0.15rem 0.4rem', borderRadius: '3px', background: 'rgba(0, 229, 255, 0.04)', border: `1px solid ${colors.borderLight}` }}>
+                GALAXY: {data.lunarcrush.galaxy_score}/100
+              </span>
+            )}
+            {data.lunarcrush?.alt_rank > 0 && (
+              <span style={{ fontSize: '0.65rem', fontFamily: FONT_MONO, color: colors.primary, padding: '0.15rem 0.4rem', borderRadius: '3px', border: `1px solid ${colors.borderLight}` }}>
+                ALT RANK: #{data.lunarcrush.alt_rank}
+              </span>
+            )}
+            {data.price.ath_distance != null && (
+              <span style={{ fontSize: '0.65rem', fontFamily: FONT_MONO, color: colors.textMuted, padding: '0.15rem 0.4rem', borderRadius: '3px', border: `1px solid ${colors.borderLight}` }}>
+                ATH: {data.price.ath_distance.toFixed(1)}%
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SparkChart({ prices, authoritativeChange, title, id, height = 60, compact = false }) {
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const range = max - min || 1
+  const width = 400
+  const padding = 2
+  const sparklineChange = ((prices[prices.length - 1] - prices[0]) / prices[0]) * 100
+  const displayChange = authoritativeChange != null ? authoritativeChange : sparklineChange
+  const isPositive = displayChange >= 0
+  const color = isPositive ? colors.sentimentBull : colors.sentimentBear
+  const ptsArr = prices.map((p, i) => {
+    const x = padding + (i / (prices.length - 1)) * (width - padding * 2)
+    const y = padding + (1 - (p - min) / range) * (height - padding * 2)
+    return `${x},${y}`
+  })
+  const points = ptsArr.join(' ')
+  const firstX = padding
+  const lastX = padding + (width - padding * 2)
+  const lastY = padding + (1 - (prices[prices.length - 1] - min) / range) * (height - padding * 2)
+  const areaPath = `M${firstX},${height} ${ptsArr.map(p => `L${p}`).join(' ')} L${lastX},${height} Z`
+  return (
+    <div style={{
+      margin: '0.5rem 0', padding: compact ? '0.5rem' : '0.75rem', borderRadius: compact ? '4px' : '6px',
+      background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${colors.borderLight}`,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+        <span style={{ fontSize: compact ? '0.6rem' : '0.65rem', fontFamily: FONT_MONO, color: compact ? colors.textMuted : colors.primary, textTransform: 'uppercase', letterSpacing: '1px', fontWeight: compact ? 600 : 700 }}>
+          {title}
+        </span>
+        <span style={{ fontSize: compact ? '0.6rem' : '0.65rem', fontFamily: FONT_MONO, color: isPositive ? colors.sentimentBull : colors.sentimentBear, fontWeight: 700 }}>
+          {isPositive ? '▲' : '▼'} {Math.abs(displayChange).toFixed(2)}%
+        </span>
+      </div>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+        <defs>
+          <linearGradient id={`grad-${id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75].map(pct => (
+          <line key={pct} x1={0} y1={pct * height} x2={width} y2={pct * height} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+        ))}
+        <path d={areaPath} fill={`url(#grad-${id})`} />
+        <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={lastX} cy={lastY} r={compact ? 2.5 : 3} fill={color} />
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
+        <span style={{ fontSize: '0.55rem', fontFamily: FONT_MONO, color: colors.textMuted }}>{compact ? formatPrice(min) : `Low: ${formatPrice(min)}`}</span>
+        <span style={{ fontSize: '0.55rem', fontFamily: FONT_MONO, color: colors.textMuted }}>{compact ? formatPrice(max) : `High: ${formatPrice(max)}`}</span>
+      </div>
+    </div>
+  )
+}
+
 export default function AskOrcaClient() {
   const searchParams = useSearchParams()
   const ticker = searchParams?.get('ticker') || null
@@ -428,6 +654,7 @@ export default function AskOrcaClient() {
               role: 'assistant',
               content: event.response || '',
               ticker: event.ticker || null,
+              data: event.data || null,
             },
           ])
         } else if (event.type === 'error') {
@@ -604,9 +831,12 @@ export default function AskOrcaClient() {
                       </div>
                     </ConfirmCard>
                   ) : (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {m.content || ''}
-                    </ReactMarkdown>
+                    <>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {m.content || ''}
+                      </ReactMarkdown>
+                      {m.data?.price && <TokenDataCard message={m} />}
+                    </>
                   )}
                 </Body>
               </Bubble>

@@ -1,5 +1,8 @@
 import React from 'react'
-import ClientOrca from './ClientOrca'
+// 2026-05-26: /ai-advisor now renders the new Ask ORCA hero UI (same as /ai).
+// Old ClientOrca.jsx file is left in place (per HARD RULES — never delete v1
+// surfaces) but is no longer the mounted component for this route.
+import AskOrcaClient from '@/app/ai/AskOrcaClient'
 
 export const metadata = {
   title: 'ORCA AI Crypto Analyst — AI-Powered Whale Intelligence | Sonar Tracker',
@@ -45,7 +48,7 @@ export default function AiAdvisorPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orcaSchema) }} />
-      <ClientOrca />
+      <AskOrcaClient />
     </>
   )
 } 
