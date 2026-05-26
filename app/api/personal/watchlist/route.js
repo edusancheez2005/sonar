@@ -14,7 +14,7 @@
  */
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 import { getUserTickers, hydrateTickers } from '@/lib/personal/watchlist'
 
 export const runtime = 'nodejs'
@@ -44,8 +44,11 @@ export async function GET(request) {
     }
     const userId = userData.user.id
 
-    const tickers = await getUserTickers(userId, supabaseAdmin)
-    const items = await hydrateTickers(tickers, supabaseAdmin)
+    // Stage B.1 (2026-05-26): use supabaseAdminFresh (cache: 'no-store') so
+    // an addition made on a token page appears in the personal Watchlist tab
+    // immediately, with no Next.js fetch-cache staleness.
+    const tickers = await getUserTickers(userId, supabaseAdminFresh)
+    const items = await hydrateTickers(tickers, supabaseAdminFresh)
 
     return NextResponse.json(
       { items, fetched_at: new Date().toISOString() },
