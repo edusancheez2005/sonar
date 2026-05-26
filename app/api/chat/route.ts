@@ -936,7 +936,7 @@ export async function POST(request: Request) {
       if (process.env.ORCA_PERSONALIZATION !== 'false') {
         try {
           const ctx = await loadPersonalizationContext(supabase as any, userId)
-          convPersonalization = buildPersonalizationBlock(ctx.profile, ctx.memories)
+          convPersonalization = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers)
         } catch (persErr) {
           console.warn('[personalization] conv-path load failed', persErr)
         }
@@ -1079,7 +1079,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           if (process.env.ORCA_PERSONALIZATION !== 'false') {
             try {
               const ctx = await loadPersonalizationContext(supabase as any, userId)
-              const block = buildPersonalizationBlock(ctx.profile, ctx.memories)
+              const block = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers)
               if (block) sysPrompt = `${block}\n\n${ORCA_SYSTEM_PROMPT}`
             } catch (persErr) {
               console.warn('[personalization] ticker-path load failed', persErr)

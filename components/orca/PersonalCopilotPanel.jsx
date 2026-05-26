@@ -16,6 +16,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { pickCopilotGreeting } from '@/lib/orca/greetings'
 
@@ -63,24 +65,82 @@ const Thread = styled.div`
 `
 
 const Bubble = styled.div`
-  max-width: 92%;
-  padding: 10px 14px;
-  border-radius: 10px;
+  max-width: 94%;
+  padding: 12px 14px;
+  border-radius: 8px;
   font-size: 13px;
-  line-height: 1.55;
-  white-space: pre-wrap;
+  line-height: 1.6;
   word-wrap: break-word;
   background: ${(p) =>
     p.$role === 'user'
       ? 'rgba(0, 229, 255, 0.08)'
-      : 'rgba(255, 255, 255, 0.03)'};
+      : 'rgba(13, 20, 33, 0.7)'};
   border: 1px solid
     ${(p) =>
       p.$role === 'user'
-        ? 'rgba(0, 229, 255, 0.22)'
-        : 'rgba(255, 255, 255, 0.06)'};
+        ? 'rgba(0, 229, 255, 0.30)'
+        : 'rgba(0, 229, 255, 0.10)'};
   align-self: ${(p) => (p.$role === 'user' ? 'flex-end' : 'flex-start')};
   color: #e0e6ed;
+  position: relative;
+  /* Markdown niceties for assistant replies */
+  p { margin: 0 0 8px; }
+  p:last-child { margin-bottom: 0; }
+  h1, h2, h3, h4 {
+    margin: 12px 0 6px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #00e5ff;
+    font-weight: 700;
+    border-bottom: 1px dashed rgba(0,229,255,0.18);
+    padding-bottom: 4px;
+  }
+  h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
+  strong { color: #ffffff; font-weight: 700; }
+  em { color: #cfd6df; font-style: italic; }
+  code {
+    background: rgba(0,229,255,0.10);
+    border: 1px solid rgba(0,229,255,0.18);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: 'JetBrains Mono','Fira Code',ui-monospace,Menlo,Consolas,monospace;
+    font-size: 12px;
+    color: #6ee7ff;
+  }
+  pre {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(0,229,255,0.12);
+    border-radius: 4px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+  pre code { background: transparent; border: 0; padding: 0; color: #cfd6df; }
+  ul, ol { margin: 6px 0 10px; padding-left: 22px; }
+  li { margin: 3px 0; }
+  a { color: #00e5ff; text-decoration: underline; text-decoration-color: rgba(0,229,255,0.4); }
+  a:hover { text-decoration-color: #00e5ff; }
+  blockquote {
+    margin: 8px 0;
+    padding: 6px 12px;
+    border-left: 2px solid rgba(0,229,255,0.4);
+    color: #b9c2cd;
+    background: rgba(0,229,255,0.04);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 12px;
+  }
+  th, td {
+    border: 1px solid rgba(0,229,255,0.15);
+    padding: 5px 8px;
+    text-align: left;
+  }
+  th { background: rgba(0,229,255,0.08); color: #00e5ff; text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; }
+  hr { border: 0; border-top: 1px dashed rgba(0,229,255,0.18); margin: 10px 0; }
 `
 
 const ErrorLine = styled.p`
@@ -318,7 +378,11 @@ export default function PersonalCopilotPanel({
       <Thread ref={threadRef} role="log" aria-live="polite">
         {messages.map((m, i) => (
           <Bubble key={i} $role={m.role} data-testid={`copilot-message-${m.role}-${i}`}>
-            {m.content}
+            {m.role === 'assistant' ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+            ) : (
+              m.content
+            )}
           </Bubble>
         ))}
         {error && <ErrorLine role="alert">{error}</ErrorLine>}

@@ -147,7 +147,7 @@ describe('loadPersonalizationContext', () => {
   it('returns empty context for missing userId', async () => {
     const sb = makeSb({})
     const out = await loadPersonalizationContext(sb as any, '')
-    expect(out).toEqual({ profile: null, memories: [] })
+    expect(out).toEqual({ profile: null, memories: [], tickers: [] })
   })
 
   it('returns profile + memories when supabase responds', async () => {

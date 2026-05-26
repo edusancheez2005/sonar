@@ -41,6 +41,7 @@ export interface MemoryFact {
 export interface PersonalizationContext {
   profile: UserProfileLite | null
   memories: MemoryFact[]
+  tickers: string[]
 }
 
 const MAX_MEMORY_FACTS = 8
@@ -65,7 +66,7 @@ export async function loadPersonalizationContext(
   userId: string,
   now: () => Date = () => new Date()
 ): Promise<PersonalizationContext> {
-  const empty: PersonalizationContext = { profile: null, memories: [] }
+  const empty: PersonalizationContext = { profile: null, memories: [], tickers: [] }
   if (!userId || typeof userId !== 'string') return empty
 
   let profile: UserProfileLite | null = null
@@ -116,7 +117,47 @@ export async function loadPersonalizationContext(
     console.warn('[orca/personalization] memory load failed', err)
   }
 
-  return { profile, memories }
+  // Watchlist + holdings tickers. Same canonical sources as the personal
+  // Watchlist tab (lib/personal/watchlist.ts) so the writer model sees what
+  // the user sees on /dashboard/personal. We deliberately use a plain query
+  // (not a helper import) to keep this file dependency-free.
+  const tickers: string[] = []
+  try {
+    const seen = new Set<string>()
+    const norm = (raw: any): string | null => {
+      if (!raw) return null
+      const t = String(raw).trim().toUpperCase()
+      if (!t || t.length > 12) return null
+      if (!/^[A-Z0-9._-]+$/.test(t)) return null
+      return t
+    }
+    // user_holdings.ticker
+    try {
+      const { data } = await (supabase as any)
+        .from('user_holdings').select('ticker').eq('user_id', userId)
+      if (Array.isArray(data)) {
+        for (const r of data) {
+          const t = norm(r?.ticker)
+          if (t && !seen.has(t)) { seen.add(t); tickers.push(t) }
+        }
+      }
+    } catch { /* ignore */ }
+    // user_watchlists.symbol (canonical, Stage B.1)
+    try {
+      const { data } = await (supabase as any)
+        .from('user_watchlists').select('symbol').eq('user_id', userId)
+      if (Array.isArray(data)) {
+        for (const r of data) {
+          const t = norm(r?.symbol)
+          if (t && !seen.has(t)) { seen.add(t); tickers.push(t) }
+        }
+      }
+    } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[orca/personalization] tickers load failed', err)
+  }
+
+  return { profile, memories, tickers }
 }
 
 const EXPERIENCE_LABEL: Record<string, string> = {
@@ -179,20 +220,33 @@ function describeProfile(profile: UserProfileLite | null): string | null {
  */
 export function buildPersonalizationBlock(
   profile: UserProfileLite | null,
-  memories: MemoryFact[]
+  memories: MemoryFact[],
+  tickers: string[] = []
 ): string {
   const profileLine = describeProfile(profile)
   const factLines = (memories || [])
     .map((m) => (m && typeof m.fact === 'string' ? m.fact.trim() : ''))
     .filter((s) => s.length > 0)
     .slice(0, MAX_MEMORY_FACTS)
+  const cleanTickers = Array.from(
+    new Set((tickers || [])
+      .map((t) => (typeof t === 'string' ? t.trim().toUpperCase() : ''))
+      .filter((t) => t.length > 0 && t.length <= 12)
+    )
+  ).slice(0, 25)
 
-  if (!profileLine && factLines.length === 0) return ''
+  if (!profileLine && factLines.length === 0 && cleanTickers.length === 0) return ''
 
   const parts: string[] = []
   parts.push('## USER PERSONALISATION (additive context — do NOT relax the HARD RULES below)')
   if (profileLine) {
     parts.push(profileLine)
+  }
+  if (cleanTickers.length > 0) {
+    parts.push(
+      `User's current watchlist + holdings (canonical, ${cleanTickers.length} tickers): ${cleanTickers.join(', ')}. ` +
+      `When the user asks "my watchlist", "my positions", "my tickers", or similar, treat THIS list as authoritative — do NOT say the watchlist is empty or unavailable.`
+    )
   }
   if (factLines.length > 0) {
     parts.push('Durable facts ORCA has learned from prior conversations with this user (paraphrased, PII-scrubbed):')
