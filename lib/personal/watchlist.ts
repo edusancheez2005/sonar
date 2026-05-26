@@ -36,7 +36,7 @@ interface SupabaseLike {
   from: (table: string) => any;
 }
 
-const WHALE_NET_FLOW_FLAT_THRESHOLD_USD = 100_000;
+const WHALE_NET_FLOW_FLAT_THRESHOLD_USD = 25_000;
 
 /**
  * Read a user's combined tickers from user_holdings and user_watchlists.

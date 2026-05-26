@@ -200,7 +200,6 @@ export default function WatchlistTab({ client, fetchImpl, onAskOrca }) {
             <thead>
               <tr>
                 <th scope="col">Ticker</th>
-                <th scope="col">1h</th>
                 <th scope="col">24h</th>
                 <th scope="col">7d</th>
                 <th scope="col">Whale</th>
@@ -215,10 +214,9 @@ export default function WatchlistTab({ client, fetchImpl, onAskOrca }) {
                       {it.ticker}
                     </Ticker>
                   </td>
-                  <td><Pct $v={it.change_1h ?? 0}>{fmtPct(it.change_1h)}</Pct></td>
                   <td><Pct $v={it.change_24h ?? 0}>{fmtPct(it.change_24h)}</Pct></td>
                   <td><Pct $v={it.change_7d ?? 0}>{fmtPct(it.change_7d)}</Pct></td>
-                  <td><Pip $d={it.net_flow_direction} />{it.net_flow_direction || '\u2014'}</td>
+                  <td><Pip $d={it.net_flow_direction} />{it.net_flow_direction || 'flat'}</td>
                   <td>
                     <AskBtn
                       type="button"

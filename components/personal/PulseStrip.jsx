@@ -128,6 +128,7 @@ function fmtPct(n) {
 export default function PulseStrip({ client, fetchImpl, macroText }) {
   const [items, setItems] = useState([])
   const [status, setStatus] = useState('loading')
+  const [macroLive, setMacroLive] = useState(null)
   const timerRef = useRef(null)
 
   useEffect(() => {
@@ -162,6 +163,24 @@ export default function PulseStrip({ client, fetchImpl, macroText }) {
 
     load()
     timerRef.current = setInterval(load, REFRESH_MS)
+
+    // Macro pin: pull live factors from /api/social/macro (Grok web-search
+    // backed, 12h-cached). We show the first factor's title + summary so
+    // the pin reflects today's actual macro driver instead of a placeholder.
+    ;(async () => {
+      try {
+        const r = await doFetch('/api/social/macro')
+        if (!r.ok) return
+        const j = await r.json()
+        const top = Array.isArray(j?.factors) ? j.factors[0] : null
+        if (!top || cancelled) return
+        const title = typeof top.title === 'string' ? top.title.trim() : ''
+        const summary = typeof top.summary === 'string' ? top.summary.trim() : ''
+        const text = title && summary ? `${title} \u2014 ${summary}` : (summary || title)
+        if (text) setMacroLive(text)
+      } catch { /* swallow */ }
+    })()
+
     return () => {
       cancelled = true
       if (timerRef.current) clearInterval(timerRef.current)
@@ -235,7 +254,7 @@ export default function PulseStrip({ client, fetchImpl, macroText }) {
         <TileLabel>Macro pin</TileLabel>
         <TileBody>
           <MacroPin>
-            {macroText ||
+            {macroText || macroLive ||
               'Macro backdrop unchanged \u2014 ask ORCA "what changed in macro today" for the latest read.'}
           </MacroPin>
         </TileBody>
