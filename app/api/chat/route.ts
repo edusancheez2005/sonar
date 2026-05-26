@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
+import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
@@ -257,6 +258,31 @@ export async function POST(request: Request) {
     
     // Extract ticker from message
     let tickerResult = extractTicker(message)
+
+    // -------------------------------------------------------------------------
+    // STAGE A FIX (2026-05-26) — non-ticker surface guard.
+    //
+    // The legacy ticker extractor (lib/orca/ticker-extractor.ts) maps the
+    // substring "0x" to ZRX, "uni" to UNI, "op" to OP, etc. When the user
+    // pastes an Ethereum address ("0x28C6c0...") or an article URL, the
+    // extractor produces a false-positive ticker hit which prevents the
+    // Stage A router from ever firing. We override that here: when the
+    // message clearly contains a non-ticker surface (address, URL, long
+    // base58 string), drop the extractor's guess so the router gets a
+    // chance to classify the message as wallet_lookup / article_explain.
+    //
+    // We intentionally do NOT do this when `originalMatch` came from
+    // `from_history` — that path is set later, not here.
+    // -------------------------------------------------------------------------
+    if (tickerResult.ticker && hasNonTickerSurface(message)) {
+      console.log(`🧹 Suppressing extractor ticker "${tickerResult.ticker}" — message contains address/URL surface`)
+      tickerResult = {
+        ticker: null,
+        confidence: 0,
+        normalized: null,
+        originalMatch: null,
+      } as typeof tickerResult
+    }
 
     // -------------------------------------------------------------------------
     // ORCA Orchestration v2 (§4.C of ORCA_COPILOT_BUILD_PROMPT.md).
