@@ -188,10 +188,12 @@ export default function PulseStrip({ client, fetchImpl, macroText }) {
     timerRef.current = setInterval(load, REFRESH_MS)
 
     // Macro pin: pull live factors from /api/social/macro (Grok web-search
-    // backed, 12h-cached). We show the first factor's title + summary so
-    // the pin reflects today's actual macro driver instead of a placeholder.
+    // backed, 12h-cached). Gated on an authed session so unauth users do not
+    // trigger network. Shows the first factor's title + summary.
     ;(async () => {
       try {
+        const { data } = await sb.auth.getSession()
+        if (!data?.session?.access_token) return
         const r = await doFetch('/api/social/macro')
         if (!r.ok) return
         const j = await r.json()

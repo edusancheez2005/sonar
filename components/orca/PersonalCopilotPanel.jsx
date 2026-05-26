@@ -237,7 +237,9 @@ export default function PersonalCopilotPanel({
       // The /api/chat endpoint may stream SSE (ticker analyses, Stage A
       // orchestrator) or return plain JSON (conv fallback, fastWrite). Parse
       // whichever shape comes back so the panel doesn't hang on a stream.
-      const ctype = (res.headers.get('content-type') || '').toLowerCase()
+      const ctype = (res.headers && typeof res.headers.get === 'function'
+        ? (res.headers.get('content-type') || '')
+        : '').toLowerCase()
       let body = null
       if (ctype.includes('text/event-stream')) {
         const raw = await res.text()

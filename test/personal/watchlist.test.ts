@@ -91,7 +91,7 @@ describe('hydrateTickers', () => {
           { usd_value: 500_000, classification: 'sell' },
         ],
       },
-      news_articles: { data: [{ title: '  Big BTC headline  ' }] },
+      news_items: { data: [{ title: '  Big BTC headline that is long enough  ' }] },
     })
     const out = await hydrateTickers([{ ticker: 'BTC', source: 'holding' }], sb)
     expect(out).toHaveLength(1)
@@ -102,14 +102,14 @@ describe('hydrateTickers', () => {
     expect(item.change_7d).toBe(-3.4)
     // net = 5M buy - 500k sell = +4.5M, well above the 100k flat threshold
     expect(item.net_flow_direction).toBe('up')
-    expect(item.latest_headline).toBe('Big BTC headline')
+    expect(item.latest_headline).toBe('Big BTC headline that is long enough')
   })
 
   it('returns null fields and flat direction when sources are empty', async () => {
     const sb = makeSupabase({
       price_snapshots: { data: [] },
       all_whale_transactions: { data: [] },
-      news_articles: { data: [] },
+      news_items: { data: [] },
     })
     const out = await hydrateTickers([{ ticker: 'SOL', source: 'watchlist' }], sb)
     expect(out[0].price_usd).toBeNull()
