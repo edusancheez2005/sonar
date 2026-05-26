@@ -234,7 +234,35 @@ export default function PersonalCopilotPanel({
         setSending(false)
         return
       }
-      const body = await res.json()
+      // The /api/chat endpoint may stream SSE (ticker analyses, Stage A
+      // orchestrator) or return plain JSON (conv fallback, fastWrite). Parse
+      // whichever shape comes back so the panel doesn't hang on a stream.
+      const ctype = (res.headers.get('content-type') || '').toLowerCase()
+      let body = null
+      if (ctype.includes('text/event-stream')) {
+        const raw = await res.text()
+        // Walk every "data: {...}" frame and keep the last 'complete' (or any
+        // payload with a `response` field) — that's the final answer.
+        let last = null
+        for (const line of raw.split('\n')) {
+          const trimmed = line.trim()
+          if (!trimmed.startsWith('data:')) continue
+          const payload = trimmed.slice(5).trim()
+          if (!payload) continue
+          try {
+            const obj = JSON.parse(payload)
+            if (obj?.type === 'complete' || typeof obj?.response === 'string') {
+              last = obj
+            } else if (obj?.type === 'error' && !last) {
+              last = { response: `ORCA error: ${obj.error || 'unknown'}` }
+            }
+          } catch { /* skip non-JSON frames */ }
+        }
+        body = last
+      } else {
+        body = await res.json()
+      }
+
       const reply =
         typeof body?.response === 'string'
           ? body.response
