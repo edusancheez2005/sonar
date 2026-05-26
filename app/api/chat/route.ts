@@ -283,6 +283,11 @@ export async function POST(request: Request) {
     // watchlist commands through the legacy / orchestrator path.
     // -------------------------------------------------------------------------
     if (process.env.ORCA_FAST_WRITES !== 'false') {
+      // Stage B.2: callers that do not negotiate SSE (e.g. PersonalCopilotPanel
+      // which does `await res.json()`) get a plain JSON envelope instead of
+      // the event-stream. Drawer/AskOrca client send `Accept: text/event-stream`
+      // and continue to receive the streamed Confirm/Cancel + complete events.
+      const acceptSse = (request.headers.get('accept') || '').includes('text/event-stream')
       const fwBody = body as { confirm?: { calls?: unknown } }
 
       // --- Trip 2: EXECUTE confirmed calls ---------------------------------
@@ -294,6 +299,49 @@ export async function POST(request: Request) {
             { status: 400 }
           )
         }
+
+        // Non-SSE callers: execute writes, return single JSON envelope.
+        if (!acceptSse) {
+          const results: Array<{ ticker: string; tool: WriteCall['tool']; ok: boolean; error?: string }> = []
+          for (const call of confirmedCalls) {
+            const fn = call.tool === 'addToWatchlist' ? runAddToWatchlist : runRemoveFromWatchlist
+            const r = await fn({ userId, ticker: call.args.ticker }, supabase as any)
+            results.push({
+              ticker: call.args.ticker,
+              tool: call.tool,
+              ok: r.ok,
+              error: r.ok ? undefined : (r.error || 'write_failed'),
+            })
+          }
+          const added = results.filter(r => r.ok && r.tool === 'addToWatchlist').map(r => r.ticker)
+          const removed = results.filter(r => r.ok && r.tool === 'removeFromWatchlist').map(r => r.ticker)
+          const failed = results.filter(r => !r.ok)
+          const parts: string[] = []
+          if (added.length) parts.push(`Added ${added.join(', ')} to your watchlist.`)
+          if (removed.length) parts.push(`Removed ${removed.join(', ')} from your watchlist.`)
+          if (failed.length) parts.push(`Could not update ${failed.map(f => f.ticker).join(', ')} (${failed[0].error || 'error'}).`)
+          const text = parts.length > 0 ? parts.join(' ') : 'No changes were made.'
+          try {
+            await supabase.from('chat_history').insert({
+              user_id: userId,
+              session_id: session_id || null,
+              question: message,
+              response: text,
+              ticker: null,
+              context_used: { intent: 'watchlist_write', writeResults: results },
+            })
+          } catch (persistErr) {
+            console.warn('[fastWrites] chat_history insert failed', persistErr)
+          }
+          return NextResponse.json({
+            success: failed.length === 0,
+            response: text,
+            intent: 'watchlist_write',
+            writeResults: results,
+            quota: quotaStatus,
+          })
+        }
+
         const encoder = new TextEncoder()
         const stream = new ReadableStream({
           async start(controller) {
@@ -381,6 +429,18 @@ export async function POST(request: Request) {
       }
       const detection = detectFastWrite(message, { contextTicker })
       if (detection) {
+        // Non-SSE callers (PersonalCopilotPanel) get a JSON envelope with
+        // the confirm payload alongside a human-readable response. The
+        // panel can render the label as the assistant reply; a future UI
+        // upgrade can surface real Confirm/Cancel buttons here.
+        if (!acceptSse) {
+          return NextResponse.json({
+            response: detection.label,
+            confirm: { label: detection.label, calls: detection.calls },
+            intent: 'watchlist_write_confirm',
+            quota: quotaStatus,
+          })
+        }
         const encoder = new TextEncoder()
         const stream = new ReadableStream({
           start(controller) {
