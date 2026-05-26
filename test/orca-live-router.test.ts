@@ -12,7 +12,7 @@
  *
  *   $env:LIVE_ROUTER_TESTS='1'; npx vitest run test/orca-live-router.test.ts
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeAll } from 'vitest'
 import OpenAI from 'openai'
 import { routeMessage } from '../lib/orca/orchestrator/router'
 import { pickStageARoute } from '../lib/orca/route-dispatch'
@@ -47,7 +47,11 @@ function buildModel() {
 }
 
 describeLive('LIVE router + dispatcher — production prompt regressions', () => {
-  const model = buildModel()
+  // Lazy — only constructed inside tests, so CI never trips on missing
+  // OPENAI_API_KEY when LIVE_ROUTER_TESTS is unset and the describe is
+  // skipped (the describe body still runs during collection).
+  let model: ReturnType<typeof buildModel>
+  beforeAll(() => { model = buildModel() })
 
   async function simulate(message: string) {
     // Mirror the route.ts pre-router pipeline.
@@ -71,6 +75,19 @@ describeLive('LIVE router + dispatcher — production prompt regressions', () =>
     const r = await simulate(
       'what is wallet 0x28C6c06298d514Db089934071355E5743bf21d60 doing'
     )
+    expect(r.path).toBe('router')
+    if (r.path === 'router') {
+      expect(r.route.kind).toBe('orchestrator')
+      if (r.route.kind === 'orchestrator') {
+        expect(r.route.intent).toBe('wallet_lookup')
+      }
+    }
+  }, 30000)
+
+  it('ABBREVIATED wallet address "0x28C6...d60" → orchestrator wallet_lookup (NOT ZRX)', async () => {
+    // 2026-05-26 production regression: user typed abbreviated form copied
+    // from a block explorer / our own UI. Must NOT fall to v1 ZRX path.
+    const r = await simulate('0x28C6...d60')
     expect(r.path).toBe('router')
     if (r.path === 'router') {
       expect(r.route.kind).toBe('orchestrator')

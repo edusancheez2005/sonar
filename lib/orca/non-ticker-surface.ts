@@ -18,8 +18,17 @@
  */
 export function hasNonTickerSurface(message: string): boolean {
   if (typeof message !== 'string' || message.length === 0) return false
-  // Ethereum / EVM address (most common)
+  // Ethereum / EVM address (most common, full 40-hex form)
   if (/0x[a-fA-F0-9]{40}\b/.test(message)) return true
+  // Abbreviated EVM address with ellipsis: "0x28C6...d60", "0x28C6…d60".
+  // 2026-05-26 regression: users paste truncated addresses copied from
+  // block explorers / our own UI; the ticker extractor maps the bare
+  // "0x" to ZRX and short-circuits Stage A. Detect ascii or unicode
+  // ellipsis between hex groups.
+  if (/0x[a-fA-F0-9]{2,}(?:\.{2,}|\u2026)[a-fA-F0-9]*/.test(message)) return true
+  // Explicit "wallet 0x..." / "address 0x..." / "holder 0x..." — even when
+  // the hex tail is short or partially elided, the keyword signals intent.
+  if (/\b(?:wallet|address|holder|account|owner)\b[^.\n]{0,30}0x[a-fA-F0-9]+/i.test(message)) return true
   // Bare http(s) URL (article / tweet links)
   if (/\bhttps?:\/\/\S+/i.test(message)) return true
   // Tron address

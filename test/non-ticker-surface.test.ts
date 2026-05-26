@@ -60,6 +60,21 @@ describe('hasNonTickerSurface', () => {
         hasNonTickerSurface('audit rUocf7iPVuPbBerMNUuP1eYTPq2nWzZkS3')
       ).toBe(true)
     })
+
+    it('detects an ABBREVIATED EVM address with ascii ellipsis (the 2026-05-26 regression)', () => {
+      expect(hasNonTickerSurface('0x28C6...d60')).toBe(true)
+      expect(hasNonTickerSurface('what is 0x28C6...d60 doing')).toBe(true)
+    })
+
+    it('detects an ABBREVIATED EVM address with unicode ellipsis (…)', () => {
+      expect(hasNonTickerSurface('0x28C6\u2026d60')).toBe(true)
+      expect(hasNonTickerSurface('look up 0xAbCd\u2026FfEe')).toBe(true)
+    })
+
+    it('detects "wallet 0x..." even with very short hex tail', () => {
+      expect(hasNonTickerSurface('wallet 0xdeadbeef')).toBe(true)
+      expect(hasNonTickerSurface('what is address 0x123 holding')).toBe(true)
+    })
   })
 
   describe('URLs are detected', () => {
