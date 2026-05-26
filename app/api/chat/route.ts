@@ -865,7 +865,48 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
       
       const aiResponse = completion.choices[0]?.message?.content || 
         "Hey! I'm ORCA, your crypto intelligence assistant. I analyze crypto using whale data, sentiment, social insights, and price trends. Which coin do you want me to check out? Try asking about BTC, ETH, SOL, STRK, SHIB, PEPE, LINK, UNI, or any other crypto!"
-      
+
+      // Stage E (2026-05-26): fire-and-forget memory extractor on the
+      // conversational fallback path too. Previously this only ran on the
+      // ticker SSE path, which meant generic chats ("give me a market
+      // update", "i mostly trade on solana") never wrote to orca_memory.
+      if (process.env.ORCA_MEMORY !== 'false' && userId && aiResponse) {
+        try {
+          void extractMemoryFacts({
+            userId,
+            userMessage: message,
+            orcaResponse: aiResponse,
+            supabase: supabase as any,
+            model: {
+              extractCall: async (sys, usr) => {
+                const r = await ai.chat.completions.create({
+                  model: miniModel,
+                  messages: [
+                    { role: 'system', content: sys },
+                    { role: 'user', content: usr },
+                  ],
+                  temperature: 0,
+                  max_tokens: 400,
+                  response_format: { type: 'json_object' } as any,
+                })
+                return r.choices[0]?.message?.content ?? ''
+              },
+            },
+          })
+            .then((res) => {
+              console.log(
+                `[orca/memory/extractor] conv-path user=${userId} inserted=${res.inserted}` +
+                  (res.skipped_reason ? ` skipped_reason=${res.skipped_reason}` : '')
+              )
+            })
+            .catch((extractErr) => {
+              console.warn('[orca/memory/extractor] conv-path background failure', extractErr)
+            })
+        } catch (launchErr) {
+          console.warn('[orca/memory/extractor] conv-path launch failed', launchErr)
+        }
+      }
+
       return NextResponse.json({
         response: aiResponse,
         type: 'conversational'
@@ -1006,9 +1047,16 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
                     return r.choices[0]?.message?.content ?? ''
                   },
                 },
-              }).catch((extractErr) => {
-                console.warn('[orca/memory/extractor] background failure', extractErr)
               })
+                .then((res) => {
+                  console.log(
+                    `[orca/memory/extractor] ticker-path user=${userId} inserted=${res.inserted}` +
+                      (res.skipped_reason ? ` skipped_reason=${res.skipped_reason}` : '')
+                  )
+                })
+                .catch((extractErr) => {
+                  console.warn('[orca/memory/extractor] background failure', extractErr)
+                })
             } catch (importErr) {
               console.warn('[orca/memory/extractor] launch failed', importErr)
             }
