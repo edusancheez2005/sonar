@@ -74,6 +74,17 @@ describe('detectFastWrite — remove patterns', () => {
     })
   })
 
+  it('handles "unadd ETH" and "can you unadd eth from my watchlist"', () => {
+    expect(detectFastWrite('unadd ETH')).toEqual({
+      calls: [{ tool: 'removeFromWatchlist', args: { ticker: 'ETH' } }],
+      label: 'Remove ETH from your watchlist?',
+    })
+    expect(detectFastWrite('can you unadd eth from my watchlist')).toEqual({
+      calls: [{ tool: 'removeFromWatchlist', args: { ticker: 'ETH' } }],
+      label: 'Remove ETH from your watchlist?',
+    })
+  })
+
   it('rejects "remove this"', () => {
     expect(detectFastWrite('remove this')).toBeNull()
   })

@@ -40,8 +40,8 @@ const TICKER_RE = /^[A-Z0-9._-]{1,12}$/
 
 // Phrases that flip the intent from add → remove.
 const REMOVE_VERBS = [
-  'remove', 'delete', 'drop', 'untrack', 'unwatch', 'stop watching',
-  'stop tracking', 'take off', 'pull off', 'unfollow',
+  'remove', 'delete', 'drop', 'untrack', 'unwatch', 'unadd',
+  'stop watching', 'stop tracking', 'take off', 'pull off', 'unfollow',
 ]
 const ADD_VERBS = [
   'add', 'watch', 'track', 'save', 'put', 'follow', 'pin',
