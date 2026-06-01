@@ -5,7 +5,7 @@ vi.mock('@/app/lib/supabaseAdmin', () => ({
   supabaseAdminFresh: vi.fn(() => ({ from: vi.fn() })),
 }))
 
-import { runCheckUserAlerts } from '@/app/api/cron/check-user-alerts/route'
+import { runCheckUserAlerts } from '@/lib/orca/alerts/runCheckUserAlerts'
 
 /**
  * Table-aware Supabase mock for the alert-evaluation cron. Each table is a
