@@ -1,34 +1,41 @@
 /**
- * Derivatives Data Module — Binance primary, Bybit fallback
+ * Derivatives Data Module — Binance primary, OKX fallback
  *
  * Fetches funding rates, open interest, and long/short ratios from
  * crypto-derivatives venues (free, no API key required).
  *
- * Source order:
+ * Source order (2026-06-01):
  *   1. Binance Futures (fapi.binance.com) — preferred when reachable.
- *   2. Bybit V5 linear perps (api.bybit.com) — fallback covering funding,
- *      open interest, and global long/short. top-trader and taker volume
- *      are zeroed on the fallback (Bybit V5 does not expose direct
- *      equivalents in the free public surface).
+ *      Gives the full 5-channel composite.
+ *   2. OKX v5 SWAP (www.okx.com) — fallback covering funding +
+ *      open-interest + top-trader account long/short ratio. Top-trader
+ *      account ratio is the closest OKX equivalent to Binance's
+ *      `topLongShortAccountRatio`; we treat it as the smart-money channel.
+ *      Taker buy/sell is zeroed (OKX has the data but it requires
+ *      historical aggregation we don't need yet).
  *
- * Background (2026-06-01): the Binance Futures host returns non-200 from
- * Vercel serverless egress (geo-block; same failure mode as the api.binance.com
- * block of 2026-05-06). Until 2026-06-01 the failure was silent — every
- * underlying fetch returned null but `available: true` was still emitted
- * because `Promise.allSettled` swallowed the errors. That gave the engine
- * 1000 consecutive token_signals with funding_rate=0, smart_long=0.5,
- * taker_ratio=1 — all the DEFAULT_RESULT values masquerading as real data.
- * The grader and the §4.F backtest harness silently fed on this noise for
- * weeks. Fixed two bugs at once: (a) failover to Bybit, (b) `available`
- * is now true iff at least one of {funding, OI, long/short} actually
- * returned non-default data.
+ * Why not Bybit: api.bybit.com is fronted by CloudFront and blocks
+ * the Vercel egress region with a 403 (confirmed 2026-06-01 via
+ * /api/debug/derivatives-probe). Bybit works fine from local US
+ * residential IPs — DON'T be fooled by the local smoke test.
+ *
+ * Background (2026-06-01): the Binance Futures host returns 451 from
+ * Vercel serverless egress (geo-block; same failure mode as the
+ * api.binance.com block of 2026-05-06). Until 2026-06-01 the failure was
+ * silent — every underlying fetch returned null but `available: true` was
+ * still emitted because `Promise.allSettled` swallowed the errors. That
+ * gave the engine 1000 consecutive token_signals with funding_rate=0,
+ * smart_long=0.5, taker_ratio=1 — DEFAULT_RESULT values masquerading as
+ * real data. The grader and the §4.F backtest harness silently fed on
+ * this noise for weeks. Fixed two bugs at once: (a) actual reachable
+ * fallback, (b) `available` is now true iff funding actually returned.
  *
  * Kill-switch: DERIVATIVES_FALLBACK=off forces Binance-only (legacy
  * behavior). Default ON.
  */
 
 const BINANCE_FUTURES_BASE = 'https://fapi.binance.com'
-const BYBIT_V5_BASE = 'https://api.bybit.com'
+const OKX_BASE = 'https://www.okx.com'
 
 export interface DerivativesData {
   // Funding rate
@@ -59,10 +66,10 @@ export interface DerivativesData {
   compositeSignal: number     // -100 to +100
   available: boolean
   // Which venue actually produced the data we used. 'binance' = full feed,
-  // 'bybit' = partial feed (top-trader + taker zeroed), 'none' = no data.
+  // 'okx' = partial feed (global L/S + taker zeroed), 'none' = no data.
   // Added 2026-06-01 so the dashboard / forensic queries can stop
   // attributing zero-default rows to live signal.
-  source?: 'binance' | 'bybit' | 'none'
+  source?: 'binance' | 'okx' | 'none'
 }
 
 const DEFAULT_RESULT: DerivativesData = {
@@ -80,10 +87,9 @@ const NO_FUTURES = new Set(['MKR', 'LRC', 'FXS', 'WBTC', 'WETH'])
 
 /**
  * Fetch all derivatives data for a token. Tries Binance first; if Binance
- * does not return real funding data (geo-block or 4xx), falls back to Bybit
- * V5 for funding + OI + global long/short. Top-trader and taker volume are
- * zeroed on the Bybit path (V5 free surface does not expose direct
- * equivalents). Returns DEFAULT_RESULT with available=false when both
+ * does not return real funding data (geo-block or 4xx), falls back to OKX
+ * for funding + OI + top-trader long/short. Taker buy/sell is zeroed on
+ * the OKX path. Returns DEFAULT_RESULT with available=false when both
  * sources fail.
  */
 export async function fetchDerivativesData(
@@ -98,12 +104,12 @@ export async function fetchDerivativesData(
   const binance = await fetchFromBinance(tokenSymbol, currentPriceUsd)
   if (binance) return binance
 
-  // 2. Fallback: Bybit V5. Gives us funding + OI + global long/short.
-  //    Top-trader and taker are zeroed (no free public equivalent in V5).
+  // 2. Fallback: OKX SWAP. Gives funding + OI (in USD natively) + top-
+  //    trader L/S ratio. Taker is zeroed (we'd need aggregated history).
   //    Off by setting DERIVATIVES_FALLBACK=off (legacy Binance-only mode).
   if (process.env.DERIVATIVES_FALLBACK === 'off') return DEFAULT_RESULT
-  const bybit = await fetchFromBybit(tokenSymbol, currentPriceUsd)
-  if (bybit) return bybit
+  const okx = await fetchFromOkx(tokenSymbol, currentPriceUsd)
+  if (okx) return okx
 
   return DEFAULT_RESULT
 }
@@ -111,7 +117,7 @@ export async function fetchDerivativesData(
 /**
  * Binance Futures source. Returns null when the funding-rate fetch
  * fails — that's our "the geo-block is active" canary and we fall through
- * to the Bybit fallback. Returns a full DerivativesData object when
+ * to the OKX fallback. Returns a full DerivativesData object when
  * funding succeeded, even if OI / long-short partially failed (those
  * degrade to defaults but `available` stays true because the funding
  * signal alone is meaningful).
@@ -219,33 +225,36 @@ async function fetchFromBinance(
 }
 
 /**
- * Bybit V5 linear-perp source. Returns null when funding fetch fails.
- * Top-trader (smart-money) and taker buy/sell signals are zeroed because
- * Bybit V5 free public surface does not expose direct equivalents — the
- * composite still uses funding (30%) + global long/short (25%) = 55% of
- * the Binance information content. We prefer 55% real to 0% real.
+ * OKX SWAP source. Returns null when funding fetch fails. We treat OKX's
+ * `top-trader account L/S ratio` as the smart-money channel (closest free
+ * equivalent to Binance's topLongShortAccountRatio). Taker buy/sell is
+ * zeroed (we'd need to aggregate the taker-volume time series). With
+ * funding (30%) + top-trader (20%) we re-normalise the composite to keep
+ * the -100..+100 scale meaningful.
  *
- * Bybit V5 docs: https://bybit-exchange.github.io/docs/v5/market
- *  - funding/history    → result.list[0].fundingRate (string decimal)
- *  - open-interest      → result.list[0].openInterest (base token units)
- *  - account-ratio      → result.list[0].buyRatio / sellRatio (decimals)
+ * OKX v5 docs: https://www.okx.com/docs-v5/en/
+ *  - public/funding-rate                          → data[0].fundingRate
+ *  - public/open-interest (instType=SWAP)         → data[0].oiUsd (native)
+ *  - rubik/stat/contracts/long-short-account-ratio (ccy=BTC, period=1H)
+ *                                                 → data[0][1] (L/S ratio)
  */
-async function fetchFromBybit(
+async function fetchFromOkx(
   tokenSymbol: string,
   currentPriceUsd?: number
 ): Promise<DerivativesData | null> {
-  const symbol = `${tokenSymbol}USDT`
+  const instId = `${tokenSymbol}-USDT-SWAP`
   try {
     const [fundingRes, oiRes, lsRes] = await Promise.allSettled([
-      fetchWithTimeout(`${BYBIT_V5_BASE}/v5/market/funding/history?category=linear&symbol=${symbol}&limit=1`),
-      fetchWithTimeout(`${BYBIT_V5_BASE}/v5/market/open-interest?category=linear&symbol=${symbol}&intervalTime=1h&limit=1`),
-      fetchWithTimeout(`${BYBIT_V5_BASE}/v5/market/account-ratio?category=linear&symbol=${symbol}&period=1h&limit=1`),
+      fetchWithTimeout(`${OKX_BASE}/api/v5/public/funding-rate?instId=${instId}`),
+      fetchWithTimeout(`${OKX_BASE}/api/v5/public/open-interest?instType=SWAP&instId=${instId}`),
+      fetchWithTimeout(`${OKX_BASE}/api/v5/rubik/stat/contracts/long-short-account-ratio?ccy=${tokenSymbol}&period=1H`),
     ])
 
+    // Canary: funding rate must come back. Without it the instId is bad
+    // (token doesn't trade on OKX) or OKX is down — fall through.
     const fundingPayload = fundingRes.status === 'fulfilled' ? fundingRes.value : null
-    const fundingItem = fundingPayload?.result?.list?.[0]
+    const fundingItem = fundingPayload?.data?.[0]
     if (!fundingItem || fundingItem.fundingRate === undefined) {
-      // Bybit failed too — caller will return DEFAULT_RESULT.
       return null
     }
     const fundingRate = parseFloat(fundingItem.fundingRate) || 0
@@ -256,60 +265,65 @@ async function fetchFromBybit(
       fundingSignal = -Math.tanh(fundingRate * 5000) * 80
     }
 
+    // OKX returns oiUsd directly. Use it as authoritative; derive openInterest
+    // (base units) from oiCcy when present so downstream usage stays consistent.
     let openInterest = 0
     let openInterestUsd = 0
-    const oiItem = oiRes.status === 'fulfilled' ? oiRes.value?.result?.list?.[0] : null
-    if (oiItem?.openInterest !== undefined) {
-      openInterest = parseFloat(oiItem.openInterest) || 0
-      openInterestUsd = currentPriceUsd ? openInterest * currentPriceUsd : 0
+    const oiItem = oiRes.status === 'fulfilled' ? oiRes.value?.data?.[0] : null
+    if (oiItem) {
+      openInterestUsd = parseFloat(oiItem.oiUsd) || 0
+      openInterest = parseFloat(oiItem.oiCcy) || (currentPriceUsd ? openInterestUsd / currentPriceUsd : 0)
     }
 
-    let longRatio = 0.5, shortRatio = 0.5, longShortRatio = 1
-    const lsItem = lsRes.status === 'fulfilled' ? lsRes.value?.result?.list?.[0] : null
-    if (lsItem?.buyRatio !== undefined && lsItem?.sellRatio !== undefined) {
-      longRatio = parseFloat(lsItem.buyRatio) || 0.5
-      shortRatio = parseFloat(lsItem.sellRatio) || 0.5
-      longShortRatio = shortRatio > 0 ? longRatio / shortRatio : 1
+    // OKX top-trader account L/S ratio. data is array of [ts, ratio]
+    // entries sorted newest first. Ratio R = longAccounts/shortAccounts,
+    // so longPct = R/(R+1), shortPct = 1/(R+1).
+    let topTraderLongRatio = 0.5, topTraderShortRatio = 0.5
+    const lsArr = lsRes.status === 'fulfilled' ? lsRes.value?.data : null
+    if (Array.isArray(lsArr) && lsArr.length > 0 && Array.isArray(lsArr[0])) {
+      const r = parseFloat(lsArr[0][1])
+      if (Number.isFinite(r) && r > 0) {
+        topTraderLongRatio = r / (r + 1)
+        topTraderShortRatio = 1 / (r + 1)
+      }
     }
 
-    let longShortSignal = 0
-    if (longRatio > 0.65) longShortSignal = -60
-    else if (longRatio > 0.60) longShortSignal = -30
-    else if (shortRatio > 0.65) longShortSignal = 60
-    else if (shortRatio > 0.60) longShortSignal = 30
+    let topTraderSignal = 0
+    if (topTraderLongRatio > 0.65) topTraderSignal = -40       // crowded long = contrarian bearish
+    else if (topTraderLongRatio > 0.60) topTraderSignal = -20
+    else if (topTraderShortRatio > 0.65) topTraderSignal = 40
+    else if (topTraderShortRatio > 0.60) topTraderSignal = 20
 
-    // Composite re-weights to the channels we actually have: funding+L/S
-    // alone normalised to the same -100..+100 scale. Without top-trader
-    // and taker, we re-normalise their 0.30+0.25=0.55 share to 1.0 so
-    // a strong funding signal isn't artificially capped.
+    // We don't have global L/S on OKX free surface. Leave at neutral defaults.
+    const longRatio = 0.5, shortRatio = 0.5, longShortRatio = 1, longShortSignal = 0
+
+    // Composite re-weights to the channels we actually have: funding (30%) +
+    // top-trader (20%). Re-normalise to 1.0 so a strong signal isn't capped.
     const compositeSignal = Math.round(
-      (fundingSignal * 0.30 + longShortSignal * 0.25) / 0.55
+      (fundingSignal * 0.30 + topTraderSignal * 0.20) / 0.50
     )
 
     return {
       fundingRate,
       fundingRateAnnualized: +fundingRateAnnualized.toFixed(2),
       fundingSignal: Math.round(fundingSignal),
-      openInterest,
+      openInterest: Math.round(openInterest),
       openInterestUsd: Math.round(openInterestUsd),
-      longRatio: +longRatio.toFixed(4),
-      shortRatio: +shortRatio.toFixed(4),
-      longShortRatio: +longShortRatio.toFixed(4),
+      longRatio,
+      shortRatio,
+      longShortRatio,
       longShortSignal,
-      // Smart-money + taker not available on Bybit free surface; leave as
-      // defaults but explicitly zeroed (vs Binance defaults which are 0.5
-      // for ratios so downstream logic doesn't read them as a signal).
-      topTraderLongRatio: 0.5,
-      topTraderShortRatio: 0.5,
-      topTraderSignal: 0,
+      topTraderLongRatio: +topTraderLongRatio.toFixed(4),
+      topTraderShortRatio: +topTraderShortRatio.toFixed(4),
+      topTraderSignal,
       takerBuySellRatio: 1,
       takerSignal: 0,
       compositeSignal,
       available: true,
-      source: 'bybit',
+      source: 'okx',
     }
   } catch (err) {
-    console.error(`[Derivatives:bybit] ${symbol}:`, (err as Error).message)
+    console.error(`[Derivatives:okx] ${instId}:`, (err as Error).message)
     return null
   }
 }
