@@ -21,6 +21,7 @@ import PulseStrip from '@/components/personal/PulseStrip'
 import WatchlistTab from '@/components/personal/WatchlistTab'
 import WalletsTab from '@/components/personal/WalletsTab'
 import SignalsTab from '@/components/personal/SignalsTab'
+import AlertsTab from '@/components/personal/AlertsTab'
 import CopilotPane from '@/components/personal/CopilotPane'
 import Tray from '@/components/personal/Tray'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
@@ -185,6 +186,7 @@ const TABS = [
   { key: 'watchlist', label: 'Watchlist' },
   { key: 'wallets', label: 'Wallets' },
   { key: 'signals', label: 'Signals' },
+  { key: 'alerts', label: 'Alerts' },
 ]
 
 export default function PersonalDashboardClient() {
@@ -307,6 +309,9 @@ function PersonalShell() {
           )}
           {activeTab === 'signals' && (
             <SignalsTab />
+          )}
+          {activeTab === 'alerts' && (
+            <AlertsTab />
           )}
         </Card>
 

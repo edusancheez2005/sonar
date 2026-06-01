@@ -17,12 +17,101 @@ import { routeMessage } from '@/lib/orca/orchestrator/router'
 import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
 import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
 import { detectFastWrite, sanitiseConfirmCalls, type WriteCall } from '@/lib/orca/orchestrator/fastWrites'
-import { runAddToWatchlist, runRemoveFromWatchlist } from '@/lib/orca/orchestrator/tools/writeTools'
-import { loadPersonalizationContext, buildPersonalizationBlock } from '@/lib/orca/memory/personalization'
+import {
+  runAddToWatchlist,
+  runRemoveFromWatchlist,
+  runCreateAlert,
+  runRemoveAlert,
+  runListAlerts,
+} from '@/lib/orca/orchestrator/tools/writeTools'
+import { loadPersonalizationContext, buildPersonalizationBlock, loadActiveAlertSummaries } from '@/lib/orca/memory/personalization'
 import { extractMemoryFacts } from '@/lib/orca/memory/extractor'
 import { waitUntil } from '@vercel/functions'
 
 export const dynamic = 'force-dynamic'
+
+interface ConfirmedWriteResult {
+  ticker: string
+  tool: WriteCall['tool']
+  ok: boolean
+  error?: string
+}
+
+const ALERT_KIND_LABEL: Record<string, string> = {
+  price_move: 'price move',
+  whale_flow: 'whale flow',
+  signal_flip: 'signal change',
+  news_high_impact: 'high-impact news',
+}
+
+/**
+ * Execute a sanitised confirm-trip `calls[]` against the write-tools and build
+ * a neutral, human-readable summary. Shared by the SSE and non-SSE branches so
+ * watchlist + alert writes behave identically on both. Returns the per-call
+ * results (echoed to the client as writeResults) plus the summary text.
+ */
+async function executeConfirmedWrites(
+  confirmedCalls: WriteCall[],
+  userId: string,
+  supabase: any
+): Promise<{ results: ConfirmedWriteResult[]; text: string; success: boolean; intent: string }> {
+  const results: ConfirmedWriteResult[] = []
+  const listings: string[] = []
+  let touchedAlerts = false
+
+  for (const call of confirmedCalls) {
+    const ticker = call.args.ticker || ''
+    if (call.tool === 'addToWatchlist' || call.tool === 'removeFromWatchlist') {
+      const fn = call.tool === 'addToWatchlist' ? runAddToWatchlist : runRemoveFromWatchlist
+      const r = await fn({ userId, ticker }, supabase)
+      results.push({ ticker, tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed') })
+    } else if (call.tool === 'createAlert') {
+      touchedAlerts = true
+      const r = await runCreateAlert(
+        { userId, ticker, kind: call.args.kind, threshold_pct: call.args.threshold_pct, threshold_usd: call.args.threshold_usd },
+        supabase
+      )
+      results.push({ ticker, tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed') })
+    } else if (call.tool === 'removeAlert') {
+      touchedAlerts = true
+      const r = await runRemoveAlert({ userId, ticker, kind: call.args.kind }, supabase)
+      results.push({ ticker, tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed') })
+    } else if (call.tool === 'listAlerts') {
+      touchedAlerts = true
+      const r = await runListAlerts({ userId }, supabase)
+      results.push({ ticker: '', tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'read_failed') })
+      const rules = (r.ok && (r.data as any)?.rules) || []
+      for (const rule of rules as Array<{ ticker: string; kind: string }>) {
+        listings.push(`${rule.ticker} ${ALERT_KIND_LABEL[rule.kind] || rule.kind}`)
+      }
+    }
+  }
+
+  const added = results.filter((r) => r.ok && r.tool === 'addToWatchlist').map((r) => r.ticker)
+  const removed = results.filter((r) => r.ok && r.tool === 'removeFromWatchlist').map((r) => r.ticker)
+  const alertsCreated = results.filter((r) => r.ok && r.tool === 'createAlert').map((r) => r.ticker)
+  const alertsRemoved = results.filter((r) => r.ok && r.tool === 'removeAlert').map((r) => r.ticker)
+  const listed = results.some((r) => r.ok && r.tool === 'listAlerts')
+  const failed = results.filter((r) => !r.ok)
+
+  const parts: string[] = []
+  if (added.length) parts.push(`Added ${added.join(', ')} to your watchlist.`)
+  if (removed.length) parts.push(`Removed ${removed.join(', ')} from your watchlist.`)
+  if (alertsCreated.length) parts.push(`Set up alerts for ${alertsCreated.join(', ')}. I'll let you know in your inbox when something changes.`)
+  if (alertsRemoved.length) parts.push(`Removed alerts for ${alertsRemoved.join(', ')}.`)
+  if (listed) {
+    parts.push(listings.length ? `Your active alerts: ${listings.join('; ')}.` : 'You have no active alerts yet.')
+  }
+  if (failed.length) {
+    const reason = failed[0].error === 'rule_limit_reached' ? 'you have reached the 50-alert limit' : (failed[0].error || 'error')
+    const labels = failed.map((f) => f.ticker).filter(Boolean).join(', ')
+    parts.push(`Could not update ${labels || 'one item'} (${reason}).`)
+  }
+  const text = parts.length > 0 ? parts.join(' ') : 'No changes were made.'
+  const intent = touchedAlerts && added.length === 0 && removed.length === 0 ? 'alert_write' : 'watchlist_write'
+  return { results, text, success: failed.length === 0, intent }
+}
+
 // Vercel function timeout. The legacy v1 path fans out to multiple upstream
 // APIs (Binance + CG + LunarCrush + news + whale alerts) and Grok-4-fast can
 // take 20-40s for a 1,500-word note. The default 10s cap was surfacing to the
@@ -305,25 +394,11 @@ export async function POST(request: Request) {
 
         // Non-SSE callers: execute writes, return single JSON envelope.
         if (!acceptSse) {
-          const results: Array<{ ticker: string; tool: WriteCall['tool']; ok: boolean; error?: string }> = []
-          for (const call of confirmedCalls) {
-            const fn = call.tool === 'addToWatchlist' ? runAddToWatchlist : runRemoveFromWatchlist
-            const r = await fn({ userId, ticker: call.args.ticker }, supabase as any)
-            results.push({
-              ticker: call.args.ticker,
-              tool: call.tool,
-              ok: r.ok,
-              error: r.ok ? undefined : (r.error || 'write_failed'),
-            })
-          }
-          const added = results.filter(r => r.ok && r.tool === 'addToWatchlist').map(r => r.ticker)
-          const removed = results.filter(r => r.ok && r.tool === 'removeFromWatchlist').map(r => r.ticker)
-          const failed = results.filter(r => !r.ok)
-          const parts: string[] = []
-          if (added.length) parts.push(`Added ${added.join(', ')} to your watchlist.`)
-          if (removed.length) parts.push(`Removed ${removed.join(', ')} from your watchlist.`)
-          if (failed.length) parts.push(`Could not update ${failed.map(f => f.ticker).join(', ')} (${failed[0].error || 'error'}).`)
-          const text = parts.length > 0 ? parts.join(' ') : 'No changes were made.'
+          const { results, text, success, intent } = await executeConfirmedWrites(
+            confirmedCalls,
+            userId,
+            supabase as any
+          )
           try {
             await supabase.from('chat_history').insert({
               user_id: userId,
@@ -331,15 +406,15 @@ export async function POST(request: Request) {
               question: message,
               response: text,
               ticker: null,
-              context_used: { intent: 'watchlist_write', writeResults: results },
+              context_used: { intent, writeResults: results },
             })
           } catch (persistErr) {
             console.warn('[fastWrites] chat_history insert failed', persistErr)
           }
           return NextResponse.json({
-            success: failed.length === 0,
+            success,
             response: text,
-            intent: 'watchlist_write',
+            intent,
             writeResults: results,
             quota: quotaStatus,
           })
@@ -352,25 +427,11 @@ export async function POST(request: Request) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
             }
             try {
-              const results: Array<{ ticker: string; tool: WriteCall['tool']; ok: boolean; error?: string }> = []
-              for (const call of confirmedCalls) {
-                const fn = call.tool === 'addToWatchlist' ? runAddToWatchlist : runRemoveFromWatchlist
-                const r = await fn({ userId, ticker: call.args.ticker }, supabase as any)
-                results.push({
-                  ticker: call.args.ticker,
-                  tool: call.tool,
-                  ok: r.ok,
-                  error: r.ok ? undefined : (r.error || 'write_failed'),
-                })
-              }
-              const added = results.filter(r => r.ok && r.tool === 'addToWatchlist').map(r => r.ticker)
-              const removed = results.filter(r => r.ok && r.tool === 'removeFromWatchlist').map(r => r.ticker)
-              const failed = results.filter(r => !r.ok)
-              const parts: string[] = []
-              if (added.length) parts.push(`Added ${added.join(', ')} to your watchlist.`)
-              if (removed.length) parts.push(`Removed ${removed.join(', ')} from your watchlist.`)
-              if (failed.length) parts.push(`Could not update ${failed.map(f => f.ticker).join(', ')} (${failed[0].error || 'error'}).`)
-              const text = parts.length > 0 ? parts.join(' ') : 'No changes were made.'
+              const { results, text, success, intent } = await executeConfirmedWrites(
+                confirmedCalls,
+                userId,
+                supabase as any
+              )
 
               // Persist a chat_history row for parity with the legacy path.
               try {
@@ -380,7 +441,7 @@ export async function POST(request: Request) {
                   question: message,
                   response: text,
                   ticker: null,
-                  context_used: { intent: 'watchlist_write', writeResults: results },
+                  context_used: { intent, writeResults: results },
                 })
               } catch (persistErr) {
                 console.warn('[fastWrites] chat_history insert failed', persistErr)
@@ -388,9 +449,9 @@ export async function POST(request: Request) {
 
               send({
                 type: 'complete',
-                success: failed.length === 0,
+                success,
                 response: text,
-                intent: 'watchlist_write',
+                intent,
                 writeResults: results,
                 quota: quotaStatus,
               })
@@ -939,7 +1000,8 @@ export async function POST(request: Request) {
       if (process.env.ORCA_PERSONALIZATION !== 'false') {
         try {
           const ctx = await loadPersonalizationContext(supabase as any, userId)
-          convPersonalization = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers)
+          const alertSummaries = await loadActiveAlertSummaries(supabase as any, userId)
+          convPersonalization = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, alertSummaries)
         } catch (persErr) {
           console.warn('[personalization] conv-path load failed', persErr)
         }
@@ -1084,7 +1146,8 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           if (process.env.ORCA_PERSONALIZATION !== 'false') {
             try {
               const ctx = await loadPersonalizationContext(supabase as any, userId)
-              const block = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers)
+              const alertSummaries = await loadActiveAlertSummaries(supabase as any, userId)
+              const block = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, alertSummaries)
               if (block) sysPrompt = `${block}\n\n${ORCA_SYSTEM_PROMPT}`
             } catch (persErr) {
               console.warn('[personalization] ticker-path load failed', persErr)

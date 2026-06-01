@@ -21,12 +21,28 @@
  *  - `userId` is intentionally NOT part of any call's args here; the route
  *    handler injects it from the verified JWT at execution time.
  */
+import { parseThreshold } from '../alerts/parseThreshold'
 
-export type WriteTool = 'addToWatchlist' | 'removeFromWatchlist'
+export type WriteTool =
+  | 'addToWatchlist'
+  | 'removeFromWatchlist'
+  | 'createAlert'
+  | 'removeAlert'
+  | 'listAlerts'
+
+/** Alert kinds the chat detector can create (mirrors lib/orca/alerts/types). */
+export type FastAlertKind = 'price_move' | 'whale_flow' | 'signal_flip' | 'news_high_impact'
+
+export interface WriteCallArgs {
+  ticker?: string
+  kind?: FastAlertKind
+  threshold_pct?: number | null
+  threshold_usd?: number | null
+}
 
 export interface WriteCall {
   tool: WriteTool
-  args: { ticker: string }
+  args: WriteCallArgs
 }
 
 export interface FastWriteDetection {
@@ -108,6 +124,135 @@ export interface DetectFastWriteOptions {
   contextTicker?: string | null
 }
 
+// ── Alert detection ─────────────────────────────────────────────────────────
+// Net-add (Proactive Alerts stage). Detects "alert me when SOL moves 5%",
+// "notify me about BTC whale flow over $1M", "ping me on ETH signal flips",
+// "tell me about SOL news", plus "remove my SOL alert" and "list my alerts".
+
+const ALERT_INTENT_RE = /\b(alert|notify|ping|tell me|let me know|remind|warn)\b|\balerts?\b/i
+const LIST_ALERTS_RE = /\b(list|show|view|see|what(?:'s| is| are)?)\b[^.?!]*\balerts?\b/i
+const REMOVE_ALERT_RE = new RegExp(
+  `\\b(?:${verbAlternation(['remove', 'delete', 'drop', 'cancel', 'stop', 'disable', 'turn off', 'clear'])})\\b[^.?!]*\\balerts?\\b`,
+  'i'
+)
+
+// Common English command / filler words that are valid by the ticker regex but
+// must never be treated as a symbol when not `$`-prefixed.
+const TICKER_STOPWORDS = new Set<string>([
+  'ALERT', 'ALERTS', 'NOTIFY', 'PING', 'TELL', 'WARN', 'REMIND', 'LET', 'ME',
+  'KNOW', 'WHEN', 'IF', 'ONCE', 'WHENEVER', 'MOVES', 'MOVE', 'MOVING', 'PRICE',
+  'WHALE', 'FLOW', 'SIGNAL', 'NEWS', 'BIG', 'OVER', 'UNDER', 'ABOUT', 'ON',
+  'THE', 'MY', 'A', 'AN', 'TO', 'AND', 'OR', 'FOR', 'OF', 'IN', 'IS', 'ARE',
+  'REMOVE', 'DELETE', 'DROP', 'CANCEL', 'STOP', 'DISABLE', 'CLEAR', 'SHOW',
+  'LIST', 'VIEW', 'SEE', 'WHAT', 'IT', 'PLEASE', 'CHANGES', 'CHANGE', 'FLIPS',
+  'FLIP', 'FLIPPED', 'GET', 'SET', 'UP', 'DOWN', 'DAY', 'HOUR', 'HOURS',
+])
+
+function pickTickerAnywhere(text: string): string | null {
+  const tokens = text.split(/[^A-Za-z0-9.$_-]+/).filter(Boolean)
+  for (const tok of tokens) {
+    const hadDollar = tok.startsWith('$')
+    const bare = tok.replace(/^\$/, '')
+    const t = normaliseTicker(bare)
+    if (!t) continue
+    // A `$`-prefixed symbol is always a ticker. Otherwise reject common English
+    // command/filler words and bare numbers so "alert me WHEN SOL moves 8%"
+    // doesn't pick "WHEN" or "8".
+    if (!hadDollar && (TICKER_STOPWORDS.has(t) || /^\d+$/.test(t))) continue
+    return t
+  }
+  return null
+}
+
+function detectAlertKind(msg: string): FastAlertKind | null {
+  if (/\b(news|headline|article|story|press)\b/i.test(msg)) return 'news_high_impact'
+  if (/\b(signal|rating|flip|flips|flipped)\b/i.test(msg)) return 'signal_flip'
+  if (/\bwhale|flow|inflow|outflow|accumulat|net\s*buy|net\s*sell\b/i.test(msg)) return 'whale_flow'
+  if (/%|\bpercent\b|\bpct\b|\bprice\b|\bmoves?\b|\bmoving\b|\bdrops?\b|\bjumps?\b|\bgains?\b|\bfalls?\b/i.test(msg)) {
+    return 'price_move'
+  }
+  return null
+}
+
+function alertKindLabel(kind: FastAlertKind): string {
+  switch (kind) {
+    case 'price_move': return 'price move'
+    case 'whale_flow': return 'whale flow'
+    case 'signal_flip': return 'signal change'
+    case 'news_high_impact': return 'high-impact news'
+  }
+}
+
+/**
+ * Detect an alert create/remove/list command. Returns null when the message
+ * is not an unambiguous alert command. Thresholds are parsed from the text
+ * with sensible per-kind defaults (5% price move, $1M whale flow).
+ */
+export function detectAlertWrite(
+  message: string,
+  opts: DetectFastWriteOptions = {}
+): FastWriteDetection | null {
+  if (typeof message !== 'string') return null
+  const msg = message.trim()
+  if (!msg || msg.length > 200) return null
+  if (!ALERT_INTENT_RE.test(msg)) return null
+
+  const contextTicker = opts.contextTicker ? normaliseTicker(opts.contextTicker) : null
+
+  // LIST — no ticker required. Must not also look like a create ("alert me when").
+  if (LIST_ALERTS_RE.test(msg) && !/\b(when|if|once|whenever)\b/i.test(msg)) {
+    return { calls: [{ tool: 'listAlerts', args: {} }], label: 'Show your active alerts?' }
+  }
+
+  const ticker = pickTickerAnywhere(msg) || contextTicker
+
+  // REMOVE.
+  if (REMOVE_ALERT_RE.test(msg)) {
+    if (!ticker) return null
+    const kind = detectAlertKind(msg)
+    return {
+      calls: [{ tool: 'removeAlert', args: kind ? { ticker, kind } : { ticker } }],
+      label: kind
+        ? `Remove the ${alertKindLabel(kind)} alert for ${ticker}?`
+        : `Remove your ${ticker} alerts?`,
+    }
+  }
+
+  // CREATE.
+  if (!ticker) return null
+  // Guard against plain queries that merely contain a soft verb ("tell me
+  // about SOL"). A create requires an explicit alert noun/verb OR a
+  // conditional trigger word.
+  const hasAlertWord = /\b(alert|notify|ping|warn|remind)\b/i.test(msg)
+  const hasTrigger = /\b(when|if|once|whenever)\b/i.test(msg)
+  if (!hasAlertWord && !hasTrigger) return null
+  const kind = detectAlertKind(msg) || 'price_move'
+  const parsed = parseThreshold(msg)
+  let threshold_pct: number | null = null
+  let threshold_usd: number | null = null
+  if (kind === 'price_move') {
+    threshold_pct = parsed?.threshold_pct ?? 5
+  } else if (kind === 'whale_flow') {
+    threshold_usd = parsed?.threshold_usd ?? 1_000_000
+  }
+
+  const args: WriteCallArgs = { ticker, kind }
+  if (threshold_pct != null) args.threshold_pct = threshold_pct
+  if (threshold_usd != null) args.threshold_usd = threshold_usd
+
+  let label: string
+  if (kind === 'price_move') label = `Alert you when ${ticker} moves ${threshold_pct}% in 24h?`
+  else if (kind === 'whale_flow') {
+    const m = (threshold_usd ?? 0) >= 1_000_000
+      ? `$${((threshold_usd ?? 0) / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+      : `$${Math.round((threshold_usd ?? 0) / 1000)}K`
+    label = `Alert you on ${ticker} whale flow over ${m}?`
+  } else if (kind === 'signal_flip') label = `Alert you when the ${ticker} signal changes?`
+  else label = `Alert you on high-impact ${ticker} news?`
+
+  return { calls: [{ tool: 'createAlert', args }], label }
+}
+
 export function detectFastWrite(
   message: string,
   opts: DetectFastWriteOptions = {}
@@ -117,6 +262,12 @@ export function detectFastWrite(
   if (!msg) return null
   // Hard cap: long messages are unlikely to be one-shot write commands.
   if (msg.length > 200) return null
+
+  // Alert commands take precedence — "track SOL alert" should create an alert,
+  // not add SOL to the watchlist. detectAlertWrite returns null for non-alert
+  // text, so watchlist detection still runs below.
+  const alert = detectAlertWrite(msg, opts)
+  if (alert) return alert
 
   const isExplicitWatchlist = /\bwatch\s*list\b|\bwatchlist\b/i.test(msg)
   const contextTicker = opts.contextTicker
@@ -185,13 +336,42 @@ export function sanitiseConfirmCalls(input: unknown): WriteCall[] | null {
   for (const raw of input) {
     if (!raw || typeof raw !== 'object') continue
     const tool = (raw as any).tool
-    if (tool !== 'addToWatchlist' && tool !== 'removeFromWatchlist') continue
     const argsRaw = (raw as any).args
-    if (!argsRaw || typeof argsRaw !== 'object') continue
-    const ticker = normaliseTicker(String(argsRaw.ticker || ''))
-    if (!ticker) continue
-    out.push({ tool, args: { ticker } })
+
+    if (tool === 'addToWatchlist' || tool === 'removeFromWatchlist') {
+      if (!argsRaw || typeof argsRaw !== 'object') continue
+      const ticker = normaliseTicker(String(argsRaw.ticker || ''))
+      if (!ticker) continue
+      out.push({ tool, args: { ticker } })
+    } else if (tool === 'listAlerts') {
+      out.push({ tool, args: {} })
+    } else if (tool === 'removeAlert') {
+      if (!argsRaw || typeof argsRaw !== 'object') continue
+      const ticker = normaliseTicker(String(argsRaw.ticker || ''))
+      if (!ticker) continue
+      const kind = ALERT_KIND_SET.has(argsRaw.kind) ? (argsRaw.kind as FastAlertKind) : undefined
+      out.push({ tool, args: kind ? { ticker, kind } : { ticker } })
+    } else if (tool === 'createAlert') {
+      if (!argsRaw || typeof argsRaw !== 'object') continue
+      const ticker = normaliseTicker(String(argsRaw.ticker || ''))
+      if (!ticker) continue
+      if (!ALERT_KIND_SET.has(argsRaw.kind)) continue
+      const kind = argsRaw.kind as FastAlertKind
+      const args: WriteCallArgs = { ticker, kind }
+      if (kind === 'price_move') {
+        const pct = Number(argsRaw.threshold_pct)
+        if (Number.isFinite(pct) && pct > 0) args.threshold_pct = pct
+      } else if (kind === 'whale_flow') {
+        const usd = Number(argsRaw.threshold_usd)
+        if (Number.isFinite(usd) && usd > 0) args.threshold_usd = Math.round(usd)
+      }
+      out.push({ tool, args })
+    } else {
+      continue
+    }
     if (out.length >= 4) break // hard cap: a confirm trip never executes more than 4 calls
   }
   return out.length > 0 ? out : null
 }
+
+const ALERT_KIND_SET = new Set<string>(['price_move', 'whale_flow', 'signal_flip', 'news_high_impact'])

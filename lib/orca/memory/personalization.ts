@@ -160,6 +160,44 @@ export async function loadPersonalizationContext(
   return { profile, memories, tickers }
 }
 
+/**
+ * Load short human-readable summaries of the user's active alert rules
+ * (e.g. "SOL price move", "BTC whale flow"). Used to add one line to the
+ * personalisation block so ORCA can answer "what am I being alerted on?".
+ * Never throws — missing table / RLS denial → empty array.
+ */
+export async function loadActiveAlertSummaries(
+  supabase: any,
+  userId: string
+): Promise<string[]> {
+  if (!userId || typeof userId !== 'string') return []
+  const KIND_LABEL: Record<string, string> = {
+    price_move: 'price move',
+    whale_flow: 'whale flow',
+    signal_flip: 'signal change',
+    news_high_impact: 'high-impact news',
+  }
+  try {
+    const { data } = await supabase
+      .from('user_alerts')
+      .select('ticker, kind')
+      .eq('user_id', userId)
+      .eq('enabled', true)
+    if (!Array.isArray(data)) return []
+    return data
+      .map((r: any) => {
+        const t = r && typeof r.ticker === 'string' ? r.ticker.trim().toUpperCase() : ''
+        const k = r && typeof r.kind === 'string' ? KIND_LABEL[r.kind] : ''
+        return t && k ? `${t} ${k}` : ''
+      })
+      .filter((s: string) => s.length > 0)
+      .slice(0, 25)
+  } catch (err) {
+    console.warn('[orca/personalization] alerts load failed', err)
+    return []
+  }
+}
+
 const EXPERIENCE_LABEL: Record<string, string> = {
   new: 'a beginner — define jargon on first use',
   intermediate: 'an intermediate crypto user — assume familiarity with common DeFi/onchain terms',
@@ -221,7 +259,8 @@ function describeProfile(profile: UserProfileLite | null): string | null {
 export function buildPersonalizationBlock(
   profile: UserProfileLite | null,
   memories: MemoryFact[],
-  tickers: string[] = []
+  tickers: string[] = [],
+  alertSummaries: string[] = []
 ): string {
   const profileLine = describeProfile(profile)
   const factLines = (memories || [])
@@ -234,8 +273,12 @@ export function buildPersonalizationBlock(
       .filter((t) => t.length > 0 && t.length <= 12)
     )
   ).slice(0, 25)
+  const cleanAlerts = (alertSummaries || [])
+    .map((s) => (typeof s === 'string' ? s.trim() : ''))
+    .filter((s) => s.length > 0)
+    .slice(0, 25)
 
-  if (!profileLine && factLines.length === 0 && cleanTickers.length === 0) return ''
+  if (!profileLine && factLines.length === 0 && cleanTickers.length === 0 && cleanAlerts.length === 0) return ''
 
   const parts: string[] = []
   parts.push('## USER PERSONALISATION (additive context — do NOT relax the HARD RULES below)')
@@ -253,6 +296,12 @@ export function buildPersonalizationBlock(
     for (const f of factLines) {
       parts.push(`- ${f.slice(0, MAX_FACT_LEN_INLINE)}`)
     }
+  }
+  if (cleanAlerts.length > 0) {
+    parts.push(
+      `User's active ORCA alerts (${cleanAlerts.length}): ${cleanAlerts.join(', ')}. ` +
+      `If the user asks about "my alerts" or whether they are being notified about a token, treat THIS list as authoritative.`
+    )
   }
   parts.push(
     'Use this context to calibrate tone, time-horizon emphasis, and chain coverage only. It does not unlock any directional verbs, target prices, or forecasts — the ROLE, HARD RULES, WHAT YOU CAN DO, and RESPONSE FORMAT sections below take absolute precedence.'

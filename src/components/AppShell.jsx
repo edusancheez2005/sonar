@@ -11,6 +11,7 @@ import Footer from '@/src/components/Footer'
 import TokenSearchField from '@/src/components/nav/TokenSearchField'
 import { isWalletTrackerPath } from '@/src/components/nav/navUtils'
 import TelegramAccessModal from '@/components/sidebar/TelegramAccessModal'
+import OrcaBell from '@/components/orca/notifications/OrcaBell'
 
 /** Neon cyan chrome — aligned with landing V2Hero / HeroTitle gradients */
 const S = {
@@ -1134,6 +1135,7 @@ export default function AppShell({ children, onLogout }) {
           </HeaderSearchWrap>
         </HeaderCenter>
         <HeaderEnd>
+          <OrcaBell />
           <MobileMenuBtn type="button" aria-label="Open menu" onClick={() => setDrawerOpen(true)}>
             ☰
           </MobileMenuBtn>

@@ -26,7 +26,7 @@ const SUFFIX_MULTIPLIER: Record<string, number> = {
  * `5pct`, `5.5%`. Returns the positive magnitude or null.
  */
 function parsePercent(text: string): number | null {
-  const m = text.match(/(-?\d+(?:\.\d+)?)\s*(?:%|percent|pct)\b/i)
+  const m = text.match(/(-?\d+(?:\.\d+)?)\s*(?:%|(?:percent|pct)\b)/i)
   if (!m) return null
   const n = Math.abs(parseFloat(m[1]))
   if (!Number.isFinite(n) || n <= 0) return null
