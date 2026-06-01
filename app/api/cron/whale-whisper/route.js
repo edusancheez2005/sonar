@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { fetchDerivativesData } from '@/app/lib/derivativesData'
 import OpenAI from 'openai'
 
 export const dynamic = 'force-dynamic'
@@ -59,23 +60,26 @@ export async function GET(req) {
       else if (tx.classification === 'SELL') { whaleAgg[sym].sells++; whaleAgg[sym].sellVol += val }
     }
 
-    // 3. Fetch derivatives data for BTC and ETH (most telling)
+    // 3. Fetch derivatives data for BTC, ETH, SOL (most telling).
+    // Uses the shared fetchDerivativesData (Binance primary, OKX fallback)
+    // so this cron benefits from the geo-block failover instead of its old
+    // inline fapi.binance.com fetch, which 451'd from Vercel and degraded
+    // every field to 'N/A'. On the OKX path global L/S and taker are zeroed,
+    // so we only surface fields the active source actually populated.
     const derivData = {}
     for (const token of ['BTC', 'ETH', 'SOL']) {
-      const symbol = `${token}USDT`
       try {
-        const [fundingRes, lsRes, topRes, takerRes] = await Promise.all([
-          fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol}&limit=1`, { signal: AbortSignal.timeout(5000), cache: 'no-store', next: { revalidate: 0 } }).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000), cache: 'no-store', next: { revalidate: 0 } }).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000), cache: 'no-store', next: { revalidate: 0 } }).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`https://fapi.binance.com/futures/data/takerlongshortRatio?symbol=${symbol}&period=4h&limit=1`, { signal: AbortSignal.timeout(5000), cache: 'no-store', next: { revalidate: 0 } }).then(r => r.ok ? r.json() : []).catch(() => []),
-        ])
-
-        derivData[token] = {
-          fundingRate: fundingRes[0] ? (parseFloat(fundingRes[0].fundingRate) * 100).toFixed(4) + '%' : 'N/A',
-          retailLongPct: lsRes[0] ? (parseFloat(lsRes[0].longAccount) * 100).toFixed(1) + '%' : 'N/A',
-          topTraderLongPct: topRes[0] ? (parseFloat(topRes[0].longAccount) * 100).toFixed(1) + '%' : 'N/A',
-          takerBuySellRatio: takerRes[0] ? parseFloat(takerRes[0].buySellRatio).toFixed(3) : 'N/A',
+        const d = await fetchDerivativesData(token)
+        if (d && d.available) {
+          const onOkx = d.source === 'okx'
+          derivData[token] = {
+            fundingRate: Number.isFinite(d.fundingRate) ? (d.fundingRate * 100).toFixed(4) + '%' : 'N/A',
+            retailLongPct: onOkx ? 'N/A' : (d.longRatio * 100).toFixed(1) + '%',
+            topTraderLongPct: Number.isFinite(d.topTraderLongRatio) && d.topTraderLongRatio > 0 ? (d.topTraderLongRatio * 100).toFixed(1) + '%' : 'N/A',
+            takerBuySellRatio: onOkx ? 'N/A' : d.takerBuySellRatio.toFixed(3),
+          }
+        } else {
+          derivData[token] = null
         }
       } catch { derivData[token] = null }
     }
