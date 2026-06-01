@@ -24,13 +24,24 @@ if (Array.isArray(cache)) {
   console.log(cache);
 }
 
-const sigs = await pg('token_signals?select=token_symbol,computed_at,snapshot_inputs&order=computed_at.desc&limit=30');
+const sigs = await pg('token_signals?select=token,computed_at,snapshot_inputs&order=computed_at.desc&limit=30');
 if (Array.isArray(sigs)) {
   let nonZeroFund = 0;
+  let hasSnapshot = 0;
   for (const s of sigs) {
+    if (s.snapshot_inputs) hasSnapshot++;
     const f = s.snapshot_inputs?.funding_rate;
-    if (f && Number(f) !== 0) nonZeroFund++;
+    if (f != null && Number(f) !== 0) nonZeroFund++;
   }
-  console.log(`\n=== token_signals (last 30): funding_rate non-zero in ${nonZeroFund}/${sigs.length} ===`);
-  console.log('latest 5 BTC:', sigs.filter(s => s.token_symbol === 'BTC').slice(0, 5).map(s => ({ funding: s.snapshot_inputs?.funding_rate, ts: s.computed_at })));
+  console.log(`\n=== token_signals (last 30) ===`);
+  console.log(`  rows with snapshot_inputs: ${hasSnapshot}/${sigs.length}`);
+  console.log(`  funding_rate non-zero:     ${nonZeroFund}/${sigs.length}`);
+  console.log('  latest 12 (any token):');
+  for (const s of sigs.slice(0, 12)) {
+    const f = s.snapshot_inputs?.funding_rate;
+    console.log(`    ${(s.token||'?').padEnd(6)} fund=${f==null?'null':(Number(f)*100).toFixed(4)+'%'} @${s.computed_at}`);
+  }
+  console.log('  latest 5 BTC:', sigs.filter(s => s.token === 'BTC').slice(0, 5).map(s => ({ funding: s.snapshot_inputs?.funding_rate, ts: s.computed_at })));
+} else {
+  console.log('token_signals query failed:', sigs);
 }

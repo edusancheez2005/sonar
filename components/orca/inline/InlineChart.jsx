@@ -53,20 +53,37 @@ export function InlineChart({ ticker, tf: initialTf = '7d', kind = 'price' }) {
       try {
         const mod = await import('lightweight-charts')
         if (cancelled || !containerRef.current) return
+        const initialWidth = containerRef.current.clientWidth || 600
         const chart = mod.createChart(containerRef.current, {
+          width: initialWidth,
           height: 320,
+          autoSize: true,
           layout: { background: { color: 'transparent' }, textColor: '#dce8f3' },
           grid: { vertLines: { color: 'rgba(0,229,255,0.06)' }, horzLines: { color: 'rgba(0,229,255,0.06)' } },
           rightPriceScale: { borderColor: 'rgba(0,229,255,0.15)' },
           timeScale: { borderColor: 'rgba(0,229,255,0.15)' },
+          handleScroll: true,
+          handleScale: true,
         })
         const s = chart.addCandlestickSeries({
           upColor: TILE.green, borderUpColor: TILE.green, wickUpColor: TILE.green,
           downColor: TILE.red, borderDownColor: TILE.red, wickDownColor: TILE.red,
         })
         s.setData(data)
+        chart.timeScale().fitContent()
         chartRef.current = chart
         seriesRef.current = s
+        // Fallback ResizeObserver for older lightweight-charts builds where autoSize is a no-op.
+        try {
+          const ro = new ResizeObserver((entries) => {
+            for (const e of entries) {
+              const cr = e.contentRect
+              try { chart.resize(cr.width, 320) } catch {}
+            }
+          })
+          ro.observe(containerRef.current)
+          chart.__ro = ro
+        } catch {}
       } catch {
         if (!cancelled) {
           setChartFailed(true)
@@ -78,6 +95,7 @@ export function InlineChart({ ticker, tf: initialTf = '7d', kind = 'price' }) {
   }, [data, chartFailed, ticker, tf])
 
   useEffect(() => () => {
+    try { chartRef.current?.__ro?.disconnect?.() } catch {}
     try { chartRef.current?.remove?.() } catch {}
     chartRef.current = null
     seriesRef.current = null
@@ -89,7 +107,7 @@ export function InlineChart({ ticker, tf: initialTf = '7d', kind = 'price' }) {
   const change = first ? ((last - first) / first) * 100 : null
 
   return (
-    <span
+    <div
       role="group"
       data-testid="inline-chart"
       style={{
@@ -102,7 +120,7 @@ export function InlineChart({ ticker, tf: initialTf = '7d', kind = 'price' }) {
         fontFamily: TILE.mono,
       }}
     >
-      <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <span style={{ color: TILE.cyan, fontWeight: 700 }}>{ticker} · {kind}</span>
         <span role="tablist" aria-label="timeframe" style={{ display: 'inline-flex', gap: 0 }}>
           {['24h', '7d', '30d'].map((t) => (
@@ -123,21 +141,21 @@ export function InlineChart({ ticker, tf: initialTf = '7d', kind = 'price' }) {
             >{t}</button>
           ))}
         </span>
-      </span>
+      </div>
       {chartFailed ? (
         <Sparkline data={closes} width={600} height={200} ariaLabel={`${ticker} ${tf} fallback`} />
       ) : (
-        <span ref={containerRef} style={{ display: 'block', width: '100%', height: 320 }} />
+        <div ref={containerRef} style={{ display: 'block', width: '100%', height: 320 }} />
       )}
-      <span style={{ display: 'flex', gap: 16, marginTop: 8, color: TILE.cyanText, fontSize: 11 }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 8, color: TILE.cyanText, fontSize: 11 }}>
         <span>last {last != null ? `$${Number(last).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</span>
         <span style={{ color: change == null ? TILE.grey : change >= 0 ? TILE.green : TILE.red }}>
           {change == null ? '—' : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`}
         </span>
         {loading && <span style={{ color: TILE.grey }}>loading…</span>}
         {error && <span style={{ color: TILE.grey }}>data unavailable</span>}
-      </span>
-    </span>
+      </div>
+    </div>
   )
 }
 
