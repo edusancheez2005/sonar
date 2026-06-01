@@ -14,16 +14,19 @@ function bucketBg(v) {
 }
 
 async function fetchSentiment(ticker) {
-  const r = await fetch(`/api/token/social-timeseries?ticker=${encodeURIComponent(ticker)}&days=7`)
+  // Real API: /api/token/social-timeseries?symbol=BTC&interval=1w
+  const r = await fetch(`/api/token/social-timeseries?symbol=${encodeURIComponent(ticker)}&interval=1w`)
   if (!r.ok) throw new Error('fetch_failed')
   const json = await r.json()
-  const arr = Array.isArray(json?.series) ? json.series : Array.isArray(json) ? json : []
-  const series = arr.map((p) => Number(p?.sentiment ?? p?.value ?? p)).filter(Number.isFinite)
+  const rows = Array.isArray(json?.data) ? json.data : []
+  const series = rows.map((p) => Number(p?.sentiment)).filter(Number.isFinite)
+  const galaxyVals = rows.map((p) => Number(p?.galaxy_score)).filter(Number.isFinite)
+  const galaxy = galaxyVals.length ? Math.round(galaxyVals[galaxyVals.length - 1]) : null
   return {
     series,
-    galaxy: json?.galaxy_score ?? json?.galaxyScore ?? null,
-    altRank: json?.alt_rank ?? json?.altRank ?? null,
-    bullishPct: json?.bullish_pct ?? json?.bullishPct ?? null,
+    galaxy,
+    altRank: json?.alt_rank ?? null,
+    bullishPct: null,
   }
 }
 

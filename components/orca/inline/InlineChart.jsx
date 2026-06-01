@@ -8,14 +8,21 @@ import { useInlineData } from './useInlineData'
 import { logTileEvent } from './telemetryClient'
 
 async function fetchOhlc(ticker, days) {
+  // Real API: /api/coingecko/ohlc?symbol=BTC&days=7 → { data: [{ timestamp, open, high, low, close }] }
   const r = await fetch(`/api/coingecko/ohlc?symbol=${encodeURIComponent(ticker)}&days=${days}`)
   if (!r.ok) throw new Error('fetch_failed')
   const json = await r.json()
-  const rows = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : []
+  const rows = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : []
   return rows
-    .map((row) => Array.isArray(row)
-      ? { time: Math.floor(row[0] / 1000), open: row[1], high: row[2], low: row[3], close: row[4] }
-      : null)
+    .map((row) => {
+      if (Array.isArray(row)) {
+        return { time: Math.floor(row[0] / 1000), open: row[1], high: row[2], low: row[3], close: row[4] }
+      }
+      if (row && row.timestamp != null) {
+        return { time: Math.floor(row.timestamp / 1000), open: row.open, high: row.high, low: row.low, close: row.close }
+      }
+      return null
+    })
     .filter(Boolean)
 }
 

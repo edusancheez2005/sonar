@@ -7,12 +7,17 @@ import { useInlineData } from './useInlineData'
 import { logTileEvent } from './telemetryClient'
 
 async function fetchWhaleSeries(ticker) {
-  const r = await fetch(`/api/whales/timeseries?ticker=${encodeURIComponent(ticker)}&window=24h`)
+  // Real API: /api/whales/timeseries?symbol=BTC&days=1
+  const r = await fetch(`/api/whales/timeseries?symbol=${encodeURIComponent(ticker)}&days=1`)
   if (!r.ok) throw new Error('fetch_failed')
   const json = await r.json()
-  const arr = Array.isArray(json?.series) ? json.series : Array.isArray(json) ? json : []
-  const series = arr.map((p) => Number(p?.netFlow ?? p?.value ?? p)).filter(Number.isFinite)
-  return { series, buys: json?.buys ?? null, sells: json?.sells ?? null }
+  const rows = Array.isArray(json?.data) ? json.data : []
+  const series = rows
+    .map((p) => Number((p?.buyVolume ?? 0) - (p?.sellVolume ?? 0)))
+    .filter(Number.isFinite)
+  const buys = json?.summary?.totalBuyCount ?? null
+  const sells = json?.summary?.totalSellCount ?? null
+  return { series, buys, sells }
 }
 
 export function WhaleChip({ ticker, raw, value }) {

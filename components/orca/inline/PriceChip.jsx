@@ -15,12 +15,15 @@ import { InlineDataCtx } from './OrcaMarkdownContext'
 import { logTileEvent } from './telemetryClient'
 
 async function fetchPriceSeries(ticker) {
-  const r = await fetch(`/api/coingecko/market-chart?vs_currency=usd&days=7&symbol=${encodeURIComponent(ticker)}`)
+  const r = await fetch(`/api/coingecko/market-chart?symbol=${encodeURIComponent(ticker)}&days=7`)
   if (!r.ok) throw new Error('fetch_failed')
   const json = await r.json()
-  // Try a couple shapes; degrade gracefully.
-  const prices = Array.isArray(json?.prices) ? json.prices : Array.isArray(json?.data?.prices) ? json.data.prices : []
-  const series = prices.map((p) => (Array.isArray(p) ? Number(p[1]) : Number(p))).filter(Number.isFinite)
+  // Real shape: { data: { prices: [[ts, close], ...] } }
+  const prices =
+    json?.data?.prices ?? json?.prices ?? []
+  const series = prices
+    .map((p) => (Array.isArray(p) ? Number(p[1]) : Number(p?.close ?? p)))
+    .filter(Number.isFinite)
   const last = series.length ? series[series.length - 1] : null
   const first = series.length ? series[0] : null
   const change7d = first ? ((last - first) / first) * 100 : null
