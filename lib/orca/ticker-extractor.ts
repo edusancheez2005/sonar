@@ -233,8 +233,14 @@ export function extractTicker(message: string): TickerExtractionResult {
   }
 
   // Method 3: Check for known coin names (bitcoin, ethereum, etc.)
-  for (const [name, ticker] of Object.entries(TICKER_MAP)) {
-    if (lowerMessage.includes(name)) {
+  // Use whole-word matching so short keys like 'op', 'ape', 'sand' don't
+  // false-match inside ordinary words (e.g. "op" inside "top whale moves").
+  // Prefer the longest matching name so "shibainu" wins over "shib".
+  const tickerNames = Object.keys(TICKER_MAP).sort((a, b) => b.length - a.length)
+  for (const name of tickerNames) {
+    const ticker = TICKER_MAP[name]
+    const wordRe = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+    if (wordRe.test(lowerMessage)) {
       return {
         ticker,
         confidence: 0.85,
