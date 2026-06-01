@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     // We accept both the ERC-20 BUY/SELL classifications and the multi-chain
     // ACCUMULATION/DISTRIBUTION classifications used by the Whale Alert feed
     // (BTC, XRP, native ETH, etc.). They are mapped 1:1 when bucketing below.
-    const { data: txns, error } = await supabase
+    const { data: erc20Txns, error } = await supabase
       .from('all_whale_transactions')
       .select('timestamp, classification, usd_value')
       .eq('token_symbol', symbol)
@@ -53,7 +53,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
-    if (!txns || txns.length === 0) {
+    // Multi-chain fallback: BTC / XRP / TRX / native ETH and others come from
+    // the public Whale Alert feed (stored in `whale_alerts` with lowercase
+    // `symbol` and `transaction_type='transfer'`). We classify by owner type:
+    //   exchange -> non-exchange : ACCUMULATION  (treated as BUY)
+    //   non-exchange -> exchange : DISTRIBUTION  (treated as SELL)
+    //   anything else is dropped (pure wallet-to-wallet transfer).
+    let txns: Array<{ timestamp: string; classification: string; usd_value: number }> =
+      Array.isArray(erc20Txns) ? (erc20Txns as any) : []
+
+    if (txns.length === 0) {
+      const { data: alerts } = await supabase
+        .from('whale_alerts')
+        .select('timestamp, amount_usd, from_owner_type, to_owner_type')
+        .ilike('symbol', symbol)
+        .gte('timestamp', since)
+        .gt('amount_usd', 0)
+        .order('timestamp', { ascending: true })
+        .limit(5000)
+
+      for (const a of (alerts || []) as Array<any>) {
+        const from = String(a.from_owner_type || '').toLowerCase()
+        const to = String(a.to_owner_type || '').toLowerCase()
+        const fromEx = from === 'exchange'
+        const toEx = to === 'exchange'
+        let cls: 'ACCUMULATION' | 'DISTRIBUTION' | null = null
+        if (fromEx && !toEx) cls = 'ACCUMULATION'
+        else if (!fromEx && toEx) cls = 'DISTRIBUTION'
+        if (!cls) continue
+        txns.push({ timestamp: a.timestamp, classification: cls, usd_value: Number(a.amount_usd) })
+      }
+    }
+
+    if (txns.length === 0) {
       return NextResponse.json({
         symbol,
         days,
