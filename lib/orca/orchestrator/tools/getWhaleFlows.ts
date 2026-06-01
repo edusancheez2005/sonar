@@ -35,7 +35,13 @@ export async function run(
       .limit(ROW_LIMIT)
 
     if (!Array.isArray(data) || data.length === 0) {
-      return { ok: true, data: emptyFlow(ticker), source: 'all_whale_transactions', fetched_at }
+      return {
+        ok: false,
+        data: null,
+        source: 'all_whale_transactions',
+        fetched_at,
+        error: 'no_whale_transactions_24h',
+      }
     }
 
     let buyUsd = 0
@@ -58,6 +64,15 @@ export async function run(
     }
 
     const net = buyUsd - sellUsd
+    if (buys === 0 && sells === 0) {
+      return {
+        ok: false,
+        data: null,
+        source: 'all_whale_transactions',
+        fetched_at,
+        error: 'no_whale_transactions_24h',
+      }
+    }
     const direction =
       net > WHALE_FLAT_THRESHOLD_USD ? 'up' : net < -WHALE_FLAT_THRESHOLD_USD ? 'down' : 'flat'
 
@@ -89,6 +104,9 @@ export async function run(
 }
 
 function emptyFlow(ticker: string) {
+  // Retained for callers/tests that still reference it; the live `run()`
+  // path now returns ok:false on zero rows so the renderer prints the
+  // "On-chain whale data not available" fallback instead of "$0.00 net flow".
   return {
     ticker,
     window: '24h',
