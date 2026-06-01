@@ -395,6 +395,14 @@ export async function GET(req) {
     // tripped/cleared transitions land in the baseline row + webhook.
     const reasonText = reasons.join(' | ')
 
+    // Durable config heartbeat: stamp the time-valve flag state on every
+    // baseline row so "is BREAKER_TIME_VALVE on in prod?" is answerable at a
+    // glance without a deploy or a fired transition. The valve produces
+    // identical clear/hold behaviour whether on or off until shadow accuracy
+    // crosses the floor, so this echo is the only observable proof it's live.
+    const heartbeat = `time_valve=${timeValveOn ? 'on' : 'off'}`
+    const baselineReason = reasonText ? `${heartbeat} | ${reasonText}` : heartbeat
+
     // Always record the baseline row so historical trend analysis works.
     const { error: insErr } = await supabaseAdmin
       .from('accuracy_baseline')
@@ -405,7 +413,7 @@ export async function GET(req) {
         sell_share: Number((dist1d.sell * 100).toFixed(2)),
         neutral_share: Number((dist1d.neutral * 100).toFixed(2)),
         alerted: level !== null,
-        alert_reason: reasonText || null,
+        alert_reason: baselineReason,
       })
     if (insErr) {
       console.warn('[AccuracyWatchdog] baseline insert failed:', insErr.message)
@@ -473,6 +481,7 @@ export async function GET(req) {
         cusum_minus: cusumMinus === null ? null : Number(cusumMinus.toFixed(2)),
       },
       circuit_breaker: breakerOutcome,
+      time_valve: timeValveOn ? 'on' : 'off',
       webhook: webhookStatus,
     })
   } catch (err) {
