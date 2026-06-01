@@ -58,19 +58,22 @@ const getAIClient = () => {
 }
 
 /**
- * Dynamically determine if any on-chain whale data exists for a token.
- * Two independent sources can satisfy this:
- *   1. ERC-20 `whale_transactions` table (Etherscan ingest, ETH-chain ERC-20s)
- *   2. Multi-chain `whale_alerts` table (Whale Alert API, $500k+ tx, covers
- *      BTC, ETH native, TRX, XRP, SOL, BSC, etc.)
- * Previously this only checked source #1, so BTC/XRP/TRX/SOL responses
- * incorrectly told users "on-chain whale data is not available".
+ * Whether the ERC-20 `whale_transactions` ingest has rows for this token.
+ * Controls which whale section `buildGPTContext` renders:
+ *   - true  -> ERC-20 buy/sell breakdown from `context.whales`
+ *   - false -> Multi-chain Whale Alert section (BTC/XRP/SOL/etc.) or the
+ *             explicit "not available" fallback when neither source has data.
+ *
+ * NOTE: previously named `hasWhaleData` and OR'd the multi-chain source in
+ * as well; that caused BTC/SOL responses to render the ERC-20 template with
+ * `context.whales` all-zero (printing "net flow $0.00"), even though the
+ * real on-chain activity lived in `context.whaleAlerts`.
  */
-function hasWhaleData(context: any): boolean {
-  const erc20 = (context?.whales?.transaction_count || 0) > 0 ||
-                (context?.whales?.net_flow_24h || 0) !== 0
-  const multichain = (context?.whaleAlerts?.recent_alerts?.length || 0) > 0
-  return erc20 || multichain
+function hasERC20Whales(context: any): boolean {
+  return (
+    (context?.whales?.transaction_count || 0) > 0 ||
+    (context?.whales?.net_flow_24h || 0) !== 0
+  )
 }
 
 // ORCA System Prompt moved to lib/orca/system-prompt.ts (single source of truth
@@ -1056,8 +1059,10 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             send({ type: 'status', step, message: stepLabels[step] || step, detail: detail || '' })
           })
 
-          // Dynamically check if whale data exists for this token
-          const isERC20 = hasWhaleData(context)
+          // Dynamically check if the ERC-20 whale_transactions ingest has rows.
+          // buildGPTContext renders the ERC-20 buy/sell section only when true;
+          // BTC/XRP/SOL/etc. fall through to the multi-chain whale_alerts path.
+          const isERC20 = hasERC20Whales(context)
 
           // Build GPT context string
           let gptContext = buildGPTContext(context, message, isERC20)
