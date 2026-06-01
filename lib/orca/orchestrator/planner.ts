@@ -95,6 +95,15 @@ export function planToolCalls(input: PlannerInput): ToolCall[] {
   const calls: ToolCall[] = []
   const tickers = input.router.tickers.slice(0, MAX_TICKERS_PER_TURN)
 
+  // Market-wide social momentum ("which tokens are hot by social momentum?").
+  // getSocial is per-ticker, so a no-ticker social request would otherwise
+  // emit zero tools and the writer would report a missing datapoint. When the
+  // user asks for social with no specific ticker, fan in the leaderboard tool.
+  if (input.router.datapoints.includes('social') && tickers.length === 0) {
+    wanted.delete('getSocial')
+    calls.push({ tool: 'getTrendingSocial', args: {} })
+  }
+
   for (const tool of wanted) {
     if (WRITE_TOOLS.has(tool)) continue // write-tools must be opted-in explicitly
     if (PER_TICKER_TOOLS.has(tool)) {

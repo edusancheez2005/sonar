@@ -54,6 +54,7 @@ export type ToolName =
   | 'getWhaleFlows'
   | 'getNews'
   | 'getSocial'
+  | 'getTrendingSocial'
   | 'getUserHoldings'
   | 'getUserWatchlist'
   | 'getSignalHistory'

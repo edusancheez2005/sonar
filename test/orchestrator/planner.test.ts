@@ -71,6 +71,28 @@ describe('planToolCalls', () => {
     expect(tools).toContain('getSocial')
   })
 
+  it('plans getTrendingSocial for a no-ticker social request', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'data_query', tickers: [], datapoints: ['social'] }),
+      profile: null,
+      userId: 'u1',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getTrendingSocial')
+    expect(tools).not.toContain('getSocial')
+  })
+
+  it('uses per-ticker getSocial (not trending) when a ticker is present', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'data_query', tickers: ['SOL'], datapoints: ['social'] }),
+      profile: null,
+      userId: 'u1',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getSocial')
+    expect(tools).not.toContain('getTrendingSocial')
+  })
+
   it('never schedules a write-tool, even when userConfirmed is true', () => {
     const calls = planToolCalls({
       router: decision({ intent: 'personal', tickers: ['SOL'] }),

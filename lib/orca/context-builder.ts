@@ -710,12 +710,24 @@ async function fetchNews(ticker: string, supabase: any): Promise<any[]> {
     
     console.log(`✅ Found ${count || 0} total articles for ${ticker}`)
     
-    // Log first few articles for debugging
-    if (newsData && newsData.length > 0) {
-      console.log(`  📰 Sample: "${newsData[0].title.substring(0, 50)}..." from ${newsData[0].source}`)
+    // Read-layer relevance guard. Some legacy / unfiltered rows (e.g. from the
+    // CryptoPanic currency feed, or ingested before the ingestion filter) carry
+    // a ticker tag that collides with an English word — "OP" matches "Op
+    // Sindoor", "Halo 3", etc. Re-apply isCryptoRelevant against the title so a
+    // legitimate query for an ambiguous ticker never surfaces non-crypto junk.
+    const relevant = (newsData || []).filter((a: any) =>
+      isCryptoRelevant(`${a.title || ''} ${a.summary || a.description || ''}`, ticker)
+    )
+    if (newsData && relevant.length !== newsData.length) {
+      console.log(`  🧹 Filtered ${newsData.length - relevant.length} irrelevant ${ticker} article(s) at read layer`)
     }
     
-    return newsData || []
+    // Log first few articles for debugging
+    if (relevant.length > 0) {
+      console.log(`  📰 Sample: "${relevant[0].title.substring(0, 50)}..." from ${relevant[0].source}`)
+    }
+    
+    return relevant
   } catch (error) {
     console.error('Error in fetchNews:', error)
     return []

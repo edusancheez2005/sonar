@@ -10,6 +10,7 @@ import { run as runGetPrice } from './getPrice'
 import { run as runGetWhaleFlows } from './getWhaleFlows'
 import { run as runGetNews } from './getNews'
 import { run as runGetSocial } from './getSocial'
+import { run as runGetTrendingSocial } from './getTrendingSocial'
 import { run as runExplainMacroFactor } from './explainMacroFactor'
 import { run as runGetWalletActivity } from './getWalletActivity'
 import { run as runGetArticleContext } from './getArticleContext'
@@ -31,6 +32,7 @@ export const READ_ONLY_TOOLS = new Set<ToolName>([
   'getWhaleFlows',
   'getNews',
   'getSocial',
+  'getTrendingSocial',
   'getUserHoldings',
   'getUserWatchlist',
   'getSignalHistory',
@@ -56,6 +58,8 @@ export async function executeTool(
       return runGetNews(call.args as any, supabase, now)
     case 'getSocial':
       return runGetSocial(call.args as any, supabase, now)
+    case 'getTrendingSocial':
+      return runGetTrendingSocial(call.args as any, supabase, now)
     case 'getUserHoldings':
       return runGetUserHoldings(call.args as any, supabase, now)
     case 'getUserWatchlist':
