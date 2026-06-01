@@ -4,9 +4,12 @@
  * Market-wide latest crypto headlines. Unlike getNews (which needs a ticker),
  * this answers "what's the latest crypto news?" / "any big news today?" \u2014
  * no-ticker informational queries. Pulls the most recent rows from
- * `news_articles` ordered by published_at, lightly de-duplicated by title.
+ * `news_items` (the table the ingest-news cron actually writes to) ordered by
+ * published_at, lightly de-duplicated by title.
  */
 import type { SupabaseLike, ToolResult } from '../types'
+
+const NEWS_TABLE = 'news_items'
 
 const DEFAULT_LIMIT = 8
 const MAX_LIMIT = 15
@@ -33,8 +36,8 @@ export async function run(
     // return nothing. Falling back to the latest available rows (and flagging
     // staleness) keeps "what's the latest crypto news?" answerable.
     const { data, error } = await supabase
-      .from('news_articles')
-      .select('title, url, source, published_at, summary, related_tickers')
+      .from(NEWS_TABLE)
+      .select('title, url, source, published_at, content, ticker')
       .order('published_at', { ascending: false })
       .limit(Math.max(limit * 4, 40))
 
@@ -42,7 +45,7 @@ export async function run(
       return {
         ok: false,
         data: null,
-        source: 'news_articles',
+        source: NEWS_TABLE,
         fetched_at,
         error: `query_failed: ${error.message || 'unknown'}`,
       }
@@ -57,13 +60,14 @@ export async function run(
       const key = title.toLowerCase()
       if (seen.has(key)) continue
       seen.add(key)
+      const summary = typeof r?.content === 'string' ? r.content.trim() : null
       deduped.push({
         title,
         url: typeof r?.url === 'string' ? r.url : null,
         source: typeof r?.source === 'string' ? r.source : null,
         published_at: r?.published_at ?? null,
-        summary: typeof r?.summary === 'string' ? r.summary.trim() : null,
-        related_tickers: parseTickers(r?.related_tickers).slice(0, 6),
+        summary: summary ? summary.slice(0, 280) : null,
+        related_tickers: parseTickers(r?.ticker).slice(0, 6),
       })
     }
 
@@ -71,7 +75,7 @@ export async function run(
       return {
         ok: false,
         data: null,
-        source: 'news_articles',
+        source: NEWS_TABLE,
         fetched_at,
         error: 'no_recent_news',
       }
@@ -105,14 +109,14 @@ export async function run(
         newest_age_hours: newestAgeHours,
         items,
       },
-      source: 'news_articles',
+      source: NEWS_TABLE,
       fetched_at,
     }
   } catch (err: any) {
     return {
       ok: false,
       data: null,
-      source: 'news_articles',
+      source: NEWS_TABLE,
       fetched_at,
       error: err?.message ? `query_failed: ${err.message}` : 'query_failed',
     }

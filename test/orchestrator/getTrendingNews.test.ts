@@ -33,8 +33,8 @@ describe('getTrendingNews', () => {
         url: 'https://x/1',
         source: 'CoinDesk',
         published_at: '2026-05-31T22:00:00Z',
-        summary: 's1',
-        related_tickers: 'BTC',
+        content: 's1',
+        ticker: 'BTC',
       },
       // duplicate title (different source) — should be dropped
       {
@@ -42,16 +42,16 @@ describe('getTrendingNews', () => {
         url: 'https://y/1',
         source: 'TheBlock',
         published_at: '2026-05-31T21:00:00Z',
-        summary: 's2',
-        related_tickers: ['BTC'],
+        content: 's2',
+        ticker: 'BTC',
       },
       {
         title: 'Fed signals dovish pivot',
         url: 'https://x/2',
         source: 'Bloomberg',
         published_at: '2026-05-31T20:00:00Z',
-        summary: 's3',
-        related_tickers: '',
+        content: 's3',
+        ticker: null,
       },
     ]
     const r = await runGetTrendingNews({ limit: 5 }, fakeSupabase(rows), now)
@@ -77,8 +77,8 @@ describe('getTrendingNews', () => {
         source: 'CoinDesk',
         // ~10 days old, outside the 72h window
         published_at: '2026-05-22T00:00:00Z',
-        summary: 'old summary',
-        related_tickers: 'ETH',
+        content: 'old summary',
+        ticker: 'ETH',
       },
     ]
     const r = await runGetTrendingNews({}, fakeSupabase(rows), now)
@@ -97,8 +97,8 @@ describe('getTrendingNews', () => {
         url: 'https://x/fresh',
         source: 'CoinDesk',
         published_at: '2026-05-31T22:00:00Z',
-        summary: 'fresh',
-        related_tickers: 'BTC',
+        content: 'fresh',
+        ticker: 'BTC',
       },
     ]
     const r = await runGetTrendingNews({}, fakeSupabase(rows), now)
@@ -114,8 +114,8 @@ describe('getTrendingNews', () => {
       url: `https://x/${i}`,
       source: 's',
       published_at: '2026-05-31T20:00:00Z',
-      summary: 'summary',
-      related_tickers: null,
+      content: 'summary',
+      ticker: null,
     }))
     const r = await runGetTrendingNews({ limit: 999 }, fakeSupabase(rows), now)
     expect(r.ok).toBe(true)
