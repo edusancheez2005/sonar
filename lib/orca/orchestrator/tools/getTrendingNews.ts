@@ -23,15 +23,20 @@ export async function run(
 ): Promise<ToolResult> {
   const fetched_at = now().toISOString()
   const limit = clampLimit(args.limit)
-  const sinceIso = new Date(now().getTime() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString()
+  const nowMs = now().getTime()
+  const windowCutoffMs = nowMs - LOOKBACK_HOURS * 60 * 60 * 1000
 
   try {
+    // Fetch the newest headlines regardless of age, then prefer those inside
+    // the freshness window. News ingestion runs only every ~12h and upstream
+    // sources can lag, so a hard published_at filter would intermittently
+    // return nothing. Falling back to the latest available rows (and flagging
+    // staleness) keeps "what's the latest crypto news?" answerable.
     const { data, error } = await supabase
       .from('news_articles')
       .select('title, url, source, published_at, summary, related_tickers')
-      .gte('published_at', sinceIso)
       .order('published_at', { ascending: false })
-      .limit(Math.max(limit * 3, 30))
+      .limit(Math.max(limit * 4, 40))
 
     if (error) {
       return {
@@ -45,14 +50,14 @@ export async function run(
 
     const rows = Array.isArray(data) ? data : []
     const seen = new Set<string>()
-    const items: Array<any> = []
+    const deduped: Array<any> = []
     for (const r of rows as any[]) {
       const title = typeof r?.title === 'string' ? r.title.trim() : ''
       if (!title) continue
       const key = title.toLowerCase()
       if (seen.has(key)) continue
       seen.add(key)
-      items.push({
+      deduped.push({
         title,
         url: typeof r?.url === 'string' ? r.url : null,
         source: typeof r?.source === 'string' ? r.source : null,
@@ -60,10 +65,9 @@ export async function run(
         summary: typeof r?.summary === 'string' ? r.summary.trim() : null,
         related_tickers: parseTickers(r?.related_tickers).slice(0, 6),
       })
-      if (items.length >= limit) break
     }
 
-    if (items.length === 0) {
+    if (deduped.length === 0) {
       return {
         ok: false,
         data: null,
@@ -73,9 +77,34 @@ export async function run(
       }
     }
 
+    const publishedMs = (v: unknown): number => {
+      const t = typeof v === 'string' || typeof v === 'number' ? new Date(v as any).getTime() : NaN
+      return Number.isFinite(t) ? t : NaN
+    }
+    const inWindow = deduped.filter((r) => {
+      const ms = publishedMs(r.published_at)
+      return Number.isFinite(ms) && ms >= windowCutoffMs
+    })
+    const stale = inWindow.length === 0
+    const items = (stale ? deduped : inWindow).slice(0, limit)
+
+    const newestMs = items.reduce((acc, r) => {
+      const ms = publishedMs(r.published_at)
+      return Number.isFinite(ms) && ms > acc ? ms : acc
+    }, -Infinity)
+    const newestAgeHours = Number.isFinite(newestMs)
+      ? Math.max(0, Math.round((nowMs - newestMs) / (60 * 60 * 1000)))
+      : null
+
     return {
       ok: true,
-      data: { window_hours: LOOKBACK_HOURS, count: items.length, items },
+      data: {
+        window_hours: LOOKBACK_HOURS,
+        count: items.length,
+        stale,
+        newest_age_hours: newestAgeHours,
+        items,
+      },
       source: 'news_articles',
       fetched_at,
     }

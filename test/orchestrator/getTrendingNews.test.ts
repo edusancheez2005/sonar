@@ -69,6 +69,45 @@ describe('getTrendingNews', () => {
     expect(r.error).toBe('no_recent_news')
   })
 
+  it('falls back to latest headlines and flags stale when none are inside the window', async () => {
+    const rows = [
+      {
+        title: 'Old but still the latest story',
+        url: 'https://x/old',
+        source: 'CoinDesk',
+        // ~10 days old, outside the 72h window
+        published_at: '2026-05-22T00:00:00Z',
+        summary: 'old summary',
+        related_tickers: 'ETH',
+      },
+    ]
+    const r = await runGetTrendingNews({}, fakeSupabase(rows), now)
+    expect(r.ok).toBe(true)
+    const data = r.data as any
+    expect(data.stale).toBe(true)
+    expect(data.count).toBe(1)
+    expect(data.items[0].title).toBe('Old but still the latest story')
+    expect(data.newest_age_hours).toBeGreaterThan(72)
+  })
+
+  it('marks fresh in-window news as not stale', async () => {
+    const rows = [
+      {
+        title: 'Fresh story',
+        url: 'https://x/fresh',
+        source: 'CoinDesk',
+        published_at: '2026-05-31T22:00:00Z',
+        summary: 'fresh',
+        related_tickers: 'BTC',
+      },
+    ]
+    const r = await runGetTrendingNews({}, fakeSupabase(rows), now)
+    expect(r.ok).toBe(true)
+    const data = r.data as any
+    expect(data.stale).toBe(false)
+    expect(data.newest_age_hours).toBeLessThanOrEqual(72)
+  })
+
   it('caps the limit', async () => {
     const rows = Array.from({ length: 50 }, (_, i) => ({
       title: `Story ${i}`,
