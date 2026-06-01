@@ -1,0 +1,11 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/orca/OrcaLauncher.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[33m 450[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m18 passed[39m[22m[90m (18)[39m
+[2m   Start at [22m 12:44:08
+[2m   Duration [22m 18.19s[2m (transform 476ms, setup 2.47s, collect 1.18s, tests 450ms, environment 6.23s, prepare 2.12s)[22m
+

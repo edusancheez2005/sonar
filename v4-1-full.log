@@ -1,0 +1,107 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/signal-research/families.test.ts [2m([22m[2m31 tests[22m[2m)[22m[90m 33[2mms[22m[39m
+stderr | test/memory/extractor.test.ts > extractMemoryFacts > returns insert_error when the supabase insert returns an error
+[orca/memory/extractor] insert error { message: 'rls denied' }
+
+ [32mÔ£ô[39m test/memory/extractor.test.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+stderr | test/api/orca/sessions.test.ts > GET /api/orca/sessions > returns 500 with opaque error on db failure (no leak)
+[api/orca/sessions:GET] db error { message: 'inner detail' }
+
+stderr | test/api/orca/sessions.test.ts > POST /api/orca/sessions > returns 500 on insert failure (no leak)
+[api/orca/sessions:POST] db error { message: 'rls violation' }
+
+ [32mÔ£ô[39m test/api/orca/sessions.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 533[2mms[22m[39m
+ [32mÔ£ô[39m test/renderers/renderers.test.ts [2m([22m[2m32 tests[22m[2m)[22m[90m 41[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/tools.w3.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 29[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PersonalCopilotPanel.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 2441[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msends user input to /api/chat with the bearer token and renders the reply [33m763[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msurfaces a timeout-specific message when the chat API returns 504 [33m457[2mms[22m[39m
+ [32mÔ£ô[39m test/onboarding/OnboardingFlow.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 3941[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mrenders step 1 with the experience question and step counter [33m434[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22madvances through all 5 steps and upserts the full profile on Finish [33m1222[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mmulti-select toggles values on the preferred_chains step [33m880[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mshows an error message when the upsert fails [33m997[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/runOrchestrator.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/watchlist.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 27[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/user_profile_and_copilot_memory.test.ts [2m([22m[2m31 tests[22m[2m)[22m[90m 49[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/signals.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 62[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/WalletsTab.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 2672[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mopens the add-wallet modal when Add is clicked [33m367[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mvalidates address shape before POSTing [33m527[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mPOSTs a wallet when the form is valid and refetches [33m1146[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/tools.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 31[2mms[22m[39m
+ [31mÔØ»[39m test/personal/MemoryClient.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [32mÔ£ô[39m test/personal/FilteredSignalsPanel.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 950[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/router-planner.w3.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PulseStrip.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 679[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/WatchlistPanel.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 897[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WatchlistPanel[2m > [22mrenders one card per ticker with link to token page [33m475[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/router.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/orca_sessions.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 51[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/planner.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 48[2mms[22m[39m
+ [31mÔØ»[39m test/personal/CopilotPane.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [32mÔ£ô[39m test/renderers/renderers.w3.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32mÔ£ô[39m test/trading/TradingComingSoon.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[90m 233[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/Tray.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1130[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Tray[2m > [22mclicking a button opens the matching drawer [33m394[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/greetings.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 16[2mms[22m[39m
+ [32mÔ£ô[39m test/memory/route-html.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 422[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GET /api/orca/memory ÔÇö HTML negotiation[2m > [22mreturns the inline HTML landing when an unauthenticated browser asks for text/html [33m407[2mms[22m[39m
+ [32mÔ£ô[39m test/signal-research/metrics.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/user_wallets.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/guardrails.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 24[2mms[22m[39m
+ [32mÔ£ô[39m test/smoke.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[90m 131[2mms[22m[39m
+ [32mÔ£ô[39m test/onboarding/useOnboardingGate.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/signal_research_results.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/orca_traces.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Suites 2 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
+
+ FAIL  test/personal/CopilotPane.test.tsx [ test/personal/CopilotPane.test.tsx ]
+Error: Failed to resolve import "@/components/personal/CopilotPane" from "test/personal/CopilotPane.test.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: C:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar/test/personal/CopilotPane.test.tsx:5:24
+  3  |  import { render, screen, waitFor } from "@testing-library/react";
+  4  |  import userEvent from "@testing-library/user-event";
+  5  |  import CopilotPane from "@/components/personal/CopilotPane";
+     |                           ^
+  6  |  function makeClient(token) {
+  7  |    return {
+ ÔØ» TransformPluginContext._formatError ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41
+ ÔØ» TransformPluginContext.error ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16
+ ÔØ» normalizeUrl ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23
+ ÔØ» ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+ ÔØ» TransformPluginContext.transform ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7
+ ÔØ» PluginContainer.transform ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18
+ ÔØ» loadAndTransform ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/2]ÔÄ»
+
+ FAIL  test/personal/MemoryClient.test.tsx [ test/personal/MemoryClient.test.tsx ]
+Error: Failed to resolve import "@/app/dashboard/personal/memory/MemoryClient" from "test/personal/MemoryClient.test.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: C:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar/test/personal/MemoryClient.test.tsx:7:38
+  5  |  const __vi_import_1__ = await import('@testing-library/react')
+  6  |  const __vi_import_2__ = await import('@testing-library/user-event')
+  7  |  const __vi_import_3__ = await import('@/app/dashboard/personal/memory/MemoryClient')
+     |                                       ^
+  8  |  
+  9  |  import { describe, it, expect, vi, beforeEach } from "vitest";
+ ÔØ» TransformPluginContext._formatError ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41
+ ÔØ» TransformPluginContext.error ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16
+ ÔØ» normalizeUrl ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23
+ ÔØ» ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+ ÔØ» TransformPluginContext.transform ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7
+ ÔØ» PluginContainer.transform ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18
+ ÔØ» loadAndTransform ../../../OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[2/2]ÔÄ»
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m32 passed[39m[22m[90m (34)[39m
+[2m      Tests [22m [1m[32m351 passed[39m[22m[90m (351)[39m
+[2m   Start at [22m 22:03:33
+[2m   Duration [22m 54.13s[2m (transform 4.49s, setup 92.05s, collect 16.60s, tests 14.68s, environment 181.08s, prepare 23.95s)[22m
+

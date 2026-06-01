@@ -1,0 +1,36 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+stderr | test/orca/OrcaMini.test.tsx > OrcaMini > renders the card, header and conversation atom
+Warning: An update to OrcaMini inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OrcaMini (C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\components\orca\OrcaMini.jsx:62:3)
+Warning: An update to OrcaMini inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OrcaMini (C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\components\orca\OrcaMini.jsx:62:3)
+
+ [32mÔ£ô[39m test/orca/OrcaMini.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1159[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaMini[2m > [22mpromotes to Studio when maxTurns is exceeded (via onPromote) [33m600[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:34:35
+[2m   Duration [22m 8.46s[2m (transform 313ms, setup 1.37s, collect 1.00s, tests 1.16s, environment 3.26s, prepare 494ms)[22m
+

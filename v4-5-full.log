@@ -1,0 +1,130 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+stderr | test/api/orca/sessions.test.ts > GET /api/orca/sessions > returns 500 with opaque error on db failure (no leak)
+[api/orca/sessions:GET] db error { message: 'inner detail' }
+
+stderr | test/api/orca/sessions.test.ts > POST /api/orca/sessions > returns 500 on insert failure (no leak)
+[api/orca/sessions:POST] db error { message: 'rls violation' }
+
+ [32mÔ£ô[39m test/signal-research/families.test.ts [2m([22m[2m31 tests[22m[2m)[22m[90m 158[2mms[22m[39m
+ [32mÔ£ô[39m test/api/orca/sessions.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 2316[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GET /api/orca/sessions[2m > [22mreturns 401 without a bearer token [33m1190[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GET /api/orca/sessions/[id][2m > [22mreturns 400 on invalid uuid [33m318[2mms[22m[39m
+stderr | test/memory/extractor.test.ts > extractMemoryFacts > returns insert_error when the supabase insert returns an error
+[orca/memory/extractor] insert error { message: 'rls denied' }
+
+ [32mÔ£ô[39m test/memory/extractor.test.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 232[2mms[22m[39m
+ [32mÔ£ô[39m test/renderers/renderers.test.ts [2m([22m[2m32 tests[22m[2m)[22m[90m 85[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/fastWrite-integration.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 8114[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m runOrchestrator ÔÇö per-tool timeout (v4 ┬º5.2)[2m > [22mmarks a tool as failed when its registry executor never resolves [33m8024[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaConversation.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[33m 12504[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mrenders seedMessages on first paint and keeps them after re-render [33m358[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msends user input to /api/chat with the bearer token and renders the reply [33m2314[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mdoes not call the chat API when the user has no session [33m478[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a quiet error line when the chat API returns 500 [33m462[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a timeout message when the chat API returns 504 [33m444[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a rate-limit message when the chat API returns 429 [33m483[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mshows an actionable message when fetch itself rejects [33m438[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mforwards focus.ticker as focus_ticker in the request body [33m555[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mforwards sessionId as session_id in the request body when provided [33m342[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mrenders Confirm + Cancel buttons when the orchestrator returns a confirm payload [33m1127[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mConfirm click POSTs again with confirm.calls payload [33m1317[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mCancel click renders a "nothing was changed" message and does NOT re-POST [33m589[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22ma fresh user message clears any pending confirmation [33m1315[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up chips[2m > [22mrenders follow-up chips returned by the orchestrator [33m426[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up chips[2m > [22mclicking a follow-up chip submits it as the next message [33m512[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msources strip[2m > [22mrenders source pills when the response includes a sources array [33m397[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mmini variant maxTurns[2m > [22mcalls onPromote instead of POSTing when maxTurns is reached [33m782[2mms[22m[39m
+ [32mÔ£ô[39m test/onboarding/OnboardingFlow.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 7114[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mrenders step 1 with the experience question and step counter [33m1007[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22madvances through all 5 steps and upserts the full profile on Finish [33m2393[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mmulti-select toggles values on the preferred_chains step [33m1568[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mshows an error message when the upsert fails [33m1320[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/tools.w3.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 66[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaLauncher.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[33m 1539[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaLauncher ÔÇö UI[2m > [22mclicking the FAB opens the drawer state [33m650[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/WalletsTab.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 5610[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mshows empty state when API returns no wallets [33m389[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mopens the add-wallet modal when Add is clicked [33m902[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mvalidates address shape before POSTing [33m885[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mPOSTs a wallet when the form is valid and refetches [33m2755[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PersonalCopilotPanel.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 5571[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mseeds the first message with the experience-tuned greeting [33m479[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msends user input to /api/chat with the bearer token and renders the reply [33m2044[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msurfaces a quiet error line when the chat API returns non-OK [33m481[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mdoes not call the chat API when the user has no session [33m450[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msurfaces a timeout-specific message when the chat API returns 504 [33m748[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msurfaces a rate-limit message when the chat API returns 429 [33m413[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mrenders an actionable message when fetch itself rejects (no generic "Network error") [33m308[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mforwards focusTicker into the request body when supplied [33m523[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/runOrchestrator.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 473[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/watchlist.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 56[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PersonalCopilotPanel-confirm.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 6416[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel ÔÇö confirm flow[2m > [22mrenders Confirm/Cancel buttons when the server returns a confirm payload [33m2732[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel ÔÇö confirm flow[2m > [22mclicking Confirm POSTs a second request with confirm.calls and renders the reply [33m1240[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel ÔÇö confirm flow[2m > [22mclicking Cancel dismisses the prompt without a second POST [33m868[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel ÔÇö confirm flow[2m > [22mtyping a new message invalidates a pending confirm [33m1564[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/user_profile_and_copilot_memory.test.ts [2m([22m[2m31 tests[22m[2m)[22m[90m 97[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/signals.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 135[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/tools.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 55[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/FilteredSignalsPanel.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1184[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m FilteredSignalsPanel[2m > [22mshows the unauth state when no session [33m411[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m FilteredSignalsPanel[2m > [22mshows an error banner on non-ok response [33m394[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/SessionList.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1399[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m SessionList[2m > [22mrenders empty state when API returns no sessions [33m449[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m SessionList[2m > [22mcalls onSelect when a row is clicked [33m517[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/MemoryClient.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 3373[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mshows the sign-in empty state when there is no session [33m727[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mlists facts returned by the API and renders the delete-all button [33m806[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mshows an error line when GET returns non-OK [33m499[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mdeleteOne calls DELETE with the id and removes the row on success [33m595[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mdelete-all requires confirmation modal and sends x-confirm-delete-all header [33m545[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PulseStrip.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 769[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PulseStrip[2m > [22mrenders all four tiles with empty states when watchlist is empty [33m362[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaStudioClient.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1505[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mrenders the empty state when no session is selected [33m423[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mclicking Start creates a new session and updates the URL [33m723[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/ToolInspector.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 685[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/fastWrites.test.ts [2m([22m[2m34 tests[22m[2m)[22m[90m 85[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/router-planner.w3.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 62[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/WatchlistPanel.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1150[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WatchlistPanel[2m > [22mshows the unauth state when there is no session [33m397[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WatchlistPanel[2m > [22mrenders one card per ticker with link to token page [33m481[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/router.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 59[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/useOrcaDrawer.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 373[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/orca_sessions.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 59[2mms[22m[39m
+ [32mÔ£ô[39m test/renderers/renderers.w3.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 87[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaDrawer.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1771[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaDrawer[2m > [22mrenders the panel with Pin and Close controls after open() [33m415[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaDrawer[2m > [22mClose button closes the drawer (data-open=false) [33m735[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaDrawer[2m > [22mPin button toggles the pinned state and aria-pressed reflects it [33m308[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/planner.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/CopilotPane.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 2241[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CopilotPane[2m > [22mrenders the no-focus chip when focus is null [33m507[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CopilotPane[2m > [22mrenders the context chip when focus is supplied and X clears it [33m398[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CopilotPane[2m > [22mclicking a slash command seeds the copilot input [33m435[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CopilotPane[2m > [22mforwards a ticker focus into the chat request body as focus_ticker [33m754[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/Tray.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1874[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Tray[2m > [22mclicking a button opens the matching drawer [33m709[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Tray[2m > [22mclicking the same button twice toggles the drawer closed [33m310[2mms[22m[39m
+ [32mÔ£ô[39m test/trading/TradingComingSoon.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 418[2mms[22m[39m
+ [32mÔ£ô[39m test/memory/route-html.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 797[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GET /api/orca/memory ÔÇö HTML negotiation[2m > [22mreturns the inline HTML landing when an unauthenticated browser asks for text/html [33m767[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/useOrcaContext.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 83[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/greetings.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32mÔ£ô[39m test/signal-research/metrics.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 34[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/guardrails.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 39[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/user_wallets.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+ [32mÔ£ô[39m test/smoke.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[90m 200[2mms[22m[39m
+ [32mÔ£ô[39m test/onboarding/useOnboardingGate.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 33[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/signal_research_results.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/orca_traces.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 24[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/SonarPulse.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 469[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m46 passed[39m[22m[90m (46)[39m
+[2m      Tests [22m [1m[32m487 passed[39m[22m[90m (487)[39m
+[2m   Start at [22m 13:18:42
+[2m   Duration [22m 223.72s[2m (transform 16.75s, setup 336.38s, collect 74.73s, tests 69.43s, environment 723.66s, prepare 103.12s)[22m
+

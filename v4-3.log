@@ -1,0 +1,42 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/orchestrator/fastWrites.test.ts [2m([22m[2m34 tests[22m[2m)[22m[90m 107[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/runOrchestrator.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 99[2mms[22m[39m
+ [31mÔØ»[39m test/orchestrator/fastWrite-integration.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 157[2mms[22m[39m
+[31m   [31m├ù[31m runOrchestrator ÔÇö per-tool timeout (v4 ┬º5.2)[2m > [22mmarks a tool as failed when its registry executor never resolves[90m 90[2mms[22m[31m[39m
+[31m     ÔåÆ expected 'user_watchlist' to be 'timeout' // Object.is equality[39m
+ [32mÔ£ô[39m test/personal/PersonalCopilotPanel.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 3674[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mseeds the first message with the experience-tuned greeting [33m384[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msends user input to /api/chat with the bearer token and renders the reply [33m1501[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msurfaces a timeout-specific message when the chat API returns 504 [33m467[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PersonalCopilotPanel-confirm.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 4953[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel ÔÇö confirm flow[2m > [22mrenders Confirm/Cancel buttons when the server returns a confirm payload [33m1952[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel ÔÇö confirm flow[2m > [22mclicking Confirm POSTs a second request with confirm.calls and renders the reply [33m658[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel ÔÇö confirm flow[2m > [22mclicking Cancel dismisses the prompt without a second POST [33m603[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel ÔÇö confirm flow[2m > [22mtyping a new message invalidates a pending confirm [33m1732[2mms[22m[39m
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Tests 1 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
+
+ FAIL  test/orchestrator/fastWrite-integration.test.ts > runOrchestrator ÔÇö per-tool timeout (v4 ┬º5.2) > marks a tool as failed when its registry executor never resolves
+AssertionError: expected 'user_watchlist' to be 'timeout' // Object.is equality
+
+Expected: "timeout"
+Received: "user_watchlist"
+
+ ÔØ» test/orchestrator/fastWrite-integration.test.ts:187:48
+    185|     expect(writeEvent).toBeDefined()
+    186|     expect((writeEvent as any).payload.ok).toBe(false)
+    187|     expect((writeEvent as any).payload.source).toBe('timeout')
+       |                                                ^
+    188|     expect((writeEvent as any).payload.error).toMatch(/tool_timeout:adÔÇª
+    189|   }, 12_000)
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/1]ÔÄ»
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m58 passed[39m[22m[90m (59)[39m
+[2m   Start at [22m 22:20:26
+[2m   Duration [22m 39.63s[2m (transform 3.71s, setup 35.63s, collect 13.32s, tests 8.99s, environment 66.82s, prepare 16.08s)[22m
+

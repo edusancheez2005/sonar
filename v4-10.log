@@ -1,0 +1,26 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/orca/OrcaConversation.test.tsx [2m([22m[2m24 tests[22m[2m)[22m[33m 10075[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msends user input to /api/chat with the bearer token and renders the reply [33m1621[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mdoes not call the chat API when the user has no session [33m427[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a quiet error line when the chat API returns 500 [33m501[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a timeout message when the chat API returns 504 [33m347[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a rate-limit message when the chat API returns 429 [33m364[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mforwards focus.ticker as focus_ticker in the request body [33m303[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mrenders Confirm + Cancel buttons when the orchestrator returns a confirm payload [33m636[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mConfirm click POSTs again with confirm.calls payload [33m926[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mCancel click renders a "nothing was changed" message and does NOT re-POST [33m431[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22ma fresh user message clears any pending confirmation [33m1188[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up chips[2m > [22mrenders follow-up chips returned by the orchestrator [33m311[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up chips[2m > [22mclicking a follow-up chip submits it as the next message [33m481[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mmini variant maxTurns[2m > [22mcalls onPromote instead of POSTing when maxTurns is reached [33m533[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up keyboard shortcuts[2m > [22mselects the first follow-up chip when "1" is pressed [33m317[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msource-strip favicons and telemetry[2m > [22mrenders a favicon img next to each source pill and emits orca:source-click on click [33m307[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m   Start at [22m 14:38:53
+[2m   Duration [22m 40.57s[2m (transform 1.44s, setup 8.82s, collect 3.82s, tests 10.07s, environment 10.98s, prepare 2.16s)[22m
+

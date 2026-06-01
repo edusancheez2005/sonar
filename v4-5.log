@@ -1,0 +1,18 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/orca/SessionList.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1864[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m SessionList[2m > [22mrenders empty state when API returns no sessions [33m687[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m SessionList[2m > [22mcalls onSelect when a row is clicked [33m666[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/ToolInspector.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 923[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaStudioClient.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 2955[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mrenders the empty state when no session is selected [33m756[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mclicking Start creates a new session and updates the URL [33m1431[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mselecting a session from the list updates the URL [33m461[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m15 passed[39m[22m[90m (15)[39m
+[2m   Start at [22m 13:00:58
+[2m   Duration [22m 89.43s[2m (transform 12.17s, setup 44.84s, collect 20.55s, tests 5.74s, environment 103.89s, prepare 15.99s)[22m
+

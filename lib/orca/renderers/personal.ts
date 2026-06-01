@@ -6,6 +6,7 @@
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
 import { formatProfileBlock, formatToolBlock } from './shared'
 import type { RenderArgs } from './types'
+import { INLINE_CHART_DIRECTIVE } from './inline-chart-directive'
 
 const EXPERIENCE_TONE: Record<string, string> = {
   new: 'Calibrate to a NEW user: use analogies, no jargon, define every metric you mention.',
@@ -44,6 +45,8 @@ INSTRUCTIONS (in order, all required):
 4. NEVER say "you should buy/sell/hold/add/trim/rebalance". NEVER give a price target. NEVER tell them whether their position is a good idea. If asked directly, decline using the HARD RULES decline string.
 5. End with ONE neutral, data-oriented follow-up question that is genuinely relevant to what they asked. Not a canned filler.
 6. Append the mandatory disclaimer EXACTLY once.${offerLine}
+
+${INLINE_CHART_DIRECTIVE}
 
 TONE: friendly, concise, peer-level. Not "AI assistant" voice. Not "trading desk" voice.
 

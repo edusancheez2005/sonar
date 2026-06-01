@@ -1,0 +1,18 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/migrations/orca_sessions.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+stderr | test/api/orca/sessions.test.ts > GET /api/orca/sessions > returns 500 with opaque error on db failure (no leak)
+[api/orca/sessions:GET] db error { message: 'inner detail' }
+
+stderr | test/api/orca/sessions.test.ts > POST /api/orca/sessions > returns 500 on insert failure (no leak)
+[api/orca/sessions:POST] db error { message: 'rls violation' }
+
+ [32mÔ£ô[39m test/api/orca/sessions.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 273[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m30 passed[39m[22m[90m (30)[39m
+[2m   Start at [22m 22:03:10
+[2m   Duration [22m 6.11s[2m (transform 212ms, setup 2.99s, collect 132ms, tests 283ms, environment 6.02s, prepare 612ms)[22m
+

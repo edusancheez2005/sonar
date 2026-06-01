@@ -18,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { OrcaMarkdown } from '@/components/orca/inline/OrcaMarkdown'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { pickCopilotGreeting } from '@/lib/orca/greetings'
 
@@ -379,7 +380,7 @@ export default function PersonalCopilotPanel({
         {messages.map((m, i) => (
           <Bubble key={i} $role={m.role} data-testid={`copilot-message-${m.role}-${i}`}>
             {m.role === 'assistant' ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+              <OrcaMarkdown>{m.content}</OrcaMarkdown>
             ) : (
               m.content
             )}

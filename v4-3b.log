@@ -1,0 +1,12 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/orchestrator/fastWrite-integration.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 8101[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m runOrchestrator ÔÇö per-tool timeout (v4 ┬º5.2)[2m > [22mmarks a tool as failed when its registry executor never resolves [33m8016[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 22:23:48
+[2m   Duration [22m 35.78s[2m (transform 1.66s, setup 4.59s, collect 1.87s, tests 8.10s, environment 15.05s, prepare 1.68s)[22m
+

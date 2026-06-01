@@ -1,0 +1,1480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Crypto Trading Bootcamp — Zero to Signals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<style>
+  :root {
+    --bg: #0b0f17;
+    --bg-panel: #131927;
+    --bg-soft: #1a2233;
+    --border: #243049;
+    --text: #e6ecf5;
+    --text-dim: #94a3b8;
+    --accent: #60a5fa;
+    --accent-2: #34d399;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --good: #34d399;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #fbfaf7;
+      --bg-panel: #ffffff;
+      --bg-soft: #f3f1ec;
+      --border: #e3dfd6;
+      --text: #1f2937;
+      --text-dim: #5b6573;
+      --accent: #2563eb;
+      --accent-2: #059669;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 16.5px;
+  }
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 32px 24px 120px;
+  }
+  header.cover {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  header.cover .eyebrow {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  header.cover h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    line-height: 1.1;
+    margin: 12px 0 10px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  header.cover .sub {
+    color: var(--text-dim);
+    font-size: 18px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .meta-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 28px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .meta-strip span { background: var(--bg-soft); border: 1px solid var(--border); padding: 6px 12px; border-radius: 999px; }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 60px 0 16px;
+    letter-spacing: -0.01em;
+    border-top: 1px solid var(--border);
+    padding-top: 40px;
+  }
+  h2 .chap { color: var(--accent); font-weight: 600; margin-right: 10px; font-size: 16px; vertical-align: middle; }
+  h3 { font-size: 20px; font-weight: 700; margin: 32px 0 10px; }
+  h4 { font-size: 16px; font-weight: 700; margin: 20px 0 8px; color: var(--text); }
+  p { margin: 12px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 6px 0; }
+  strong { color: var(--text); font-weight: 600; }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg-soft);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  a { color: var(--accent); }
+
+  /* TOC */
+  nav.toc {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 30px 0;
+  }
+  nav.toc h3 { margin-top: 0; }
+  nav.toc ol { columns: 2; column-gap: 30px; padding-left: 20px; }
+  @media (max-width: 600px) { nav.toc ol { columns: 1; } }
+  nav.toc a { text-decoration: none; color: var(--text); }
+  nav.toc a:hover { color: var(--accent); }
+
+  /* Callout boxes */
+  .box {
+    border-left: 4px solid var(--accent);
+    background: var(--bg-panel);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 18px 0;
+  }
+  .box.tip { border-color: var(--accent-2); }
+  .box.warn { border-color: var(--warn); }
+  .box.bad { border-color: var(--bad); }
+  .box.key { border-color: var(--accent); background: linear-gradient(90deg, rgba(96,165,250,0.08), transparent); }
+  .box .label {
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .box.tip .label { color: var(--accent-2); }
+  .box.warn .label { color: var(--warn); }
+  .box.bad .label { color: var(--bad); }
+
+  /* Diagrams */
+  .diagram {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 22px 0;
+    overflow-x: auto;
+    text-align: center;
+  }
+  .diagram .caption {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+  }
+  th { background: var(--bg-soft); font-weight: 600; }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+  /* Collapsibles */
+  details {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 14px 0;
+  }
+  details > summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--accent);
+    list-style: none;
+  }
+  details > summary::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    font-size: 10px;
+  }
+  details[open] > summary::before { transform: rotate(90deg); }
+  details > summary::-webkit-details-marker { display: none; }
+
+  /* Quiz */
+  .quiz {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 28px 0;
+  }
+  .quiz h4 { margin-top: 0; color: var(--accent); }
+  .quiz .q { margin: 18px 0; }
+  .quiz .opt {
+    display: block;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 6px 0;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .quiz .opt:hover { border-color: var(--accent); }
+  .quiz .opt.correct { background: rgba(52, 211, 153, 0.18); border-color: var(--good); color: var(--good); font-weight: 600; }
+  .quiz .opt.wrong { background: rgba(248, 113, 113, 0.15); border-color: var(--bad); color: var(--bad); }
+  .quiz .feedback { margin-top: 8px; font-size: 14px; color: var(--text-dim); min-height: 1.4em; }
+
+  /* Glossary */
+  dl.glossary dt { font-weight: 700; color: var(--accent); margin-top: 14px; }
+  dl.glossary dd { margin: 4px 0 0; color: var(--text); }
+
+  /* Progress bar */
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: var(--accent); width: 0%; z-index: 100;
+    transition: width 0.1s;
+  }
+
+  /* Print */
+  @media print {
+    body { background: white; color: black; font-size: 11pt; }
+    .wrap { max-width: none; padding: 0; }
+    .progress-bar, nav.toc { display: none; }
+    h2 { page-break-before: always; border: none; }
+    .quiz, .box, .diagram { page-break-inside: avoid; }
+    details { border: 1px solid #ccc; }
+    details:not([open]) > *:not(summary) { display: none; }
+    a { color: black; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="progress-bar" id="prog"></div>
+<div class="wrap">
+
+<header class="cover">
+  <div class="eyebrow">A Sonar Bootcamp</div>
+  <h1>Crypto Trading, From Zero to Signals</h1>
+  <p class="sub">A self-paced field guide that takes you from "what is a blockchain?" to understanding how professional firms — and your own signal engine — actually decide when to buy and sell.</p>
+  <div class="meta-strip">
+    <span>📖 ~3 hr read</span>
+    <span>🎯 No prior knowledge required</span>
+    <span>🧪 12 quiz checkpoints</span>
+    <span>📊 18 diagrams</span>
+    <span>🖨️ Print → Save as PDF</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h3>Curriculum</h3>
+  <ol>
+    <li><a href="#ch1">What money actually is</a></li>
+    <li><a href="#ch2">Blockchains in 10 minutes</a></li>
+    <li><a href="#ch2b">Consensus deep dive — who "solves" a block</a></li>
+    <li><a href="#ch2c">Smart contracts &amp; how Aave works</a></li>
+    <li><a href="#ch3">Where trading happens</a></li>
+    <li><a href="#ch4">The order book — the heart</a></li>
+    <li><a href="#ch5">Spot vs. derivatives</a></li>
+    <li><a href="#ch6">Liquidity, slippage, market makers</a></li>
+    <li><a href="#ch7">How retail loses, how pros win</a></li>
+    <li><a href="#ch8">The pro firm playbook</a></li>
+    <li><a href="#ch9">What is a "signal"?</a></li>
+    <li><a href="#ch10">Backtesting (and how it lies)</a></li>
+    <li><a href="#ch11">Risk: the only thing that matters</a></li>
+    <li><a href="#ch12">How Sonar's engine works</a></li>
+    <li><a href="#ch13">Glossary</a></li>
+    <li><a href="#ch14">Final exam</a></li>
+  </ol>
+</nav>
+
+<p>Welcome. This bootcamp is opinionated and dense, but written for someone who has never placed a trade. Each chapter ends with a short quiz so you can self-check before moving on. Every diagram is interactive (click, hover, expand). When you see a <code>collapse</code> block, click it to dig deeper — or skip it to keep moving.</p>
+
+<div class="box key">
+  <div class="label">How to use this</div>
+  Read linearly the first time. Don't skip the quizzes. When you finish, you'll understand 90% of what your own signal engine is doing and why your forensic ρ = −0.141 is not embarrassing — it's the most useful number you've ever measured.
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch1"><span class="chap">CH 01</span>What money actually is</h2>
+
+<p>Before crypto, before trading, before any of this matters — you need a working definition of money. Most people skip this and then never quite understand why bitcoin exists. Don't skip it.</p>
+
+<p>Money is three things at once:</p>
+<ol>
+  <li><strong>A medium of exchange</strong> — I give you this, you give me a sandwich.</li>
+  <li><strong>A unit of account</strong> — we can both quote the price of the sandwich in the same number.</li>
+  <li><strong>A store of value</strong> — if I save it today, I can spend it next month for roughly the same sandwich.</li>
+</ol>
+
+<p>Anything that does all three reasonably well <em>is</em> money. Gold did it for 5,000 years. The US dollar does it today, backed by the US government's ability to tax and to enforce contracts. Crypto attempts to do it backed by <em>math and incentives</em> instead of governments.</p>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  A[Trust in<br/>institutions] --> B[Fiat money<br/>USD, EUR]
+  C[Trust in<br/>physical scarcity] --> D[Gold]
+  E[Trust in<br/>cryptography +<br/>incentives] --> F[Bitcoin / Crypto]
+  B --> G((Money))
+  D --> G
+  F --> G
+  style G fill:#60a5fa,stroke:#fff,color:#000
+</pre>
+<div class="caption">All money is a trust-substitute. The question is just: trust in what?</div>
+</div>
+
+<h3>Why this matters for trading</h3>
+<p>When you trade crypto, you're not just betting on a coin going up. You're betting on whether <strong>more people will trust this thing tomorrow than today</strong>. That's it. Every technical chart, every "alpha signal", every whale tracker is a downstream proxy for that one question: <em>is conviction in this asset rising or falling?</em></p>
+
+<div class="quiz" data-quiz>
+  <h4>Checkpoint 1</h4>
+  <div class="q">
+    <p>Which of the three functions of money is hardest for a brand-new crypto token to satisfy on day one?</p>
+    <div class="opt" data-correct="false">Medium of exchange</div>
+    <div class="opt" data-correct="false">Unit of account</div>
+    <div class="opt" data-correct="true">Store of value</div>
+    <div class="feedback"></div>
+    <details><summary>Why?</summary>A new token can technically be exchanged and quoted immediately. But "store of value" requires that next month it's worth roughly what it's worth today — and a token with no track record has zero evidence of that. This is why 99% of new tokens fail: they never earn the store-of-value status.</details>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch2"><span class="chap">CH 02</span>Blockchains in 10 minutes</h2>
+
+<p>A blockchain is a <strong>shared database that nobody owns</strong>. That's it. Everything else is plumbing.</p>
+
+<p>Imagine a Google Sheet where every row is a transaction (<em>"Alice sent Bob 5 coins"</em>). Now imagine that instead of one server holding the sheet, 10,000 computers around the world each hold an identical copy, and they agree on the next row using a voting rule. No single computer can cheat, because the other 9,999 would notice and reject the bad row.</p>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph Block_N["Block N"]
+    T1[Tx: Alice→Bob 5 BTC]
+    T2[Tx: Carol→Dan 0.1 BTC]
+    T3[Tx: Eve→Fred 2.5 BTC]
+    H1[Hash of Block N-1<br/>+ this block's txs<br/>= 0xa3f1...]
+  end
+  subgraph Block_N1["Block N+1"]
+    T4[Tx: Gus→Hal 1 BTC]
+    T5[Tx: Ida→Joe 4 BTC]
+    H2[Hash of Block N<br/>+ this block's txs<br/>= 0xb742...]
+  end
+  Block_N --> Block_N1
+  Block_N1 --> Block_N2["Block N+2 ..."]
+  style H1 fill:#34d399,color:#000
+  style H2 fill:#34d399,color:#000
+</pre>
+<div class="caption">Each block carries a cryptographic fingerprint of the previous block. Change one row of history and every subsequent hash breaks. That's "immutability" in three words.</div>
+</div>
+
+<h3>The two flavours you need to know</h3>
+
+<table>
+  <thead><tr><th>Layer 1 chain</th><th>What it is</th><th>Why traders care</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Bitcoin</strong></td><td>The original. Slow (~10-min blocks), expensive, but the most secure ledger in the world. Designed only to move BTC.</td><td>It's the "gold" of the space. Everything else is correlated to it (more on this later — see Family F in Ch. 12).</td></tr>
+    <tr><td><strong>Ethereum</strong></td><td>A blockchain that runs <em>programs</em> ("smart contracts"). ~12-sec blocks. Can host other tokens, lending markets, exchanges, NFTs.</td><td>Most of the action happens here or on Ethereum-compatible chains.</td></tr>
+    <tr><td><strong>Solana, Base, Arbitrum, etc.</strong></td><td>Faster, cheaper alternatives. Each has trade-offs in security and decentralisation.</td><td>Most new tokens launch here because fees are tiny.</td></tr>
+  </tbody>
+</table>
+
+<div class="box tip">
+  <div class="label">Key insight</div>
+  <strong>Every transaction is public.</strong> When Alice sends Bob 5 BTC, the whole world sees it. This is the foundation of <em>on-chain analytics</em> — and of your whale-tracking engine. If a wallet holding $50M moves to an exchange, anyone watching can see it. That's a signal.
+</div>
+
+<details>
+<summary>Deep dive: how mining / staking actually picks the next block</summary>
+<p><strong>Proof of Work (Bitcoin):</strong> Computers race to solve a meaningless math puzzle. First one to solve it earns the right to write the next block and gets paid in BTC ("block reward"). The puzzle is hard on purpose — it makes attacking the network ruinously expensive.</p>
+<p><strong>Proof of Stake (Ethereum, Solana, ...):</strong> Instead of burning electricity, validators lock up ("stake") their own coins as collateral. The protocol randomly picks a validator weighted by stake. If they cheat, the protocol burns their collateral ("slashing"). Cheaper and greener, same security property.</p>
+</details>
+
+<div class="quiz" data-quiz>
+  <h4>Checkpoint 2</h4>
+  <div class="q">
+    <p>You see a wallet move 10,000 ETH from cold storage onto Binance. What's the most common interpretation?</p>
+    <div class="opt" data-correct="false">The holder is buying more ETH</div>
+    <div class="opt" data-correct="true">The holder is likely preparing to sell</div>
+    <div class="opt" data-correct="false">The exchange is being hacked</div>
+    <div class="opt" data-correct="false">Nothing — wallets move all the time</div>
+    <div class="feedback"></div>
+    <details><summary>Why?</summary>You only move coins to an exchange when you need exchange functionality — and the dominant reason is to convert them to fiat or another asset (i.e., sell). This is exactly the "exchange inflow" signal — one of the strongest in on-chain analysis and the basis of your Family B (exchange-imbalance).</details>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch2b"><span class="chap">CH 02·5</span>Consensus deep dive — who actually "solves" a block</h2>
+
+<p>This is the chapter that turns "blockchain" from buzzword into machinery. Skip nothing here.</p>
+
+<h3>The problem the network has to solve</h3>
+<p>Imagine ten thousand computers around the world, all wanting to agree on the <em>exact same list</em> of transactions, in the <em>exact same order</em>, with no boss. Without a central authority, who decides which transactions go into the next block, and in what order?</p>
+
+<p>If you just let everyone broadcast their own version, you'd get chaos — different computers would see different orderings, conflicting transactions, and an attacker could spam the network with fake "official" lists.</p>
+
+<p>So the network needs a <strong>rule</strong> for picking <em>one</em> computer to propose the next block, and that rule has to be:</p>
+<ol>
+  <li><strong>Random enough</strong> that no one can predict or game it.</li>
+  <li><strong>Expensive enough</strong> that an attacker can't just spin up fake identities.</li>
+</ol>
+
+<p>There are two big designs in use today.</p>
+
+<h3>Bitcoin — Proof of Work ("mining")</h3>
+
+<p>The rule: <strong>whoever first solves a hard math puzzle gets to write the next block.</strong></p>
+
+<p>The puzzle is deliberately useless. It's literally: <em>"find a number N such that when you hash (block contents + N), the result starts with, say, 19 zeros."</em> There's no clever way to solve it. You just guess trillions of numbers per second until you get lucky.</p>
+
+<pre><code>Hash("block data" + 1)         = 0xa3f8b2...  ❌ doesn't start with 19 zeros
+Hash("block data" + 2)         = 0xc91e4f...  ❌
+Hash("block data" + 3)         = 0x7d2a0c...  ❌
+...
+Hash("block data" + 8,472,931) = 0x000000000000000000091e... ✅ winner!</code></pre>
+
+<p><strong>Why it works:</strong></p>
+<ul>
+  <li>It costs <em>real-world electricity</em> to guess. A modern Bitcoin miner burns ~$5–10 of electricity per second of guessing.</li>
+  <li>The first one to find a valid <code>N</code> broadcasts the block. Every other node verifies it instantly (one hash, microseconds) and moves on.</li>
+  <li>To cheat, you'd need more compute than the rest of the network combined ("51% attack") — currently tens of billions of dollars <em>per hour</em>.</li>
+</ul>
+
+<div class="box key">
+  <div class="label">Why every 10 minutes?</div>
+  The protocol <em>adjusts the difficulty</em> every 2,016 blocks (~2 weeks). If miners are solving blocks too fast (more miners joined), the puzzle gets harder. Too slow? Easier. The target is always "average one block every 10 minutes." It's not magic — it's a feedback loop. Ethereum's target is ~12 seconds with a different mechanism.
+</div>
+
+<p><strong>Who is the miner?</strong> Today, mostly industrial-scale operations: warehouses in Texas, Kazakhstan, Iceland — wherever electricity is cheapest. Each "miner" is a rack of specialised chips (ASICs) doing nothing but guessing hashes. They get paid two ways:</p>
+<ul>
+  <li><strong>Block reward</strong> — the protocol mints new BTC and gives it to whoever solves the block (currently 3.125 BTC ≈ $190k per block).</li>
+  <li><strong>Transaction fees</strong> — every transaction the miner includes pays them a tip.</li>
+</ul>
+
+<h3>Ethereum — Proof of Stake ("staking")</h3>
+
+<p>Ethereum used to use Proof of Work like Bitcoin, but switched in September 2022 ("The Merge"). The new rule: <strong>the protocol randomly picks a validator, weighted by how much ETH they've locked up.</strong></p>
+
+<p>To become a validator, you put 32 ETH (~$80k) into a special contract as collateral. Every ~12 seconds, the protocol picks one validator at random (weighted by stake) and says "you produce the next block." Other validators vote on whether the block is valid.</p>
+
+<ul>
+  <li>To attack the network, you'd need 51% of all staked ETH — currently $50B+.</li>
+  <li>If you cheat (sign two conflicting blocks, go offline, etc.), the protocol <strong>burns your collateral</strong> ("slashing"). You lose your 32 ETH.</li>
+  <li>Behave → earn ~3-4% yield. Misbehave → lose everything.</li>
+</ul>
+
+<p>Same goal as Bitcoin (make attacking ruinous) but using <em>financial</em> stake instead of <em>physical</em> electricity.</p>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph PoW["Proof of Work — Bitcoin"]
+    M1[Miner 1<br/>10 EH/s] --> P[Hash puzzle:<br/>find N where<br/>hash starts with<br/>19 zeros]
+    M2[Miner 2<br/>5 EH/s] --> P
+    M3[Miner 3<br/>2 EH/s] --> P
+    P --> W1[First to solve<br/>writes block + earns BTC]
+  end
+  subgraph PoS["Proof of Stake — Ethereum"]
+    V1[Validator A<br/>stake: 32 ETH]
+    V2[Validator B<br/>stake: 32 ETH]
+    V3[Validator C<br/>stake: 32 ETH]
+    R[Protocol randomly<br/>picks one,<br/>weighted by stake]
+    V1 --> R
+    V2 --> R
+    V3 --> R
+    R --> W2[Chosen validator<br/>writes block + earns ETH]
+  end
+  style P fill:#fbbf24,color:#000
+  style R fill:#34d399,color:#000
+</pre>
+<div class="caption">Two different ways of making block production expensive enough to trust. Same goal, different cost model.</div>
+</div>
+
+<h3>"Does everyone hold the whole blockchain? Even me?"</h3>
+
+<p>Sort of. There are three types of participants — you'd be one of the first two:</p>
+
+<table>
+<thead><tr><th>Type</th><th>What they do</th><th>Storage</th><th>Earns?</th></tr></thead>
+<tbody>
+<tr><td><strong>Light client (wallet)</strong></td><td>Stores just your keys, asks a node "what's my balance?" when you open it. 99.9% of people.</td><td>~0 GB</td><td>No</td></tr>
+<tr><td><strong>Full node</strong></td><td>Downloads + verifies entire history. Stores everything locally. Trusts no one. Relays blocks/txs to peers.</td><td>Bitcoin ~600 GB · Ethereum ~1.2 TB</td><td>No</td></tr>
+<tr><td><strong>Miner / Validator</strong></td><td>A full node that <em>also</em> produces blocks. Earns block rewards + fees.</td><td>Same as full node</td><td>Yes</td></tr>
+</tbody>
+</table>
+
+<p>So no, you don't hold the chain by default — your MetaMask doesn't. But you absolutely <em>can</em>. A Raspberry Pi + a 2TB SSD will run a full Bitcoin node and you'd join the ~15,000 independent copies of the ledger worldwide.</p>
+
+<h3>What "constantly updated" means — gossip propagation</h3>
+
+<p>When a new block is produced:</p>
+<ol>
+  <li>The producing node broadcasts it to its peers.</li>
+  <li>Each peer verifies it (signatures, hashes, balances).</li>
+  <li>If valid, they add it to their copy and relay to <em>their</em> peers.</li>
+  <li>In ~5 seconds, the whole world has it.</li>
+</ol>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  V[Validator<br/>produces block]
+  V --> A[Peer A]
+  V --> B[Peer B]
+  A --> C[Peer C]
+  A --> D[Peer D]
+  B --> E[Peer E]
+  B --> F[Peer F]
+  C --> G[...]
+  D --> H[...]
+  E --> I[...]
+  F --> J[...]
+  style V fill:#34d399,color:#000
+</pre>
+<div class="caption">No coordinator. Just everyone gossiping. In ~5 seconds the entire network has the new block.</div>
+</div>
+
+<div class="quiz" data-quiz>
+  <h4>Checkpoint 2·5</h4>
+  <div class="q">
+    <p>An attacker wants to rewrite last week's Bitcoin history. To do it, they need to:</p>
+    <div class="opt" data-correct="false">Hack a single mining pool</div>
+    <div class="opt" data-correct="false">Bribe Satoshi</div>
+    <div class="opt" data-correct="true">Re-mine every block from then to now, faster than the entire honest network combined</div>
+    <div class="opt" data-correct="false">Get 51% of full nodes to agree</div>
+    <div class="feedback"></div>
+    <details><summary>Why?</summary>Each block contains the hash of the previous one. Changing one historical block invalidates every subsequent block's hash. To overwrite history you'd need to redo all that Proof of Work faster than the honest miners are producing new blocks on the real chain — economically impossible at Bitcoin's current hashrate.</details>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch2c"><span class="chap">CH 02·75</span>Smart contracts &amp; how Aave actually works</h2>
+
+<p>You've heard the word "smart contract" a thousand times. Here's what it actually <em>is</em>, and how the most-used DeFi protocol in the world (Aave) is built out of one.</p>
+
+<h3>The one-paragraph version</h3>
+
+<p>A <strong>smart contract</strong> is a small program that lives <em>on</em> a blockchain. You deploy it once; afterwards anyone in the world can call its functions, and the blockchain itself guarantees the code runs exactly as written and that the results (balances, ownership, state) are recorded permanently. There's no company hosting it, no admin who can pause it, no database you can ask to roll back a transaction. <strong>The code <em>is</em> the institution.</strong></p>
+
+<h3>The vending-machine analogy</h3>
+
+<p>Think of a vending machine:</p>
+<ul>
+  <li>You put in $2.</li>
+  <li>The machine, by its mechanical design, <em>must</em> give you a Coke.</li>
+  <li>There's no clerk to argue with, no "let me check with my manager".</li>
+  <li>The rules are visible and enforced by the physical mechanism.</li>
+</ul>
+
+<p>A smart contract is the same idea, but the "machine" is code running on thousands of computers simultaneously, and the "Coke" is anything digital — tokens, NFTs, a loan, an insurance payout, a vote.</p>
+
+<h3>What makes it different from a normal program</h3>
+
+<table>
+<thead><tr><th>Normal program</th><th>Smart contract</th></tr></thead>
+<tbody>
+<tr><td>Runs on one server you control</td><td>Runs on every node in the network</td></tr>
+<tr><td>You can patch it, pause it, delete it</td><td>Once deployed, immutable (unless you built an upgrade hatch)</td></tr>
+<tr><td>Stores data in your database</td><td>Stores data on-chain — public forever</td></tr>
+<tr><td>You pay for the server</td><td>The <em>caller</em> pays gas to execute it</td></tr>
+<tr><td>Bug = embarrassing</td><td>Bug = $600M gone in one transaction (Poly Network, 2021)</td></tr>
+</tbody>
+</table>
+
+<h3>What smart contracts enable — the whole DeFi universe</h3>
+
+<ul>
+  <li><strong>DEXes</strong> (Uniswap, Jupiter) — automated trading without an exchange company</li>
+  <li><strong>Lending</strong> (Aave, Compound) — deposit collateral, borrow against it, all enforced by code</li>
+  <li><strong>Stablecoins</strong> (DAI, USDC) — tokens whose supply rules are coded</li>
+  <li><strong>NFTs</strong> — a contract that tracks "address X owns token #1234"</li>
+  <li><strong>DAOs</strong> — voting + treasury management as code</li>
+  <li><strong>Perpetual futures</strong> (dYdX, GMX) — the whole derivatives stack</li>
+</ul>
+
+<h3>Worked example — how Aave works</h3>
+
+<p>Aave is a <strong>lending market</strong> — like a bank, but as a smart contract. Two roles: lenders (deposit) and borrowers (borrow). No human approves anything. No credit check.</p>
+
+<h4>The core idea</h4>
+<p>A big shared pool of USDC sits in a smart contract. Anyone can <strong>deposit USDC</strong> to earn interest, or <strong>borrow USDC</strong> by paying interest. But you can't sue an anonymous Ethereum address — so how do they stop borrowers running away with the money?</p>
+
+<div class="box key">
+  <div class="label">The answer: over-collateralisation</div>
+  To borrow $1,000 of USDC, you must first lock up something worth more — say $1,500 of ETH — as collateral. The contract holds it hostage. If you don't pay back, the contract sells your ETH to recover the loan.
+</div>
+
+<p>Why would anyone do this? Because they:</p>
+<ul>
+  <li>Don't want to <em>sell</em> their ETH (tax reasons, conviction it'll go up), but</li>
+  <li>Need cash <em>now</em> (to buy something, to lever up, to short, etc.).</li>
+</ul>
+
+<p>They keep ETH exposure <em>and</em> get cash. The cost is interest + the risk of liquidation.</p>
+
+<h4>The full flow</h4>
+
+<pre><code>STEP 1 — LENDER side
+  Alice deposits 10,000 USDC into Aave's USDC pool.
+  Contract gives Alice 10,000 aUSDC tokens (the "receipt").
+  Alice's aUSDC balance grows continuously — that's her interest.
+
+STEP 2 — BORROWER side
+  Bob deposits 5 ETH (~$15,000) as collateral.
+  Aave lets him borrow up to 75% of that value → $11,250 max.
+  Bob borrows 8,000 USDC. He now has the cash + still owns the ETH.
+
+STEP 3 — INTEREST
+  Bob pays, say, 5% APR on his 8,000 USDC loan.
+  That interest flows into the pool, increasing the value of every aUSDC.
+  Alice's 10,000 aUSDC slowly grows to 10,300 aUSDC over a year.
+
+STEP 4 — REPAYMENT (happy path)
+  Bob earns money, repays 8,000 USDC + interest.
+  Contract releases his 5 ETH. Done.
+
+STEP 5 — LIQUIDATION (sad path)
+  ETH crashes $3,000 → $2,200. Collateral now worth $11,000,
+  Bob owes $8,000 — that's 73% LTV, dangerously close to the 75% limit.
+  At 80% LTV, the contract opens Bob's position to anyone in the world:
+  "anyone who repays Bob's 8,000 USDC gets his ETH at a 5% discount."
+  A liquidator bot spots this in milliseconds, repays the debt, takes
+  Bob's ETH worth $10,450 → instant $550 profit.
+  Alice's pool is made whole. Bob is left with whatever ETH was leftover.</code></pre>
+
+<h4>Where the interest rates come from</h4>
+
+<p>No Aave employee sets rates. The contract has a formula:</p>
+
+<p>$$\text{borrow rate} = f(\text{utilisation})$$</p>
+
+<p>where <strong>utilisation</strong> = how much of the pool is currently borrowed. If 80% of the USDC is lent out, rates rise (incentivises more lenders, discourages more borrowers). If only 10% is lent out, rates fall. Pure supply and demand, enforced by math, updated every block.</p>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph POOL["Aave USDC Pool — a smart contract"]
+    P["Total: 1,000,000 USDC<br/>Borrowed: 750,000 (75%)<br/>Borrow rate: 8% APR<br/>Supply rate: 6% APR<br/>Locked collateral: 600 ETH"]
+  end
+  A[Alice<br/>lender] -->|deposit USDC| POOL
+  POOL -->|aUSDC receipt<br/>+ yield| A
+  B[Bob<br/>borrower] -->|lock 5 ETH| POOL
+  POOL -->|hand out USDC loan| B
+  B -->|repay USDC + interest| POOL
+  POOL -.->|if Bob's LTV > 80%| L[Liquidator bots<br/>24/7 watching]
+  L -->|repay Bob's debt<br/>take ETH at 5% discount| POOL
+  style POOL fill:#60a5fa,color:#000
+  style L fill:#fbbf24,color:#000
+</pre>
+<div class="caption">A bank with no humans. The contract is the bank manager, the price oracle is the loan officer, and competing bots are the debt collectors.</div>
+</div>
+
+<h3>Why this is wild</h3>
+<ul>
+  <li>Aave holds ~$15 <strong>billion</strong> in deposits across chains.</li>
+  <li>It has been running since 2020. Has never been shut down. Has no CEO. Has no headquarters.</li>
+  <li>It's ~2,000 lines of Solidity at a fixed Ethereum address.</li>
+  <li>All of it is <strong>public</strong>. You can watch every deposit, every loan, every liquidation in real time on Etherscan. (Your whale tracker watches exactly this kind of activity.)</li>
+</ul>
+
+<div class="box warn">
+  <div class="label">The catch (always read this)</div>
+  <ul style="margin:6px 0">
+    <li><strong>Bugs are catastrophic.</strong> A typo in a contract holding $200M can drain the whole pool. No undo, no support ticket.</li>
+    <li><strong>Immutability cuts both ways.</strong> Great for trustlessness; terrible when you find a bug and can't fix it.</li>
+    <li><strong>Gas is real money.</strong> Every line that runs costs a fee to the network. Inefficient contracts are unusable.</li>
+    <li><strong>"Decentralised" is often a lie.</strong> Many contracts have an <code>onlyOwner</code> function letting one key-holder upgrade or pause everything. Always check.</li>
+  </ul>
+</div>
+
+<div class="quiz" data-quiz>
+  <h4>Checkpoint 2·75</h4>
+  <div class="q">
+    <p>Why does Aave require borrowers to post collateral worth <em>more</em> than what they borrow?</p>
+    <div class="opt" data-correct="false">Regulation forces them to</div>
+    <div class="opt" data-correct="false">To make extra profit on the spread</div>
+    <div class="opt" data-correct="true">Because anonymous on-chain borrowers can't be sued — over-collateralisation makes default impossible to profit from</div>
+    <div class="opt" data-correct="false">Because ETH is volatile</div>
+    <div class="feedback"></div>
+    <details><summary>Why?</summary>The whole protocol is trustless. There's no court, no collections agency, no identity check. The only way to guarantee lenders get repaid is to make sure the collateral is always worth more than the loan — and to auto-liquidate the instant that ratio gets dangerous. The buffer (e.g. 75% LTV cap, 80% liquidation threshold) protects against volatility.</details>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch3"><span class="chap">CH 03</span>Where trading happens</h2>
+
+<p>There are two species of exchange. They look similar but work nothing alike.</p>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph CEX["Centralised Exchange (CEX)<br/>Binance, Coinbase, Kraken"]
+    U1[User deposits<br/>USD/crypto] --> EX[(Exchange<br/>holds funds)]
+    EX --> OB[Order Book<br/>matching engine]
+    OB --> U1
+  end
+  subgraph DEX["Decentralised Exchange (DEX)<br/>Uniswap, Jupiter, dYdX"]
+    U2[Wallet signs tx] --> SC[Smart Contract<br/>holds liquidity pool]
+    SC --> BC[Blockchain settles<br/>in seconds]
+    BC --> U2
+  end
+  style EX fill:#f87171,color:#000
+  style SC fill:#34d399,color:#000
+</pre>
+<div class="caption">CEX = you trust a company. DEX = you trust code. Both have failure modes.</div>
+</div>
+
+<table>
+<thead><tr><th></th><th>CEX</th><th>DEX</th></tr></thead>
+<tbody>
+<tr><td><strong>Who holds your coins?</strong></td><td>The exchange (custodial)</td><td>You (non-custodial)</td></tr>
+<tr><td><strong>Speed</strong></td><td>Instant (off-chain matching)</td><td>Limited by block times (~1-12 sec)</td></tr>
+<tr><td><strong>Fees</strong></td><td>0.01% – 0.5% per trade</td><td>0.05% – 1% + gas fees</td></tr>
+<tr><td><strong>Listings</strong></td><td>Curated, slow (weeks)</td><td>Anyone, instant. 90% are scams.</td></tr>
+<tr><td><strong>Biggest risk</strong></td><td>Exchange collapses (FTX, Mt. Gox)</td><td>Smart-contract bug, you lose everything</td></tr>
+<tr><td><strong>Where pros trade</strong></td><td>Primarily CEX for size/speed</td><td>DEX for new tokens & on-chain strategies</td></tr>
+</tbody>
+</table>
+
+<div class="box warn">
+  <div class="label">The first rule</div>
+  "Not your keys, not your coins." When you leave coins on a CEX, you're an unsecured creditor. FTX users learned this in 2022 — $8B vanished overnight. Pros use CEXs to trade and immediately withdraw winnings to self-custody.
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch4"><span class="chap">CH 04</span>The order book — the heart of price</h2>
+
+<p>If you only understand <em>one</em> mechanism in trading, make it this one. The order book is where supply meets demand, in real time, in public.</p>
+
+<p>Two kinds of orders exist:</p>
+<ul>
+  <li><strong>Limit order:</strong> "I want to buy 1 BTC at $60,000 or lower." You sit and wait until someone agrees. This <em>adds</em> liquidity to the book.</li>
+  <li><strong>Market order:</strong> "I want to buy 1 BTC now, at whatever the best price is." You eat whatever's available. This <em>removes</em> liquidity.</li>
+</ul>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph BOOK["BTC/USDT Order Book"]
+    direction TB
+    A1["🔴 SELL @ $60,200  | size 0.5"] 
+    A2["🔴 SELL @ $60,150  | size 1.2"]
+    A3["🔴 SELL @ $60,100  | size 0.8  ← best ask"]
+    MID["━━━ spread = $20 ━━━"]
+    B1["🟢 BUY  @ $60,080  | size 1.5  ← best bid"]
+    B2["🟢 BUY  @ $60,050  | size 2.0"]
+    B3["🟢 BUY  @ $60,000  | size 5.0"]
+    A1 --> A2 --> A3 --> MID --> B1 --> B2 --> B3
+  end
+  style A3 fill:#f87171,color:#000
+  style B1 fill:#34d399,color:#000
+  style MID fill:#fbbf24,color:#000
+</pre>
+<div class="caption">Sellers stack above, buyers stack below. The gap between the best bid and best ask is the <em>spread</em> — the market's friction.</div>
+</div>
+
+<p>When you place a <strong>market buy</strong> for 2 BTC, you eat:</p>
+<ol>
+  <li>0.8 BTC at $60,100 → $48,080</li>
+  <li>1.2 BTC at $60,150 → $72,180</li>
+  <li>Total: 2 BTC for $120,260, average price $60,130</li>
+</ol>
+<p>Your average fill ($60,130) is <em>worse</em> than the best ask ($60,100). That difference is called <strong>slippage</strong>. The bigger your order vs. book depth, the worse it gets. This is why large trades are split into pieces ("algorithmic execution").</p>
+
+<div class="box key">
+  <div class="label">The price you see is a lie</div>
+  When CoinGecko says "BTC = $60,100", it means "the best ask is $60,100 for some tiny size". The real price you pay depends on how much you're buying and how thick the book is. Pros never quote one number — they quote a price <em>at a size</em>.
+</div>
+
+<div class="quiz" data-quiz>
+  <h4>Checkpoint 4</h4>
+  <div class="q">
+    <p>The spread on a thin alt-coin is $0.50 on a $10 token (5%). You market-buy and immediately market-sell the same coin. What's your guaranteed loss before fees?</p>
+    <div class="opt" data-correct="false">0%</div>
+    <div class="opt" data-correct="false">~2.5%</div>
+    <div class="opt" data-correct="true">~5%</div>
+    <div class="opt" data-correct="false">~10%</div>
+    <div class="feedback"></div>
+    <details><summary>Why?</summary>You buy at the ask ($10.25) and sell at the bid ($9.75). That's a round-trip cost equal to the full spread, before any exchange fee. This is why thin markets are predator territory — every retail click feeds the market maker.</details>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch5"><span class="chap">CH 05</span>Spot vs. derivatives</h2>
+
+<p>So far we've talked about <strong>spot</strong>: you buy the coin, you own the coin. Simple.</p>
+<p><strong>Derivatives</strong> are contracts whose value <em>derives</em> from the spot price, but you never touch the underlying coin. The two that matter:</p>
+
+<h3>1. Futures</h3>
+<p>"I agree to buy 1 BTC at $65,000 on December 30." If BTC is above $65k on Dec 30, you profit; below, you lose. Used for hedging and leveraged speculation.</p>
+
+<h3>2. Perpetual futures ("perps")</h3>
+<p>Crypto invented this. A perp is a future with <strong>no expiry</strong>. To keep its price tethered to the spot price, the exchange charges a <strong>funding rate</strong> every 8 hours:</p>
+
+<div class="box key">
+  <div class="label">Funding rate — the most underrated signal</div>
+  <ul>
+    <li>If perp price > spot → too many longs → <strong>longs pay shorts</strong> (positive funding)</li>
+    <li>If perp price < spot → too many shorts → <strong>shorts pay longs</strong> (negative funding)</li>
+  </ul>
+  When funding gets extreme (say > 0.05% per 8 hours, i.e. ~50% annualised), it tells you the market is dangerously one-sided. <strong>This is Family D in your engine.</strong> Crowded longs get liquidated on small dips — so the contrarian short trade has positive expectancy.
+</div>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  S["Spot BTC = $60,000"]
+  P["Perp BTC = $60,300<br/>(+0.5% premium)"]
+  F["Funding = +0.06% / 8h<br/>(longs pay shorts)"]
+  L["Longs feel pain<br/>some close positions"]
+  R["Perp price re-converges<br/>to spot"]
+  S --> P --> F --> L --> R --> S
+  style F fill:#fbbf24,color:#000
+</pre>
+<div class="caption">The funding mechanism is a self-correcting loop. When it gets <em>stuck</em> at extremes, that's the alpha.</div>
+</div>
+
+<h3>Leverage — the trader killer</h3>
+<p>Derivatives let you put down 10% margin to control 100% of a position ("10× leverage"). If the price moves 10% against you, you're wiped out ("liquidated"). Most retail accounts that touch 50× or 100× leverage die within weeks. Pros rarely use more than 2–3×.</p>
+
+<div class="box bad">
+  <div class="label">The math of leverage</div>
+  At 10× leverage, a 10% adverse move = 100% loss. At 20× leverage, a 5% move = 100% loss. Crypto routinely moves 5% in an hour. Do the math.
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch6"><span class="chap">CH 06</span>Liquidity, slippage, market makers</h2>
+
+<p>Liquidity = how much you can trade without moving the price. It's the single most important number after price itself.</p>
+
+<p>Who provides this liquidity? <strong>Market makers</strong>. They post both bids and asks simultaneously, hoping to collect the spread on every round trip. They're the casino. You're the gambler.</p>
+
+<div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant R as Retail trader
+  participant MM as Market maker
+  participant E as Exchange
+  MM->>E: Post BID 60,080 + ASK 60,100 (size 5 each)
+  R->>E: Market BUY 1 BTC
+  E->>MM: Sell you 1 BTC @ 60,100
+  Note over MM: Inventory: -1 BTC, +$60,100
+  R->>E: Market SELL 1 BTC (later)
+  E->>MM: Buy your 1 BTC @ 60,080
+  Note over MM: Inventory: 0 BTC, +$20 profit
+</pre>
+<div class="caption">Every time you round-trip, the market maker pockets the spread. Multiply by millions of trades per day.</div>
+</div>
+
+<p>Sophisticated market makers (Jump, Wintermute, GSR, Cumberland) run statistical models to:</p>
+<ul>
+  <li>Widen the spread when volatility spikes (they don't want to get run over by news)</li>
+  <li>Skew quotes when their inventory gets lopsided</li>
+  <li>Pull quotes entirely when something feels off (flash crashes happen because everyone pulls at once)</li>
+</ul>
+
+<!-- =========================================================== -->
+<h2 id="ch7"><span class="chap">CH 07</span>How retail loses, how pros win</h2>
+
+<p>This is the hardest chapter to internalise. Retail traders lose money <em>structurally</em>, not because they're dumb. The system is designed to extract from them.</p>
+
+<h3>The four retail death modes</h3>
+<ol>
+  <li><strong>Buying tops, selling bottoms.</strong> Retail enters when price has already moved (FOMO from news/Twitter) and exits when it's already crashed (capitulation). Pros are the counter-party on both sides.</li>
+  <li><strong>Over-leverage.</strong> Discussed above. The exchange wants you to use leverage — they earn fees and liquidate you.</li>
+  <li><strong>Trading too often.</strong> Every trade pays the spread + fee. Even with 55% win rate, churning 50× per day will bleed you to zero.</li>
+  <li><strong>No risk management.</strong> Doubling down on losers ("averaging into a loss"), no stop losses, betting too much per position.</li>
+</ol>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  N[News drops:<br/>Token X partnership] --> T[Twitter explodes]
+  T --> R1[Retail FOMOs in<br/>at $1.50]
+  R1 --> P1[Price up to $1.80]
+  P1 --> M[Whales who bought<br/>at $1.00 sell into the pump]
+  M --> P2[Price down to $1.20]
+  P2 --> R2[Retail panics<br/>sells at $1.20]
+  R2 --> P3[Price stabilises $1.10]
+  P3 --> X[Whales reload at $1.10]
+  X --> N2[repeat]
+  N2 --> N
+  style R1 fill:#f87171,color:#000
+  style R2 fill:#f87171,color:#000
+  style M fill:#34d399,color:#000
+  style X fill:#34d399,color:#000
+</pre>
+<div class="caption">The retail cycle, drawn honestly. Every news pump is a liquidity event for someone who got in earlier.</div>
+</div>
+
+<h3>How pros win</h3>
+<ol>
+  <li><strong>They have an edge they can measure.</strong> Win rate × avg win > loss rate × avg loss. Anything else is gambling.</li>
+  <li><strong>They size positions by edge.</strong> Big edge = big bet. Tiny edge = tiny bet. Never bet the farm.</li>
+  <li><strong>They diversify across uncorrelated strategies.</strong> Five strategies with 1.0 Sharpe ratio each combine to ~2.2 Sharpe if uncorrelated. Diversification is the only free lunch in finance.</li>
+  <li><strong>They are paranoid about overfitting.</strong> A strategy that worked in backtest but fails live is the default outcome. Pros assume their model is wrong and design to survive being wrong.</li>
+</ol>
+
+<div class="quiz" data-quiz>
+  <h4>Checkpoint 7</h4>
+  <div class="q">
+    <p>A strategy backtests with 70% win rate over the last year. You go live. After 200 trades, the win rate is 48%. Most likely cause?</p>
+    <div class="opt" data-correct="false">The market regime changed</div>
+    <div class="opt" data-correct="true">The backtest was overfit / had data leakage</div>
+    <div class="opt" data-correct="false">200 trades isn't enough sample</div>
+    <div class="opt" data-correct="false">You're being unlucky</div>
+    <div class="feedback"></div>
+    <details><summary>Why?</summary>200 trades is enough to detect a 22-point gap with high confidence. The honest answer is almost always overfitting — the backtest accidentally peeked at the future, or the parameters were tuned until they fit the past perfectly. This is exactly what your engine was doing before the forensic sweep.</details>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch8"><span class="chap">CH 08</span>The pro firm playbook</h2>
+
+<p>Quant trading firms (Jane Street, Citadel, Two Sigma in TradFi; Jump, Alameda-pre-fraud, Wintermute, GSR in crypto) run a handful of strategy <em>families</em>. Understanding them is half the battle.</p>
+
+<h3>The five canonical families</h3>
+
+<table>
+<thead><tr><th>Family</th><th>What it does</th><th>Edge source</th><th>Capacity</th></tr></thead>
+<tbody>
+<tr><td><strong>Market making</strong></td><td>Post bid+ask, collect spread</td><td>Speed, inventory management</td><td>Massive</td></tr>
+<tr><td><strong>Arbitrage</strong></td><td>Buy on Exchange A, sell on Exchange B when prices diverge</td><td>Speed, infrastructure</td><td>Limited (gets competed away)</td></tr>
+<tr><td><strong>Statistical arbitrage</strong></td><td>Pairs that "should" move together; trade the divergence</td><td>Models, data</td><td>Medium</td></tr>
+<tr><td><strong>Momentum / trend</strong></td><td>Buy what's going up, sell what's going down. Surprisingly works.</td><td>Behavioural — herding</td><td>Huge</td></tr>
+<tr><td><strong>Mean reversion</strong></td><td>Bet that extreme moves over-shoot and snap back</td><td>Behavioural — panic</td><td>Medium</td></tr>
+</tbody>
+</table>
+
+<div class="diagram">
+<pre class="mermaid">
+quadrantChart
+  title Strategy Map — Hold Time vs Capacity
+  x-axis Short hold --> Long hold
+  y-axis Low capacity --> High capacity
+  quadrant-1 Slow + scalable
+  quadrant-2 Fast + scalable
+  quadrant-3 Fast + niche
+  quadrant-4 Slow + niche
+  Market making: [0.1, 0.95]
+  HF arbitrage: [0.15, 0.3]
+  Stat arb: [0.4, 0.5]
+  Momentum: [0.75, 0.85]
+  Mean reversion: [0.5, 0.55]
+  Macro discretionary: [0.95, 0.7]
+</pre>
+<div class="caption">Where on the map you operate dictates your tech stack, your team, and your AUM ceiling.</div>
+</div>
+
+<h3>The org chart of a quant firm</h3>
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  R[Researchers<br/>build strategies] --> M[Model production<br/>live deployment]
+  D[Data engineers<br/>clean + serve features] --> R
+  M --> X[Execution<br/>smart order routing]
+  X --> O[Ops + Risk<br/>monitor live P&L,<br/>kill switches]
+  O --> R
+  T[Trader-PMs<br/>allocate capital across<br/>strategies]
+  T --> M
+  O --> T
+  style O fill:#fbbf24,color:#000
+</pre>
+<div class="caption">Risk is at the centre. A good firm can kill a strategy in seconds.</div>
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch9"><span class="chap">CH 09</span>What is a "signal"?</h2>
+
+<p>A signal is a <strong>specific, repeatable, measurable</strong> condition that predicts future return better than chance. That's the whole definition.</p>
+
+<p>It is <em>not</em>:</p>
+<ul>
+  <li>A vibe ("BTC feels overbought")</li>
+  <li>A narrative ("ETH will moon because of the upgrade")</li>
+  <li>A chart pattern with no statistical backing</li>
+</ul>
+
+<p>To qualify as a signal, you need three things:</p>
+<ol>
+  <li><strong>Trigger:</strong> a precise condition. <em>"Funding rate > 0.05%/8h"</em>. Not <em>"funding looks high"</em>.</li>
+  <li><strong>Direction:</strong> long or short.</li>
+  <li><strong>Edge:</strong> measurable positive expected return on past data, robust to overfitting.</li>
+</ol>
+
+<h3>The data buckets signals come from</h3>
+
+<div class="diagram">
+<pre class="mermaid">
+mindmap
+  root((Signals))
+    On-chain
+      Whale wallet flows
+      Exchange inflows/outflows
+      Stablecoin supply
+      Active addresses
+      Smart-money labels
+    Derivatives
+      Funding rate
+      Open interest
+      Long/short ratio
+      Liquidation cascades
+    Sentiment
+      Twitter/X volume
+      News cluster density
+      Reddit/Discord activity
+      Search trends
+    Technical
+      Price momentum
+      Volatility regime
+      Mean reversion
+      Volume profile
+    Cross-asset
+      BTC dominance
+      ETH/BTC ratio
+      Correlation breaks
+      Macro (DXY, gold)
+</pre>
+<div class="caption">The signal universe. Each branch is a Family. Each Family is a hypothesis you must validate empirically.</div>
+</div>
+
+<h3>How signals are scored (and miscored)</h3>
+
+<p>Most signal engines do something like this: each Family outputs a number in <code>[-1, +1]</code> (negative = short, positive = long, magnitude = conviction). You combine them into a composite score, then bucket the score into discrete labels (STRONG BUY / BUY / HOLD / SELL / STRONG SELL).</p>
+
+<p>This is fine — <em>if</em> you actually measured that each Family is predictive. The trap is to combine 5 Families that <em>sound</em> good but were never individually validated. You get a beautiful number that's negatively correlated with reality. (Sound familiar? It's literally what happened to your engine — ρ = −0.141.)</p>
+
+<div class="box tip">
+  <div class="label">The professional rule</div>
+  <strong>Validate each Family in isolation before combining.</strong> Each Family must clear a statistical bar (e.g. Spearman ρ > 0.05 with future return at p < 0.01) on out-of-sample data. Then — and only then — you combine. The combination should improve Sharpe, not just sound better.
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch10"><span class="chap">CH 10</span>Backtesting (and how it lies to you)</h2>
+
+<p>Backtesting = running your strategy on historical data to see how it would have performed. It's the most important — and most dangerous — tool in quant trading.</p>
+
+<h3>The seven deadly sins of backtesting</h3>
+
+<table>
+<thead><tr><th>Sin</th><th>What it is</th><th>How to detect</th></tr></thead>
+<tbody>
+<tr><td><strong>Look-ahead bias</strong></td><td>Your strategy "knows" something it couldn't have known in real time (e.g. uses tomorrow's price to decide today's trade)</td><td>Audit your code for any reference to future-indexed data</td></tr>
+<tr><td><strong>Survivorship bias</strong></td><td>You only test on tokens that exist today, ignoring the 1000s that died</td><td>Use a point-in-time universe</td></tr>
+<tr><td><strong>Overfitting</strong></td><td>You tuned parameters until the curve looked great. It won't generalise.</td><td>Out-of-sample test. K-fold CV. The smaller the gap between train and test performance, the safer.</td></tr>
+<tr><td><strong>Ignoring fees + slippage</strong></td><td>Strategy makes 10 bps per trade. Round-trip cost is 15 bps. Net loss.</td><td>Always model realistic execution.</td></tr>
+<tr><td><strong>Small sample</strong></td><td>"My strategy hit 8 out of 10 trades" — meaningless</td><td>Need hundreds of independent trades minimum.</td></tr>
+<tr><td><strong>Regime cherry-picking</strong></td><td>Backtested only during a bull market</td><td>Test across bull, bear, sideways, crisis.</td></tr>
+<tr><td><strong>Data snooping</strong></td><td>You tested 200 variations and reported the best one</td><td>Bonferroni-correct your p-values, or use a holdout you only touch once.</td></tr>
+</tbody>
+</table>
+
+<h3>The honest workflow</h3>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  H[Hypothesis:<br/>funding extremes<br/>mean-revert] --> T[Train on<br/>2020-2023]
+  T --> V[Validate on<br/>2024 OOS]
+  V -->|fails| K[Kill it]
+  V -->|passes| F[Forward test live<br/>tiny size, 3 months]
+  F -->|fails| K
+  F -->|passes| P[Paper-trade full size<br/>3 months]
+  P -->|fails| K
+  P -->|passes| L[Live with real capital<br/>monitor drawdown]
+  L --> M[Monthly review:<br/>has edge decayed?]
+  M -->|yes| K
+  M -->|no| L
+  style K fill:#f87171,color:#000
+  style L fill:#34d399,color:#000
+</pre>
+<div class="caption">90% of hypotheses die at validation. Of survivors, 50% die in forward test. Of those survivors, 50% decay within a year. That's normal.</div>
+</div>
+
+<h3>The metrics that actually matter</h3>
+<p>Forget annualised return. Pros judge a strategy on:</p>
+
+<dl class="glossary">
+<dt>Sharpe ratio = (mean return − risk free) / std deviation of returns</dt>
+<dd>Risk-adjusted return. Sharpe < 1.0 = retail. 1.0–2.0 = decent. > 2.0 = institutional-grade. > 3.0 = rare and likely overfit.</dd>
+
+<dt>Maximum drawdown</dt>
+<dd>The worst peak-to-trough loss. A strategy with 50% annual return and 60% max drawdown is unholdable — you'd panic out before recovery.</dd>
+
+<dt>Calmar ratio = annual return / max drawdown</dt>
+<dd>Cleaner than Sharpe for tail-risk-aware traders.</dd>
+
+<dt>Hit rate</dt>
+<dd>% of trades that win. Often misleading — a 30% hit rate strategy can be highly profitable if the wins are big.</dd>
+
+<dt>Profit factor = gross wins / gross losses</dt>
+<dd>Combines hit rate and avg win/loss. > 1.5 is good.</dd>
+</dl>
+
+<p>The math underneath Sharpe:</p>
+<p>$$\text{Sharpe} = \frac{E[R_p - R_f]}{\sigma_p} \cdot \sqrt{N}$$</p>
+<p>where $R_p$ is your strategy's return, $R_f$ is the risk-free rate, $\sigma_p$ is the standard deviation of returns, and $N$ is the number of periods per year (252 for daily, 8760 for hourly).</p>
+
+<!-- =========================================================== -->
+<h2 id="ch11"><span class="chap">CH 11</span>Risk: the only thing that matters</h2>
+
+<p>You'll hear pros say "alpha is overrated, risk is everything". They mean it literally. A strategy with mediocre returns and great risk control will outlive a brilliant strategy with sloppy risk every time.</p>
+
+<h3>Position sizing — the Kelly criterion</h3>
+
+<p>Given an edge, how much of your bankroll should you bet? The math has a clean answer (Kelly, 1956):</p>
+
+<p>$$f^* = \frac{p \cdot b - (1-p)}{b}$$</p>
+
+<p>where $p$ = probability of winning, $b$ = ratio of average win to average loss, and $f^*$ = fraction of bankroll to bet.</p>
+
+<p>Example: a strategy wins 55% of the time, with avg win = avg loss (b = 1). Then $f^* = 0.55 \cdot 1 - 0.45 = 0.10$ — bet 10% of the bankroll per trade. <strong>Most pros use a fractional Kelly</strong> (often 0.25× or 0.5×) because the full formula assumes you know your edge perfectly. You don't.</p>
+
+<div class="box bad">
+  <div class="label">Bet too big and you die</div>
+  Even a strategy with positive expected value will blow up if you bet too much per trade. The volatility of compounding kills you long before the expected value rescues you. This is the difference between "expectation positive" and "growth optimal".
+</div>
+
+<h3>Stop losses, take profits, and asymmetric payoffs</h3>
+
+<p>Every trade should have:</p>
+<ul>
+  <li><strong>An entry rule</strong> (signal fires)</li>
+  <li><strong>An exit rule</strong> for being right (take profit at X)</li>
+  <li><strong>An exit rule</strong> for being wrong (stop loss at Y)</li>
+  <li><strong>A time stop</strong> (close after N hours regardless)</li>
+</ul>
+
+<p>Aim for a <strong>reward:risk ratio</strong> of at least 2:1. If your average winner is 2% and average loser is 1%, you only need a 35% hit rate to be profitable.</p>
+
+<h3>Portfolio-level risk</h3>
+
+<p>Even with great per-trade risk, your overall portfolio can blow up if:</p>
+<ol>
+  <li>Positions are correlated (all crypto crashes together)</li>
+  <li>You concentrate too much in one trade ("conviction" is the most dangerous word in finance)</li>
+  <li>You can't exit ("liquidity risk") — common in alt-coins during crashes</li>
+</ol>
+
+<div class="quiz" data-quiz>
+  <h4>Checkpoint 11</h4>
+  <div class="q">
+    <p>Your strategy has 60% hit rate, 1:1 reward/risk. Full Kelly says bet 20%. You bet 20% per trade. After 50 trades you've lost 80% of your capital despite the strategy "working". Why?</p>
+    <div class="opt" data-correct="false">The strategy stopped working</div>
+    <div class="opt" data-correct="true">Variance — you hit a losing streak that compounded brutally at full Kelly</div>
+    <div class="opt" data-correct="false">Fees</div>
+    <div class="opt" data-correct="false">Bad luck</div>
+    <div class="feedback"></div>
+    <details><summary>Why?</summary>Full Kelly maximises expected log wealth, but with massive drawdowns. A run of 10 losses in a row at 20% per trade leaves you with (0.8)^10 ≈ 11% of starting capital. This is why fractional Kelly (typically 0.25×) is industry standard — slightly slower compounding, dramatically smaller drawdowns.</details>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch12"><span class="chap">CH 12</span>How Sonar's signal engine actually works</h2>
+
+<p>Now we can read your own codebase. Everything we've covered shows up directly.</p>
+
+<h3>The pipeline</h3>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph INGEST["Every 15 minutes — ingestion"]
+    A1[Whale Alert API<br/>large on-chain txs]
+    A2[Coinglass<br/>funding rate, OI]
+    A3[News APIs<br/>CryptoPanic, etc]
+    A4[CoinGecko<br/>price, mcap, volume]
+    A5[Twitter/X<br/>sentiment]
+  end
+  INGEST --> COMP[compute-signals/route.js<br/>builds FamilyInput per token]
+  COMP --> SCORE[Tier 1-4 scoring<br/>current composite engine]
+  SCORE --> GATE{3-tier-agree<br/>gate<br/>NEW ✓}
+  GATE -->|agree| EMIT[Write to token_signals<br/>+ snapshot_inputs JSONB]
+  GATE -->|disagree| DROP[Drop signal<br/>~78% of candidates]
+  EMIT --> DB[(Supabase<br/>token_signals)]
+  EMIT --> UI[Dashboard<br/>STRONG BUY / BUY / etc]
+  DB --> OUTCOMES[24h outcome attribution<br/>signal_outcomes]
+  OUTCOMES --> FORENSIC[Forensic sweep<br/>ρ, Sharpe, win rate]
+  FORENSIC --> RESEARCH[Family A/B/C/D/E/F<br/>backtest harness]
+  RESEARCH --> SCORE
+  style GATE fill:#34d399,color:#000
+  style FORENSIC fill:#fbbf24,color:#000
+</pre>
+<div class="caption">The current state of your signal pipeline, end to end. The green gate and yellow forensic loop are this week's work.</div>
+</div>
+
+<h3>The Families you've defined</h3>
+
+<table>
+<thead><tr><th>Family</th><th>Type</th><th>Triggers when</th><th>Direction</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><strong>A — Whale-Flow Divergence</strong></td><td>On-chain</td><td>Net whale flow diverges from price trend</td><td>Follow whales</td><td>Defined, awaiting data</td></tr>
+<tr><td><strong>B — Exchange Imbalance</strong></td><td>On-chain</td><td>Inflows >> outflows (or vice versa)</td><td>Inflow → bearish</td><td>Defined, awaiting data</td></tr>
+<tr><td><strong>C — Sentiment Compression</strong></td><td>Sentiment</td><td>Sentiment hot/cold but price flat</td><td>Towards sentiment</td><td>Defined, awaiting data</td></tr>
+<tr><td><strong>D — Funding Extreme</strong></td><td>Derivatives</td><td>|funding| > 0.02%/8h</td><td>Fade the crowd</td><td>Defined, snapshot writing</td></tr>
+<tr><td><strong>E — News-Event Drift</strong></td><td>News + price</td><td>News cluster ≥ 3, price hasn't reacted</td><td>Direction of news</td><td>Inert (no news pipeline yet)</td></tr>
+<tr><td><strong>F — BTC Rotation</strong></td><td>Cross-asset</td><td>BTC moves > 3%, alt diverges > 5%</td><td>Persist relative strength</td><td>Defined, snapshot writing</td></tr>
+</tbody>
+</table>
+
+<h3>What the forensic numbers mean</h3>
+
+<dl class="glossary">
+<dt>ρ (Spearman correlation) = −0.141</dt>
+<dd>Across 1,592 signals, the engine's score was <em>negatively</em> correlated with actual 24-hour return. Random would be ~0. This is real — the engine was anti-predictive at the composite level.</dd>
+
+<dt>3-tier-agree gate lifts mean α by +11.7pp</dt>
+<dd>When the four scoring tiers <em>agree</em> on direction, the residual edge is meaningfully positive. When they disagree (78% of candidates), the result is noise or worse. The gate now filters production output to only agreement cases.</dd>
+
+<dt>BUY 24h win rate = 5.7%</dt>
+<dd>The BUY label was structurally broken. SELLs were OK (H1 passed) but BUYs leak. Investigating which tier flips the sign is H13 (planned).</dd>
+
+<dt>snapshot_inputs JSONB</dt>
+<dd>Every signal now persists its full feature vector at emission time, so the backtest harness can replay any candidate Family against historical signals <em>without leakage</em>. This is the data-capture system that makes all future research possible.</dd>
+</dl>
+
+<div class="box key">
+  <div class="label">Why this is good news, not bad</div>
+  Before this week, the engine was invisibly broken — emitting signals, generating revenue, with no way to know it was anti-predictive. Now you have measurement. You have an agree-gate that filters out 78% of bad emissions. You have a writer accumulating typed features for proper research. You have 6 candidate Families ready to backtest as soon as 4 weeks of data lands. That is exactly how a pro firm operates: measure first, decide second.
+</div>
+
+<!-- =========================================================== -->
+<h2 id="ch13"><span class="chap">CH 13</span>Glossary — the words you'll hear constantly</h2>
+
+<dl class="glossary">
+<dt>Ask</dt><dd>The lowest price at which someone is willing to sell.</dd>
+<dt>Bid</dt><dd>The highest price at which someone is willing to buy.</dd>
+<dt>Spread</dt><dd>Ask − Bid. The cost of round-tripping a position.</dd>
+<dt>Liquidity</dt><dd>How much you can trade without moving the price.</dd>
+<dt>Slippage</dt><dd>The difference between expected fill price and actual fill price.</dd>
+<dt>Order book</dt><dd>The live ledger of all open buy and sell limit orders on an exchange.</dd>
+<dt>Market order</dt><dd>Buy/sell immediately at the best available price.</dd>
+<dt>Limit order</dt><dd>Buy/sell only at price X or better; sits in the book until filled or cancelled.</dd>
+<dt>Spot</dt><dd>Trading the actual asset for immediate delivery.</dd>
+<dt>Futures</dt><dd>Contract to buy/sell at a fixed price on a future date.</dd>
+<dt>Perpetual / Perp</dt><dd>A futures contract with no expiry, kept tethered to spot via funding rate.</dd>
+<dt>Funding rate</dt><dd>Periodic payment between longs and shorts on a perp to keep its price near spot.</dd>
+<dt>Open Interest (OI)</dt><dd>Total notional value of open derivative contracts. Rising OI + rising price = strong trend; rising OI + falling price = capitulation incoming.</dd>
+<dt>Long</dt><dd>Betting price will go up.</dd>
+<dt>Short</dt><dd>Betting price will go down.</dd>
+<dt>Leverage</dt><dd>Borrowed money to amplify position size. 10× = $1 of margin controls $10 of asset.</dd>
+<dt>Liquidation</dt><dd>Forced closure of a leveraged position when collateral runs out.</dd>
+<dt>Margin</dt><dd>The collateral you post against a leveraged position.</dd>
+<dt>Stop loss</dt><dd>An order that closes a position when price hits a threshold to cap losses.</dd>
+<dt>Whale</dt><dd>An entity (person/fund) holding enough of an asset to move price by trading.</dd>
+<dt>Smart money</dt><dd>Wallets with a documented track record of profitable trades; worth following.</dd>
+<dt>Exchange inflow/outflow</dt><dd>Coins moving onto / off of exchanges. Inflow usually = selling intent.</dd>
+<dt>On-chain</dt><dd>Anything happening directly on the blockchain (vs. on a CEX's internal database).</dd>
+<dt>Off-chain</dt><dd>Inside an exchange's books; not visible publicly.</dd>
+<dt>Stablecoin</dt><dd>Token pegged to a fiat currency (USDT, USDC, DAI). The bridge between crypto and dollars.</dd>
+<dt>Alt / Altcoin</dt><dd>Any non-Bitcoin cryptocurrency.</dd>
+<dt>Market cap</dt><dd>Token price × circulating supply.</dd>
+<dt>FDV (Fully Diluted Valuation)</dt><dd>Token price × total supply if all tokens were unlocked. Often much higher than market cap.</dd>
+<dt>Sharpe ratio</dt><dd>Risk-adjusted return measure. >1 decent, >2 excellent.</dd>
+<dt>Alpha</dt><dd>Return in excess of a benchmark. The thing all of this is trying to generate.</dd>
+<dt>Beta</dt><dd>Sensitivity to a benchmark. Beta = 1 means moves with BTC 1:1.</dd>
+<dt>Drawdown</dt><dd>Peak-to-trough loss in capital. Max drawdown is the worst one.</dd>
+<dt>Backtest</dt><dd>Simulating a strategy on historical data.</dd>
+<dt>Walk-forward / OOS</dt><dd>Testing on data the model has never seen. The only test that matters.</dd>
+<dt>Overfitting</dt><dd>A model that fits past noise rather than real signal. Will fail live.</dd>
+<dt>Look-ahead bias</dt><dd>Accidentally using future information in a backtest. The most common bug.</dd>
+<dt>Edge</dt><dd>The statistical advantage over random.</dd>
+<dt>Hit rate</dt><dd>Fraction of trades that are profitable.</dd>
+<dt>Kelly criterion</dt><dd>Optimal bet sizing formula given known edge. Always use a fraction of it.</dd>
+<dt>Sentiment</dt><dd>Aggregated bullishness/bearishness, typically derived from social or news.</dd>
+<dt>HODL</dt><dd>Buy and never sell. A real strategy with surprisingly good long-term Sharpe in crypto.</dd>
+<dt>DeFi</dt><dd>Decentralised finance — lending, trading, derivatives on-chain via smart contracts.</dd>
+<dt>Gas</dt><dd>Transaction fee paid to the blockchain to process your transaction.</dd>
+<dt>Custody</dt><dd>Who controls the private keys. Self-custody = you do. Custodial = an exchange does.</dd>
+</dl>
+
+<!-- =========================================================== -->
+<h2 id="ch14"><span class="chap">CH 14</span>Final exam</h2>
+
+<p>Twelve questions across the whole curriculum. No retries. Be honest.</p>
+
+<div class="quiz" data-quiz>
+  <div class="q">
+    <p><strong>1.</strong> Which of these is NOT one of the three functions of money?</p>
+    <div class="opt" data-correct="false">Medium of exchange</div>
+    <div class="opt" data-correct="false">Unit of account</div>
+    <div class="opt" data-correct="false">Store of value</div>
+    <div class="opt" data-correct="true">Source of yield</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>2.</strong> A whale moves 5,000 BTC <em>off</em> Binance to a cold wallet. The most common interpretation is:</p>
+    <div class="opt" data-correct="true">Bullish — holder doesn't plan to sell soon</div>
+    <div class="opt" data-correct="false">Bearish — holder is preparing to sell</div>
+    <div class="opt" data-correct="false">Neutral</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>3.</strong> Spread on BTC/USDT is $0.10 on a $60,000 token. You round-trip 1 BTC. What's the cost in basis points (1 bp = 0.01%)?</p>
+    <div class="opt" data-correct="false">~10 bp</div>
+    <div class="opt" data-correct="true">~0.17 bp</div>
+    <div class="opt" data-correct="false">~1.7 bp</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>4.</strong> Perp funding rate is +0.08% per 8 hours. Annualised, this is roughly:</p>
+    <div class="opt" data-correct="false">~10%</div>
+    <div class="opt" data-correct="false">~30%</div>
+    <div class="opt" data-correct="true">~88%</div>
+    <div class="opt" data-correct="false">~300%</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>5.</strong> At 25× leverage, what % adverse move liquidates you?</p>
+    <div class="opt" data-correct="false">25%</div>
+    <div class="opt" data-correct="false">10%</div>
+    <div class="opt" data-correct="true">~4%</div>
+    <div class="opt" data-correct="false">~1%</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>6.</strong> A market maker primarily earns money from:</p>
+    <div class="opt" data-correct="false">Predicting direction</div>
+    <div class="opt" data-correct="true">Capturing the bid-ask spread on round trips</div>
+    <div class="opt" data-correct="false">Leverage</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>7.</strong> Five uncorrelated strategies each with Sharpe = 1.0 combine to a portfolio Sharpe of approximately:</p>
+    <div class="opt" data-correct="false">1.0</div>
+    <div class="opt" data-correct="false">5.0</div>
+    <div class="opt" data-correct="true">~2.2</div>
+    <div class="opt" data-correct="false">~3.5</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>8.</strong> Your backtest showed Sharpe 3.5. Live shows Sharpe 0.4. Most likely cause:</p>
+    <div class="opt" data-correct="false">Regime change</div>
+    <div class="opt" data-correct="true">Overfitting / data snooping</div>
+    <div class="opt" data-correct="false">Bad luck</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>9.</strong> Strategy wins 40% of the time, average win = 3×, average loss = 1×. Profit factor =</p>
+    <div class="opt" data-correct="false">0.75</div>
+    <div class="opt" data-correct="true">2.0</div>
+    <div class="opt" data-correct="false">1.2</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>10.</strong> Most quant firms use what fraction of full Kelly?</p>
+    <div class="opt" data-correct="false">2× Kelly</div>
+    <div class="opt" data-correct="false">Full Kelly</div>
+    <div class="opt" data-correct="true">0.25× – 0.5× Kelly</div>
+    <div class="opt" data-correct="false">Kelly is theoretical, no one uses it</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>11.</strong> Sonar's <em>3-tier-agree gate</em> primarily improves performance by:</p>
+    <div class="opt" data-correct="false">Boosting more signals to STRONG BUY</div>
+    <div class="opt" data-correct="true">Filtering out signals where the scoring tiers disagree (low-confidence noise)</div>
+    <div class="opt" data-correct="false">Changing how prices are scored</div>
+    <div class="feedback"></div>
+  </div>
+  <div class="q">
+    <p><strong>12.</strong> The single most important purpose of <code>snapshot_inputs JSONB</code> is:</p>
+    <div class="opt" data-correct="false">To make the UI faster</div>
+    <div class="opt" data-correct="false">To save Supabase storage</div>
+    <div class="opt" data-correct="true">To enable leak-free backtesting of new Families against past emissions</div>
+    <div class="feedback"></div>
+  </div>
+</div>
+
+<h3 style="margin-top:60px">What to read next</h3>
+<ul>
+  <li><strong>"Trading and Exchanges"</strong> — Larry Harris. The canonical market-microstructure textbook.</li>
+  <li><strong>"Advances in Financial Machine Learning"</strong> — Marcos López de Prado. Brutal on overfitting; essential.</li>
+  <li><strong>"Inside the Black Box"</strong> — Rishi Narang. Gentle intro to how quant firms actually run.</li>
+  <li><strong>Glassnode Academy</strong> — free, the best on-chain analytics primer.</li>
+  <li><strong>Your own codebase</strong>: <code>lib/signal-research/families.ts</code> is now your living textbook on Families.</li>
+</ul>
+
+<div class="box key" style="margin-top:40px">
+  <div class="label">Closing thought</div>
+  Most people who try to trade crypto are gambling without knowing it. The single skill that separates pros from retail is <strong>willingness to measure</strong>. Anyone can have an opinion. Almost no one writes the code to prove themselves wrong. You did this week. Keep doing it.
+</div>
+
+<p style="text-align:center; margin-top:60px; color:var(--text-dim); font-size:13px;">
+  Sonar Crypto Bootcamp v1.0 • Made for one specific person on May 24, 2026 • Press <kbd>Ctrl+P</kbd> → Save as PDF for the print edition.
+</p>
+
+</div>
+
+<!-- ============ scripts ============ -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script>
+  // Mermaid
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: isDark ? 'dark' : 'default',
+    themeVariables: { fontFamily: 'Inter, sans-serif' },
+    flowchart: { curve: 'basis', padding: 16 },
+    securityLevel: 'loose',
+  });
+
+  // KaTeX
+  document.addEventListener('DOMContentLoaded', () => {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+      ],
+      throwOnError: false,
+    });
+  });
+
+  // Quiz interactivity
+  document.querySelectorAll('[data-quiz]').forEach(quiz => {
+    quiz.querySelectorAll('.q').forEach(q => {
+      const opts = q.querySelectorAll('.opt');
+      const fb = q.querySelector('.feedback');
+      opts.forEach(opt => {
+        opt.addEventListener('click', () => {
+          if (q.dataset.answered) return;
+          q.dataset.answered = 'true';
+          const correct = opt.dataset.correct === 'true';
+          opt.classList.add(correct ? 'correct' : 'wrong');
+          if (!correct) {
+            opts.forEach(o => {
+              if (o.dataset.correct === 'true') o.classList.add('correct');
+            });
+          }
+          if (fb) fb.textContent = correct ? '✓ Correct.' : '✗ Not quite — the green option is right.';
+        });
+      });
+    });
+  });
+
+  // Reading progress bar
+  const prog = document.getElementById('prog');
+  document.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+    prog.style.width = pct + '%';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/orchestrator/fastWrites.test.ts [2m([22m[2m29 tests[22m[2m)[22m[90m 128[2mms[22m[39m
+stderr | test/memory/extractor.test.ts > extractMemoryFacts > returns insert_error when the supabase insert returns an error
+[orca/memory/extractor] insert error { message: 'rls denied' }
+
+ [32mÔ£ô[39m test/memory/extractor.test.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 177[2mms[22m[39m
+ [32mÔ£ô[39m test/signal-research/families.test.ts [2m([22m[2m31 tests[22m[2m)[22m[90m 151[2mms[22m[39m
+stderr | test/memory/personalization.test.ts > loadPersonalizationContext > swallows profile errors and still returns memories
+[orca/personalization] profile load failed Error: boom
+    at Object.maybeSingle (C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\test\memory\personalization.test.ts:119:48)
+    at Module.loadPersonalizationContext (C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\lib\orca\memory\personalization.ts:78:20)
+    at C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\test\memory\personalization.test.ts:172:23
+    at file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at runSuite (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:1205:15)
+
+stderr | test/memory/personalization.test.ts > loadPersonalizationContext > swallows memory errors and still returns profile
+[orca/personalization] memory load failed Error: boom
+    at Object.from (C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\test\memory\personalization.test.ts:128:30)
+    at Module.loadPersonalizationContext (C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\lib\orca\memory\personalization.ts:91:8)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\test\memory\personalization.test.ts:182:17
+    at file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/t-eduardos/OneDrive%20-%20Microsoft/Desktop/UI%20sonar/node_modules/@vitest/runner/dist/index.js:1271:3)
+
+ [31mÔØ»[39m test/memory/personalization.test.ts [2m([22m[2m14 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 277[2mms[22m[39m
+[31m   [31m├ù[31m buildPersonalizationBlock[2m > [22mdoes NOT contain buy/sell/hold imperatives or price-target words[90m 155[2mms[22m[31m[39m
+[31m     ÔåÆ expected '## user personalisation (additive conÔÇª' not to match /\bbuy\b/[39m
+ [32mÔ£ô[39m test/renderers/renderers.test.ts [2m([22m[2m32 tests[22m[2m)[22m[90m 127[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PersonalCopilotPanel.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 5790[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mseeds the first message with the experience-tuned greeting [33m373[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msends user input to /api/chat with the bearer token and renders the reply [33m2172[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msurfaces a quiet error line when the chat API returns non-OK [33m492[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mdoes not call the chat API when the user has no session [33m506[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msurfaces a timeout-specific message when the chat API returns 504 [33m1014[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22msurfaces a rate-limit message when the chat API returns 429 [33m372[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mrenders an actionable message when fetch itself rejects (no generic "Network error") [33m304[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PersonalCopilotPanel[2m > [22mforwards focusTicker into the request body when supplied [33m353[2mms[22m[39m
+ [32mÔ£ô[39m test/onboarding/OnboardingFlow.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 8176[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mrenders step 1 with the experience question and step counter [33m1020[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22madvances through all 5 steps and upserts the full profile on Finish [33m2323[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mmulti-select toggles values on the preferred_chains step [33m2361[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mshows an error message when the upsert fails [33m1549[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/watchlist.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 84[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/tools.w3.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 131[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/user_profile_and_copilot_memory.test.ts [2m([22m[2m31 tests[22m[2m)[22m[33m 432[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/runOrchestrator.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 238[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/signals.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 166[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/WalletsTab.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 7442[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mshows empty state when API returns no wallets [33m446[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mopens the add-wallet modal when Add is clicked [33m956[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mvalidates address shape before POSTing [33m806[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mPOSTs a wallet when the form is valid and refetches [33m4274[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mtwo-step delete: first click arms, second click DELETEs [33m444[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/tools.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 207[2mms[22m[39m
+ [32mÔ£ô[39m test/non-ticker-surface.test.ts [2m([22m[2m18 tests[22m[2m)[22m[90m 73[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PulseStrip.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 997[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PulseStrip[2m > [22mrenders all four tiles with empty states when watchlist is empty [33m436[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/FilteredSignalsPanel.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1243[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m FilteredSignalsPanel[2m > [22mshows the unauth state when no session [33m428[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m FilteredSignalsPanel[2m > [22mshows an error banner on non-ok response [33m383[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/MemoryClient.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 2747[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mshows the sign-in empty state when there is no session [33m791[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mlists facts returned by the API and renders the delete-all button [33m674[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mshows an error line when GET returns non-OK [33m406[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mdeleteOne calls DELETE with the id and removes the row on success [33m357[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mdelete-all requires confirmation modal and sends x-confirm-delete-all header [33m340[2mms[22m[39m
+ [32mÔ£ô[39m test/route-dispatch.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/WatchlistPanel.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 3547[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WatchlistPanel[2m > [22mshows the unauth state when there is no session [33m943[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WatchlistPanel[2m > [22mrenders one card per ticker with link to token page [33m1690[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WatchlistPanel[2m > [22mshows an error message when the API call fails [33m361[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/router-planner.w3.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 84[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/router.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+ [32mÔ£ô[39m test/renderers/renderers.w3.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 48[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/writeTools-canonical.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 69[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/planner.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 27[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/CopilotPane.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 3038[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CopilotPane[2m > [22mrenders the no-focus chip when focus is null [33m530[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CopilotPane[2m > [22mrenders the context chip when focus is supplied and X clears it [33m976[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CopilotPane[2m > [22mclicking a slash command seeds the copilot input [33m378[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CopilotPane[2m > [22mforwards a ticker focus into the chat request body as focus_ticker [33m978[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/Tray.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 2327[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Tray[2m > [22mclicking a button opens the matching drawer [33m978[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Tray[2m > [22mopening a second drawer closes the first [33m345[2mms[22m[39m
+ [32mÔ£ô[39m test/trading/TradingComingSoon.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 454[2mms[22m[39m
+ [32mÔ£ô[39m test/memory/route-html.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1038[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GET /api/orca/memory ÔÇö HTML negotiation[2m > [22mreturns the inline HTML landing when an unauthenticated browser asks for text/html [33m1003[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/contextFromPath.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 71[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/greetings.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 92[2mms[22m[39m
+ [32mÔ£ô[39m test/signal-research/metrics.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 79[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/suggestedChips.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 51[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/guardrails.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 43[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/user_wallets.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [2m[90mÔåô[39m[22m test/orca-live-router.test.ts [2m([22m[2m6 tests[22m[2m | [22m[33m6 skipped[39m[2m)[22m
+ [32mÔ£ô[39m test/smoke.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[90m 249[2mms[22m[39m
+ [32mÔ£ô[39m test/onboarding/useOnboardingGate.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/orca_traces.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 142[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/signal_research_results.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 20[2mms[22m[39m
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Tests 1 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
+
+ FAIL  test/memory/personalization.test.ts > buildPersonalizationBlock > does NOT contain buy/sell/hold imperatives or price-target words
+AssertionError: expected '## user personalisation (additive conÔÇª' not to match /\bbuy\b/
+
+- Expected: 
+/\bbuy\b/
+
++ Received: 
+"## user personalisation (additive context ÔÇö do not relax the hard rules below)
+
+calibrate to an advanced crypto user ÔÇö skip basic definitions, lead with the data. user trades on a long-term horizon (lead with 30d and macro context). user has an aggressive risk posture ÔÇö they have asked for blunt, dense data, no softening. user is here to follow live market structure.
+
+durable facts orca has learned from prior conversations with this user (paraphrased, pii-scrubbed):
+
+- user likes momentum signals
+
+use this context to calibrate tone, time-horizon emphasis, and chain coverage only. never use it to issue buy/sell/hold verbs, price targets, or directional forecasts ÔÇö the role, hard rules, what you can do, and response format sections below take absolute precedence."
+
+ ÔØ» test/memory/personalization.test.ts:97:35
+     95|     // hard rules are what enforce compliance, but the personalisation
+     96|     // block must never seed forbidden vocabulary.
+     97|     expect(out.toLowerCase()).not.toMatch(/\bbuy\b/)
+       |                                   ^
+     98|     expect(out.toLowerCase()).not.toMatch(/\bsell\b/)
+     99|     expect(out.toLowerCase()).not.toMatch(/\bhold\b/)
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/1]ÔÄ»
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m38 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (40)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m425 passed[39m[22m[2m | [22m[33m6 skipped[39m[90m (432)[39m
+[2m   Start at [22m 14:39:28
+[2m   Duration [22m 193.28s[2m (transform 16.29s, setup 353.13s, collect 71.77s, tests 40.09s, environment 690.34s, prepare 56.46s)[22m
+

@@ -1,0 +1,140 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/signal-research/families.test.ts [2m([22m[2m31 tests[22m[2m)[22m[90m 104[2mms[22m[39m
+stderr | test/memory/extractor.test.ts > extractMemoryFacts > returns insert_error when the supabase insert returns an error
+[orca/memory/extractor] insert error { message: 'rls denied' }
+
+ [32mÔ£ô[39m test/memory/extractor.test.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 78[2mms[22m[39m
+stderr | test/api/orca/sessions.test.ts > GET /api/orca/sessions > returns 500 with opaque error on db failure (no leak)
+[api/orca/sessions:GET] db error { message: 'inner detail' }
+
+stderr | test/api/orca/sessions.test.ts > POST /api/orca/sessions > returns 500 on insert failure (no leak)
+[api/orca/sessions:POST] db error { message: 'rls violation' }
+
+ [32mÔ£ô[39m test/api/orca/sessions.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 2430[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GET /api/orca/sessions[2m > [22mreturns 401 without a bearer token [33m1406[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GET /api/orca/sessions/[id][2m > [22mreturns 400 on invalid uuid [33m502[2mms[22m[39m
+ [32mÔ£ô[39m test/renderers/renderers.test.ts [2m([22m[2m32 tests[22m[2m)[22m[90m 130[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/fastWrite-integration.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 8112[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m runOrchestrator ÔÇö per-tool timeout (v4 ┬º5.2)[2m > [22mmarks a tool as failed when its registry executor never resolves [33m8029[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaConversation.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[33m 11551[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mrenders seedMessages on first paint and keeps them after re-render [33m396[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msends user input to /api/chat with the bearer token and renders the reply [33m1890[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mdoes not call the chat API when the user has no session [33m376[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a quiet error line when the chat API returns 500 [33m389[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a timeout message when the chat API returns 504 [33m352[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a rate-limit message when the chat API returns 429 [33m485[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mshows an actionable message when fetch itself rejects [33m411[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mforwards focus.ticker as focus_ticker in the request body [33m551[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mrenders Confirm + Cancel buttons when the orchestrator returns a confirm payload [33m879[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mConfirm click POSTs again with confirm.calls payload [33m1219[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mCancel click renders a "nothing was changed" message and does NOT re-POST [33m691[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22ma fresh user message clears any pending confirmation [33m1241[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up chips[2m > [22mrenders follow-up chips returned by the orchestrator [33m359[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up chips[2m > [22mclicking a follow-up chip submits it as the next message [33m555[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msources strip[2m > [22mrenders source pills when the response includes a sources array [33m481[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mmini variant maxTurns[2m > [22mcalls onPromote instead of POSTing when maxTurns is reached [33m868[2mms[22m[39m
+ [32mÔ£ô[39m test/onboarding/OnboardingFlow.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 7368[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mrenders step 1 with the experience question and step counter [33m1014[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22madvances through all 5 steps and upserts the full profile on Finish [33m2537[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mmulti-select toggles values on the preferred_chains step [33m1505[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OnboardingFlow[2m > [22mshows an error message when the upsert fails [33m1415[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/tools.w3.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 86[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/runOrchestrator.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 68[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaLauncher.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[33m 1722[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaLauncher ÔÇö UI[2m > [22mclicking the FAB opens the drawer state [33m673[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/WalletsTab.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 6052[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mopens the add-wallet modal when Add is clicked [33m1240[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mvalidates address shape before POSTing [33m991[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mPOSTs a wallet when the form is valid and refetches [33m2660[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WalletsTab[2m > [22mtwo-step delete: first click arms, second click DELETEs [33m318[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/watchlist.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 54[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/user_profile_and_copilot_memory.test.ts [2m([22m[2m31 tests[22m[2m)[22m[90m 97[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/signals.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 180[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/tools.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 69[2mms[22m[39m
+stderr | test/orca/OrcaMini.test.tsx > OrcaMini > renders the card, header and conversation atom
+Warning: An update to OrcaMini inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OrcaMini (C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\components\orca\OrcaMini.jsx:62:3)
+Warning: An update to OrcaMini inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at OrcaMini (C:\Users\t-eduardos\OneDrive - Microsoft\Desktop\UI sonar\components\orca\OrcaMini.jsx:62:3)
+
+ [32mÔ£ô[39m test/orca/OrcaMini.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 3374[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaMini[2m > [22mrenders the card, header and conversation atom [33m361[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaMini[2m > [22m"Open in Studio" pushes the router to /orca?session=<id> [33m752[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaMini[2m > [22mfalls back to /orca when no session was created [33m323[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaMini[2m > [22mpromotes to Studio when maxTurns is exceeded (via onPromote) [33m1816[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/FilteredSignalsPanel.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1363[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m FilteredSignalsPanel[2m > [22mshows the unauth state when no session [33m360[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m FilteredSignalsPanel[2m > [22mshows an error banner on non-ok response [33m369[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/SessionList.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1450[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m SessionList[2m > [22mrenders empty state when API returns no sessions [33m400[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m SessionList[2m > [22mcalls onSelect when a row is clicked [33m590[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/MemoryClient.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 2887[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mshows the sign-in empty state when there is no session [33m484[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mlists facts returned by the API and renders the delete-all button [33m747[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mshows an error line when GET returns non-OK [33m491[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mdeleteOne calls DELETE with the id and removes the row on success [33m442[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mdelete-all requires confirmation modal and sends x-confirm-delete-all header [33m491[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/PulseStrip.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1032[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PulseStrip[2m > [22mrenders all four tiles with empty states when watchlist is empty [33m514[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaStudioClient.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 4006[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mrenders the empty state when no session is selected [33m950[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mrenders the conversation when ?session= is in the URL [33m589[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mclicking Start creates a new session and updates the URL [33m1549[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaStudioClient[2m > [22mselecting a session from the list updates the URL [33m858[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/ToolInspector.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 819[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m ToolInspector[2m > [22mshows the empty hint when no session is selected [33m306[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/fastWrites.test.ts [2m([22m[2m34 tests[22m[2m)[22m[90m 101[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/router-planner.w3.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 70[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/router.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 94[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/WatchlistPanel.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 999[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WatchlistPanel[2m > [22mshows the unauth state when there is no session [33m392[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m WatchlistPanel[2m > [22mrenders one card per ticker with link to token page [33m417[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/useOrcaDrawer.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[90m 287[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/orca_sessions.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 49[2mms[22m[39m
+ [32mÔ£ô[39m test/renderers/renderers.w3.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 64[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaDrawer.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 2538[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaDrawer[2m > [22mrenders the panel with Pin and Close controls after open() [33m905[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaDrawer[2m > [22mClose button closes the drawer (data-open=false) [33m903[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaDrawer[2m > [22mPin button toggles the pinned state and aria-pressed reflects it [33m323[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/planner.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 51[2mms[22m[39m
+ [32mÔ£ô[39m test/memory/route-html.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1075[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m GET /api/orca/memory ÔÇö HTML negotiation[2m > [22mreturns the inline HTML landing when an unauthenticated browser asks for text/html [33m1042[2mms[22m[39m
+ [32mÔ£ô[39m test/trading/TradingComingSoon.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 615[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m TradingComingSoon[2m > [22mrenders the exact regulatory disclaimer string verbatim [33m360[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/useOrcaContext.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 56[2mms[22m[39m
+ [32mÔ£ô[39m test/personal/greetings.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32mÔ£ô[39m test/signal-research/metrics.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 36[2mms[22m[39m
+ [32mÔ£ô[39m test/orchestrator/guardrails.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 40[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/user_wallets.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+ [32mÔ£ô[39m test/smoke.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[90m 248[2mms[22m[39m
+ [32mÔ£ô[39m test/onboarding/useOnboardingGate.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 110[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/signal_research_results.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 57[2mms[22m[39m
+ [32mÔ£ô[39m test/migrations/orca_traces.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/SonarPulse.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 346[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m43 passed[39m[22m[90m (43)[39m
+[2m      Tests [22m [1m[32m465 passed[39m[22m[90m (465)[39m
+[2m   Start at [22m 13:52:12
+[2m   Duration [22m 253.37s[2m (transform 30.10s, setup 396.73s, collect 90.68s, tests 59.94s, environment 867.57s, prepare 105.68s)[22m
+

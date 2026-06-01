@@ -1,0 +1,16 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/personal/MemoryClient.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 3980[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mshows the sign-in empty state when there is no session [33m695[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mlists facts returned by the API and renders the delete-all button [33m860[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mshows an error line when GET returns non-OK [33m719[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mdeleteOne calls DELETE with the id and removes the row on success [33m799[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m MemoryClient[2m > [22mdelete-all requires confirmation modal and sends x-confirm-delete-all header [33m534[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 19:10:42
+[2m   Duration [22m 19.90s[2m (transform 717ms, setup 3.70s, collect 2.85s, tests 3.98s, environment 5.75s, prepare 1.29s)[22m
+

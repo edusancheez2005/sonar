@@ -18,6 +18,7 @@ import styled, { keyframes } from 'styled-components'
 import { useSearchParams } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { OrcaMarkdown } from '@/components/orca/inline/OrcaMarkdown'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
 import { getSuggestedChips } from '@/lib/orca/suggestedChips'
@@ -843,9 +844,7 @@ export default function AskOrcaClient({
                     </ConfirmCard>
                   ) : (
                     <>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {m.content || ''}
-                      </ReactMarkdown>
+                      <OrcaMarkdown>{m.content || ''}</OrcaMarkdown>
                       {m.data?.price && <TokenDataCard message={m} />}
                     </>
                   )}

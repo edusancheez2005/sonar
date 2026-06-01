@@ -1,0 +1,31 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/t-eduardos/OneDrive - Microsoft/Desktop/UI sonar[39m
+
+ [32mÔ£ô[39m test/orca/useOrcaDrawer.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 479[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/SonarPulse.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 426[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/useOrcaContext.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 86[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaDrawer.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1521[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaDrawer[2m > [22mrenders the panel with Pin and Close controls after open() [33m394[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaDrawer[2m > [22mClose button closes the drawer (data-open=false) [33m583[2mms[22m[39m
+ [32mÔ£ô[39m test/orca/OrcaConversation.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[33m 9283[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mrenders seedMessages on first paint and keeps them after re-render [33m429[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msends user input to /api/chat with the bearer token and renders the reply [33m1871[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mdoes not call the chat API when the user has no session [33m323[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a quiet error line when the chat API returns 500 [33m342[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22msurfaces a timeout message when the chat API returns 504 [33m331[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mshows an actionable message when fetch itself rejects [33m333[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mforwards focus.ticker as focus_ticker in the request body [33m383[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mrenders Confirm + Cancel buttons when the orchestrator returns a confirm payload [33m885[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mConfirm click POSTs again with confirm.calls payload [33m770[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22mCancel click renders a "nothing was changed" message and does NOT re-POST [33m532[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mtwo-trip confirmation (v4 ┬º5.3)[2m > [22ma fresh user message clears any pending confirmation [33m894[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up chips[2m > [22mrenders follow-up chips returned by the orchestrator [33m312[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mfollow-up chips[2m > [22mclicking a follow-up chip submits it as the next message [33m401[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m OrcaConversation ÔÇö atom[2m > [22mmini variant maxTurns[2m > [22mcalls onPromote instead of POSTing when maxTurns is reached [33m609[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m47 passed[39m[22m[90m (47)[39m
+[2m   Start at [22m 12:30:32
+[2m   Duration [22m 50.29s[2m (transform 4.11s, setup 53.04s, collect 13.55s, tests 11.80s, environment 118.55s, prepare 3.81s)[22m
+

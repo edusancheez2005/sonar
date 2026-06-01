@@ -7,6 +7,7 @@
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
 import { formatProfileBlock, formatToolBlock } from './shared'
 import type { RenderArgs } from './types'
+import { INLINE_CHART_DIRECTIVE } from './inline-chart-directive'
 
 export function renderWalletLookupPrompt(args: RenderArgs): string {
   return `You are ORCA. The user is asking about one or more wallets / addresses. Stay descriptive.
@@ -21,6 +22,8 @@ INSTRUCTIONS:
 - DO NOT name a price target, predict price impact, or recommend any action.
 - If no wallet data is available, say so plainly in one line and stop \u2014 do not pad.
 - Append the mandatory disclaimer exactly once at the very end.
+
+${INLINE_CHART_DIRECTIVE}
 
 ${formatProfileBlock(args.profile)}
 ${formatToolBlock(args.toolResults)}

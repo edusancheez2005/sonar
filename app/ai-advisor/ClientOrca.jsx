@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { OrcaMarkdown } from '@/components/orca/inline/OrcaMarkdown'
 import OrcaWelcome from './OrcaWelcome'
 import { useSearchParams } from 'next/navigation'
 import TokenIcon from '@/components/TokenIcon'
@@ -1212,9 +1213,7 @@ export default function ClientOrca() {
                       }
                       return (
                         <>
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {body}
-                          </ReactMarkdown>
+                          <OrcaMarkdown>{body}</OrcaMarkdown>
                           {disclaimer && (
                             <p style={{
                               marginTop: '0.6rem',

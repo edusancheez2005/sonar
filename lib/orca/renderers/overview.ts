@@ -16,6 +16,7 @@
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
 import type { RenderArgs } from './types'
 import { formatProfileBlock, formatToolBlock } from './shared'
+import { INLINE_CHART_DIRECTIVE } from './inline-chart-directive'
 
 const OVERVIEW_RESPONSE_FORMAT = `## RESPONSE FORMAT
 
@@ -110,6 +111,8 @@ User experience level: ${experience}. ${lengthHint} Never strip data sections to
 4. Use markdown bulleted lists ("- " prefix) for any enumeration of 3+ items.
 5. Never recycle the same explanatory sentence across sections.
 6. Append the mandatory disclaimer exactly once at the end.${offerLine}
+
+${INLINE_CHART_DIRECTIVE}
 
 ${formatProfileBlock(args.profile)}
 ${formatToolBlock(args.toolResults)}
