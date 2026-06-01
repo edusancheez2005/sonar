@@ -8,11 +8,14 @@
 import type { SupabaseLike, ToolCall, ToolName, ToolResult } from '../types'
 import { run as runGetPrice } from './getPrice'
 import { run as runGetWhaleFlows } from './getWhaleFlows'
+import { run as runGetTrendingWhales } from './getTrendingWhales'
 import { run as runGetNews } from './getNews'
+import { run as runGetTrendingNews } from './getTrendingNews'
 import { run as runGetSocial } from './getSocial'
 import { run as runGetTrendingSocial } from './getTrendingSocial'
 import { run as runExplainMacroFactor } from './explainMacroFactor'
 import { run as runGetWalletActivity } from './getWalletActivity'
+import { run as runGetMostActiveWallets } from './getMostActiveWallets'
 import { run as runGetArticleContext } from './getArticleContext'
 import { run as runGetSignalContext } from './getSignalContext'
 import { run as runFindTrackedWallets } from './findTrackedWallets'
@@ -30,7 +33,9 @@ import {
 export const READ_ONLY_TOOLS = new Set<ToolName>([
   'getPrice',
   'getWhaleFlows',
+  'getTrendingWhales',
   'getNews',
+  'getTrendingNews',
   'getSocial',
   'getTrendingSocial',
   'getUserHoldings',
@@ -39,6 +44,7 @@ export const READ_ONLY_TOOLS = new Set<ToolName>([
   'explainMacroFactor',
   'getOrcaMemory',
   'getWalletActivity',
+  'getMostActiveWallets',
   'getArticleContext',
   'getSignalContext',
   'findTrackedWallets',
@@ -54,8 +60,12 @@ export async function executeTool(
       return runGetPrice(call.args as any, supabase, now)
     case 'getWhaleFlows':
       return runGetWhaleFlows(call.args as any, supabase, now)
+    case 'getTrendingWhales':
+      return runGetTrendingWhales(call.args as any, supabase, now)
     case 'getNews':
       return runGetNews(call.args as any, supabase, now)
+    case 'getTrendingNews':
+      return runGetTrendingNews(call.args as any, supabase, now)
     case 'getSocial':
       return runGetSocial(call.args as any, supabase, now)
     case 'getTrendingSocial':
@@ -70,6 +80,8 @@ export async function executeTool(
       return runExplainMacroFactor(call.args as any, supabase, now)
     case 'getWalletActivity':
       return runGetWalletActivity(call.args as any, supabase, now)
+    case 'getMostActiveWallets':
+      return runGetMostActiveWallets(call.args as any, supabase, now)
     case 'getArticleContext':
       return runGetArticleContext(call.args as any, supabase, now)
     case 'getSignalContext':

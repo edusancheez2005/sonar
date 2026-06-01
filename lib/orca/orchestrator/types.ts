@@ -52,7 +52,9 @@ export interface RouterInput {
 export type ToolName =
   | 'getPrice'
   | 'getWhaleFlows'
+  | 'getTrendingWhales'
   | 'getNews'
+  | 'getTrendingNews'
   | 'getSocial'
   | 'getTrendingSocial'
   | 'getUserHoldings'
@@ -62,6 +64,7 @@ export type ToolName =
   | 'getOrcaMemory'
   // W3 — agentic read-only tools.
   | 'getWalletActivity'
+  | 'getMostActiveWallets'
   | 'getArticleContext'
   | 'getSignalContext'
   | 'findTrackedWallets'
@@ -100,6 +103,12 @@ export interface PlannerInput {
   router: RouterDecision
   profile: UserProfileSnapshot | null
   userId: string
+  /**
+   * Raw user message — exposed so the planner can pull lightweight hints
+   * (e.g. "this week" → 7d window for getTrendingWhales) without re-running
+   * the router.
+   */
+  message?: string
   /**
    * Set to true by the client when the user has explicitly confirmed an
    * action ORCA offered (e.g. clicked "Yes, add SOL to my watchlist").

@@ -37,6 +37,21 @@ Intent guidance:
 - article_explain: user references a specific news article and asks ORCA to explain or contextualise it ("explain this headline", "what does this article mean for BTC").
 - signal_explain: user asks ORCA to explain a specific Sonar signal ("why is SOL flagged STRONG BUY", "explain the current signal on ETH"). Put the ticker in tickers[].
 
+Datapoint guidance — ALWAYS populate datapoints[] with every surface the question touches, even when no ticker is named. The downstream pipeline has market-wide tools for each surface, so a question with no ticker still needs the right datapoint(s):
+- "whales": any mention of whales, whale moves/activity/flows, big buyers/sellers, smart money, large transactions, accumulation/distribution. Emit "whales" even without a ticker ("top whale moves this week" → datapoints:["whales"], tickers:[]).
+- "social": social momentum, trending, hype, hot tokens, buzz, sentiment, what people are talking about ("which tokens are hot by social momentum?" → datapoints:["social"], tickers:[]).
+- "news": latest news, headlines, what happened, any news/announcements/articles ("any big crypto news today?" → datapoints:["news"], tickers:[]).
+- "price": price, volume, market cap, open interest.
+- "macro": rates, CPI, Fed, macro environment, ETF flows.
+- "portfolio": the user's own holdings/watchlist (also set intent "personal").
+
+Examples (no ticker, still classify confidently):
+- "what are the top whale moves this week?" → {"intent":"data_query","tickers":[],"entities":[],"datapoints":["whales"],"confidence":0.9}
+- "which tokens are hot right now by social momentum?" → {"intent":"data_query","tickers":[],"entities":[],"datapoints":["social"],"confidence":0.9}
+- "what's the latest crypto news?" → {"intent":"data_query","tickers":[],"entities":[],"datapoints":["news"],"confidence":0.9}
+- "tell me about the wallet with the most transactions today" → {"intent":"wallet_lookup","tickers":[],"entities":[],"datapoints":["whales"],"confidence":0.9}
+- "what's happening in crypto right now?" → {"intent":"overview","tickers":[],"entities":[],"datapoints":["whales","social","news"],"confidence":0.8}
+
 Return ONLY the JSON object. No prose, no markdown.`
 
 /**

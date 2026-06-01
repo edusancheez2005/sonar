@@ -104,6 +104,52 @@ export function planToolCalls(input: PlannerInput): ToolCall[] {
     calls.push({ tool: 'getTrendingSocial', args: {} })
   }
 
+  // Market-wide whale flows ("top whale moves this week"). Mirrors the social
+  // case: getWhaleFlows is per-ticker, so without a ticker we fan in the
+  // market-wide leaderboard. Time-window hint is parsed from the raw message
+  // (today / week / month) and defaults to 7d.
+  if (input.router.datapoints.includes('whales') && tickers.length === 0) {
+    wanted.delete('getWhaleFlows')
+    calls.push({
+      tool: 'getTrendingWhales',
+      args: { window: detectTimeWindow(input.message) },
+    })
+  }
+
+  // Market-wide news ("what's the latest crypto news?"). getNews is
+  // per-ticker and returns invalid_ticker without one, so fan in the
+  // market-wide latest-headlines tool when no ticker was named.
+  if (input.router.datapoints.includes('news') && tickers.length === 0) {
+    wanted.delete('getNews')
+    calls.push({ tool: 'getTrendingNews', args: {} })
+  }
+
+  // Bare market-overview question ("what's happening in crypto right now")
+  // with no ticker and no explicit datapoint — surface both leaderboards so
+  // the writer has something concrete to talk about instead of "no data".
+  if (
+    input.router.intent === 'overview' &&
+    tickers.length === 0 &&
+    input.router.datapoints.length === 0
+  ) {
+    if (!calls.some((c) => c.tool === 'getTrendingWhales')) {
+      calls.push({
+        tool: 'getTrendingWhales',
+        args: { window: detectTimeWindow(input.message) },
+      })
+    }
+    if (!calls.some((c) => c.tool === 'getTrendingSocial')) {
+      calls.push({ tool: 'getTrendingSocial', args: {} })
+    }
+    if (!calls.some((c) => c.tool === 'getTrendingNews')) {
+      calls.push({ tool: 'getTrendingNews', args: {} })
+    }
+    // Drop the per-ticker overview defaults — they'd all be no-ops.
+    wanted.delete('getPrice')
+    wanted.delete('getWhaleFlows')
+    wanted.delete('getNews')
+  }
+
   for (const tool of wanted) {
     if (WRITE_TOOLS.has(tool)) continue // write-tools must be opted-in explicitly
     if (PER_TICKER_TOOLS.has(tool)) {
@@ -137,6 +183,21 @@ export function planToolCalls(input: PlannerInput): ToolCall[] {
 /** Exposed for the route handler when it needs to schedule an authorised write. */
 export function isWriteTool(tool: ToolName): boolean {
   return WRITE_TOOLS.has(tool)
+}
+
+/**
+ * Pull a coarse time-window hint out of the raw user message. Returns one of
+ * the windows the getTrendingWhales tool understands ('24h' | '7d' | '30d').
+ * Defaults to '7d' — the "top whale moves this week" prompt is the most
+ * common no-ticker whale query in production.
+ */
+function detectTimeWindow(message: string | undefined): '24h' | '7d' | '30d' {
+  if (!message) return '7d'
+  const m = message.toLowerCase()
+  if (/\b(today|24h|24 hours?|last day|past day|1d)\b/.test(m)) return '24h'
+  if (/\b(this month|past month|last month|30d|30 days?)\b/.test(m)) return '30d'
+  if (/\b(this week|past week|last week|7d|7 days?|week)\b/.test(m)) return '7d'
+  return '7d'
 }
 
 // =============================================================================
@@ -182,13 +243,36 @@ function planWalletLookup(input: PlannerInput): ToolCall[] {
     })
   }
   if (calls.length === 0) {
-    // Nothing actionable; fall back to listing the user's wallets.
-    calls.push({
-      tool: 'findTrackedWallets',
-      args: { query: input.router.tickers[0] ?? 'wallet', userId: input.userId },
-    })
+    // No specific address or label was extracted. If the user asked about the
+    // "most active" / "biggest" / "top" wallet market-wide, answer with the
+    // wallet leaderboard instead of a junk free-text search. Otherwise fall
+    // back to listing the user's own tracked wallets.
+    if (mentionsMostActiveWallet(input.message)) {
+      calls.push({
+        tool: 'getMostActiveWallets',
+        args: { window: detectTimeWindow(input.message) },
+      })
+    } else {
+      calls.push({
+        tool: 'findTrackedWallets',
+        args: { query: input.router.tickers[0] ?? 'wallet', userId: input.userId },
+      })
+    }
   }
   return calls
+}
+
+/**
+ * Detect "which wallet is most active / has the most transactions / is the
+ * biggest mover" style questions — market-wide wallet ranking with no address.
+ */
+function mentionsMostActiveWallet(message: string | undefined): boolean {
+  if (!message) return false
+  const m = message.toLowerCase()
+  if (!/\b(wallet|address|trader|whale)s?\b/.test(m)) return false
+  return /\b(most active|most transactions?|most trades?|biggest|largest|top|busiest|highest volume|most aggressive)\b/.test(
+    m
+  )
 }
 
 function planArticleExplain(input: PlannerInput): ToolCall[] {

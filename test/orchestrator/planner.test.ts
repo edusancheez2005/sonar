@@ -34,13 +34,17 @@ describe('planToolCalls', () => {
     expect(priceCalls.map((c) => c.args.ticker)).toEqual(['BTC', 'ETH', 'SOL'])
   })
 
-  it('skips per-ticker tools when no tickers are present', () => {
+  it('falls back to market-wide leaderboards on bare overview with no ticker', () => {
     const calls = planToolCalls({
-      router: decision({ intent: 'overview', tickers: [] }),
+      router: decision({ intent: 'overview', tickers: [], datapoints: [] }),
       profile: null,
       userId: 'u1',
     })
-    expect(calls).toEqual([])
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getTrendingWhales')
+    expect(tools).toContain('getTrendingSocial')
+    expect(tools).not.toContain('getPrice')
+    expect(tools).not.toContain('getWhaleFlows')
   })
 
   it('emits user-scoped tools for personal intent', () => {
@@ -91,6 +95,103 @@ describe('planToolCalls', () => {
     const tools = calls.map((c) => c.tool)
     expect(tools).toContain('getSocial')
     expect(tools).not.toContain('getTrendingSocial')
+  })
+
+  it('plans getTrendingWhales for a no-ticker whales request', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'data_query', tickers: [], datapoints: ['whales'] }),
+      profile: null,
+      userId: 'u1',
+      message: 'top whale moves this week',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getTrendingWhales')
+    expect(tools).not.toContain('getWhaleFlows')
+    const whaleCall = calls.find((c) => c.tool === 'getTrendingWhales')!
+    expect(whaleCall.args.window).toBe('7d')
+  })
+
+  it('uses per-ticker getWhaleFlows (not trending) when a ticker is present', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'overview', tickers: ['BTC'], datapoints: ['whales'] }),
+      profile: null,
+      userId: 'u1',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getWhaleFlows')
+    expect(tools).not.toContain('getTrendingWhales')
+  })
+
+  it('detects 24h window hint from message text', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'data_query', tickers: [], datapoints: ['whales'] }),
+      profile: null,
+      userId: 'u1',
+      message: 'largest whale moves today',
+    })
+    const whaleCall = calls.find((c) => c.tool === 'getTrendingWhales')!
+    expect(whaleCall.args.window).toBe('24h')
+  })
+
+  it('plans getTrendingNews for a no-ticker news request', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'data_query', tickers: [], datapoints: ['news'] }),
+      profile: null,
+      userId: 'u1',
+      message: "what's the latest crypto news?",
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getTrendingNews')
+    expect(tools).not.toContain('getNews')
+  })
+
+  it('uses per-ticker getNews (not trending) when a ticker is present', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'data_query', tickers: ['BTC'], datapoints: ['news'] }),
+      profile: null,
+      userId: 'u1',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getNews')
+    expect(tools).not.toContain('getTrendingNews')
+  })
+
+  it('bare overview includes trending news alongside whales and social', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'overview', tickers: [], datapoints: [] }),
+      profile: null,
+      userId: 'u1',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getTrendingWhales')
+    expect(tools).toContain('getTrendingSocial')
+    expect(tools).toContain('getTrendingNews')
+  })
+
+  it('routes "most active wallet today" to getMostActiveWallets', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'wallet_lookup', tickers: [], entities: [] }),
+      profile: null,
+      userId: 'u1',
+      message: 'tell me about the wallet with the most transactions today',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getMostActiveWallets')
+    expect(tools).not.toContain('findTrackedWallets')
+    const w = calls.find((c) => c.tool === 'getMostActiveWallets')!
+    expect(w.args.window).toBe('24h')
+  })
+
+  it('wallet_lookup with no entities and no "most active" hint falls back to findTrackedWallets', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'wallet_lookup', tickers: [], entities: [] }),
+      profile: null,
+      userId: 'u1',
+      message: 'show me a wallet',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('findTrackedWallets')
+    expect(tools).not.toContain('getMostActiveWallets')
   })
 
   it('never schedules a write-tool, even when userConfirmed is true', () => {

@@ -81,6 +81,7 @@ export async function runOrchestrator(
     router,
     profile: input.profile,
     userId: input.userId,
+    message: input.message,
     userConfirmed: input.userConfirmed,
   })
   const writeCalls = input.userConfirmed

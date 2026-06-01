@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { run as runGetTrendingSocial } from '@/lib/orca/orchestrator/tools/getTrendingSocial'
+import { __clearTrendingCacheForTests } from '@/lib/social/trendingCoins'
 
 const now = () => new Date('2026-06-01T00:00:00Z')
 const noopSupabase = {} as any
@@ -17,6 +18,9 @@ function fakeFetch(body: any, ok = true, status = 200): typeof fetch {
 const ORIGINAL_KEY = process.env.LUNARCRUSH_API_KEY
 
 describe('getTrendingSocial', () => {
+  beforeEach(() => {
+    __clearTrendingCacheForTests()
+  })
   it('returns lunarcrush_unconfigured when no API key', async () => {
     delete process.env.LUNARCRUSH_API_KEY
     const r = await runGetTrendingSocial({}, noopSupabase, now, fakeFetch({ data: [] }))

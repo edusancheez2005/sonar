@@ -18,6 +18,7 @@ INSTRUCTIONS:
 - For each wallet covered by the TOOL RESULTS block, write a short paragraph that names the wallet (label if known, otherwise short address), states the chain, and reports the last-24h tx count, the net USD flow (frame as inflow / outflow), and the tokens touched.
 - If a wallet has a known label from \`tracked_address_universe\` (exchange, market maker, fund), use that label and frame the activity as observed flow at that named entity.
 - If \`findTrackedWallets\` returned matches, list them as a markdown bulleted list with the user's label (when present) and chain, so the user can pick one to dig into next.
+- If \`getMostActiveWallets\` returned data, present a ranked markdown list of the most active wallets over the window (short address, transaction count, net USD inflow/outflow, top tokens touched). Lead with the busiest wallet.
 - DO NOT speculate on the wallet's intent, identity, motivation, or what they "are planning to do".
 - DO NOT name a price target, predict price impact, or recommend any action.
 - If no wallet data is available, say so plainly in one line and stop \u2014 do not pad.
