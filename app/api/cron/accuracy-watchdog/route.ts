@@ -53,21 +53,23 @@ const CUSUM_H = 5.0  // alert when |cumulative deviation| crosses 5σ
 const CUSUM_LOOKBACK = 56  // ~14 days @ 6h/sample
 
 // ─── Per-direction circuit breaker (added 2026-05-04 evening) ────────────
-// When BUY (or SELL) accuracy collapses on the trailing 6h window, the
-// watchdog flips a row in `signal_circuit_breaker`. /api/cron/compute-signals
-// reads it and downgrades matching outputs to NEUTRAL before they're emitted
-// to users. Breaker auto-clears once accuracy mean-reverts.
-//
-// Thresholds tuned from the 2026-05-04 BUY collapse: BUY ran at ~15-25%
-// accuracy for 8+ consecutive hourly buckets. SUPPRESS at <35% with n>=25
-// is still well past noise (binomial p<0.05 vs 50% coinflip at n=25, p<0.01
-// at n>=30). CLEAR at >=45% leaves a 10pp hysteresis band to prevent flapping.
-// 2026-05-06: lowered MIN_SAMPLES 40→25 and SUPPRESS 30→35 after May 6 BUY
-// regression sat at 5.1% on n=39 for 6h without tripping (n was 1 short of 40).
 const BREAKER_LOOKBACK_HOURS = 6
 const BREAKER_MIN_SAMPLES = 25
 const BREAKER_SUPPRESS_PCT = 35
 const BREAKER_CLEAR_PCT = 45
+
+// ─── Time-valve backstop (added 2026-06-01) ────────────────────────────
+// After SHADOW grading was added, the breaker clear path normally measures
+// against shadow rows. But if shadow data is sparse or noisy and a breaker
+// has been latched for >TIME_VALVE_HOURS while shadow accuracy is at least
+// borderline-acceptable, force-release at half confidence (post-clear cap).
+// Gated behind BREAKER_TIME_VALVE=on; default off until shadow data has
+// stabilised for the operator-watched grace period.
+const TIME_VALVE_HOURS = 72
+const TIME_VALVE_MIN_SHADOW_ACC_PCT = 40
+const TIME_VALVE_MIN_SHADOW_N = 15
+const POST_CLEAR_CAP_HOURS = 6
+const STALE_BREAKER_WARN_HOURS = 48
 
 function shareOf(rows, type) {
   if (!rows.length) return 0
@@ -156,9 +158,13 @@ export async function GET(req) {
     const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
 
     // Pull the trailing 7d outcomes once; slice for 24h in JS.
+    // 2026-06-01: also pull `shadow` so we can split live-only (headline)
+    // from union (breaker) downstream. Headline accuracy stays user-facing
+    // and excludes shadow; breaker clear-logic reads union so the dead-lock
+    // diagnosed in SIGNAL_REMEDIATION_2026-06-01_PROMPT.md cannot recur.
     const { data: rows7d, error } = await supabaseAdmin
       .from('signal_outcomes')
-      .select('signal_type, correct, signal_time')
+      .select('signal_type, correct, signal_time, shadow')
       .gte('signal_time', sevenDaysAgo)
       .limit(20000)
 
@@ -168,20 +174,27 @@ export async function GET(req) {
 
     const rows1d = (rows7d || []).filter(r => r.signal_time >= oneDayAgo)
 
-    const acc1d = accuracyOf(rows1d)
-    const acc7d = accuracyOf(rows7d || [])
+    // Live-only slices for headline metrics + distribution (shadow rows
+    // would inflate counts and skew the user-visible numbers).
+    const liveRows1d = rows1d.filter(r => !r.shadow)
+    const liveRows7d = (rows7d || []).filter(r => !r.shadow)
+
+    const acc1d = accuracyOf(liveRows1d)
+    const acc7d = accuracyOf(liveRows7d)
 
     // Distribution shares (computed on ALL rows, not just directional, so
     // we pick up a shift in NEUTRAL share too).
+    // Live-only: shadow rows have signal_type=BUY/SELL by construction,
+    // which would mask any real BUY/SELL drought from the dashboards.
     const dist1d = {
-      buy: buyShare(rows1d),
-      sell: sellShare(rows1d),
-      neutral: neutralShare(rows1d),
+      buy: buyShare(liveRows1d),
+      sell: sellShare(liveRows1d),
+      neutral: neutralShare(liveRows1d),
     }
     const dist7d = {
-      buy: buyShare(rows7d || []),
-      sell: sellShare(rows7d || []),
-      neutral: neutralShare(rows7d || []),
+      buy: buyShare(liveRows7d),
+      sell: sellShare(liveRows7d),
+      neutral: neutralShare(liveRows7d),
     }
 
     const accDelta = acc1d.pct - acc7d.pct
@@ -250,32 +263,43 @@ export async function GET(req) {
     }
 
     // ─── Circuit breaker per direction ───────────────────────────────────
-    // Compute trailing 6h accuracy for BUY / SELL families and compare to
-    // the suppress / clear thresholds. Read the existing breaker state so
-    // we only flip on real transitions (and so a still-active breaker that
-    // hasn't recovered stays active without rewriting timestamps).
+    // 2026-06-01: clear-logic now reads UNION of live + shadow outcomes
+    // (rowsBreakerWindow includes shadow rows). This is the dead-lock fix:
+    // a suppressed direction still gets graded via the shadow path so the
+    // clear condition stays measurable. Headline metrics above stay live-only.
     const breakerCutoff = new Date(now - BREAKER_LOOKBACK_HOURS * 60 * 60 * 1000).toISOString()
     const rowsBreakerWindow = (rows7d || []).filter(r => r.signal_time >= breakerCutoff)
     const buy6h = directionAccuracy(rowsBreakerWindow, 'BUY')
     const sell6h = directionAccuracy(rowsBreakerWindow, 'SELL')
 
+    // Shadow-only slices for the time-valve check (it should only fire when
+    // there's enough SHADOW evidence; we don't want a 6h live blip to
+    // release a 72h-old breaker).
+    const shadowBreakerWindow = rowsBreakerWindow.filter(r => r.shadow)
+    const shadowBuy = directionAccuracy(shadowBreakerWindow, 'BUY')
+    const shadowSell = directionAccuracy(shadowBreakerWindow, 'SELL')
+
     const { data: breakerCurrent } = await supabaseAdmin
       .from('signal_circuit_breaker')
-      .select('signal_type, active, triggered_at')
-    const breakerState: Record<string, { active: boolean; triggered_at: string | null }> = {}
+      .select('signal_type, active, triggered_at, confidence_cap_until')
+    const breakerState: Record<string, { active: boolean; triggered_at: string | null; confidence_cap_until: string | null }> = {}
     for (const row of breakerCurrent || []) {
       breakerState[row.signal_type] = {
         active: !!row.active,
         triggered_at: row.triggered_at,
+        confidence_cap_until: row.confidence_cap_until ?? null,
       }
     }
 
-    const breakerOutcome: Record<string, { active: boolean; transition: string | null; pct: number; n: number }> = {}
+    const breakerOutcome: Record<string, { active: boolean; transition: string | null; pct: number; n: number; shadow_pct?: number; shadow_n?: number }> = {}
+    const timeValveOn = process.env.BREAKER_TIME_VALVE === 'on'
     for (const family of ['BUY', 'SELL'] as const) {
       const m = family === 'BUY' ? buy6h : sell6h
-      const cur = breakerState[family] || { active: false, triggered_at: null }
+      const shadowM = family === 'BUY' ? shadowBuy : shadowSell
+      const cur = breakerState[family] || { active: false, triggered_at: null, confidence_cap_until: null }
       let nextActive = cur.active
       let transition: string | null = null
+      let releaseReason: 'standard' | 'time_valve' | null = null
       if (m.n >= BREAKER_MIN_SAMPLES) {
         if (!cur.active && m.pct < BREAKER_SUPPRESS_PCT) {
           nextActive = true
@@ -283,14 +307,58 @@ export async function GET(req) {
         } else if (cur.active && m.pct >= BREAKER_CLEAR_PCT) {
           nextActive = false
           transition = 'cleared'
+          releaseReason = 'standard'
         }
       }
-      breakerOutcome[family] = { active: nextActive, transition, pct: Number(m.pct.toFixed(2)), n: m.n }
+      // Time-valve backstop: if the standard clear didn't fire AND the
+      // breaker has been latched longer than TIME_VALVE_HOURS AND shadow
+      // accuracy is at least borderline-acceptable, force-release with a
+      // post-clear confidence cap. Off by default; operator flips
+      // BREAKER_TIME_VALVE=on after watching shadow data stabilise.
+      if (
+        timeValveOn
+        && transition === null
+        && cur.active
+        && cur.triggered_at
+        && (now - new Date(cur.triggered_at).getTime()) > TIME_VALVE_HOURS * 3600 * 1000
+        && shadowM.n >= TIME_VALVE_MIN_SHADOW_N
+        && shadowM.pct >= TIME_VALVE_MIN_SHADOW_ACC_PCT
+      ) {
+        nextActive = false
+        transition = 'cleared'
+        releaseReason = 'time_valve'
+      }
+      breakerOutcome[family] = {
+        active: nextActive,
+        transition,
+        pct: Number(m.pct.toFixed(2)),
+        n: m.n,
+        shadow_pct: Number(shadowM.pct.toFixed(2)),
+        shadow_n: shadowM.n,
+      }
+
+      // Stale-breaker warning: a breaker latched >STALE_BREAKER_WARN_HOURS
+      // without a transition is operationally suspicious even when shadow
+      // hasn't reached the clear threshold. Emit a warn-level reason so we
+      // never sleep on a dead-lock again (counter-factual: the bug we're
+      // fixing went undetected for 21 days because nothing alerted).
+      if (
+        cur.active
+        && transition === null
+        && cur.triggered_at
+        && (now - new Date(cur.triggered_at).getTime()) > STALE_BREAKER_WARN_HOURS * 3600 * 1000
+      ) {
+        const ageHours = Math.round((now - new Date(cur.triggered_at).getTime()) / 3600000)
+        level = level || 'warn'
+        reasons.push(`stale_breaker:${family} age=${ageHours}h live=${m.pct.toFixed(1)}%/n${m.n} shadow=${shadowM.pct.toFixed(1)}%/n${shadowM.n}`)
+      }
 
       if (transition !== null) {
         const reason = transition === 'tripped'
           ? `auto_suppress: ${family} acc ${m.pct.toFixed(1)}% on n=${m.n} over last ${BREAKER_LOOKBACK_HOURS}h (< ${BREAKER_SUPPRESS_PCT}%)`
-          : `auto_clear: ${family} acc ${m.pct.toFixed(1)}% on n=${m.n} recovered (>= ${BREAKER_CLEAR_PCT}%)`
+          : releaseReason === 'time_valve'
+            ? `time_valve_release: ${family} latched >${TIME_VALVE_HOURS}h; shadow acc ${shadowM.pct.toFixed(1)}% on n=${shadowM.n} (>= ${TIME_VALVE_MIN_SHADOW_ACC_PCT}%). Confidence capped ${POST_CLEAR_CAP_HOURS}h.`
+            : `auto_clear: ${family} acc ${m.pct.toFixed(1)}% on n=${m.n} recovered (>= ${BREAKER_CLEAR_PCT}%)`
         const upsertRow: Record<string, unknown> = {
           signal_type: family,
           active: nextActive,
@@ -302,8 +370,13 @@ export async function GET(req) {
         if (transition === 'tripped') {
           upsertRow.triggered_at = new Date().toISOString()
           upsertRow.cleared_at = null
+          upsertRow.confidence_cap_until = null
         } else {
           upsertRow.cleared_at = new Date().toISOString()
+          // Every clear (standard or time-valve) gets a post-clear cap so
+          // the re-entry never starts at full confidence. compute-signals
+          // reads confidence_cap_until and halves confidence until expiry.
+          upsertRow.confidence_cap_until = new Date(now + POST_CLEAR_CAP_HOURS * 3600 * 1000).toISOString()
         }
         const { error: bErr } = await supabaseAdmin
           .from('signal_circuit_breaker')
@@ -313,7 +386,7 @@ export async function GET(req) {
         } else {
           // Promote breaker transitions to alert reasons so the webhook fires.
           level = transition === 'tripped' ? 'critical' : (level || 'warn')
-          reasons.push(`circuit_breaker_${transition}:${family} (${m.pct.toFixed(1)}% n=${m.n})`)
+          reasons.push(`circuit_breaker_${transition}${releaseReason === 'time_valve' ? '_time_valve' : ''}:${family} (live ${m.pct.toFixed(1)}% n=${m.n}, shadow ${shadowM.pct.toFixed(1)}% n=${shadowM.n})`)
         }
       }
     }
@@ -364,7 +437,7 @@ export async function GET(req) {
               accuracy_pp: Number(accDelta.toFixed(2)),
               distribution_max_pp: Number(distDelta.toFixed(2)),
             },
-            sample_signals: (rows1d || []).slice(0, 10).map(r => ({
+            sample_signals: (liveRows1d || []).slice(0, 10).map(r => ({
               type: r.signal_type, correct: r.correct, at: r.signal_time,
             })),
           }

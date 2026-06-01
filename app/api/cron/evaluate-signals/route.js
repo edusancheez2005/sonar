@@ -242,10 +242,18 @@ export async function GET(req) {
 
       const { data: signals, error: sigErr } = await supabaseAdmin
         .from('token_signals')
-        .select('id, token, signal, score, confidence, raw_score, price_at_signal, computed_at, tier1_factors')
+        .select('id, token, signal, original_signal, breaker_suppressed, score, confidence, raw_score, price_at_signal, computed_at, tier1_factors')
         .gte('computed_at', windowStart.toISOString())
         .lte('computed_at', windowEnd.toISOString())
-        .not('signal', 'eq', 'NEUTRAL')
+        // 2026-06-01: Include suppressed-shadow rows. The legacy filter
+        // was `.not('signal', 'eq', 'NEUTRAL')`, which silently excluded
+        // every breaker-muted signal from grading — that's the dead-lock
+        // diagnosed in SIGNAL_REMEDIATION_2026-06-01_PROMPT.md §3.1.
+        // Grade NEUTRAL rows too when original_signal is present (shadow),
+        // unless SHADOW_GRADING=off is set as a kill-switch.
+        .or(process.env.SHADOW_GRADING === 'off'
+          ? 'signal.neq.NEUTRAL'
+          : 'signal.neq.NEUTRAL,original_signal.not.is.null')
         .not('price_at_signal', 'is', null)
 
       if (sigErr) {
@@ -316,8 +324,15 @@ export async function GET(req) {
         }
 
         const priceChange = ((currentPrice - sig.price_at_signal) / sig.price_at_signal) * 100
-        const isBullish = sig.signal === 'STRONG BUY' || sig.signal === 'BUY'
-        const isBearish = sig.signal === 'STRONG SELL' || sig.signal === 'SELL'
+        // 2026-06-01: shadow grading. For breaker-suppressed rows the
+        // user-facing `signal` is NEUTRAL but the would-be direction lives
+        // in `original_signal`. Grade against that; mark shadow=true so
+        // the watchdog can union shadow + live for breaker-clear logic
+        // while headline accuracy stays live-only.
+        const isShadowRow = sig.signal === 'NEUTRAL' && sig.original_signal && sig.original_signal !== 'NEUTRAL'
+        const effectiveSignal = isShadowRow ? sig.original_signal : sig.signal
+        const isBullish = effectiveSignal === 'STRONG BUY' || effectiveSignal === 'BUY'
+        const isBearish = effectiveSignal === 'STRONG SELL' || effectiveSignal === 'SELL'
 
         // Noise-floor gate: tiny moves (or stale-price gaps where
         // currentPrice ≈ price_at_signal) are NOT a failed prediction.
@@ -369,7 +384,7 @@ export async function GET(req) {
           .insert({
             signal_id: sig.id,
             token: sig.token,
-            signal_type: sig.signal,
+            signal_type: effectiveSignal,
             signal_score: sig.score,
             signal_confidence: sig.confidence,
             price_at_signal: sig.price_at_signal,
@@ -386,6 +401,7 @@ export async function GET(req) {
             beat_benchmark: beatBenchmark,
             raw_score: Number.isFinite(rawScoreNum) ? rawScoreNum : null,
             raw_direction: rawDirection,
+            shadow: isShadowRow,
           })
 
         if (insertErr) {

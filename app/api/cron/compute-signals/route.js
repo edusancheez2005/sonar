@@ -114,9 +114,33 @@ export async function GET(req) {
         // bad direction during a regime regression.
         const isBuyFamily = signal.signal === 'BUY' || signal.signal === 'STRONG BUY'
         const isSellFamily = signal.signal === 'SELL' || signal.signal === 'STRONG SELL'
+
+        // 2026-06-01: post-clear confidence cap. When the breaker is
+        // INACTIVE but a recent clear-transition set confidence_cap_until,
+        // halve the directional emission's confidence until the cap
+        // expires. Lets us re-enter the market without one outsized signal
+        // immediately re-tripping the breaker.
+        const nowMs = Date.now()
+        const buyCapActive = breaker.BUY_capUntil && breaker.BUY_capUntil.getTime() > nowMs && !breaker.BUY
+        const sellCapActive = breaker.SELL_capUntil && breaker.SELL_capUntil.getTime() > nowMs && !breaker.SELL
+        if ((isBuyFamily && buyCapActive) || (isSellFamily && sellCapActive)) {
+          const family = isBuyFamily ? 'BUY' : 'SELL'
+          const capUntil = isBuyFamily ? breaker.BUY_capUntil : breaker.SELL_capUntil
+          signal.confidence = Math.min(Number(signal.confidence) || 0, 50)
+          signal.traps = [
+            ...(signal.traps || []),
+            {
+              type: 'Post-Clear Confidence Cap',
+              severity: 'LOW',
+              description: `${family} family recently exited circuit-breaker suppression; confidence capped at 50 until ${capUntil.toISOString()}.`,
+            },
+          ]
+        }
+
         if ((isBuyFamily && breaker.BUY) || (isSellFamily && breaker.SELL)) {
           const family = isBuyFamily ? 'BUY' : 'SELL'
           signal.original_signal = signal.signal
+          signal.breaker_suppressed = true
           signal.signal = 'NEUTRAL'
           signal.traps = [
             ...(signal.traps || []),
@@ -320,25 +344,39 @@ async function loadSnapshotByToken(tokens) {
  * missing (pre-migration) or the read fails — fail-open so a Supabase
  * blip cannot accidentally silence the whole signal feed.
  */
+// Returns {
+//   BUY: bool, SELL: bool,         // active suppression
+//   BUY_capUntil: Date|null,        // confidence-cap window end after a clear
+//   SELL_capUntil: Date|null,
+// }
+// `confidence_cap_until` is the post-clear soft-start window (see migration
+// 20260601_breaker_shadow_observability.sql). When set and in the future,
+// the engine halves the confidence of any directional emission for that
+// family. Prevents a confident-but-untrusted spike the instant a breaker
+// reopens after a long suppression.
 async function loadCircuitBreaker() {
+  const empty = { BUY: false, SELL: false, BUY_capUntil: null, SELL_capUntil: null }
   try {
     const { data, error } = await supabaseAdminFresh
       .from('signal_circuit_breaker')
-      .select('signal_type, active')
+      .select('signal_type, active, confidence_cap_until')
     if (error) {
       console.warn('[SignalEngine] circuit_breaker load failed (defaulting open):', error.message)
-      return { BUY: false, SELL: false }
+      return empty
     }
-    const out = { BUY: false, SELL: false }
+    const out = { ...empty }
     for (const row of data || []) {
       if (row.signal_type === 'BUY' || row.signal_type === 'SELL') {
         out[row.signal_type] = !!row.active
+        if (row.confidence_cap_until) {
+          out[`${row.signal_type}_capUntil`] = new Date(row.confidence_cap_until)
+        }
       }
     }
     return out
   } catch (err) {
     console.warn('[SignalEngine] circuit_breaker load threw (defaulting open):', err.message)
-    return { BUY: false, SELL: false }
+    return empty
   }
 }
 
@@ -1046,6 +1084,14 @@ async function storeSignal(signal) {
     // docs/SCHEMA_GAP_4F.md and migration
     // supabase/migrations/20260602_token_signals_snapshot_inputs.sql.
     snapshot_inputs: signal.snapshot_inputs || null,
+    // 2026-06-01: breaker shadow observability (see
+    // SIGNAL_REMEDIATION_2026-06-01_PROMPT.md §3.1 + migration
+    // 20260601_breaker_shadow_observability.sql). original_signal carries
+    // the would-be label when any downstream gate (breaker or tier-agree)
+    // overrides to NEUTRAL; evaluate-signals reads it to shadow-grade so
+    // the breaker clear condition stays measurable.
+    original_signal: signal.original_signal || null,
+    breaker_suppressed: !!signal.breaker_suppressed,
   }
 
   const { error } = await supabaseAdmin
