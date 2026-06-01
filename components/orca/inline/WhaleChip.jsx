@@ -7,17 +7,23 @@ import { useInlineData } from './useInlineData'
 import { logTileEvent } from './telemetryClient'
 
 async function fetchWhaleSeries(ticker) {
-  // Real API: /api/whales/timeseries?symbol=BTC&days=1
-  const r = await fetch(`/api/whales/timeseries?symbol=${encodeURIComponent(ticker)}&days=1`)
-  if (!r.ok) throw new Error('fetch_failed')
-  const json = await r.json()
-  const rows = Array.isArray(json?.data) ? json.data : []
-  const series = rows
-    .map((p) => Number((p?.buyVolume ?? 0) - (p?.sellVolume ?? 0)))
-    .filter(Number.isFinite)
-  const buys = json?.summary?.totalBuyCount ?? null
-  const sells = json?.summary?.totalSellCount ?? null
-  return { series, buys, sells }
+  // Try 24h first; if the bucket is silent, widen to 7d so the popover
+  // never shows an uninformative "buys 0 · sells 0".
+  for (const days of [1, 7]) {
+    const r = await fetch(`/api/whales/timeseries?symbol=${encodeURIComponent(ticker)}&days=${days}`)
+    if (!r.ok) continue
+    const json = await r.json()
+    const rows = Array.isArray(json?.data) ? json.data : []
+    const series = rows
+      .map((p) => Number((p?.buyVolume ?? 0) - (p?.sellVolume ?? 0)))
+      .filter(Number.isFinite)
+    const buys = json?.summary?.totalBuyCount ?? 0
+    const sells = json?.summary?.totalSellCount ?? 0
+    if (series.length > 0 || buys > 0 || sells > 0) {
+      return { series, buys, sells, window: days === 1 ? '24h' : '7d' }
+    }
+  }
+  return { series: [], buys: 0, sells: 0, window: '7d', empty: true }
 }
 
 export function WhaleChip({ ticker, raw, value }) {
@@ -85,15 +91,20 @@ export function WhaleChip({ ticker, raw, value }) {
         {raw}
       </button>
       <HoverPopover anchorRef={ref} open={open} onClose={doClose} ariaLabel={`${ticker || 'asset'} whale flow`}>
-        <div style={{ marginBottom: 6, color: TILE.cyan }}>{ticker || '—'} whale flow 24h</div>
+        <div style={{ marginBottom: 6, color: TILE.cyan }}>
+          {ticker || '—'} whale flow {data?.window || '24h'}
+        </div>
         {loading && <div style={{ color: TILE.grey }}>Loading…</div>}
         {error && <div style={{ color: TILE.grey }}>Live data unavailable.</div>}
-        {data?.series?.length > 1 && (
-          <Sparkline data={data.series} width={240} height={48} ariaLabel="whale net flow 24h" />
+        {data?.empty && !loading && !error && (
+          <div style={{ color: TILE.grey }}>No tracked whale activity in the last 7 days.</div>
         )}
-        {(data?.buys != null || data?.sells != null) && (
+        {data?.series?.length > 1 && (
+          <Sparkline data={data.series} width={240} height={48} ariaLabel="whale net flow" />
+        )}
+        {!data?.empty && (data?.buys > 0 || data?.sells > 0) && (
           <div style={{ marginTop: 6, color: TILE.cyanText }}>
-            buys {data.buys ?? '—'} · sells {data.sells ?? '—'}
+            buys {data.buys} · sells {data.sells}
           </div>
         )}
         <div style={{ marginTop: 8, textAlign: 'right' }}>

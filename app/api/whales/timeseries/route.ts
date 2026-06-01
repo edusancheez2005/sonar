@@ -34,12 +34,15 @@ export async function GET(request: NextRequest) {
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
-    // Query all whale transactions for this token in the time range
+    // Query all whale transactions for this token in the time range.
+    // We accept both the ERC-20 BUY/SELL classifications and the multi-chain
+    // ACCUMULATION/DISTRIBUTION classifications used by the Whale Alert feed
+    // (BTC, XRP, native ETH, etc.). They are mapped 1:1 when bucketing below.
     const { data: txns, error } = await supabase
       .from('all_whale_transactions')
       .select('timestamp, classification, usd_value')
       .eq('token_symbol', symbol)
-      .in('classification', ['BUY', 'SELL'])
+      .in('classification', ['BUY', 'SELL', 'ACCUMULATION', 'DISTRIBUTION'])
       .gte('timestamp', since)
       .gt('usd_value', 0)
       .order('timestamp', { ascending: true })
@@ -101,8 +104,10 @@ export async function GET(request: NextRequest) {
 
       const b = buckets.get(key)!
       const usd = tx.usd_value || 0
+      const cls = String(tx.classification || '').toUpperCase()
+      const isBuy = cls === 'BUY' || cls === 'ACCUMULATION'
 
-      if (tx.classification === 'BUY') {
+      if (isBuy) {
         b.buyVolume += usd
         b.buyCount += 1
         totalBuyVolume += usd
