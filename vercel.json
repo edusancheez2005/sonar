@@ -71,14 +71,6 @@
     {
       "path": "/api/cron/weekly-top-wallets",
       "schedule": "0 15 * * 0"
-    },
-    {
-      "path": "/api/cron/check-user-alerts",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/send-email-digests",
-      "schedule": "0 * * * *"
     }
   ]
 }
