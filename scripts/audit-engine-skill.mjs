@@ -45,8 +45,8 @@ const since = new Date(Date.now() - DAYS * 86400_000).toISOString()
 async function fetchOutcomes() {
   // Try select with `suspect` first; fall back if migration not yet applied.
   for (const cols of [
-    'signal_time,token,signal_type,signal_score,raw_score,raw_direction,price_change_pct,btc_change_pct,alpha_pct,correct,suspect,eval_window',
-    'signal_time,token,signal_type,signal_score,raw_score,raw_direction,price_change_pct,btc_change_pct,alpha_pct,correct,eval_window',
+    'signal_time,token,signal_type,signal_score,raw_score,raw_direction,price_change_pct,btc_change_pct,btc_price_at_eval,alpha_pct,correct,suspect,eval_window',
+    'signal_time,token,signal_type,signal_score,raw_score,raw_direction,price_change_pct,btc_change_pct,btc_price_at_eval,alpha_pct,correct,eval_window',
   ]) {
     const url =
       `${URL}/rest/v1/signal_outcomes` +
@@ -93,7 +93,48 @@ function welchT(a, b) {
 function bullish(t) { return t === 'BUY' || t === 'STRONG BUY' }
 function bearish(t) { return t === 'SELL' || t === 'STRONG SELL' }
 
-const rows = (await fetchOutcomes()).filter((r) => r.suspect !== true)
+// ─── Frozen-benchmark guardrail (May-11 lesson #3) ─────────────────────
+// The May 2026 fetch-cache bug froze btc_price_at_eval at a single value
+// ($76,876) across ~47% of rows, manufacturing a phantom SELL edge. Across
+// a multi-day window no single BTC eval price should dominate — if one value
+// holds more than this share of rows, the benchmark feed was stale and every
+// btc_change_pct / alpha_pct derived from it is poisoned. Quarantine those
+// rows before computing anything.
+const FROZEN_BTC_MAX_SHARE = 0.05
+
+function quarantineFrozenBenchmark(allRows) {
+  const counts = new Map()
+  let withPrice = 0
+  for (const r of allRows) {
+    const v = r.btc_price_at_eval
+    if (v === null || v === undefined) continue
+    withPrice++
+    const key = String(v)
+    counts.set(key, (counts.get(key) || 0) + 1)
+  }
+  if (withPrice === 0) return { clean: allRows, frozenValue: null, frozenCount: 0, share: 0 }
+  let frozenValue = null, frozenCount = 0
+  for (const [key, n] of counts) {
+    if (n > frozenCount) { frozenCount = n; frozenValue = key }
+  }
+  const share = frozenCount / withPrice
+  if (share <= FROZEN_BTC_MAX_SHARE) return { clean: allRows, frozenValue: null, frozenCount: 0, share }
+  const clean = allRows.filter((r) => String(r.btc_price_at_eval) !== frozenValue)
+  return { clean, frozenValue, frozenCount, share }
+}
+
+const rawRows = (await fetchOutcomes()).filter((r) => r.suspect !== true)
+const guard = quarantineFrozenBenchmark(rawRows)
+if (guard.frozenValue !== null) {
+  console.log('\n' + '!'.repeat(72))
+  console.log('!! FROZEN-BENCHMARK GUARD TRIPPED — stale btc_price_at_eval detected')
+  console.log(`!! value ${guard.frozenValue} appears in ${guard.frozenCount} rows ` +
+    `(${(guard.share * 100).toFixed(1)}% > ${(FROZEN_BTC_MAX_SHARE * 100).toFixed(0)}% threshold)`)
+  console.log('!! These rows are QUARANTINED. btc_change_pct / alpha_pct from them is')
+  console.log('!! poisoned (fetch-cache bug, see May-11 note). Re-run after re-eval.')
+  console.log('!'.repeat(72))
+}
+const rows = guard.clean
 console.log(`\n=== audit-engine-skill: ${rows.length} clean 6h outcomes (last ${DAYS}d) ===\n`)
 
 if (!rows.length) {
