@@ -19,6 +19,9 @@ import {
   evaluateWhaleFlow,
   evaluateSignalFlip,
   evaluateNewsImpact,
+  evaluateWalletActivity,
+  evaluateNewsAny,
+  evaluateSocialPost,
   type SupabaseLike,
 } from '@/lib/orca/alerts/evaluators'
 import { dedupHour } from '@/lib/orca/alerts/dedup'
@@ -89,7 +92,7 @@ export async function runCheckUserAlerts(
   try {
     const { data } = await supabase
       .from('user_alerts')
-      .select('id, user_id, ticker, kind, threshold_pct, threshold_usd, enabled')
+      .select('id, user_id, ticker, kind, threshold_pct, threshold_usd, address, chain, enabled')
       .eq('enabled', true)
       .limit(10000)
     rules = ((Array.isArray(data) ? data : []) as AlertRule[]).filter((r) =>
@@ -104,22 +107,37 @@ export async function runCheckUserAlerts(
   // 3. Evaluate each rule, memoising shared reads by (kind, ticker, threshold).
   const memo = new Map<string, Promise<NotificationCopy | null>>()
   const evaluate = (rule: AlertRule): Promise<NotificationCopy | null> => {
-    const key = `${rule.kind}|${rule.ticker}|${rule.threshold_pct ?? ''}|${rule.threshold_usd ?? ''}`
+    const key = `${rule.kind}|${rule.ticker ?? rule.address ?? ''}|${rule.threshold_pct ?? ''}|${rule.threshold_usd ?? ''}|${rule.chain ?? ''}`
     const cached = memo.get(key)
     if (cached) return cached
     let pending: Promise<NotificationCopy | null>
     switch (rule.kind) {
       case 'price_move':
-        pending = evaluatePriceMove(rule.ticker, Number(rule.threshold_pct), supabase)
+        pending = evaluatePriceMove(rule.ticker as string, Number(rule.threshold_pct), supabase)
         break
       case 'whale_flow':
-        pending = evaluateWhaleFlow(rule.ticker, Number(rule.threshold_usd), supabase, now)
+        pending = evaluateWhaleFlow(rule.ticker as string, Number(rule.threshold_usd), supabase, now)
         break
       case 'signal_flip':
-        pending = evaluateSignalFlip(rule.ticker, supabase)
+        pending = evaluateSignalFlip(rule.ticker as string, supabase)
         break
       case 'news_high_impact':
-        pending = evaluateNewsImpact(rule.ticker, supabase, now)
+        pending = evaluateNewsImpact(rule.ticker as string, supabase, now)
+        break
+      case 'wallet_activity':
+        pending = evaluateWalletActivity(
+          rule.address ?? '',
+          rule.threshold_usd ?? null,
+          rule.chain ?? null,
+          supabase,
+          now
+        )
+        break
+      case 'news_any':
+        pending = evaluateNewsAny(rule.ticker as string, supabase, now)
+        break
+      case 'social_post':
+        pending = evaluateSocialPost(rule.ticker as string, supabase, now)
         break
       default:
         pending = Promise.resolve(null)
@@ -174,7 +192,7 @@ export async function runCheckUserAlerts(
     const rows = allowed.map(({ rule, copy }) => ({
       user_id: userId,
       rule_id: rule.id,
-      ticker: rule.ticker,
+      ticker: rule.ticker ?? copy.payload.ticker,
       kind: rule.kind,
       title: copy.title,
       body: copy.body,

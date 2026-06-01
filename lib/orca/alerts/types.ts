@@ -9,27 +9,42 @@ export type AlertKind =
   | 'whale_flow'
   | 'signal_flip'
   | 'news_high_impact'
+  | 'wallet_activity'
+  | 'news_any'
+  | 'social_post'
 
 export const ALERT_KINDS: AlertKind[] = [
   'price_move',
   'whale_flow',
   'signal_flip',
   'news_high_impact',
+  'wallet_activity',
+  'news_any',
+  'social_post',
 ]
+
+/** Kinds that target an on-chain address instead of a ticker. */
+export const ADDRESS_KINDS: AlertKind[] = ['wallet_activity']
+
+export function isAddressKind(kind: AlertKind): boolean {
+  return ADDRESS_KINDS.includes(kind)
+}
 
 export interface AlertRule {
   id: string
   user_id: string
-  ticker: string
+  ticker: string | null
   kind: AlertKind
   threshold_pct: number | null
   threshold_usd: number | null
+  address?: string | null
+  chain?: string | null
   enabled?: boolean
 }
 
 /** A re-ask hint so clicking a notification can deep-link into ORCA. */
 export interface ReaskHint {
-  intent: 'overview' | 'article_explain'
+  intent: 'overview' | 'article_explain' | 'wallet_explain'
   prompt: string
   url?: string
 }
@@ -66,3 +81,9 @@ export const DEFAULT_WHALE_FLOW_USD = 1_000_000
 
 /** News impact sentiment trigger magnitude. */
 export const NEWS_SENTIMENT_THRESHOLD = 0.6
+
+/** Default minimum transaction size (USD) for a wallet-activity alert. */
+export const DEFAULT_WALLET_MIN_USD = 0
+
+/** Lookback window (ms) for wallet / any-news / social-post evaluators. */
+export const RECENT_WINDOW_MS = 60 * 60 * 1000

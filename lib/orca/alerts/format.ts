@@ -103,3 +103,80 @@ export function formatNewsImpact(
     reask
   )
 }
+
+/** Shorten an on-chain address for display: 0x1234…abcd. */
+export function shortAddress(addr: string): string {
+  const a = String(addr || '').trim()
+  if (a.length <= 12) return a
+  return `${a.slice(0, 6)}…${a.slice(-4)}`
+}
+
+export function formatWalletActivity(
+  address: string,
+  chain: string | null,
+  txCount: number,
+  totalUsd: number,
+  topToken: string | null
+): NotificationCopy {
+  const label = shortAddress(address)
+  const chainPart = chain ? ` on ${chain}` : ''
+  const tokenPart = topToken ? ` (${topToken})` : ''
+  const txWord = txCount === 1 ? 'transaction' : 'transactions'
+  const usd = formatUsd(totalUsd).replace(/^\+/, '')
+  const reask: ReaskHint = {
+    intent: 'wallet_explain',
+    prompt: `what did wallet ${address} just do`,
+  }
+  return copy(
+    'wallet_activity',
+    label,
+    `Wallet ${label} active${chainPart}`,
+    `${txCount} ${txWord}${tokenPart} totalling ${usd} in the last hour.`,
+    { address, chain, txCount, totalUsd, topToken },
+    reask
+  )
+}
+
+export function formatNewsAny(
+  ticker: string,
+  headline: string,
+  url: string
+): NotificationCopy {
+  const reask: ReaskHint = {
+    intent: 'article_explain',
+    prompt: `explain this headline: ${headline}`,
+    url,
+  }
+  return copy(
+    'news_any',
+    ticker,
+    `${ticker} headline: ${headline}`,
+    `New article mentioning ${ticker}; opens in Sonar.`,
+    { headline, url },
+    reask
+  )
+}
+
+export function formatSocialPost(
+  ticker: string,
+  author: string,
+  snippet: string,
+  url: string,
+  interactions: number
+): NotificationCopy {
+  const who = author ? `@${author}` : 'a tracked account'
+  const clean = String(snippet || '').replace(/\s+/g, ' ').trim().slice(0, 140)
+  const reask: ReaskHint = {
+    intent: 'article_explain',
+    prompt: `summarise the latest social chatter on ${ticker}`,
+    url,
+  }
+  return copy(
+    'social_post',
+    ticker,
+    `${ticker} mentioned by ${who}`,
+    clean ? `"${clean}"` : `New post mentioning ${ticker} in the last hour.`,
+    { author, snippet: clean, url, interactions },
+    reask
+  )
+}

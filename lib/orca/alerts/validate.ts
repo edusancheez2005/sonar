@@ -5,12 +5,27 @@
 import { ALERT_KINDS, type AlertKind } from './types'
 
 const TICKER_RE = /^[A-Z0-9._-]{1,12}$/
+const ADDRESS_RE = /^[a-zA-Z0-9]{20,80}$/
 
 export function normaliseTicker(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   const t = raw.trim().toUpperCase()
   if (!TICKER_RE.test(t)) return null
   return t
+}
+
+/**
+ * Normalise an on-chain address. Accepts EVM (0x…40 hex) and common base58
+ * chains (Solana etc). EVM addresses are lower-cased; others keep their case
+ * (base58 is case-sensitive). Returns null when the shape is implausible.
+ */
+export function normaliseAddress(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const a = raw.trim()
+  if (!a) return null
+  if (/^0x[a-fA-F0-9]{40}$/.test(a)) return a.toLowerCase()
+  if (!ADDRESS_RE.test(a)) return null
+  return a
 }
 
 export function isAlertKind(value: unknown): value is AlertKind {
@@ -42,6 +57,15 @@ export function resolveThreshold(
     if (!Number.isFinite(usd) || usd <= 0) return null
     return { threshold_pct: null, threshold_usd: Math.round(usd) }
   }
-  // signal_flip / news_high_impact — no threshold.
+  if (kind === 'wallet_activity') {
+    // Optional minimum transaction size. Absent/zero = any movement.
+    if (opts.threshold_usd === undefined || opts.threshold_usd === null || opts.threshold_usd === '') {
+      return { threshold_pct: null, threshold_usd: null }
+    }
+    const usd = Number(opts.threshold_usd)
+    if (!Number.isFinite(usd) || usd < 0) return null
+    return { threshold_pct: null, threshold_usd: usd > 0 ? Math.round(usd) : null }
+  }
+  // signal_flip / news_high_impact / news_any / social_post — no threshold.
   return { threshold_pct: null, threshold_usd: null }
 }

@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { parseThreshold } from '@/lib/orca/alerts/parseThreshold'
 import { dedupHour } from '@/lib/orca/alerts/dedup'
-import { normaliseTicker, isAlertKind, resolveThreshold } from '@/lib/orca/alerts/validate'
+import {
+  normaliseTicker,
+  normaliseAddress,
+  isAlertKind,
+  resolveThreshold,
+} from '@/lib/orca/alerts/validate'
 
 describe('parseThreshold', () => {
   it('parses percent forms', () => {
@@ -57,6 +62,29 @@ describe('isAlertKind', () => {
     expect(isAlertKind('nope')).toBe(false)
     expect(isAlertKind(undefined)).toBe(false)
   })
+  it('accepts the new wallet / news / social kinds', () => {
+    expect(isAlertKind('wallet_activity')).toBe(true)
+    expect(isAlertKind('news_any')).toBe(true)
+    expect(isAlertKind('social_post')).toBe(true)
+  })
+})
+
+describe('normaliseAddress', () => {
+  it('lower-cases EVM addresses', () => {
+    expect(normaliseAddress('0xABCDEF1234567890abcdef1234567890ABCDEF12')).toBe(
+      '0xabcdef1234567890abcdef1234567890abcdef12'
+    )
+  })
+  it('keeps base58 (Solana) addresses as-is', () => {
+    const sol = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU'
+    expect(normaliseAddress(sol)).toBe(sol)
+  })
+  it('rejects implausible input', () => {
+    expect(normaliseAddress('')).toBeNull()
+    expect(normaliseAddress('0x123')).toBeNull()
+    expect(normaliseAddress('not an address!!')).toBeNull()
+    expect(normaliseAddress(42 as any)).toBeNull()
+  })
 })
 
 describe('resolveThreshold', () => {
@@ -72,5 +100,15 @@ describe('resolveThreshold', () => {
   it('returns empty thresholds for signal_flip / news_high_impact', () => {
     expect(resolveThreshold('signal_flip', {})).toEqual({ threshold_pct: null, threshold_usd: null })
     expect(resolveThreshold('news_high_impact', {})).toEqual({ threshold_pct: null, threshold_usd: null })
+  })
+  it('treats wallet_activity usd as an optional minimum', () => {
+    expect(resolveThreshold('wallet_activity', {})).toEqual({ threshold_pct: null, threshold_usd: null })
+    expect(resolveThreshold('wallet_activity', { threshold_usd: 0 })).toEqual({ threshold_pct: null, threshold_usd: null })
+    expect(resolveThreshold('wallet_activity', { threshold_usd: 50_000 })).toEqual({ threshold_pct: null, threshold_usd: 50_000 })
+    expect(resolveThreshold('wallet_activity', { threshold_usd: -1 })).toBeNull()
+  })
+  it('returns empty thresholds for news_any / social_post', () => {
+    expect(resolveThreshold('news_any', {})).toEqual({ threshold_pct: null, threshold_usd: null })
+    expect(resolveThreshold('social_post', {})).toEqual({ threshold_pct: null, threshold_usd: null })
   })
 })

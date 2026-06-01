@@ -4,6 +4,9 @@ import {
   evaluateWhaleFlow,
   evaluateSignalFlip,
   evaluateNewsImpact,
+  evaluateWalletActivity,
+  evaluateNewsAny,
+  evaluateSocialPost,
 } from '@/lib/orca/alerts/evaluators'
 
 /**
@@ -18,6 +21,8 @@ function makeSupabase(byTable: Record<string, any[]>) {
         select: () => builder,
         eq: () => builder,
         gte: () => builder,
+        or: () => builder,
+        contains: () => builder,
         order: () => builder,
         limit: () => Promise.resolve({ data: rows }),
         then: (resolve: any) => resolve({ data: rows }),
@@ -112,5 +117,64 @@ describe('evaluateNewsImpact', () => {
       news_items: [{ title: 'Minor note', sentiment_score: 0.1, url: 'https://x/y' }],
     })
     expect(await evaluateNewsImpact('SOL', sb, NOW)).toBeNull()
+  })
+})
+
+describe('evaluateWalletActivity', () => {
+  it('fires on recent movement and aggregates transactions', async () => {
+    const sb = makeSupabase({
+      all_whale_transactions: [
+        { usd_value: 2_000_000, token_symbol: 'PEPE', blockchain: 'ethereum' },
+        { usd_value: 500_000, token_symbol: 'USDC', blockchain: 'ethereum' },
+      ],
+    })
+    const c = await evaluateWalletActivity('0xabc', null, null, sb, NOW)
+    expect(c).not.toBeNull()
+    expect(c!.payload.kind).toBe('wallet_activity')
+    expect((c!.payload.raw as any).txCount).toBe(2)
+    expect((c!.payload.raw as any).totalUsd).toBe(2_500_000)
+  })
+  it('respects the minimum-size threshold', async () => {
+    const sb = makeSupabase({
+      all_whale_transactions: [{ usd_value: 100, token_symbol: 'X', blockchain: 'ethereum' }],
+    })
+    expect(await evaluateWalletActivity('0xabc', 1_000_000, null, sb, NOW)).toBeNull()
+  })
+  it('returns null with no movement', async () => {
+    const sb = makeSupabase({ all_whale_transactions: [] })
+    expect(await evaluateWalletActivity('0xabc', null, null, sb, NOW)).toBeNull()
+  })
+})
+
+describe('evaluateNewsAny', () => {
+  it('fires on any recent article regardless of sentiment', async () => {
+    const sb = makeSupabase({
+      news_items: [{ title: 'Routine update', url: 'https://x/y' }],
+    })
+    const c = await evaluateNewsAny('SOL', sb, NOW)
+    expect(c).not.toBeNull()
+    expect(c!.payload.kind).toBe('news_any')
+  })
+  it('returns null with no articles', async () => {
+    const sb = makeSupabase({ news_items: [] })
+    expect(await evaluateNewsAny('SOL', sb, NOW)).toBeNull()
+  })
+})
+
+describe('evaluateSocialPost', () => {
+  it('fires on a recent mention', async () => {
+    const sb = makeSupabase({
+      social_posts: [
+        { body: 'Heavy volume noted', creator_screen_name: 'watcher', url: 'https://t/1', interactions: 900 },
+      ],
+    })
+    const c = await evaluateSocialPost('SOL', sb, NOW)
+    expect(c).not.toBeNull()
+    expect(c!.payload.kind).toBe('social_post')
+    expect(c!.title).toContain('@watcher')
+  })
+  it('returns null with no posts', async () => {
+    const sb = makeSupabase({ social_posts: [] })
+    expect(await evaluateSocialPost('SOL', sb, NOW)).toBeNull()
   })
 })

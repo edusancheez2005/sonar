@@ -5,6 +5,10 @@ import {
   formatWhaleFlow,
   formatSignalFlip,
   formatNewsImpact,
+  formatWalletActivity,
+  formatNewsAny,
+  formatSocialPost,
+  shortAddress,
 } from '@/lib/orca/alerts/format'
 
 // HARD RULE §0.4: rendered title + body must never contain a directional verb.
@@ -64,5 +68,48 @@ describe('formatNewsImpact', () => {
     assertNeutral(c)
     expect(c.payload.kind).toBe('news_high_impact')
     expect(c.payload.reask?.url).toBe('https://x/y')
+  })
+})
+
+describe('shortAddress', () => {
+  it('truncates long addresses and leaves short ones', () => {
+    expect(shortAddress('0x1234567890abcdef1234567890abcdef12345678')).toBe('0x1234…5678')
+    expect(shortAddress('SOL')).toBe('SOL')
+  })
+})
+
+describe('formatWalletActivity', () => {
+  it('produces neutral copy and uses the short address as ticker', () => {
+    const c = formatWalletActivity(
+      '0x1234567890abcdef1234567890abcdef12345678',
+      'ethereum',
+      3,
+      2_400_000,
+      'PEPE'
+    )
+    assertNeutral(c)
+    expect(c.payload.kind).toBe('wallet_activity')
+    expect(c.payload.ticker).toBe('0x1234…5678')
+    expect(c.body).not.toContain('+$')
+    expect((c.payload.raw as any).txCount).toBe(3)
+  })
+})
+
+describe('formatNewsAny', () => {
+  it('produces neutral copy with an article re-ask', () => {
+    const c = formatNewsAny('BONK', 'Exchange lists the token', 'https://x/z')
+    assertNeutral(c)
+    expect(c.payload.kind).toBe('news_any')
+    expect(c.payload.reask?.url).toBe('https://x/z')
+  })
+})
+
+describe('formatSocialPost', () => {
+  it('produces neutral copy with author + snippet', () => {
+    const c = formatSocialPost('SOL', 'whalewatch', 'Big volume on the network today', 'https://t/1', 1200)
+    assertNeutral(c)
+    expect(c.payload.kind).toBe('social_post')
+    expect(c.title).toContain('@whalewatch')
+    expect((c.payload.raw as any).interactions).toBe(1200)
   })
 })
