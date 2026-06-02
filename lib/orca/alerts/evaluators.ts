@@ -121,14 +121,14 @@ export async function evaluateNewsImpact(
     const sinceIso = new Date(now().getTime() - 60 * 60 * 1000).toISOString()
     const { data } = await supabase
       .from('news_items')
-      .select('title, sentiment_score, url, published_at')
+      .select('title, sentiment_llm, sentiment_raw, url, published_at')
       .eq('ticker', ticker)
       .gte('published_at', sinceIso)
       .order('published_at', { ascending: false })
       .limit(20)
     if (!Array.isArray(data)) return null
-    for (const r of data as Array<{ title?: string; sentiment_score?: number; url?: string }>) {
-      const s = Number(r.sentiment_score)
+    for (const r of data as Array<{ title?: string; sentiment_llm?: number; sentiment_raw?: number; url?: string }>) {
+      const s = Number(r.sentiment_llm ?? r.sentiment_raw)
       if (!Number.isFinite(s)) continue
       if (Math.abs(s) < NEWS_SENTIMENT_THRESHOLD) continue
       const headline = typeof r.title === 'string' ? r.title.trim() : ''

@@ -106,7 +106,7 @@ describe('evaluateSignalFlip', () => {
 describe('evaluateNewsImpact', () => {
   it('fires on a high-|sentiment| headline', async () => {
     const sb = makeSupabase({
-      news_items: [{ title: 'Major upgrade ships', sentiment_score: 0.82, url: 'https://x/y' }],
+      news_items: [{ title: 'Major upgrade ships', sentiment_llm: 0.82, url: 'https://x/y' }],
     })
     const c = await evaluateNewsImpact('SOL', sb, NOW)
     expect(c).not.toBeNull()
@@ -114,7 +114,7 @@ describe('evaluateNewsImpact', () => {
   })
   it('does not fire on a low-sentiment headline', async () => {
     const sb = makeSupabase({
-      news_items: [{ title: 'Minor note', sentiment_score: 0.1, url: 'https://x/y' }],
+      news_items: [{ title: 'Minor note', sentiment_llm: 0.1, url: 'https://x/y' }],
     })
     expect(await evaluateNewsImpact('SOL', sb, NOW)).toBeNull()
   })
