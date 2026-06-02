@@ -416,10 +416,56 @@ const Note = styled.p`
   color: #6b7a8c;
   line-height: 1.5;
 `
+const MutedRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 8px;
+`
+const MutedChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #c3ccd6;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+`
+const UnmuteBtn = styled.button`
+  border: none;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #07101a;
+  background: #2ee6c5;
+  transition: opacity 0.15s ease;
+  &:hover { opacity: 0.85; }
+`
 
 function shortAddr(a) {
   const s = String(a || '')
   return s.length > 12 ? `${s.slice(0, 6)}…${s.slice(-4)}` : s
+}
+
+function formatMuteUntil(iso) {
+  try {
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return ''
+  }
 }
 
 export default function AlertsTab({ client, fetchImpl }) {
@@ -429,6 +475,7 @@ export default function AlertsTab({ client, fetchImpl }) {
   const [form, setForm] = useState({ kind: 'price_move', ticker: '', address: '', chain: '', threshold: '5' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [muted, setMuted] = useState({ tickers: [], until_iso: null })
 
   const meta = KIND_META[form.kind]
 
@@ -447,15 +494,23 @@ export default function AlertsTab({ client, fetchImpl }) {
     }
     const headers = { authorization: `Bearer ${t}` }
     try {
-      const [aRes, pRes] = await Promise.all([
+      const [aRes, pRes, mRes] = await Promise.all([
         doFetch('/api/personal/alerts', { headers }),
         doFetch('/api/notifications/preferences', { headers }),
+        doFetch('/api/personal/mute', { headers }),
       ])
       if (aRes.ok) {
         const body = await aRes.json()
         setRules(Array.isArray(body?.rules) ? body.rules : [])
       }
       if (pRes.ok) setPrefs(await pRes.json())
+      if (mRes.ok) {
+        const mBody = await mRes.json()
+        setMuted({
+          tickers: Array.isArray(mBody?.tickers) ? mBody.tickers : [],
+          until_iso: mBody?.until_iso || null,
+        })
+      }
       setStatus('ready')
     } catch {
       setStatus('error')
@@ -465,6 +520,39 @@ export default function AlertsTab({ client, fetchImpl }) {
   useEffect(() => {
     load()
   }, [load])
+
+  // Refresh muted tickers when ORCA mutes/unmutes via a voice-write.
+  useEffect(() => {
+    function onMuteChanged() { load() }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('orca:mute-changed', onMuteChanged)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('orca:mute-changed', onMuteChanged)
+      }
+    }
+  }, [load])
+
+  const unmute = useCallback(async (ticker) => {
+    const doFetch = fetchImpl ?? fetch
+    const t = await token()
+    if (!t) return
+    try {
+      const res = await doFetch(`/api/personal/mute?ticker=${encodeURIComponent(ticker)}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${t}` },
+      })
+      if (res.ok) {
+        setMuted((m) => {
+          const next = m.tickers.filter((x) => x !== ticker)
+          return { tickers: next, until_iso: next.length ? m.until_iso : null }
+        })
+      }
+    } catch {
+      /* best-effort */
+    }
+  }, [fetchImpl, token])
 
   const pickKind = (kind) => {
     const m = KIND_META[kind]
@@ -733,6 +821,34 @@ export default function AlertsTab({ client, fetchImpl }) {
           <em>“alert me when SOL moves 5%”</em> · <em>“watch wallet 0xabc… for movement”</em> ·{' '}
           <em>“ping me on any BONK news”</em>
         </Empty>
+      )}
+
+      {status === 'ready' && muted.tickers.length > 0 && (
+        <Panel>
+          <Sub>
+            Muted tickers
+            {muted.until_iso ? ` · until ${formatMuteUntil(muted.until_iso)}` : ''}
+          </Sub>
+          <MutedRow>
+            {muted.tickers.map((tk) => (
+              <MutedChip key={tk}>
+                {tk}
+                <UnmuteBtn
+                  type="button"
+                  onClick={() => unmute(tk)}
+                  aria-label={`Unmute ${tk} alerts`}
+                  title={`Unmute ${tk}`}
+                >
+                  Unmute
+                </UnmuteBtn>
+              </MutedChip>
+            ))}
+          </MutedRow>
+          <Note>
+            Muted tickers won’t trigger ORCA alerts until the mute expires. You can unmute any time
+            here or by telling ORCA “unmute {muted.tickers[0]}”.
+          </Note>
+        </Panel>
       )}
 
       <Panel>

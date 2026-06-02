@@ -2,7 +2,20 @@
  * Shared formatters for renderer prompts.
  */
 import { truncate } from '../shared-rules'
+import { formatHistoryForPrompt } from '../chat/formatHistoryForPrompt'
+import type { RecentTurn } from '../chat/loadRecentHistory'
 import type { ToolCall, ToolResult, UserProfileSnapshot } from '../orchestrator/types'
+
+/**
+ * Prior-conversation block to prepend to a renderer prompt. Returns '' when
+ * there is no history (so callers can `${historyPrefix(args.chatHistory)}` at
+ * the top of a template without leaving stray blank lines — the trailing
+ * newlines are only emitted when there is content).
+ */
+export function historyPrefix(chatHistory?: RecentTurn[]): string {
+  const block = formatHistoryForPrompt(chatHistory ?? [])
+  return block ? `${block}\n\n` : ''
+}
 
 export function formatProfileBlock(profile: UserProfileSnapshot | null): string {
   if (!profile) {

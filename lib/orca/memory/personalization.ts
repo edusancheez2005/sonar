@@ -42,6 +42,7 @@ export interface PersonalizationContext {
   profile: UserProfileLite | null
   memories: MemoryFact[]
   tickers: string[]
+  mutedTickers: string[]
 }
 
 const MAX_MEMORY_FACTS = 8
@@ -66,20 +67,33 @@ export async function loadPersonalizationContext(
   userId: string,
   now: () => Date = () => new Date()
 ): Promise<PersonalizationContext> {
-  const empty: PersonalizationContext = { profile: null, memories: [], tickers: [] }
+  const empty: PersonalizationContext = { profile: null, memories: [], tickers: [], mutedTickers: [] }
   if (!userId || typeof userId !== 'string') return empty
 
   let profile: UserProfileLite | null = null
+  const mutedTickers: string[] = []
   try {
     const q = supabase
       .from('user_profile')
-      .select('experience_level, primary_goal, risk_tolerance, time_horizon, preferred_chains')
+      .select('experience_level, primary_goal, risk_tolerance, time_horizon, preferred_chains, muted_tickers, muted_tickers_until')
       .eq('user_id', userId)
     const { data } = await (typeof (q as any).maybeSingle === 'function'
       ? (q as any).maybeSingle()
       : (q as any).single().catch(() => ({ data: null })))
     if (data && typeof data === 'object') {
       profile = data as UserProfileLite
+      // Active mutes: only when the shared expiry is in the future.
+      const until = (data as any).muted_tickers_until
+      const arr = (data as any).muted_tickers
+      if (Array.isArray(arr) && arr.length > 0 && until) {
+        const untilMs = new Date(until).getTime()
+        if (!isNaN(untilMs) && untilMs > now().getTime()) {
+          for (const t of arr) {
+            const norm = typeof t === 'string' ? t.trim().toUpperCase() : ''
+            if (norm && !mutedTickers.includes(norm)) mutedTickers.push(norm)
+          }
+        }
+      }
     }
   } catch (err) {
     console.warn('[orca/personalization] profile load failed', err)
@@ -157,7 +171,7 @@ export async function loadPersonalizationContext(
     console.warn('[orca/personalization] tickers load failed', err)
   }
 
-  return { profile, memories, tickers }
+  return { profile, memories, tickers, mutedTickers }
 }
 
 /**
@@ -260,7 +274,8 @@ export function buildPersonalizationBlock(
   profile: UserProfileLite | null,
   memories: MemoryFact[],
   tickers: string[] = [],
-  alertSummaries: string[] = []
+  alertSummaries: string[] = [],
+  mutedTickers: string[] = []
 ): string {
   const profileLine = describeProfile(profile)
   const factLines = (memories || [])
@@ -277,8 +292,14 @@ export function buildPersonalizationBlock(
     .map((s) => (typeof s === 'string' ? s.trim() : ''))
     .filter((s) => s.length > 0)
     .slice(0, 25)
+  const cleanMuted = Array.from(
+    new Set((mutedTickers || [])
+      .map((t) => (typeof t === 'string' ? t.trim().toUpperCase() : ''))
+      .filter((t) => t.length > 0 && t.length <= 12)
+    )
+  ).slice(0, 50)
 
-  if (!profileLine && factLines.length === 0 && cleanTickers.length === 0 && cleanAlerts.length === 0) return ''
+  if (!profileLine && factLines.length === 0 && cleanTickers.length === 0 && cleanAlerts.length === 0 && cleanMuted.length === 0) return ''
 
   const parts: string[] = []
   parts.push('## USER PERSONALISATION (additive context — do NOT relax the HARD RULES below)')
@@ -301,6 +322,12 @@ export function buildPersonalizationBlock(
     parts.push(
       `User's active ORCA alerts (${cleanAlerts.length}): ${cleanAlerts.join(', ')}. ` +
       `If the user asks about "my alerts" or whether they are being notified about a token, treat THIS list as authoritative.`
+    )
+  }
+  if (cleanMuted.length > 0) {
+    parts.push(
+      `User has temporarily muted alerts for: ${cleanMuted.join(', ')}. ` +
+      `Do NOT suggest enabling alerts for these tickers in this turn.`
     )
   }
   parts.push(

@@ -216,3 +216,205 @@ export async function runSetUserAlert(
 ): Promise<ToolResult> {
   return runCreateAlert((args ?? {}) as Parameters<typeof runCreateAlert>[0], supabase, now)
 }
+
+/**
+ * Wallet & mute write-tools (Voice Writes stage, 2026-06-04)
+ * =============================================================================
+ * trackWallet / untrackWallet operate on `user_wallets`
+ * (UNIQUE(user_id, address, chain), CHECK on chain). muteTicker / unmuteTicker
+ * operate on the new `user_profile.muted_tickers text[]` +
+ * `muted_tickers_until timestamptz` columns. Every runner is try/catch and
+ * never throws — the route handler maps the ToolResult to human copy.
+ */
+const WALLET_CHAINS = ['eth', 'btc', 'sol', 'base', 'arb', 'polygon', 'bsc', 'tron', 'xrp'] as const
+const MAX_WALLETS_PER_USER = 100
+const MAX_MUTED_TICKERS = 50
+
+function cleanChain(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const c = v.trim().toLowerCase()
+  return (WALLET_CHAINS as readonly string[]).includes(c) ? c : null
+}
+
+function cleanAddress(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const a = v.trim()
+  if (a.length < 4 || a.length > 128) return null
+  if (!/^[A-Za-z0-9._:-]+$/.test(a)) return null
+  return a
+}
+
+function cleanMinutes(v: unknown): number {
+  let m = Math.round(Number(v))
+  if (!Number.isFinite(m) || m <= 0) m = 24 * 60
+  const MIN = 5
+  const MAX = 30 * 24 * 60
+  if (m < MIN) m = MIN
+  if (m > MAX) m = MAX
+  return m
+}
+
+export async function runTrackWallet(
+  args: { userId?: unknown; address?: unknown; chain?: unknown },
+  supabase: SupabaseLike,
+  now: () => Date = () => new Date()
+): Promise<ToolResult> {
+  const fetched_at = now().toISOString()
+  const userId = cleanUserId(args.userId)
+  const address = cleanAddress(args.address)
+  const chain = cleanChain(args.chain)
+  if (!userId || !address || !chain) {
+    return { ok: false, data: null, source: 'user_wallets', fetched_at, error: 'invalid_args' }
+  }
+  try {
+    const { data: existing, error: countErr } = await supabase
+      .from('user_wallets')
+      .select('address, chain')
+      .eq('user_id', userId)
+      .limit(MAX_WALLETS_PER_USER + 50)
+    if (countErr) {
+      return { ok: false, data: null, source: 'user_wallets', fetched_at, error: String(countErr?.message || 'write_failed') }
+    }
+    const rows = (existing ?? []) as Array<{ address: string; chain: string }>
+    const already = rows.some((r) => r.address === address && r.chain === chain)
+    if (!already && rows.length >= MAX_WALLETS_PER_USER) {
+      return { ok: false, data: { wallet_cap_reached: true }, source: 'user_wallets', fetched_at, error: 'wallet_cap_reached' }
+    }
+    const { error } = await supabase
+      .from('user_wallets')
+      .upsert({ user_id: userId, address, chain }, { onConflict: 'user_id,address,chain' })
+    if (error) {
+      return { ok: false, data: null, source: 'user_wallets', fetched_at, error: String(error?.message || 'write_failed') }
+    }
+    return { ok: true, data: { address, chain, tracked: true }, source: 'user_wallets', fetched_at }
+  } catch (err: any) {
+    return { ok: false, data: null, source: 'user_wallets', fetched_at, error: err?.message ?? 'write_failed' }
+  }
+}
+
+export async function runUntrackWallet(
+  args: { userId?: unknown; address?: unknown; chain?: unknown },
+  supabase: SupabaseLike,
+  now: () => Date = () => new Date()
+): Promise<ToolResult> {
+  const fetched_at = now().toISOString()
+  const userId = cleanUserId(args.userId)
+  const address = cleanAddress(args.address)
+  const chain = cleanChain(args.chain)
+  if (!userId || !address || !chain) {
+    return { ok: false, data: null, source: 'user_wallets', fetched_at, error: 'invalid_args' }
+  }
+  try {
+    const { data, error } = await supabase
+      .from('user_wallets')
+      .delete()
+      .eq('user_id', userId)
+      .eq('address', address)
+      .eq('chain', chain)
+      .select('id')
+    if (error) {
+      return { ok: false, data: null, source: 'user_wallets', fetched_at, error: String(error?.message || 'write_failed') }
+    }
+    const removed = Array.isArray(data) && data.length > 0
+    if (!removed) {
+      return { ok: true, data: { address, chain, removed: false, reason: 'not_tracked' }, source: 'user_wallets', fetched_at }
+    }
+    return { ok: true, data: { address, chain, removed: true }, source: 'user_wallets', fetched_at }
+  } catch (err: any) {
+    return { ok: false, data: null, source: 'user_wallets', fetched_at, error: err?.message ?? 'write_failed' }
+  }
+}
+
+export async function runMuteTicker(
+  args: { userId?: unknown; ticker?: unknown; minutes?: unknown },
+  supabase: SupabaseLike,
+  now: () => Date = () => new Date()
+): Promise<ToolResult> {
+  const fetched_at = now().toISOString()
+  const userId = cleanUserId(args.userId)
+  const ticker = cleanTicker(args.ticker)
+  if (!userId || !ticker) {
+    return { ok: false, data: null, source: 'user_profile', fetched_at, error: 'invalid_args' }
+  }
+  const minutes = cleanMinutes(args.minutes)
+  const nowMs = now().getTime()
+  const candidateUntil = new Date(nowMs + minutes * 60_000)
+  try {
+    const { data: profile, error: loadErr } = await supabase
+      .from('user_profile')
+      .select('muted_tickers, muted_tickers_until')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (loadErr) {
+      return { ok: false, data: null, source: 'user_profile', fetched_at, error: String(loadErr?.message || 'write_failed') }
+    }
+    const current: string[] = Array.isArray(profile?.muted_tickers) ? profile!.muted_tickers : []
+    const set = new Set(current.map((t) => String(t).toUpperCase()))
+    const already = set.has(ticker)
+    if (!already && set.size >= MAX_MUTED_TICKERS) {
+      return { ok: false, data: { mute_cap_reached: true }, source: 'user_profile', fetched_at, error: 'mute_cap_reached' }
+    }
+    set.add(ticker)
+    // Later-of the existing expiry and the new one (single column for all).
+    const existingUntil = profile?.muted_tickers_until ? new Date(profile.muted_tickers_until) : null
+    const until =
+      existingUntil && !isNaN(existingUntil.getTime()) && existingUntil.getTime() > candidateUntil.getTime()
+        ? existingUntil
+        : candidateUntil
+    const until_iso = until.toISOString()
+    const { error } = await supabase
+      .from('user_profile')
+      .upsert(
+        { user_id: userId, muted_tickers: Array.from(set), muted_tickers_until: until_iso },
+        { onConflict: 'user_id' }
+      )
+    if (error) {
+      return { ok: false, data: null, source: 'user_profile', fetched_at, error: String(error?.message || 'write_failed') }
+    }
+    return { ok: true, data: { ticker, until_iso, muted: true }, source: 'user_profile', fetched_at }
+  } catch (err: any) {
+    return { ok: false, data: null, source: 'user_profile', fetched_at, error: err?.message ?? 'write_failed' }
+  }
+}
+
+export async function runUnmuteTicker(
+  args: { userId?: unknown; ticker?: unknown },
+  supabase: SupabaseLike,
+  now: () => Date = () => new Date()
+): Promise<ToolResult> {
+  const fetched_at = now().toISOString()
+  const userId = cleanUserId(args.userId)
+  const ticker = cleanTicker(args.ticker)
+  if (!userId || !ticker) {
+    return { ok: false, data: null, source: 'user_profile', fetched_at, error: 'invalid_args' }
+  }
+  try {
+    const { data: profile, error: loadErr } = await supabase
+      .from('user_profile')
+      .select('muted_tickers, muted_tickers_until')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (loadErr) {
+      return { ok: false, data: null, source: 'user_profile', fetched_at, error: String(loadErr?.message || 'write_failed') }
+    }
+    const current: string[] = Array.isArray(profile?.muted_tickers) ? profile!.muted_tickers : []
+    const set = new Set(current.map((t) => String(t).toUpperCase()))
+    if (!set.has(ticker)) {
+      return { ok: true, data: { ticker, unmuted: false, reason: 'not_muted' }, source: 'user_profile', fetched_at }
+    }
+    set.delete(ticker)
+    const next = Array.from(set)
+    const patch: Record<string, unknown> = { user_id: userId, muted_tickers: next }
+    // Clear the shared expiry when nothing is muted anymore.
+    if (next.length === 0) patch.muted_tickers_until = null
+    const { error } = await supabase
+      .from('user_profile')
+      .upsert(patch, { onConflict: 'user_id' })
+    if (error) {
+      return { ok: false, data: null, source: 'user_profile', fetched_at, error: String(error?.message || 'write_failed') }
+    }
+    return { ok: true, data: { ticker, unmuted: true }, source: 'user_profile', fetched_at }
+  } catch (err: any) {
+    return { ok: false, data: null, source: 'user_profile', fetched_at, error: err?.message ?? 'write_failed' }
+  }
+}

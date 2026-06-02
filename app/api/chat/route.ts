@@ -16,15 +16,24 @@ import { runOrchestrator } from '@/lib/orca/orchestrator/runOrchestrator'
 import { routeMessage } from '@/lib/orca/orchestrator/router'
 import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
 import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
-import { detectFastWrite, sanitiseConfirmCalls, type WriteCall } from '@/lib/orca/orchestrator/fastWrites'
+import { detectFastWrite, sanitiseConfirmCalls, shortenAddress, type WriteCall } from '@/lib/orca/orchestrator/fastWrites'
+import { detectAddress } from '@/lib/orca/orchestrator/detectAddress'
 import {
   runAddToWatchlist,
   runRemoveFromWatchlist,
   runCreateAlert,
   runRemoveAlert,
   runListAlerts,
+  runTrackWallet,
+  runUntrackWallet,
+  runMuteTicker,
+  runUnmuteTicker,
 } from '@/lib/orca/orchestrator/tools/writeTools'
 import { loadPersonalizationContext, buildPersonalizationBlock, loadActiveAlertSummaries } from '@/lib/orca/memory/personalization'
+import { loadRecentHistory } from '@/lib/orca/chat/loadRecentHistory'
+import { trimTurnsForPrompt } from '@/lib/orca/chat/trimHistory'
+import { formatHistoryForPrompt } from '@/lib/orca/chat/formatHistoryForPrompt'
+import { humanRelative } from '@/lib/orca/alerts/humanRelative'
 import { extractMemoryFacts } from '@/lib/orca/memory/extractor'
 import { waitUntil } from '@vercel/functions'
 
@@ -35,6 +44,8 @@ interface ConfirmedWriteResult {
   tool: WriteCall['tool']
   ok: boolean
   error?: string
+  /** Per-call human sentence for wallet/mute writes (verbatim copy spec). */
+  message?: string
 }
 
 const ALERT_KIND_LABEL: Record<string, string> = {
@@ -54,10 +65,12 @@ async function executeConfirmedWrites(
   confirmedCalls: WriteCall[],
   userId: string,
   supabase: any
-): Promise<{ results: ConfirmedWriteResult[]; text: string; success: boolean; intent: string }> {
+): Promise<{ results: ConfirmedWriteResult[]; text: string; success: boolean; intent: string; invalidate: string[] }> {
   const results: ConfirmedWriteResult[] = []
   const listings: string[] = []
   let touchedAlerts = false
+  let touchedWallets = false
+  let touchedMutes = false
 
   for (const call of confirmedCalls) {
     const ticker = call.args.ticker || ''
@@ -84,6 +97,47 @@ async function executeConfirmedWrites(
       for (const rule of rules as Array<{ ticker: string; kind: string }>) {
         listings.push(`${rule.ticker} ${ALERT_KIND_LABEL[rule.kind] || rule.kind}`)
       }
+    } else if (call.tool === 'trackWallet') {
+      touchedWallets = true
+      const address = call.args.address || ''
+      const chain = call.args.chain || ''
+      const r = await runTrackWallet({ userId, address, chain }, supabase)
+      const message = r.ok
+        ? `Now tracking ${shortenAddress(address)} on ${chain}.`
+        : (r.error === 'wallet_cap_reached'
+            ? `You've reached the 100-wallet cap. Untrack one from the Wallets tab first.`
+            : `Could not track that wallet (${r.error || 'error'}).`)
+      results.push({ ticker: '', tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed'), message })
+    } else if (call.tool === 'untrackWallet') {
+      touchedWallets = true
+      const address = call.args.address || ''
+      const chain = call.args.chain || ''
+      const r = await runUntrackWallet({ userId, address, chain }, supabase)
+      const removed = r.ok && (r.data as any)?.removed === true
+      const message = r.ok
+        ? (removed
+            ? `Stopped tracking ${shortenAddress(address)} on ${chain}.`
+            : `That wallet wasn't on your tracked list.`)
+        : `Could not untrack that wallet (${r.error || 'error'}).`
+      results.push({ ticker: '', tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed'), message })
+    } else if (call.tool === 'muteTicker') {
+      touchedMutes = true
+      const r = await runMuteTicker({ userId, ticker, minutes: call.args.minutes }, supabase)
+      const until = r.ok ? (r.data as any)?.until_iso : null
+      const message = r.ok
+        ? `Muted ${ticker} alerts until ${humanRelative(until)}. You can unmute any time.`
+        : (r.error === 'mute_cap_reached'
+            ? `You've muted 50 tickers already. Unmute one first.`
+            : `Could not mute ${ticker} (${r.error || 'error'}).`)
+      results.push({ ticker, tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed'), message })
+    } else if (call.tool === 'unmuteTicker') {
+      touchedMutes = true
+      const r = await runUnmuteTicker({ userId, ticker }, supabase)
+      const unmuted = r.ok && (r.data as any)?.unmuted === true
+      const message = r.ok
+        ? (unmuted ? `${ticker} alerts are back on.` : `${ticker} wasn't muted.`)
+        : `Could not unmute ${ticker} (${r.error || 'error'}).`
+      results.push({ ticker, tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed'), message })
     }
   }
 
@@ -92,7 +146,11 @@ async function executeConfirmedWrites(
   const alertsCreated = results.filter((r) => r.ok && r.tool === 'createAlert').map((r) => r.ticker)
   const alertsRemoved = results.filter((r) => r.ok && r.tool === 'removeAlert').map((r) => r.ticker)
   const listed = results.some((r) => r.ok && r.tool === 'listAlerts')
-  const failed = results.filter((r) => !r.ok)
+  const WALLET_MUTE_TOOLS = new Set(['trackWallet', 'untrackWallet', 'muteTicker', 'unmuteTicker'])
+  const walletMuteMessages = results
+    .filter((r) => WALLET_MUTE_TOOLS.has(r.tool) && r.message)
+    .map((r) => r.message as string)
+  const failed = results.filter((r) => !r.ok && !WALLET_MUTE_TOOLS.has(r.tool))
 
   const parts: string[] = []
   if (added.length) parts.push(`Added ${added.join(', ')} to your watchlist.`)
@@ -102,14 +160,30 @@ async function executeConfirmedWrites(
   if (listed) {
     parts.push(listings.length ? `Your active alerts: ${listings.join('; ')}.` : 'You have no active alerts yet.')
   }
+  // Wallet + mute writes carry their own verbatim copy.
+  for (const m of walletMuteMessages) parts.push(m)
   if (failed.length) {
     const reason = failed[0].error === 'rule_limit_reached' ? 'you have reached the 50-alert limit' : (failed[0].error || 'error')
     const labels = failed.map((f) => f.ticker).filter(Boolean).join(', ')
     parts.push(`Could not update ${labels || 'one item'} (${reason}).`)
   }
   const text = parts.length > 0 ? parts.join(' ') : 'No changes were made.'
-  const intent = touchedAlerts && added.length === 0 && removed.length === 0 ? 'alert_write' : 'watchlist_write'
-  return { results, text, success: failed.length === 0, intent }
+
+  // invalidate hints — clients dispatch orca:<x>-changed to refresh tabs.
+  const invalidate: string[] = []
+  if (added.length || removed.length) invalidate.push('watchlist')
+  if (touchedAlerts) invalidate.push('alerts')
+  if (touchedWallets) invalidate.push('wallets')
+  if (touchedMutes) invalidate.push('mute')
+
+  // intent — prefer the most specific write performed.
+  let intent = 'watchlist_write'
+  if (touchedWallets && !added.length && !removed.length && !touchedAlerts && !touchedMutes) intent = 'wallet_write'
+  else if (touchedMutes && !added.length && !removed.length && !touchedAlerts && !touchedWallets) intent = 'mute_write'
+  else if (touchedAlerts && added.length === 0 && removed.length === 0) intent = 'alert_write'
+
+  const success = failed.length === 0 && results.every((r) => r.ok)
+  return { results, text, success, intent, invalidate }
 }
 
 // Vercel function timeout. The legacy v1 path fans out to multiple upstream
@@ -355,6 +429,31 @@ export async function POST(request: Request) {
     }
 
     // -------------------------------------------------------------------------
+    // CONVERSATION LOOKBACK (2026-06-02) — server-side single source of truth.
+    //
+    // The chat clients do NOT reliably send prior turns. The server loads the
+    // last N turns from `chat_history` (filtered to THIS user's verified JWT
+    // id, optionally scoped to the session_id the client sent) and builds a
+    // read-only prompt block. Every downstream writer path (fast-write copy,
+    // orchestrator renderers, conversational fallback, legacy ticker) injects
+    // `historyBlock` / `recentTurns` so follow-ups like "what does that mean?"
+    // resolve against the real prior turns instead of inventing a denial.
+    //
+    // Best-effort: loadRecentHistory never throws (returns [] on any error).
+    // -------------------------------------------------------------------------
+    let recentTurns = await loadRecentHistory(supabase as any, userId, session_id || null, 12)
+    recentTurns = trimTurnsForPrompt(recentTurns)
+    const historyBlock = formatHistoryForPrompt(recentTurns)
+
+    // Resolve the most-recently-mentioned wallet address for the pronoun
+    // fallback ("track this wallet"). Scans newest → oldest.
+    let contextAddress: { address: string; chain: any } | null = null
+    for (let i = recentTurns.length - 1; i >= 0; i--) {
+      const found = detectAddress(recentTurns[i]?.content || '')
+      if (found) { contextAddress = found; break }
+    }
+
+    // -------------------------------------------------------------------------
     // STAGE B.2 (2026-05-26) — fast-write Confirm/Cancel flow.
     //
     // Intercept simple watchlist mutation utterances ("add SOL to my
@@ -394,7 +493,7 @@ export async function POST(request: Request) {
 
         // Non-SSE callers: execute writes, return single JSON envelope.
         if (!acceptSse) {
-          const { results, text, success, intent } = await executeConfirmedWrites(
+          const { results, text, success, intent, invalidate } = await executeConfirmedWrites(
             confirmedCalls,
             userId,
             supabase as any
@@ -416,6 +515,7 @@ export async function POST(request: Request) {
             response: text,
             intent,
             writeResults: results,
+            invalidate,
             quota: quotaStatus,
           })
         }
@@ -427,7 +527,7 @@ export async function POST(request: Request) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
             }
             try {
-              const { results, text, success, intent } = await executeConfirmedWrites(
+              const { results, text, success, intent, invalidate } = await executeConfirmedWrites(
                 confirmedCalls,
                 userId,
                 supabase as any
@@ -453,6 +553,7 @@ export async function POST(request: Request) {
                 response: text,
                 intent,
                 writeResults: results,
+                invalidate,
                 quota: quotaStatus,
               })
             } catch (err: any) {
@@ -491,7 +592,7 @@ export async function POST(request: Request) {
       } catch {
         // No prior history is fine; pronoun fallback simply won't trigger.
       }
-      const detection = detectFastWrite(message, { contextTicker })
+      const detection = detectFastWrite(message, { contextTicker, contextAddress })
       if (detection) {
         // Non-SSE callers (PersonalCopilotPanel) get a JSON envelope with
         // the confirm payload alongside a human-readable response. The
@@ -567,11 +668,15 @@ export async function POST(request: Request) {
     if (process.env.ORCA_ORCHESTRATION_V2 === 'true') {
       try {
         const v2Body = body as { history?: ChatTurn[]; confirm?: { calls?: ToolCall[] } }
-        const chatHistory: ChatTurn[] = Array.isArray(v2Body.history)
-          ? v2Body.history
-              .filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string')
-              .slice(-12)
-          : []
+        // Server-loaded recentTurns are the single source of truth; fall back
+        // to client-sent history only when the server load came back empty.
+        const chatHistory: ChatTurn[] = recentTurns.length
+          ? recentTurns.map((t) => ({ role: t.role, content: t.content }))
+          : Array.isArray(v2Body.history)
+            ? v2Body.history
+                .filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string')
+                .slice(-12)
+            : []
         const confirmedWriteCalls: ToolCall[] = Array.isArray(v2Body.confirm?.calls)
           ? v2Body.confirm!.calls!.filter((c) => c && typeof c.tool === 'string')
           : []
@@ -720,7 +825,7 @@ export async function POST(request: Request) {
         const { client: ai, miniModel, model: aiModel } = getAIClient()
         const routerStart = Date.now()
         const decision = await routeMessage(
-          { message, userId, chatHistory: [] },
+          { message, userId, chatHistory: recentTurns.map((t) => ({ role: t.role, content: t.content })) },
           {
             routerCall: async (sys, usr) => {
               const r = await ai.chat.completions.create({
@@ -801,7 +906,7 @@ export async function POST(request: Request) {
                 }
 
                 const out = await runOrchestrator(
-                  { message, userId, chatHistory: [], profile },
+                  { message, userId, chatHistory: recentTurns.map((t) => ({ role: t.role, content: t.content })), profile },
                   {
                     supabase,
                     model: {
@@ -1001,7 +1106,7 @@ export async function POST(request: Request) {
         try {
           const ctx = await loadPersonalizationContext(supabase as any, userId)
           const alertSummaries = await loadActiveAlertSummaries(supabase as any, userId)
-          convPersonalization = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, alertSummaries)
+          convPersonalization = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, alertSummaries, ctx.mutedTickers)
         } catch (persErr) {
           console.warn('[personalization] conv-path load failed', persErr)
         }
@@ -1015,9 +1120,11 @@ Examples:
 - Be friendly, concise (2-3 sentences max), and helpful. No emojis.
 
 Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP, ADA, XRP, AVAX, DOT, MATIC, and 200+ more tokens.`
-      const convFullSystem = convPersonalization
-        ? `${convPersonalization}\n\n${convSystem}`
-        : convSystem
+      // Slot the conversation-lookback block between personalisation and the
+      // conversational instructions so follow-ups resolve against prior turns.
+      const convFullSystem = [convPersonalization, historyBlock, convSystem]
+        .filter(Boolean)
+        .join('\n\n')
 
       const completion = await ai.chat.completions.create({
         model: miniModel,
@@ -1147,11 +1254,15 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             try {
               const ctx = await loadPersonalizationContext(supabase as any, userId)
               const alertSummaries = await loadActiveAlertSummaries(supabase as any, userId)
-              const block = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, alertSummaries)
-              if (block) sysPrompt = `${block}\n\n${ORCA_SYSTEM_PROMPT}`
+              const block = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, alertSummaries, ctx.mutedTickers)
+              // Order: personalisation → prior turns → ORCA_SYSTEM_PROMPT.
+              sysPrompt = [block, historyBlock, ORCA_SYSTEM_PROMPT].filter(Boolean).join('\n\n')
             } catch (persErr) {
               console.warn('[personalization] ticker-path load failed', persErr)
+              if (historyBlock) sysPrompt = `${historyBlock}\n\n${ORCA_SYSTEM_PROMPT}`
             }
+          } else if (historyBlock) {
+            sysPrompt = `${historyBlock}\n\n${ORCA_SYSTEM_PROMPT}`
           }
 
           const requestBody: any = {

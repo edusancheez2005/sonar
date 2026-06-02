@@ -164,4 +164,24 @@ describe('WalletsTab', () => {
     await screen.findByTestId('wallets-empty')
     expect(/\p{Extended_Pictographic}/u.test(container.textContent || '')).toBe(false)
   })
+
+  it('refetches when an "orca:wallets-changed" event fires', async () => {
+    const client = makeClient('tok')
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ items: [] }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [{ id: 11, address: '0xnewlytracked0000000000000000000000000000', chain: 'bsc', label: null, created_at: 'now' }],
+        }),
+      })
+    render(<WalletsTab client={client} fetchImpl={fetchImpl} />)
+    await screen.findByTestId('wallets-empty')
+    const callsBefore = fetchImpl.mock.calls.length
+    window.dispatchEvent(new CustomEvent('orca:wallets-changed'))
+    await waitFor(() => {
+      expect(fetchImpl.mock.calls.length).toBeGreaterThan(callsBefore)
+    })
+    await screen.findByTestId('wallets-row-11')
+  })
 })

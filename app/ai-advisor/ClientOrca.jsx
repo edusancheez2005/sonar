@@ -717,6 +717,7 @@ export default function ClientOrca() {
         let buffer = ''
         let finalText = ''
         let success = false
+        let invalidate = null
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
@@ -731,6 +732,7 @@ export default function ClientOrca() {
               if (event.type === 'complete') {
                 finalText = event.response || ''
                 success = !!event.success
+                if (Array.isArray(event.invalidate)) invalidate = event.invalidate
                 if (event.quota) setQuota(event.quota)
               } else if (event.type === 'error') {
                 throw new Error(event.error || 'Write failed')
@@ -747,7 +749,15 @@ export default function ClientOrca() {
         ))
         if (success) {
           try {
-            window.dispatchEvent(new CustomEvent('orca:watchlist-changed'))
+            if (invalidate && invalidate.length > 0) {
+              for (const key of invalidate) {
+                if (typeof key === 'string' && key) {
+                  window.dispatchEvent(new CustomEvent(`orca:${key}-changed`))
+                }
+              }
+            } else {
+              window.dispatchEvent(new CustomEvent('orca:watchlist-changed'))
+            }
           } catch (_) {}
         }
       } else {

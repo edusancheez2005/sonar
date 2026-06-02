@@ -271,6 +271,22 @@ export default function WalletsTab({ client, fetchImpl, onAskOrca }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Refresh when ORCA performs a voice-write wallet track/untrack. The chat
+  // clients dispatch 'orca:wallets-changed' on a confirmed write that touched
+  // wallets, so the Wallets tab reflects the change without a manual reload.
+  useEffect(() => {
+    function onWalletsChanged() { load() }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('orca:wallets-changed', onWalletsChanged)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('orca:wallets-changed', onWalletsChanged)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   async function handleDelete(id) {
     const t = await ensureToken()
     if (!t) return

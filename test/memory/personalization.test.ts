@@ -147,7 +147,7 @@ describe('loadPersonalizationContext', () => {
   it('returns empty context for missing userId', async () => {
     const sb = makeSb({})
     const out = await loadPersonalizationContext(sb as any, '')
-    expect(out).toEqual({ profile: null, memories: [], tickers: [] })
+    expect(out).toEqual({ profile: null, memories: [], tickers: [], mutedTickers: [] })
   })
 
   it('returns profile + memories when supabase responds', async () => {
@@ -205,3 +205,52 @@ describe('loadPersonalizationContext', () => {
     expect(out.memories.map((m) => m.fact)).toEqual(['real', 'real2'])
   })
 })
+
+describe('personalization — muted tickers', () => {
+  function makeProfileSb(profile: any) {
+    return {
+      from(table: string) {
+        if (table === 'user_profile') {
+          return {
+            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: profile }) }) }),
+          }
+        }
+        // orca_memory — resolve empty
+        const chain: any = {
+          or: () => chain,
+          order: () => chain,
+          limit: () => chain,
+          then: (resolve: any) => Promise.resolve({ data: [] }).then(resolve),
+        }
+        return { select: () => ({ eq: () => chain }) }
+      },
+    }
+  }
+
+  const NOW = () => new Date('2026-06-04T12:00:00Z')
+
+  it('surfaces muted tickers when the expiry is in the future', async () => {
+    const sb = makeProfileSb({
+      experience_level: 'intermediate',
+      muted_tickers: ['btc', 'sol'],
+      muted_tickers_until: '2026-06-05T12:00:00Z',
+    })
+    const ctx = await loadPersonalizationContext(sb as any, 'user-1', NOW)
+    expect(ctx.mutedTickers).toEqual(['BTC', 'SOL'])
+    const block = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, [], ctx.mutedTickers)
+    expect(block).toContain('temporarily muted alerts for: BTC, SOL')
+  })
+
+  it('omits muted tickers (and the mute line) when the expiry is in the past', async () => {
+    const sb = makeProfileSb({
+      experience_level: 'intermediate',
+      muted_tickers: ['btc'],
+      muted_tickers_until: '2026-06-01T00:00:00Z',
+    })
+    const ctx = await loadPersonalizationContext(sb as any, 'user-1', NOW)
+    expect(ctx.mutedTickers).toEqual([])
+    const block = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, [], ctx.mutedTickers)
+    expect(block).not.toContain('temporarily muted alerts')
+  })
+})
+

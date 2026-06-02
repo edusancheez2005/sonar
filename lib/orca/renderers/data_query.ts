@@ -5,11 +5,11 @@
  * Lead with the numbers in a focused markdown list. No tangents.
  */
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
-import { formatProfileBlock, formatToolBlock } from './shared'
+import { formatProfileBlock, formatToolBlock, historyPrefix } from './shared'
 import type { RenderArgs } from './types'
 
 export function renderDataQueryPrompt(args: RenderArgs): string {
-  return `You are ORCA. The user asked a SPECIFIC data question. Give them the data in a clean, scannable, well-formatted answer.
+  return `${historyPrefix(args.chatHistory)}You are ORCA. The user asked a SPECIFIC data question. Give them the data in a clean, scannable, well-formatted answer.
 
 ${HARD_RULES}
 

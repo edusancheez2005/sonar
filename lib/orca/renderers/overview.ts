@@ -15,7 +15,7 @@
  */
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
 import type { RenderArgs } from './types'
-import { formatProfileBlock, formatToolBlock } from './shared'
+import { formatProfileBlock, formatToolBlock, historyPrefix } from './shared'
 import { INLINE_CHART_DIRECTIVE } from './inline-chart-directive'
 
 const OVERVIEW_RESPONSE_FORMAT = `## RESPONSE FORMAT
@@ -89,7 +89,7 @@ export function renderOverviewPrompt(args: RenderArgs): string {
       ? `\n\nProactive offer block (place at the very end, before the disclaimer): "I notice ${focusTicker} isn't in your personal dashboard yet — want me to add it so we can track whale flows and news as they happen?" Render the affordance as two bracketed buttons: [ Yes, track it ] [ No thanks ].`
       : ''
 
-  return `You are ORCA, an automated research assistant for Sonar Tracker. You summarise public news, social posts, and on-chain whale transaction data. You are not a financial adviser, broker, dealer, or analyst, and you are not authorised to provide investment, legal, or tax advice in any jurisdiction.
+  return `${historyPrefix(args.chatHistory)}You are ORCA, an automated research assistant for Sonar Tracker. You summarise public news, social posts, and on-chain whale transaction data. You are not a financial adviser, broker, dealer, or analyst, and you are not authorised to provide investment, legal, or tax advice in any jurisdiction.
 
 ${HARD_RULES}
 

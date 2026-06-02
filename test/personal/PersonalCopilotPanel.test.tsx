@@ -205,4 +205,65 @@ describe('PersonalCopilotPanel', () => {
       expect(body.focus_ticker).toBe('ETH')
     })
   })
+
+  it('persists a session_id to sessionStorage and sends it on every POST', async () => {
+    window.sessionStorage.clear()
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ response: 'ok' }),
+    })
+    render(
+      <PersonalCopilotPanel
+        experienceLevel="intermediate"
+        tickers={['ETH']}
+        client={makeClient('tok')}
+        fetchImpl={fetchImpl}
+      />
+    )
+    await userEvent.type(screen.getByTestId('copilot-input'), 'explain')
+    await userEvent.click(screen.getByTestId('copilot-send'))
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalled())
+    const sid = window.sessionStorage.getItem('orca:personal-copilot:sid')
+    expect(sid).toBeTruthy()
+    const body = JSON.parse(fetchImpl.mock.calls[0][1].body)
+    expect(body.session_id).toBe(sid)
+  })
+
+  it('dispatches the matching orca:<x>-changed event when a confirmed write returns invalidate', async () => {
+    const fetchImpl = vi.fn()
+      // Trip 1 — server asks to confirm a wallet track.
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          response: 'Track wallet 0x515b…33C8 on bsc?',
+          confirm: { label: 'Track wallet 0x515b…33C8 on bsc?', calls: [{ tool: 'trackWallet', args: { address: '0x515b72Ed8a97F42C568D6A143232775018f133C8', chain: 'bsc' } }] },
+        }),
+      })
+      // Trip 2 — confirmed write succeeds and reports which data sets changed.
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: 'Now tracking 0x515b…33C8 on bsc.', success: true, invalidate: ['wallets'] }),
+      })
+    const onWallets = vi.fn()
+    window.addEventListener('orca:wallets-changed', onWallets)
+    try {
+      render(
+        <PersonalCopilotPanel
+          experienceLevel="intermediate"
+          tickers={['ETH']}
+          client={makeClient('tok')}
+          fetchImpl={fetchImpl}
+        />
+      )
+      await userEvent.type(screen.getByTestId('copilot-input'), 'track wallet 0x515b72Ed8a97F42C568D6A143232775018f133C8 on bsc')
+      await userEvent.click(screen.getByTestId('copilot-send'))
+      await waitFor(() => expect(screen.getByText(/Track wallet 0x515b…33C8 on bsc\?/i)).toBeInTheDocument())
+
+      await userEvent.type(screen.getByTestId('copilot-input'), 'yes')
+      await userEvent.click(screen.getByTestId('copilot-send'))
+      await waitFor(() => expect(onWallets).toHaveBeenCalled())
+    } finally {
+      window.removeEventListener('orca:wallets-changed', onWallets)
+    }
+  })
 })

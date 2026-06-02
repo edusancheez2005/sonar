@@ -5,12 +5,12 @@
  * what the on-chain feed says \u2014 NEVER a recommendation, never a forecast.
  */
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
-import { formatProfileBlock, formatToolBlock } from './shared'
+import { formatProfileBlock, formatToolBlock, historyPrefix } from './shared'
 import type { RenderArgs } from './types'
 import { INLINE_CHART_DIRECTIVE } from './inline-chart-directive'
 
 export function renderWalletLookupPrompt(args: RenderArgs): string {
-  return `You are ORCA. The user is asking about one or more wallets / addresses. Stay descriptive.
+  return `${historyPrefix(args.chatHistory)}You are ORCA. The user is asking about one or more wallets / addresses. Stay descriptive.
 
 ${HARD_RULES}
 

@@ -2,11 +2,11 @@
  * Renderer: followup (intent: short follow-up to prior turn).
  */
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
-import { formatProfileBlock, formatToolBlock } from './shared'
+import { formatProfileBlock, formatToolBlock, historyPrefix } from './shared'
 import type { RenderArgs } from './types'
 
 export function renderFollowupPrompt(args: RenderArgs): string {
-  return `You are ORCA. The user is following up on the previous turn. Keep it short.
+  return `${historyPrefix(args.chatHistory)}You are ORCA. The user is following up on the previous turn. Keep it short.
 
 ${HARD_RULES}
 

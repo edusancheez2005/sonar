@@ -109,7 +109,7 @@ export async function runOrchestrator(
 
   // --- Stage 4: writer ------------------------------------------------------
   const renderer = selectRenderer(router.intent)
-  const systemPrompt = renderer({ toolResults, profile: input.profile, message: input.message })
+  const systemPrompt = renderer({ toolResults, profile: input.profile, message: input.message, chatHistory: input.chatHistory })
 
   const tWriter = Date.now()
   let draft: string

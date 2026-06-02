@@ -6,11 +6,11 @@
  * activity) WITHOUT translating the signal into a buy/sell recommendation.
  */
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
-import { formatProfileBlock, formatToolBlock } from './shared'
+import { formatProfileBlock, formatToolBlock, historyPrefix } from './shared'
 import type { RenderArgs } from './types'
 
 export function renderSignalExplainPrompt(args: RenderArgs): string {
-  return `You are ORCA. The user is asking why the Sonar signal engine emitted its current verdict for a ticker. Describe the engine's inputs \u2014 do not translate the verdict into a recommendation.
+  return `${historyPrefix(args.chatHistory)}You are ORCA. The user is asking why the Sonar signal engine emitted its current verdict for a ticker. Describe the engine's inputs — do not translate the verdict into a recommendation.
 
 ${HARD_RULES}
 

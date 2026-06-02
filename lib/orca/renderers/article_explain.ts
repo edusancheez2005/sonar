@@ -5,11 +5,11 @@
  * crypto markets, without forecasting price.
  */
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
-import { formatProfileBlock, formatToolBlock } from './shared'
+import { formatProfileBlock, formatToolBlock, historyPrefix } from './shared'
 import type { RenderArgs } from './types'
 
 export function renderArticleExplainPrompt(args: RenderArgs): string {
-  return `You are ORCA. The user is asking ORCA to explain a specific news article. Stay descriptive and grounded in the supplied excerpt.
+  return `${historyPrefix(args.chatHistory)}You are ORCA. The user is asking ORCA to explain a specific news article. Stay descriptive and grounded in the supplied excerpt.
 
 ${HARD_RULES}
 

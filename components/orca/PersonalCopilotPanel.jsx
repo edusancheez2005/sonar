@@ -208,6 +208,25 @@ export default function PersonalCopilotPanel({
   // either execute the calls (confirm trip) or discard them.
   const [pendingConfirm, setPendingConfirm] = useState(null)
   const threadRef = useRef(null)
+  // Per-tab conversation id so the server can load the right lookback turns.
+  // Stored in sessionStorage (per-tab, survives reloads, not shared across
+  // tabs). Hydrated inside an effect to stay SSR-safe.
+  const sessionIdRef = useRef(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const KEY = 'orca:personal-copilot:sid'
+      let sid = window.sessionStorage.getItem(KEY)
+      if (!sid) {
+        sid = (window.crypto && typeof window.crypto.randomUUID === 'function')
+          ? window.crypto.randomUUID()
+          : `sid-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        window.sessionStorage.setItem(KEY, sid)
+      }
+      sessionIdRef.current = sid
+    } catch { /* sessionStorage unavailable — lookback simply scopes by user */ }
+  }, [])
 
   // Refresh the seeded greeting if the user's profile or watchlist changes
   // before they have sent any message.
@@ -271,8 +290,8 @@ export default function PersonalCopilotPanel({
       }
 
       const reqBody = isYes
-        ? { message: pendingConfirm.label, confirm: { calls: pendingConfirm.calls } }
-        : { message: text, focus_ticker: focusTicker || undefined }
+        ? { message: pendingConfirm.label, confirm: { calls: pendingConfirm.calls }, session_id: sessionIdRef.current || undefined }
+        : { message: text, focus_ticker: focusTicker || undefined, session_id: sessionIdRef.current || undefined }
 
       const res = await doFetch('/api/chat', {
         method: 'POST',
@@ -349,10 +368,23 @@ export default function PersonalCopilotPanel({
         setPendingConfirm(null)
       }
 
-      // After a successful watchlist write, tell tabs/strips to refetch.
+      // After a successful write, tell tabs/strips to refetch. The server
+      // returns an `invalidate` array naming the data sets that changed
+      // ('watchlist' | 'wallets' | 'alerts' | 'mute'); dispatch a matching
+      // 'orca:<x>-changed' event for each. Fall back to the legacy
+      // watchlist-changed event when the server didn't send invalidate.
       if (isYes && typeof window !== 'undefined') {
         try {
-          window.dispatchEvent(new CustomEvent('orca:watchlist-changed'))
+          const invalidate = Array.isArray(body?.invalidate) ? body.invalidate : null
+          if (invalidate && invalidate.length > 0) {
+            for (const key of invalidate) {
+              if (typeof key === 'string' && key) {
+                window.dispatchEvent(new CustomEvent(`orca:${key}-changed`))
+              }
+            }
+          } else {
+            window.dispatchEvent(new CustomEvent('orca:watchlist-changed'))
+          }
         } catch { /* ignore */ }
       }
     } catch (err) {

@@ -4,7 +4,7 @@
  * For questions about the user's own holdings, watchlist, or memory.
  */
 import { HARD_RULES, MANDATORY_DISCLAIMER, truncate } from '../shared-rules'
-import { formatProfileBlock, formatToolBlock } from './shared'
+import { formatProfileBlock, formatToolBlock, historyPrefix } from './shared'
 import type { RenderArgs } from './types'
 import { INLINE_CHART_DIRECTIVE } from './inline-chart-directive'
 
@@ -32,7 +32,7 @@ export function renderPersonalPrompt(args: RenderArgs): string {
     ? `\n\nProactive offer (place before the disclaimer, after the follow-up question): "I notice ${offerCandidate} isn't in your personal dashboard yet — want me to add it so we can track whale flows and news as they happen?" Render as: [ Yes, track it ] [ No thanks ]. Do NOT emit more than one such offer per response.`
     : ''
 
-  return `You are ORCA, the user's personalised crypto research copilot.
+  return `${historyPrefix(args.chatHistory)}You are ORCA, the user's personalised crypto research copilot.
 
 ${HARD_RULES}
 

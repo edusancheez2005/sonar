@@ -22,6 +22,8 @@
  *    handler injects it from the verified JWT at execution time.
  */
 import { parseThreshold } from '../alerts/parseThreshold'
+import { detectAddress, type Chain } from './detectAddress'
+import { parseDuration } from './parseDuration'
 
 export type WriteTool =
   | 'addToWatchlist'
@@ -29,15 +31,53 @@ export type WriteTool =
   | 'createAlert'
   | 'removeAlert'
   | 'listAlerts'
+  | 'trackWallet'
+  | 'untrackWallet'
+  | 'muteTicker'
+  | 'unmuteTicker'
 
 /** Alert kinds the chat detector can create (mirrors lib/orca/alerts/types). */
 export type FastAlertKind = 'price_move' | 'whale_flow' | 'signal_flip' | 'news_high_impact'
+
+/** Canonical chains accepted by the user_wallets table CHECK constraint. */
+export const VALID_CHAINS = new Set<string>([
+  'eth', 'btc', 'sol', 'base', 'arb', 'polygon', 'bsc', 'tron', 'xrp',
+])
 
 export interface WriteCallArgs {
   ticker?: string
   kind?: FastAlertKind
   threshold_pct?: number | null
   threshold_usd?: number | null
+  // Wallet writes.
+  address?: string
+  chain?: string
+  // Mute writes.
+  minutes?: number
+}
+
+/** first6…last4 — mirrors the WalletRow.jsx abbreviation. */
+export function shortenAddress(addr: string): string {
+  if (typeof addr !== 'string' || addr.length <= 12) return addr
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+}
+
+/** Human duration label for the mute confirm card ("24 hours", "3 days"). */
+function humanDuration(minutes: number): string {
+  if (!Number.isFinite(minutes) || minutes <= 0) return '24 hours'
+  if (minutes % (7 * 24 * 60) === 0) {
+    const w = minutes / (7 * 24 * 60)
+    return `${w} week${w === 1 ? '' : 's'}`
+  }
+  if (minutes % (24 * 60) === 0) {
+    const d = minutes / (24 * 60)
+    return `${d} day${d === 1 ? '' : 's'}`
+  }
+  if (minutes % 60 === 0) {
+    const h = minutes / 60
+    return `${h} hour${h === 1 ? '' : 's'}`
+  }
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`
 }
 
 export interface WriteCall {
@@ -122,6 +162,12 @@ export interface DetectFastWriteOptions {
    * resolve "it" to this value.
    */
   contextTicker?: string | null
+  /**
+   * Optional wallet resolved from prior conversation context (e.g. the
+   * most-recently-discussed address). When the user says "track this wallet"
+   * with no explicit address, the detector resolves the pronoun to this value.
+   */
+  contextAddress?: { address: string; chain: Chain } | null
 }
 
 // ── Alert detection ─────────────────────────────────────────────────────────
@@ -146,6 +192,10 @@ const TICKER_STOPWORDS = new Set<string>([
   'REMOVE', 'DELETE', 'DROP', 'CANCEL', 'STOP', 'DISABLE', 'CLEAR', 'SHOW',
   'LIST', 'VIEW', 'SEE', 'WHAT', 'IT', 'PLEASE', 'CHANGES', 'CHANGE', 'FLIPS',
   'FLIP', 'FLIPPED', 'GET', 'SET', 'UP', 'DOWN', 'DAY', 'HOUR', 'HOURS',
+  'MUTE', 'MUTED', 'SILENCE', 'HIDE', 'SUPPRESS', 'UNMUTE', 'RESUME', 'TRACK',
+  'TRACKING', 'UNTRACK', 'WALLET', 'ADDRESS', 'WHALE', 'MINUTE', 'MINUTES',
+  'WEEK', 'WEEKS', 'DAYS', 'THIS', 'THAT', 'THEM', 'WK', 'HR', 'HRS',
+  'ALERTING', 'PINGING', 'NOTIFYING', 'TELLING', 'SILENCING', 'SUPPRESSING',
 ])
 
 function pickTickerAnywhere(text: string): string | null {
@@ -253,6 +303,88 @@ export function detectAlertWrite(
   return { calls: [{ tool: 'createAlert', args }], label }
 }
 
+// ── Wallet detection ────────────────────────────────────────────────────────
+// "track this wallet 0xabc…", "watch 0xabc on base", "stop tracking 0xabc",
+// "untrack bc1q…". Requires a detectable address (or contextAddress pronoun
+// fallback). Untrack phrases take precedence over the shared "track"/"watch".
+
+const WALLET_UNTRACK_RE = /\b(untrack|stop\s+tracking|stop\s+watching|stop\s+following|unfollow|forget|remove|drop)\b/i
+const WALLET_TRACK_RE = /\b(track|watch|follow|monitor|save|add)\b/i
+const WALLET_PRONOUN_RE = /\b(this|that|the|it|wallet|address)\b/i
+
+export function detectWalletWrite(
+  message: string,
+  opts: DetectFastWriteOptions = {}
+): FastWriteDetection | null {
+  if (typeof message !== 'string') return null
+  const msg = message.trim()
+  if (!msg || msg.length > 200) return null
+
+  const hasUntrack = WALLET_UNTRACK_RE.test(msg)
+  const hasTrack = WALLET_TRACK_RE.test(msg)
+  if (!hasUntrack && !hasTrack) return null
+
+  let detected = detectAddress(msg)
+  // Pronoun fallback — "track this wallet" with a context address.
+  if (!detected && opts.contextAddress && WALLET_PRONOUN_RE.test(msg)) {
+    detected = opts.contextAddress
+  }
+  if (!detected) return null
+
+  const { address, chain } = detected
+  const short = shortenAddress(address)
+
+  if (hasUntrack) {
+    return {
+      calls: [{ tool: 'untrackWallet', args: { address, chain } }],
+      label: `Stop tracking ${short} on ${chain}?`,
+    }
+  }
+  return {
+    calls: [{ tool: 'trackWallet', args: { address, chain } }],
+    label: `Track wallet ${short} on ${chain}?`,
+  }
+}
+
+// ── Mute detection ──────────────────────────────────────────────────────────
+// "mute SOL alerts for 3 days", "silence BTC", "stop alerting me on ETH",
+// "unmute SOL". Unmute takes precedence. Duration defaults to 24h.
+
+const MUTE_RE = /\b(mute|silence|suppress|stop\s+alerting|stop\s+pinging|stop\s+notifying|stop\s+telling)\b/i
+const UNMUTE_RE = /\b(unmute|unsilence|un-?mute|stop\s+muting|resume\s+alerts?|unsuppress)\b/i
+
+export function detectMuteWrite(
+  message: string,
+  opts: DetectFastWriteOptions = {}
+): FastWriteDetection | null {
+  if (typeof message !== 'string') return null
+  const msg = message.trim()
+  if (!msg || msg.length > 200) return null
+
+  const contextTicker = opts.contextTicker ? normaliseTicker(opts.contextTicker) : null
+
+  if (UNMUTE_RE.test(msg)) {
+    const ticker = pickTickerAnywhere(msg) || contextTicker
+    if (!ticker) return null
+    return {
+      calls: [{ tool: 'unmuteTicker', args: { ticker } }],
+      label: `Unmute ${ticker} alerts?`,
+    }
+  }
+
+  if (MUTE_RE.test(msg)) {
+    const ticker = pickTickerAnywhere(msg) || contextTicker
+    if (!ticker) return null
+    const minutes = parseDuration(msg)
+    return {
+      calls: [{ tool: 'muteTicker', args: { ticker, minutes } }],
+      label: `Mute ${ticker} alerts for ${humanDuration(minutes)}?`,
+    }
+  }
+
+  return null
+}
+
 export function detectFastWrite(
   message: string,
   opts: DetectFastWriteOptions = {}
@@ -268,6 +400,16 @@ export function detectFastWrite(
   // text, so watchlist detection still runs below.
   const alert = detectAlertWrite(msg, opts)
   if (alert) return alert
+
+  // Wallet track/untrack — requires a detectable address, so it never fires on
+  // plain watchlist/ticker text. Runs before watchlist add so "track 0xabc"
+  // tracks a wallet rather than trying to add "0XABC" as a ticker.
+  const wallet = detectWalletWrite(msg, opts)
+  if (wallet) return wallet
+
+  // Mute/unmute — requires a mute verb, so it never fires on watchlist text.
+  const mute = detectMuteWrite(msg, opts)
+  if (mute) return mute
 
   const isExplicitWatchlist = /\bwatch\s*list\b|\bwatchlist\b/i.test(msg)
   const contextTicker = opts.contextTicker
@@ -366,6 +508,31 @@ export function sanitiseConfirmCalls(input: unknown): WriteCall[] | null {
         if (Number.isFinite(usd) && usd > 0) args.threshold_usd = Math.round(usd)
       }
       out.push({ tool, args })
+    } else if (tool === 'trackWallet' || tool === 'untrackWallet') {
+      if (!argsRaw || typeof argsRaw !== 'object') continue
+      const address = String(argsRaw.address || '').trim()
+      const chain = String(argsRaw.chain || '').trim().toLowerCase()
+      if (!VALID_CHAINS.has(chain)) continue
+      // Conservative address charset; length 4–128 mirrors the wallets route.
+      if (!/^[A-Za-z0-9._:-]+$/.test(address)) continue
+      if (address.length < 4 || address.length > 128) continue
+      out.push({ tool, args: { address, chain } })
+    } else if (tool === 'muteTicker') {
+      if (!argsRaw || typeof argsRaw !== 'object') continue
+      const ticker = normaliseTicker(String(argsRaw.ticker || ''))
+      if (!ticker) continue
+      let minutes = Math.round(Number(argsRaw.minutes))
+      if (!Number.isFinite(minutes) || minutes <= 0) minutes = 24 * 60
+      const MIN = 5
+      const MAX = 30 * 24 * 60
+      if (minutes < MIN) minutes = MIN
+      if (minutes > MAX) minutes = MAX
+      out.push({ tool, args: { ticker, minutes } })
+    } else if (tool === 'unmuteTicker') {
+      if (!argsRaw || typeof argsRaw !== 'object') continue
+      const ticker = normaliseTicker(String(argsRaw.ticker || ''))
+      if (!ticker) continue
+      out.push({ tool, args: { ticker } })
     } else {
       continue
     }
