@@ -4,7 +4,7 @@
 // orca:reask event) and "Dismiss" (marks the single notification read).
 import React from 'react'
 import { TILE } from '../inline/tileTokens'
-import { markRead, reaskFromPayload } from './client'
+import { markRead, openNotificationInOrca } from './client'
 
 const STRIPE_BY_KIND = {
   price_move: TILE.cyan,
@@ -27,17 +27,17 @@ function relativeTime(iso) {
 }
 
 export function NotificationCard({ notification, onChange }) {
-  const { id, kind, title, body, payload, read_at, created_at } = notification || {}
+  const { id, kind, title, body, read_at, created_at } = notification || {}
   const stripe = STRIPE_BY_KIND[kind] || TILE.grey
   const unread = !read_at
 
   const onOpen = async (e) => {
     e.preventDefault()
-    reaskFromPayload(payload)
     if (unread) {
       await markRead(id)
       if (onChange) onChange()
     }
+    openNotificationInOrca(notification)
   }
 
   const onDismiss = async (e) => {

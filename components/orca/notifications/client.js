@@ -83,3 +83,46 @@ export function reaskFromPayload(payload) {
     return false
   }
 }
+
+// Build a prompt for a notification so "Open in ORCA" can deep-link into the
+// /ai copilot with the question pre-filled.
+export function orcaPromptForNotification(notification) {
+  const { kind, ticker, title, body, payload } = notification || {}
+  const reask = payload && payload.reask
+  if (reask && typeof reask.prompt === 'string' && reask.prompt.trim()) {
+    return reask.prompt.trim()
+  }
+  const subject = ticker || (payload && payload.address) || 'this alert'
+  switch (kind) {
+    case 'price_move':
+      return `What's driving the recent price move in ${subject}? ${title || ''}`.trim()
+    case 'whale_flow':
+      return `Explain the recent whale flow in ${subject}. ${title || ''}`.trim()
+    case 'signal_flip':
+      return `Why did the signal for ${subject} change? ${title || ''}`.trim()
+    case 'news_high_impact':
+    case 'news_any':
+      return `Summarise this ${subject} news and what it means: ${title || body || ''}`.trim()
+    case 'social_post':
+      return `What's the context behind this ${subject} social post: ${title || body || ''}`.trim()
+    case 'wallet_activity':
+      return `Explain the recent on-chain activity for ${subject}. ${title || ''}`.trim()
+    default:
+      return (title || body || `Tell me more about ${subject}`).trim()
+  }
+}
+
+// Navigate to the /ai copilot with a notification's question pre-filled.
+export function openNotificationInOrca(notification) {
+  try {
+    const q = orcaPromptForNotification(notification)
+    const params = new URLSearchParams()
+    params.set('q', q)
+    if (notification?.ticker) params.set('ticker', notification.ticker)
+    else if (notification?.payload?.address) params.set('wallet', notification.payload.address)
+    window.location.assign(`/ai?${params.toString()}`)
+    return true
+  } catch {
+    return false
+  }
+}
