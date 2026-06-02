@@ -4,6 +4,7 @@
 // action and "Load more" pagination. Traps focus while open and closes on
 // ESC or backdrop click.
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { TILE } from '../inline/tileTokens'
 import { NotificationCard } from './NotificationCard'
 import { fetchInbox, markAllRead } from './client'
@@ -58,7 +59,9 @@ export function OrcaInbox({ open, onClose }) {
     if (last) load(last.created_at)
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <div
       role="presentation"
       onMouseDown={(e) => {
@@ -68,7 +71,7 @@ export function OrcaInbox({ open, onClose }) {
         position: 'fixed',
         inset: 0,
         background: 'rgba(0,0,0,0.45)',
-        zIndex: 1000,
+        zIndex: 4000,
         display: 'flex',
         justifyContent: 'flex-end',
       }}
@@ -153,7 +156,8 @@ export function OrcaInbox({ open, onClose }) {
           )}
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body
   )
 }
 
