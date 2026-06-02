@@ -69,3 +69,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_user_alerts_wallet
 -- Lookup index for the evaluation cron (enabled wallet rules by address).
 CREATE INDEX IF NOT EXISTS idx_user_alerts_address
   ON public.user_alerts (address) WHERE enabled = true AND address IS NOT NULL;
+
+-- Cadence column the cron and preferences API rely on. Without it the cron's
+-- profile query returns no rows and NO notifications are ever delivered.
+ALTER TABLE IF EXISTS public.user_profile
+  ADD COLUMN IF NOT EXISTS notification_style text NOT NULL DEFAULT 'balanced';
+ALTER TABLE IF EXISTS public.user_profile DROP CONSTRAINT IF EXISTS chk_notification_style;
+ALTER TABLE IF EXISTS public.user_profile ADD CONSTRAINT chk_notification_style
+  CHECK (notification_style IN ('quiet', 'balanced', 'frequent'));

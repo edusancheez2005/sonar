@@ -113,6 +113,11 @@ const Select = styled.select`
   transition: all 0.3s ease;
   cursor: pointer;
 
+  option {
+    background: #0d2134;
+    color: var(--text-primary);
+  }
+
   &:hover {
     border-color: rgba(54, 166, 186, 0.5);
   }

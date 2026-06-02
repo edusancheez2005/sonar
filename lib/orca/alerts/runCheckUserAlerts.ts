@@ -76,11 +76,21 @@ export async function runCheckUserAlerts(
       .select('user_id, notifications_in_app, notification_style')
       .eq('notifications_in_app', true)
       .limit(5000)
-    for (const row of (Array.isArray(data) ? data : []) as Array<{
-      user_id: string
-      notification_style?: unknown
-    }>) {
-      if (row?.user_id) styleByUser.set(row.user_id, normaliseStyle(row.notification_style))
+    if (Array.isArray(data)) {
+      for (const row of data as Array<{ user_id: string; notification_style?: unknown }>) {
+        if (row?.user_id) styleByUser.set(row.user_id, normaliseStyle(row.notification_style))
+      }
+    } else {
+      // Fallback: the notification_style column may not exist yet. Re-query the
+      // minimal shape so notifications still flow (default cadence = balanced).
+      const { data: basic } = await supabase
+        .from('user_profile')
+        .select('user_id, notifications_in_app')
+        .eq('notifications_in_app', true)
+        .limit(5000)
+      for (const row of (Array.isArray(basic) ? basic : []) as Array<{ user_id: string }>) {
+        if (row?.user_id) styleByUser.set(row.user_id, 'balanced')
+      }
     }
   } catch {
     return result

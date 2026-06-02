@@ -90,6 +90,11 @@ const Select = styled.select`
   cursor: pointer;
   transition: border-color 160ms ease;
 
+  option {
+    background: #060e16;
+    color: var(--text-primary);
+  }
+
   &:focus, &:hover {
     border-color: rgba(34, 211, 238, 0.4);
   }

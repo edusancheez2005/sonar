@@ -70,6 +70,11 @@ const Select = styled.select`
     outline: none;
     border-color: var(--primary);
   }
+
+  option {
+    background: #0d2134;
+    color: var(--text-primary);
+  }
 `
 
 const Button = styled.button`

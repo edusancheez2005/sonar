@@ -267,6 +267,10 @@ const Select = styled.select`
   color: #eef3f8;
   font-size: 13px;
   padding: 9px 11px;
+  option {
+    background: #0f1722;
+    color: #eef3f8;
+  }
 `
 const Btn = styled.button`
   background: linear-gradient(180deg, rgba(0, 229, 255, 0.18), rgba(0, 229, 255, 0.08));
