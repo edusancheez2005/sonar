@@ -468,9 +468,17 @@ export default function NewsTerminal({ initialNews = [] }) {
 
   // Fetch voices
   useEffect(() => {
-    fetch('/api/social/voices').then(r => r.json()).then(d => {
-      if (d?.voices) setVoices(d)
-    }).catch(() => {})
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 30000)
+    fetch('/api/social/voices', { signal: ctrl.signal })
+      .then(r => r.json())
+      .then(d => {
+        // Always resolve the skeleton — even an empty list beats an infinite spinner.
+        setVoices({ voices: Array.isArray(d?.voices) ? d.voices : [] })
+      })
+      .catch(() => setVoices({ voices: [] }))
+      .finally(() => clearTimeout(timer))
+    return () => { clearTimeout(timer); ctrl.abort() }
   }, [])
 
   // Filter articles
@@ -561,7 +569,13 @@ export default function NewsTerminal({ initialNews = [] }) {
                 <SideBadge>LIVE</SideBadge>
               </SideHeader>
               <SideBody $maxH="35vh">
-                {voices?.voices ? voices.voices.slice(0, 8).map((v, i) => (
+                {!voices ? (
+                  [1,2,3,4].map(i => <div key={i} style={{ padding: '.4rem 0' }}><SkeletonBar $w="50%" $h="10px" $mb="4px" /><SkeletonBar $h="8px" $mb="4px" /><SkeletonBar $w="35%" $h="7px" /></div>)
+                ) : voices.voices.length === 0 ? (
+                  <div style={{ padding: '.6rem 0', fontSize: '.72rem', color: C.textMuted, fontFamily: FONT_MONO }}>
+                    No recent statements from tracked voices.
+                  </div>
+                ) : voices.voices.slice(0, 8).map((v, i) => (
                   <VoiceCard key={i}>
                     <VoiceName>
                       {v.name}
@@ -574,9 +588,7 @@ export default function NewsTerminal({ initialNews = [] }) {
                       <span style={{ marginLeft: 'auto' }}>{v.date}</span>
                     </VoiceContext>
                   </VoiceCard>
-                )) : (
-                  [1,2,3,4].map(i => <div key={i} style={{ padding: '.4rem 0' }}><SkeletonBar $w="50%" $h="10px" $mb="4px" /><SkeletonBar $h="8px" $mb="4px" /><SkeletonBar $w="35%" $h="7px" /></div>)
-                )}
+                ))}
               </SideBody>
             </SideSection>
 

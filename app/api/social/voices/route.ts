@@ -188,7 +188,7 @@ Rules:
         input: prompt,
         tools: [{ type: 'web_search' }],
       }),
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(22_000),
     })
     if (!resp.ok) {
       console.warn('[voices] xAI responses non-OK:', resp.status, await resp.text().catch(() => ''))

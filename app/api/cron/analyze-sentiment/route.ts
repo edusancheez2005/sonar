@@ -61,15 +61,16 @@ export async function GET(request: Request) {
 
     const openai = getAIClient()
 
-    // Fetch news items without LLM sentiment from last 48 hours
-    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
-    
+    // Fetch news items still missing LLM sentiment. We do NOT clamp to a recent
+    // window — older items that were skipped on prior runs (truncated batch,
+    // transient LLM error) would otherwise stay null forever, which is why
+    // "half the news" had no sentiment. Newest-first so fresh items win, but
+    // the backlog still drains over successive runs.
     const { data: newsItems, error: fetchError } = await supabase
       .from('news_items')
       .select('id, title, content, ticker')
       .is('sentiment_llm', null)
-      .gte('fetched_at', twoDaysAgo)
-      .order('fetched_at', { ascending: false })
+      .order('published_at', { ascending: false, nullsFirst: false })
       .limit(400) // Max 400 items per run
 
     if (fetchError) {
@@ -189,7 +190,7 @@ ${headlinesList}`
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.3,
-      max_tokens: 500
+      max_tokens: 1500
     })
 
     const responseText = completion.choices[0]?.message?.content?.trim()
