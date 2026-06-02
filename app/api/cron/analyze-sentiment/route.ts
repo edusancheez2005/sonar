@@ -17,7 +17,7 @@ const getAIClient = () => {
   }
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 }
-const AI_MODEL = process.env.XAI_API_KEY ? 'grok-4-1-fast-non-reasoning' : 'gpt-4o-mini'
+const AI_MODEL = process.env.XAI_API_KEY ? 'grok-4-fast-non-reasoning' : 'gpt-4o-mini'
 
 const BATCH_SIZE = 20 // Process 20 articles at a time
 
