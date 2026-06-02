@@ -594,6 +594,7 @@ export default function AskOrcaClient({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ message: question, session_id: sessionIdRef.current }),
@@ -705,6 +706,7 @@ export default function AskOrcaClient({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({

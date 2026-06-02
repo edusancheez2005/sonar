@@ -265,10 +265,18 @@ function planWalletLookup(input: PlannerInput): ToolCall[] {
 /**
  * Detect "which wallet is most active / has the most transactions / is the
  * biggest mover" style questions — market-wide wallet ranking with no address.
+ * Also catches follow-ups that reference the previously-shown ranked table by
+ * rank or ask for a wallet's full/complete address (e.g. "what's the full
+ * address for rank 1?"), so the leaderboard re-runs and the full address is
+ * back in the renderer's tool context.
  */
 function mentionsMostActiveWallet(message: string | undefined): boolean {
   if (!message) return false
   const m = message.toLowerCase()
+  // Follow-up referencing the ranked table: "full address for rank 1",
+  // "rank 2 address", "complete/whole address of the top wallet".
+  if (/\brank\s*#?\d+\b/.test(m) && /\b(address|wallet)\b/.test(m)) return true
+  if (/\b(full|complete|whole|entire)\s+(wallet\s+)?address\b/.test(m)) return true
   if (!/\b(wallet|address|trader|whale)s?\b/.test(m)) return false
   return /\b(most active|most transactions?|most trades?|biggest|largest|top|busiest|highest volume|most aggressive)\b/.test(
     m

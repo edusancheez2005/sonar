@@ -194,6 +194,18 @@ describe('planToolCalls', () => {
     expect(tools).not.toContain('getMostActiveWallets')
   })
 
+  it('re-runs getMostActiveWallets for a "full address for rank N" follow-up', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'wallet_lookup', tickers: [], entities: [] }),
+      profile: null,
+      userId: 'u1',
+      message: "what's the full address for rank 1?",
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getMostActiveWallets')
+    expect(tools).not.toContain('findTrackedWallets')
+  })
+
   it('never schedules a write-tool, even when userConfirmed is true', () => {
     const calls = planToolCalls({
       router: decision({ intent: 'personal', tickers: ['SOL'] }),

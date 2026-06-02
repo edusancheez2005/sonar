@@ -50,6 +50,7 @@ Examples (no ticker, still classify confidently):
 - "which tokens are hot right now by social momentum?" → {"intent":"data_query","tickers":[],"entities":[],"datapoints":["social"],"confidence":0.9}
 - "what's the latest crypto news?" → {"intent":"data_query","tickers":[],"entities":[],"datapoints":["news"],"confidence":0.9}
 - "tell me about the wallet with the most transactions today" → {"intent":"wallet_lookup","tickers":[],"entities":[],"datapoints":["whales"],"confidence":0.9}
+- "what's the full address for rank 1?" (follow-up to a ranked wallet table) → {"intent":"wallet_lookup","tickers":[],"entities":[],"datapoints":["whales"],"confidence":0.85}
 - "what's happening in crypto right now?" → {"intent":"overview","tickers":[],"entities":[],"datapoints":["whales","social","news"],"confidence":0.8}
 
 Return ONLY the JSON object. No prose, no markdown.`

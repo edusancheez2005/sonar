@@ -701,6 +701,7 @@ export default function ClientOrca() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
@@ -812,6 +813,7 @@ export default function ClientOrca() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({ message: question, session_id: currentSessionId })
