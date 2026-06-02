@@ -2,6 +2,7 @@ import React from 'react'
 import NewsTerminal from './NewsTerminal'
 import AuthGuard from '@/app/components/AuthGuard'
 import { createClient } from '@supabase/supabase-js'
+import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 export const metadata = {
   title: 'News Terminal — Real-Time Crypto Intelligence',
@@ -63,6 +64,10 @@ export default async function NewsPage() {
             seen.add(row.url)
             const tickers = row.ticker ? [{ code: String(row.ticker).toUpperCase(), title: '' }] : extractTokens(`${row.title} ${row.content || ''}`)
             if (!tickers.length) continue
+            // Drop ambiguous-ticker false positives (e.g. SOL = Spanish "sol",
+            // Costa del Sol, Sol-Gel stock) that slipped past the ingest filter.
+            const relevanceText = `${row.title || ''} ${row.content || ''}`
+            if (!tickers.some(t => isCryptoRelevant(relevanceText, t.code))) continue
             lcMapped.push({
               id: row.id || row.url,
               title: row.title,

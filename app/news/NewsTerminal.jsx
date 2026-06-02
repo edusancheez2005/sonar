@@ -5,6 +5,7 @@ import styled, { keyframes } from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────
@@ -427,11 +428,21 @@ export default function NewsTerminal({ initialNews = [] }) {
         const sb = supabaseBrowser()
         const { data } = await sb
           .from('news_items')
-          .select('id,title,description,published_at,source,url,image,tokens_mentioned,sentiment_llm')
+          .select('id,title,description,published_at,source,url,image,tokens_mentioned,ticker,sentiment_llm')
           .order('published_at', { ascending: false })
           .limit(200)
         if (data && data.length > 0) {
-          const mapped = data.map(n => ({
+          const mapped = data
+            .filter(n => {
+              // Drop ambiguous-ticker false positives (e.g. SOL = Spanish "sol").
+              const codes = (n.tokens_mentioned && n.tokens_mentioned.length)
+                ? n.tokens_mentioned
+                : (n.ticker ? [n.ticker] : [])
+              if (!codes.length) return true // no ticker to disambiguate; keep
+              const text = `${n.title || ''} ${n.description || ''}`
+              return codes.some(c => isCryptoRelevant(text, String(c)))
+            })
+            .map(n => ({
             id: n.id,
             title: n.title || '',
             description: n.description || '',

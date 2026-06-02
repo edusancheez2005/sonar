@@ -8,6 +8,16 @@
 // Tickers that are commonly confused with non-crypto terms
 const AMBIGUOUS_TICKERS: Record<string, string[]> = {
   'CRV': ['honda', 'cr-v', 'crv suv', 'car ', 'vehicle', 'toyota', 'rav4', 'trailsport', 'stolen car', 'consulate', 'shooting', 'suspects', 'police'],
+  // SOL collides with the Spanish/French word "sol" (sun/ground), place names
+  // (Costa del Sol, Sol de Mexico), people (Sol Ruca) and Sol-Gel the pharma stock.
+  'SOL': ['costa del sol', 'del sol', 'el sol', 'sol de', 'sol-gel', 'sol gel', 'matelas', 'au sol', 'sol ruca', 'plein sol'],
+  'ADA': ['ada lovelace', 'americans with disabilities', 'ada compliance', 'ada county'],
+  'TON': ['ton of', 'tons of', 'metric ton', 'tonne', 'per ton'],
+  'SUI': ['sui generis', 'sui dynasty', 'monsieur', 'ennui'],
+  'TIA': ['tia portal', 'auntie', 'tia maria'],
+  'SEI': ['seinfeld', 'sei investments', 'nisei'],
+  'JUP': ['jupiter planet', 'jupiter florida', 'jupiter ascending'],
+  'ENA': ['catena', 'arena', 'hyena', 'verbena'],
   'SAND': ['beach', 'desert', 'sandbox game', 'sand castle', 'hourglass'],
   'MANA': ['magic mana', 'mana potion', 'spiritual'],
   'ROSE': ['flower', 'rose garden', 'bouquet', 'petal'],
@@ -134,6 +144,14 @@ export function isCryptoRelevant(text: string, ticker: string): boolean {
     // Only allow if the full crypto name appears (e.g., "Curve" for CRV)
     const fullNames: Record<string, string[]> = {
       'CRV': ['curve'],
+      'SOL': ['solana'],
+      'ADA': ['cardano'],
+      'TON': ['toncoin', 'the open network'],
+      'SUI': ['sui network', 'sui blockchain', 'mysten'],
+      'TIA': ['celestia'],
+      'SEI': ['sei network', 'sei blockchain'],
+      'JUP': ['jupiter exchange', 'jupiter dex', 'jupiter perps', 'jupiter aggregator'],
+      'ENA': ['ethena'],
       'SAND': ['sandbox'],
       'MANA': ['decentraland'],
       'ROSE': ['oasis network', 'oasis protocol'],
