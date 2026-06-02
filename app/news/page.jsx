@@ -47,7 +47,7 @@ export default async function NewsPage() {
         const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
         const { data: lcRows } = await supabase
           .from('news_items')
-          .select('id, title, url, published_at, source, content, sentiment_raw, ticker, metadata')
+          .select('id, title, url, published_at, source, content, sentiment_raw, sentiment_llm, ticker, metadata')
           .gte('published_at', since)
           .neq('title', 'Untitled')
           .not('title', 'is', null)
@@ -73,7 +73,14 @@ export default async function NewsPage() {
               image: '',
               instruments: tickers,
               kind: 'news',
-              sentiment_llm: typeof row.sentiment_raw === 'number' ? row.sentiment_raw : null,
+              // Prefer the LLM sentiment (Grok) and fall back to the provider's
+              // raw sentiment so cards still tag when the LLM score is absent.
+              sentiment_llm:
+                typeof row.sentiment_llm === 'number'
+                  ? row.sentiment_llm
+                  : typeof row.sentiment_raw === 'number'
+                    ? row.sentiment_raw
+                    : null,
             })
           }
           initialNews = lcMapped
