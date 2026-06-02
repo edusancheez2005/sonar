@@ -741,16 +741,30 @@ async function fetchWhaleTransactions(tokenSymbol) {
 
 
 async function fetchSentimentScore(tokenSymbol) {
+  // Kill-switch: SENTIMENT_INPUT_FIX=off restores the previous (dead) behaviour.
+  if (process.env.SENTIMENT_INPUT_FIX === 'off') return null
+
+  // The producer (aggregate-sentiment cron) writes columns
+  // `aggregated_score` (-1..+1, 0 = neutral) and `news_count_24h`. The old
+  // select referenced non-existent `score`/`count` columns, so this query
+  // returned a 400 every run and Tier 3 news sentiment silently contributed
+  // ZERO to every signal. Read the real columns here.
   const { data, error } = await supabaseAdmin
     .from('sentiment_scores')
-    .select('score, count, timestamp')
+    .select('aggregated_score, news_count_24h, timestamp')
     .eq('ticker', tokenSymbol)
     .order('timestamp', { ascending: false })
     .limit(1)
     .maybeSingle()
 
-  if (error || !data) return null
-  return data
+  if (error || !data || data.aggregated_score == null) return null
+
+  // Tier 3 (computeTier3_SentimentSocial) expects `score` on a 0..1 scale
+  // where 0.5 = neutral: sentimentScore = (score - 0.5) * 200. Remap the
+  // producer's -1..+1 scale accordingly (-1 -> 0, 0 -> 0.5, +1 -> 1) so a
+  // neutral aggregate maps to 0, NOT to max-bearish.
+  const normalized = (Number(data.aggregated_score) + 1) / 2
+  return { score: normalized, count: data.news_count_24h ?? 0 }
 }
 
 
