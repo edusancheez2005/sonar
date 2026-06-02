@@ -2,6 +2,7 @@
  * /api/notifications/[id]
  * =============================================================================
  * PATCH — mark a single notification read (body: { read: true }) or unread.
+ * DELETE — permanently dismiss a single notification for the owner.
  */
 import { NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
@@ -37,6 +38,30 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ notification: data })
   } catch (err) {
     console.error('[api/notifications/[id] PATCH] failure', err)
+    return NextResponse.json({ error: 'internal_error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  try {
+    const user = await getUserFromRequest(request)
+    if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
+
+    const id = Number(params?.id)
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json({ error: 'invalid_id' }, { status: 400 })
+    }
+
+    const { error } = await supabaseAdminFresh
+      .from('user_notifications')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
+    if (error) throw error
+
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[api/notifications/[id] DELETE] failure', err)
     return NextResponse.json({ error: 'internal_error' }, { status: 500 })
   }
 }

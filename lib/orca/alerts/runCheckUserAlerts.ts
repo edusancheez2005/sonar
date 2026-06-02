@@ -123,7 +123,7 @@ export async function runCheckUserAlerts(
     let pending: Promise<NotificationCopy | null>
     switch (rule.kind) {
       case 'price_move':
-        pending = evaluatePriceMove(rule.ticker as string, Number(rule.threshold_pct), supabase)
+        pending = evaluatePriceMove(rule.ticker as string, Number(rule.threshold_pct), supabase, now)
         break
       case 'whale_flow':
         pending = evaluateWhaleFlow(rule.ticker as string, Number(rule.threshold_usd), supabase, now)

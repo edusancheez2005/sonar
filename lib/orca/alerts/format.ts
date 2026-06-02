@@ -45,8 +45,8 @@ export function formatPriceMove(ticker: string, pct: number): NotificationCopy {
   return copy(
     'price_move',
     ticker,
-    `${ticker} ${signed(rounded)}% in last 24h`,
-    `Price on ${ticker} moved ${signed(rounded)}% over the last 24 hours.`,
+    `${ticker} ${signed(rounded)}% in last hour`,
+    `Price on ${ticker} moved ${signed(rounded)}% over the last hour.`,
     { pct: rounded },
     overviewReask(ticker)
   )

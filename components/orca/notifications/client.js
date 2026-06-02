@@ -56,6 +56,21 @@ export async function markRead(id) {
   }
 }
 
+export async function deleteNotification(id) {
+  const headers = await authHeaders()
+  if (!headers) return false
+  try {
+    const res = await fetch(`/api/notifications/${id}`, {
+      method: 'DELETE',
+      headers,
+    })
+    if (res.ok) notifyChanged()
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export async function markAllRead() {
   const headers = await authHeaders()
   if (!headers) return false

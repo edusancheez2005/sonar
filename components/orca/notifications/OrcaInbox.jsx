@@ -132,7 +132,12 @@ export function OrcaInbox({ open, onClose }) {
             </div>
           )}
           {items.map((n) => (
-            <NotificationCard key={n.id} notification={n} onChange={() => load(null)} />
+            <NotificationCard
+              key={n.id}
+              notification={n}
+              onChange={() => load(null)}
+              onRemove={(id) => setItems((prev) => prev.filter((it) => it.id !== id))}
+            />
           ))}
           {hasMore && (
             <div style={{ padding: 12, textAlign: 'center' }}>

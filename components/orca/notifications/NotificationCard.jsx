@@ -1,10 +1,10 @@
 'use client'
 // A single notification row inside the ORCA inbox drawer. A left stripe is
 // colour-coded by kind. Two actions: "Open in ORCA →" (deep-links via the
-// orca:reask event) and "Dismiss" (marks the single notification read).
+// orca:reask event) and "Dismiss" (deletes the notification and removes the row).
 import React from 'react'
 import { TILE } from '../inline/tileTokens'
-import { markRead, openNotificationInOrca } from './client'
+import { markRead, deleteNotification, openNotificationInOrca } from './client'
 
 const STRIPE_BY_KIND = {
   price_move: TILE.cyan,
@@ -26,7 +26,7 @@ function relativeTime(iso) {
   return `${d}d ago`
 }
 
-export function NotificationCard({ notification, onChange }) {
+export function NotificationCard({ notification, onChange, onRemove }) {
   const { id, kind, title, body, read_at, created_at } = notification || {}
   const stripe = STRIPE_BY_KIND[kind] || TILE.grey
   const unread = !read_at
@@ -42,8 +42,11 @@ export function NotificationCard({ notification, onChange }) {
 
   const onDismiss = async (e) => {
     e.preventDefault()
-    await markRead(id)
-    if (onChange) onChange()
+    // Optimistically drop the card so the UI responds instantly, then delete
+    // it server-side. (Marking read alone left the row in the list, which is
+    // why Dismiss looked broken.)
+    if (onRemove) onRemove(id)
+    await deleteNotification(id)
   }
 
   return (

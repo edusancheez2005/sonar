@@ -35,19 +35,38 @@ function makeSupabase(byTable: Record<string, any[]>) {
 const NOW = () => new Date('2026-06-03T12:00:00Z')
 
 describe('evaluatePriceMove', () => {
-  it('fires when |change| >= threshold', async () => {
-    const sb = makeSupabase({ price_snapshots: [{ price_change_24h: 8.2 }] })
-    const c = await evaluatePriceMove('SOL', 5, sb)
+  // price_snapshots are newest-first; the evaluator pairs the latest price with
+  // the oldest snapshot >= 45 min back to compute a ~1h move.
+  const snaps = (latest: number, old: number) => [
+    { price_usd: latest, timestamp: '2026-06-03T11:55:00Z' },
+    { price_usd: old, timestamp: '2026-06-03T11:00:00Z' },
+  ]
+  it('fires when |1h change| >= threshold', async () => {
+    const sb = makeSupabase({ price_snapshots: snaps(108.2, 100) })
+    const c = await evaluatePriceMove('SOL', 5, sb, NOW)
     expect(c).not.toBeNull()
     expect(c!.payload.kind).toBe('price_move')
   })
   it('does not fire below threshold', async () => {
-    const sb = makeSupabase({ price_snapshots: [{ price_change_24h: 2 }] })
-    expect(await evaluatePriceMove('SOL', 5, sb)).toBeNull()
+    const sb = makeSupabase({ price_snapshots: snaps(102, 100) })
+    expect(await evaluatePriceMove('SOL', 5, sb, NOW)).toBeNull()
+  })
+  it('floors at 1% even when the rule threshold is tiny', async () => {
+    const sb = makeSupabase({ price_snapshots: snaps(100.4, 100) })
+    expect(await evaluatePriceMove('SOL', 0.1, sb, NOW)).toBeNull()
   })
   it('returns null with no data', async () => {
     const sb = makeSupabase({ price_snapshots: [] })
-    expect(await evaluatePriceMove('SOL', 5, sb)).toBeNull()
+    expect(await evaluatePriceMove('SOL', 5, sb, NOW)).toBeNull()
+  })
+  it('returns null when history is too short to span ~1h', async () => {
+    const sb = makeSupabase({
+      price_snapshots: [
+        { price_usd: 110, timestamp: '2026-06-03T11:55:00Z' },
+        { price_usd: 100, timestamp: '2026-06-03T11:50:00Z' },
+      ],
+    })
+    expect(await evaluatePriceMove('SOL', 5, sb, NOW)).toBeNull()
   })
 })
 

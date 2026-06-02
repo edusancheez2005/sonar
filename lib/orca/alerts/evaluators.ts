@@ -8,7 +8,7 @@
  * thrown error (HARD RULE §0.6).
  *
  * Canonical sources:
- *   price_move        -> price_snapshots (latest row for ticker)
+ *   price_move        -> price_snapshots (~1h rolling move, floored at 1%)
  *   whale_flow        -> all_whale_transactions (rolling 24h net buy-sell USD)
  *   signal_flip       -> token_signals (latest 2 rows; column is `signal`)
  *   news_high_impact  -> news_items (published in last 1h, |sentiment| >= 0.6)
@@ -34,22 +34,63 @@ export interface SupabaseLike {
 
 const DIRECTIONAL = new Set(['BUY', 'SELL', 'STRONG BUY', 'STRONG SELL'])
 
+// Never alert on micro-moves regardless of how low a user sets their rule. A
+// rolling 24h % barely changes hour to hour, so the old 24h metric re-fired the
+// same move every hour; we now compute a genuine ~1h move and floor it.
+const MIN_PRICE_MOVE_FLOOR_PCT = 1.0
+// price_snapshots are written every ~15 min. We look back over a 90-min window
+// and pair the latest price with the oldest snapshot that is at least this far
+// back, so the computed move spans roughly one hour.
+const PRICE_LOOKBACK_MS = 90 * 60 * 1000
+const PRICE_MIN_SPAN_MS = 45 * 60 * 1000
+
 export async function evaluatePriceMove(
   ticker: string,
   thresholdPct: number,
-  supabase: SupabaseLike
+  supabase: SupabaseLike,
+  now: () => Date = () => new Date()
 ): Promise<NotificationCopy | null> {
   try {
+    const effectiveThreshold = Math.max(
+      Number.isFinite(thresholdPct) ? thresholdPct : MIN_PRICE_MOVE_FLOOR_PCT,
+      MIN_PRICE_MOVE_FLOOR_PCT
+    )
+    const sinceIso = new Date(now().getTime() - PRICE_LOOKBACK_MS).toISOString()
     const { data } = await supabase
       .from('price_snapshots')
-      .select('price_change_24h')
+      .select('price_usd, timestamp')
       .eq('ticker', ticker)
+      .gte('timestamp', sinceIso)
       .order('timestamp', { ascending: false })
-      .limit(1)
-    const row = Array.isArray(data) ? data[0] : null
-    const pct = row && typeof row.price_change_24h === 'number' ? row.price_change_24h : null
-    if (pct === null || !Number.isFinite(thresholdPct)) return null
-    if (Math.abs(pct) < thresholdPct) return null
+      .limit(12)
+    const rows = (Array.isArray(data) ? data : []) as Array<{
+      price_usd: number | string
+      timestamp: string
+    }>
+    if (rows.length < 2) return null
+
+    const latest = rows[0]
+    const latestPrice = Number(latest.price_usd)
+    const latestTs = new Date(latest.timestamp).getTime()
+    if (!Number.isFinite(latestPrice) || latestPrice <= 0) return null
+
+    // Walk back to the oldest snapshot that is >= PRICE_MIN_SPAN_MS before the
+    // latest, so the delta reflects ~1h rather than a 15-min wiggle.
+    let reference: { price: number; ts: number } | null = null
+    for (let i = 1; i < rows.length; i++) {
+      const p = Number(rows[i].price_usd)
+      const ts = new Date(rows[i].timestamp).getTime()
+      if (!Number.isFinite(p) || p <= 0) continue
+      if (latestTs - ts >= PRICE_MIN_SPAN_MS) {
+        reference = { price: p, ts }
+        break
+      }
+    }
+    if (!reference) return null
+
+    const pct = ((latestPrice - reference.price) / reference.price) * 100
+    if (!Number.isFinite(pct)) return null
+    if (Math.abs(pct) < effectiveThreshold) return null
     return formatPriceMove(ticker, pct)
   } catch {
     return null
