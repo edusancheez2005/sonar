@@ -129,6 +129,13 @@ export interface OrchestratorOutput {
   text: string
   intent: Intent
   trace: TraceEvent[]
+  /**
+   * Full wallet addresses surfaced to the user this turn, most-prominent
+   * first. Persisted to chat_history so the next turn can resolve pronoun
+   * writes like "track this wallet" (chat text only ever shows the
+   * shortened 0x51c7…2a7f form, which detectAddress cannot parse).
+   */
+  walletAddresses?: string[]
 }
 
 export interface TraceEvent {

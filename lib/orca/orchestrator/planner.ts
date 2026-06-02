@@ -278,7 +278,7 @@ function mentionsMostActiveWallet(message: string | undefined): boolean {
   if (/\brank\s*#?\d+\b/.test(m) && /\b(address|wallet)\b/.test(m)) return true
   if (/\b(full|complete|whole|entire)\s+(wallet\s+)?address\b/.test(m)) return true
   if (!/\b(wallet|address|trader|whale)s?\b/.test(m)) return false
-  return /\b(most active|most transactions?|most trades?|biggest|largest|top|busiest|highest volume|most aggressive)\b/.test(
+  return /\b(most active|most transactions?|most trades?|biggest|largest|top|busiest|highest volume|most aggressive|best|worth (following|watching)|to (follow|watch|track)|smart money)\b/.test(
     m
   )
 }

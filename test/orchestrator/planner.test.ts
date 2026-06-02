@@ -206,6 +206,20 @@ describe('planToolCalls', () => {
     expect(tools).not.toContain('findTrackedWallets')
   })
 
+  it('routes "best whale addresses to follow this week" to getMostActiveWallets', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'wallet_lookup', tickers: [], entities: [] }),
+      profile: null,
+      userId: 'u1',
+      message: 'what are the best whale addresses to follow this week?',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getMostActiveWallets')
+    expect(tools).not.toContain('findTrackedWallets')
+    const w = calls.find((c) => c.tool === 'getMostActiveWallets')!
+    expect(w.args.window).toBe('7d')
+  })
+
   it('never schedules a write-tool, even when userConfirmed is true', () => {
     const calls = planToolCalls({
       router: decision({ intent: 'personal', tickers: ['SOL'] }),

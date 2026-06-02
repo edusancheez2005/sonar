@@ -172,4 +172,54 @@ describe('runOrchestrator', () => {
     const tools = out.trace.filter((t) => t.stage === 'tool').map((t) => (t.payload as any).tool)
     expect(tools).not.toContain('addToWatchlist')
   })
+
+  it('surfaces full wallet addresses from a wallet_lookup so pronoun writes can resolve', async () => {
+    const FULL_ADDR = '0x51c72848c68a965f66fa7a88855f9f7784502a7f'
+    // Custom supabase that returns whale rows for the leaderboard query.
+    const supabase: any = {
+      from(table: string) {
+        const chain: any = {
+          select() { return chain },
+          eq() { return chain },
+          gte() { return chain },
+          ilike() { return chain },
+          or() { return chain },
+          order() { return chain },
+          limit() {
+            if (table === 'all_whale_transactions') {
+              return Promise.resolve({
+                data: [
+                  { whale_address: FULL_ADDR, token_symbol: 'ETH', usd_value: 2_000_000, classification: 'buy', timestamp: '2026-05-26T11:00:00Z' },
+                  { whale_address: FULL_ADDR, token_symbol: 'ETH', usd_value: 1_490_000, classification: 'sell', timestamp: '2026-05-26T10:00:00Z' },
+                ],
+                error: null,
+              })
+            }
+            return Promise.resolve({ data: [], error: null })
+          },
+          upsert() { return { error: null } },
+          delete() { return chain },
+          then(resolve: any) { resolve({ data: [] }) },
+        }
+        return chain
+      },
+    }
+    const routerCall = vi.fn().mockResolvedValue(
+      JSON.stringify({
+        intent: 'wallet_lookup',
+        tickers: [],
+        entities: [],
+        datapoints: [],
+        persona_hint: null,
+        confidence: 0.9,
+      })
+    )
+    const writerCall = vi.fn().mockResolvedValue('The busiest wallet this week is 0x51c7…2a7f.')
+    const out = await runOrchestrator(
+      { message: 'most active wallets this week', userId: 'u1', chatHistory: [], profile: null },
+      { supabase, model: { routerCall, writerCall }, now }
+    )
+    expect(out.walletAddresses).toContain(FULL_ADDR)
+    expect(out.walletAddresses![0]).toBe(FULL_ADDR)
+  })
 })

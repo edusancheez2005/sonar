@@ -453,6 +453,35 @@ export async function POST(request: Request) {
       if (found) { contextAddress = found; break }
     }
 
+    // Fallback: chat text only ever shows shortened addresses (0x51c7…2a7f),
+    // which detectAddress cannot parse. When a prior wallet-lookup turn ran,
+    // the orchestrator persisted the FULL addresses it surfaced into
+    // chat_history.data_sources_used.wallet_addresses (most-prominent first).
+    // Read the newest such row so "track this wallet" resolves rank #1.
+    if (!contextAddress) {
+      try {
+        let walletQuery = supabase
+          .from('chat_history')
+          .select('data_sources_used')
+          .eq('user_id', userId)
+          .order('timestamp', { ascending: false })
+          .limit(5)
+        if (session_id) walletQuery = walletQuery.eq('session_id', session_id)
+        const { data: walletRows } = await walletQuery
+        if (Array.isArray(walletRows)) {
+          for (const row of walletRows) {
+            const addrs = (row as any)?.data_sources_used?.wallet_addresses
+            if (Array.isArray(addrs) && addrs.length) {
+              const found = detectAddress(String(addrs[0] || ''))
+              if (found) { contextAddress = found; break }
+            }
+          }
+        }
+      } catch {
+        // Best-effort; pronoun fallback simply won't trigger.
+      }
+    }
+
     // -------------------------------------------------------------------------
     // STAGE B.2 (2026-05-26) — fast-write Confirm/Cancel flow.
     //
@@ -946,7 +975,7 @@ export async function POST(request: Request) {
                     tokens_used: 0,
                     model: aiModel,
                     tickers_mentioned: decision.tickers,
-                    data_sources_used: { intent: out.intent },
+                    data_sources_used: { intent: out.intent, wallet_addresses: out.walletAddresses ?? [] },
                     response_time_ms: Date.now() - startTime,
                   }),
                   (async () => {

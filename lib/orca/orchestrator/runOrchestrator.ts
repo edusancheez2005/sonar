@@ -107,6 +107,11 @@ export async function runOrchestrator(
     })
   )
 
+  // Collect the full wallet addresses surfaced this turn (most-prominent
+  // first) so the caller can persist them for next-turn pronoun resolution
+  // ("track this wallet"). Chat text only ever shows the shortened form.
+  const walletAddresses = collectWalletAddresses(toolResults)
+
   // --- Stage 4: writer ------------------------------------------------------
   const renderer = selectRenderer(router.intent)
   const systemPrompt = renderer({ toolResults, profile: input.profile, message: input.message, chatHistory: input.chatHistory })
@@ -146,7 +151,37 @@ export async function runOrchestrator(
     text: guarded.text,
     intent: router.intent,
     trace,
+    walletAddresses,
   }
+}
+
+/**
+ * Walk wallet-bearing tool results and collect the full (un-shortened)
+ * addresses they surfaced, in display order, de-duplicated. Covers the
+ * three wallet read tools: getMostActiveWallets (data.wallets[]),
+ * findTrackedWallets (data.matches[]), and getWalletActivity (the queried
+ * call.args.address). Returns [] when no wallet tool ran.
+ */
+function collectWalletAddresses(
+  toolResults: Array<{ call: ToolCall; result: ToolResult }>
+): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  const push = (addr: unknown) => {
+    if (typeof addr !== 'string') return
+    const a = addr.trim()
+    if (!a || seen.has(a.toLowerCase())) return
+    seen.add(a.toLowerCase())
+    out.push(a)
+  }
+  for (const { call, result } of toolResults) {
+    if (!result?.ok || !result.data) continue
+    const d = result.data as any
+    if (Array.isArray(d.wallets)) for (const w of d.wallets) push(w?.address)
+    if (Array.isArray(d.matches)) for (const m of d.matches) push(m?.address)
+    if (typeof call?.args?.address === 'string') push(call.args.address)
+  }
+  return out.slice(0, 10)
 }
 
 /**
