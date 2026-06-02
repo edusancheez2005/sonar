@@ -32,6 +32,40 @@ const ECOSYSTEMS = [
   { key: 'ai', label: 'AI', tokens: ['FET','RENDER','OCEAN','TAO'] },
 ]
 
+// Full project names so a headline like "Bitcoin and ETH scraped new lows"
+// (ingested under a single ticker) still matches the right ecosystem filter.
+const TOKEN_NAMES = {
+  BTC: ['bitcoin'], WBTC: ['wrapped bitcoin'],
+  ETH: ['ethereum', 'ether'], UNI: ['uniswap'], AAVE: ['aave'], LINK: ['chainlink'],
+  MKR: ['maker', 'makerdao'], LDO: ['lido'], ENS: ['ethereum name service'],
+  ARB: ['arbitrum'], OP: ['optimism'],
+  SOL: ['solana'], JUP: ['jupiter exchange'], RAY: ['raydium'], BONK: ['bonk'],
+  WIF: ['dogwifhat'], PYTH: ['pyth'], JTO: ['jito'],
+  ADA: ['cardano'], DOT: ['polkadot'], AVAX: ['avalanche'], ATOM: ['cosmos'],
+  NEAR: ['near protocol'], SUI: ['sui network', 'sui blockchain'], SEI: ['sei network'],
+  APT: ['aptos'], TIA: ['celestia'],
+  CRV: ['curve finance'], COMP: ['compound'], SNX: ['synthetix'], SUSHI: ['sushiswap'],
+  DYDX: ['dydx'], INJ: ['injective'],
+  DOGE: ['dogecoin'], SHIB: ['shiba inu'], PEPE: ['pepe coin', 'pepecoin'], FLOKI: ['floki'],
+  FET: ['fetch.ai', 'fetch ai'], RENDER: ['render network'], OCEAN: ['ocean protocol'], TAO: ['bittensor'],
+}
+
+// True if the article belongs to an ecosystem: tagged instrument matches, OR the
+// headline/description names one of the ecosystem's tokens (symbol or full name).
+function articleMatchesTokens(article, tokens) {
+  const codes = (article.instruments || []).map(i => String(i.code).toUpperCase())
+  if (codes.some(c => tokens.includes(c))) return true
+  const text = `${article.title || ''} ${article.description || ''}`
+  const lower = text.toLowerCase()
+  for (const t of tokens) {
+    // Whole-word symbol match (avoids "ETH" inside "method", "OP" inside "open").
+    if (new RegExp(`\\b${t}\\b`, 'i').test(text)) return true
+    const names = TOKEN_NAMES[t]
+    if (names && names.some(n => lower.includes(n))) return true
+  }
+  return false
+}
+
 const SENTIMENTS = [
   { key: 'all', label: 'All' },
   { key: 'bullish', label: 'Bullish' },
@@ -498,7 +532,7 @@ export default function NewsTerminal({ initialNews = [] }) {
     if (eco !== 'all') {
       const tokens = ECOSYSTEMS.find(e => e.key === eco)?.tokens || []
       if (tokens.length) {
-        items = items.filter(a => (a.instruments || []).some(i => tokens.includes(String(i.code).toUpperCase())))
+        items = items.filter(a => articleMatchesTokens(a, tokens))
       }
     }
     if (sent !== 'all') {
