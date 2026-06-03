@@ -83,6 +83,18 @@ export async function markAllRead() {
   }
 }
 
+export async function clearAllNotifications() {
+  const headers = await authHeaders()
+  if (!headers) return false
+  try {
+    const res = await fetch('/api/notifications/mark-all-read', { method: 'DELETE', headers })
+    if (res.ok) notifyChanged()
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export function reaskFromPayload(payload) {
   // Bridges a notification's stored reask hint into the same orca:reask event
   // NewsCard uses, so clicking "Open in ORCA" deep-links into the copilot.

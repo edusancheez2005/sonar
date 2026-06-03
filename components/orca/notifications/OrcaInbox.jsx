@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { TILE } from '../inline/tileTokens'
 import { NotificationCard } from './NotificationCard'
-import { fetchInbox, markAllRead } from './client'
+import { fetchInbox, clearAllNotifications } from './client'
 
 const PAGE = 20
 
@@ -50,8 +50,9 @@ export function OrcaInbox({ open, onClose }) {
   if (!open) return null
 
   const onMarkAll = async () => {
-    await markAllRead()
-    setItems((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() })))
+    // Optimistically clear the list, then delete every notification server-side.
+    setItems([])
+    await clearAllNotifications()
   }
 
   const onLoadMore = () => {
