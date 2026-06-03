@@ -46,6 +46,7 @@ describe('getMostActiveWallets', () => {
     expect(data.window).toBe('24h')
     // A and C both have 3 txns; A wins on volume ($6M > $4M). B is last with 2 txns.
     expect(data.wallets.map((w: any) => w.address)).toEqual(['0xA', '0xC', '0xB'])
+    expect(data.wallets.map((w: any) => w.rank)).toEqual([1, 2, 3])
     expect(data.wallets[0].tx_count).toBe(3)
     expect(data.wallets[0].total_usd).toBe(6_000_000)
     expect(data.wallets[0].buy_usd).toBe(5_000_000)

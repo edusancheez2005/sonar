@@ -220,15 +220,37 @@ function guessChain(address: string): string | null {
 
 function planWalletLookup(input: PlannerInput): ToolCall[] {
   const calls: ToolCall[] = []
+
+  // A follow-up that references a prior ranked wallet table — by rank or by
+  // asking for a full/complete address — must re-run the leaderboard so the
+  // FULL addresses are back in the renderer's tool context. The user usually
+  // pastes the SHORTENED address straight back ("0x51c7…2a7f"), which the
+  // router emits as an entity. That truncated string can never be resolved
+  // on-chain, so when the leaderboard is wanted we ignore free-text queries
+  // entirely and answer from the ranked table.
+  const wantsLeaderboard = mentionsMostActiveWallet(input.message)
+
   const entities = input.router.entities.slice(0, 5)
   const addressLike: Array<{ address: string; chain: string }> = []
   const queries: string[] = []
   for (const e of entities) {
     const trimmed = e.trim()
     if (!trimmed) continue
+    // Drop truncated addresses pasted back from a prior table (they contain an
+    // ellipsis); they can't be looked up and would otherwise become a junk
+    // findTrackedWallets query that masks the leaderboard re-run.
+    if (/[…]|\.\.\./.test(trimmed)) continue
     const chain = guessChain(trimmed)
     if (chain) addressLike.push({ address: trimmed, chain })
-    else queries.push(trimmed)
+    else if (!wantsLeaderboard) queries.push(trimmed)
+  }
+
+  // Leaderboard first so its full addresses lead the tool context.
+  if (wantsLeaderboard) {
+    calls.push({
+      tool: 'getMostActiveWallets',
+      args: { window: detectTimeWindow(input.message) },
+    })
   }
   for (const { address, chain } of addressLike) {
     calls.push({
@@ -243,21 +265,12 @@ function planWalletLookup(input: PlannerInput): ToolCall[] {
     })
   }
   if (calls.length === 0) {
-    // No specific address or label was extracted. If the user asked about the
-    // "most active" / "biggest" / "top" wallet market-wide, answer with the
-    // wallet leaderboard instead of a junk free-text search. Otherwise fall
+    // No specific address, label, or leaderboard intent was extracted. Fall
     // back to listing the user's own tracked wallets.
-    if (mentionsMostActiveWallet(input.message)) {
-      calls.push({
-        tool: 'getMostActiveWallets',
-        args: { window: detectTimeWindow(input.message) },
-      })
-    } else {
-      calls.push({
-        tool: 'findTrackedWallets',
-        args: { query: input.router.tickers[0] ?? 'wallet', userId: input.userId },
-      })
-    }
+    calls.push({
+      tool: 'findTrackedWallets',
+      args: { query: input.router.tickers[0] ?? 'wallet', userId: input.userId },
+    })
   }
   return calls
 }

@@ -9,9 +9,11 @@
  * ORCA_COPILOT_BUILD_PROMPT.md.
  */
 
-export const MANDATORY_DISCLAIMER = `---
-This output is an automated summary of public data for informational and educational purposes only. It is not financial, investment, legal, or tax advice and is not a recommendation to buy, sell, or hold any asset. Output may be incomplete or incorrect. Cryptocurrency trading carries a high risk of total loss. Consult a qualified, licensed financial adviser in your jurisdiction before making any investment decision.
----`
+// NOTE: deliberately NOT wrapped in `---` fences. A line of text immediately
+// followed by `---` is parsed by Markdown as a setext H2 heading, which made
+// the disclaimer render in huge heading text. Keep it as a plain paragraph so
+// every client can detect it and render it as tiny, muted fine-print.
+export const MANDATORY_DISCLAIMER = `This output is an automated summary of public data for informational and educational purposes only. It is not financial, investment, legal, or tax advice and is not a recommendation to buy, sell, or hold any asset. Output may be incomplete or incorrect. Cryptocurrency trading carries a high risk of total loss. Consult a qualified, licensed financial adviser in your jurisdiction before making any investment decision.`
 
 export const HARD_RULES = `HARD RULES (must never be violated):
 1. Never recommend that the user buy, sell, short, hold, or trade any asset.

@@ -118,6 +118,35 @@ function splitSegments(md) {
   return segments
 }
 
+// Split the mandatory legal disclaimer off the end of an ORCA message so it
+// can be rendered as tiny, muted fine-print instead of full body text (or, in
+// the worst case, a giant setext heading). Defensive: returns the original
+// text as `body` with an empty `disclaimer` when no disclaimer is present.
+function splitDisclaimer(md) {
+  if (!md || typeof md !== 'string') return { body: md || '', disclaimer: '' }
+  const m = md.match(/this output is an automated summary/i)
+  if (!m || m.index == null) return { body: md, disclaimer: '' }
+  let start = m.index
+  while (start > 0 && md[start - 1] !== '\n') start--
+  const body = md
+    .slice(0, start)
+    .replace(/\n?\**\s*(Disclaimer|Important|Note)\s*:?\s*\**\s*$/i, '')
+    .replace(/\n?[-_*]{3,}\s*$/g, '')
+    .replace(/\n?>+\s*$/g, '')
+    .replace(/\n?#{1,6}\s*$/g, '')
+    .trimEnd()
+  const disclaimer = md
+    .slice(start)
+    .replace(/^[\s\n>#-]+/, '')
+    .replace(/\*\*/g, '')
+    .replace(/__/g, '')
+    .replace(/[-_*]{3,}/g, '')
+    .replace(/^_+|_+$/g, '')
+    .replace(/^(Disclaimer|Important Note|Important|Note|IMPORTANT)\s*:?\s*/i, '')
+    .trim()
+  return { body, disclaimer }
+}
+
 export function OrcaMarkdown({ children }) {
   const [openedCharts, setOpenedCharts] = useState([])
   const onOpenChart = useCallback((ticker, tf, kind) => {
@@ -128,7 +157,8 @@ export function OrcaMarkdown({ children }) {
   }, [])
 
   const text = typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : String(children ?? '')
-  const segments = useMemo(() => splitSegments(text), [text])
+  const { body, disclaimer } = useMemo(() => splitDisclaimer(text), [text])
+  const segments = useMemo(() => splitSegments(body), [body])
 
   return (
     <>
@@ -146,6 +176,22 @@ export function OrcaMarkdown({ children }) {
       {openedCharts.map((c, i) => (
         <InlineChart key={`opened-${c.ticker}-${i}`} ticker={c.ticker} tf={c.tf} kind={c.kind} />
       ))}
+      {disclaimer && (
+        <p
+          style={{
+            marginTop: '0.6rem',
+            marginBottom: 0,
+            fontSize: '0.6rem',
+            lineHeight: 1.45,
+            color: 'inherit',
+            fontStyle: 'italic',
+            fontWeight: 400,
+            opacity: 0.5,
+          }}
+        >
+          {disclaimer}
+        </p>
+      )}
     </>
   )
 }

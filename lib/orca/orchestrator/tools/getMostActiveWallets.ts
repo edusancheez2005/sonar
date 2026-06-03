@@ -99,7 +99,8 @@ export async function run(
     const wallets = Array.from(buckets.values())
       .sort((a, b) => (b.tx_count - a.tx_count) || (b.total_usd - a.total_usd))
       .slice(0, limit)
-      .map((b) => ({
+      .map((b, i) => ({
+        rank: i + 1,
         address: b.address,
         address_short: shortAddress(b.address),
         tx_count: b.tx_count,

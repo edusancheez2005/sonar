@@ -206,6 +206,22 @@ describe('planToolCalls', () => {
     expect(tools).not.toContain('findTrackedWallets')
   })
 
+  it('re-runs getMostActiveWallets when the user pastes back a SHORTENED address for a rank follow-up', () => {
+    // Production regression: the router emits the truncated address the user
+    // pasted ("0x51c7…2a7f") as an entity. It can never be resolved on-chain,
+    // so the planner must ignore it and re-run the leaderboard rather than
+    // turning it into a junk findTrackedWallets query that masks the table.
+    const calls = planToolCalls({
+      router: decision({ intent: 'wallet_lookup', tickers: [], entities: ['0x51c7…2a7f'] }),
+      profile: null,
+      userId: 'u1',
+      message: 'can you give me the full address for rank 1? 0x51c7…2a7f',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getMostActiveWallets')
+    expect(tools).not.toContain('findTrackedWallets')
+  })
+
   it('routes "best whale addresses to follow this week" to getMostActiveWallets', () => {
     const calls = planToolCalls({
       router: decision({ intent: 'wallet_lookup', tickers: [], entities: [] }),
