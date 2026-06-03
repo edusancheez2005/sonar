@@ -115,6 +115,14 @@ export interface PlannerInput {
    * The planner refuses to enqueue any write-tool when this is false.
    */
   userConfirmed?: boolean
+  /**
+   * Subject of the most recent assistant turn, carried forward so a
+   * `followup` intent inherits the right tools (e.g. a wallet leaderboard
+   * follow-up re-emits getMostActiveWallets instead of a useless getPrice).
+   */
+  priorIntent?: Intent
+  /** Tickers surfaced on the previous turn, used with priorIntent above. */
+  priorTickers?: string[]
 }
 
 export interface WriterInput {

@@ -14,12 +14,20 @@ export type StageADecision = {
   intent: string
   tickers: string[]
   confidence: number
+  /** Raw user message — used to classify a contentless greeting vs. a broad
+   *  answerable market question (see wantsMarketWideAnswer). Optional so old
+   *  callers keep compiling; absence simply preserves legacy fallthrough. */
+  message?: string
 }
 
 export type StageARoute =
   | { kind: 'compliance_decline' }
   | { kind: 'orchestrator'; intent: string }
   | { kind: 'v1_with_ticker'; ticker: string; confidence: number }
+  // A no-rendered-intent, no-ticker message that still wants a real answer
+  // (market state / news / "what's happening"). The route handler runs the
+  // orchestrator with a market-wide overview plan instead of greeting.
+  | { kind: 'market_wide' }
   | { kind: 'fallthrough' }
 
 const RENDERED_INTENTS = new Set([
@@ -28,6 +36,29 @@ const RENDERED_INTENTS = new Set([
   'data_query',
   'signal_explain',
 ])
+
+const PURE_GREETING =
+  /^\s*(hi|hey|hello|yo|gm|thanks|thank you|ok|okay|cool|great|nice|got it|sup)\b[\s!.]*$/i
+
+const MARKET_WIDE_HINT =
+  /\b(market|happening|going on|news|trending|whales?|movers?|active|hot|interesting|update|recap|today|right now|watch)\b/i
+
+/**
+ * True when a no-rendered-intent, no-ticker message still wants a real answer
+ * (market state, news, "what's happening", "what should I watch"), as opposed
+ * to a contentless greeting ("hi", "thanks"). Pure heuristics — never an LLM
+ * call — so it stays deterministic and unit-testable.
+ */
+export function wantsMarketWideAnswer(message: string): boolean {
+  const m = (message ?? '').trim()
+  if (m.length < 3) return false
+  if (PURE_GREETING.test(m)) return false
+  if (MARKET_WIDE_HINT.test(m)) return true
+  // A broad open question (ends with '?' and is more than ~4 words) with no
+  // extractable ticker is almost always answerable from market-wide context.
+  if (m.includes('?') && m.split(/\s+/).filter(Boolean).length > 4) return true
+  return false
+}
 
 /**
  * Decide what to do with a router decision. Intent always wins over
@@ -46,6 +77,12 @@ export function pickStageARoute(decision: StageADecision): StageARoute {
       ticker: decision.tickers[0],
       confidence: Math.max(0.6, decision.confidence),
     }
+  }
+  // No rendered intent and no ticker. Broad answerable market questions go to
+  // the orchestrator's market-wide overview plan; genuine greetings keep the
+  // legacy light conversational fallthrough.
+  if (decision.message !== undefined && wantsMarketWideAnswer(decision.message)) {
+    return { kind: 'market_wide' }
   }
   return { kind: 'fallthrough' }
 }

@@ -247,6 +247,60 @@ describe('planToolCalls', () => {
       expect(isWriteTool(c.tool)).toBe(false)
     }
   })
+
+  // Fix #2 — followup subject carry-over.
+  it('followup with priorIntent=wallet_lookup emits getMostActiveWallets (not just getPrice)', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'followup', tickers: [] }),
+      profile: null,
+      userId: 'u1',
+      message: 'what about the others?',
+      priorIntent: 'wallet_lookup',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getMostActiveWallets')
+    expect(tools).not.toContain('getPrice')
+  })
+
+  it('followup with priorIntent=signal_explain + priorTickers emits getSignalContext', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'followup', tickers: [] }),
+      profile: null,
+      userId: 'u1',
+      message: 'why is it noisy?',
+      priorIntent: 'signal_explain',
+      priorTickers: ['BTC'],
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getSignalContext')
+    expect(tools).toContain('getPrice')
+    const sig = calls.find((c) => c.tool === 'getSignalContext')!
+    expect(sig.args.ticker).toBe('BTC')
+  })
+
+  it('followup with no prior subject keeps the legacy getPrice behaviour', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'followup', tickers: ['ETH'] }),
+      profile: null,
+      userId: 'u1',
+      message: 'and 7d?',
+    })
+    const tools = calls.map((c) => c.tool)
+    expect(tools).toContain('getPrice')
+    expect(tools).not.toContain('getMostActiveWallets')
+  })
+
+  // Fix #4 — empty-portfolio personal gets exactly one leaderboard fallback.
+  it('personal intent emits exactly one getTrendingWhales leaderboard fallback', () => {
+    const calls = planToolCalls({
+      router: decision({ intent: 'personal', tickers: [] }),
+      profile: null,
+      userId: 'u1',
+    })
+    const leaderboardCalls = calls.filter((c) => c.tool === 'getTrendingWhales')
+    expect(leaderboardCalls).toHaveLength(1)
+    expect(leaderboardCalls[0].args.window).toBe('24h')
+  })
 })
 
 describe('isWriteTool', () => {

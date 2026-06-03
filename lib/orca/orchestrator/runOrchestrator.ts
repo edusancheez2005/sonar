@@ -37,6 +37,12 @@ export interface RunOrchestratorInput {
    * call shape (`{tool, args}`); reads from this list are ignored.
    */
   confirmedWriteCalls?: ToolCall[]
+  /**
+   * Prior-turn subject carry-over (Fix #2). Lets a `followup` intent inherit
+   * the right tools from the previous assistant turn's intent/tickers.
+   */
+  priorIntent?: import('./types').Intent
+  priorTickers?: string[]
 }
 
 export interface RunOrchestratorDeps {
@@ -83,6 +89,8 @@ export async function runOrchestrator(
     userId: input.userId,
     message: input.message,
     userConfirmed: input.userConfirmed,
+    priorIntent: input.priorIntent,
+    priorTickers: input.priorTickers,
   })
   const writeCalls = input.userConfirmed
     ? (input.confirmedWriteCalls ?? []).filter((c) => WRITE_TOOLS.has(c.tool))
