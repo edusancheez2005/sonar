@@ -77,9 +77,43 @@ export async function routeMessage(
   try {
     raw = await model.routerCall(ROUTER_SYSTEM_PROMPT, userBlock)
   } catch {
-    return fallback()
+    return applyDeterministicOverrides(input.message, fallback())
   }
-  return parseRouterOutput(raw)
+  return applyDeterministicOverrides(input.message, parseRouterOutput(raw))
+}
+
+/**
+ * Deterministic, regex-based corrections applied AFTER the LLM router so a
+ * misclassification can't strand a clearly wallet-shaped follow-up.
+ *
+ * The motivating production bug: a user asks "and the full address for rank 2?"
+ * as a follow-up to a ranked wallet table. The leading "and" makes the mini
+ * model classify it as `followup`, which has no wallet renderer, so the user
+ * got a generic greeting instead of the address. Any message that references a
+ * table rank ("rank 2") or asks for a "full / complete address" is forced to
+ * `wallet_lookup` with the `whales` datapoint so the leaderboard re-runs and
+ * the address is back in the renderer's context.
+ */
+export function applyDeterministicOverrides(
+  message: string | undefined,
+  decision: RouterDecision
+): RouterDecision {
+  if (!message) return decision
+  const m = message.toLowerCase()
+  const refersToRank = /\brank\s*#?\d+\b/.test(m)
+  const wantsFullAddress = /\b(full|complete|whole|entire)\s+(wallet\s+)?address(es)?\b/.test(m)
+  if (refersToRank || wantsFullAddress) {
+    const datapoints = decision.datapoints.includes('whales')
+      ? decision.datapoints
+      : [...decision.datapoints, 'whales' as Datapoint]
+    return {
+      ...decision,
+      intent: 'wallet_lookup',
+      datapoints,
+      confidence: Math.max(decision.confidence, 0.85),
+    }
+  }
+  return decision
 }
 
 export function parseRouterOutput(raw: string): RouterDecision {

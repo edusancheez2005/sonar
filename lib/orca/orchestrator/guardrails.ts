@@ -8,6 +8,8 @@
  * Pure functions; no IO. Easy to unit test.
  */
 
+import { MANDATORY_DISCLAIMER } from '../shared-rules'
+
 export const STANDARD_DISCLAIMER =
   'Not financial advice. This is research-grade analysis only.'
 
@@ -70,12 +72,29 @@ export function applyGuardrails(draft: string): GuardrailResult {
 }
 
 export function ensureSingleDisclaimer(text: string): string {
-  const lines = text.split(/\r?\n/)
-  // Strip any line that is essentially the disclaimer (any casing / whitespace).
-  const stripped = lines.filter((l) => !isDisclaimerLine(l))
-  // Re-append exactly once at the end.
-  const body = stripped.join('\n').replace(/\s+$/, '')
-  return `${body}\n\n${STANDARD_DISCLAIMER}`.trim()
+  // Every ORCA answer must end with EXACTLY ONE disclaimer. Two systems used
+  // to both append one — the renderer prompt told the writer to add the long
+  // MANDATORY_DISCLAIMER, and this function added the short STANDARD one —
+  // producing a visible double disclaimer. We now collapse both into a single
+  // canonical block: strip everything from the first long-disclaimer marker
+  // onward (the long disclaimer plus any trailing duplicate), drop any stray
+  // short-disclaimer lines, then append one canonical disclaimer at the end.
+  //
+  // The long MANDATORY_DISCLAIMER is preferred as the canonical block because
+  // the chat client detects its opening phrase and renders it as tiny, muted
+  // fine-print. We fall back to the short STANDARD disclaimer only when the
+  // draft never carried the long one (keeps existing plain-text behaviour).
+  const mandatoryIdx = text.search(/this output is an automated summary/i)
+  const hadMandatory = mandatoryIdx !== -1
+  const head = hadMandatory ? text.slice(0, mandatoryIdx) : text
+  const body = head
+    .split(/\r?\n/)
+    .filter((l) => !isDisclaimerLine(l))
+    .join('\n')
+    .replace(/\n?[-_*]{3,}\s*$/g, '')
+    .replace(/\s+$/, '')
+  const canonical = hadMandatory ? MANDATORY_DISCLAIMER : STANDARD_DISCLAIMER
+  return `${body}\n\n${canonical}`.trim()
 }
 
 function isDisclaimerLine(line: string): boolean {

@@ -4,6 +4,7 @@ import {
   applyGuardrails,
   ensureSingleDisclaimer,
 } from '@/lib/orca/orchestrator/guardrails'
+import { MANDATORY_DISCLAIMER } from '@/lib/orca/shared-rules'
 
 describe('ensureSingleDisclaimer', () => {
   it('appends the disclaimer when absent', () => {
@@ -22,6 +23,15 @@ describe('ensureSingleDisclaimer', () => {
     const text = `BTC is at $60k.\n\n${STANDARD_DISCLAIMER}\n\n${STANDARD_DISCLAIMER}`
     const out = ensureSingleDisclaimer(text)
     expect(out.split(STANDARD_DISCLAIMER).length - 1).toBe(1)
+  })
+
+  it('collapses a long mandatory disclaimer + a trailing short one into a single long disclaimer', () => {
+    const text = `Wallet activity summary.\n\n${MANDATORY_DISCLAIMER}\n\n${STANDARD_DISCLAIMER}`
+    const out = ensureSingleDisclaimer(text)
+    // Exactly one long disclaimer, and no leftover short one.
+    expect(out.split('This output is an automated summary').length - 1).toBe(1)
+    expect(out.includes(STANDARD_DISCLAIMER)).toBe(false)
+    expect(out.endsWith(MANDATORY_DISCLAIMER)).toBe(true)
   })
 })
 

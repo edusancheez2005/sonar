@@ -147,15 +147,16 @@ describe('renderers — explainer', () => {
 })
 
 describe('renderers — data_query', () => {
-  it('instructs the writer to lead with a focused markdown list', () => {
+  it('instructs the writer to lead with a ranked table or numbered list', () => {
     const out = renderDataQueryPrompt(mkArgs())
-    expect(out).toMatch(/focused markdown list/i)
-    expect(out).toMatch(/1-3 sentences of context maximum/i)
+    expect(out).toMatch(/ranked markdown table or a numbered list/i)
+    expect(out).toMatch(/at most 2 sentences of synthesis/i)
   })
 
-  it('instructs the writer to say so when the datapoint is missing', () => {
+  it('instructs the writer to degrade gracefully when data is unavailable', () => {
     const out = renderDataQueryPrompt(mkArgs())
-    expect(out).toMatch(/missing from the tool results/i)
+    expect(out).toMatch(/graceful degradation/i)
+    expect(out).toMatch(/isn't available right now/i)
   })
 })
 

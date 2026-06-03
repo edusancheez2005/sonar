@@ -109,4 +109,47 @@ describe('routeMessage', () => {
     expect(out.intent).toBe('overview')
     expect(out.confidence).toBe(0)
   })
+
+  it('forces wallet_lookup for a "full address for rank N" follow-up the model mislabels as followup', async () => {
+    // The leading "and" makes the mini model classify this as `followup`,
+    // which has no wallet renderer. The deterministic override must rescue it.
+    const routerCall = vi.fn().mockResolvedValue(
+      JSON.stringify({
+        intent: 'followup',
+        tickers: [],
+        entities: [],
+        datapoints: [],
+        persona_hint: null,
+        confidence: 0.9,
+      })
+    )
+    const out = await routeMessage(
+      {
+        message: 'and the full address for rank 2?',
+        userId: 'u1',
+        chatHistory: [{ role: 'assistant', content: 'Rank 1 ... Rank 2 ...' }],
+      },
+      { routerCall, writerCall: vi.fn() }
+    )
+    expect(out.intent).toBe('wallet_lookup')
+    expect(out.datapoints).toContain('whales')
+  })
+
+  it('does not force wallet_lookup for an ordinary "and the 7d?" follow-up', async () => {
+    const routerCall = vi.fn().mockResolvedValue(
+      JSON.stringify({
+        intent: 'followup',
+        tickers: ['BTC'],
+        entities: [],
+        datapoints: ['price'],
+        persona_hint: null,
+        confidence: 0.9,
+      })
+    )
+    const out = await routeMessage(
+      { message: 'and the 7d?', userId: 'u1', chatHistory: [] },
+      { routerCall, writerCall: vi.fn() }
+    )
+    expect(out.intent).toBe('followup')
+  })
 })
