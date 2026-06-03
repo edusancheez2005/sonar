@@ -137,6 +137,12 @@ describe('evaluateNewsImpact', () => {
     })
     expect(await evaluateNewsImpact('SOL', sb, NOW)).toBeNull()
   })
+  it('skips the literal "Untitled" ingest fallback even when sentiment is high', async () => {
+    const sb = makeSupabase({
+      news_items: [{ title: 'Untitled', sentiment_llm: 0.9, url: 'https://x/y' }],
+    })
+    expect(await evaluateNewsImpact('SOL', sb, NOW)).toBeNull()
+  })
 })
 
 describe('evaluateWalletActivity', () => {
@@ -176,6 +182,15 @@ describe('evaluateNewsAny', () => {
   })
   it('returns null with no articles', async () => {
     const sb = makeSupabase({ news_items: [] })
+    expect(await evaluateNewsAny('SOL', sb, NOW)).toBeNull()
+  })
+  it('skips junk "Untitled" and too-short headlines', async () => {
+    const sb = makeSupabase({
+      news_items: [
+        { title: 'Untitled', url: 'https://x/1' },
+        { title: 'BTC', url: 'https://x/2' },
+      ],
+    })
     expect(await evaluateNewsAny('SOL', sb, NOW)).toBeNull()
   })
 })

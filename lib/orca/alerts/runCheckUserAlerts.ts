@@ -51,6 +51,44 @@ function normaliseStyle(value: unknown): NotificationStyle {
   return value === 'quiet' || value === 'frequent' ? value : 'balanced'
 }
 
+// Suppress a candidate when an identical-looking notification was created for
+// the same rule within this window. The hourly UNIQUE(user,rule,hour) index
+// only stops collisions *inside* one hour; a sustained price move or a
+// re-surfaced headline would otherwise re-fire near-identically every hour.
+const RECENT_DUP_WINDOW_MS = 6 * 60 * 60 * 1000
+
+function rawUrl(copy: NotificationCopy): string {
+  const raw = copy.payload?.raw as Record<string, unknown> | undefined
+  const url = raw?.url
+  return typeof url === 'string' ? url.trim() : ''
+}
+
+/**
+ * Collapse redundant news candidates: a user who watches both "any news" and
+ * "high-impact news" on the same ticker would otherwise get two notifications
+ * for one article. When a high-impact (news_high_impact) candidate references
+ * the same URL as a news_any candidate, drop the news_any one — the
+ * high-impact copy is strictly more informative.
+ */
+function dropDuplicateNews(
+  candidates: Array<{ rule: AlertRule; copy: NotificationCopy }>
+): Array<{ rule: AlertRule; copy: NotificationCopy }> {
+  const impactUrls = new Set<string>()
+  for (const c of candidates) {
+    if (c.rule.kind === 'news_high_impact') {
+      const u = rawUrl(c.copy)
+      if (u) impactUrls.add(u)
+    }
+  }
+  if (impactUrls.size === 0) return candidates
+  return candidates.filter((c) => {
+    if (c.rule.kind !== 'news_any') return true
+    const u = rawUrl(c.copy)
+    return !(u && impactUrls.has(u))
+  })
+}
+
+
 /**
  * Pure-ish core so tests can drive it with a mocked Supabase client.
  * Returns counts; never throws (every read is defensively wrapped).
@@ -174,30 +212,52 @@ export async function runCheckUserAlerts(
 
   // 4. Per-user daily cap, then deduplicated insert.
   const dayStart = startOfUtcDay(now())
-  for (const [userId, candidates] of candidatesByUser) {
+  const recentCutoff = now().getTime() - RECENT_DUP_WINDOW_MS
+  for (const [userId, rawCandidates] of candidatesByUser) {
     const style = styleByUser.get(userId) ?? 'balanced'
     const cap = Math.min(DAILY_CAP_BY_STYLE[style], MAX_INAPP_PER_DAY)
 
+    // Collapse "any news" + "high-impact news" duplicates for the same article.
+    const candidates = dropDuplicateNews(rawCandidates)
+
     let usedToday = 0
+    const recentDupKeys = new Set<string>()
     try {
       const { data } = await supabase
         .from('user_notifications')
-        .select('id')
+        .select('id, rule_id, title, created_at')
         .eq('user_id', userId)
         .gte('created_at', dayStart)
         .limit(MAX_INAPP_PER_DAY + 1)
-      usedToday = Array.isArray(data) ? data.length : 0
+      const rows = (Array.isArray(data) ? data : []) as Array<{
+        rule_id?: string
+        title?: string
+        created_at?: string
+      }>
+      usedToday = rows.length
+      for (const r of rows) {
+        const ts = r.created_at ? Date.parse(r.created_at) : NaN
+        if (Number.isFinite(ts) && ts >= recentCutoff && r.rule_id && r.title) {
+          recentDupKeys.add(`${r.rule_id}|${r.title}`)
+        }
+      }
     } catch {
       usedToday = 0
     }
 
+    // Skip candidates whose (rule, title) already fired in the recent window.
+    const deduped = candidates.filter(
+      ({ rule, copy }) => !recentDupKeys.has(`${rule.id}|${copy.title}`)
+    )
+    result.capped += candidates.length - deduped.length
+
     const remaining = Math.max(0, cap - usedToday)
     if (remaining <= 0) {
-      result.capped += candidates.length
+      result.capped += deduped.length
       continue
     }
-    const allowed = candidates.slice(0, remaining)
-    result.capped += candidates.length - allowed.length
+    const allowed = deduped.slice(0, remaining)
+    result.capped += deduped.length - allowed.length
 
     const rows = allowed.map(({ rule, copy }) => ({
       user_id: userId,

@@ -34,6 +34,16 @@ export interface SupabaseLike {
 
 const DIRECTIONAL = new Set(['BUY', 'SELL', 'STRONG BUY', 'STRONG SELL'])
 
+// News rows are ingested with a literal 'Untitled' fallback when the source
+// gives no headline (see ingest-news). Those make for useless "BTC headline:
+// Untitled" alerts, so the news evaluators treat them (and any too-short stub)
+// as no-headline and skip the row.
+function isJunkHeadline(headline: string): boolean {
+  const h = headline.trim()
+  if (h.length < 10) return true
+  return h.toLowerCase() === 'untitled'
+}
+
 // Never alert on micro-moves regardless of how low a user sets their rule. A
 // rolling 24h % barely changes hour to hour, so the old 24h metric re-fired the
 // same move every hour; we now compute a genuine ~1h move and floor it.
@@ -173,7 +183,7 @@ export async function evaluateNewsImpact(
       if (!Number.isFinite(s)) continue
       if (Math.abs(s) < NEWS_SENTIMENT_THRESHOLD) continue
       const headline = typeof r.title === 'string' ? r.title.trim() : ''
-      if (!headline) continue
+      if (isJunkHeadline(headline)) continue
       return formatNewsImpact(ticker, headline, s, typeof r.url === 'string' ? r.url : '')
     }
     return null
@@ -252,7 +262,7 @@ export async function evaluateNewsAny(
     if (!Array.isArray(data)) return null
     for (const r of data as Array<{ title?: string; url?: string }>) {
       const headline = typeof r.title === 'string' ? r.title.trim() : ''
-      if (!headline) continue
+      if (isJunkHeadline(headline)) continue
       return formatNewsAny(ticker, headline, typeof r.url === 'string' ? r.url : '')
     }
     return null
