@@ -1,9 +1,10 @@
 import React from 'react'
 import { supabaseAdmin, supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
-import WalletTrackerTabs from '@/app/components/wallet-tracker/WalletTrackerTabs'
 import FiguresDirectoryClient from './FiguresDirectoryClient'
 import SubmitFigureButton from './SubmitFigureButton'
-import HubPageHeader from '@/app/components/wallet-tracker/HubPageHeader'
+import CoverageInProgress from './CoverageInProgress'
+import WhaleTerminalShell from '@/app/components/whale-terminal/WhaleTerminalShell'
+import DirectoryHeader from '@/app/components/whale-terminal/DirectoryHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +52,20 @@ async function fetchApprovedFigures() {
   return (data || []).filter(
     (r) => Array.isArray(r.addresses) && r.addresses.length > 0
   )
+}
+
+// Approved figures that don't yet have any verified addresses. Surfaced
+// in a muted "Coverage in progress" strip so the directory communicates
+// pipeline coverage without rendering dead deeplinks.
+async function fetchCoverageInProgress() {
+  const { data, error } = await supabaseAdminFresh
+    .from('curated_entities')
+    .select('slug, display_name, category, avatar_url, twitter_handle, addresses')
+    .eq('submission_status', 'approved')
+  if (error) return []
+  return (data || [])
+    .filter((r) => !Array.isArray(r.addresses) || r.addresses.length === 0)
+    .sort((a, b) => String(a.display_name || '').localeCompare(String(b.display_name || '')))
 }
 
 // Pre-computed nightly by /api/cron/backtest-figures. Returns a Map
@@ -121,7 +136,11 @@ function parseSearchParams(searchParams) {
 
 export default async function FiguresDirectoryPage({ searchParams }) {
   const { sort, page } = parseSearchParams(searchParams || {})
-  const [all, btMap] = await Promise.all([fetchApprovedFigures(), fetchBacktestMap()])
+  const [all, btMap, coverage] = await Promise.all([
+    fetchApprovedFigures(),
+    fetchBacktestMap(),
+    fetchCoverageInProgress(),
+  ])
   const enriched = all.map((f) => {
     const bt = btMap.get(f.slug)
     return {
@@ -136,17 +155,8 @@ export default async function FiguresDirectoryPage({ searchParams }) {
   const clampedPage = Math.min(Math.max(1, page), totalPages)
 
   return (
-    <main
-      style={{
-        width: '100%',
-        maxWidth: '1400px',
-        margin: '0 auto',
-        padding: '1.5rem 2rem 2rem',
-        color: 'var(--text-primary)',
-      }}
-    >
-      <HubPageHeader
-        title="Public figures"
+    <WhaleTerminalShell title="WHALE_INTELLIGENCE // FIGURES" live={false}>
+      <DirectoryHeader
         subtitle={
           <>
             {totalCount.toLocaleString()} verified figure
@@ -155,8 +165,6 @@ export default async function FiguresDirectoryPage({ searchParams }) {
         }
         right={<SubmitFigureButton />}
       />
-
-      <WalletTrackerTabs activeOverride="figures" />
 
       {/* Client renders sort dropdown, search, grid, pagination. Data
           is fully sorted server-side so search bypass in the client is
@@ -168,6 +176,8 @@ export default async function FiguresDirectoryPage({ searchParams }) {
         pageSize={PAGE_SIZE}
         sort={sort}
       />
-    </main>
+
+      <CoverageInProgress figures={coverage} />
+    </WhaleTerminalShell>
   )
 }

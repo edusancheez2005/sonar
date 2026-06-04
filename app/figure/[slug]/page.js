@@ -4,6 +4,8 @@ import FollowButton from '@/app/components/entities/FollowButton'
 import EntityAvatar from '@/app/components/entities/EntityAvatar'
 import { fetchChainTxsForAddresses } from '@/app/lib/chainFetchers'
 import WalletBacktestPanel from '@/components/wallet-tracker/WalletBacktestPanel'
+import PortfolioCandleChart from './PortfolioCandleChart'
+import CredibilityChip from '@/app/components/whale-terminal/CredibilityChip'
 import {
   CLASSIFICATION_COLORS,
   chainDisplay,
@@ -14,6 +16,7 @@ import {
   isNarrativeReasoning,
   categoryStyle,
   categoryLabel,
+  computeAddressCredibility,
 } from '@/app/lib/entityHelpers'
 
 export const dynamic = 'force-dynamic'
@@ -42,8 +45,62 @@ function normalizeAddresses(addresses) {
       address: String(a?.address || '').trim(),
       chain: String(a?.chain || '').toLowerCase().trim() || null,
       note: a?.note || null,
+      // Provenance — surfaced as a citation link on the detail page.
+      source: typeof a?.source === 'string' && a.source.trim() ? a.source.trim() : null,
+      verified: a?.verified === true,
     }))
     .filter((a) => a.address !== '')
+}
+
+// Build a daily candlestick series of the figure's cumulative net USD
+// flow across its verified addresses, derived purely from the merged
+// transaction feed. Inflows (the figure receiving) push the line up;
+// outflows (the figure sending) push it down. Each day becomes an OHLC
+// bar so the chart reads like a portfolio equity curve. Returns both
+// the candle array (oldest-first, as lightweight-charts requires) and
+// the final cumulative value used as the headline "portfolio" number.
+function buildPortfolioCandles(txs, ownedSet) {
+  const signed = []
+  for (const tx of txs) {
+    const usd = Number(tx.usd_value)
+    if (!Number.isFinite(usd) || usd === 0) continue
+    const t = new Date(tx.timestamp).getTime()
+    if (!Number.isFinite(t)) continue
+    let sign = 0
+    if (ownedSet.has(tx.to_address)) sign = 1
+    else if (ownedSet.has(tx.from_address)) sign = -1
+    else {
+      const c = String(tx.classification || '').toLowerCase()
+      if (c === 'buy') sign = 1
+      else if (c === 'sell') sign = -1
+    }
+    if (sign === 0) continue
+    signed.push({ t, day: new Date(t).toISOString().slice(0, 10), delta: sign * usd })
+  }
+  if (signed.length === 0) return { candles: [], value: 0 }
+  signed.sort((a, b) => a.t - b.t)
+
+  const byDay = new Map()
+  let cumulative = 0
+  for (const s of signed) {
+    let rec = byDay.get(s.day)
+    if (!rec) {
+      rec = { day: s.day, open: cumulative, high: cumulative, low: cumulative, close: cumulative }
+      byDay.set(s.day, rec)
+    }
+    cumulative += s.delta
+    rec.close = cumulative
+    if (cumulative > rec.high) rec.high = cumulative
+    if (cumulative < rec.low) rec.low = cumulative
+  }
+  const candles = Array.from(byDay.values()).map((r) => ({
+    time: r.day,
+    open: r.open,
+    high: r.high,
+    low: r.low,
+    close: r.close,
+  }))
+  return { candles, value: cumulative }
 }
 
 function addrListLiteral(addrs) {
@@ -493,33 +550,59 @@ function VerifiedAddressesCard({ addrs }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
           {addrs.map((a) => (
-            <a
+            <div
               key={`${a.chain}-${a.address}`}
-              href={`/whale/${encodeURIComponent(a.address)}`}
               style={{
-                display: 'flex', flexDirection: 'column', gap: '0.25rem',
+                display: 'flex', flexDirection: 'column', gap: '0.3rem',
                 padding: '0.55rem 0.7rem',
                 background: 'rgba(54, 166, 186, 0.06)',
                 border: '1px solid rgba(54, 166, 186, 0.15)',
                 borderRadius: '10px',
-                color: 'var(--text-primary)', textDecoration: 'none',
+                color: 'var(--text-primary)',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                <code
+                <a
+                  href={`/whale/${encodeURIComponent(a.address)}`}
                   title={a.address}
                   style={{
                     fontFamily: "'Courier New', monospace",
                     fontSize: '0.8rem',
                     color: 'var(--text-primary)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    minWidth: 0,
+                    minWidth: 0, textDecoration: 'none',
                   }}
                 >
                   {truncateAddress(a.address)}
-                </code>
-                <span style={{ fontSize: '0.7rem', color: '#36a6ba', fontWeight: 700, flexShrink: 0 }}>
-                  {chainDisplay(a.chain)}
+                </a>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                  {a.verified ? (
+                    <span
+                      title="Self-disclosed or otherwise verified with a cited source"
+                      style={{ fontSize: '0.66rem', color: '#2ecc71', fontWeight: 700 }}
+                    >
+                      ✓ VERIFIED
+                    </span>
+                  ) : (
+                    <span
+                      title="Community-attributed via OSINT — not self-disclosed. Treat with lower confidence."
+                      style={{
+                        fontSize: '0.62rem',
+                        color: '#f1c40f',
+                        fontWeight: 700,
+                        padding: '0.1rem 0.35rem',
+                        borderRadius: '4px',
+                        background: 'rgba(241, 196, 15, 0.1)',
+                        border: '1px solid rgba(241, 196, 15, 0.3)',
+                        letterSpacing: '0.3px',
+                      }}
+                    >
+                      COMMUNITY
+                    </span>
+                  )}
+                  <span style={{ fontSize: '0.7rem', color: '#36a6ba', fontWeight: 700 }}>
+                    {chainDisplay(a.chain)}
+                  </span>
                 </span>
               </div>
               {a.note ? (
@@ -529,18 +612,32 @@ function VerifiedAddressesCard({ addrs }) {
               ) : null}
               {a.arkham_label ? (
                 <div
-                  style={{
-                    fontSize: '0.7rem',
-                    color: '#36a6ba',
-                    fontWeight: 600,
-                    marginTop: a.note ? '0.15rem' : 0,
-                  }}
+                  style={{ fontSize: '0.7rem', color: '#36a6ba', fontWeight: 600 }}
                   title="On-chain attribution label"
                 >
                   {a.arkham_label}
                 </div>
               ) : null}
-            </a>
+              {a.source ? (
+                <a
+                  href={a.source}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  style={{
+                    fontSize: '0.7rem',
+                    color: '#36a6ba',
+                    textDecoration: 'none',
+                    wordBreak: 'break-all',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                  }}
+                  title="Source citation for this address"
+                >
+                  ↗ Source
+                </a>
+              ) : null}
+            </div>
           ))}
         </div>
       )}
@@ -630,6 +727,11 @@ export default async function FigureDetailPage({ params }) {
   )
 
   const ownedSet = new Set(addrs.map((a) => a.address))
+  const credibility = computeAddressCredibility(figure.addresses)
+  const { candles: portfolioCandles, value: portfolioValue } = buildPortfolioCandles(
+    mergedAll,
+    ownedSet
+  )
   const catStyle = categoryStyle(figure.category)
 
   return (
@@ -723,24 +825,7 @@ export default async function FigureDetailPage({ params }) {
                 >
                   {categoryLabel(figure.category)}
                 </span>
-                <span
-                  title="This figure's addresses have been verified by Sonar"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    padding: '0.25rem 0.7rem',
-                    background: 'rgba(54, 166, 186, 0.15)',
-                    border: '1px solid rgba(54, 166, 186, 0.45)',
-                    borderRadius: '999px',
-                    color: '#36a6ba',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  ✓ Verified public figure
-                </span>
+                <CredibilityChip stats={credibility} />
               </div>
             </div>
             <div style={{ flexShrink: 0 }}>
@@ -750,6 +835,10 @@ export default async function FigureDetailPage({ params }) {
 
           {hasAddresses ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+              <StatCard
+                label="Net on-chain flow"
+                value={portfolioCandles.length > 0 ? formatVolume(portfolioValue) : '—'}
+              />
               <StatCard label="Transactions" value={txCount.toLocaleString()} />
               <StatCard
                 label="Tracked Volume"
@@ -863,6 +952,7 @@ export default async function FigureDetailPage({ params }) {
             className="figure-main-grid"
           >
             <div style={{ minWidth: 0 }}>
+              <PortfolioCandleChart candles={portfolioCandles} />
               {backtestAddr ? (
                 <WalletBacktestPanel
                   address={backtestAddr.address}

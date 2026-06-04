@@ -176,6 +176,30 @@ export function categoryLabel(category) {
   return key.charAt(0).toUpperCase() + key.slice(1)
 }
 
+// Summarize address-level credibility for the "verified entity" chip.
+// Pure derivation from the curated_entities.addresses array that is
+// already loaded on figure/entity surfaces — no DB call.
+export function computeAddressCredibility(addresses) {
+  const list = Array.isArray(addresses) ? addresses : []
+  let verifiedCount = 0
+  let sourcedCount = 0
+  const chains = new Set()
+  for (const a of list) {
+    if (!a || !a.address) continue
+    if (a.verified === true) verifiedCount += 1
+    if (typeof a.source === 'string' && a.source.trim() !== '') sourcedCount += 1
+    if (a.chain) chains.add(String(a.chain).toLowerCase())
+  }
+  const addressCount = list.filter((a) => a && a.address).length
+  return {
+    addressCount,
+    verifiedCount,
+    chainCount: chains.size,
+    sourcedCount,
+    communityOnly: verifiedCount === 0 && addressCount > 0,
+  }
+}
+
 export function entityInitials(displayName) {
   if (!displayName) return '?'
   const parts = String(displayName)

@@ -2,6 +2,10 @@
 export function isWalletTrackerPath(pathname) {
   if (!pathname) return false;
   return (
+    pathname === '/whale' ||
+    pathname.startsWith('/whale/') ||
+    pathname === '/polymarket' ||
+    pathname.startsWith('/polymarket/') ||
     pathname === '/wallet-tracker' ||
     pathname.startsWith('/wallet-tracker/') ||
     pathname === '/entities' ||

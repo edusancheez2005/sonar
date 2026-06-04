@@ -1,13 +1,16 @@
 'use client'
+// Unified shell + tab bar for the Whale Intelligence Terminal.
+// Wraps Feed / Entities / Figures / Polymarket / Following sections in
+// the shared terminal chrome so each route looks like one product.
+// Auth + watchlist-count logic mirrors the existing WalletTrackerTabs.
 import React, { useEffect, useState } from 'react'
 import NextLink from 'next/link'
 import { usePathname } from 'next/navigation'
+import styled from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import { C, FONT_MONO } from '@/app/lib/terminalTheme'
+import { PageWrapper, Container, PageTitle, TitleText, LiveDot } from './primitives'
 
-// Shared tab bar for the Wallet Tracker hub. Sits directly under the
-// page header on /wallet-tracker, /entities, /figures, /watchlist.
-// Following tab is hidden when the viewer is signed out, and carries
-// a live count badge once the signed-in user has followed anything.
 const TABS = [
   { id: 'feed', label: 'Live Feed', href: '/whale' },
   { id: 'research', label: 'Research', href: '/wallet-tracker' },
@@ -20,7 +23,7 @@ const TABS = [
 function resolveActive(pathname) {
   if (!pathname) return null
   if (pathname === '/whale') return 'feed'
-  // `/wallet-tracker/0xabc...` and `/whale/0xabc...` are wallet profiles → Research.
+  // Wallet research hub + individual wallet/whale profiles.
   if (pathname === '/wallet-tracker' || pathname.startsWith('/wallet-tracker/')) return 'research'
   if (pathname.startsWith('/whale/')) return 'research'
   if (pathname === '/entities' || pathname.startsWith('/entities/')) return 'entities'
@@ -32,7 +35,46 @@ function resolveActive(pathname) {
   return null
 }
 
-export default function WalletTrackerTabs({ activeOverride } = {}) {
+const TabBar = styled.nav`
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid ${C.borderSubtle};
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+`
+
+const Tab = styled(NextLink)`
+  position: relative;
+  flex-shrink: 0;
+  padding: 0.6rem 0.95rem;
+  font-family: ${FONT_MONO};
+  font-size: 0.78rem;
+  font-weight: ${(p) => (p.$active ? 700 : 500)};
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: ${(p) => (p.$active ? C.cyan : C.textMuted)};
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid ${(p) => (p.$active ? C.cyan : 'transparent')};
+  margin-bottom: -1px;
+  transition: color 160ms ease, border-color 160ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  &:hover { color: ${(p) => (p.$active ? C.cyan : C.textPrimary)}; }
+`
+
+const CountBadge = styled.span`
+  color: ${C.textMuted};
+  font-size: 0.72rem;
+  font-weight: 500;
+`
+
+export default function WhaleTerminalShell({ title = 'WHALE_INTELLIGENCE', live = true, children }) {
   const pathname = usePathname()
   const [isAuthed, setIsAuthed] = useState(null)
   const [count, setCount] = useState(0)
@@ -43,16 +85,14 @@ export default function WalletTrackerTabs({ activeOverride } = {}) {
     const loadSession = async () => {
       try {
         const { data } = await sb.auth.getSession()
-        if (cancelled) return
-        setIsAuthed(!!data?.session)
+        if (!cancelled) setIsAuthed(!!data?.session)
       } catch {
         if (!cancelled) setIsAuthed(false)
       }
     }
     loadSession()
     const { data: sub } = sb.auth.onAuthStateChange((_e, session) => {
-      if (cancelled) return
-      setIsAuthed(!!session)
+      if (!cancelled) setIsAuthed(!!session)
     })
     return () => {
       cancelled = true
@@ -61,8 +101,6 @@ export default function WalletTrackerTabs({ activeOverride } = {}) {
   }, [])
 
   useEffect(() => {
-    // Lightweight count ping — re-runs on auth change and whenever the
-    // route changes so the badge stays in sync after a follow/unfollow.
     let cancelled = false
     const run = async () => {
       if (isAuthed !== true) {
@@ -94,74 +132,34 @@ export default function WalletTrackerTabs({ activeOverride } = {}) {
     }
   }, [isAuthed, pathname])
 
-  const active = activeOverride || resolveActive(pathname)
-
+  const active = resolveActive(pathname)
   const visibleTabs = TABS.filter((t) => !t.requiresAuth || isAuthed === true)
 
   return (
-    <>
-      <nav
-        aria-label="Wallet Tracker sections"
-        style={{
-          display: 'flex',
-          gap: '0.25rem',
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          marginBottom: '1.25rem',
-          borderBottom: '1px solid rgba(34, 211, 238, 0.12)',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-        className="sonar-wt-tabs"
-      >
-        {visibleTabs.map((t) => {
-          const isActive = active === t.id
-          return (
-            <NextLink
+    <PageWrapper>
+      <Container>
+        <PageTitle>
+          <TitleText>{title}</TitleText>
+          {live ? <LiveDot>LIVE</LiveDot> : null}
+        </PageTitle>
+
+        <TabBar aria-label="Whale terminal sections">
+          {visibleTabs.map((t) => (
+            <Tab
               key={t.id}
               href={t.href}
               prefetch={false}
-              style={{
-                position: 'relative',
-                flexShrink: 0,
-                padding: '0.6rem 0.95rem',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.78rem',
-                fontWeight: isActive ? 700 : 500,
-                letterSpacing: '0.8px',
-                textTransform: 'uppercase',
-                color: isActive ? 'var(--neon-bright)' : 'var(--text-secondary)',
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-                borderBottom: `2px solid ${isActive ? 'var(--neon-cyan)' : 'transparent'}`,
-                marginBottom: '-1px',
-                transition: 'color 160ms ease, border-color 160ms ease',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-              aria-current={isActive ? 'page' : undefined}
+              $active={active === t.id}
+              aria-current={active === t.id ? 'page' : undefined}
             >
               {t.label}
-              {t.id === 'following' && count > 0 ? (
-                <span
-                  aria-label={`${count} items in watchlist`}
-                  style={{
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.78rem',
-                    fontWeight: 500,
-                  }}
-                >
-                  · {count}
-                </span>
-              ) : null}
-            </NextLink>
-          )
-        })}
-      </nav>
-      <style>{`
-        .sonar-wt-tabs::-webkit-scrollbar { display: none; }
-      `}</style>
-    </>
+              {t.id === 'following' && count > 0 ? <CountBadge>· {count}</CountBadge> : null}
+            </Tab>
+          ))}
+        </TabBar>
+
+        {children}
+      </Container>
+    </PageWrapper>
   )
 }

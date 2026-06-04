@@ -29,6 +29,7 @@ const INNER_TABS = [
   { id: 'figures', label: 'Figures' },
   { id: 'entities', label: 'Entities' },
   { id: 'wallets', label: 'Wallets' },
+  { id: 'polymarket', label: 'Polymarket' },
 ]
 
 const DEFAULT_INNER_TAB = 'figures'
@@ -43,6 +44,7 @@ export default function WatchlistClient() {
   const [figures, setFigures] = useState([])
   const [entities, setEntities] = useState([])
   const [wallets, setWallets] = useState([])
+  const [polymarketWhales, setPolymarketWhales] = useState([])
 
   const router = useRouter()
   const pathname = usePathname()
@@ -82,6 +84,7 @@ export default function WatchlistClient() {
       setFigures(json?.figures || [])
       setEntities(json?.entities || [])
       setWallets(json?.wallets || [])
+      setPolymarketWhales(json?.polymarketWhales || [])
     } catch {
       // silent
     } finally {
@@ -152,13 +155,34 @@ export default function WatchlistClient() {
     }
   }
 
+  const unfollowPolymarketWhale = async (wallet) => {
+    const prev = polymarketWhales
+    setPolymarketWhales((list) => list.filter((w) => w.proxy_wallet !== wallet))
+    const headers = await getAuthHeaders()
+    if (!headers) {
+      setPolymarketWhales(prev)
+      return
+    }
+    try {
+      const res = await fetch('/api/watchlist/polymarket', {
+        method: 'DELETE',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proxy_wallet: wallet }),
+      })
+      if (!res.ok) throw new Error('delete failed')
+    } catch {
+      setPolymarketWhales(prev)
+    }
+  }
+
   const counts = useMemo(
     () => ({
       figures: figures.length,
       entities: entities.length,
       wallets: wallets.length,
+      polymarket: polymarketWhales.length,
     }),
-    [figures.length, entities.length, wallets.length]
+    [figures.length, entities.length, wallets.length, polymarketWhales.length]
   )
 
   if (signedIn === false) {
@@ -271,6 +295,32 @@ export default function WatchlistClient() {
                 key={w.address}
                 w={w}
                 onUnfollow={() => unfollowWallet(w.address)}
+              />
+            ))}
+          </div>
+        </TabPanel>
+      ) : null}
+
+      {activeTab === 'polymarket' ? (
+        <TabPanel
+          id="polymarket"
+          emptyLabel="Polymarket whales"
+          emptyBrowseHref="/polymarket"
+          emptyBrowseLabel="the Polymarket tab"
+          count={counts.polymarket}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: '1rem',
+            }}
+          >
+            {polymarketWhales.map((w) => (
+              <PolymarketWhaleCard
+                key={w.proxy_wallet}
+                w={w}
+                onUnfollow={() => unfollowPolymarketWhale(w.proxy_wallet)}
               />
             ))}
           </div>
@@ -740,6 +790,86 @@ function WalletRow({ w, onUnfollow }) {
           zIndex: 2,
         }}
       >
+        <UnfollowPill onClick={onUnfollow} />
+      </div>
+    </div>
+  )
+}
+
+// ─── Polymarket whale card ───────────────────────────────────────────────
+
+function PolymarketWhaleCard({ w, onUnfollow }) {
+  const [hover, setHover] = useState(false)
+  const isAddrName = typeof w.name === 'string' && /^0x[a-fA-F0-9]{40}/.test(w.name.trim())
+  const display = w.name && !isAddrName ? w.name : truncateAddress(w.proxy_wallet)
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ position: 'relative', minWidth: 0 }}
+    >
+      <a
+        href={`/polymarket?whale=${encodeURIComponent(w.proxy_wallet)}`}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+          background: hover ? 'rgba(10, 22, 32, 0.7)' : 'rgba(6, 14, 22, 0.6)',
+          border: hover
+            ? '1px solid rgba(34, 211, 238, 0.32)'
+            : '1px solid rgba(34, 211, 238, 0.12)',
+          borderRadius: '10px',
+          padding: '0.85rem 0.95rem',
+          color: 'var(--text-primary)',
+          textDecoration: 'none',
+          boxShadow: hover ? '0 4px 16px rgba(34, 211, 238, 0.1)' : 'none',
+          transition: 'background 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
+          minWidth: 0,
+        }}
+      >
+        <div
+          style={{
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: '#36a6ba',
+            wordBreak: 'break-word',
+            paddingRight: '5rem',
+            lineHeight: 1.25,
+          }}
+        >
+          {display}
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+          {truncateAddress(w.proxy_wallet)}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: '1.25rem',
+            marginTop: '0.15rem',
+            borderTop: '1px solid rgba(54, 166, 186, 0.12)',
+            paddingTop: '0.6rem',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {w.total_amount != null ? formatVolume(w.total_amount) : '—'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Total size</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {w.markets_count != null ? Number(w.markets_count).toLocaleString() : '—'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Markets</div>
+          </div>
+        </div>
+        <div style={{ fontSize: '0.78rem', color: '#36a6ba', fontWeight: 600, marginTop: '0.1rem' }}>
+          View bids →
+        </div>
+      </a>
+
+      <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 2 }}>
         <UnfollowPill onClick={onUnfollow} />
       </div>
     </div>

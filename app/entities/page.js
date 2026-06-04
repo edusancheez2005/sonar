@@ -1,12 +1,12 @@
 import React from 'react'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
-import WalletTrackerTabs from '@/app/components/wallet-tracker/WalletTrackerTabs'
 import {
   isJunkEntityLabel,
   inferEntityType,
 } from '@/app/lib/entityHelpers'
 import EntitiesDirectoryClient from './EntitiesDirectoryClient'
-import HubPageHeader from '@/app/components/wallet-tracker/HubPageHeader'
+import WhaleTerminalShell from '@/app/components/whale-terminal/WhaleTerminalShell'
+import DirectoryHeader from '@/app/components/whale-terminal/DirectoryHeader'
 
 /**
  * Aggregating /entities walks up to 30k whale-tx rows through the in-memory
@@ -265,26 +265,16 @@ export default async function EntitiesDirectoryPage({ searchParams }) {
   )
 
   return (
-    <main
-        style={{
-          width: '100%',
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '1.5rem 2rem 2rem',
-          color: 'var(--text-primary)',
-        }}
-      >
-        <HubPageHeader title="Tracked entities" subtitle={subtitle} />
+    <WhaleTerminalShell title="WHALE_INTELLIGENCE // ENTITIES" live={false}>
+      <DirectoryHeader subtitle={subtitle} />
 
-        <WalletTrackerTabs activeOverride="entities" />
-
-        <EntitiesDirectoryClient
-          entities={entities}
-          page={clampedPage}
-          totalPages={totalPages}
-          pageSize={PAGE_SIZE}
-          sort={sort}
-        />
-      </main>
+      <EntitiesDirectoryClient
+        entities={entities}
+        page={clampedPage}
+        totalPages={totalPages}
+        pageSize={PAGE_SIZE}
+        sort={sort}
+      />
+    </WhaleTerminalShell>
   )
 }

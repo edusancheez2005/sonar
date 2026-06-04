@@ -173,8 +173,40 @@ export async function GET(req) {
     })
   }
 
+  // Followed Polymarket whales. Tolerant of the table not existing yet
+  // (migration pending) — falls back to an empty list.
+  let polymarketWhales = []
+  try {
+    const { data: pmFollows } = await supabaseAdmin
+      .from('polymarket_whale_follows')
+      .select('proxy_wallet, name, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    const rows = pmFollows || []
+    if (rows.length > 0) {
+      const wallets = rows.map((r) => r.proxy_wallet)
+      const { data: whaleRows } = await supabaseAdmin
+        .from('polymarket_whales')
+        .select('proxy_wallet, name, total_amount, markets_count')
+        .in('proxy_wallet', wallets)
+      const whaleMap = new Map((whaleRows || []).map((w) => [w.proxy_wallet, w]))
+      polymarketWhales = rows.map((r) => {
+        const w = whaleMap.get(r.proxy_wallet) || null
+        return {
+          proxy_wallet: r.proxy_wallet,
+          name: (w && w.name) || r.name || null,
+          total_amount: w?.total_amount ?? null,
+          markets_count: w?.markets_count ?? null,
+          followed_at: r.created_at,
+        }
+      })
+    }
+  } catch {
+    polymarketWhales = []
+  }
+
   return NextResponse.json(
-    { figures, entities, wallets },
+    { figures, entities, wallets, polymarketWhales },
     { headers: { 'Cache-Control': 'no-store' } }
   )
 }

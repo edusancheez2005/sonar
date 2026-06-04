@@ -2,8 +2,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import EntityAvatar from '@/app/components/entities/EntityAvatar'
-import { categoryStyle, categoryLabel } from '@/app/lib/entityHelpers'
+import { categoryStyle, categoryLabel, computeAddressCredibility } from '@/app/lib/entityHelpers'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import CredibilityChip from '@/app/components/whale-terminal/CredibilityChip'
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
@@ -321,6 +322,7 @@ function FigureCard({ f }) {
   const [hover, setHover] = useState(false)
   const style = categoryStyle(f.category)
   const addrCount = Array.isArray(f.addresses) ? f.addresses.length : 0
+  const credibility = computeAddressCredibility(f.addresses)
   const isFollowed = !!f._isFollowed
   const isFeatured = !!f.is_featured
   return (
@@ -418,6 +420,7 @@ function FigureCard({ f }) {
             >
               {categoryLabel(f.category)}
             </span>
+            <CredibilityChip stats={credibility} compact />
             {isFeatured ? (
               <span
                 style={{

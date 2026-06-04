@@ -13,6 +13,8 @@ import {
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import AlertBanner from '@/components/wallet-tracker/AlertBanner'
 import TopPerformersWeek from '@/components/wallet-tracker/TopPerformersWeek'
+import { PageTitle, TitleText, LiveDot } from '@/app/components/whale-terminal/primitives'
+import DirectoryHeader from '@/app/components/whale-terminal/DirectoryHeader'
 
 // `/wallet-tracker` hub that sits above the existing leaderboard
 // wrapper. Renders the new unified header, shared tab bar (Research
@@ -34,6 +36,7 @@ export default function WalletTrackerHub({ featuredFigures = [], topPerformers =
     >
       <HubHeader />
       <WalletTrackerTabs activeOverride="research" />
+      <DirectoryHeader subtitle="Research wallets, track entities, follow public figures." />
       <HeroSearch />
       <TopPerformersWeek performers={topPerformers} />
       <FeaturedFiguresStrip figures={featuredFigures} />
@@ -52,34 +55,14 @@ export default function WalletTrackerHub({ featuredFigures = [], topPerformers =
 }
 
 function HubHeader() {
+  // Terminal CLI header to match the other Whale Intelligence sections
+  // (Feed / Entities / Figures / Polymarket). Subtitle is rendered by
+  // DirectoryHeader below the tab bar, same as the directory pages.
   return (
-    <div style={{ marginBottom: '1.25rem' }}>
-      <h1
-        style={{
-          fontSize: 'clamp(1.6rem, 3.4vw, 2.1rem)',
-          fontWeight: 800,
-          margin: 0,
-          lineHeight: 1.1,
-          color: 'var(--text-primary)',
-          background: 'linear-gradient(135deg, #7af8ff 0%, #22d3ee 60%, #36a6ba 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          letterSpacing: '-0.01em',
-        }}
-      >
-        Whale Tracker
-      </h1>
-      <div
-        style={{
-          marginTop: '0.4rem',
-          color: 'var(--text-secondary)',
-          fontSize: '0.92rem',
-        }}
-      >
-        Research wallets, track entities, follow public figures.
-      </div>
-    </div>
+    <PageTitle>
+      <TitleText>WHALE_INTELLIGENCE // RESEARCH</TitleText>
+      <LiveDot>LIVE</LiveDot>
+    </PageTitle>
   )
 }
 
