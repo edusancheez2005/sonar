@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
+
+// PERF: select only the columns the drawer renders (drop the implicit
+// select('*')). `arkham_entity` is the Arkham-resolved real name and takes
+// priority over pseudonyms in the UI.
+const HOLDER_COLUMNS = 'condition_id,proxy_wallet,name,arkham_entity,amount,outcome_index,updated_at'
 
 // Drill-down endpoint for the Polymarket radar.
 //   ?proxy_wallet=0x...   -> every market a given whale holds
@@ -23,7 +28,7 @@ export async function GET(req) {
     )
   }
 
-  let q = supabaseAdmin.from('polymarket_market_holders').select('*')
+  let q = supabaseAdmin.from('polymarket_market_holders').select(HOLDER_COLUMNS)
   if (proxyWallet) {
     q = q.eq('proxy_wallet', proxyWallet).order('amount', { ascending: false, nullsFirst: false })
   } else {

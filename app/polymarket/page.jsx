@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react'
 import PolymarketClient from './PolymarketClient'
+import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 
 export const metadata = {
   title: 'Polymarket Whale Radar — Top Markets & Whale Leaderboard | Sonar',
@@ -10,7 +11,13 @@ export const metadata = {
 
 export default function PolymarketPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <SonarLoader />
+        </div>
+      }
+    >
       <PolymarketClient />
     </Suspense>
   )

@@ -16,11 +16,29 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-async function fetchEntityStats(name) {
+// PERF: prefer the Postgres aggregation RPC (migrations/entity_page_rpcs.sql);
+// fall back to the in-memory scan if the function isn't deployed yet. Wrapped
+// in React.cache so generateMetadata + the page render share one DB call.
+const fetchEntityStats = React.cache(async function fetchEntityStats(name) {
+  const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc('entity_stats', { p_name: name })
+  if (!rpcErr && Array.isArray(rpcData) && rpcData.length) {
+    const s = rpcData[0]
+    return {
+      tx_count: Number(s.tx_count || 0),
+      total_volume: Number(s.total_volume || 0),
+      chain_count: Number(s.chain_count || 0),
+      address_count: Number(s.address_count || 0),
+      first_seen: s.first_seen || null,
+      last_active: s.last_active || null,
+    }
+  }
+
+  // Fallback: bounded scan + in-memory aggregation.
   const { data, error } = await supabaseAdmin
     .from('all_whale_transactions')
     .select('usd_value, blockchain, from_address, to_address, timestamp')
     .or(`from_label.eq.${escapeOrValue(name)},to_label.eq.${escapeOrValue(name)}`)
+    .limit(5000)
   if (error) return null
 
   const rows = data || []
@@ -53,7 +71,7 @@ async function fetchEntityStats(name) {
     first_seen: firstSeen ? new Date(firstSeen).toISOString() : null,
     last_active: lastActive ? new Date(lastActive).toISOString() : null,
   }
-}
+})
 
 async function fetchRecentTxs(name) {
   const { data, error } = await supabaseAdmin
@@ -69,8 +87,20 @@ async function fetchRecentTxs(name) {
 }
 
 async function fetchTopTokens(name) {
-  // Pull a larger slice and aggregate in memory (PostgREST has no
-  // GROUP BY without an RPC). Cap at 5000 rows for latency.
+  // PERF: prefer the Postgres GROUP BY RPC; fall back to the in-memory scan.
+  const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc('entity_top_tokens', {
+    p_name: name,
+    p_limit: 10,
+  })
+  if (!rpcErr && Array.isArray(rpcData)) {
+    return rpcData.map((r) => ({
+      token_symbol: r.token_symbol || 'UNKNOWN',
+      tx_count: Number(r.tx_count || 0),
+      volume: Number(r.volume || 0),
+    }))
+  }
+
+  // Fallback: pull a slice and aggregate in memory. Cap at 5000 rows.
   const { data, error } = await supabaseAdmin
     .from('all_whale_transactions')
     .select('token_symbol, usd_value, timestamp')
@@ -96,6 +126,20 @@ async function fetchTopTokens(name) {
 }
 
 async function fetchAssociatedAddresses(name) {
+  // PERF: prefer the Postgres aggregation RPC; fall back to the two 5000-row
+  // scans + in-memory merge.
+  const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc('entity_associated_addresses', {
+    p_name: name,
+    p_limit: 20,
+  })
+  if (!rpcErr && Array.isArray(rpcData)) {
+    return rpcData.map((r) => ({
+      address: r.address,
+      tx_count: Number(r.tx_count || 0),
+      volume: Number(r.volume || 0),
+    }))
+  }
+
   const safe = escapeOrValue(name)
   const [fromRes, toRes] = await Promise.all([
     supabaseAdmin

@@ -180,7 +180,7 @@ function looksLikeAddress(s) {
   return typeof s === 'string' && /^0x[a-fA-F0-9]{40}/.test(s.trim())
 }
 function whaleName(w) {
-  const name = pick(w, ['name', 'username', 'display_name', 'pseudonym'])
+  const name = pick(w, ['arkham_entity', 'name', 'username', 'display_name', 'pseudonym'])
   const wallet = pick(w, ['proxy_wallet', 'proxyWallet', 'wallet', 'address'])
   if (name && !looksLikeAddress(name)) return name
   const addr = wallet || (looksLikeAddress(name) ? name : null)
@@ -190,7 +190,7 @@ function whaleWallet(w) {
   return pick(w, ['proxy_wallet', 'proxyWallet', 'wallet', 'address'])
 }
 function whaleDisplayName(w) {
-  const name = pick(w, ['name', 'username', 'display_name', 'pseudonym'])
+  const name = pick(w, ['arkham_entity', 'name', 'username', 'display_name', 'pseudonym'])
   if (name && !looksLikeAddress(name)) return name
   return null
 }
@@ -199,6 +199,12 @@ function whaleTotal(w) {
 }
 function whaleMarkets(w) {
   return Number(pick(w, ['markets_count', 'num_markets', 'market_count', 'markets', 'n_markets'], 0))
+}
+
+// Arkham-resolved name takes priority over the Polymarket pseudonym.
+function holderRealName(h) {
+  const name = pick(h, ['arkham_entity', 'name'])
+  return name && !looksLikeAddress(name) ? name : null
 }
 
 function holderAmount(h) {
@@ -409,6 +415,7 @@ function fmtCount(n) {
 export default function PolymarketClient() {
   const [markets, setMarkets] = useState([])
   const [whales, setWhales] = useState([])
+  const [activity, setActivity] = useState([]) // live whale-trade tape (Arkham)
   const [status, setStatus] = useState('loading') // loading | ready | error
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -571,14 +578,21 @@ export default function PolymarketClient() {
     try {
       const marketParams = new URLSearchParams({ limit: '600', sort: sortKey })
       if (categoryFilter && categoryFilter !== 'all') marketParams.set('category', categoryFilter)
-      const [mRes, wRes] = await Promise.all([
+      const [mRes, wRes, aRes] = await Promise.all([
         fetch(`/api/polymarket/markets?${marketParams.toString()}`, { cache: 'no-store' }),
         fetch('/api/polymarket/whales?limit=100', { cache: 'no-store' }),
+        // Live whale-activity tape; tolerate absence (table may be empty until
+        // the Arkham Polymarket cron has run).
+        fetch('/api/polymarket/activity?limit=40', { cache: 'no-store' }).catch(() => null),
       ])
       if (!mRes.ok || !wRes.ok) throw new Error('fetch failed')
       const [mJson, wJson] = await Promise.all([mRes.json(), wRes.json()])
       setMarkets(Array.isArray(mJson.data) ? mJson.data : [])
       setWhales(Array.isArray(wJson.data) ? wJson.data : [])
+      if (aRes && aRes.ok) {
+        const aJson = await aRes.json()
+        setActivity(Array.isArray(aJson.data) ? aJson.data : [])
+      }
       setStatus('ready')
       setLastUpdated(new Date())
     } catch {
@@ -967,6 +981,49 @@ export default function PolymarketClient() {
               </DataTable>
             )}
           </Panel>
+
+          {activity.length > 0 ? (
+            <Panel>
+              <PanelTitle>
+                <h2>Live Whale Activity</h2>
+              </PanelTitle>
+              <DataTable>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Whale</th>
+                      <th>Side</th>
+                      <th className="right">Size</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activity.map((a, i) => {
+                      const nm = holderRealName(a)
+                      const wallet = whaleWallet(a)
+                      const side = String(a.side || '').toUpperCase()
+                      return (
+                        <tr key={`${wallet || ''}-${a.ts || ''}-${i}`}>
+                          <td>{nm || (wallet ? shortenAddress(wallet, 5) : '—')}</td>
+                          <td>
+                            <span
+                              style={{
+                                color: side === 'BUY' ? C.green : side === 'SELL' ? C.red : C.textMuted,
+                                fontWeight: 700,
+                                fontSize: '0.72rem',
+                              }}
+                            >
+                              {side || '—'}
+                            </span>
+                          </td>
+                          <td className="right" style={{ fontWeight: 700 }}>{formatUsd(Number(a.usd_value || a.size || 0))}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </DataTable>
+            </Panel>
+          ) : null}
         </Grid>
       )}
 
@@ -1037,11 +1094,8 @@ export default function PolymarketClient() {
                           href = polymarketUrl(holderSlug(h))
                         } else {
                           label =
-                            h.name && !looksLikeAddress(h.name)
-                              ? h.name
-                              : h.proxy_wallet
-                                ? shortenAddress(h.proxy_wallet, 5)
-                                : '—'
+                            holderRealName(h) ||
+                            (h.proxy_wallet ? shortenAddress(h.proxy_wallet, 5) : '—')
                         }
                         const side = holderSide(h)
                         const holderWallet = whaleWallet(h)
@@ -1068,10 +1122,7 @@ export default function PolymarketClient() {
                                       type="button"
                                       $on={holderFollowing}
                                       onClick={() =>
-                                        toggleFollow(
-                                          holderWallet,
-                                          h.name && !looksLikeAddress(h.name) ? h.name : null
-                                        )
+                                        toggleFollow(holderWallet, holderRealName(h))
                                       }
                                       title={holderFollowing ? 'Unfollow whale' : 'Follow whale'}
                                       aria-label={holderFollowing ? 'Unfollow whale' : 'Follow whale'}
@@ -1081,9 +1132,7 @@ export default function PolymarketClient() {
                                   ) : null}
                                   <WhaleWalletCell
                                     wallet={holderWallet}
-                                    displayName={
-                                      h.name && !looksLikeAddress(h.name) ? h.name : null
-                                    }
+                                    displayName={holderRealName(h)}
                                     compact
                                   />
                                 </span>

@@ -1,12 +1,17 @@
 import React from 'react'
-import { supabaseAdmin, supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
+import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import FiguresDirectoryClient from './FiguresDirectoryClient'
 import SubmitFigureButton from './SubmitFigureButton'
 import CoverageInProgress from './CoverageInProgress'
 import WhaleTerminalShell from '@/app/components/whale-terminal/WhaleTerminalShell'
 import DirectoryHeader from '@/app/components/whale-terminal/DirectoryHeader'
 
-export const dynamic = 'force-dynamic'
+// PERF: was force-dynamic + supabaseAdminFresh, so every navigation loaded the
+// entire curated_entities + figure_backtests tables uncached. Switch to ISR:
+// served from cache, refreshed at most every 5 min. Newly-seeded figures now
+// appear within the revalidate window instead of instantly, an acceptable
+// trade for a fast directory.
+export const revalidate = 300
 
 export const metadata = {
   title: 'Figures | Sonar',
@@ -39,10 +44,8 @@ const DEFAULT_SORT = 'featured'
 // wallets aren't publicly attributable; those rows are visible to
 // admins via /admin/figures/backfill but should not surface here.
 async function fetchApprovedFigures() {
-  // Use the fresh client so newly-seeded figures appear immediately.
-  // The cacheable supabaseAdmin made the directory show stale rows
-  // for hours after a successful seed/sync, even with `force-dynamic`.
-  const { data, error } = await supabaseAdminFresh
+  // ISR-cached (see `revalidate` above): use the cacheable client.
+  const { data, error } = await supabaseAdmin
     .from('curated_entities')
     .select(
       'slug, display_name, description, category, avatar_url, twitter_handle, is_featured, addresses, created_at'
@@ -58,7 +61,7 @@ async function fetchApprovedFigures() {
 // in a muted "Coverage in progress" strip so the directory communicates
 // pipeline coverage without rendering dead deeplinks.
 async function fetchCoverageInProgress() {
-  const { data, error } = await supabaseAdminFresh
+  const { data, error } = await supabaseAdmin
     .from('curated_entities')
     .select('slug, display_name, category, avatar_url, twitter_handle, addresses')
     .eq('submission_status', 'approved')
@@ -75,7 +78,7 @@ async function fetchCoverageInProgress() {
 // route's lifetime, which made every page render show stale `null`s
 // for hours after a successful cron.
 async function fetchBacktestMap() {
-  const { data, error } = await supabaseAdminFresh
+  const { data, error } = await supabaseAdmin
     .from('figure_backtests')
     .select('slug, return_pct_7d, return_pct_90d, computed_at')
   if (error || !Array.isArray(data)) return new Map()
