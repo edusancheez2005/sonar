@@ -13,7 +13,7 @@ import {
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import AlertBanner from '@/components/wallet-tracker/AlertBanner'
 import TopPerformersWeek from '@/components/wallet-tracker/TopPerformersWeek'
-import { PageTitle, TitleText, LiveDot } from '@/app/components/whale-terminal/primitives'
+import { PageTitle, TitleText } from '@/app/components/whale-terminal/primitives'
 import DirectoryHeader from '@/app/components/whale-terminal/DirectoryHeader'
 
 // `/wallet-tracker` hub that sits above the existing leaderboard
@@ -55,13 +55,11 @@ export default function WalletTrackerHub({ featuredFigures = [], topPerformers =
 }
 
 function HubHeader() {
-  // Terminal CLI header to match the other Whale Intelligence sections
-  // (Feed / Entities / Figures / Polymarket). Subtitle is rendered by
-  // DirectoryHeader below the tab bar, same as the directory pages.
+  // Terminal CLI header to match Entities / Figures / Polymarket.
+  // Subtitle is rendered by DirectoryHeader below the tab bar.
   return (
     <PageTitle>
       <TitleText>WHALE_INTELLIGENCE // RESEARCH</TitleText>
-      <LiveDot>LIVE</LiveDot>
     </PageTitle>
   )
 }

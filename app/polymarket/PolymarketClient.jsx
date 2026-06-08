@@ -21,6 +21,7 @@ import { C, FONT_MONO } from '@/app/lib/terminalTheme'
 import { shortenAddress, formatUsd } from '@/lib/wallet-tracker'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
+import { WhaleWalletCell } from '@/app/components/whale-terminal/WalletAddrActions'
 
 const POLL_MS = 30000
 const PAGE_SIZE = 25
@@ -187,6 +188,11 @@ function whaleName(w) {
 }
 function whaleWallet(w) {
   return pick(w, ['proxy_wallet', 'proxyWallet', 'wallet', 'address'])
+}
+function whaleDisplayName(w) {
+  const name = pick(w, ['name', 'username', 'display_name', 'pseudonym'])
+  if (name && !looksLikeAddress(name)) return name
+  return null
 }
 function whaleTotal(w) {
   return Number(pick(w, ['total_amount', 'totalAmount', 'total', 'total_size', 'size'], 0))
@@ -646,7 +652,7 @@ export default function PolymarketClient() {
       openDrawer({
         kind: 'whale',
         title: name || shortenAddress(wallet, 5),
-        sub: `${shortenAddress(wallet, 6)}${marketsCount ? ` · ${fmtCount(marketsCount)} markets` : ''}`,
+        sub: marketsCount ? `${fmtCount(marketsCount)} markets` : null,
         wallet,
         url: `/api/polymarket/holders?proxy_wallet=${encodeURIComponent(wallet)}&limit=200`,
         filter: 'proxy_wallet',
@@ -677,7 +683,7 @@ export default function PolymarketClient() {
   }, [status, whales, searchParams, openWhaleByWallet])
 
   return (
-    <WhaleTerminalShell title="WHALE_INTELLIGENCE // POLYMARKET">
+    <WhaleTerminalShell title="WHALE_INTELLIGENCE // POLYMARKET" live={false}>
       {status === 'loading' ? (
         <Panel>
           <SonarLoader text="Scanning Polymarket whales…" size={60} compact />
@@ -931,7 +937,12 @@ export default function PolymarketClient() {
                           title="View this whale's markets"
                         >
                           <td className="muted">{i + 1}</td>
-                          <td style={{ color: C.cyan, fontWeight: 600 }}>{whaleName(w)}</td>
+                          <td>
+                            <WhaleWalletCell
+                              wallet={wallet}
+                              displayName={whaleDisplayName(w)}
+                            />
+                          </td>
                           <td className="right" style={{ fontWeight: 700 }}>{formatUsd(whaleTotal(w))}</td>
                           <td className="right">{fmtCount(whaleMarkets(w))}</td>
                           <td className="right">
@@ -966,7 +977,19 @@ export default function PolymarketClient() {
             <DrawerHead>
               <div style={{ minWidth: 0 }}>
                 <h3>{drawer.title}</h3>
-                {drawer.sub ? <div className="sub">{drawer.sub}</div> : null}
+                {drawer.kind === 'whale' && drawer.wallet ? (
+                  <div style={{ marginTop: '0.35rem' }}>
+                    <WhaleWalletCell
+                      wallet={drawer.wallet}
+                      displayName={
+                        drawer.title !== shortenAddress(drawer.wallet, 5) ? drawer.title : null
+                      }
+                      compact
+                    />
+                  </div>
+                ) : drawer.sub ? (
+                  <div className="sub">{drawer.sub}</div>
+                ) : null}
               </div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
                 {drawer.kind === 'whale' && drawer.wallet ? (
@@ -1038,8 +1061,8 @@ export default function PolymarketClient() {
                                   {label} <span style={{ color: C.textMuted }}>↗</span>
                                 </ExtLink>
                               ) : (
-                                // Whale row (market drill-down): name + follow star.
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                                // Whale row (market drill-down): follow + copy + analyze.
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                                   {holderWallet ? (
                                     <StarBtn
                                       type="button"
@@ -1056,7 +1079,13 @@ export default function PolymarketClient() {
                                       {holderFollowing ? '★' : '☆'}
                                     </StarBtn>
                                   ) : null}
-                                  <span>{label}</span>
+                                  <WhaleWalletCell
+                                    wallet={holderWallet}
+                                    displayName={
+                                      h.name && !looksLikeAddress(h.name) ? h.name : null
+                                    }
+                                    compact
+                                  />
                                 </span>
                               )}
                             </td>

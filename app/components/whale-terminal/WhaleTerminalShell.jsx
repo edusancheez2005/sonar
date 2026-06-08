@@ -12,7 +12,6 @@ import { C, FONT_MONO } from '@/app/lib/terminalTheme'
 import { PageWrapper, Container, PageTitle, TitleText, LiveDot } from './primitives'
 
 const TABS = [
-  { id: 'feed', label: 'Live Feed', href: '/whale' },
   { id: 'research', label: 'Research', href: '/wallet-tracker' },
   { id: 'entities', label: 'Entities', href: '/entities' },
   { id: 'figures', label: 'Figures', href: '/figures' },
@@ -22,7 +21,6 @@ const TABS = [
 
 function resolveActive(pathname) {
   if (!pathname) return null
-  if (pathname === '/whale') return 'feed'
   // Wallet research hub + individual wallet/whale profiles.
   if (pathname === '/wallet-tracker' || pathname.startsWith('/wallet-tracker/')) return 'research'
   if (pathname.startsWith('/whale/')) return 'research'
@@ -74,7 +72,7 @@ const CountBadge = styled.span`
   font-weight: 500;
 `
 
-export default function WhaleTerminalShell({ title = 'WHALE_INTELLIGENCE', live = true, children }) {
+export default function WhaleTerminalShell({ title = 'WHALE_INTELLIGENCE', live = false, children }) {
   const pathname = usePathname()
   const [isAuthed, setIsAuthed] = useState(null)
   const [count, setCount] = useState(0)

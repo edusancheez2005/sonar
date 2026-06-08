@@ -12,6 +12,7 @@ import {
   truncateAddress,
 } from '@/app/lib/entityHelpers'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import { CopyWalletBtn, walletAnalysisHref } from '@/app/components/whale-terminal/WalletAddrActions'
 
 async function getAuthHeaders() {
   try {
@@ -802,32 +803,30 @@ function PolymarketWhaleCard({ w, onUnfollow }) {
   const [hover, setHover] = useState(false)
   const isAddrName = typeof w.name === 'string' && /^0x[a-fA-F0-9]{40}/.test(w.name.trim())
   const display = w.name && !isAddrName ? w.name : truncateAddress(w.proxy_wallet)
+  const cardStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    background: hover ? 'rgba(10, 22, 32, 0.7)' : 'rgba(6, 14, 22, 0.6)',
+    border: hover
+      ? '1px solid rgba(34, 211, 238, 0.32)'
+      : '1px solid rgba(34, 211, 238, 0.12)',
+    borderRadius: '10px',
+    padding: '0.85rem 0.95rem',
+    color: 'var(--text-primary)',
+    boxShadow: hover ? '0 4px 16px rgba(34, 211, 238, 0.1)' : 'none',
+    transition: 'background 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
+    minWidth: 0,
+  }
   return (
     <div
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{ position: 'relative', minWidth: 0 }}
     >
-      <a
-        href={`/polymarket?whale=${encodeURIComponent(w.proxy_wallet)}`}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
-          background: hover ? 'rgba(10, 22, 32, 0.7)' : 'rgba(6, 14, 22, 0.6)',
-          border: hover
-            ? '1px solid rgba(34, 211, 238, 0.32)'
-            : '1px solid rgba(34, 211, 238, 0.12)',
-          borderRadius: '10px',
-          padding: '0.85rem 0.95rem',
-          color: 'var(--text-primary)',
-          textDecoration: 'none',
-          boxShadow: hover ? '0 4px 16px rgba(34, 211, 238, 0.1)' : 'none',
-          transition: 'background 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
-          minWidth: 0,
-        }}
-      >
-        <div
+      <div style={cardStyle}>
+        <a
+          href={walletAnalysisHref(w.proxy_wallet)}
           style={{
             fontSize: '0.95rem',
             fontWeight: 700,
@@ -835,12 +834,38 @@ function PolymarketWhaleCard({ w, onUnfollow }) {
             wordBreak: 'break-word',
             paddingRight: '5rem',
             lineHeight: 1.25,
+            textDecoration: 'none',
           }}
+          title="Analyze wallet"
         >
           {display}
-        </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-          {truncateAddress(w.proxy_wallet)}
+        </a>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            flexWrap: 'wrap',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.72rem',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <a
+            href={walletAnalysisHref(w.proxy_wallet)}
+            style={{ color: '#36a6ba', textDecoration: 'none', fontWeight: 600 }}
+            title="Analyze wallet"
+          >
+            {truncateAddress(w.proxy_wallet)}
+          </a>
+          <CopyWalletBtn address={w.proxy_wallet} />
+          <a
+            href={walletAnalysisHref(w.proxy_wallet)}
+            style={{ color: '#36a6ba', textDecoration: 'none', fontSize: '0.68rem', fontWeight: 600 }}
+            title="Analyze wallet"
+          >
+            Analyze →
+          </a>
         </div>
         <div
           style={{
@@ -864,10 +889,13 @@ function PolymarketWhaleCard({ w, onUnfollow }) {
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Markets</div>
           </div>
         </div>
-        <div style={{ fontSize: '0.78rem', color: '#36a6ba', fontWeight: 600, marginTop: '0.1rem' }}>
-          View bids →
-        </div>
-      </a>
+        <a
+          href={`/polymarket?whale=${encodeURIComponent(w.proxy_wallet)}`}
+          style={{ fontSize: '0.78rem', color: '#36a6ba', fontWeight: 600, marginTop: '0.1rem', textDecoration: 'none' }}
+        >
+          View Polymarket bids →
+        </a>
+      </div>
 
       <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 2 }}>
         <UnfollowPill onClick={onUnfollow} />

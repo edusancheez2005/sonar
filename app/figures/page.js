@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Figures | Sonar',
   description:
-    'Directory of public on-chain entities tracked on Sonar.',
+    'Directory of verified public figures with sourced on-chain addresses on Sonar.',
   // De-indexed 2026-04-21 pending per-record source attribution + a
   // working GDPR Art. 17 / right-of-publicity removal pathway. See
   // LEGAL_AUDIT_2026-04-21.md §1.D findings D1, D2, D3.
@@ -20,7 +20,7 @@ export const metadata = {
   openGraph: {
     title: 'Figures | Sonar',
     description:
-      'Directory of public on-chain entities tracked on Sonar.',
+      'Directory of verified public figures with sourced on-chain addresses on Sonar.',
     url: 'https://www.sonartracker.io/figures',
     type: 'website',
   },

@@ -9,7 +9,6 @@ import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 // Following tab is hidden when the viewer is signed out, and carries
 // a live count badge once the signed-in user has followed anything.
 const TABS = [
-  { id: 'feed', label: 'Live Feed', href: '/whale' },
   { id: 'research', label: 'Research', href: '/wallet-tracker' },
   { id: 'entities', label: 'Entities', href: '/entities' },
   { id: 'figures', label: 'Figures', href: '/figures' },
@@ -19,7 +18,6 @@ const TABS = [
 
 function resolveActive(pathname) {
   if (!pathname) return null
-  if (pathname === '/whale') return 'feed'
   // `/wallet-tracker/0xabc...` and `/whale/0xabc...` are wallet profiles → Research.
   if (pathname === '/wallet-tracker' || pathname.startsWith('/wallet-tracker/')) return 'research'
   if (pathname.startsWith('/whale/')) return 'research'

@@ -781,7 +781,7 @@ const APP_LINKS = [
     Icon: IconChart,
   },
   {
-    href: '/whale',
+    href: '/wallet-tracker',
     label: 'Whales',
     match: (p) => isWalletTrackerPath(p),
     Icon: IconWhale,
