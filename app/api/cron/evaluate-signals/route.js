@@ -18,11 +18,29 @@ import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { NOISE_FLOOR_PCT } from '@/lib/quant/constants'
 
 export const dynamic = 'force-dynamic'
+// 2026-06-09: window ladder grew 3 -> 7. Per-run graded volume is tiny today
+// (~10-40 rows) so this is well under budget, but directional emissions can
+// surge when a breaker clears in a trending regime — size the function
+// generously so no window at the tail of EVAL_WINDOWS is truncated mid-run.
+export const maxDuration = 120
 
+// Horizon ladder for accuracy telemetry. 30m/12h/48h/72h were added 2026-06-09
+// for finer observability of whale-driven moves (short windows can catch a
+// squeeze-then-fade that the 1h floor misses; long windows confirm whether the
+// move persists). These four extra windows are OBSERVATIONAL ONLY: calibrate-
+// signals keeps its own EVAL_WINDOWS = ['1h','6h','24h'], and both
+// token_signal_calibration and signal_calibration_snapshot enforce
+// CHECK (eval_window IN ('1h','6h','24h')), so the new windows can never feed
+// the engine's sign/confidence calibration. Pure telemetry — do not wire them
+// into calibration without lifting those CHECK constraints on purpose.
 const EVAL_WINDOWS = [
+  { label: '30m', ms: 30 * 60 * 1000 },
   { label: '1h', ms: 1 * 60 * 60 * 1000 },
   { label: '6h', ms: 6 * 60 * 60 * 1000 },
+  { label: '12h', ms: 12 * 60 * 60 * 1000 },
   { label: '24h', ms: 24 * 60 * 60 * 1000 },
+  { label: '48h', ms: 48 * 60 * 60 * 1000 },
+  { label: '72h', ms: 72 * 60 * 60 * 1000 },
 ]
 
 // Noise floor: any |price change| below this is statistically indistinguishable
@@ -344,7 +362,10 @@ export async function GET(req) {
         // null so a single bad ticker can't tank the headline accuracy.
         // Calibrated against 2026-05-03 incident where MATICUSDT zombie
         // quote produced a fake +290% "move" on every 1h eval.
-        const OUTLIER_LIMITS = { '1h': 50, '6h': 200, '24h': 500 }
+        // 30m mirrors the 1h cap (real sub-hour squeezes stay; only >50%
+        // data-error jumps are clipped); 12h/48h/72h interpolate/extend the
+        // longer-horizon caps. Missing-window labels fall through to no cap.
+        const OUTLIER_LIMITS = { '30m': 50, '1h': 50, '6h': 200, '12h': 350, '24h': 500, '48h': 800, '72h': 1000 }
         const outlierLimit = OUTLIER_LIMITS[window.label]
         const isOutlier = outlierLimit !== undefined && Math.abs(priceChange) > outlierLimit
         if (!isOutlier && Math.abs(priceChange) >= NOISE_FLOOR_PCT) {
