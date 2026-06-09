@@ -463,7 +463,10 @@ export async function GET(req) {
       }
 
       if (transition !== null) {
-        const metricTag = BREAKER_USE_ALPHA ? `${family} alpha[${m.basis}]` : `${family} acc`
+        // `basis` lives only on the alpha metric; read it from alphaM (always
+        // typed with basis) rather than the `m` union so the tag is type-safe.
+        // When BREAKER_USE_ALPHA is on, m === alphaM, so the value is identical.
+        const metricTag = BREAKER_USE_ALPHA ? `${family} alpha[${alphaM.basis}]` : `${family} acc`
         const windowTag = BREAKER_USE_ALPHA ? `${ALPHA_TELEMETRY_HOURS}h` : `${BREAKER_LOOKBACK_HOURS}h`
         const reason = transition === 'tripped'
           ? `auto_suppress: ${metricTag} ${m.pct.toFixed(1)}% on n=${m.n} over last ${windowTag} (< ${suppressPct}%)`
