@@ -16,6 +16,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { NOISE_FLOOR_PCT } from '@/lib/quant/constants'
+import { residualAlpha, beatFromResidual } from '@/lib/quant/beta'
 
 export const dynamic = 'force-dynamic'
 // 2026-06-09: window ladder grew 3 -> 7. Per-run graded volume is tiny today
@@ -221,6 +222,34 @@ export async function GET(req) {
     // each eval window comes from price_snapshots.
     const btcNow = priceMap.get('BTC') || null
 
+    // ─── Residual-alpha labeling (audit item A) ──────────────────────────
+    // Load per-(token, eval_window) betas written nightly by calibrate-
+    // signals. Each new outcome gets a market-neutral residual alpha
+    //   residual = token_return − beta · btc_return
+    // and a beat_residual flag, the skill analogue of beat_benchmark.
+    //
+    // Fully tolerant of the migration not being applied yet: BETA_LABELING=off
+    // OR a missing token_beta table ⇒ empty map ⇒ residual columns stay NULL
+    // and grading proceeds on the raw label EXACTLY as before. A readable
+    // token_beta also implies the signal_outcomes residual columns exist
+    // (same migration), so it doubles as the schema-ready probe that keeps
+    // the outcome insert from referencing not-yet-created columns.
+    const betaByKey = new Map()
+    let betaLabelingActive = process.env.BETA_LABELING !== 'off'
+    if (betaLabelingActive) {
+      const { data: betaRows, error: betaErr } = await supabaseAdmin
+        .from('token_beta')
+        .select('token, eval_window, beta')
+      if (betaErr) {
+        console.warn('[EvalSignals] token_beta unavailable — residual labeling off this run (migration 20260609 applied?):', betaErr.message)
+        betaLabelingActive = false
+      } else {
+        for (const b of betaRows || []) {
+          betaByKey.set(`${b.token}|${b.eval_window}`, Number(b.beta))
+        }
+      }
+    }
+
     for (const window of EVAL_WINDOWS) {
       // Find signals that were created approximately `window.ms` ago
       // Look in a 30-min window around the target time
@@ -379,10 +408,32 @@ export async function GET(req) {
           : btcChangePctLegacy
         let alphaPct = null
         let beatBenchmark = null
-        if (btcChangePctSig !== null) {
+        // 2026-06-09 (audit finding #8): only compute alpha on non-outlier
+        // moves. Previously alpha_pct was computed even for data-error spikes
+        // (e.g. the MATIC→POL +326% artifact), which silently poisoned every
+        // pooled mean-alpha. An outlier move is not a real alpha observation.
+        if (!isOutlier && btcChangePctSig !== null) {
           alphaPct = priceChange - btcChangePctSig
           if (isBullish) beatBenchmark = alphaPct > 0
           else if (isBearish) beatBenchmark = alphaPct < 0
+        }
+
+        // Market-neutral residual alpha (audit item A): strip the beta-scaled
+        // market move so the label measures SKILL, not market exposure. Uses
+        // the nightly per-(token, window) beta. Stays NULL when no beta exists
+        // yet (cold start), the row was an outlier/frozen skip, or BTC is
+        // unavailable — we never fabricate a residual.
+        let residual = null
+        let beatResidual = null
+        let betaUsed = null
+        if (betaLabelingActive && !isOutlier && btcChangePctSig !== null) {
+          const beta = betaByKey.get(`${sig.token}|${window.label}`)
+          if (beta !== undefined && Number.isFinite(beta)) {
+            betaUsed = beta
+            residual = residualAlpha(priceChange, btcChangePctSig, beta)
+            if (isBullish) beatResidual = beatFromResidual(residual, 'bullish')
+            else if (isBearish) beatResidual = beatFromResidual(residual, 'bearish')
+          }
         }
 
         // 2026-05-04 (Stage 1: observability). Persist the raw signal
@@ -423,6 +474,14 @@ export async function GET(req) {
             raw_score: Number.isFinite(rawScoreNum) ? rawScoreNum : null,
             raw_direction: rawDirection,
             shadow: isShadowRow,
+            // Residual-alpha columns added only when the schema supports them
+            // (token_beta readable ⇒ migration 20260609 applied). Pre-migration
+            // these keys are absent so the insert references no missing column.
+            ...(betaLabelingActive ? {
+              residual_alpha: residual === null ? null : Math.round(residual * 100) / 100,
+              beat_residual: beatResidual,
+              beta_at_eval: betaUsed === null ? null : Math.round(betaUsed * 10000) / 10000,
+            } : {}),
           })
 
         if (insertErr) {

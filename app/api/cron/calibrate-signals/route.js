@@ -39,6 +39,7 @@ import {
   bootstrapICConfidenceInterval,
   deriveConfidenceScore as confidenceFromMath,
 } from '@/app/lib/calibration-math'
+import { olsBeta, winsorizeSeries, pairFiniteReturns, proportionTrue } from '@/lib/quant/beta'
 
 export const dynamic = 'force-dynamic'
 // Stage 4 budget: calibration is a single nightly batch, 90s is plenty.
@@ -88,6 +89,23 @@ const IC_BOOTSTRAP_RESAMPLES = 200
 //   0.40 < hr < 0.60  →  0 (coin flip; mute)
 const FLIP_HIT_RATE = 0.40
 const KEEP_HIT_RATE = 0.60
+
+// ─── Beta estimation config (2026-06-09, audit item A) ───────────────────
+// calibrate-signals doubles as the nightly beta refit: for every (token,
+// eval_window) it regresses the token's window return on BTC's window return
+// (OLS) and stores the slope in `token_beta`. evaluate-signals reads that
+// table to grade each new outcome's market-neutral residual alpha. Beta is
+// slow-moving, so a nightly refresh that intra-day grading reads is plenty.
+//
+// This pass is independent of the sign-calibration above and writes a
+// DIFFERENT table, so it can run over ALL eval windows (not just the
+// CHECK-constrained 1h/6h/24h) and over ALL outcomes including shadow —
+// beta is a property of price co-movement, not of signal direction.
+// Kill-switch: BETA_LABELING=off disables the whole pass.
+const BETA_LOOKBACK_DAYS = 30
+const BETA_MIN_SAMPLES = 30      // matches lib/quant/beta.ts olsBeta default
+const BETA_WINSOR_PCT = 0.02     // clip 2%/tail before the regression
+
 
 function pearson(xs, ys) {
   // Thin wrapper kept for back-compat with any in-file callers; delegates to
@@ -163,6 +181,102 @@ async function isFlipConfirmed(token, evalWindow, proposedSign, currentSign) {
   return true
 }
 
+/**
+ * Nightly beta refit (audit item A). Regresses each (token, eval_window)'s
+ * return on BTC's return over the same window and upserts the OLS slope into
+ * `token_beta`. evaluate-signals consumes this to label residual alpha.
+ *
+ * Returns a summary object. NEVER throws — a beta failure must not abort the
+ * sign-calibration that precedes it. If the `token_beta` table is missing
+ * (migration 20260609 not yet applied) the upsert error is caught and the
+ * pass degrades to a no-op with a one-line warning.
+ */
+async function computeAndStoreBetas() {
+  if (process.env.BETA_LABELING === 'off') {
+    return { skipped: 'BETA_LABELING=off' }
+  }
+
+  const since = new Date(Date.now() - BETA_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
+
+  // Pull token + BTC window returns for every graded outcome (direction-
+  // agnostic, shadow included). Filter suspect rows — frozen-benchmark
+  // poisoning would corrupt the slope. Paginate past the 1000-row cap.
+  let rows = []
+  let from = 0
+  const page = 1000
+  while (true) {
+    const { data, error } = await supabaseAdmin
+      .from('signal_outcomes')
+      .select('token, eval_window, price_change_pct, btc_change_pct')
+      .gte('signal_time', since)
+      .eq('suspect', false)
+      .not('price_change_pct', 'is', null)
+      .not('btc_change_pct', 'is', null)
+      .order('signal_time', { ascending: false })
+      .range(from, from + page - 1)
+    if (error) {
+      console.warn('[CalibrateSignals] beta pull failed:', error.message)
+      return { error: error.message }
+    }
+    if (!data || data.length === 0) break
+    rows = rows.concat(data)
+    if (data.length < page) break
+    from += page
+  }
+
+  // Group by (token, eval_window).
+  const buckets = new Map()
+  for (const r of rows) {
+    const k = `${r.token}|${r.eval_window}`
+    if (!buckets.has(k)) buckets.set(k, { asset: [], market: [] })
+    const b = buckets.get(k)
+    b.asset.push(r.price_change_pct)
+    b.market.push(r.btc_change_pct)
+  }
+
+  const decidedAt = new Date().toISOString()
+  const betaRows = []
+  for (const [key, series] of buckets) {
+    const [token, evalWindow] = key.split('|')
+    // Pair first (drop nulls, keep alignment), THEN winsorize each leg so a
+    // single data-error spike can't lever the slope. Element-wise clipping
+    // preserves the (x, y) pairing.
+    const { asset, market } = pairFiniteReturns(series.asset, series.market)
+    if (asset.length < BETA_MIN_SAMPLES) continue
+    const assetW = winsorizeSeries(asset, BETA_WINSOR_PCT)
+    const marketW = winsorizeSeries(market, BETA_WINSOR_PCT)
+    const result = olsBeta(assetW, marketW, { minN: BETA_MIN_SAMPLES })
+    if (!result) continue
+    betaRows.push({
+      token,
+      eval_window: evalWindow,
+      beta: Number(result.beta.toFixed(4)),
+      n_samples: result.n,
+      r_squared: Number(result.rSquared.toFixed(4)),
+      lookback_days: BETA_LOOKBACK_DAYS,
+      computed_at: decidedAt,
+    })
+  }
+
+  if (betaRows.length === 0) {
+    return { buckets: buckets.size, betas_written: 0 }
+  }
+
+  const { error: upErr } = await supabaseAdmin
+    .from('token_beta')
+    .upsert(betaRows, { onConflict: 'token,eval_window' })
+  if (upErr) {
+    // Most likely the migration hasn't been applied yet — non-fatal.
+    console.warn('[CalibrateSignals] token_beta upsert failed (migration 20260609 applied?):', upErr.message)
+    return { error: upErr.message, betas_computed: betaRows.length }
+  }
+  return {
+    buckets: buckets.size,
+    betas_written: betaRows.length,
+    sample: betaRows.slice(0, 8).map(b => `${b.token}|${b.eval_window} β=${b.beta} R²=${b.r_squared} n=${b.n_samples}`),
+  }
+}
+
 export async function GET(req) {
   try {
     const authHeader = req.headers.get('authorization')
@@ -173,26 +287,50 @@ export async function GET(req) {
 
     const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
+    // ─── Metric mode (raw vs alpha) ──────────────────────────────────────
+    // Default: the per-token sign + confidence are derived from RAW return IC
+    // and RAW hit-rate (unchanged). Under CALIBRATION_USE_ALPHA=on they derive
+    // from MARKET-NEUTRAL residual alpha instead, so calibration stops
+    // rewarding beta (audit item B, calibration layer — the deeper twin of the
+    // alpha breaker). residual_alpha/beat_residual ship in migration 20260609;
+    // if the flag is on but the columns aren't there yet, we degrade to raw
+    // for the run rather than failing calibration.
+    const wantAlpha = process.env.CALIBRATION_USE_ALPHA === 'on'
+    let alphaColumnsAvailable = wantAlpha
+    const BASE_COLS = 'token, signal_type, eval_window, signal_score, price_change_pct, alpha_pct, beat_benchmark, correct'
+    const ALPHA_COLS = ', residual_alpha, beat_residual'
+
     // Pull all directional, non-null outcomes in the lookback window.
     // We paginate because Supabase caps a single request at 1000 rows.
     let outcomes = []
     let from = 0
     const page = 1000
     while (true) {
+      const selectCols = alphaColumnsAvailable ? BASE_COLS + ALPHA_COLS : BASE_COLS
       const { data, error } = await supabaseAdmin
         .from('signal_outcomes')
-        .select('token, signal_type, eval_window, signal_score, price_change_pct, alpha_pct, correct')
+        .select(selectCols)
         .gte('signal_time', since)
         .neq('signal_type', 'NEUTRAL')
         .not('correct', 'is', null)
         .order('signal_time', { ascending: false })
         .range(from, from + page - 1)
-      if (error) throw error
+      if (error) {
+        // Pre-migration: residual columns absent. Drop them and retry the
+        // same page in raw mode so calibration still runs.
+        if (alphaColumnsAvailable && /residual_alpha|beat_residual|does not exist/i.test(error.message)) {
+          console.warn('[CalibrateSignals] residual columns absent — CALIBRATION_USE_ALPHA degrades to raw this run (migration 20260609 applied?)')
+          alphaColumnsAvailable = false
+          continue
+        }
+        throw error
+      }
       if (!data || data.length === 0) break
       outcomes = outcomes.concat(data)
       if (data.length < page) break
       from += page
     }
+    const useAlpha = wantAlpha && alphaColumnsAvailable
 
     // Group by (token, eval_window).
     const buckets = new Map()
@@ -230,21 +368,48 @@ export async function GET(req) {
       const [token, evalWindow] = key.split('|')
       const n = rowsForBucket.length
 
-      // Pearson IC needs paired (score, return) arrays.
-      const scores = rowsForBucket.map(r => Number(r.signal_score)).filter(v => Number.isFinite(v))
-      const returns = rowsForBucket.map(r => Number(r.price_change_pct)).filter(v => Number.isFinite(v))
-      const ic = (scores.length === returns.length && scores.length >= 3)
-        ? pearson(scores, returns)
-        : null
-
-      // Bootstrap 95% CI for the IC. Used both as a flip-confirmation gate
-      // (CI must exclude 0) and as a small confidence-score kicker.
-      const icCI = (scores.length === returns.length && scores.length >= 10)
-        ? bootstrapICConfidenceInterval(scores, returns, IC_BOOTSTRAP_RESAMPLES)
-        : null
-
-      const nCorrect = rowsForBucket.filter(r => r.correct === true).length
-      const hitRate = n > 0 ? nCorrect / n : null
+      // ─── Metric selection (raw vs alpha) ────────────────────────────────
+      // raw (default): IC of score vs raw return + raw hit-rate.
+      // alpha (CALIBRATION_USE_ALPHA=on): IC of score vs MARKET-NEUTRAL
+      //   residual return + residual beat-rate. Residual is preferred per
+      //   row, falling back to raw-alpha benchmark then raw return while
+      //   token_beta backfills, so the flag degrades gracefully token by token.
+      let ic, icCI, hitRate, gateN
+      if (useAlpha) {
+        // Per-row residual-preferred return, properly paired with the score
+        // (drop rows where either side is non-finite to keep IC aligned).
+        const sa = []
+        const ra = []
+        for (const r of rowsForBucket) {
+          const ret = r.residual_alpha != null ? Number(r.residual_alpha)
+            : r.alpha_pct != null ? Number(r.alpha_pct)
+              : Number(r.price_change_pct)
+          const sc = Number(r.signal_score)
+          if (Number.isFinite(sc) && Number.isFinite(ret)) { sa.push(sc); ra.push(ret) }
+        }
+        ic = sa.length >= 3 ? pearson(sa, ra) : null
+        icCI = sa.length >= 10 ? bootstrapICConfidenceInterval(sa, ra, IC_BOOTSTRAP_RESAMPLES) : null
+        // Residual-preferred beat flag per row; proportionTrue skips nulls.
+        const flags = rowsForBucket.map(r => (r.beat_residual != null ? r.beat_residual : r.beat_benchmark))
+        const bt = proportionTrue(flags)
+        hitRate = bt.n > 0 ? bt.pct / 100 : null
+        gateN = bt.n
+      } else {
+        // Pearson IC needs paired (score, return) arrays.
+        const scores = rowsForBucket.map(r => Number(r.signal_score)).filter(v => Number.isFinite(v))
+        const returns = rowsForBucket.map(r => Number(r.price_change_pct)).filter(v => Number.isFinite(v))
+        ic = (scores.length === returns.length && scores.length >= 3)
+          ? pearson(scores, returns)
+          : null
+        // Bootstrap 95% CI for the IC. Used both as a flip-confirmation gate
+        // (CI must exclude 0) and as a small confidence-score kicker.
+        icCI = (scores.length === returns.length && scores.length >= 10)
+          ? bootstrapICConfidenceInterval(scores, returns, IC_BOOTSTRAP_RESAMPLES)
+          : null
+        const nCorrect = rowsForBucket.filter(r => r.correct === true).length
+        hitRate = n > 0 ? nCorrect / n : null
+        gateN = n
+      }
 
       const alphas = rowsForBucket.map(r => Number(r.alpha_pct)).filter(v => Number.isFinite(v))
       const meanAlpha = alphas.length > 0
@@ -255,7 +420,7 @@ export async function GET(req) {
         ? changes.reduce((a, b) => a + b, 0) / changes.length
         : null
 
-      const proposedSign = proposeSign({ ic, hitRate, n, icCI })
+      const proposedSign = proposeSign({ ic, hitRate, n: gateN, icCI })
       const currentSign = currentByKey.get(key)
       const currentSignNorm = (currentSign === -1 || currentSign === 0 || currentSign === 1) ? currentSign : null
 
@@ -324,7 +489,7 @@ export async function GET(req) {
         }
       }
 
-      const confidenceScore = deriveConfidenceScore(ic, hitRate, n, icCI)
+      const confidenceScore = deriveConfidenceScore(ic, hitRate, gateN, icCI)
 
       rows.push({
         token,
@@ -383,13 +548,28 @@ export async function GET(req) {
       }
     }
 
+    // ─── Nightly beta refit (audit item A) ───────────────────────────────
+    // Runs after sign-calibration so a beta failure can never abort it.
+    // Writes the token_beta table that evaluate-signals reads for residual
+    // alpha. Wrapped defensively — degrades to a no-op if anything throws.
+    let betaSummary
+    try {
+      betaSummary = await computeAndStoreBetas()
+    } catch (betaErr) {
+      console.warn('[CalibrateSignals] beta refit threw (non-fatal):', betaErr.message)
+      betaSummary = { error: betaErr.message }
+    }
+
     const summary = {
       lookback_days: LOOKBACK_DAYS,
+      metric_mode: useAlpha ? 'alpha' : 'raw',
+      alpha_requested: wantAlpha,
       outcomes_used: outcomes.length,
       buckets: buckets.size,
       upserted: upsertedCount,
       proposals_logged: proposalInserts.length,
       changes_applied: changeInserts.length,
+      beta: betaSummary,
       sample_changes: changeInserts
         .slice(0, 10)
         .map(c => `${c.token}|${c.eval_window} ${c.old_sign}→${c.new_sign} ic=${c.ic} hit=${c.hit_rate} n=${c.n_outcomes}`),
