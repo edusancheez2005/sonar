@@ -6,6 +6,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { findFrozenTickers } from '@/lib/quant/feed-health'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,10 @@ function getSupabase() {
 const BINANCE_USDT_SKIPLIST = new Set<string>([
   'MATICUSDT', // Migrated to POL in 2024; pair frozen at $0.3794.
 ])
+
+// Stablecoins legitimately sit at a near-constant value, so the frozen-feed
+// canary must never flag them. Compared upper-case against the ticker symbol.
+const STABLECOINS = new Set<string>(['USDT', 'USDC', 'DAI', 'TUSD', 'BUSD', 'FDUSD', 'USDD', 'PYUSD'])
 
 // Top crypto tickers with their CoinGecko IDs
 // Must include ALL tokens that compute-signals processes (ALWAYS_INCLUDE + active)
@@ -412,6 +417,51 @@ export async function GET(request: Request) {
       }
     }
 
+    // FROZEN-FEED CANARY (2026-06-10): source-agnostic guard against zombie
+    // quotes. Some upstream USDT pairs (MATICUSDT historically; LRC/MKR on
+    // 2026-06-10) serve a price frozen at one value for hours/days while the
+    // rest of the feed is live — ingesting it yields price_change = 0 on every
+    // eval window, poisoning accuracy + the alpha series. We judge the SYMPTOM
+    // (an unbroken run of identical stored prints that the incoming tick
+    // continues), not the provider, because the culprit (Binance mirror vs a
+    // stale CoinGecko key) varies by region/deploy. Skipping the insert stops
+    // the frozen run from growing; ingestion resumes automatically the first
+    // tick the price moves. Kill-switch: FETCH_FROZEN_CANARY=off.
+    const frozenSkipped: string[] = []
+    if (process.env.FETCH_FROZEN_CANARY !== 'off') {
+      try {
+        const sinceFrozen = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
+        const { data: recentSnaps } = await supabase
+          .from('price_snapshots')
+          .select('ticker, price_usd, timestamp')
+          .gte('timestamp', sinceFrozen)
+          .order('timestamp', { ascending: false })
+          .limit(5000)
+        const recentByTicker: Record<string, number[]> = {}
+        for (const row of recentSnaps || []) {
+          (recentByTicker[row.ticker] ??= []).push(Number(row.price_usd))
+        }
+        const incomingPrices: Record<string, number> = {}
+        for (const [sym, lp] of Object.entries(livePrices)) {
+          if (lp?.price) incomingPrices[sym] = lp.price
+        }
+        const frozen = findFrozenTickers(incomingPrices, recentByTicker, {
+          minRun: 6, // ~90min of identical 15-min prints before we trust it's stuck
+          exemptTickers: STABLECOINS,
+        })
+        for (const ticker of frozen) {
+          delete livePrices[ticker]
+          frozenSkipped.push(ticker)
+        }
+        if (frozenSkipped.length > 0) {
+          errors.push(`frozen_feed_canary: skipped ${frozenSkipped.join(', ')} (price stuck >=90min, source-agnostic)`)
+        }
+      } catch (e) {
+        // Non-fatal: a canary failure must never block the price cron.
+        errors.push(`frozen_feed_canary error: ${e instanceof Error ? e.message : e}`)
+      }
+    }
+
     // Insert all live prices
     for (const ticker of TICKER_MAP) {
       const lp = livePrices[ticker.symbol]
@@ -461,6 +511,7 @@ export async function GET(request: Request) {
       tokens: TICKER_MAP.length,
       providers: providersTried,
       canary: canaryReport,
+      frozen_skipped: frozenSkipped,
       errors: errors.slice(0, 10),
     })
 
@@ -470,6 +521,7 @@ export async function GET(request: Request) {
       tokens: TICKER_MAP.length,
       providers: providersTried,
       canary: canaryReport,
+      frozen_skipped: frozenSkipped,
       errors: errors.length > 0 ? errors.slice(0, 10) : undefined
     })
 
