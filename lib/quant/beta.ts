@@ -51,10 +51,24 @@ export interface OlsBetaOptions {
    * estimate. Units are (percent)², default 1e-6.
    */
   marketVarianceFloor?: number
+  /**
+   * Floor on ASSET-return variance. When the token's own return is (near-)
+   * constant across the sample — e.g. a frozen/stale price feed emitting an
+   * unbroken run of 0.000% returns — Cov(x,y)=0 yields a mathematically
+   * correct but meaningless β=0. Consuming that as `residual = raw − 0·btc =
+   * raw` would silently file a NON market-neutral number into the alpha
+   * series (exactly the contamination this whole effort exists to prevent).
+   * Below this floor we return null so the caller skips the token rather than
+   * trusting a degenerate beta. Units are (percent)². Default 0 (disabled):
+   * the pure function stays policy-neutral; callers opt in (calibrate-signals
+   * passes a noise-floor-aligned value). Added 2026-06-10.
+   */
+  assetVarianceFloor?: number
 }
 
 const DEFAULT_MIN_N = 30
 const DEFAULT_MARKET_VARIANCE_FLOOR = 1e-6
+const DEFAULT_ASSET_VARIANCE_FLOOR = 0
 
 /**
  * Estimate market beta by OLS: regress `assetReturns` (y) on
@@ -62,8 +76,10 @@ const DEFAULT_MARKET_VARIANCE_FLOOR = 1e-6
  *
  * Returns null when:
  *   - the arrays differ in length,
- *   - fewer than `minN` paired observations remain, or
- *   - market-return variance is below `marketVarianceFloor` (unstable slope).
+ *   - fewer than `minN` paired observations remain,
+ *   - market-return variance is below `marketVarianceFloor` (unstable slope), or
+ *   - asset-return variance is below `assetVarianceFloor` (degenerate/frozen
+ *     token — a β=0 here is meaningless, not a real market-neutral estimate).
  *
  * Both arrays are expected to be pre-paired and finite. The function is
  * defensive about length only; callers should drop NaN/null pairs upstream
@@ -76,6 +92,7 @@ export function olsBeta(
 ): BetaResult | null {
   const minN = options.minN ?? DEFAULT_MIN_N
   const varianceFloor = options.marketVarianceFloor ?? DEFAULT_MARKET_VARIANCE_FLOOR
+  const assetVarianceFloor = options.assetVarianceFloor ?? DEFAULT_ASSET_VARIANCE_FLOOR
 
   const n = assetReturns.length
   if (n !== marketReturns.length) return null
@@ -103,6 +120,12 @@ export function olsBeta(
 
   // Var(x) = sxx / n. Guard against a degenerate (near-constant) market.
   if (!Number.isFinite(sxx) || sxx / n < varianceFloor) return null
+
+  // Var(y) = syy / n. Guard against a degenerate (near-constant) ASSET — a
+  // frozen/stale price feed produces zero own-variance, where β=0 is correct
+  // arithmetic but a meaningless market-neutral estimate. Off by default
+  // (floor 0); calibrate-signals opts in with a noise-floor-aligned value.
+  if (syy / n < assetVarianceFloor) return null
 
   const beta = sxy / sxx
   if (!Number.isFinite(beta)) return null

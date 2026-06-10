@@ -105,6 +105,16 @@ const KEEP_HIT_RATE = 0.60
 const BETA_LOOKBACK_DAYS = 30
 const BETA_MIN_SAMPLES = 30      // matches lib/quant/beta.ts olsBeta default
 const BETA_WINSOR_PCT = 0.02     // clip 2%/tail before the regression
+// 2026-06-10: reject degenerate betas from frozen/stale price feeds. Some
+// tokens (e.g. LRC, MKR) carry an unbroken run of 0.000% returns in
+// signal_outcomes — a price-feed coverage gap upstream. Zero own-variance
+// yields a mathematically-correct-but-meaningless β=0, which evaluate-signals
+// would consume as `residual = raw − 0·btc = raw`, silently filing a NON
+// market-neutral number into the alpha series. The floor is the noise floor
+// squared: a token whose entire-window return std is below 0.05% (≈ feed
+// jitter / a single Binance taker fee) is not really trading, so we skip it
+// (→ no token_beta row → evaluate leaves residual NULL) rather than trust it.
+const BETA_MIN_ASSET_VARIANCE = 0.0025  // (0.05%)² — aligned with NOISE_FLOOR_PCT
 
 
 function pearson(xs, ys) {
@@ -245,7 +255,10 @@ async function computeAndStoreBetas() {
     if (asset.length < BETA_MIN_SAMPLES) continue
     const assetW = winsorizeSeries(asset, BETA_WINSOR_PCT)
     const marketW = winsorizeSeries(market, BETA_WINSOR_PCT)
-    const result = olsBeta(assetW, marketW, { minN: BETA_MIN_SAMPLES })
+    const result = olsBeta(assetW, marketW, {
+      minN: BETA_MIN_SAMPLES,
+      assetVarianceFloor: BETA_MIN_ASSET_VARIANCE,
+    })
     if (!result) continue
     betaRows.push({
       token,

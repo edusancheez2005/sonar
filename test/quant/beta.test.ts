@@ -41,6 +41,26 @@ describe('olsBeta', () => {
     expect(olsBeta(asset, market, { minN: 4 })).toBeNull()
   })
 
+  it('rejects a degenerate/frozen ASSET when assetVarianceFloor is set', () => {
+    // Frozen price feed: every token return is exactly 0 (the LRC/MKR case).
+    // β=0 is correct arithmetic but meaningless — the floor must reject it so
+    // evaluate-signals leaves residual NULL instead of filing residual=raw.
+    const market = Array.from({ length: 40 }, (_, i) => (i % 2 ? 1 : -1))
+    const asset = new Array(40).fill(0)
+    expect(olsBeta(asset, market, { minN: 30 })).not.toBeNull() // floor off by default
+    expect(olsBeta(asset, market, { minN: 30, assetVarianceFloor: 0.0025 })).toBeNull()
+  })
+
+  it('keeps a genuine market-neutral asset (real variance, ~zero correlation)', () => {
+    // Healthy own-variance but uncorrelated with the market → β≈0 is a VALID
+    // estimate (residual≈raw is the right grade), so the floor must NOT reject.
+    const market = Array.from({ length: 40 }, (_, i) => (i % 2 ? 2 : -2))
+    const asset = Array.from({ length: 40 }, (_, i) => (i % 4 < 2 ? 1.5 : -1.5))
+    const res = olsBeta(asset, market, { minN: 30, assetVarianceFloor: 0.0025 })
+    expect(res).not.toBeNull()
+    expect(Math.abs(res!.beta)).toBeLessThan(0.5)
+  })
+
   it('defaults minN to 30', () => {
     const x = Array.from({ length: 29 }, (_, i) => i - 14)
     expect(olsBeta(x, x)).toBeNull()
