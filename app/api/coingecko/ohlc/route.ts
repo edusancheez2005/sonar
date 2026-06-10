@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
       high: k.high,
       low: k.low,
       close: k.close,
+      volume: k.volume,
     }))
 
     return NextResponse.json({

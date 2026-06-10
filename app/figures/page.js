@@ -158,7 +158,10 @@ export default async function FiguresDirectoryPage({ searchParams }) {
   const clampedPage = Math.min(Math.max(1, page), totalPages)
 
   return (
-    <WhaleTerminalShell title="WHALE_INTELLIGENCE // FIGURES" live={false}>
+    <WhaleTerminalShell
+      title="WHALE_TERMINAL // FIGURES"
+      statusSegments={[{ k: 'FIGURES', v: totalCount.toLocaleString() }]}
+    >
       <DirectoryHeader
         subtitle={
           <>

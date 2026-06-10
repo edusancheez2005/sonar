@@ -18,14 +18,14 @@ const pulseGlow = keyframes`
 
 const BannerWrap = styled.div`
   background: rgba(13, 17, 28, 0.8);
-  border: 1px solid rgba(0, 229, 255, 0.08);
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 0;
+  padding: 0.45rem 0.9rem;
   display: flex;
   align-items: center;
   gap: 0.6rem;
   position: relative;
-  margin: 1rem 0 0.5rem;
+  margin: 0 0 10px;
   backdrop-filter: blur(8px);
 
   @media (max-width: 768px) {
@@ -127,7 +127,9 @@ export default function AlertBanner() {
   const token = signal.token_symbol || '???'
   const usd = formatUsd(signal.usd_value)
   const ago = timeAgo(signal.timestamp)
-  const profileHref = `/wallet-tracker/${signal.whale_address}`
+  // Canonical public wallet profile — same destination as every other
+  // address link in the terminal (see walletAnalysisHref).
+  const profileHref = `/whale/${encodeURIComponent(signal.whale_address)}`
 
   return (
     <BannerWrap>

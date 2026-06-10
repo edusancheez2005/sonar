@@ -4,7 +4,7 @@ import {
   isJunkEntityLabel,
   inferEntityType,
 } from '@/app/lib/entityHelpers'
-import EntitiesDirectoryClient from './EntitiesDirectoryClient'
+import EntitiesLedgerClient from './EntitiesLedgerClient'
 import WhaleTerminalShell from '@/app/components/whale-terminal/WhaleTerminalShell'
 import DirectoryHeader from '@/app/components/whale-terminal/DirectoryHeader'
 
@@ -79,8 +79,12 @@ async function fetchLabeledEntities() {
   return rows
 }
 
+const SPARK_DAYS = 14
+
 function aggregateEntities(rows) {
   const map = new Map()
+  const now = Date.now()
+  const dayMs = 24 * 60 * 60 * 1000
   for (const r of rows) {
     const rawName = r.from_label || r.to_label
     if (!rawName) continue
@@ -94,14 +98,34 @@ function aggregateEntities(rows) {
         total_volume: 0,
         last_active: null,
         chains: new Set(),
+        flow_in_24h: 0,
+        flow_out_24h: 0,
+        spark: new Array(SPARK_DAYS).fill(0),
       }
       map.set(name, rec)
     }
+    const usd = Number(r.usd_value || 0)
     rec.tx_count += 1
-    rec.total_volume += Number(r.usd_value || 0)
+    rec.total_volume += usd
     if (r.blockchain) rec.chains.add(String(r.blockchain).toLowerCase())
     if (!rec.last_active || new Date(r.timestamp) > new Date(rec.last_active)) {
       rec.last_active = r.timestamp
+    }
+    const ts = new Date(r.timestamp).getTime()
+    if (Number.isFinite(ts)) {
+      // Signed 24h flow: receiving label = inflow, sending label = outflow.
+      // A row that carries both labels credits both entities once each.
+      if (now - ts <= dayMs) {
+        const inName = r.to_label ? normalizeEntityName(r.to_label) : null
+        const outName = r.from_label ? normalizeEntityName(r.from_label) : null
+        if (inName === name) rec.flow_in_24h += usd
+        if (outName === name) rec.flow_out_24h += usd
+      }
+      // 14-day daily volume sparkline (oldest → newest).
+      const daysAgo = Math.floor((now - ts) / dayMs)
+      if (daysAgo >= 0 && daysAgo < SPARK_DAYS) {
+        rec.spark[SPARK_DAYS - 1 - daysAgo] += usd
+      }
     }
   }
   return Array.from(map.values())
@@ -111,6 +135,9 @@ function aggregateEntities(rows) {
       total_volume: e.total_volume,
       last_active: e.last_active,
       chain_count: e.chains.size,
+      flow_in_24h: Math.round(e.flow_in_24h),
+      flow_out_24h: Math.round(e.flow_out_24h),
+      spark: e.spark.map((v) => Math.round(v)),
     }))
     .filter((e) => e.tx_count >= 10)
     .filter((e) => !isJunkEntityLabel(e.entity_name))
@@ -244,6 +271,11 @@ export default async function EntitiesDirectoryPage({ searchParams }) {
   ])
   const labelEntities = aggregateEntities(rawRows)
   const merged = mergeCurated(labelEntities, curatedCompanies)
+  // Dominance: each entity's share of all tracked volume in the directory.
+  const volumeSum = merged.reduce((a, e) => a + (e.total_volume || 0), 0)
+  for (const e of merged) {
+    e.dominance = volumeSum > 0 ? (e.total_volume || 0) / volumeSum : 0
+  }
   const entities = sortEntities(merged, sort)
   const totalCount = entities.length
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
@@ -265,10 +297,17 @@ export default async function EntitiesDirectoryPage({ searchParams }) {
   )
 
   return (
-    <WhaleTerminalShell title="WHALE_INTELLIGENCE // ENTITIES" live={false}>
+    <WhaleTerminalShell
+      title="WHALE_TERMINAL // ENTITIES"
+      live
+      statusSegments={[
+        { k: 'ENTITIES', v: totalCount.toLocaleString() },
+        { k: 'TX INDEXED', v: totalTx.toLocaleString() },
+      ]}
+    >
       <DirectoryHeader subtitle={subtitle} />
 
-      <EntitiesDirectoryClient
+      <EntitiesLedgerClient
         entities={entities}
         page={clampedPage}
         totalPages={totalPages}

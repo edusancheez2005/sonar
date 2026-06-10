@@ -18,13 +18,14 @@ import {
   ErrorNotice,
 } from '@/app/components/whale-terminal/primitives'
 import { C, FONT_MONO } from '@/app/lib/terminalTheme'
+import { ProbLine } from '@/app/components/whale-terminal/charts'
 import { shortenAddress, formatUsd } from '@/lib/wallet-tracker'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 import { WhaleWalletCell } from '@/app/components/whale-terminal/WalletAddrActions'
 
 const POLL_MS = 30000
-const PAGE_SIZE = 25
+const PAGE_SIZE = 24 // divisible by 2/3/4 grid columns
 
 // Public Polymarket market URL from a market slug.
 export function polymarketUrl(slug) {
@@ -150,8 +151,8 @@ function marketOddsView(m) {
     if (pairs.length === 2) {
       return { binary: true, a: pairs[0], b: pairs[1] }
     }
-    const leader = pairs.reduce((m1, x) => (x.pct > m1.pct ? x : m1), pairs[0])
-    return { binary: false, leader }
+    const sorted = [...pairs].sort((a, b) => b.pct - a.pct)
+    return { binary: false, leader: sorted[0], pairs: sorted }
   }
 
   const yesCol = pick(m, ['yes_price', 'price_yes', 'yes'])
@@ -228,25 +229,243 @@ function holderSide(h) {
   return out ? String(out).toUpperCase() : null
 }
 
+// One-day price change of the leading outcome, when the cron captured it.
+function marketDayChange(m) {
+  const v = Number(pick(m, ['one_day_price_change', 'oneDayPriceChange']))
+  return Number.isFinite(v) ? v : null
+}
+
+// Short uppercase category code for the card corner chip (FED/BTC-style).
+const CAT_CODES = {
+  politics: 'POL',
+  crypto: 'CRY',
+  sports: 'SPT',
+  finance: 'FIN',
+  geopolitics: 'GEO',
+  tech: 'TEC',
+  economy: 'ECO',
+  business: 'BIZ',
+  weather: 'WX',
+  commodities: 'CMD',
+}
+function marketCatCode(m) {
+  const c = marketCategory(m)
+  if (!c) return '???'
+  return CAT_CODES[c.toLowerCase()] || c.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
+}
+
 // ── styled ───────────────────────────────────────────────────────────
-const Grid = styled.div`
+const BottomGrid = styled.div`
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 1.25rem;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 10px;
   align-items: start;
+  margin-top: 10px;
   @media (max-width: 980px) { grid-template-columns: 1fr; }
 `
 
-const OddsBar = styled.div`
+const CardsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  align-items: stretch;
+`
+
+const MCard = styled.div`
   display: flex;
-  width: 120px;
-  height: 14px;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  flex-direction: column;
+  border: 1px solid ${C.borderSubtle};
+  background: rgba(10, 14, 23, 0.85);
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color 140ms ease, background 140ms ease;
+  &:hover { border-color: rgba(0, 229, 255, 0.3); background: rgba(13, 18, 28, 0.95); }
+
+  .head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 0.65rem 0.75rem 0.35rem;
+  }
+  .code {
+    flex-shrink: 0;
+    padding: 0.14rem 0.4rem;
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    color: ${C.cyan};
+    font-family: ${FONT_MONO};
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+  .q {
+    flex: 1;
+    min-width: 0;
+    font-family: ${FONT_MONO};
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: ${C.textPrimary};
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .pct {
+    flex-shrink: 0;
+    text-align: right;
+    font-family: ${FONT_MONO};
+    line-height: 1;
+    .big { font-size: 1.25rem; font-weight: 800; }
+    .big sub { font-size: 0.6rem; font-weight: 700; vertical-align: baseline; }
+    .chg { display: block; margin-top: 3px; font-size: 0.56rem; font-weight: 700; letter-spacing: 0.5px; }
+  }
+  .spark { padding: 0.25rem 0.75rem 0; height: 48px; }
+  .spark-empty {
+    height: 48px;
+    margin: 0.25rem 0.75rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: ${FONT_MONO};
+    font-size: 0.54rem;
+    letter-spacing: 1px;
+    color: ${C.textMuted};
+    opacity: 0.6;
+  }
+  .outcomes { padding: 0.45rem 0.75rem 0.1rem; display: flex; flex-direction: column; gap: 5px; }
+  .orow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: ${FONT_MONO};
+    font-size: 0.68rem;
+    .nm { flex: 1; min-width: 0; color: ${C.textPrimary}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pc { color: ${C.textPrimary}; font-weight: 700; }
+  }
+  .btns { display: flex; gap: 8px; padding: 0.55rem 0.75rem 0.65rem; margin-top: auto; }
+  .foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.75rem;
+    border-top: 1px solid rgba(0, 229, 255, 0.06);
+    font-family: ${FONT_MONO};
+    font-size: 0.56rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: ${C.textMuted};
+    white-space: nowrap;
+    overflow: hidden;
+    .flow { font-weight: 700; }
+    .right { margin-left: auto; flex-shrink: 0; }
+  }
+`
+
+const PriceBtn = styled.a`
+  flex: 1;
+  text-align: center;
+  padding: 0.4rem 0.4rem;
   font-family: ${FONT_MONO};
-  .yes { background: rgba(0, 230, 118, 0.55); }
-  .no { background: rgba(255, 23, 68, 0.5); }
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid ${(p) => (p.$side === 'yes' ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 23, 68, 0.35)')};
+  color: ${(p) => (p.$side === 'yes' ? C.green : C.red)};
+  background: ${(p) => (p.$side === 'yes' ? 'rgba(0, 230, 118, 0.07)' : 'rgba(255, 23, 68, 0.07)')};
+  transition: background 140ms ease;
+  &:hover { background: ${(p) => (p.$side === 'yes' ? 'rgba(0, 230, 118, 0.16)' : 'rgba(255, 23, 68, 0.16)')}; }
+`
+
+const MiniChip = styled.span`
+  flex-shrink: 0;
+  padding: 0.08rem 0.35rem;
+  font-family: ${FONT_MONO};
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  border: 1px solid ${(p) => (p.$side === 'yes' ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 23, 68, 0.35)')};
+  color: ${(p) => (p.$side === 'yes' ? C.green : C.red)};
+`
+
+// ── terminal category bar ────────────────────────────────────────────
+const CatBar = styled.div`
+  display: flex;
+  align-items: stretch;
+  border: 1px solid ${C.borderSubtle};
+  background: rgba(10, 14, 23, 0.85);
+  margin-bottom: 0.75rem;
+  min-width: 0;
+
+  .lead {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 0.9rem;
+    border-right: 1px solid ${C.borderSubtle};
+    font-family: ${FONT_MONO};
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    color: ${C.cyan};
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .lead .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${C.green};
+    animation: pm-pulse 2s ease-in-out infinite;
+  }
+  @keyframes pm-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  nav {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+  .meta {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.9rem;
+    border-left: 1px solid ${C.borderSubtle};
+    font-family: ${FONT_MONO};
+    font-size: 0.58rem;
+    color: ${C.textMuted};
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    @media (max-width: 720px) { display: none; }
+  }
+`
+
+const CatTab = styled.button`
+  padding: 0.6rem 1rem;
+  background: ${(p) => (p.$active ? 'rgba(0, 229, 255, 0.06)' : 'none')};
+  border: none;
+  border-right: 1px solid rgba(0, 229, 255, 0.05);
+  box-shadow: ${(p) => (p.$active ? `inset 0 -2px 0 ${C.cyan}` : 'none')};
+  color: ${(p) => (p.$active ? C.cyan : C.textMuted)};
+  font-family: ${FONT_MONO};
+  font-size: 0.62rem;
+  font-weight: ${(p) => (p.$active ? 700 : 500)};
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  .count { opacity: 0.6; margin-left: 0.35rem; }
+  &:hover { color: ${(p) => (p.$active ? C.cyan : C.textPrimary)}; }
 `
 
 const ClickRow = styled.tr`
@@ -299,12 +518,6 @@ const Controls = styled.div`
   margin-bottom: 1rem;
 `
 
-const Chips = styled.div`
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-`
-
 const Chip = styled.button`
   font-family: ${FONT_MONO};
   font-size: 0.66rem;
@@ -312,7 +525,7 @@ const Chip = styled.button`
   letter-spacing: 0.6px;
   text-transform: uppercase;
   padding: 0.3rem 0.6rem;
-  border-radius: 4px;
+  border-radius: 0;
   cursor: pointer;
   white-space: nowrap;
   color: ${(p) => (p.$active ? '#041018' : C.textMuted)};
@@ -340,7 +553,7 @@ const SortSelect = styled.select`
   color: ${C.textPrimary};
   background: ${C.inputBg};
   border: 1px solid ${C.borderSubtle};
-  border-radius: 4px;
+  border-radius: 0;
   padding: 0.32rem 0.5rem;
   cursor: pointer;
   outline: none;
@@ -394,7 +607,7 @@ const CloseBtn = styled.button`
   background: transparent;
   border: 1px solid ${C.borderSubtle};
   color: ${C.textMuted};
-  border-radius: 4px;
+  border-radius: 0;
   width: 28px; height: 28px;
   cursor: pointer;
   font-size: 1rem;
@@ -410,6 +623,141 @@ const DrawerBody = styled.div`
 
 function fmtCount(n) {
   return Number.isFinite(n) && n > 0 ? n.toLocaleString() : '—'
+}
+
+// ── per-market probability sparkline ─────────────────────────────────
+// Lazily fetched per card via /api/polymarket/history (server-cached
+// proxy to Polymarket's public CLOB API). Client-side memo so paging
+// back and forth never refetches.
+const histCache = new Map()
+function useProbHistory(cid) {
+  const [pts, setPts] = useState(() => (cid && histCache.get(cid)) || null)
+  useEffect(() => {
+    if (!cid) return undefined
+    if (histCache.has(cid)) {
+      setPts(histCache.get(cid))
+      return undefined
+    }
+    let cancelled = false
+    fetch(`/api/polymarket/history?cid=${encodeURIComponent(cid)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const arr = j && Array.isArray(j.data) ? j.data : []
+        histCache.set(cid, arr)
+        if (!cancelled) setPts(arr)
+      })
+      .catch(() => {
+        if (!cancelled) setPts([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [cid])
+  return pts // null = loading, [] = no history
+}
+
+function fmtCents(pct) {
+  if (!Number.isFinite(pct)) return '—'
+  if (pct > 0 && pct < 1) return '<1¢'
+  return `${Math.round(pct)}¢`
+}
+
+function MarketCard({ m, onOpen }) {
+  const cid = marketConditionId(m)
+  const odds = marketOddsView(m)
+  const hist = useProbHistory(cid)
+  const chg = marketDayChange(m)
+  const url = polymarketUrl(marketSlug(m))
+  const vol = marketVolume24h(m)
+  const flow = marketWhaleFlow(m)
+  const whales = marketWhaleCount(m)
+
+  // Big number = YES probability for binary markets, leader for multis.
+  const headPct = odds ? (odds.binary ? odds.a.pct : odds.leader.pct) : null
+  const sparkDir =
+    Array.isArray(hist) && hist.length >= 2 ? hist[hist.length - 1].p - hist[0].p : null
+  const dir = chg != null ? chg : sparkDir
+  const pctColor = dir == null ? C.cyan : dir >= 0 ? C.green : C.red
+
+  return (
+    <MCard onClick={() => onOpen(m)} title="View whale positioning in this market">
+      <div className="head">
+        <span className="code">{marketCatCode(m)}</span>
+        <span className="q">{marketQuestion(m)}</span>
+        {headPct != null ? (
+          <span className="pct" style={{ color: pctColor }}>
+            <span className="big">
+              {Math.round(headPct)}
+              <sub>%</sub>
+            </span>
+            {chg != null && chg !== 0 ? (
+              <span className="chg">
+                {chg > 0 ? '▲' : '▼'} {Math.abs(chg * 100).toFixed(1)}
+              </span>
+            ) : null}
+          </span>
+        ) : null}
+      </div>
+
+      {hist === null ? (
+        <div className="spark-empty">·· LOADING ··</div>
+      ) : hist.length >= 2 ? (
+        <div className="spark">
+          <ProbLine data={hist.map((x) => x.p * 100)} width={300} height={44} fluid />
+        </div>
+      ) : (
+        <div className="spark-empty">NO PRICE HISTORY</div>
+      )}
+
+      {odds && !odds.binary && Array.isArray(odds.pairs) ? (
+        <div className="outcomes">
+          {odds.pairs.slice(0, 3).map((o) => (
+            <span className="orow" key={o.label}>
+              <span className="nm" title={o.label}>{o.label}</span>
+              <span className="pc">{fmtPct(o.pct)}</span>
+              <MiniChip $side="yes">YES {fmtCents(o.pct)}</MiniChip>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {odds && odds.binary ? (
+        <div className="btns" onClick={(e) => e.stopPropagation()}>
+          <PriceBtn
+            $side="yes"
+            href={url || undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={url ? 'Trade YES on Polymarket' : undefined}
+          >
+            {odds.a.label} {fmtCents(odds.a.pct)}
+          </PriceBtn>
+          <PriceBtn
+            $side="no"
+            href={url || undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={url ? 'Trade NO on Polymarket' : undefined}
+          >
+            {odds.b.label} {fmtCents(odds.b.pct)}
+          </PriceBtn>
+        </div>
+      ) : (
+        <div style={{ marginTop: 'auto' }} />
+      )}
+
+      <div className="foot">
+        <span>{formatUsd(vol)} VOL</span>
+        {whales > 0 ? <span>· {fmtCount(whales)} WHALES</span> : null}
+        {flow !== 0 ? (
+          <span className="flow" style={{ color: flow >= 0 ? C.green : C.red }}>
+            · FLOW {flow >= 0 ? '+' : '−'}{formatUsd(Math.abs(flow))}
+          </span>
+        ) : null}
+        <span className="right">{fmtEndDate(marketEndDate(m)) || ''}</span>
+      </div>
+    </MCard>
+  )
 }
 
 export default function PolymarketClient() {
@@ -697,7 +1045,15 @@ export default function PolymarketClient() {
   }, [status, whales, searchParams, openWhaleByWallet])
 
   return (
-    <WhaleTerminalShell title="WHALE_INTELLIGENCE // POLYMARKET" live={false}>
+    <WhaleTerminalShell
+      title="WHALE_TERMINAL // POLYMARKET"
+      live
+      whaleAlert={false}
+      statusSegments={[
+        { k: 'MARKETS', v: markets.length.toLocaleString() },
+        { k: 'WHALES', v: whales.length.toLocaleString() },
+      ]}
+    >
       {status === 'loading' ? (
         <Panel>
           <SonarLoader text="Scanning Polymarket whales…" size={60} compact />
@@ -712,7 +1068,7 @@ export default function PolymarketClient() {
           </ErrorNotice>
         </Panel>
       ) : (
-        <Grid>
+        <>
           <Panel>
             <PanelTitle>
               <h2>Top Markets · {(SORT_OPTIONS.find((s) => s.id === sortKey) || SORT_OPTIONS[0]).label}</h2>
@@ -729,34 +1085,30 @@ export default function PolymarketClient() {
               <Notice>No markets available yet.</Notice>
             ) : (
               <>
-                <Controls>
-                  {categoryChips.length > 7 ? (
-                    <SortWrap>
-                      Category
-                      <SortSelect
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
+                <CatBar>
+                  <span className="lead">
+                    <span className="dot" aria-hidden />
+                    Markets
+                  </span>
+                  <nav aria-label="Market categories">
+                    {categoryChips.map((c) => (
+                      <CatTab
+                        key={c.id}
+                        type="button"
+                        $active={categoryFilter === c.id}
+                        onClick={() => setCategoryFilter(c.id)}
                       >
-                        {categoryChips.map((c) => (
-                          <option key={c.id} value={c.id}>{c.label} ({c.count})</option>
-                        ))}
-                      </SortSelect>
-                    </SortWrap>
-                  ) : (
-                    <Chips>
-                      {categoryChips.map((c) => (
-                        <Chip
-                          key={c.id}
-                          type="button"
-                          $active={categoryFilter === c.id}
-                          onClick={() => setCategoryFilter(c.id)}
-                        >
-                          {c.label}
-                          <span className="count">{c.count}</span>
-                        </Chip>
-                      ))}
-                    </Chips>
-                  )}
+                        {c.label}
+                        <span className="count">{c.count}</span>
+                      </CatTab>
+                    ))}
+                  </nav>
+                  <span className="meta">
+                    {visibleMarkets.length.toLocaleString()} MKTS ·{' '}
+                    {formatUsd(visibleMarkets.reduce((s, m) => s + marketVolume24h(m), 0))} VOL
+                  </span>
+                </CatBar>
+                <Controls>
                   <span style={{ display: 'inline-flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     {tagOptions.length > 0 ? (
                       <SortWrap>
@@ -802,93 +1154,11 @@ export default function PolymarketClient() {
                       : 'No markets in this category.'}
                   </Notice>
                 ) : (
-              <DataTable>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Market</th>
-                      <th>Cat</th>
-                      <th>Yes / No</th>
-                      <th className="right">24h Vol</th>
-                      <th className="right">Whale Flow</th>
-                      <th className="right">Whales</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pagedMarkets.map((m, i) => {
-                      const odds = marketOddsView(m)
-                      const flow = marketWhaleFlow(m)
-                      return (
-                        <ClickRow
-                          key={marketConditionId(m) || i}
-                          onClick={() => onMarketClick(m)}
-                          title="View whales in this market"
-                        >
-                          <td style={{ whiteSpace: 'normal', maxWidth: '320px', color: C.textPrimary }}>
-                            <div>{marketQuestion(m)}</div>
-                            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                              {fmtEndDate(marketEndDate(m)) ? (
-                                <span style={{ fontSize: '0.62rem', color: C.textMuted, fontFamily: FONT_MONO }}>
-                                  {fmtEndDate(marketEndDate(m))}
-                                </span>
-                              ) : null}
-                              {polymarketUrl(marketSlug(m)) ? (
-                                <ExtLink
-                                  href={polymarketUrl(marketSlug(m))}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  title="Open on Polymarket"
-                                >
-                                  Polymarket ↗
-                                </ExtLink>
-                              ) : null}
-                            </div>
-                          </td>
-                          <td>
-                            <span style={{ fontFamily: FONT_MONO, fontSize: '0.6rem', letterSpacing: '0.5px', textTransform: 'uppercase', color: C.textMuted, whiteSpace: 'nowrap' }}>
-                              {marketCategoryLabel(m)}
-                            </span>
-                          </td>
-                          <td>
-                            {!odds ? (
-                              <span style={{ color: C.textMuted }}>—</span>
-                            ) : odds.binary ? (
-                              <span style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                <OddsBar title={`${odds.a.label} ${fmtPct(odds.a.pct)} · ${odds.b.label} ${fmtPct(odds.b.pct)}`}>
-                                  <span className="yes" style={{ width: `${odds.a.pct}%` }} />
-                                  <span className="no" style={{ width: `${odds.b.pct}%` }} />
-                                </OddsBar>
-                                <span style={{ fontSize: '0.62rem', color: C.textMuted }}>
-                                  {odds.a.label} {fmtPct(odds.a.pct)} · {odds.b.label} {fmtPct(odds.b.pct)}
-                                </span>
-                              </span>
-                            ) : (
-                              <span style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                <OddsBar title={`${odds.leader.label} ${fmtPct(odds.leader.pct)} leading`}>
-                                  <span className="yes" style={{ width: `${odds.leader.pct}%` }} />
-                                  <span className="no" style={{ width: `${100 - odds.leader.pct}%` }} />
-                                </OddsBar>
-                                <span style={{ fontSize: '0.62rem', color: C.textMuted }}>
-                                  {odds.leader.label} {fmtPct(odds.leader.pct)}
-                                </span>
-                              </span>
-                            )}
-                          </td>
-                          <td className="right">{formatUsd(marketVolume24h(m))}</td>
-                          <td
-                            className="right"
-                            style={{ fontWeight: 700, color: flow >= 0 ? C.green : C.red }}
-                          >
-                            {flow >= 0 ? '+' : ''}{formatUsd(flow)}
-                          </td>
-                          <td className="right">{fmtCount(marketWhaleCount(m))}</td>
-                        </ClickRow>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </DataTable>
+                  <CardsGrid>
+                    {pagedMarkets.map((m, i) => (
+                      <MarketCard key={marketConditionId(m) || i} m={m} onOpen={onMarketClick} />
+                    ))}
+                  </CardsGrid>
                 )}
                 {visibleMarkets.length > PAGE_SIZE ? (
                   <Pager>
@@ -922,6 +1192,7 @@ export default function PolymarketClient() {
             )}
           </Panel>
 
+          <BottomGrid>
           <Panel>
             <PanelTitle>
               <h2>Whale Leaderboard</h2>
@@ -1024,7 +1295,8 @@ export default function PolymarketClient() {
               </DataTable>
             </Panel>
           ) : null}
-        </Grid>
+          </BottomGrid>
+        </>
       )}
 
       {drawer ? (

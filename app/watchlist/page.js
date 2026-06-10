@@ -23,7 +23,7 @@ export const metadata = {
 export default function WatchlistPage() {
   return (
     <AuthGuard>
-      <WhaleTerminalShell title="WHALE_INTELLIGENCE // FOLLOWING" live={false}>
+      <WhaleTerminalShell title="WHALE_TERMINAL // FOLLOWING">
         <DirectoryHeader subtitle="Figures, entities, wallets, and Polymarket whales you follow." />
         {/* WatchlistClient reads ?tab= via useSearchParams — Suspense required. */}
         <Suspense fallback={null}>

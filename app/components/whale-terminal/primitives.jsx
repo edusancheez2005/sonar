@@ -69,9 +69,162 @@ export const Panel = styled.div`
   background: ${C.panelBg};
   backdrop-filter: blur(12px);
   border: 1px solid ${C.borderSubtle};
-  border-radius: 8px;
+  border-radius: 0;
   padding: 1.5rem;
   @media (max-width: 768px) { padding: 1rem; }
+`
+
+// ── Terminal panel: hairline border + mono header strip ─────────────
+// The core building block of the Whale Terminal modules. Square corners,
+// uppercase CLI label, optional live pulse dot and right-aligned meta.
+const TermPanelFrame = styled.section`
+  border: 1px solid ${C.borderSubtle};
+  background: rgba(10, 14, 23, 0.72);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`
+
+const TermPanelHead = styled.header`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.42rem 0.7rem;
+  border-bottom: 1px solid ${C.borderSubtle};
+  background: rgba(0, 229, 255, 0.025);
+  .tp-label {
+    font-family: ${FONT_MONO};
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: ${C.cyan};
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .tp-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${C.green};
+    animation: ${pulseGlow} 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .tp-meta {
+    font-family: ${FONT_MONO};
+    font-size: 0.58rem;
+    letter-spacing: 0.5px;
+    color: ${C.textMuted};
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`
+
+const TermPanelBody = styled.div`
+  flex: 1;
+  min-height: 0;
+`
+
+export function TermPanel({ label, meta, live, children, style, bodyStyle, className }) {
+  return (
+    <TermPanelFrame style={style} className={className}>
+      <TermPanelHead>
+        <span className="tp-label">
+          {live ? <span className="tp-dot" aria-hidden /> : null}
+          {label}
+        </span>
+        {meta ? <span className="tp-meta">{meta}</span> : null}
+      </TermPanelHead>
+      <TermPanelBody style={bodyStyle}>{children}</TermPanelBody>
+    </TermPanelFrame>
+  )
+}
+
+// ── KPI tile ─────────────────────────────────────────────────────────
+const KpiFrame = styled.div`
+  border: 1px solid ${C.borderSubtle};
+  background: rgba(10, 14, 23, 0.72);
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  .kpi-label {
+    font-family: ${FONT_MONO};
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: ${C.textMuted};
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .kpi-row { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .kpi-value {
+    font-family: ${FONT_MONO};
+    font-size: 1.14rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .kpi-delta { font-family: ${FONT_MONO}; font-size: 0.62rem; font-weight: 600; white-space: nowrap; }
+`
+
+export function Kpi({ label, value, delta, tone, children }) {
+  const col =
+    tone === 'pos' ? C.green : tone === 'neg' ? C.red : tone === 'cyan' ? C.cyan : C.textPrimary
+  const deltaNeg = typeof delta === 'string' && delta.trim().startsWith('-')
+  return (
+    <KpiFrame>
+      <span className="kpi-label">{label}</span>
+      <span className="kpi-row">
+        <span className="kpi-value" style={{ color: col }}>{value}</span>
+        {delta ? (
+          <span className="kpi-delta" style={{ color: deltaNeg ? C.red : C.green }}>{delta}</span>
+        ) : null}
+      </span>
+      {children}
+    </KpiFrame>
+  )
+}
+
+// ── Filter tab strip (square, CLI-style) ─────────────────────────────
+export const FilterTabs = styled.div`
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+`
+
+export const FilterTab = styled.button`
+  padding: 0.45rem 0.85rem;
+  background: ${(p) => (p.$active ? 'rgba(0, 229, 255, 0.06)' : 'none')};
+  border: none;
+  border-right: 1px solid rgba(0, 229, 255, 0.05);
+  box-shadow: ${(p) => (p.$active ? `inset 0 -2px 0 ${C.cyan}` : 'none')};
+  color: ${(p) => (p.$active ? C.cyan : C.textMuted)};
+  font-family: ${FONT_MONO};
+  font-size: 0.6rem;
+  font-weight: ${(p) => (p.$active ? 700 : 500)};
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  &:hover { color: ${(p) => (p.$active ? C.cyan : C.textPrimary)}; }
 `
 
 export const PanelTitle = styled.div`
@@ -88,7 +241,7 @@ export const PillInput = styled.input`
   border: 1px solid ${C.borderSubtle};
   color: ${C.textPrimary};
   padding: 0.55rem 0.75rem;
-  border-radius: 4px;
+  border-radius: 0;
   outline: none;
   transition: border-color 0.15s ease;
   font-size: 0.85rem;
@@ -104,7 +257,7 @@ export const PillSelect = styled.select`
   border: 1px solid ${C.borderSubtle};
   color: ${C.textPrimary};
   padding: 0.55rem 2rem 0.55rem 0.75rem;
-  border-radius: 4px;
+  border-radius: 0;
   outline: none;
   transition: border-color 0.15s ease;
   font-size: 0.85rem;
@@ -122,7 +275,7 @@ export const GhostButton = styled.button`
   background: transparent;
   color: ${(p) => (p.$danger ? C.red : C.cyan)};
   border: 1px solid ${(p) => (p.$danger ? 'rgba(255, 23, 68, 0.2)' : C.borderSubtle)};
-  border-radius: 4px;
+  border-radius: 0;
   padding: 0.4rem 0.85rem;
   font-weight: 600;
   font-size: 0.75rem;
@@ -163,7 +316,7 @@ export const DataTable = styled.div`
 export const Badge = styled.span`
   display: inline-block;
   padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  border-radius: 0;
   font-weight: 600;
   font-size: 0.7rem;
   font-family: ${FONT_MONO};
@@ -179,7 +332,7 @@ export const Badge = styled.span`
 export const ChainBadge = styled.span`
   display: inline-block;
   padding: 0.18rem 0.45rem;
-  border-radius: 4px;
+  border-radius: 0;
   font-weight: 600;
   font-size: 0.65rem;
   font-family: ${FONT_MONO};
@@ -198,7 +351,7 @@ export const Notice = styled.div`
   font-size: 0.82rem;
   color: ${C.textMuted};
   border: 1px dashed ${C.borderSubtle};
-  border-radius: 8px;
+  border-radius: 0;
   background: rgba(0, 229, 255, 0.015);
 `
 
