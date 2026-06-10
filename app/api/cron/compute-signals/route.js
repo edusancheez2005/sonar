@@ -167,9 +167,31 @@ export async function GET(req) {
             || signal.signal === 'SELL' || signal.signal === 'STRONG SELL'
           if (isDirectional) {
             const wantBullish = signal.signal === 'BUY' || signal.signal === 'STRONG BUY'
-            const agreeBullish = t1 > 0 && t2 > 0 && t3 > 0
-            const agreeBearish = t1 < 0 && t2 < 0 && t3 < 0
-            const agrees = wantBullish ? agreeBullish : agreeBearish
+            const wantSign = wantBullish ? 1 : -1
+            // 2026-06-09 (audit finding #3): TIER_GATE_V2 reshapes the gate.
+            //   v1 (default): require T1>0 ∧ T2>0 ∧ T3>0 (or all <0). Because
+            //     tier3 (sentiment) is 0 whenever news is neutral/absent — the
+            //     common case, and it was fully DEAD until 2026-06-02 — this
+            //     forced NEUTRAL on essentially every signal regardless of how
+            //     strongly whale-flow and momentum agreed. ~86% of would-be
+            //     SELLs were suppressed here.
+            //   v2 (TIER_GATE_V2=on): gate on the SUBSTANTIVE tiers (T1∧T2);
+            //     tier3 vetoes ONLY when it holds a real opposing opinion
+            //     (t3≠0 and sign opposes). A neutral t3 no longer blocks. This
+            //     keeps the forensic-H2 protection (T1∧T2 must agree → avoids
+            //     the −12pp 24h-alpha noise cohort) without the t3=0 hole.
+            //     Default OFF — loosens emissions, so validate alpha delta over
+            //     24h before flipping (per the engine workflow).
+            let agrees
+            if (process.env.TIER_GATE_V2 === 'on') {
+              const coreAgrees = wantBullish ? (t1 > 0 && t2 > 0) : (t1 < 0 && t2 < 0)
+              const t3Opposes = t3 !== 0 && Math.sign(t3) !== wantSign
+              agrees = coreAgrees && !t3Opposes
+            } else {
+              const agreeBullish = t1 > 0 && t2 > 0 && t3 > 0
+              const agreeBearish = t1 < 0 && t2 < 0 && t3 < 0
+              agrees = wantBullish ? agreeBullish : agreeBearish
+            }
             if (!agrees) {
               signal.original_signal = signal.original_signal || signal.signal
               signal.signal = 'NEUTRAL'

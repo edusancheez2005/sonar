@@ -81,6 +81,14 @@ export function planToolCalls(input: PlannerInput): ToolCall[] {
     return planSignalExplain(input)
   }
 
+  // Fix #2 — followup subject carry-over. When the router labels a short
+  // continuation `followup` but the prior turn was about wallets / a signal /
+  // an article, `getPrice` is useless. Inherit the prior turn's tools instead.
+  if (input.router.intent === 'followup') {
+    const carried = planFollowupCarryOver(input)
+    if (carried) return carried
+  }
+
   const wanted = new Set<ToolName>(INTENT_TOOLS[input.router.intent])
   for (const dp of input.router.datapoints) {
     for (const t of DATAPOINT_TOOLS[dp] ?? []) wanted.add(t)
@@ -148,6 +156,13 @@ export function planToolCalls(input: PlannerInput): ToolCall[] {
     wanted.delete('getPrice')
     wanted.delete('getWhaleFlows')
     wanted.delete('getNews')
+  }
+
+  // Fix #4 (§5.1) — give the empty-portfolio personal renderer real market
+  // context to pivot to. One cheap leaderboard call (24h whale flows); the
+  // renderer only surfaces it when holdings + watchlist come back empty.
+  if (input.router.intent === 'personal') {
+    calls.push({ tool: 'getTrendingWhales', args: { window: '24h' } })
   }
 
   for (const tool of wanted) {
@@ -322,4 +337,47 @@ function planSignalExplain(input: PlannerInput): ToolCall[] {
     calls.push({ tool: 'getWhaleFlows', args: { ticker: t } })
   }
   return calls
+}
+
+/**
+ * Fix #2 — carry the prior turn's subject into a `followup`. The router
+ * frequently labels short continuations ("why?", "and the others?") as
+ * `followup`, which the static map points at `getPrice`. When the previous
+ * assistant turn was a wallet leaderboard, a signal, or an article, that's a
+ * non-answer. Re-emit the prior turn's tools so the writer has the right data.
+ *
+ * Returns null when there is no usable prior subject, so the caller falls back
+ * to the existing `getPrice` + datapoint overlay behaviour.
+ */
+function planFollowupCarryOver(input: PlannerInput): ToolCall[] | null {
+  const prior = input.priorIntent
+  if (!prior) return null
+  const priorTickers = (input.priorTickers ?? []).slice(0, MAX_TICKERS_PER_TURN)
+
+  if (prior === 'wallet_lookup') {
+    return [
+      {
+        tool: 'getMostActiveWallets',
+        args: { window: detectTimeWindow(input.message) },
+      },
+    ]
+  }
+
+  if (prior === 'signal_explain' && priorTickers.length > 0) {
+    const calls: ToolCall[] = []
+    for (const t of priorTickers) {
+      calls.push({ tool: 'getSignalContext', args: { ticker: t } })
+      calls.push({ tool: 'getPrice', args: { ticker: t } })
+    }
+    return calls
+  }
+
+  if (prior === 'article_explain') {
+    if (priorTickers.length > 0) {
+      return priorTickers.map((t) => ({ tool: 'getNews', args: { ticker: t } }))
+    }
+    return [{ tool: 'getTrendingNews', args: {} }]
+  }
+
+  return null
 }

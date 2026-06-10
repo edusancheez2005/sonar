@@ -20,6 +20,7 @@
  */
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { proportionTrue } from '@/lib/quant/beta'
 
 export const dynamic = 'force-dynamic'
 // Per Stage 4 budget: small batch, single webhook POST, 30s is generous.
@@ -57,6 +58,27 @@ const BREAKER_LOOKBACK_HOURS = 6
 const BREAKER_MIN_SAMPLES = 25
 const BREAKER_SUPPRESS_PCT = 35
 const BREAKER_CLEAR_PCT = 45
+
+// ─── Alpha-gated breaker (2026-06-09, audit item B) ──────────────────────
+// The breaker above gates on RAW accuracy ("did price move our way"), which
+// the 2026-06-09 audit proved is mostly beta: in a downtrend SELLs "win" for
+// free, so the breaker selects for regime persistence, not skill. When
+// BREAKER_USE_ALPHA=on the trip/clear logic instead reads the by-direction
+// beat-rate on the MARKET-NEUTRAL residual (beat_residual), falling back to
+// the raw-alpha benchmark (beat_benchmark) only while residual data is still
+// accruing. Both metrics are computed and logged EVERY run for A/B regardless
+// of the flag, so the alpha series is observable before the switch is flipped.
+//
+// Thresholds re-centre on the ~50% coin-flip line for a beat-rate (vs the
+// 35/45 tuned for raw accuracy) and require more samples because alpha is
+// noisier. Default OFF — flip only after the residual series has stabilised.
+const BREAKER_USE_ALPHA = process.env.BREAKER_USE_ALPHA === 'on'
+const BREAKER_ALPHA_MIN_SAMPLES = 40
+const BREAKER_ALPHA_SUPPRESS_PCT = 45
+const BREAKER_ALPHA_CLEAR_PCT = 50
+// Trailing window for the always-on alpha telemetry echo (24h is steadier
+// than the 6h breaker window for a noisy beat-rate).
+const ALPHA_TELEMETRY_HOURS = 24
 
 // ─── Time-valve backstop (added 2026-06-01) ────────────────────────────
 // After SHADOW grading was added, the breaker clear path normally measures
@@ -115,6 +137,25 @@ function directionAccuracy(rows, family: 'BUY' | 'SELL') {
 }
 
 /**
+ * Beat-rate of one signal direction over a row set on a given boolean column
+ * (`beat_residual` for market-neutral skill, `beat_benchmark` for raw alpha).
+ * Null flags (ungraded) are ignored. The alpha analogue of directionAccuracy;
+ * delegates the null-skipping proportion to lib/quant/beta.proportionTrue so
+ * the semantics match every other alpha read in the pipeline.
+ */
+function directionBeatRate(
+  rows,
+  family: 'BUY' | 'SELL',
+  field: 'beat_residual' | 'beat_benchmark',
+) {
+  const match = family === 'BUY'
+    ? (t: string) => t === 'BUY' || t === 'STRONG BUY'
+    : (t: string) => t === 'SELL' || t === 'STRONG SELL'
+  const flags = rows.filter(r => match(r.signal_type)).map(r => r[field])
+  return proportionTrue(flags)
+}
+
+/**
  * Sample mean + sample standard deviation (n-1 denominator).
  * Returns { mean: 0, std: 0 } for n<2 — caller is expected to gate on
  * sample count separately.
@@ -162,14 +203,35 @@ export async function GET(req) {
     // from union (breaker) downstream. Headline accuracy stays user-facing
     // and excludes shadow; breaker clear-logic reads union so the dead-lock
     // diagnosed in SIGNAL_REMEDIATION_2026-06-01_PROMPT.md cannot recur.
-    const { data: rows7d, error } = await supabaseAdmin
+    const { data: initialRows, error } = await supabaseAdmin
       .from('signal_outcomes')
-      .select('signal_type, correct, signal_time, shadow')
+      .select('signal_type, correct, signal_time, shadow, beat_benchmark, beat_residual')
       .gte('signal_time', sevenDaysAgo)
       .limit(20000)
 
+    // Pre-migration resilience: `beat_residual` (migration 20260609) may not
+    // exist yet. Rather than 500 the whole watchdog, retry without it and
+    // mark residual telemetry unavailable for this run (directionBeatRate on
+    // beat_residual then resolves to n=0 and the alpha breaker falls back to
+    // the raw-alpha benchmark). Reassigned into `rows7d` so every downstream
+    // consumer is agnostic to which branch produced the data.
+    let rows7d = initialRows
+    let residualColumnAvailable = true
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      if (/beat_residual|does not exist/i.test(error.message)) {
+        residualColumnAvailable = false
+        const retry = await supabaseAdmin
+          .from('signal_outcomes')
+          .select('signal_type, correct, signal_time, shadow, beat_benchmark')
+          .gte('signal_time', sevenDaysAgo)
+          .limit(20000)
+        if (retry.error) {
+          return NextResponse.json({ error: retry.error.message }, { status: 500 })
+        }
+        rows7d = (retry.data || []).map(r => ({ ...r, beat_residual: null }))
+      } else {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
     }
 
     const rows1d = (rows7d || []).filter(r => r.signal_time >= oneDayAgo)
@@ -279,6 +341,33 @@ export async function GET(req) {
     const shadowBuy = directionAccuracy(shadowBreakerWindow, 'BUY')
     const shadowSell = directionAccuracy(shadowBreakerWindow, 'SELL')
 
+    // ─── Alpha telemetry (2026-06-09, audit item B) ──────────────────────
+    // Computed EVERY run regardless of BREAKER_USE_ALPHA so the alpha series
+    // is observable for the A/B before the flag is flipped. Uses a 24h window
+    // (steadier than the 6h breaker window for a noisy beat-rate) over the
+    // union of live + shadow rows. Residual (market-neutral skill) is the
+    // metric we ultimately want to gate on; it falls back to the raw-alpha
+    // benchmark while the residual column is still accruing / pre-migration.
+    const alphaCutoff = new Date(now - ALPHA_TELEMETRY_HOURS * 60 * 60 * 1000).toISOString()
+    const rowsAlphaWindow = (rows7d || []).filter(r => r.signal_time >= alphaCutoff)
+    function alphaMetric(family: 'BUY' | 'SELL') {
+      const residual = directionBeatRate(rowsAlphaWindow, family, 'beat_residual')
+      if (residual.n >= BREAKER_ALPHA_MIN_SAMPLES) {
+        return { pct: residual.pct, n: residual.n, basis: 'residual' as const }
+      }
+      const benchmark = directionBeatRate(rowsAlphaWindow, family, 'beat_benchmark')
+      return { pct: benchmark.pct, n: benchmark.n, basis: 'benchmark' as const }
+    }
+    const buyAlpha = alphaMetric('BUY')
+    const sellAlpha = alphaMetric('SELL')
+    // Raw-alpha + residual beat-rates for the always-on baseline echo.
+    const alphaEcho = {
+      alpha_buy_pct: directionBeatRate(rowsAlphaWindow, 'BUY', 'beat_benchmark').pct,
+      alpha_sell_pct: directionBeatRate(rowsAlphaWindow, 'SELL', 'beat_benchmark').pct,
+      ralpha_buy_pct: directionBeatRate(rowsAlphaWindow, 'BUY', 'beat_residual').pct,
+      ralpha_sell_pct: directionBeatRate(rowsAlphaWindow, 'SELL', 'beat_residual').pct,
+    }
+
     const { data: breakerCurrent } = await supabaseAdmin
       .from('signal_circuit_breaker')
       .select('signal_type, active, triggered_at, confidence_cap_until')
@@ -291,20 +380,34 @@ export async function GET(req) {
       }
     }
 
-    const breakerOutcome: Record<string, { active: boolean; transition: string | null; pct: number; n: number; shadow_pct?: number; shadow_n?: number }> = {}
+    const breakerOutcome: Record<string, {
+      active: boolean; transition: string | null; pct: number; n: number;
+      shadow_pct?: number; shadow_n?: number;
+      mode: 'raw' | 'alpha'; raw_pct: number; raw_n: number;
+      alpha_pct: number; alpha_n: number; alpha_basis: 'residual' | 'benchmark';
+    }> = {}
     const timeValveOn = process.env.BREAKER_TIME_VALVE === 'on'
     for (const family of ['BUY', 'SELL'] as const) {
-      const m = family === 'BUY' ? buy6h : sell6h
+      const rawM = family === 'BUY' ? buy6h : sell6h
+      const alphaM = family === 'BUY' ? buyAlpha : sellAlpha
       const shadowM = family === 'BUY' ? shadowBuy : shadowSell
+      // Which metric actuates the breaker this run. BREAKER_USE_ALPHA swaps
+      // raw accuracy (beta-confounded) for the market-neutral alpha beat-rate
+      // and re-centres the thresholds on the ~50% coin-flip line. Both metrics
+      // are computed every run; only the selected one is allowed to actuate.
+      const m = BREAKER_USE_ALPHA ? alphaM : rawM
+      const minSamples = BREAKER_USE_ALPHA ? BREAKER_ALPHA_MIN_SAMPLES : BREAKER_MIN_SAMPLES
+      const suppressPct = BREAKER_USE_ALPHA ? BREAKER_ALPHA_SUPPRESS_PCT : BREAKER_SUPPRESS_PCT
+      const clearPct = BREAKER_USE_ALPHA ? BREAKER_ALPHA_CLEAR_PCT : BREAKER_CLEAR_PCT
       const cur = breakerState[family] || { active: false, triggered_at: null, confidence_cap_until: null }
       let nextActive = cur.active
       let transition: string | null = null
       let releaseReason: 'standard' | 'time_valve' | null = null
-      if (m.n >= BREAKER_MIN_SAMPLES) {
-        if (!cur.active && m.pct < BREAKER_SUPPRESS_PCT) {
+      if (m.n >= minSamples) {
+        if (!cur.active && m.pct < suppressPct) {
           nextActive = true
           transition = 'tripped'
-        } else if (cur.active && m.pct >= BREAKER_CLEAR_PCT) {
+        } else if (cur.active && m.pct >= clearPct) {
           nextActive = false
           transition = 'cleared'
           releaseReason = 'standard'
@@ -335,6 +438,12 @@ export async function GET(req) {
         n: m.n,
         shadow_pct: Number(shadowM.pct.toFixed(2)),
         shadow_n: shadowM.n,
+        mode: BREAKER_USE_ALPHA ? 'alpha' : 'raw',
+        raw_pct: Number(rawM.pct.toFixed(2)),
+        raw_n: rawM.n,
+        alpha_pct: Number(alphaM.pct.toFixed(2)),
+        alpha_n: alphaM.n,
+        alpha_basis: alphaM.basis,
       }
 
       // Stale-breaker warning: a breaker latched >STALE_BREAKER_WARN_HOURS
@@ -354,11 +463,16 @@ export async function GET(req) {
       }
 
       if (transition !== null) {
+        // `basis` lives only on the alpha metric; read it from alphaM (always
+        // typed with basis) rather than the `m` union so the tag is type-safe.
+        // When BREAKER_USE_ALPHA is on, m === alphaM, so the value is identical.
+        const metricTag = BREAKER_USE_ALPHA ? `${family} alpha[${alphaM.basis}]` : `${family} acc`
+        const windowTag = BREAKER_USE_ALPHA ? `${ALPHA_TELEMETRY_HOURS}h` : `${BREAKER_LOOKBACK_HOURS}h`
         const reason = transition === 'tripped'
-          ? `auto_suppress: ${family} acc ${m.pct.toFixed(1)}% on n=${m.n} over last ${BREAKER_LOOKBACK_HOURS}h (< ${BREAKER_SUPPRESS_PCT}%)`
+          ? `auto_suppress: ${metricTag} ${m.pct.toFixed(1)}% on n=${m.n} over last ${windowTag} (< ${suppressPct}%)`
           : releaseReason === 'time_valve'
             ? `time_valve_release: ${family} latched >${TIME_VALVE_HOURS}h; shadow acc ${shadowM.pct.toFixed(1)}% on n=${shadowM.n} (>= ${TIME_VALVE_MIN_SHADOW_ACC_PCT}%). Confidence capped ${POST_CLEAR_CAP_HOURS}h.`
-            : `auto_clear: ${family} acc ${m.pct.toFixed(1)}% on n=${m.n} recovered (>= ${BREAKER_CLEAR_PCT}%)`
+            : `auto_clear: ${metricTag} ${m.pct.toFixed(1)}% on n=${m.n} recovered (>= ${clearPct}%)`
         const upsertRow: Record<string, unknown> = {
           signal_type: family,
           active: nextActive,
@@ -400,21 +514,40 @@ export async function GET(req) {
     // glance without a deploy or a fired transition. The valve produces
     // identical clear/hold behaviour whether on or off until shadow accuracy
     // crosses the floor, so this echo is the only observable proof it's live.
-    const heartbeat = `time_valve=${timeValveOn ? 'on' : 'off'}`
+    //
+    // 2026-06-09: also stamp the alpha-breaker mode + the by-direction alpha
+    // beat-rate the breaker WOULD gate on (residual-preferred). This makes the
+    // alpha series watchable from accuracy_baseline.alert_reason even before
+    // the migration's numeric columns are applied.
+    const alphaHeartbeat =
+      `alpha_breaker=${BREAKER_USE_ALPHA ? 'on' : 'off'} ` +
+      `buy=${buyAlpha.pct.toFixed(1)}%[${buyAlpha.basis}]n${buyAlpha.n} ` +
+      `sell=${sellAlpha.pct.toFixed(1)}%[${sellAlpha.basis}]n${sellAlpha.n}`
+    const heartbeat = `time_valve=${timeValveOn ? 'on' : 'off'} | ${alphaHeartbeat}`
     const baselineReason = reasonText ? `${heartbeat} | ${reasonText}` : heartbeat
 
     // Always record the baseline row so historical trend analysis works.
+    // The four alpha_*_pct columns ship in migration 20260609; include them
+    // only when that migration is applied (residualColumnAvailable), so the
+    // insert never references a not-yet-created column pre-migration.
+    const baselineRow: Record<string, unknown> = {
+      accuracy_pct: Number(acc1d.pct.toFixed(2)),
+      sample_size: acc1d.n,
+      buy_share: Number((dist1d.buy * 100).toFixed(2)),
+      sell_share: Number((dist1d.sell * 100).toFixed(2)),
+      neutral_share: Number((dist1d.neutral * 100).toFixed(2)),
+      alerted: level !== null,
+      alert_reason: baselineReason,
+    }
+    if (residualColumnAvailable) {
+      baselineRow.alpha_buy_pct = Number(alphaEcho.alpha_buy_pct.toFixed(2))
+      baselineRow.alpha_sell_pct = Number(alphaEcho.alpha_sell_pct.toFixed(2))
+      baselineRow.ralpha_buy_pct = Number(alphaEcho.ralpha_buy_pct.toFixed(2))
+      baselineRow.ralpha_sell_pct = Number(alphaEcho.ralpha_sell_pct.toFixed(2))
+    }
     const { error: insErr } = await supabaseAdmin
       .from('accuracy_baseline')
-      .insert({
-        accuracy_pct: Number(acc1d.pct.toFixed(2)),
-        sample_size: acc1d.n,
-        buy_share: Number((dist1d.buy * 100).toFixed(2)),
-        sell_share: Number((dist1d.sell * 100).toFixed(2)),
-        neutral_share: Number((dist1d.neutral * 100).toFixed(2)),
-        alerted: level !== null,
-        alert_reason: baselineReason,
-      })
+      .insert(baselineRow)
     if (insErr) {
       console.warn('[AccuracyWatchdog] baseline insert failed:', insErr.message)
     }
@@ -482,6 +615,19 @@ export async function GET(req) {
       },
       circuit_breaker: breakerOutcome,
       time_valve: timeValveOn ? 'on' : 'off',
+      alpha_breaker: {
+        mode: BREAKER_USE_ALPHA ? 'on' : 'off',
+        window_hours: ALPHA_TELEMETRY_HOURS,
+        residual_labeling: residualColumnAvailable ? 'available' : 'pending_migration',
+        buy: { pct: Number(buyAlpha.pct.toFixed(2)), n: buyAlpha.n, basis: buyAlpha.basis },
+        sell: { pct: Number(sellAlpha.pct.toFixed(2)), n: sellAlpha.n, basis: sellAlpha.basis },
+        echo: {
+          alpha_buy_pct: Number(alphaEcho.alpha_buy_pct.toFixed(2)),
+          alpha_sell_pct: Number(alphaEcho.alpha_sell_pct.toFixed(2)),
+          ralpha_buy_pct: Number(alphaEcho.ralpha_buy_pct.toFixed(2)),
+          ralpha_sell_pct: Number(alphaEcho.ralpha_sell_pct.toFixed(2)),
+        },
+      },
       webhook: webhookStatus,
     })
   } catch (err) {

@@ -89,6 +89,12 @@ export function renderOverviewPrompt(args: RenderArgs): string {
       ? `\n\nProactive offer block (place at the very end, before the disclaimer): "I notice ${focusTicker} isn't in your personal dashboard yet — want me to add it so we can track whale flows and news as they happen?" Render the affordance as two bracketed buttons: [ Yes, track it ] [ No thanks ].`
       : ''
 
+  // Fix #1/#3 — market-wide "Market Pulse" framing. Active only when the turn
+  // ran the trending leaderboards (no per-ticker price). Either renders the
+  // sectioned Whales/Social/News list, or — when every leaderboard is empty —
+  // an honest all-quiet message with two real next-step offers.
+  const marketPulseBlock = buildMarketPulseBlock(args.toolResults, focusTicker)
+
   return `${historyPrefix(args.chatHistory)}You are ORCA, an automated research assistant for Sonar Tracker. You summarise public news, social posts, and on-chain whale transaction data. You are not a financial adviser, broker, dealer, or analyst, and you are not authorised to provide investment, legal, or tax advice in any jurisdiction.
 
 ${HARD_RULES}
@@ -96,7 +102,7 @@ ${HARD_RULES}
 ## DATA YOU RECEIVE
 
 Use only the values explicitly present in the TOOL RESULTS block below. Do not supplement with external memory, estimates, or fabricated numbers.
-
+${marketPulseBlock}
 ${OVERVIEW_RESPONSE_FORMAT}
 
 ## LENGTH CALIBRATION
@@ -135,4 +141,72 @@ function inferFocusTicker(
     }
   }
   return null
+}
+
+const LEADERBOARD_TOOLS = new Set([
+  'getTrendingWhales',
+  'getTrendingSocial',
+  'getTrendingNews',
+])
+
+/** A leaderboard result is "empty" when it failed or carries no rows. */
+function isEmptyLeaderboard(result: RenderArgs['toolResults'][number]['result']): boolean {
+  if (!result.ok || !result.data) return true
+  const d = result.data as any
+  for (const key of ['wallets', 'tickers', 'items', 'articles', 'headlines', 'results', 'rows']) {
+    if (Array.isArray(d[key])) return d[key].length === 0
+  }
+  // Unknown shape with at least one populated array → treat as non-empty.
+  for (const v of Object.values(d)) {
+    if (Array.isArray(v) && v.length > 0) return false
+  }
+  return true
+}
+
+/**
+ * Fix #1/#3 — build the "Market Pulse" instruction block for a no-ticker,
+ * leaderboard-only overview turn. Returns '' when this is an ordinary
+ * per-ticker overview (so the rich research-note path is untouched).
+ */
+function buildMarketPulseBlock(
+  toolResults: RenderArgs['toolResults'],
+  focusTicker: string | null
+): string {
+  const leaderboards = toolResults.filter((t) => LEADERBOARD_TOOLS.has(t.call.tool))
+  if (leaderboards.length === 0 || focusTicker) return ''
+
+  const whales = leaderboards.find((t) => t.call.tool === 'getTrendingWhales')
+  const social = leaderboards.find((t) => t.call.tool === 'getTrendingSocial')
+  const news = leaderboards.find((t) => t.call.tool === 'getTrendingNews')
+  const emptySources: string[] = []
+  if (!whales || isEmptyLeaderboard(whales.result)) emptySources.push('whales')
+  if (!social || isEmptyLeaderboard(social.result)) emptySources.push('social')
+  if (!news || isEmptyLeaderboard(news.result)) emptySources.push('news')
+
+  const allEmpty = emptySources.length === leaderboards.length && emptySources.length > 0
+
+  if (allEmpty) {
+    return `
+## MARKET PULSE — ALL QUIET (override the research-note format below)
+
+The trending leaderboards all came back empty this turn (no whale flows above threshold, no standout social momentum, and no fresh headlines in the recent window). You MUST:
+- Open by stating plainly that it is quiet across the sources you track right now, and name which were empty in plain prose: whale flows, social momentum, and headlines.
+- Do NOT use the **Data** / **News and Market Impact** / **Bottom Line** headers — this is a short honest note, not a research write-up.
+- Never invent activity, a number, a headline, or a wallet to fill the gap. Never imply the market is rising or falling.
+- Close with exactly two real next-step offers: (1) set up an alert for when activity crosses the threshold, and (2) name a specific token and you'll pull its data.
+`
+  }
+
+  return `
+## MARKET PULSE — MARKET-WIDE NOTE (override the research-note format below)
+
+This is a no-ticker, market-wide question answered from the trending leaderboards. You MUST:
+- Open with one factual sentence framing the overall tape (e.g. "Here's what's most active across on-chain flows, social, and headlines right now"). No directional or predictive claim.
+- Render up to three compact sections — **Whales**, **Social**, **News** — each a short ranked list (markdown bullets) drawn ONLY from the matching leaderboard tool result. Wrap every number in backticks.
+- Skip any section whose leaderboard is empty, and add one plain line noting that source is quiet right now${emptySources.length ? ` (currently quiet: ${emptySources.join(', ')})` : ''}.
+- Do NOT use the **Data** / **News and Market Impact** / **Bottom Line** research-note headers for this market-wide note.
+- Never invent rows, numbers, or headlines beyond what the tool results contain.
+- Close with one concrete, data-oriented follow-up offer (e.g. "Want me to go deeper on any of these?").
+- Calibrate length to the user's experience level exactly as stated in the LENGTH CALIBRATION section.
+`
 }

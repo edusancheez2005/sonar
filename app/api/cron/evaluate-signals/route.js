@@ -16,13 +16,32 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { NOISE_FLOOR_PCT } from '@/lib/quant/constants'
+import { residualAlpha, beatFromResidual } from '@/lib/quant/beta'
 
 export const dynamic = 'force-dynamic'
+// 2026-06-09: window ladder grew 3 -> 7. Per-run graded volume is tiny today
+// (~10-40 rows) so this is well under budget, but directional emissions can
+// surge when a breaker clears in a trending regime — size the function
+// generously so no window at the tail of EVAL_WINDOWS is truncated mid-run.
+export const maxDuration = 120
 
+// Horizon ladder for accuracy telemetry. 30m/12h/48h/72h were added 2026-06-09
+// for finer observability of whale-driven moves (short windows can catch a
+// squeeze-then-fade that the 1h floor misses; long windows confirm whether the
+// move persists). These four extra windows are OBSERVATIONAL ONLY: calibrate-
+// signals keeps its own EVAL_WINDOWS = ['1h','6h','24h'], and both
+// token_signal_calibration and signal_calibration_snapshot enforce
+// CHECK (eval_window IN ('1h','6h','24h')), so the new windows can never feed
+// the engine's sign/confidence calibration. Pure telemetry — do not wire them
+// into calibration without lifting those CHECK constraints on purpose.
 const EVAL_WINDOWS = [
+  { label: '30m', ms: 30 * 60 * 1000 },
   { label: '1h', ms: 1 * 60 * 60 * 1000 },
   { label: '6h', ms: 6 * 60 * 60 * 1000 },
+  { label: '12h', ms: 12 * 60 * 60 * 1000 },
   { label: '24h', ms: 24 * 60 * 60 * 1000 },
+  { label: '48h', ms: 48 * 60 * 60 * 1000 },
+  { label: '72h', ms: 72 * 60 * 60 * 1000 },
 ]
 
 // Noise floor: any |price change| below this is statistically indistinguishable
@@ -203,6 +222,34 @@ export async function GET(req) {
     // each eval window comes from price_snapshots.
     const btcNow = priceMap.get('BTC') || null
 
+    // ─── Residual-alpha labeling (audit item A) ──────────────────────────
+    // Load per-(token, eval_window) betas written nightly by calibrate-
+    // signals. Each new outcome gets a market-neutral residual alpha
+    //   residual = token_return − beta · btc_return
+    // and a beat_residual flag, the skill analogue of beat_benchmark.
+    //
+    // Fully tolerant of the migration not being applied yet: BETA_LABELING=off
+    // OR a missing token_beta table ⇒ empty map ⇒ residual columns stay NULL
+    // and grading proceeds on the raw label EXACTLY as before. A readable
+    // token_beta also implies the signal_outcomes residual columns exist
+    // (same migration), so it doubles as the schema-ready probe that keeps
+    // the outcome insert from referencing not-yet-created columns.
+    const betaByKey = new Map()
+    let betaLabelingActive = process.env.BETA_LABELING !== 'off'
+    if (betaLabelingActive) {
+      const { data: betaRows, error: betaErr } = await supabaseAdmin
+        .from('token_beta')
+        .select('token, eval_window, beta')
+      if (betaErr) {
+        console.warn('[EvalSignals] token_beta unavailable — residual labeling off this run (migration 20260609 applied?):', betaErr.message)
+        betaLabelingActive = false
+      } else {
+        for (const b of betaRows || []) {
+          betaByKey.set(`${b.token}|${b.eval_window}`, Number(b.beta))
+        }
+      }
+    }
+
     for (const window of EVAL_WINDOWS) {
       // Find signals that were created approximately `window.ms` ago
       // Look in a 30-min window around the target time
@@ -344,7 +391,10 @@ export async function GET(req) {
         // null so a single bad ticker can't tank the headline accuracy.
         // Calibrated against 2026-05-03 incident where MATICUSDT zombie
         // quote produced a fake +290% "move" on every 1h eval.
-        const OUTLIER_LIMITS = { '1h': 50, '6h': 200, '24h': 500 }
+        // 30m mirrors the 1h cap (real sub-hour squeezes stay; only >50%
+        // data-error jumps are clipped); 12h/48h/72h interpolate/extend the
+        // longer-horizon caps. Missing-window labels fall through to no cap.
+        const OUTLIER_LIMITS = { '30m': 50, '1h': 50, '6h': 200, '12h': 350, '24h': 500, '48h': 800, '72h': 1000 }
         const outlierLimit = OUTLIER_LIMITS[window.label]
         const isOutlier = outlierLimit !== undefined && Math.abs(priceChange) > outlierLimit
         if (!isOutlier && Math.abs(priceChange) >= NOISE_FLOOR_PCT) {
@@ -358,10 +408,32 @@ export async function GET(req) {
           : btcChangePctLegacy
         let alphaPct = null
         let beatBenchmark = null
-        if (btcChangePctSig !== null) {
+        // 2026-06-09 (audit finding #8): only compute alpha on non-outlier
+        // moves. Previously alpha_pct was computed even for data-error spikes
+        // (e.g. the MATIC→POL +326% artifact), which silently poisoned every
+        // pooled mean-alpha. An outlier move is not a real alpha observation.
+        if (!isOutlier && btcChangePctSig !== null) {
           alphaPct = priceChange - btcChangePctSig
           if (isBullish) beatBenchmark = alphaPct > 0
           else if (isBearish) beatBenchmark = alphaPct < 0
+        }
+
+        // Market-neutral residual alpha (audit item A): strip the beta-scaled
+        // market move so the label measures SKILL, not market exposure. Uses
+        // the nightly per-(token, window) beta. Stays NULL when no beta exists
+        // yet (cold start), the row was an outlier/frozen skip, or BTC is
+        // unavailable — we never fabricate a residual.
+        let residual = null
+        let beatResidual = null
+        let betaUsed = null
+        if (betaLabelingActive && !isOutlier && btcChangePctSig !== null) {
+          const beta = betaByKey.get(`${sig.token}|${window.label}`)
+          if (beta !== undefined && Number.isFinite(beta)) {
+            betaUsed = beta
+            residual = residualAlpha(priceChange, btcChangePctSig, beta)
+            if (isBullish) beatResidual = beatFromResidual(residual, 'bullish')
+            else if (isBearish) beatResidual = beatFromResidual(residual, 'bearish')
+          }
         }
 
         // 2026-05-04 (Stage 1: observability). Persist the raw signal
@@ -402,6 +474,14 @@ export async function GET(req) {
             raw_score: Number.isFinite(rawScoreNum) ? rawScoreNum : null,
             raw_direction: rawDirection,
             shadow: isShadowRow,
+            // Residual-alpha columns added only when the schema supports them
+            // (token_beta readable ⇒ migration 20260609 applied). Pre-migration
+            // these keys are absent so the insert references no missing column.
+            ...(betaLabelingActive ? {
+              residual_alpha: residual === null ? null : Math.round(residual * 100) / 100,
+              beat_residual: beatResidual,
+              beta_at_eval: betaUsed === null ? null : Math.round(betaUsed * 10000) / 10000,
+            } : {}),
           })
 
         if (insertErr) {

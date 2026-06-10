@@ -853,6 +853,22 @@ export function computeUnifiedSignal({
   const derivScore = hasDeriv ? derivativesData.compositeSignal : 0
   const derivConf = hasDeriv ? 70 : 0
 
+  // 2026-06-09 (audit finding #4): composite weight normalisation fix.
+  // The derivatives sleeve was added at a hardcoded 0.30 on top of tier
+  // weights that already sum to 0.75 in IC_FIX mode → a 1.05 total, silently
+  // over-weighting derivatives ~20% and running the whole composite ~5% hot
+  // (the comment beside baseWeights even says "+ derivatives 0.25"). The
+  // intended sleeve is 0.25 in IC_FIX (0.75+0.25=1.0) and 0.30 in legacy
+  // (0.70+0.30=1.0). Gated COMPOSITE_WEIGHT_FIX (default on; =off restores
+  // the pre-fix 0.30 so the prior scaling can be reinstated instantly if an
+  // IC re-audit regresses). NOTE: the golden regression fixture was
+  // regenerated under the default (fix on); building with the flag =off will
+  // intentionally diverge from golden.
+  const COMPOSITE_WEIGHT_FIX = process.env.COMPOSITE_WEIGHT_FIX !== 'off'
+  const derivWeight = COMPOSITE_WEIGHT_FIX
+    ? (IC_FIX_ENABLED ? 0.25 : 0.30)
+    : 0.30
+
   // v5 weights with derivatives: T1=20%, T2=30%, T3=15%, T4=5%, derivatives=30%
   // Without derivatives: fallback to v3 weights T1=25%, T2=40%, T3=25%, T4=10%
   //
@@ -918,9 +934,9 @@ export function computeUnifiedSignal({
     rawScore += t.data.score * t.effectiveWeight
   }
 
-  // v5: Add derivatives signal (30% weight when available)
+  // v5: Add derivatives signal (weight when available; see derivWeight).
   if (hasDeriv) {
-    rawScore += derivScore * 0.30
+    rawScore += derivScore * derivWeight
   }
 
   const traps = detectTraps(tier1, tier2, tier3, volumeData)
@@ -973,7 +989,7 @@ export function computeUnifiedSignal({
   for (const t of availableTiers) {
     baseConfidence += t.data.confidence * t.effectiveWeight
   }
-  if (hasDeriv) baseConfidence += derivConf * 0.30
+  if (hasDeriv) baseConfidence += derivConf * derivWeight
   const confidence = Math.round(
     Math.min(100, Math.max(0, baseConfidence * confluenceMultiplier - confidenceReduction - tierDisagreementPenalty - regimeConfidencePenalty))
   )
@@ -1020,8 +1036,8 @@ export function computeUnifiedSignal({
     factors.push({
       name: 'Derivatives',
       score: derivScore,
-      weight: 30,
-      contribution: Math.round(derivScore * 0.30),
+      weight: Math.round(derivWeight * 100),
+      contribution: Math.round(derivScore * derivWeight),
     })
   }
   factors.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
