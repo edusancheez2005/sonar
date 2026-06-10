@@ -313,6 +313,16 @@ export async function GET(req) {
         .gte('signal_time', since)
         .neq('signal_type', 'NEUTRAL')
         .not('correct', 'is', null)
+        // 2026-06-10: restrict to the calibratable windows. token_signal_
+        // calibration enforces CHECK (eval_window IN ('1h','6h','24h')); the
+        // 2026-06-09 window-ladder added 30m/12h/48h/72h to signal_outcomes,
+        // so an unfiltered pull buckets those and the upsert violates the
+        // CHECK → the whole cron 500s (observed 2026-06-10, blocked both sign
+        // calibration AND the beta refit that runs after it). Filtering here
+        // is the firewall the separate EVAL_WINDOWS constant always implied.
+        // NOTE: computeAndStoreBetas() does its OWN unfiltered pull on purpose
+        // — token_beta has no CHECK and benefits from all-window betas.
+        .in('eval_window', EVAL_WINDOWS)
         .order('signal_time', { ascending: false })
         .range(from, from + page - 1)
       if (error) {
