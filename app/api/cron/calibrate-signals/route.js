@@ -246,6 +246,13 @@ async function computeAndStoreBetas() {
 
   const decidedAt = new Date().toISOString()
   const betaRows = []
+  // (token, eval_window) buckets that had ENOUGH samples but were rejected as
+  // degenerate (e.g. frozen price feed → zero asset variance). We must DELETE
+  // any pre-existing token_beta row for these: upsert only overwrites keys we
+  // write, so a stale β=0 row from before the variance floor shipped would
+  // otherwise persist forever and keep feeding evaluate-signals a bogus
+  // residual=0 label. Self-cleaning the table keeps the alpha series honest.
+  const degenerateKeys = []
   for (const [key, series] of buckets) {
     const [token, evalWindow] = key.split('|')
     // Pair first (drop nulls, keep alignment), THEN winsorize each leg so a
@@ -259,7 +266,11 @@ async function computeAndStoreBetas() {
       minN: BETA_MIN_SAMPLES,
       assetVarianceFloor: BETA_MIN_ASSET_VARIANCE,
     })
-    if (!result) continue
+    if (!result) {
+      // Had the samples but failed a quality gate → ensure no stale row lingers.
+      degenerateKeys.push({ token, eval_window: evalWindow })
+      continue
+    }
     betaRows.push({
       token,
       eval_window: evalWindow,
@@ -271,8 +282,26 @@ async function computeAndStoreBetas() {
     })
   }
 
+  // Remove stale rows for degenerate buckets (bounded: typically 0-5 frozen
+  // tokens). Per-key deletes keep the composite-key match exact and avoid an
+  // over-broad .in() cross-product. Non-fatal — a delete failure shouldn't
+  // abort the refit.
+  let degenerateCleaned = 0
+  for (const { token, eval_window } of degenerateKeys) {
+    const { error: delErr } = await supabaseAdmin
+      .from('token_beta')
+      .delete()
+      .eq('token', token)
+      .eq('eval_window', eval_window)
+    if (delErr) {
+      console.warn(`[CalibrateSignals] token_beta cleanup ${token}|${eval_window} failed:`, delErr.message)
+    } else {
+      degenerateCleaned++
+    }
+  }
+
   if (betaRows.length === 0) {
-    return { buckets: buckets.size, betas_written: 0 }
+    return { buckets: buckets.size, betas_written: 0, degenerate_cleaned: degenerateCleaned }
   }
 
   const { error: upErr } = await supabaseAdmin
@@ -286,6 +315,7 @@ async function computeAndStoreBetas() {
   return {
     buckets: buckets.size,
     betas_written: betaRows.length,
+    degenerate_cleaned: degenerateCleaned,
     sample: betaRows.slice(0, 8).map(b => `${b.token}|${b.eval_window} β=${b.beta} R²=${b.r_squared} n=${b.n_samples}`),
   }
 }
