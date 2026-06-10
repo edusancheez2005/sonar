@@ -1,40 +1,56 @@
 -- Whale Terminal performance indexes
 --
 -- The Research module's data routes were running multi-second queries
--- against all_whale_transactions (≈ tens of millions of rows). The three
--- hot access patterns and the index each needs:
+-- against all_whale_transactions, which is a VIEW that UNION ALLs the
+-- per-chain transaction tables (see 20260318_all_whale_transactions_view).
+-- You cannot index a view, so the indexes go on each base table; the
+-- planner uses them when the view is queried.
 --
---   1. signals      WHERE whale_address IN (...) AND classification IN ('BUY','SELL')
---                   ORDER BY timestamp DESC
---   2. candles      WHERE whale_address = $1 AND timestamp >= $2 ORDER BY timestamp
---   3. sparklines   WHERE whale_address IN (...) AND timestamp >= $2
+-- Hot access patterns (all filter a wallet column + order/range timestamp):
+--   1. signals     WHERE whale_address IN (...) AND classification IN ('BUY','SELL')
+--                  ORDER BY timestamp DESC
+--   2. candles     WHERE whale_address = $1 AND timestamp >= $2 ORDER BY timestamp
+--                  (+ from_address/to_address counterparty fallback)
+--   3. sparklines  WHERE whale_address IN (...) AND timestamp >= $2
 --
--- A composite (whale_address, timestamp DESC) index serves all three: the
--- equality/IN on whale_address seeks, and timestamp is already ordered so
--- the sort and range filter are free.
+-- A composite (<addr col>, timestamp DESC) index per base table serves all
+-- three: the equality/IN seeks and timestamp is pre-ordered.
 --
--- CONCURRENTLY avoids locking writes during creation. Must run outside a
--- transaction block (psql: run this file directly, not wrapped in BEGIN).
+-- CONCURRENTLY avoids locking writes but CANNOT run inside a transaction
+-- block — so run this file with psql or the Supabase CLI, NOT the Dashboard
+-- SQL Editor (which wraps statements in a transaction). For the Dashboard,
+-- drop the word CONCURRENTLY from each statement (it will briefly lock each
+-- table while building — run it during low traffic).
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_awt_whale_ts
-  ON all_whale_transactions (whale_address, timestamp DESC);
+-- ── ethereum_transactions ──
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_eth_tx_whale_ts ON ethereum_transactions (whale_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_eth_tx_from_ts  ON ethereum_transactions (from_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_eth_tx_to_ts    ON ethereum_transactions (to_address, timestamp DESC);
 
--- Counterparty fallback used by the candles route (wallets that only show
--- up as from_address/to_address rather than the indexed whale_address).
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_awt_from_ts
-  ON all_whale_transactions (from_address, timestamp DESC);
+-- ── bitcoin_transactions ──
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_btc_tx_whale_ts ON bitcoin_transactions (whale_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_btc_tx_from_ts  ON bitcoin_transactions (from_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_btc_tx_to_ts    ON bitcoin_transactions (to_address, timestamp DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_awt_to_ts
-  ON all_whale_transactions (to_address, timestamp DESC);
+-- ── solana_transactions ──
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sol_tx_whale_ts ON solana_transactions (whale_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sol_tx_from_ts  ON solana_transactions (from_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sol_tx_to_ts    ON solana_transactions (to_address, timestamp DESC);
 
--- Leaderboard: wallet_profiles filtered by tx_count_30d and sorted by one
--- of a few score columns. A partial index on the qualifying rows keeps it
--- small (most profiles fall below the 10-tx threshold).
+-- ── polygon_transactions ──
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_poly_tx_whale_ts ON polygon_transactions (whale_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_poly_tx_from_ts  ON polygon_transactions (from_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_poly_tx_to_ts    ON polygon_transactions (to_address, timestamp DESC);
+
+-- ── xrp_transactions ──
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_xrp_tx_whale_ts ON xrp_transactions (whale_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_xrp_tx_from_ts  ON xrp_transactions (from_address, timestamp DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_xrp_tx_to_ts    ON xrp_transactions (to_address, timestamp DESC);
+
+-- ── leaderboard + label lookups (real tables) ──
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_wallet_profiles_active_score
   ON wallet_profiles (smart_money_score DESC)
   WHERE tx_count_30d >= 10;
 
--- Entity-label lookups (addresses.entity_name) used to enrich both the
--- leaderboard and signals.
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_addresses_address
   ON addresses (address);
