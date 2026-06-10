@@ -397,7 +397,17 @@ export async function GET(req) {
         const OUTLIER_LIMITS = { '30m': 50, '1h': 50, '6h': 200, '12h': 350, '24h': 500, '48h': 800, '72h': 1000 }
         const outlierLimit = OUTLIER_LIMITS[window.label]
         const isOutlier = outlierLimit !== undefined && Math.abs(priceChange) > outlierLimit
-        if (!isOutlier && Math.abs(priceChange) >= NOISE_FLOOR_PCT) {
+        // A move below the noise floor (or an outlier data error) is not a real
+        // directional observation. 2026-06-10 audit follow-up: gate `correct`,
+        // alpha, AND residual on this SAME condition so they stay coherent.
+        // Previously alpha_pct/beat_benchmark (and beat_residual) were computed
+        // for sub-noise-floor moves even though `correct` was nulled — so a
+        // FROZEN-feed token (price_change_pct = exactly 0; e.g. LRC/MKR whose
+        // upstream quote is stuck at one value) still earned a benchmark verdict
+        // from BTC's move alone (alpha = 0 − btcChange), leaking pseudo-alpha
+        // into the alpha_sell / ralpha_sell series the rollout gates on.
+        const isGradeableMove = !isOutlier && Math.abs(priceChange) >= NOISE_FLOOR_PCT
+        if (isGradeableMove) {
           if (isBullish) correct = priceChange > 0
           else if (isBearish) correct = priceChange < 0
         }
@@ -409,10 +419,11 @@ export async function GET(req) {
         let alphaPct = null
         let beatBenchmark = null
         // 2026-06-09 (audit finding #8): only compute alpha on non-outlier
-        // moves. Previously alpha_pct was computed even for data-error spikes
-        // (e.g. the MATIC→POL +326% artifact), which silently poisoned every
-        // pooled mean-alpha. An outlier move is not a real alpha observation.
-        if (!isOutlier && btcChangePctSig !== null) {
+        // moves (data-error spikes like the MATIC→POL +326% artifact poison
+        // pooled mean-alpha). 2026-06-10 follow-up: ALSO gate on the noise
+        // floor (isGradeableMove) so a frozen-feed token (ret=0) cannot earn a
+        // benchmark verdict from BTC's move alone.
+        if (isGradeableMove && btcChangePctSig !== null) {
           alphaPct = priceChange - btcChangePctSig
           if (isBullish) beatBenchmark = alphaPct > 0
           else if (isBearish) beatBenchmark = alphaPct < 0
@@ -426,7 +437,7 @@ export async function GET(req) {
         let residual = null
         let beatResidual = null
         let betaUsed = null
-        if (betaLabelingActive && !isOutlier && btcChangePctSig !== null) {
+        if (betaLabelingActive && isGradeableMove && btcChangePctSig !== null) {
           const beta = betaByKey.get(`${sig.token}|${window.label}`)
           if (beta !== undefined && Number.isFinite(beta)) {
             betaUsed = beta
