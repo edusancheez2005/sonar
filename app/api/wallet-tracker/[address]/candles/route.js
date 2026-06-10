@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { cached } from '@/app/lib/serverCache'
 
 // Daily OHLC candles of a wallet's cumulative net USD flow, derived from
 // the merged transaction feed — the same construction the figure detail
@@ -29,8 +30,23 @@ export async function GET(req, { params }) {
   const { searchParams } = new URL(req.url)
   const daysRaw = parseInt(searchParams.get('days') || '90', 10)
   const days = Math.min(Math.max(7, Number.isFinite(daysRaw) ? daysRaw : 90), MAX_DAYS)
-  const since = new Date(Date.now() - days * 86400000).toISOString()
 
+  try {
+    const payload = await cached(
+      `candles:${address}:${days}`,
+      () => buildCandles(address, days),
+      { ttl: 120000, swr: 300000 }
+    )
+    return NextResponse.json(payload, {
+      headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=300' },
+    })
+  } catch (err) {
+    return NextResponse.json({ error: err?.message || 'candles failed' }, { status: 500 })
+  }
+}
+
+async function buildCandles(address, days) {
+  const since = new Date(Date.now() - days * 86400000).toISOString()
   const COLS = 'timestamp, usd_value, classification, from_address, to_address'
 
   let { data, error } = await supabaseAdmin
@@ -56,7 +72,7 @@ export async function GET(req, { params }) {
   }
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    throw new Error(error.message)
   }
 
   // Signed deltas → daily OHLC of the cumulative curve.
@@ -98,8 +114,5 @@ export async function GET(req, { params }) {
     v: Math.round(r.v),
   }))
 
-  return NextResponse.json(
-    { data: candles, net_flow_usd: Math.round(cumulative), tx_count: txCount, days },
-    { headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=300' } }
-  )
+  return { data: candles, net_flow_usd: Math.round(cumulative), tx_count: txCount, days }
 }

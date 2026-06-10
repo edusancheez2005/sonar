@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { cached } from '@/app/lib/serverCache'
 
 export async function GET(req) {
   if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
@@ -17,9 +18,25 @@ export async function GET(req) {
     return NextResponse.json({ error: 'No addresses provided' }, { status: 400 })
   }
 
-  // Cap at 100 addresses per request
-  const capped = addresses.slice(0, 100)
+  // Cap at 100 addresses per request. Sort so the cache key is stable
+  // regardless of address order in the query string.
+  const capped = addresses.slice(0, 100).sort()
 
+  try {
+    const result = await cached(
+      `sparklines:${capped.join(',')}`,
+      () => buildSparklines(capped),
+      { ttl: 120000, swr: 300000 }
+    )
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=300' },
+    })
+  } catch (err) {
+    return NextResponse.json({ error: err?.message || 'sparklines failed' }, { status: 500 })
+  }
+}
+
+async function buildSparklines(capped) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   const { data, error } = await supabaseAdmin
@@ -29,9 +46,7 @@ export async function GET(req) {
     .gte('timestamp', sevenDaysAgo)
     .order('timestamp', { ascending: true })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  if (error) throw new Error(error.message)
 
   // Build day-indexed volume per address
   const result = {}
@@ -49,8 +64,5 @@ export async function GET(req) {
     result[addr][dayIndex] += Math.abs(Number(row.usd_value) || 0)
   }
 
-  return NextResponse.json(
-    result,
-    { headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=300' } }
-  )
+  return result
 }

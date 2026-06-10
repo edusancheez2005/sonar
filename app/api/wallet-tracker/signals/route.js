@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { cached } from '@/app/lib/serverCache'
 
 export async function GET(req) {
   if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
@@ -13,6 +14,22 @@ export async function GET(req) {
   const limitRaw = parseInt(searchParams.get('limit') || '30', 10)
   const limit = Math.min(Math.max(1, limitRaw), 100)
 
+  try {
+    const signals = await cached(
+      `signals:${limit}`,
+      () => buildSignals(limit),
+      { ttl: 20000, swr: 60000 }
+    )
+    return NextResponse.json(
+      { data: signals },
+      { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } }
+    )
+  } catch (err) {
+    return NextResponse.json({ error: err?.message || 'signals failed' }, { status: 500 })
+  }
+}
+
+async function buildSignals(limit) {
   // Get recent transactions from high-score wallets
   // First get smart money addresses
   const { data: smartWallets } = await supabaseAdmin
@@ -24,7 +41,7 @@ export async function GET(req) {
     .limit(100)
 
   if (!smartWallets || smartWallets.length === 0) {
-    return NextResponse.json({ data: [] })
+    return []
   }
 
   const addrList = smartWallets.map(w => w.address)
@@ -40,7 +57,7 @@ export async function GET(req) {
     .limit(limit)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    throw new Error(error.message)
   }
 
   // Enrich with wallet info
@@ -81,8 +98,5 @@ export async function GET(req) {
     }
   }
 
-  return NextResponse.json(
-    { data: signals },
-    { headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=60' } }
-  )
+  return signals
 }

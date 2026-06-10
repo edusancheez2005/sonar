@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
+import { cached } from '@/app/lib/serverCache'
 
 const VALID_SORT = ['smart_money_score', 'total_volume_usd_30d', 'portfolio_value_usd', 'pnl_estimated_usd']
 const VALID_CHAINS = ['ethereum', 'bitcoin', 'solana', 'polygon', 'arbitrum', 'base']
@@ -33,6 +34,22 @@ export async function GET(req) {
   const limitRaw = parseInt(searchParams.get('limit') || '50', 10)
   const limit = Math.min(Math.max(1, limitRaw), 100)
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+
+  try {
+    const payload = await cached(
+      `leaderboard:${sortBy}:${ascending ? 'a' : 'd'}:${chain || 'all'}:${page}:${limit}`,
+      () => buildLeaderboard({ sortBy, ascending, chain, page, limit }),
+      { ttl: 30000, swr: 120000 }
+    )
+    return NextResponse.json(payload, {
+      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' },
+    })
+  } catch (err) {
+    return NextResponse.json({ error: err?.message || 'leaderboard failed' }, { status: 500 })
+  }
+}
+
+async function buildLeaderboard({ sortBy, ascending, chain, page, limit }) {
   const from = (page - 1) * limit
   const to = from + limit - 1
 
@@ -65,7 +82,7 @@ export async function GET(req) {
   const { data, error } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    throw new Error(error.message)
   }
 
   // Enrich with entity labels from addresses table for wallets missing entity_name
@@ -111,8 +128,5 @@ export async function GET(req) {
 
   const totalPages = Math.ceil((count || 0) / limit)
 
-  return NextResponse.json(
-    { data, page, limit, total: count || 0, total_pages: totalPages, sort_by: sortBy },
-    { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }
-  )
+  return { data, page, limit, total: count || 0, total_pages: totalPages, sort_by: sortBy }
 }
