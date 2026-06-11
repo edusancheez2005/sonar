@@ -8,14 +8,14 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
 import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
-import { pickStageARoute } from '@/lib/orca/route-dispatch'
+import { pickStageARoute, isTickerFollowUp } from '@/lib/orca/route-dispatch'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
 import { runOrchestrator } from '@/lib/orca/orchestrator/runOrchestrator'
 import { routeMessage } from '@/lib/orca/orchestrator/router'
 import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
-import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
+import type { ChatTurn, Datapoint, RouterDecision, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
 import { loadRecentHistory, type RecentTurn } from '@/lib/orca/chat/loadRecentHistory'
 import { formatHistoryForPrompt } from '@/lib/orca/chat/formatHistoryForPrompt'
 import { derivePriorSubject, type LastChatRow } from '@/lib/orca/chat/priorSubject'
@@ -822,30 +822,55 @@ export async function POST(request: Request) {
     // answers instead of the v1 long-form research note).
     // -------------------------------------------------------------------------
     const intentRoutingEnabled = process.env.ORCA_INTENT_ROUTING !== 'false'
-    if (!tickerResult.ticker && intentRoutingEnabled) {
-      console.log('🧭 No ticker found — running intent router...')
+    // Option A (2026-06-11) — ticker-bearing FOLLOW-UPS drill down through the
+    // orchestrator/agentic loop instead of dumping the full v1 long-form note.
+    // "just BTC" right after a whale table → focused BTC whale-flow answer;
+    // "tell me about BTC" (fresh/explicit) still gets the long-form note.
+    // Gated by ORCA_TICKER_FOLLOWUP (default ON). Reversible.
+    const tickerFollowUp =
+      !!tickerResult.ticker &&
+      process.env.ORCA_TICKER_FOLLOWUP !== 'false' &&
+      isTickerFollowUp(message, recentTurns.length > 0)
+    if ((!tickerResult.ticker || tickerFollowUp) && intentRoutingEnabled) {
+      console.log(
+        tickerFollowUp
+          ? `🧭 ticker follow-up "${tickerResult.ticker}" → drill-down via orchestrator (skipping long-form note)`
+          : '🧭 No ticker found — running intent router...'
+      )
       try {
         const { client: ai, miniModel, model: aiModel } = getAIClient()
         const routerStart = Date.now()
-        let decision = await routeMessage(
-          { message, userId, chatHistory: recentTurns },
-          {
-            routerCall: async (sys, usr) => {
-              const r = await ai.chat.completions.create({
-                model: miniModel,
-                messages: [
-                  { role: 'system', content: sys },
-                  { role: 'user', content: usr },
-                ],
-                temperature: 0,
-                max_tokens: 400,
-                response_format: { type: 'json_object' } as any,
-              })
-              return r.choices[0]?.message?.content ?? ''
-            },
-            writerCall: async () => '',
-          }
-        )
+        // For a ticker follow-up we synthesise the router decision (intent
+        // followup + the extracted ticker) and skip the LLM router call — it is
+        // deterministic and saves a round-trip. Otherwise run the real router.
+        let decision: RouterDecision = tickerFollowUp
+          ? {
+              intent: 'followup',
+              tickers: [tickerResult.ticker as string],
+              entities: [],
+              datapoints: ['whales', 'price'] as Datapoint[],
+              persona_hint: null,
+              confidence: 0.9,
+            }
+          : await routeMessage(
+              { message, userId, chatHistory: recentTurns },
+              {
+                routerCall: async (sys, usr) => {
+                  const r = await ai.chat.completions.create({
+                    model: miniModel,
+                    messages: [
+                      { role: 'system', content: sys },
+                      { role: 'user', content: usr },
+                    ],
+                    temperature: 0,
+                    max_tokens: 400,
+                    response_format: { type: 'json_object' } as any,
+                  })
+                  return r.choices[0]?.message?.content ?? ''
+                },
+                writerCall: async () => '',
+              }
+            )
         console.log(`🧭 router → intent=${decision.intent} conf=${decision.confidence.toFixed(2)} tickers=[${decision.tickers.join(',')}] entities=[${decision.entities.slice(0,3).join(',')}] (${Date.now() - routerStart}ms)`)
 
         const stageARoute = pickStageARoute({

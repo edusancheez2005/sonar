@@ -65,6 +65,41 @@ export function wantsMarketWideAnswer(message: string): boolean {
   return false
 }
 
+// A short continuation cue at the START of a follow-up ("just BTC", "now ETH",
+// "what about SOL", "cool, and BTC", "ok show me ETH").
+const FOLLOWUP_CUE_RE =
+  /^\s*(?:ok(?:ay)?|cool|nice|great|got it|and|also|then|now|so|just|only|what about|how about|show me|give me|pull up|check)\b/i
+
+// An explicit request for the full research note — these KEEP the v1 long-form
+// path even when there is history, so "tell me about BTC" / "full ETH analysis"
+// are never downgraded to the short drill-down.
+const DEEP_ANALYSIS_RE =
+  /\b(tell me about|full|in[- ]?depth|deep[- ]?dive|break ?down|breakdown|analy[sz]e|analysis|everything about|research note|complete (?:picture|analysis|overview)|overview of|rundown|report on|brief me)\b/i
+
+/**
+ * True when a ticker-bearing message is a SHORT FOLLOW-UP that should drill
+ * down through the orchestrator (agentic loop) instead of dumping the full v1
+ * long-form research note. Requires prior history (a follow-up needs a prior
+ * turn). Explicit "deep analysis" asks are excluded so the long-form note is
+ * preserved for "tell me about BTC" / "full ETH analysis".
+ *
+ * Pure + deterministic; the route handler only consults it when the ticker
+ * extractor already found a ticker.
+ */
+export function isTickerFollowUp(message: string | undefined, hasHistory: boolean): boolean {
+  if (!hasHistory) return false
+  const m = (message ?? '').trim()
+  if (!m) return false
+  if (DEEP_ANALYSIS_RE.test(m)) return false
+  const words = m.split(/\s+/).filter(Boolean).length
+  if (FOLLOWUP_CUE_RE.test(m)) return true
+  // Bare / very short ticker reference after a prior turn ("BTC", "BTC?",
+  // "BTC whales", "ETH ones").
+  if (words <= 4) return true
+  return false
+}
+
+
 /**
  * Decide what to do with a router decision. Intent always wins over
  * incidental ticker matches — see file-level comment.

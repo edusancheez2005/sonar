@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   pickStageARoute,
   wantsMarketWideAnswer,
+  isTickerFollowUp,
   type StageADecision,
 } from '@/lib/orca/route-dispatch'
 
@@ -94,5 +95,39 @@ describe('pickStageARoute — followup + hasHistory (§4.2)', () => {
       decision({ intent: 'compliance_decline', message: 'should I buy?', hasHistory: true })
     )
     expect(route.kind).toBe('compliance_decline')
+  })
+})
+
+describe('isTickerFollowUp (Option A — ticker drill-down routing)', () => {
+  it('treats short continuation phrasing as a follow-up (drill-down)', () => {
+    expect(isTickerFollowUp('just BTC', true)).toBe(true)
+    expect(isTickerFollowUp('cool. now just btc ones', true)).toBe(true)
+    expect(isTickerFollowUp('what about ETH', true)).toBe(true)
+    expect(isTickerFollowUp('now ETH', true)).toBe(true)
+    expect(isTickerFollowUp('show me SOL', true)).toBe(true)
+  })
+
+  it('treats a bare/short ticker reference as a follow-up when there is history', () => {
+    expect(isTickerFollowUp('BTC', true)).toBe(true)
+    expect(isTickerFollowUp('BTC whales', true)).toBe(true)
+    expect(isTickerFollowUp('ETH ones', true)).toBe(true)
+  })
+
+  it('keeps the v1 long-form note for explicit deep-analysis asks', () => {
+    expect(isTickerFollowUp('tell me about BTC', true)).toBe(false)
+    expect(isTickerFollowUp('full analysis of ETH', true)).toBe(false)
+    expect(isTickerFollowUp('give me a deep dive on SOL', true)).toBe(false)
+    expect(isTickerFollowUp('breakdown of BTC', true)).toBe(false)
+  })
+
+  it('never fires without history (a follow-up needs a prior turn)', () => {
+    expect(isTickerFollowUp('just BTC', false)).toBe(false)
+    expect(isTickerFollowUp('BTC', false)).toBe(false)
+  })
+
+  it('does not fire for a long standalone question', () => {
+    expect(
+      isTickerFollowUp('what has been driving the price of bitcoin over the past month exactly', true)
+    ).toBe(false)
   })
 })
