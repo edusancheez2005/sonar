@@ -67,3 +67,32 @@ describe('pickStageARoute — market-wide fallback', () => {
     expect(route.kind).toBe('v1_with_ticker')
   })
 })
+
+describe('pickStageARoute — followup + hasHistory (§4.2)', () => {
+  it('routes a followup WITH history to the orchestrator', () => {
+    const route = pickStageARoute(
+      decision({ intent: 'followup', message: 'so most of them had sells right?', hasHistory: true })
+    )
+    expect(route.kind).toBe('orchestrator')
+    expect((route as any).intent).toBe('followup')
+  })
+
+  it('does NOT route a followup with NO history to the orchestrator (preserves fallthrough)', () => {
+    const route = pickStageARoute(
+      decision({ intent: 'followup', message: 'so most of them had sells right?', hasHistory: false })
+    )
+    expect(route.kind).not.toBe('orchestrator')
+  })
+
+  it('a followup with no history and no market hint falls through', () => {
+    const route = pickStageARoute(decision({ intent: 'followup', message: 'right', hasHistory: false }))
+    expect(route.kind).toBe('fallthrough')
+  })
+
+  it('compliance_decline still wins over a followup+history', () => {
+    const route = pickStageARoute(
+      decision({ intent: 'compliance_decline', message: 'should I buy?', hasHistory: true })
+    )
+    expect(route.kind).toBe('compliance_decline')
+  })
+})

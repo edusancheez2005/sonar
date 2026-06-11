@@ -10,6 +10,7 @@
  * volume). Per-address lookups still go through getWalletActivity.
  */
 import type { SupabaseLike, ToolResult } from '../types'
+import { applyLabel, fetchEntityLabels } from './entityLabels'
 
 const WINDOWS = {
   '24h': 24 * 60 * 60 * 1000,
@@ -111,9 +112,15 @@ export async function run(
         tokens: Array.from(b.tokens).slice(0, 8),
       }))
 
+    // §7 — join Arkham entity labels (label/cohort) onto the ranked wallets so
+    // the renderer can show "Binance 14 (0x28C6…1d60)". Best-effort + flagged;
+    // unlabelled wallets keep their bare address. Never fabricates a label.
+    const labels = await fetchEntityLabels(supabase, wallets.map((w) => w.address))
+    const labelledWallets = wallets.map((w) => applyLabel(w, labels))
+
     return {
       ok: true,
-      data: { window, count: wallets.length, wallets },
+      data: { window, count: labelledWallets.length, wallets: labelledWallets },
       source: 'all_whale_transactions',
       fetched_at,
     }

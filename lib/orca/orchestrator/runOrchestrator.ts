@@ -11,8 +11,10 @@
  */
 import { COMPLIANCE_DECLINE_RESPONSE, applyGuardrails } from './guardrails'
 import { planToolCalls } from './planner'
+import { runAgenticPlan } from './agenticPlanner'
 import { routeMessage } from './router'
 import { selectRenderer } from '../renderers'
+import { renderSynthesisPrompt } from '../renderers/synthesis'
 import { executeTool } from './tools/registry'
 import type {
   ChatTurn,
@@ -82,38 +84,79 @@ export async function runOrchestrator(
     }
   }
 
-  // --- Stage 2: plan --------------------------------------------------------
-  const readCalls = planToolCalls({
-    router,
-    profile: input.profile,
-    userId: input.userId,
-    message: input.message,
-    userConfirmed: input.userConfirmed,
-    priorIntent: input.priorIntent,
-    priorTickers: input.priorTickers,
-  })
+  // --- Stage 2 + 3: plan + execute tools -----------------------------------
+  // §6 — when the agentic loop is enabled (ORCA_AGENTIC_TOOLS === 'true') AND a
+  // plannerCall is wired into the model, let an LLM plan → observe → re-plan
+  // over READ-ONLY tools (capped at 2 hops). Otherwise use the static
+  // deterministic planner. The flag defaults OFF so the code ships dark; with
+  // it OFF, behaviour is byte-for-byte today's. Either branch ends with
+  // `toolResults: Array<{call, result}>`.
+  const useAgentic =
+    process.env.ORCA_AGENTIC_TOOLS === 'true' && typeof deps.model.plannerCall === 'function'
+
+  // Confirmed write calls always flow through the existing two-trip confirm
+  // path (never schedulable by the agentic loop — the catalogue is read-only).
   const writeCalls = input.userConfirmed
     ? (input.confirmedWriteCalls ?? []).filter((c) => WRITE_TOOLS.has(c.tool))
     : []
-  const allCalls: ToolCall[] = [...readCalls, ...writeCalls]
-  trace.push({
-    stage: 'planner',
-    payload: { read_calls: readCalls.length, write_calls: writeCalls.length, tools: allCalls.map((c) => c.tool) },
-  })
 
-  // --- Stage 3: execute tools in parallel ----------------------------------
-  const toolResults: Array<{ call: ToolCall; result: ToolResult }> = await Promise.all(
-    allCalls.map(async (call) => {
-      const tTool = Date.now()
-      const result = await executeTool(call, deps.supabase, now)
-      trace.push({
-        stage: 'tool',
-        payload: { tool: call.tool, ok: result.ok, source: result.source, args: redactArgs(call.args), error: result.error ?? null },
-        latency_ms: Date.now() - tTool,
-      })
-      return { call, result }
+  let toolResults: Array<{ call: ToolCall; result: ToolResult }>
+  if (useAgentic) {
+    toolResults = await runAgenticPlan(
+      {
+        router,
+        profile: input.profile,
+        userId: input.userId,
+        message: input.message,
+        chatHistory: input.chatHistory,
+      },
+      { supabase: deps.supabase, model: deps.model, now },
+      trace
+    )
+    if (writeCalls.length > 0) {
+      const writeResults = await Promise.all(
+        writeCalls.map(async (call) => {
+          const tTool = Date.now()
+          const result = await executeTool(call, deps.supabase, now)
+          trace.push({
+            stage: 'tool',
+            payload: { tool: call.tool, ok: result.ok, source: result.source, args: redactArgs(call.args), error: result.error ?? null },
+            latency_ms: Date.now() - tTool,
+          })
+          return { call, result }
+        })
+      )
+      toolResults = [...toolResults, ...writeResults]
+    }
+  } else {
+    const readCalls = planToolCalls({
+      router,
+      profile: input.profile,
+      userId: input.userId,
+      message: input.message,
+      userConfirmed: input.userConfirmed,
+      priorIntent: input.priorIntent,
+      priorTickers: input.priorTickers,
     })
-  )
+    const allCalls: ToolCall[] = [...readCalls, ...writeCalls]
+    trace.push({
+      stage: 'planner',
+      payload: { read_calls: readCalls.length, write_calls: writeCalls.length, tools: allCalls.map((c) => c.tool) },
+    })
+
+    toolResults = await Promise.all(
+      allCalls.map(async (call) => {
+        const tTool = Date.now()
+        const result = await executeTool(call, deps.supabase, now)
+        trace.push({
+          stage: 'tool',
+          payload: { tool: call.tool, ok: result.ok, source: result.source, args: redactArgs(call.args), error: result.error ?? null },
+          latency_ms: Date.now() - tTool,
+        })
+        return { call, result }
+      })
+    )
+  }
 
   // Collect the full wallet addresses surfaced this turn (most-prominent
   // first) so the caller can persist them for next-turn pronoun resolution
@@ -121,8 +164,13 @@ export async function runOrchestrator(
   const walletAddresses = collectWalletAddresses(toolResults)
 
   // --- Stage 4: writer ------------------------------------------------------
-  const renderer = selectRenderer(router.intent)
-  const systemPrompt = renderer({ toolResults, profile: input.profile, message: input.message, chatHistory: input.chatHistory })
+  // The agentic path uses the tool-driven synthesis renderer (it can gather
+  // cross-cutting tools that don't map to one intent renderer); the
+  // deterministic path uses the per-intent renderer exactly as before.
+  const renderArgs = { toolResults, profile: input.profile, message: input.message, chatHistory: input.chatHistory }
+  const systemPrompt = useAgentic
+    ? renderSynthesisPrompt(renderArgs, router.intent)
+    : selectRenderer(router.intent)(renderArgs)
 
   const tWriter = Date.now()
   let draft: string

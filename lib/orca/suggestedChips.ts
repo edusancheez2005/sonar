@@ -64,3 +64,69 @@ export function getSuggestedChips(ctx: ChipContext = {}): Chip[] {
     { label: 'Hot tokens by social momentum', prompt: 'Which tokens are hot right now by social momentum?' },
   ]
 }
+
+/**
+ * §8 — grounded follow-up chips. After an answer, suggest 2-3 data-grounded
+ * next questions DERIVED from what was just shown (the tools that ran + the
+ * tickers in play), so the copilot feels like Nansen's "drill down" flow.
+ *
+ * Pure + compliance-safe: every suggestion is an information request, never a
+ * "should I buy/sell" prompt. Returns prompt strings (the SSE `complete` event
+ * ships them as `suggestions: string[]`; the client renders clickable chips).
+ */
+export interface FollowupContext {
+  intent?: string
+  tickers?: string[]
+  /** Tool names that actually ran this turn (from the orchestrator trace). */
+  tools?: string[]
+}
+
+export function getFollowupChips(ctx: FollowupContext = {}): string[] {
+  const tools = new Set((ctx.tools ?? []).filter((t) => typeof t === 'string'))
+  const tickers = (ctx.tickers ?? []).filter((t) => typeof t === 'string' && t.trim())
+  const firstTicker = tickers[0] ? tickers[0].toUpperCase().replace(/^\$/, '') : null
+
+  if (tools.has('getTrendingWhales')) {
+    return [
+      firstTicker ? `Filter to ${firstTicker}` : 'Filter to BTC',
+      'Who were the top sellers?',
+      'Same for the last 24h',
+    ]
+  }
+  if (tools.has('getMostActiveWallets')) {
+    return [
+      'Who is the most active wallet?',
+      'Is the top wallet a known entity?',
+      'Same for the last 7d',
+    ]
+  }
+  if (tools.has('getMacroFactors')) {
+    return [
+      'How does that affect BTC?',
+      'What is the latest crypto news?',
+      'Which tokens are hot by social momentum?',
+    ]
+  }
+  if (tools.has('getTrendingSocial')) {
+    return [
+      'What are the top whale moves this week?',
+      firstTicker ? `What is driving ${firstTicker}?` : 'What changed in crypto macro today?',
+      'What is the latest crypto news?',
+    ]
+  }
+  if (tools.has('getTrendingNews') || tools.has('getNews')) {
+    return [
+      'What are the top whale moves this week?',
+      'What changed in crypto macro today?',
+      firstTicker ? `Whale flow on ${firstTicker}` : 'Hot tokens by social momentum',
+    ]
+  }
+  if (firstTicker) {
+    return [
+      `Whale flow on ${firstTicker}`,
+      `News driving ${firstTicker}`,
+      `What is the current Sonar signal for ${firstTicker}?`,
+    ]
+  }
+  return getSuggestedChips().map((c) => c.prompt)
+}

@@ -11,7 +11,13 @@ export function renderFollowupPrompt(args: RenderArgs): string {
   // generic price line.
   const tools = new Set(args.toolResults.map((t) => t.call.tool))
   let carryInstruction = ''
-  if (tools.has('getMostActiveWallets')) {
+  if (tools.has('getTrendingWhales')) {
+    carryInstruction =
+      '\n- This is a follow-up to a market-wide whale-flow table. Answer the user\u2019s question (e.g. about the buy/sell split) USING the same ranked rows in the tool results \u2014 quote the relevant buys/sells counts and net-flow direction for the specific tokens. Do NOT ask which token they mean; infer it from the prior turn.'
+  } else if (tools.has('getWhaleFlows')) {
+    carryInstruction =
+      '\n- This is a follow-up that drilled into a specific token from the prior turn. Answer using the per-ticker whale-flow and price data in the tool results (net buying/selling, counts), not a generic line.'
+  } else if (tools.has('getMostActiveWallets')) {
     carryInstruction =
       '\n- This is a follow-up to a wallet leaderboard. Continue in that format: answer using the ranked wallet rows in the tool results (rank, shortened address, activity), not a price line.'
   } else if (tools.has('getSignalContext')) {

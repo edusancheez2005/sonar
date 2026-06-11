@@ -1,0 +1,114 @@
+[
+  {
+    "name": "1. whale table → \"most of them had sells right\" (memory + carry-over)",
+    "agentic": false,
+    "turns": [
+      {
+        "user": "what are the top whale moves this week?",
+        "router": { "intent": "data_query", "tickers": [], "datapoints": ["whales"] },
+        "expect": { "toolsInclude": ["getTrendingWhales"] }
+      },
+      {
+        "user": "so most of them had loads of sells right?",
+        "router": { "intent": "followup", "tickers": [], "datapoints": ["whales"] },
+        "expect": {
+          "toolsInclude": ["getTrendingWhales"],
+          "toolsExclude": ["getPrice"],
+          "promptIncludes": ["PRIOR CONVERSATION TURNS", "tool=getTrendingWhales"],
+          "noGreeting": true
+        }
+      }
+    ]
+  },
+  {
+    "name": "2. \"what changed in macro today\" → live factors, not the glossary",
+    "agentic": false,
+    "turns": [
+      {
+        "user": "what changed in crypto macro today?",
+        "router": { "intent": "data_query", "tickers": [], "datapoints": ["macro"], "entities": [] },
+        "expect": { "toolsInclude": ["getMacroFactors"], "toolsExclude": ["explainMacroFactor"] }
+      }
+    ]
+  },
+  {
+    "name": "3. \"what does CPI mean\" → glossary definition, explainer renderer",
+    "agentic": false,
+    "turns": [
+      {
+        "user": "what does CPI mean?",
+        "router": { "intent": "explainer", "tickers": [], "datapoints": ["macro"], "entities": ["CPI"] },
+        "expect": { "toolsInclude": ["explainMacroFactor"], "promptIncludes": ["plain-English"] }
+      }
+    ]
+  },
+  {
+    "name": "4. overview → \"just BTC\" carries the ticker into per-ticker tools",
+    "agentic": false,
+    "turns": [
+      {
+        "user": "what's happening in crypto right now?",
+        "router": { "intent": "overview", "tickers": [], "datapoints": [] },
+        "expect": { "toolsInclude": ["getTrendingWhales"] }
+      },
+      {
+        "user": "just BTC",
+        "router": { "intent": "followup", "tickers": ["BTC"], "datapoints": ["whales"] },
+        "expect": { "toolsInclude": ["getPrice", "getWhaleFlows"], "toolsExclude": ["getTrendingWhales"] }
+      }
+    ]
+  },
+  {
+    "name": "6. \"should I buy SOL\" → compliance_decline (unchanged)",
+    "agentic": false,
+    "turns": [
+      {
+        "user": "should I buy SOL?",
+        "router": { "intent": "compliance_decline", "tickers": ["SOL"], "datapoints": [] },
+        "expect": { "intent": "compliance_decline", "compliance": true }
+      }
+    ]
+  },
+  {
+    "name": "9. agentic drill-down: top whales → just BTC → biggest sellers (≤2 hops, read-only)",
+    "agentic": true,
+    "turns": [
+      {
+        "user": "top whale moves this week",
+        "router": { "intent": "data_query", "tickers": [], "datapoints": ["whales"] },
+        "planner": [
+          { "thought": "market-wide whale leaderboard", "tool_calls": [{ "tool": "getTrendingWhales", "args": { "window": "7d" } }], "done": true }
+        ],
+        "expect": { "toolsInclude": ["getTrendingWhales"], "maxHops": 2, "readOnly": true }
+      },
+      {
+        "user": "just BTC",
+        "router": { "intent": "followup", "tickers": ["BTC"], "datapoints": ["whales"] },
+        "planner": [
+          { "thought": "drill into BTC", "tool_calls": [{ "tool": "getWhaleFlows", "args": { "ticker": "BTC", "window": "7d" } }, { "tool": "getPrice", "args": { "ticker": "BTC" } }], "done": true }
+        ],
+        "expect": { "toolsInclude": ["getWhaleFlows", "getPrice"], "maxHops": 2, "readOnly": true }
+      },
+      {
+        "user": "who were the biggest sellers?",
+        "router": { "intent": "followup", "tickers": ["BTC"], "datapoints": ["whales"] },
+        "planner": [
+          { "thought": "wallet leaderboard", "tool_calls": [{ "tool": "getMostActiveWallets", "args": { "window": "7d" } }], "done": true }
+        ],
+        "expect": { "toolsInclude": ["getMostActiveWallets"], "maxHops": 2, "readOnly": true }
+      }
+    ]
+  },
+  {
+    "name": "10. agentic planner returns garbage JSON → deterministic fallback still answers",
+    "agentic": true,
+    "turns": [
+      {
+        "user": "what are the top whale moves this week?",
+        "router": { "intent": "data_query", "tickers": [], "datapoints": ["whales"] },
+        "planner": ["this is not json at all"],
+        "expect": { "toolsInclude": ["getTrendingWhales"], "writerCalled": true, "readOnly": true }
+      }
+    ]
+  }
+]

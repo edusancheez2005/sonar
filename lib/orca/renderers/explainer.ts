@@ -30,6 +30,15 @@ export function renderExplainerPrompt(args: RenderArgs): string {
       ? `\n- OFF-GLOSSARY FALLBACK: the supplied tools returned no canonical definition for what the user asked. Give a general, first-principles explanation from your own general knowledge, explicitly framed as general education (e.g. "In general terms, ..."). Calibrate to the user's experience level. Name the transmission channel to crypto markets where one exists. You MUST NOT cite any specific live numbers, prices, levels, dates, or current events you did not fetch — keep it strictly definitional. No predictions, no directional language.`
       : ''
 
+  // §5.3 — when live macro factors were fetched (a "how does the current macro
+  // environment affect crypto" question), ground the explanation in them.
+  const hasMacroFactors = args.toolResults.some(
+    (t) => t.call.tool === 'getMacroFactors' && t.result.ok
+  )
+  const macroFactorsBlock = hasMacroFactors
+    ? `\n- LIVE MACRO CONTEXT: the tool results include current macro factors (getMacroFactors). Briefly ground your explanation in them — name the overall read and one or two relevant factors as NEUTRAL FACTUAL DESCRIPTORS (bullish/bearish/neutral), cite last_updated, and never turn them into a recommendation or prediction.`
+    : ''
+
   return `You are ORCA. The user wants a plain-English explanation, not market data.
 
 ${HARD_RULES}
@@ -40,7 +49,7 @@ INSTRUCTIONS:
 - ${tone}
 - Include the generic transmission channel to crypto markets when relevant (e.g. "higher rates → strong dollar → pressure on risk assets including crypto"), but do NOT pull in live price data or current sentiment unless the user explicitly asked.
 - DO NOT use **Data** / **News and Market Impact** / **Bottom Line** section headers. This is a teaching answer, not a research note.
-- DO NOT add a follow-up question unless the user invited one — let the explanation stand on its own.${offGlossaryBlock}
+- DO NOT add a follow-up question unless the user invited one — let the explanation stand on its own.${offGlossaryBlock}${macroFactorsBlock}
 - Append the mandatory disclaimer exactly once at the end.
 
 ${formatProfileBlock(args.profile)}

@@ -15,7 +15,11 @@ import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
 import { runOrchestrator } from '@/lib/orca/orchestrator/runOrchestrator'
 import { routeMessage } from '@/lib/orca/orchestrator/router'
 import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
-import type { ChatTurn, Intent, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
+import type { ChatTurn, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
+import { loadRecentHistory, type RecentTurn } from '@/lib/orca/chat/loadRecentHistory'
+import { formatHistoryForPrompt } from '@/lib/orca/chat/formatHistoryForPrompt'
+import { derivePriorSubject, type LastChatRow } from '@/lib/orca/chat/priorSubject'
+import { getFollowupChips } from '@/lib/orca/suggestedChips'
 import { detectFastWrite, sanitiseConfirmCalls, type WriteCall } from '@/lib/orca/orchestrator/fastWrites'
 import {
   runAddToWatchlist,
@@ -559,6 +563,35 @@ export async function POST(request: Request) {
     }
 
     // -------------------------------------------------------------------------
+    // §4.1 — Conversational memory (ORCA_CHAT_MEMORY, default ON).
+    // Load the last N turns ONCE, server-side (the clients never send history),
+    // and reuse on every path below (V2, Stage A, v1 long-form). The most-recent
+    // chat_history row also yields the prior-turn subject so a `followup` intent
+    // inherits the right tools instead of dead-ending on a greeting.
+    // Best-effort: loadRecentHistory never throws and returns [] on any error.
+    // -------------------------------------------------------------------------
+    const recentTurns: RecentTurn[] =
+      process.env.ORCA_CHAT_MEMORY !== 'false'
+        ? await loadRecentHistory(supabase, userId, session_id ?? null, 12)
+        : []
+    let lastChatRow: LastChatRow | null = null
+    if (recentTurns.length > 0) {
+      try {
+        const { data } = await supabase
+          .from('chat_history')
+          .select('tickers_mentioned, data_sources_used')
+          .eq('user_id', userId)
+          .order('timestamp', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        lastChatRow = (data ?? null) as LastChatRow | null
+      } catch {
+        // No prior row / unreadable — carry-over simply won't trigger.
+      }
+    }
+    const { priorIntent, priorTickers } = derivePriorSubject(recentTurns, lastChatRow)
+
+    // -------------------------------------------------------------------------
     // ORCA Orchestration v2 (§4.C of ORCA_COPILOT_BUILD_PROMPT.md).
     // Behind a feature flag. When false, fall through to the legacy single-
     // prompt path immediately below. When true, run the four-stage pipeline
@@ -566,12 +599,10 @@ export async function POST(request: Request) {
     // -------------------------------------------------------------------------
     if (process.env.ORCA_ORCHESTRATION_V2 === 'true') {
       try {
-        const v2Body = body as { history?: ChatTurn[]; confirm?: { calls?: ToolCall[] } }
-        const chatHistory: ChatTurn[] = Array.isArray(v2Body.history)
-          ? v2Body.history
-              .filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string')
-              .slice(-12)
-          : []
+        const v2Body = body as { confirm?: { calls?: ToolCall[] } }
+        // §4.1 — server is the single source of truth for history. Ignore any
+        // client-supplied `history` and use the server-loaded recentTurns.
+        const chatHistory: ChatTurn[] = recentTurns.map((t) => ({ role: t.role, content: t.content }))
         const confirmedWriteCalls: ToolCall[] = Array.isArray(v2Body.confirm?.calls)
           ? v2Body.confirm!.calls!.filter((c) => c && typeof c.tool === 'string')
           : []
@@ -591,27 +622,10 @@ export async function POST(request: Request) {
 
         const { client: ai, model: aiModel, miniModel } = getAIClient()
 
-        // Fix #2 — best-effort prior-turn subject carry-over so a `followup`
-        // intent inherits the right tools (wallet leaderboard / signal /
-        // article) instead of a useless getPrice. Failure here is harmless.
-        let priorIntent: Intent | undefined
-        let priorTickers: string[] | undefined
-        try {
-          const { data: lastTurn } = await supabase
-            .from('chat_history')
-            .select('tickers_mentioned, data_sources_used')
-            .eq('user_id', userId)
-            .order('timestamp', { ascending: false })
-            .limit(1)
-            .single()
-          const dsu = (lastTurn?.data_sources_used ?? {}) as { intent?: string }
-          if (typeof dsu.intent === 'string') priorIntent = dsu.intent as Intent
-          if (Array.isArray(lastTurn?.tickers_mentioned)) {
-            priorTickers = lastTurn!.tickers_mentioned.map((t: unknown) => String(t))
-          }
-        } catch {
-          // No prior turn / unreadable — carry-over simply won't trigger.
-        }
+        // §4.1 — prior-turn subject carry-over (priorIntent / priorTickers) is
+        // derived once in the outer scope from the server-loaded history, so a
+        // `followup` intent inherits the right tools instead of a useless
+        // getPrice. Both live request paths share that single derivation.
 
         const out = await runOrchestrator(
           { message, userId, chatHistory, profile, userConfirmed, confirmedWriteCalls, priorIntent, priorTickers },
@@ -627,6 +641,19 @@ export async function POST(request: Request) {
                   ],
                   temperature: 0,
                   max_tokens: 400,
+                  response_format: { type: 'json_object' } as any,
+                })
+                return r.choices[0]?.message?.content ?? ''
+              },
+              plannerCall: async (sys, usr) => {
+                const r = await ai.chat.completions.create({
+                  model: miniModel,
+                  messages: [
+                    { role: 'system', content: sys },
+                    { role: 'user', content: usr },
+                  ],
+                  temperature: 0,
+                  max_tokens: 500,
                   response_format: { type: 'json_object' } as any,
                 })
                 return r.choices[0]?.message?.content ?? ''
@@ -697,10 +724,68 @@ export async function POST(request: Request) {
           }
         }
 
+        // §8 / §2.5 — grounded follow-up chips + SSE parity. Derive 2-3
+        // data-grounded next questions from what actually ran (the trace's
+        // router tickers + tool list).
+        const v2RouterEvt = out.trace.find((e) => e.stage === 'router')
+        const v2Tickers = Array.isArray((v2RouterEvt?.payload as any)?.tickers)
+          ? ((v2RouterEvt!.payload as any).tickers as string[])
+          : []
+        const v2Suggestions =
+          process.env.ORCA_FOLLOWUP_CHIPS !== 'false'
+            ? getFollowupChips({
+                intent: out.intent,
+                tickers: v2Tickers,
+                tools: out.trace
+                  .filter((e) => e.stage === 'tool')
+                  .map((e) => String((e.payload as any)?.tool ?? '')),
+              })
+            : undefined
+
+        // Stream status→complete when the client negotiated text/event-stream
+        // (SSE parity — JSON-only responses were a regression). JSON-only
+        // callers (e.g. PersonalCopilotPanel uses res.json()) still get JSON.
+        const v2AcceptSse = (request.headers.get('accept') || '').includes('text/event-stream')
+        if (v2AcceptSse) {
+          const encoder = new TextEncoder()
+          const stream = new ReadableStream({
+            start(controller) {
+              const send = (payload: Record<string, any>) =>
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
+              send({ type: 'status', step: 'router', message: `Routing: ${out.intent.replace(/_/g, ' ')}` })
+              send({
+                type: 'complete',
+                success: true,
+                response: out.text,
+                intent: out.intent,
+                orchestrator: 'v2',
+                data: null,
+                suggestions: v2Suggestions,
+                quota: {
+                  used: quotaStatus.used + 1,
+                  limit: quotaStatus.limit,
+                  remaining: Math.max(0, quotaStatus.remaining - 1),
+                  plan: quotaStatus.plan,
+                },
+                metadata: { response_time_ms: Date.now() - startTime },
+              })
+              controller.close()
+            },
+          })
+          return new Response(stream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            },
+          })
+        }
+
         return NextResponse.json({
           response: out.text,
           intent: out.intent,
           orchestrator: 'v2',
+          suggestions: v2Suggestions,
         })
       } catch (orchErr) {
         console.error('[orchestrator] v2 path failed, falling back to v1', orchErr)
@@ -743,7 +828,7 @@ export async function POST(request: Request) {
         const { client: ai, miniModel, model: aiModel } = getAIClient()
         const routerStart = Date.now()
         let decision = await routeMessage(
-          { message, userId, chatHistory: [] },
+          { message, userId, chatHistory: recentTurns },
           {
             routerCall: async (sys, usr) => {
               const r = await ai.chat.completions.create({
@@ -768,6 +853,7 @@ export async function POST(request: Request) {
           tickers: decision.tickers,
           confidence: decision.confidence,
           message,
+          hasHistory: recentTurns.length > 0,
         })
         console.log(`🧭 stage-a dispatch → ${stageARoute.kind}`)
 
@@ -823,6 +909,7 @@ export async function POST(request: Request) {
             data_query: 'Running data query',
             signal_explain: 'Loading Sonar signal context',
             overview: 'Scanning market-wide activity',
+            followup: 'Picking up where we left off',
           }
 
           const encoder = new TextEncoder()
@@ -848,7 +935,7 @@ export async function POST(request: Request) {
                 }
 
                 const out = await runOrchestrator(
-                  { message, userId, chatHistory: [], profile },
+                  { message, userId, chatHistory: recentTurns, profile, priorIntent, priorTickers },
                   {
                     supabase,
                     model: {
@@ -860,6 +947,22 @@ export async function POST(request: Request) {
                         persona_hint: decision.persona_hint,
                         confidence: decision.confidence,
                       }),
+                      plannerCall: async (sys, usr) => {
+                        // §6.10 — one status line per planning hop on the
+                        // streaming path. plannerCall is invoked once per hop.
+                        send({ type: 'status', step: 'planning', message: 'Planning…' })
+                        const r = await ai.chat.completions.create({
+                          model: miniModel,
+                          messages: [
+                            { role: 'system', content: sys },
+                            { role: 'user', content: usr },
+                          ],
+                          temperature: 0,
+                          max_tokens: 500,
+                          response_format: { type: 'json_object' } as any,
+                        })
+                        return r.choices[0]?.message?.content ?? ''
+                      },
                       writerCall: async (sys, usr) => {
                         send({ type: 'status', step: 'ai_thinking', message: 'ORCA writing response...' })
                         const r = await ai.chat.completions.create({
@@ -961,6 +1064,16 @@ export async function POST(request: Request) {
                   response: out.text,
                   intent: out.intent,
                   data: null,
+                  suggestions:
+                    process.env.ORCA_FOLLOWUP_CHIPS !== 'false'
+                      ? getFollowupChips({
+                          intent: out.intent,
+                          tickers: decision.tickers,
+                          tools: out.trace
+                            .filter((e) => e.stage === 'tool')
+                            .map((e) => String((e.payload as any)?.tool ?? '')),
+                        })
+                      : undefined,
                   quota: {
                     used: quotaStatus.used + 1,
                     limit: quotaStatus.limit,
@@ -1178,6 +1291,14 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
 
           if (isFollowUp) {
             gptContext = `**THIS IS A FOLLOW-UP QUESTION**\n\nThe user is continuing their conversation about ${ticker}. They already received the full data analysis.\n\nRESPOND CONVERSATIONALLY in 1-2 paragraphs:\n- Answer their specific question directly\n- Reference relevant data briefly if needed\n- Do NOT repeat all the data sections\n- Keep it natural and engaging\n- Ask a follow-up question\n\nUser's follow-up: "${message}"\n\nPrevious context (for reference only, do not repeat):\n${gptContext}`
+          }
+
+          // §4.1 — inject server-loaded conversation history at the very top so
+          // the long-form path can resolve "that" / "those" / "you said"
+          // against real prior turns. Best-effort: empty when no history.
+          if (process.env.ORCA_CHAT_MEMORY !== 'false') {
+            const historyBlock = formatHistoryForPrompt(recentTurns)
+            if (historyBlock) gptContext = `${historyBlock}\n\n${gptContext}`
           }
 
           // Send AI thinking status

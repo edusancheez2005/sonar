@@ -61,6 +61,7 @@ export type ToolName =
   | 'getUserWatchlist'
   | 'getSignalHistory'
   | 'explainMacroFactor'
+  | 'getMacroFactors'
   | 'getOrcaMemory'
   // W3 — agentic read-only tools.
   | 'getWalletActivity'
@@ -147,10 +148,22 @@ export interface OrchestratorOutput {
 }
 
 export interface TraceEvent {
-  stage: 'router' | 'planner' | 'tool' | 'writer' | 'guardrails' | 'orchestrator'
+  stage: 'router' | 'planner' | 'agentic_plan' | 'tool' | 'writer' | 'guardrails' | 'orchestrator'
   payload: Record<string, unknown>
   latency_ms?: number
   model?: string
+}
+
+/**
+ * §6.2 — one agentic planning hop's decision. Internal to agenticPlanner.ts.
+ * `thought` is logged to orca_traces and NEVER shown to the user, so internal
+ * reasoning can't leak into a non-compliant sentence. `tool_calls` is already
+ * validated down to READ_ONLY tools by the time it leaves the planner.
+ */
+export interface AgenticHopPlan {
+  thought: string
+  tool_calls: ToolCall[]
+  done: boolean
 }
 
 // =============================================================================
@@ -159,6 +172,12 @@ export interface TraceEvent {
 export interface ModelClient {
   routerCall: (prompt: string, userMessage: string) => Promise<string>
   writerCall: (systemPrompt: string, userMessage: string) => Promise<string>
+  /**
+   * §6.2 — JSON-mode mini-model call for the agentic planning hops. Optional
+   * so existing tests/constructions compile; when absent the orchestrator
+   * transparently falls back to the deterministic planner (planToolCalls).
+   */
+  plannerCall?: (systemPrompt: string, userMessage: string) => Promise<string>
 }
 
 export interface SupabaseLike {

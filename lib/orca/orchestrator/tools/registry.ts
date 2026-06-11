@@ -14,6 +14,7 @@ import { run as runGetTrendingNews } from './getTrendingNews'
 import { run as runGetSocial } from './getSocial'
 import { run as runGetTrendingSocial } from './getTrendingSocial'
 import { run as runExplainMacroFactor } from './explainMacroFactor'
+import { run as runGetMacroFactors } from './getMacroFactors'
 import { run as runGetWalletActivity } from './getWalletActivity'
 import { run as runGetMostActiveWallets } from './getMostActiveWallets'
 import { run as runGetArticleContext } from './getArticleContext'
@@ -42,6 +43,7 @@ export const READ_ONLY_TOOLS = new Set<ToolName>([
   'getUserWatchlist',
   'getSignalHistory',
   'explainMacroFactor',
+  'getMacroFactors',
   'getOrcaMemory',
   'getWalletActivity',
   'getMostActiveWallets',
@@ -78,6 +80,8 @@ export async function executeTool(
       return runGetOrcaMemory(call.args as any, supabase, now)
     case 'explainMacroFactor':
       return runExplainMacroFactor(call.args as any, supabase, now)
+    case 'getMacroFactors':
+      return runGetMacroFactors(call.args as any, supabase, now)
     case 'getWalletActivity':
       return runGetWalletActivity(call.args as any, supabase, now)
     case 'getMostActiveWallets':

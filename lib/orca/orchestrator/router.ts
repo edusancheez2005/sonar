@@ -30,7 +30,7 @@ Intent guidance:
 - overview: "what's happening with X" — multi-surface recap.
 - explainer: "what does X mean" / "why does X matter" — pedagogical.
 - data_query: "what is the price / volume / open interest" — point lookup.
-- followup: short message that obviously continues the prior turn ("and 7d?", "why?").
+- followup: short message that obviously continues the prior turn ("and 7d?", "why?"). If "Prior turns" are present and the current message is a short reaction, question, or pronoun reference ("them", "it", "that", "those", "so most of them...", "what about...") to the last assistant answer, classify as followup and COPY the prior turn's tickers into tickers[]. If the follow-up itself names a new ticker ("just BTC"), put that ticker in tickers[] instead.
 - personal: explicitly about the user's holdings, watchlist or alerts.
 - compliance_decline: explicit request for buy/sell/will/predict advice. The downstream layer will issue a non-advice decline.
 - wallet_lookup: user asks about a specific wallet, address, or named-entity wallet ("what is 0x... doing", "show me Binance hot wallet activity"). Put the address(es) or entity name in entities[].
@@ -52,6 +52,8 @@ Examples (no ticker, still classify confidently):
 - "tell me about the wallet with the most transactions today" → {"intent":"wallet_lookup","tickers":[],"entities":[],"datapoints":["whales"],"confidence":0.9}
 - "what's the full address for rank 1?" (follow-up to a ranked wallet table) → {"intent":"wallet_lookup","tickers":[],"entities":[],"datapoints":["whales"],"confidence":0.85}
 - "what's happening in crypto right now?" → {"intent":"overview","tickers":[],"entities":[],"datapoints":["whales","social","news"],"confidence":0.8}
+- (after a market-wide whale table) "so most of them had loads of sells right?" → {"intent":"followup","tickers":[],"entities":[],"datapoints":["whales"],"confidence":0.8}
+- (after a market-wide whale table) "just BTC" → {"intent":"followup","tickers":["BTC"],"entities":[],"datapoints":["whales"],"confidence":0.8}
 
 Return ONLY the JSON object. No prose, no markdown.`
 

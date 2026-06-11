@@ -17,6 +17,7 @@ import type {
   ToolCall,
   ToolName,
 } from './types'
+import { matchesMacroGlossary } from './tools/explainMacroFactor'
 
 /** Maximum tickers to expand into per-ticker tool calls in one turn. */
 const MAX_TICKERS_PER_TURN = 3
@@ -43,7 +44,9 @@ const DATAPOINT_TOOLS: Record<Datapoint, ToolName[]> = {
   whales: ['getWhaleFlows'],
   news: ['getNews'],
   social: ['getSocial'],
-  macro: ['explainMacroFactor'],
+  // §5.2 — macro now defaults to LIVE factors (getMacroFactors). The static
+  // glossary (explainMacroFactor) is added only for a named term below.
+  macro: ['getMacroFactors'],
   portfolio: ['getUserHoldings', 'getUserWatchlist'],
 }
 
@@ -98,6 +101,23 @@ export function planToolCalls(input: PlannerInput): ToolCall[] {
   if (input.router.intent === 'personal') {
     wanted.add('getUserHoldings')
     wanted.add('getUserWatchlist')
+  }
+
+  // §5.2 — macro routing. Live factors (getMacroFactors) are the default for a
+  // "what changed in macro" question. Behind ORCA_MACRO_LIVE (default ON); set
+  // it to 'false' to restore the pre-§5 glossary-only behaviour exactly.
+  if (input.router.datapoints.includes('macro')) {
+    if (process.env.ORCA_MACRO_LIVE === 'false') {
+      wanted.delete('getMacroFactors')
+      wanted.add('explainMacroFactor')
+    } else {
+      // Add the glossary definition only when the router named a known macro
+      // term (so "how did the Fed decision affect crypto?" can use both). For a
+      // purely pedagogical explainer turn ("what does CPI mean?") the glossary
+      // answer is enough — skip the live web-search call.
+      if (matchesMacroGlossary(input.router.entities)) wanted.add('explainMacroFactor')
+      if (input.router.intent === 'explainer') wanted.delete('getMacroFactors')
+    }
   }
 
   const calls: ToolCall[] = []
@@ -353,6 +373,11 @@ function planFollowupCarryOver(input: PlannerInput): ToolCall[] | null {
   const prior = input.priorIntent
   if (!prior) return null
   const priorTickers = (input.priorTickers ?? []).slice(0, MAX_TICKERS_PER_TURN)
+  // The current follow-up may itself name a ticker ("just BTC" after a
+  // market-wide whale table). Prefer the current turn's tickers when present;
+  // otherwise inherit the prior turn's subject.
+  const currentTickers = input.router.tickers.slice(0, MAX_TICKERS_PER_TURN)
+  const subjectTickers = currentTickers.length > 0 ? currentTickers : priorTickers
 
   if (prior === 'wallet_lookup') {
     return [
@@ -363,9 +388,9 @@ function planFollowupCarryOver(input: PlannerInput): ToolCall[] | null {
     ]
   }
 
-  if (prior === 'signal_explain' && priorTickers.length > 0) {
+  if (prior === 'signal_explain' && subjectTickers.length > 0) {
     const calls: ToolCall[] = []
-    for (const t of priorTickers) {
+    for (const t of subjectTickers) {
       calls.push({ tool: 'getSignalContext', args: { ticker: t } })
       calls.push({ tool: 'getPrice', args: { ticker: t } })
     }
@@ -373,10 +398,33 @@ function planFollowupCarryOver(input: PlannerInput): ToolCall[] | null {
   }
 
   if (prior === 'article_explain') {
-    if (priorTickers.length > 0) {
-      return priorTickers.map((t) => ({ tool: 'getNews', args: { ticker: t } }))
+    if (subjectTickers.length > 0) {
+      return subjectTickers.map((t) => ({ tool: 'getNews', args: { ticker: t } }))
     }
     return [{ tool: 'getTrendingNews', args: {} }]
+  }
+
+  // §4.2 — follow-up to a market-wide whale leaderboard or a broad overview.
+  // Without this, the static map points `followup` at a useless getPrice and
+  // the user gets a cold greeting ("so most of them had loads of sells right"
+  // after a whale table). When the follow-up names a ticker, drill into it;
+  // otherwise re-run the same leaderboard so its ranked rows are back in the
+  // renderer's context.
+  if (prior === 'data_query' || prior === 'overview') {
+    if (subjectTickers.length > 0) {
+      const calls: ToolCall[] = []
+      for (const t of subjectTickers) {
+        calls.push({ tool: 'getPrice', args: { ticker: t } })
+        calls.push({ tool: 'getWhaleFlows', args: { ticker: t } })
+      }
+      return calls
+    }
+    return [
+      {
+        tool: 'getTrendingWhales',
+        args: { window: detectTimeWindow(input.message) },
+      },
+    ]
   }
 
   return null

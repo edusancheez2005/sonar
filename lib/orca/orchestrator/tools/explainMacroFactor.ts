@@ -49,3 +49,18 @@ export async function run(
     fetched_at,
   }
 }
+
+/**
+ * True when at least one entity matches a known glossary term. Used by the
+ * planner (§5.2) to decide whether to add the definitional tool alongside the
+ * live `getMacroFactors` source. Mirrors the normalisation used by `run`.
+ */
+export function matchesMacroGlossary(entities: readonly unknown[] | undefined): boolean {
+  if (!Array.isArray(entities)) return false
+  for (const ent of entities) {
+    if (typeof ent !== 'string') continue
+    const k = ent.toLowerCase().replace(/[^a-z]/g, '')
+    if (MACRO_GLOSSARY[k]) return true
+  }
+  return false
+}

@@ -18,6 +18,11 @@ export type StageADecision = {
    *  answerable market question (see wantsMarketWideAnswer). Optional so old
    *  callers keep compiling; absence simply preserves legacy fallthrough. */
   message?: string
+  /** True when the server loaded prior conversation turns for this user.
+   *  A `followup` intent only makes sense with a prior turn, so when history
+   *  is present we route it to the orchestrator (which carries the prior
+   *  subject forward) instead of dead-ending on the legacy greeting. */
+  hasHistory?: boolean
 }
 
 export type StageARoute =
@@ -67,6 +72,13 @@ export function wantsMarketWideAnswer(message: string): boolean {
 export function pickStageARoute(decision: StageADecision): StageARoute {
   if (decision.intent === 'compliance_decline') {
     return { kind: 'compliance_decline' }
+  }
+  // §4.2 — a follow-up only makes sense with a prior turn. When the server
+  // loaded history, send it to the orchestrator so the prior subject is
+  // carried forward; otherwise fall through to the legacy greeting/market-wide
+  // handling below (a contentless "followup" with no history is just chatter).
+  if (decision.intent === 'followup' && decision.hasHistory) {
+    return { kind: 'orchestrator', intent: 'followup' }
   }
   if (RENDERED_INTENTS.has(decision.intent)) {
     return { kind: 'orchestrator', intent: decision.intent }
