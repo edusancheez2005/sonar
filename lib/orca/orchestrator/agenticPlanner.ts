@@ -64,6 +64,9 @@ Rules:
 - NEVER request a per-ticker tool (getPrice, getWhaleFlows, getNews, getSocial, getSignalContext) without a "ticker" arg.
 - You will be called at most twice. On the second call, set "done": true unless a single critical datapoint is still missing.
 - If the user is following up on the prior turn, REUSE the same tools/subject as that turn (the prior turns are provided).
+- WINDOW CARRY: keep the SAME time window as the prior turn unless the user explicitly changes it. If the previous turn was about "this week" (7d), use window "7d" again — do NOT silently drop to "24h".
+- BUYERS / SELLERS: "who were the biggest sellers/buyers?" about ONE token → getWhaleFlows with that ticker + the carried window (it returns the top individual buy/sell transactions). About the WHOLE market (e.g. a follow-up to a market-wide whale table) → getTrendingWhales for the same window and read the sell side of the leaderboard. When unsure whether they mean the single token or the whole market, fetch BOTH.
+- ZOOM OUT: if the prior turn drilled into one token but the new question is clearly market-wide again ("which had the most selling", "across all of them"), use the market-wide tool, not the single ticker.
 - Only choose tools from the catalogue below. Do not invent tool names. Never request any tool that writes or changes data.
 - "thought" is a brief internal note on why these tools; it is never shown to the user.`
 

@@ -28,7 +28,7 @@ export interface ToolSpec {
 
 export const TOOL_CATALOGUE: ToolSpec[] = [
   { name: 'getPrice', purpose: 'Spot price, 24h change, volume for ONE ticker.', args: { ticker: 'string, e.g. "BTC"' }, cost: 'cheap' },
-  { name: 'getWhaleFlows', purpose: 'Net whale buy/sell flow for ONE ticker over a window.', args: { ticker: 'string', window: '"24h"|"7d"|"30d"' }, cost: 'medium' },
+  { name: 'getWhaleFlows', purpose: 'Net whale buy/sell flow for ONE ticker over a window, PLUS the biggest individual buy/sell transactions (labeled wallets) — use this to answer "who were the biggest buyers/sellers of <token>?".', args: { ticker: 'string', window: '"24h"|"7d"|"30d"' }, cost: 'medium' },
   { name: 'getTrendingWhales', purpose: 'Market-wide whale-flow leaderboard (no ticker needed).', args: { window: '"24h"|"7d"|"30d"' }, marketWide: true, cost: 'medium' },
   { name: 'getMostActiveWallets', purpose: 'Ranked most-active wallets (no ticker needed).', args: { window: '"24h"|"7d"|"30d"' }, marketWide: true, cost: 'medium' },
   { name: 'getWalletActivity', purpose: 'Recent activity for ONE wallet address.', args: { address: 'string', chain: 'string' }, cost: 'medium' },
