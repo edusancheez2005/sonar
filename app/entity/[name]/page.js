@@ -12,105 +12,107 @@ import {
   isNarrativeReasoning,
   inferEntityType,
   entityTypeStyle,
+  normalizeEntityName,
 } from '@/app/lib/entityHelpers'
 
 export const dynamic = 'force-dynamic'
 
-// PERF: prefer the Postgres aggregation RPC (migrations/entity_page_rpcs.sql);
-// fall back to the in-memory scan if the function isn't deployed yet. Wrapped
-// in React.cache so generateMetadata + the page render share one DB call.
-const fetchEntityStats = React.cache(async function fetchEntityStats(name) {
-  const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc('entity_stats', { p_name: name })
-  if (!rpcErr && Array.isArray(rpcData) && rpcData.length) {
-    const s = rpcData[0]
-    return {
-      tx_count: Number(s.tx_count || 0),
-      total_volume: Number(s.total_volume || 0),
-      chain_count: Number(s.chain_count || 0),
-      address_count: Number(s.address_count || 0),
-      first_seen: s.first_seen || null,
-      last_active: s.last_active || null,
-    }
+// The /entities directory groups whale rows by a NORMALIZED entity name
+// (suffixes like "(JUP holder)", " - Market Maker", "Exchange 2" are trimmed)
+// and the Trace button links to that normalized name. The detail page must
+// resolve the SAME way — matching every RAW from_label/to_label that
+// normalizes to the requested name. The old code matched the raw label
+// verbatim, so any entity whose card name had been normalized (e.g.
+// "Binance Exchange" ← "Binance Exchange 2 (JUP holder)") dead-ended on
+// "Entity not found" — that's the intermittent Trace failure. Because
+// normalization only trims trailing text, the normalized name is always a
+// PREFIX of the raw label: fetch by case-insensitive prefix, then keep the
+// rows that normalize to an exact match.
+const ENTITY_ROW_COLUMNS =
+  'transaction_hash, token_symbol, usd_value, blockchain, from_address, to_address, from_label, to_label, reasoning, timestamp, classification'
+const ROW_SCAN_LIMIT = 6000
+
+// Escape LIKE metacharacters so a name containing % or _ can't wildcard.
+function likePrefix(name) {
+  return `${String(name || '').replace(/([\\%_])/g, '\\$1')}%`
+}
+
+function rowMatchesEntity(r, name) {
+  if (r.from_label === name || r.to_label === name) return true
+  return (
+    normalizeEntityName(r.from_label) === name ||
+    normalizeEntityName(r.to_label) === name
+  )
+}
+
+// One bounded, newest-first scan shared by every section AND by
+// generateMetadata (via React.cache, so the page renders off a single DB
+// round-trip). The partial label indexes added in
+// 20260612_entity_directory_label_indexes.sql let the prefix+order scan stay
+// cheap.
+const fetchEntityRows = React.cache(async function fetchEntityRows(name) {
+  const prefix = likePrefix(name)
+  const [fromRes, toRes] = await Promise.all([
+    supabaseAdmin
+      .from('all_whale_transactions')
+      .select(ENTITY_ROW_COLUMNS)
+      .ilike('from_label', prefix)
+      .order('timestamp', { ascending: false })
+      .limit(ROW_SCAN_LIMIT),
+    supabaseAdmin
+      .from('all_whale_transactions')
+      .select(ENTITY_ROW_COLUMNS)
+      .ilike('to_label', prefix)
+      .order('timestamp', { ascending: false })
+      .limit(ROW_SCAN_LIMIT),
+  ])
+
+  const seen = new Set()
+  const rows = []
+  for (const r of [...(fromRes.data || []), ...(toRes.data || [])]) {
+    if (!rowMatchesEntity(r, name)) continue
+    const key = `${r.transaction_hash}|${r.from_address}|${r.to_address}|${r.token_symbol}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    rows.push(r)
   }
+  rows.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
+  return rows
+})
 
-  // Fallback: bounded scan + in-memory aggregation.
-  const { data, error } = await supabaseAdmin
-    .from('all_whale_transactions')
-    .select('usd_value, blockchain, from_address, to_address, timestamp')
-    .or(`from_label.eq.${escapeOrValue(name)},to_label.eq.${escapeOrValue(name)}`)
-    .limit(5000)
-  if (error) return null
-
-  const rows = data || []
-  if (rows.length === 0) return { tx_count: 0, total_volume: 0, chain_count: 0, address_count: 0, first_seen: null, last_active: null }
-
+function computeEntityStats(rows) {
+  if (!rows.length) {
+    return { tx_count: 0, total_volume: 0, chain_count: 0, address_count: 0, first_seen: null, last_active: null }
+  }
   const chains = new Set()
-  const fromAddrs = new Set()
-  const toAddrs = new Set()
+  const addrs = new Set()
   let totalVolume = 0
   let firstSeen = null
   let lastActive = null
-
   for (const r of rows) {
     totalVolume += Number(r.usd_value || 0)
     if (r.blockchain) chains.add(String(r.blockchain).toLowerCase())
-    if (r.from_address) fromAddrs.add(r.from_address)
-    if (r.to_address) toAddrs.add(r.to_address)
+    if (r.from_address) addrs.add(r.from_address)
+    if (r.to_address) addrs.add(r.to_address)
     const ts = r.timestamp ? new Date(r.timestamp).getTime() : null
     if (ts && Number.isFinite(ts)) {
       if (firstSeen === null || ts < firstSeen) firstSeen = ts
       if (lastActive === null || ts > lastActive) lastActive = ts
     }
   }
-
   return {
     tx_count: rows.length,
     total_volume: totalVolume,
     chain_count: chains.size,
-    address_count: fromAddrs.size + toAddrs.size,
+    address_count: addrs.size,
     first_seen: firstSeen ? new Date(firstSeen).toISOString() : null,
     last_active: lastActive ? new Date(lastActive).toISOString() : null,
   }
-})
-
-async function fetchRecentTxs(name) {
-  const { data, error } = await supabaseAdmin
-    .from('all_whale_transactions')
-    .select(
-      'transaction_hash, token_symbol, usd_value, blockchain, from_address, to_address, from_label, to_label, reasoning, timestamp, classification'
-    )
-    .or(`from_label.eq.${escapeOrValue(name)},to_label.eq.${escapeOrValue(name)}`)
-    .order('timestamp', { ascending: false })
-    .limit(50)
-  if (error) return []
-  return data || []
 }
 
-async function fetchTopTokens(name) {
-  // PERF: prefer the Postgres GROUP BY RPC; fall back to the in-memory scan.
-  const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc('entity_top_tokens', {
-    p_name: name,
-    p_limit: 10,
-  })
-  if (!rpcErr && Array.isArray(rpcData)) {
-    return rpcData.map((r) => ({
-      token_symbol: r.token_symbol || 'UNKNOWN',
-      tx_count: Number(r.tx_count || 0),
-      volume: Number(r.volume || 0),
-    }))
-  }
-
-  // Fallback: pull a slice and aggregate in memory. Cap at 5000 rows.
-  const { data, error } = await supabaseAdmin
-    .from('all_whale_transactions')
-    .select('token_symbol, usd_value, timestamp')
-    .or(`from_label.eq.${escapeOrValue(name)},to_label.eq.${escapeOrValue(name)}`)
-    .order('timestamp', { ascending: false })
-    .limit(5000)
-  if (error) return []
-
+function computeTopTokens(rows) {
   const map = new Map()
-  for (const r of data || []) {
+  for (const r of rows) {
     const key = r.token_symbol || 'UNKNOWN'
     let rec = map.get(key)
     if (!rec) {
@@ -125,39 +127,7 @@ async function fetchTopTokens(name) {
     .slice(0, 10)
 }
 
-async function fetchAssociatedAddresses(name) {
-  // PERF: prefer the Postgres aggregation RPC; fall back to the two 5000-row
-  // scans + in-memory merge.
-  const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc('entity_associated_addresses', {
-    p_name: name,
-    p_limit: 20,
-  })
-  if (!rpcErr && Array.isArray(rpcData)) {
-    return rpcData.map((r) => ({
-      address: r.address,
-      tx_count: Number(r.tx_count || 0),
-      volume: Number(r.volume || 0),
-    }))
-  }
-
-  const safe = escapeOrValue(name)
-  const [fromRes, toRes] = await Promise.all([
-    supabaseAdmin
-      .from('all_whale_transactions')
-      .select('from_address, usd_value')
-      .eq('from_label', name)
-      .limit(5000),
-    supabaseAdmin
-      .from('all_whale_transactions')
-      .select('to_address, usd_value')
-      .eq('to_label', name)
-      .limit(5000),
-  ])
-
-  // `safe` is used only when falling back via .or(); we explicitly `.eq`
-  // here, so avoid an unused-var lint by referencing it.
-  void safe
-
+function computeAssociatedAddresses(name, rows) {
   const map = new Map()
   const bump = (addr, usd) => {
     if (!addr) return
@@ -169,19 +139,15 @@ async function fetchAssociatedAddresses(name) {
     rec.tx_count += 1
     rec.volume += Number(usd || 0)
   }
-  for (const r of fromRes.data || []) bump(r.from_address, r.usd_value)
-  for (const r of toRes.data || []) bump(r.to_address, r.usd_value)
-
+  for (const r of rows) {
+    const fromIsThis = r.from_label === name || normalizeEntityName(r.from_label) === name
+    const toIsThis = r.to_label === name || normalizeEntityName(r.to_label) === name
+    if (fromIsThis) bump(r.from_address, r.usd_value)
+    if (toIsThis) bump(r.to_address, r.usd_value)
+  }
   return Array.from(map.values())
     .sort((a, b) => b.tx_count - a.tx_count)
     .slice(0, 20)
-}
-
-// Supabase `or()` takes a comma-separated string; commas/parens inside
-// values break the parser. Quote the value and escape embedded quotes.
-function escapeOrValue(v) {
-  const s = String(v || '').replace(/"/g, '\\"')
-  return `"${s}"`
 }
 
 // Pull every Arkham-attributed wallet for this entity from
@@ -225,7 +191,7 @@ async function fetchLiveTransfers(name) {
 
 export async function generateMetadata({ params }) {
   const name = decodeURIComponent(params.name)
-  const stats = await fetchEntityStats(name)
+  const stats = computeEntityStats(await fetchEntityRows(name))
   const canonical = `https://www.sonartracker.io/entity/${encodeURIComponent(name)}`
 
   if (!stats || stats.tx_count === 0) {
@@ -886,14 +852,16 @@ function AddressesCard({ addresses }) {
 export default async function EntityDetailPage({ params }) {
   const name = decodeURIComponent(params.name)
 
-  const [stats, recentTxs, topTokens, associatedAddresses, knownWallets, liveTransfers] = await Promise.all([
-    fetchEntityStats(name),
-    fetchRecentTxs(name),
-    fetchTopTokens(name),
-    fetchAssociatedAddresses(name),
+  const [rows, knownWallets, liveTransfers] = await Promise.all([
+    fetchEntityRows(name),
     fetchArkhamKnownWallets(name),
     fetchLiveTransfers(name),
   ])
+
+  const stats = computeEntityStats(rows)
+  const recentTxs = rows.slice(0, 50)
+  const topTokens = computeTopTokens(rows)
+  const associatedAddresses = computeAssociatedAddresses(name, rows)
 
   const empty =
     !stats ||
@@ -1073,9 +1041,9 @@ export default async function EntityDetailPage({ params }) {
               <div
                 style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}
               >
-                {recentTxs.map((tx) => (
+                {recentTxs.map((tx, i) => (
                   <TxCard
-                    key={tx.transaction_hash}
+                    key={`${tx.transaction_hash}-${tx.token_symbol || ''}-${i}`}
                     tx={tx}
                     entityName={name}
                   />

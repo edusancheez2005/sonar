@@ -1,8 +1,10 @@
 import React from 'react'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { cached } from '@/app/lib/serverCache'
 import {
   isJunkEntityLabel,
   inferEntityType,
+  normalizeEntityName,
 } from '@/app/lib/entityHelpers'
 import EntitiesLedgerClient from './EntitiesLedgerClient'
 import WhaleTerminalShell from '@/app/components/whale-terminal/WhaleTerminalShell'
@@ -31,52 +33,34 @@ export const metadata = {
   },
 }
 
-// Collapse noisy label variants to their canonical entity name so a
-// row like "Wintermute - Market Maker (JUP holder)" groups with
-// "Wintermute" instead of splintering the directory into 50 near-
-// duplicates. Applied BEFORE group-by in `aggregateEntities` and also
-// used to match curated company/government rows to labels.
-function normalizeEntityName(label) {
-  if (!label) return ''
-  let t = String(label).trim()
-  // Strip a chain of suffixes; run multiple passes because some
-  // labels carry more than one (e.g. "Binance Exchange 2 (JUP holder)").
-  let prev = null
-  while (prev !== t) {
-    prev = t
-    t = t
-      .replace(/\s*\([^()]*holder\)\s*$/i, '')        // "(JUP holder)"
-      .replace(/\s*-\s*Market Maker\s*$/i, '')         // " - Market Maker"
-      .replace(/\s+Exchange\s+\d+\s*$/i, ' Exchange')  // "Exchange 2" → "Exchange"
-      .replace(/\s+Hot Wallet\s+\d+\s*$/i, ' Hot Wallet')
-      .trim()
-  }
-  return t
-}
-
 async function fetchLabeledEntities() {
   const PAGE = 1000
   // 30 → 12 pages: keeps the Top-N entity cards intact (the directory only
   // shows the top ~200 by tx volume) and slashes cold-render latency. Older
   // rows beyond 12k still flow into the live whale feeds — they just don't
   // contribute to the cached aggregation.
+  //
+  // Pages are independent offset windows, so fire them in parallel: wall time
+  // collapses from 12× a single query to ~1×. The partial index
+  // `(timestamp DESC) WHERE from_label/to_label IS NOT NULL` on each base
+  // chain table keeps every window cheap. Empty/short pages past the end of
+  // the data just resolve to nothing.
   const MAX_PAGES = 12
-  const rows = []
-  for (let i = 0; i < MAX_PAGES; i++) {
-    const from = i * PAGE
-    const to = from + PAGE - 1
-    const { data, error } = await supabaseAdmin
-      .from('all_whale_transactions')
-      .select('from_label, to_label, usd_value, blockchain, timestamp')
-      .or('from_label.not.is.null,to_label.not.is.null')
-      .order('timestamp', { ascending: false })
-      .range(from, to)
-    if (error) break
-    if (!data || data.length === 0) break
-    rows.push(...data)
-    if (data.length < PAGE) break
-  }
-  return rows
+  const pages = await Promise.all(
+    Array.from({ length: MAX_PAGES }, async (_, i) => {
+      const from = i * PAGE
+      const to = from + PAGE - 1
+      const { data, error } = await supabaseAdmin
+        .from('all_whale_transactions')
+        .select('from_label, to_label, usd_value, blockchain, timestamp')
+        .or('from_label.not.is.null,to_label.not.is.null')
+        .order('timestamp', { ascending: false })
+        .range(from, to)
+      if (error || !data) return []
+      return data
+    })
+  )
+  return pages.flat()
 }
 
 const SPARK_DAYS = 14
@@ -263,8 +247,14 @@ function parseSearchParams(searchParams) {
   return { sort, page }
 }
 
-export default async function EntitiesDirectoryPage({ searchParams }) {
-  const { sort, page } = parseSearchParams(searchParams || {})
+// Build the full directory (label aggregation + curated merge + dominance)
+// once and memoize it. This is the expensive part — it pages up to 12k whale
+// rows and groups them in memory — and it's identical for every request
+// regardless of sort/page, so caching it decouples the heavy work from both
+// per-request rendering AND ISR revalidation: a stale value serves instantly
+// while a single background refresh runs, so no real user ever blocks on the
+// cold aggregation. Sort/page are applied per-request below (cheap).
+async function buildDirectory() {
   const [rawRows, curatedCompanies] = await Promise.all([
     fetchLabeledEntities(),
     fetchCuratedCompanies(),
@@ -276,6 +266,15 @@ export default async function EntitiesDirectoryPage({ searchParams }) {
   for (const e of merged) {
     e.dominance = volumeSum > 0 ? (e.total_volume || 0) / volumeSum : 0
   }
+  return merged
+}
+
+export default async function EntitiesDirectoryPage({ searchParams }) {
+  const { sort, page } = parseSearchParams(searchParams || {})
+  const merged = await cached('entities:directory:v1', buildDirectory, {
+    ttl: 120_000,
+    swr: 600_000,
+  })
   const entities = sortEntities(merged, sort)
   const totalCount = entities.length
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))

@@ -114,6 +114,31 @@ const EXCHANGE_KEYWORDS = ['Binance', 'Coinbase', 'OKX', 'Kraken', 'Bybit', 'Gat
 const MARKET_MAKER_KEYWORDS = ['Wintermute', 'Jump', 'GSR', 'Cumberland']
 const PROTOCOL_KEYWORDS = ['CoW', 'Uniswap', 'Kyber', 'Meteora', 'Curve', 'Aave']
 
+// Collapse noisy label variants to their canonical entity name so a row like
+// "Wintermute - Market Maker (JUP holder)" groups with "Wintermute" instead of
+// splintering into near-duplicates. SHARED so the /entities directory (group
+// + Trace link) and the /entity/[name] detail page resolve identically — if
+// they drift, the Trace button dead-ends on "Entity not found". Normalization
+// only trims trailing suffixes, so the result is always a prefix of the raw
+// label (the detail page relies on this for its prefix lookup).
+export function normalizeEntityName(label) {
+  if (!label) return ''
+  let t = String(label).trim()
+  // Strip a chain of suffixes; run multiple passes because some labels carry
+  // more than one (e.g. "Binance Exchange 2 (JUP holder)").
+  let prev = null
+  while (prev !== t) {
+    prev = t
+    t = t
+      .replace(/\s*\([^()]*holder\)\s*$/i, '')        // "(JUP holder)"
+      .replace(/\s*-\s*Market Maker\s*$/i, '')         // " - Market Maker"
+      .replace(/\s+Exchange\s+\d+\s*$/i, ' Exchange')  // "Exchange 2" → "Exchange"
+      .replace(/\s+Hot Wallet\s+\d+\s*$/i, ' Hot Wallet')
+      .trim()
+  }
+  return t
+}
+
 export function inferEntityType(name) {
   if (!name) return 'Entity'
   const s = String(name)
