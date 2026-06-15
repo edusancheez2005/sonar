@@ -4,9 +4,9 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 export const dynamic = 'force-dynamic'
 
 // Live Polymarket whale-activity tape — the "terminal" feed of large trades.
-// Populated by scripts/sync_arkham_polymarket.py (Arkham /polymarket/activity),
-// entity-resolved so trades show real names. Read-only; service role stays
-// server-side.
+// Populated by app/api/cron/polymarket (Polymarket Data /trades), entity-
+// resolved against tracked_address_universe so trades show real names.
+// Read-only; service role stays server-side.
 //
 //   ?limit=N           rows (default 50, max 200)
 //   ?min_usd=N         minimum notional (default 0 — table is already filtered

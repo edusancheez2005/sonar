@@ -75,6 +75,10 @@
     {
       "path": "/api/cron/check-user-alerts",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/polymarket",
+      "schedule": "7,22,37,52 * * * *"
     }
   ]
 }

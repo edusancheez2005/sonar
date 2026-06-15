@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic'
 // columns (see PolymarketClient) but no longer drive the ordering, so the
 // list stays full even where whale coverage is still sparse.
 //
-// PERF: we trust the cron-written `whale_count` (scripts/sync_polymarket.py)
-// instead of recomputing distinct wallets from polymarket_market_holders on
+// PERF: we trust the sync-written `whale_count` (maintained by the external
+// Polymarket sync) instead of recomputing distinct wallets from polymarket_market_holders on
 // every request. That recompute was N×M chunked Supabase round-trips per page
 // load — the single biggest source of slow Polymarket page loads. We also
 // select only the columns the board needs (no clob_token_ids blob) and add a

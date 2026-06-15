@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic'
 // exclude the `positions` JSONB blob (full open-position snapshots), which is
 // only needed in the whale drill-down drawer — fetch it there via
 // ?include=positions. `arkham_entity` is the Arkham-resolved real name
-// (scripts/sync_arkham_polymarket.py); it takes priority over pseudonyms in
-// the UI so whales stop showing as "—".
+// (the real name written by the external Polymarket sync); it takes priority
+// over pseudonyms in the UI so whales stop showing as "—".
 const BASE_COLUMNS = 'proxy_wallet,name,arkham_entity,profile_image,total_amount,markets_count,updated_at'
 
 export async function GET(req) {

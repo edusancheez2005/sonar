@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 // of keyword inference.
 //
 // PERF: prefer the polymarket_category_counts() RPC (a Postgres GROUP BY,
-// migrations/polymarket_arkham.sql) instead of scanning up to 10k rows into
+// supabase/migrations/20260612_polymarket_data_tables.sql) instead of scanning up to 10k rows into
 // Node on every request. Falls back to the in-memory scan if the function
 // isn't deployed yet. Short CDN cache since categories change slowly.
 export async function GET() {
