@@ -308,7 +308,8 @@ export default function WhaleDetailClient({
   isExchange,
   exchangeInfo,
   entityInfo,
-  timeWindow = '24h'
+  timeWindow = '24h',
+  autoRunBacktest = true
 }) {
   const short = `${address.slice(0, 6)}…${address.slice(-4)}`
   const displayName = entityInfo?.entity_name || entityInfo?.label || null
@@ -446,6 +447,7 @@ export default function WhaleDetailClient({
         <WalletBacktestPanel
           address={address}
           defaultChain={/^0x[a-fA-F0-9]{40}$/.test(address) ? 'ethereum' : 'solana'}
+          autoRun={autoRunBacktest}
         />
       ) : null}
 

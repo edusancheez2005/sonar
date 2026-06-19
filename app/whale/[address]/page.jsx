@@ -1,18 +1,26 @@
-import React from 'react'
+import React, { cache } from 'react'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import AuthGuard from '@/app/components/AuthGuard'
 import WhaleDetailClient from './WhaleDetailClient'
+
+// Deduped per-request: generateMetadata and the page body both need the
+// address row, and React.cache collapses the two identical lookups into a
+// single DB round-trip during one render.
+const getAddressInfo = cache(async (addrLower) => {
+  const { data } = await supabaseAdmin
+    .from('addresses')
+    .select('address_name, address_type, entity_name, label, analysis_tags, signal_potential')
+    .eq('address', addrLower)
+    .maybeSingle()
+  return data || null
+})
 
 export async function generateMetadata({ params }) {
   const addr = decodeURIComponent(params.address)
   const short = `${addr.slice(0, 6)}…${addr.slice(-4)}`
   
   // Check if this is an exchange address
-  const { data: addressInfo } = await supabaseAdmin
-    .from('addresses')
-    .select('address_name, address_type, entity_name, label, analysis_tags')
-    .eq('address', addr.toLowerCase())
-    .maybeSingle()
+  const addressInfo = await getAddressInfo(addr.toLowerCase())
   
   const isExchange = addressInfo && ['CEX Wallet', 'exchange', 'Exchange Wallet', 'CEX'].includes(addressInfo.address_type)
   const entityName = addressInfo?.entity_name || addressInfo?.address_name || null
@@ -47,15 +55,27 @@ function BreadcrumbJsonLd({ addr, isExchange, exchangeName }) {
 
 export default async function WhaleProfile({ params }) {
   const addr = decodeURIComponent(params.address)
-  let since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  
-  // Check if this is an exchange address AND get entity info
-  const { data: addressInfo } = await supabaseAdmin
-    .from('addresses')
-    .select('address_name, address_type, entity_name, label, analysis_tags, signal_potential')
-    .eq('address', addr.toLowerCase())
-    .maybeSingle()
-  
+  const dayMs = 24 * 60 * 60 * 1000
+  const cutoff24h = Date.now() - dayMs
+  // Single 7-day pull (newest first). Previously this page issued a 24h query
+  // and, when it came back empty, a second 7-day query — two sequential
+  // round-trips that ALWAYS fired for wallets with no recent on-chain activity
+  // (e.g. Polymarket proxy wallets). One 7-day pull covers both: rows within
+  // the last 24h are the prefix of the result, so we derive the 24h window in
+  // memory below. Run it in parallel with the address lookup.
+  const since = new Date(Date.now() - 7 * dayMs).toISOString()
+
+  const [addressInfo, txResult] = await Promise.all([
+    getAddressInfo(addr.toLowerCase()),
+    supabaseAdmin
+      .from('all_whale_transactions')
+      .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address,reasoning,confidence,from_label,to_label')
+      .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
+      .gte('timestamp', since)
+      .order('timestamp', { ascending: false })
+      .limit(500),
+  ])
+
   const isExchange = addressInfo && ['CEX Wallet', 'exchange', 'Exchange Wallet', 'CEX'].includes(addressInfo.address_type)
   const exchangeInfo = isExchange ? {
     name: addressInfo.address_name || addressInfo.entity_name || 'Exchange',
@@ -72,28 +92,12 @@ export default async function WhaleProfile({ params }) {
     signal_potential: addressInfo.signal_potential || null,
   } : null
   
-  // First try 24h, if no data, try 7 days
-  let { data, error } = await supabaseAdmin
-    .from('all_whale_transactions')
-    .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address,reasoning,confidence,from_label,to_label')
-    .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
-    .gte('timestamp', since)
-    .order('timestamp', { ascending: false })
-    .limit(500)
-  
-  // If no data in 24h, try last 7 days
-  if (!data || data.length === 0) {
-    since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    const result = await supabaseAdmin
-      .from('all_whale_transactions')
-      .select('transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,whale_score,counterparty_type,from_address,to_address,whale_address,counterparty_address,reasoning,confidence,from_label,to_label')
-      .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
-      .gte('timestamp', since)
-      .order('timestamp', { ascending: false })
-      .limit(500)
-    data = result.data
-    error = result.error
-  }
+  // Prefer the last-24h slice; fall back to the full 7-day pull only when the
+  // wallet had nothing in the past day (preserves the old 24h-then-7d behavior
+  // without a second query).
+  const sevenDayRows = txResult.data || []
+  const rows24h = sevenDayRows.filter((r) => new Date(r.timestamp).getTime() >= cutoff24h)
+  const data = rows24h.length > 0 ? rows24h : sevenDayRows
 
   let netUsd = 0
   let buyVolume = 0
@@ -210,7 +214,8 @@ export default async function WhaleProfile({ params }) {
         isExchange={isExchange}
         exchangeInfo={exchangeInfo}
         entityInfo={entityInfo}
-        timeWindow={allTransactions.length === 0 ? 'No data' : (data && data.length > 0 && new Date(data[0].timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000) ? '24h' : '7d')}
+        timeWindow={allTransactions.length === 0 ? 'No data' : (rows24h.length > 0 ? '24h' : '7d')}
+        autoRunBacktest={allTransactions.length > 0}
       />
     </AuthGuard>
   )

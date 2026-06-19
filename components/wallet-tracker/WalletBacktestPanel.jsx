@@ -111,7 +111,7 @@ function Sparkline({ curve, benchmarks, capital }) {
   )
 }
 
-export default function WalletBacktestPanel({ address, defaultChain = 'ethereum' }) {
+export default function WalletBacktestPanel({ address, defaultChain = 'ethereum', autoRun = true }) {
   const [chain, setChain] = useState(defaultChain)
   const [capital, setCapital] = useState(10000)
   const [startDate, setStartDate] = useState(isoDaysAgo(90))
@@ -149,13 +149,17 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
   }
 
   // Auto-run once with defaults so the panel is useful at first paint.
+  // Skipped when autoRun is false (e.g. wallets with no recorded activity,
+  // like Polymarket proxy wallets) — the engine would hit Alchemy/CoinGecko
+  // only to replay zero trades, leaving the panel spinning. Users can still
+  // trigger it manually with the "Run backtest" button.
   useEffect(() => {
-    if (!autoRan && address) {
+    if (autoRun && !autoRan && address) {
       setAutoRan(true)
       runBacktest()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address])
+  }, [address, autoRun])
 
   const result = data?.result
   const benchmarks = data?.benchmarks
