@@ -70,6 +70,18 @@ const CG_ID_FALLBACK = {
   COMP: 'compound-governance-token', CRV: 'curve-dao-token', SNX: 'havven',
 }
 
+// Zombie/frozen ticker skiplist (2026-06-19). evaluate-signals builds its OWN
+// priceMap from a raw Binance fetch and does NOT share fetch-prices'
+// BINANCE_USDT_SKIPLIST. Result: MATICUSDT (frozen at $0.3794 since the POL
+// migration) was still picked up AT GRADING TIME, so MATIC SELL signals were
+// scored against the zombie quote — manufacturing fake +392% "moves" (94
+// such outcomes on 2026-06-19, 0% accuracy, dragging headline SELL accuracy
+// from ~53% to ~39% and poisoning the alpha series). This is the 2026-05-03
+// MATIC incident's encore via a second, un-skiplisted price path. Skip these
+// symbols in EVERY priceMap-population path below (Binance, CG, snapshot
+// fallback). Compared in symbol space (after the USDT suffix is stripped).
+const ZOMBIE_TICKERS = new Set(['MATIC'])
+
 export async function GET(req) {
   try {
     const authHeader = req.headers.get('authorization')
@@ -101,6 +113,7 @@ export async function GET(req) {
         for (const p of all) {
           if (!p.symbol.endsWith('USDT')) continue
           const sym = p.symbol.replace('USDT', '')
+          if (ZOMBIE_TICKERS.has(sym)) continue // frozen zombie quote — never grade against it
           const px = parseFloat(p.price)
           if (px > 0) priceMap.set(sym, px)
         }
@@ -172,6 +185,7 @@ export async function GET(req) {
         .order('timestamp', { ascending: false })
         .limit(500)
       for (const row of (priceRows || [])) {
+        if (ZOMBIE_TICKERS.has(row.ticker)) continue // never resurrect a zombie from old snapshots
         if (!priceMap.has(row.ticker)) priceMap.set(row.ticker, row.price_usd)
       }
     }
@@ -311,6 +325,11 @@ export async function GET(req) {
       if (!signals || signals.length === 0) continue
 
       for (const sig of signals) {
+        // 2026-06-19: never grade a zombie/frozen ticker. Belt-and-suspenders
+        // over the priceMap skiplist above — guarantees MATIC (frozen at
+        // $0.3794) is skipped regardless of which price path (Binance,
+        // CoinGecko, NEAREST snapshot, or live fallback) would resolve it.
+        if (ZOMBIE_TICKERS.has(sig.token)) { skipped++; continue }
         // EVAL-1 fix: per-signal eval target = signal.computed_at + window.ms.
         // Resolve currentPrice and btcAtEval from the snapshot closest to
         // that exact instant. Falls back to the live priceMap only if no
