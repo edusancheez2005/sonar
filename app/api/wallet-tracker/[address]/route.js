@@ -84,6 +84,17 @@ export async function GET(req, { params }) {
   }
 
   if (!txData || txData.length === 0) {
+    // Polymarket fallback. Polymarket proxy wallets trade prediction markets
+    // on Polygon and never land in all_whale_transactions/wallet_profiles, so
+    // the generic page would dead-end on "No tracked data". We already sync
+    // their positions + trade tape, so surface that instead.
+    const pmProfile = await buildPolymarketProfile(supabaseAdmin, address)
+    if (pmProfile) {
+      return NextResponse.json(
+        { data: pmProfile },
+        { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }
+      )
+    }
     return NextResponse.json({ error: 'Wallet not found' }, { status: 404 })
   }
 
@@ -126,4 +137,77 @@ export async function GET(req, { params }) {
     },
     { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }
   )
+}
+
+// Build a wallet profile from the Polymarket tables we already sync
+// (polymarket_whales = aggregated positions, polymarket_activity = trade tape).
+// Returns null when the address has no Polymarket footprint.
+async function buildPolymarketProfile(supabaseAdmin, address) {
+  const lower = String(address).toLowerCase()
+  const [{ data: whale }, { data: trades }] = await Promise.all([
+    supabaseAdmin
+      .from('polymarket_whales')
+      .select('proxy_wallet, name, profile_image, total_value_usd, total_amount, markets_count, positions, arkham_entity, updated_at')
+      .eq('proxy_wallet', lower)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('polymarket_activity')
+      .select('tx_hash, condition_id, side, outcome, usd_value, price, size, ts, name, entity_name')
+      .eq('proxy_wallet', lower)
+      .order('ts', { ascending: false })
+      .limit(50),
+  ])
+
+  const tradeRows = trades || []
+  if (!whale && tradeRows.length === 0) return null
+
+  const positions = Array.isArray(whale?.positions) ? whale.positions : []
+  const pnl = positions.reduce((sum, p) => sum + (Number(p?.pnl_usd) || 0), 0)
+  const tradeVolume = tradeRows.reduce((sum, t) => sum + (Number(t?.usd_value) || 0), 0)
+  const displayName =
+    whale?.name ||
+    whale?.arkham_entity ||
+    tradeRows.find((t) => t.entity_name)?.entity_name ||
+    tradeRows.find((t) => t.name)?.name ||
+    null
+
+  return {
+    address,
+    chains: ['polygon'],
+    chain: 'polygon',
+    entity_name: displayName,
+    portfolio_value_usd: whale?.total_value_usd != null ? Number(whale.total_value_usd) : null,
+    pnl_estimated_usd: positions.length > 0 ? Math.round(pnl * 100) / 100 : null,
+    total_volume_usd_30d: tradeVolume || null,
+    tx_count: tradeRows.length,
+    last_active: tradeRows[0]?.ts || whale?.updated_at || null,
+    source: 'polymarket',
+    polymarket: {
+      name: whale?.name || displayName,
+      profile_image: whale?.profile_image || null,
+      total_value_usd: whale?.total_value_usd != null ? Number(whale.total_value_usd) : null,
+      markets_count: whale?.markets_count ?? positions.length,
+      pnl_usd: positions.length > 0 ? Math.round(pnl * 100) / 100 : null,
+      positions: positions
+        .map((p) => ({
+          market_question: p?.market_question || null,
+          outcome: p?.outcome || null,
+          size: Number(p?.size) || 0,
+          avg_price: p?.avg_price != null ? Number(p.avg_price) : null,
+          cur_price: p?.cur_price != null ? Number(p.cur_price) : null,
+          value_usd: Number(p?.value_usd) || 0,
+          pnl_usd: Number(p?.pnl_usd) || 0,
+        }))
+        .sort((a, b) => b.value_usd - a.value_usd),
+      recent_trades: tradeRows.map((t) => ({
+        tx_hash: t.tx_hash,
+        side: t.side,
+        outcome: t.outcome,
+        usd_value: Number(t.usd_value) || 0,
+        price: t.price != null ? Number(t.price) : null,
+        size: Number(t.size) || 0,
+        ts: t.ts,
+      })),
+    },
+  }
 }

@@ -1,6 +1,7 @@
 'use client'
 // Copy + deeplink actions for a wallet address in the whale terminal.
-// Links to /whale/[address] for on-chain analysis (same as Research hero search).
+// Links to the Whale Tracker profile (/wallet-tracker/[address]) — the
+// canonical wallet page. (Legacy /whale/[address] 307-redirects here.)
 import React, { useState } from 'react'
 import NextLink from 'next/link'
 import styled from 'styled-components'
@@ -9,7 +10,7 @@ import { shortenAddress } from '@/lib/wallet-tracker'
 
 export function walletAnalysisHref(wallet) {
   if (!wallet) return null
-  return `/whale/${encodeURIComponent(wallet)}`
+  return `/wallet-tracker/${encodeURIComponent(wallet)}`
 }
 
 const CopyBtn = styled.button`

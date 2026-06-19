@@ -46,6 +46,14 @@ const nextConfig = {
         destination: '/subscribe',
         permanent: true,
       },
+      {
+        // Consolidate the two wallet pages onto the richer Whale Tracker
+        // profile. Permanent (308) so search engines transfer ranking signals
+        // to the canonical /wallet-tracker URL.
+        source: '/whale/:address',
+        destination: '/wallet-tracker/:address',
+        permanent: true,
+      },
     ]
   },
   async headers() {

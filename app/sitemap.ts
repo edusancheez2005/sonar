@@ -159,7 +159,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(50)
       if (whales) {
         whalePages = whales.map((w: any) => ({
-          url: `${BASE}/whale/${encodeURIComponent(w.address)}`,
+          url: `${BASE}/wallet-tracker/${encodeURIComponent(w.address)}`,
           lastModified: now,
           changeFrequency: 'weekly' as const,
           priority: 0.5,

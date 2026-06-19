@@ -11,6 +11,8 @@ import WatchlistModal from '@/components/wallet-tracker/WatchlistModal'
 import AlertModal from '@/components/wallet-tracker/AlertModal'
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 import ErrorBoundary from '@/components/wallet-tracker/ErrorBoundary'
+import WalletBacktestPanel from '@/components/wallet-tracker/WalletBacktestPanel'
+import PolymarketWalletPanel from '@/components/wallet-tracker/PolymarketWalletPanel'
 import BackToTop from '@/components/BackToTop'
 import { formatUsd, shortenAddress } from '@/lib/wallet-tracker'
 
@@ -188,6 +190,8 @@ export default function WalletProfileWrapper({ address }) {
   }
 
   const isUnknown = profile.unknown
+  const isPolymarket = profile.source === 'polymarket'
+  const isEvm = /^0x[a-fA-F0-9]{40}$/.test(address)
   const topTokens = profile.top_tokens || []
   const pnlColor = profile.pnl_estimated_usd > 0 ? '#00d4aa' : profile.pnl_estimated_usd < 0 ? '#ff6b6b' : 'var(--text-primary)'
   const displayName = profile.entity_name || shortenAddress(address)
@@ -222,6 +226,31 @@ export default function WalletProfileWrapper({ address }) {
               Add it to a watchlist or set an alert to start tracking.
             </p>
           </div>
+        ) : isPolymarket ? (
+          <>
+            <StatsGrid>
+              <StatCard>
+                <StatLabel>Position Value</StatLabel>
+                <StatValue>{formatUsd(profile.portfolio_value_usd)}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Estimated PnL</StatLabel>
+                <StatValue $color={pnlColor}>{formatUsd(profile.pnl_estimated_usd)}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Markets</StatLabel>
+                <StatValue>{profile.polymarket?.markets_count ?? '—'}</StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>Recent Trades</StatLabel>
+                <StatValue>{profile.tx_count ?? '—'}</StatValue>
+              </StatCard>
+            </StatsGrid>
+
+            <ErrorBoundary fallbackMessage="Failed to load Polymarket positions">
+              <PolymarketWalletPanel polymarket={profile.polymarket} />
+            </ErrorBoundary>
+          </>
         ) : (
           <>
             <StatsGrid>
@@ -254,6 +283,12 @@ export default function WalletProfileWrapper({ address }) {
                   ))}
                 </TokenGrid>
               </TopTokensCard>
+            )}
+
+            {isEvm && (
+              <ErrorBoundary fallbackMessage="Failed to load backtest">
+                <WalletBacktestPanel address={address} defaultChain="ethereum" autoRun={(profile.tx_count ?? 0) > 0} />
+              </ErrorBoundary>
             )}
 
             <ErrorBoundary fallbackMessage="Failed to load holdings">
