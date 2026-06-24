@@ -72,7 +72,7 @@ async function buildLeaderboard({ sortBy, ascending, chain, page, limit }) {
     .select('*')
     .not('address', 'in', `(${BLACKLIST.join(',')})`)
     .gte('tx_count_30d', 10)
-    .order(sortBy, { ascending })
+    .order(sortBy, { ascending, nullsFirst: false })
     .range(from, to)
 
   if (chain) {

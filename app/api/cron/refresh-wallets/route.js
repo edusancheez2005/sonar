@@ -12,6 +12,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { estimateRealizedPnl } from '@/lib/wallet-backtest/engine'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 mins — may need to process many wallets
@@ -119,7 +120,6 @@ export async function GET(request) {
 
           // ── Calculate portfolio value (qty × current price) ───
           let portfolioValue = 0
-          let pnlEstimate = 0
           const topTokens = []
 
           for (const [sym, h] of tokenHoldings) {
@@ -129,12 +129,6 @@ export async function GET(request) {
             if (h.qty > 0 && price) {
               // Whale still holds tokens — value at current price
               portfolioValue += h.qty * price
-            }
-
-            if (h.costBasis < 0) {
-              // Net negative cost basis means they sold for more USD than they received
-              // i.e., realized profit = |costBasis| (the excess sell USD)
-              pnlEstimate += Math.abs(h.costBasis)
             }
           }
 
@@ -155,7 +149,6 @@ export async function GET(request) {
               const net = flows.buy - flows.sell
               topTokens.push({ symbol: sym, volume: flows.buy + flows.sell, netQty: 0 })
               if (net > 0) portfolioValue += net
-              if (net < 0) pnlEstimate += Math.abs(net)
             }
           }
 
@@ -199,12 +192,34 @@ export async function GET(request) {
           topTokens.sort((a, b) => b.volume - a.volume)
           const top5 = topTokens.slice(0, 5).map(t => t.symbol)
 
+          // Honest realized PnL (FIFO cost basis, priced at execution) on the
+          // wallet's tracked round-trips. Replaces the legacy Σ(sell−buy)
+          // "estimate" that mislabeled distribution of pre-acquired inventory
+          // as profit. Only EVM-mainnet + Solana are priceable today; other
+          // chains get null rather than a fabricated number.
+          let realizedPnl = null
+          const btChain =
+            wallet.chain === 'polygon' ? 'polygon'
+            : wallet.chain === 'solana' ? 'solana'
+            : wallet.chain === 'ethereum' ? 'ethereum'
+            : null
+          if (btChain) {
+            try {
+              const rp = await estimateRealizedPnl({ address: wallet.address, chain: btChain })
+              realizedPnl = Number.isFinite(rp?.realized_pnl_usd)
+                ? Math.round(rp.realized_pnl_usd * 100) / 100
+                : null
+            } catch {
+              realizedPnl = null
+            }
+          }
+
           // Upsert into wallet_profiles
           const { error: upErr } = await supabase
             .from('wallet_profiles')
             .update({
               portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
-              pnl_estimated_usd: Math.round(pnlEstimate * 100) / 100,
+              pnl_estimated_usd: realizedPnl,
               total_volume_usd_30d: Math.round(totalVol30d * 100) / 100,
               tx_count_30d: txCount30d,
               last_active: lastActive,

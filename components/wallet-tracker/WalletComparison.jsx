@@ -479,7 +479,7 @@ export default function WalletComparison() {
             <StatValue>{formatUsd(profile.portfolio_value_usd)}</StatValue>
           </StatRow>
           <StatRow>
-            <StatLabel>PnL</StatLabel>
+            <StatLabel>Realized PnL</StatLabel>
             <StatValue $color={profile.pnl_estimated_usd > 0 ? '#00d4aa' : profile.pnl_estimated_usd < 0 ? '#ff6b6b' : undefined}>
               {formatUsd(profile.pnl_estimated_usd)}
             </StatValue>
