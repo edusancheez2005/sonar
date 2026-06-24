@@ -215,16 +215,20 @@ export async function GET(request) {
           }
 
           // Upsert into wallet_profiles
+          const updateFields = {
+            portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
+            total_volume_usd_30d: Math.round(totalVol30d * 100) / 100,
+            tx_count_30d: txCount30d,
+            last_active: lastActive,
+            top_tokens: top5,
+          }
+          // Only overwrite PnL when we actually computed one. A transient
+          // pricing failure returns null — it must not wipe a previously
+          // correct realized PnL (which would churn the leaderboard).
+          if (realizedPnl != null) updateFields.pnl_estimated_usd = realizedPnl
           const { error: upErr } = await supabase
             .from('wallet_profiles')
-            .update({
-              portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
-              pnl_estimated_usd: realizedPnl,
-              total_volume_usd_30d: Math.round(totalVol30d * 100) / 100,
-              tx_count_30d: txCount30d,
-              last_active: lastActive,
-              top_tokens: top5,
-            })
+            .update(updateFields)
             .eq('address', wallet.address)
 
           if (upErr) throw new Error(`Update failed for ${wallet.address}: ${upErr.message}`)
