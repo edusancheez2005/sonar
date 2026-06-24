@@ -857,18 +857,28 @@ export default function NewsTerminal({ initialNews = [] }) {
   const hero = useMemo(() => {
     const pool = filteredArticles.length ? filteredArticles : articles
     if (!pool.length) return null
-    // Pick the most *important* recent story (not just the newest) so a random
-    // viral tweet never headlines.
+    const ageHours = (a) => {
+      const t = a.published_at ? new Date(a.published_at).getTime() : NaN
+      return Number.isFinite(t) ? (Date.now() - t) / 3.6e6 : Infinity
+    }
+    // Breaking must be RECENT: only real news articles from the last 24h qualify.
+    // If none are that fresh, fall back to the top recent story but label it
+    // "TOP STORY" rather than lying with a "BREAKING · 6d ago" tag.
+    const news = pool.filter((a) => a.kind !== 'x-post' && a.kind !== 'social')
+    const fresh = news.filter((a) => ageHours(a) <= 24)
+    const scorePool = (fresh.length ? fresh : news).slice(0, 80)
+    if (!scorePool.length) return null
     let article = null
     let best = -Infinity
-    for (const a of pool.slice(0, 80)) {
+    for (const a of scorePool) {
       const sc = importanceScore(a)
       if (sc > best) {
         best = sc
         article = a
       }
     }
-    if (!article) article = pool[0]
+    if (!article) return null
+    const breaking = ageHours(article) <= 24
     const codes = (article.instruments || []).map((i) => String(i.code).toUpperCase())
     let coin = codes.map((c) => coinBySym.get(c)).find(Boolean)
     if (!coin) coin = coinBySym.get('BTC') || coins[0]
@@ -912,6 +922,7 @@ export default function NewsTerminal({ initialNews = [] }) {
       .join(' ')
     return {
       article,
+      breaking,
       id: article.id || article.url || article.title,
       source: article.source || '',
       coinSym: coin ? coin.sym : '',
@@ -1174,9 +1185,9 @@ export default function NewsTerminal({ initialNews = [] }) {
                   <Hero>
                     <HeroTop>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <BreakingPill $c={hero.accent}>
-                          <BreakingDot />
-                          BREAKING
+                        <BreakingPill $c={hero.breaking ? hero.accent : K.muted3}>
+                          {hero.breaking && <BreakingDot />}
+                          {hero.breaking ? 'BREAKING' : 'TOP STORY'}
                         </BreakingPill>
                         <HeroTime>{hero.time}</HeroTime>
                       </span>
