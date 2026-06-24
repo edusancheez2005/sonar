@@ -317,6 +317,11 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        {/* News Terminal editorial redesign fonts (app/news). */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
         {/* Google Tag Manager + Google Analytics 4 are loaded only after
             the user grants analytics consent via the cookie banner.
             See LEGAL_AUDIT_2026-04-21.md §1.A finding A4. */}
