@@ -131,6 +131,47 @@ function guessSentiment(item) {
   return 'neutral'
 }
 
+// Tradable symbols on the rail — a breaking story charts cleanly when it maps to one.
+const RAIL_SYMS = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'LINK']
+const RAIL_SET = new Set(RAIL_SYMS)
+
+// Market-moving signals that make a story "breaking" rather than background chatter.
+const IMPORTANCE_KEYWORDS = [
+  'fomc', 'federal reserve', 'fed ', 'rate cut', 'rate hike', 'interest rate', 'inflation',
+  'cpi', 'pce', 'jobs report', 'powell', 'treasury', 'etf', 'blackrock', 'ibit', 'fbtc',
+  'sec ', 'lawsuit', 'approval', 'halving', 'liquidation', 'all-time high', 'record high',
+  'hack', 'exploit', 'inflow', 'outflow', 'spot etf', 'tariff', 'sanction', 'default',
+]
+const STRONG_SOURCES = [
+  'cointelegraph', 'coindesk', 'the block', 'blockworks', 'decrypt', 'bloomberg', 'reuters',
+  'cnbc', 'wall street journal', 'financial times', 'forbes', 'the defiant',
+]
+
+// Rank a story's fitness to headline the breaking hero (higher = more important).
+// Excludes social posts; rewards macro keywords, a chartable token, clear
+// sentiment, a reputable source, and recency.
+function importanceScore(article) {
+  if (!article || !article.title) return -Infinity
+  const text = `${article.title} ${article.description || ''}`.toLowerCase()
+  const codes = (article.instruments || []).map((i) => String(i.code).toUpperCase())
+  let score = 0
+  if (codes.some((c) => RAIL_SET.has(c))) score += 4
+  else if (codes.length) score += 1
+  let kw = 0
+  for (const k of IMPORTANCE_KEYWORDS) if (text.includes(k)) kw++
+  score += Math.min(kw, 4) * 2
+  if (guessSentiment(article) !== 'neutral') score += 2
+  const src = (article.source || '').toLowerCase()
+  if (STRONG_SOURCES.some((s) => src.includes(s))) score += 2
+  const ageH = article.published_at ? (Date.now() - new Date(article.published_at).getTime()) / 3.6e6 : 999
+  if (ageH < 3) score += 4
+  else if (ageH < 8) score += 3
+  else if (ageH < 16) score += 2
+  else if (ageH < 36) score += 1
+  if (article.kind === 'x-post' || article.kind === 'social') score -= 8
+  return score
+}
+
 // social_posts.sentiment is LunarCrush's 1–5 scale (1 bearish · 3 neutral · 5 bullish).
 function socialSentiment(post) {
   const raw = post.sentiment
@@ -273,10 +314,9 @@ const Body = styled.div`
 // Left market rail (dark)
 const Rail = styled.aside`
   width: 262px; flex: none; background: ${K.dark}; border-right: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 18px 16px 28px; position: sticky; top: 94px; align-self: flex-start;
-  max-height: calc(100vh - 94px); overflow-y: auto;
+  padding: 18px 16px 28px;
   @media (max-width: ${BREAK}px) {
-    width: 100%; position: static; max-height: none;
+    width: 100%;
     border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 `
@@ -713,8 +753,19 @@ export default function NewsTerminal({ initialNews = [] }) {
   // against its primary tradable coin (falls back to BTC so a chart always shows).
   const hero = useMemo(() => {
     const pool = filteredArticles.length ? filteredArticles : articles
-    const article = pool[0]
-    if (!article) return null
+    if (!pool.length) return null
+    // Pick the most *important* recent story (not just the newest) so a random
+    // viral tweet never headlines.
+    let article = null
+    let best = -Infinity
+    for (const a of pool.slice(0, 80)) {
+      const sc = importanceScore(a)
+      if (sc > best) {
+        best = sc
+        article = a
+      }
+    }
+    if (!article) article = pool[0]
     const codes = (article.instruments || []).map((i) => String(i.code).toUpperCase())
     let coin = codes.map((c) => coinBySym.get(c)).find(Boolean)
     if (!coin) coin = coinBySym.get('BTC') || coins[0]
@@ -732,10 +783,30 @@ export default function NewsTerminal({ initialNews = [] }) {
       pctStr = `${pos ? '+' : ''}${pctNum.toFixed(2)}%`
       paths = buildPaths(coin.series, 360, 118)
     }
-    const dir = pctNum >= 0 ? 'up' : 'down'
-    const why = coin
-      ? `${coin.sym} is trading at $${fmtPrice(coin.price)}, ${dir} ${Math.abs(pctNum).toFixed(2)}% over the last 24 hours. Tracked sentiment for this story reads ${s}.`
-      : `Tracked sentiment for this story reads ${s}.`
+    // "Why it moved": real 24h price action + the most relevant live macro factor,
+    // tying the breaking story back to the macro panel. Always populated.
+    const macroList = (macroFactors && macroFactors.factors) || []
+    let macroNote = ''
+    if (macroList.length) {
+      const t = `${article.title || ''} ${article.description || ''}`.toLowerCase()
+      const rel = (m) => {
+        const mt = `${m.title || ''} ${m.summary || ''}`.toLowerCase()
+        let r = 0
+        for (const c of codes) if (mt.includes(c.toLowerCase())) r += 3
+        for (const k of IMPORTANCE_KEYWORDS) if (t.includes(k) && mt.includes(k)) r += 1
+        return r
+      }
+      const m = [...macroList].sort((a, b) => rel(b) - rel(a))[0]
+      if (m && m.title) {
+        const sum = (m.summary || '').trim()
+        macroNote = sum ? `${m.title} — ${sum}` : m.title
+        if (macroNote.length > 200) macroNote = macroNote.slice(0, 197).trimEnd() + '…'
+      }
+    }
+    const moveStr = coin ? `${coin.sym} ${pctNum >= 0 ? '+' : '−'}${Math.abs(pctNum).toFixed(2)}% over 24h.` : ''
+    const why = [moveStr, macroNote || `Sentiment across tracked sources currently reads ${s}.`]
+      .filter(Boolean)
+      .join(' ')
     return {
       article,
       title: article.title || '',
@@ -758,7 +829,7 @@ export default function NewsTerminal({ initialNews = [] }) {
       areaPath: paths.area,
       linePath: paths.line,
     }
-  }, [filteredArticles, articles, coinBySym, coins])
+  }, [filteredArticles, articles, coinBySym, coins, macroFactors])
 
   const macroSent = macroFactors?.overall_sentiment
     ? SENT[macroFactors.overall_sentiment] || SENT.neutral
