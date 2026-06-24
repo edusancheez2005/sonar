@@ -247,7 +247,6 @@ const shimmer = keyframes`0%{background-position:-200% 0}100%{background-positio
 const Fonts = createGlobalStyle`
   .son-root *::-webkit-scrollbar{width:8px;height:8px}
   .son-root *::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.14);border-radius:8px}
-  .son-rail-dark::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12)}
 `
 
 // ─── STYLED COMPONENTS ──────────────────────────────────────────────
@@ -313,35 +312,35 @@ const Body = styled.div`
 
 // Left market rail (dark)
 const Rail = styled.aside`
-  width: 262px; flex: none; background: ${K.dark}; border-right: 1px solid rgba(255, 255, 255, 0.06);
+  width: 262px; flex: none; background: rgba(0, 0, 0, 0.012); border-right: 1px solid rgba(0, 0, 0, 0.1);
   padding: 18px 16px 28px;
   @media (max-width: ${BREAK}px) {
     width: 100%;
-    border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: none; border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
 `
 const RailHead = styled.div`display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;`
-const RailLabel = styled.span`font-family: ${MONO}; font-size: 11px; letter-spacing: 0.2em; color: #8a9099;`
-const RailLive = styled.span`font-family: ${MONO}; font-size: 10px; letter-spacing: 0.16em; color: ${K.live};`
-const IndexCard = styled.div`padding: 12px 13px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 4px; margin-bottom: 18px;`
+const RailLabel = styled.span`font-family: ${MONO}; font-size: 11px; letter-spacing: 0.2em; color: ${K.muted3};`
+const RailLive = styled.span`font-family: ${MONO}; font-size: 10px; letter-spacing: 0.16em; color: #2bae6e;`
+const IndexCard = styled.div`padding: 12px 13px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 4px; margin-bottom: 18px; background: ${K.cardWhite}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);`
 const IndexTop = styled.div`display: flex; align-items: baseline; justify-content: space-between;`
 const IndexName = styled.span`font-family: ${MONO}; font-size: 10px; letter-spacing: 0.14em; color: #7a818b;`
 const IndexState = styled.span`font-family: ${MONO}; font-size: 11px; color: ${(p) => p.$c}; letter-spacing: 0.08em;`
 const IndexRow = styled.div`display: flex; align-items: baseline; gap: 6px; margin: 5px 0 9px;`
-const IndexValue = styled.span`font-family: ${MONO}; font-size: 26px; font-weight: 600; color: #f1f2f4;`
+const IndexValue = styled.span`font-family: ${MONO}; font-size: 26px; font-weight: 600; color: ${K.ink};`
 const IndexDelta = styled.span`font-family: ${MONO}; font-size: 11px; color: ${(p) => p.$c};`
-const IndexBarTrack = styled.div`height: 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden;`
+const IndexBarTrack = styled.div`height: 4px; border-radius: 3px; background: rgba(0, 0, 0, 0.08); overflow: hidden;`
 const IndexBarFill = styled.div`width: ${(p) => p.$w}%; height: 100%; background: ${(p) => p.$g};`
 const RailCoins = styled.div`
   @media (max-width: ${BREAK}px) { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 20px; }
   @media (max-width: 560px) { grid-template-columns: 1fr; }
 `
-const CoinRow = styled.div`display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.055);`
+const CoinRow = styled.div`display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.08);`
 const CoinId = styled.div`width: 54px; flex: none;`
-const CoinSym = styled.div`font-family: ${MONO}; font-size: 13px; font-weight: 600; color: #e7e9ec; letter-spacing: 0.04em;`
-const CoinName = styled.div`font-size: 10px; color: #6e747e; margin-top: 1px;`
+const CoinSym = styled.div`font-family: ${MONO}; font-size: 13px; font-weight: 600; color: ${K.ink3}; letter-spacing: 0.04em;`
+const CoinName = styled.div`font-size: 10px; color: #7a818b; margin-top: 1px;`
 const CoinRight = styled.div`flex: 1; text-align: right;`
-const CoinPrice = styled.div`font-family: ${MONO}; font-size: 12px; color: #d3d7dc;`
+const CoinPrice = styled.div`font-family: ${MONO}; font-size: 12px; color: ${K.body2};`
 const CoinPct = styled.div`font-family: ${MONO}; font-size: 11px; color: ${(p) => p.$c}; margin-top: 1px;`
 
 // Light area
@@ -476,7 +475,6 @@ const OrcaChip = styled.button`font-family: ${MONO}; font-size: 10px; color: #90
 
 // Skeletons
 const Sk = styled.div`height: ${(p) => p.$h || '12px'}; width: ${(p) => p.$w || '100%'}; border-radius: 3px; margin-bottom: ${(p) => p.$mb || '0'}; background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 25%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.04) 75%); background-size: 200% 100%; animation: ${shimmer} 1.5s ease infinite;`
-const SkDark = styled(Sk)`background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%); background-size: 200% 100%;`
 
 // ─── COMPONENT ──────────────────────────────────────────────────────
 export default function NewsTerminal({ initialNews = [] }) {
@@ -674,6 +672,7 @@ export default function NewsTerminal({ initialNews = [] }) {
           priceStr: `$${fmtPrice(c.price)}`,
           pctStr: `${pos ? '+' : ''}${pct.toFixed(2)}%`,
           col: pos ? K.posDark : K.negDark,
+          colLight: pos ? K.posText : K.negText,
           spark: spark(c.series, 64, 24),
         }
       }),
@@ -896,7 +895,7 @@ export default function NewsTerminal({ initialNews = [] }) {
 
         <Body>
           {/* LEFT MARKET RAIL */}
-          <Rail className="son-rail-dark">
+          <Rail>
             <RailHead>
               <RailLabel>MARKETS</RailLabel>
               <RailLive>● REALTIME</RailLive>
@@ -910,7 +909,7 @@ export default function NewsTerminal({ initialNews = [] }) {
               <IndexRow>
                 <IndexValue>{index?.value ?? '—'}</IndexValue>
                 {index && (
-                  <IndexDelta $c={index.delta >= 0 ? K.posDark : K.negDark}>
+                  <IndexDelta $c={index.delta >= 0 ? K.posText : K.negText}>
                     {index.delta >= 0 ? '+' : '−'}
                     {Math.abs(index.delta)} / 24h
                   </IndexDelta>
@@ -930,23 +929,23 @@ export default function NewsTerminal({ initialNews = [] }) {
                         <CoinName>{c.name}</CoinName>
                       </CoinId>
                       <svg width="64" height="24" viewBox="0 0 64 24" preserveAspectRatio="none" style={{ flex: 'none' }}>
-                        <polyline fill="none" stroke={c.col} strokeWidth="1.5" strokeLinejoin="round" points={c.spark} />
+                        <polyline fill="none" stroke={c.colLight} strokeWidth="1.5" strokeLinejoin="round" points={c.spark} />
                       </svg>
                       <CoinRight>
                         <CoinPrice>{c.priceStr}</CoinPrice>
-                        <CoinPct $c={c.col}>{c.pctStr}</CoinPct>
+                        <CoinPct $c={c.colLight}>{c.pctStr}</CoinPct>
                       </CoinRight>
                     </CoinRow>
                   ))
                 : [0, 1, 2, 3, 4, 5].map((i) => (
                     <CoinRow key={i}>
                       <CoinId>
-                        <SkDark $w="40px" $h="13px" $mb="4px" />
-                        <SkDark $w="30px" $h="9px" />
+                        <Sk $w="40px" $h="13px" $mb="4px" />
+                        <Sk $w="30px" $h="9px" />
                       </CoinId>
-                      <SkDark $w="64px" $h="20px" />
+                      <Sk $w="64px" $h="20px" />
                       <CoinRight>
-                        <SkDark $w="48px" $h="12px" $mb="4px" />
+                        <Sk $w="48px" $h="12px" $mb="4px" />
                       </CoinRight>
                     </CoinRow>
                   ))}
