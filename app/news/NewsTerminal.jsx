@@ -188,6 +188,54 @@ function socialSentiment(post) {
   return guessSentiment({ body: post.body })
 }
 
+// ── Feed quality: keep it professional ────────────────────────────
+// Tracked-creator tweets get merged into the feed, but many are foreign-language
+// or off-topic culture-war/violent rants that aren't market commentary. These
+// helpers drop them from both the Articles and Social feeds.
+const NON_ENGLISH_STOPWORDS = [
+  ' los ', ' las ', ' una ', ' unos ', ' este ', ' esta ', ' está ', ' años ', ' historia ',
+  ' medios ', ' gobierno ', ' porque ', ' pero ', ' como ', ' hacia ', ' ayer ', ' todo ',
+  ' nada ', ' contra ', ' mundo ', ' agua ', ' não ', ' são ', ' você ', ' até ', ' avec ',
+  ' pour ', ' dans ', ' où ', ' être ', ' parce ', ' aujourd ', ' und ', ' nicht ', ' aber ',
+]
+const UNPROFESSIONAL_TERMS = [
+  'rape', 'raped', 'sexually', 'sexual assault', 'molest', 'pedophile', 'groom',
+  'murder', 'genocide', 'slaughter', 'nazi', 'terrorist', 'dehumaniz', 'going to hell',
+  'immigrant', 'immigration', 'ilegal', 'migrant', 'desnuda', 'agrede', 'navaja', 'violaci',
+]
+const CRYPTO_RELEVANCE = /\b(bitcoin|btc|ethereum|eth|solana|sol|crypto|blockchain|defi|altcoin|token|stablecoin|usdt|usdc|etf|halving|staking|airdrop|on-?chain|market\s?cap|liquidity|liquidation|futures|perp|whale|binance|coinbase|kraken|xrp|ripple|dogecoin|doge|cardano|ada|avalanche|avax|chainlink|link|memecoin|rally|sell-?off|all-?time high|\bath\b|treasury|saylor|blackrock|ibit)\b/i
+
+function isLikelyEnglish(text) {
+  if (!text) return false
+  if (/[\u0400-\u04FF\u0590-\u05FF\u0600-\u06FF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/.test(text)) return false
+  const lower = ` ${text.toLowerCase()} `
+  let hits = 0
+  for (const w of NON_ENGLISH_STOPWORDS) {
+    if (lower.includes(w)) {
+      hits++
+      if (hits >= 2) return false
+    }
+  }
+  return true
+}
+
+function isProfessional(text) {
+  const lower = (text || '').toLowerCase()
+  return !UNPROFESSIONAL_TERMS.some((w) => lower.includes(w))
+}
+
+// Feed-worthy only if substantive, English, professional, and actually about
+// crypto/markets — not merely posted by a tracked crypto creator.
+function isQualitySocial(post) {
+  const bodyText = post && post.body ? String(post.body) : ''
+  if (bodyText.trim().length < 24) return false
+  if (!isLikelyEnglish(bodyText)) return false
+  if (!isProfessional(bodyText)) return false
+  const hasTicker = Array.isArray(post.tickers_mentioned) && post.tickers_mentioned.length > 0
+  if (!hasTicker && !CRYPTO_RELEVANCE.test(bodyText)) return false
+  return true
+}
+
 function fmtPrice(p) {
   if (p == null || !Number.isFinite(p)) return '—'
   if (p >= 1000) return p.toLocaleString('en-US', { maximumFractionDigits: 0 })
@@ -412,7 +460,8 @@ const HeroLeft = styled.div`flex: 1; min-width: 0;`
 const HeroTitle = styled.h1`font-family: ${HL}; font-weight: ${HL_WEIGHT}; font-size: 33px; line-height: 1.14; letter-spacing: -0.01em; margin: 0 0 12px; color: ${K.ink}; @media (max-width: 760px) { font-size: 26px; }`
 const HeroSummary = styled.p`font-size: 15.5px; line-height: 1.6; color: ${K.body}; margin: 0 0 18px;`
 const WhyBox = styled.div`border-left: 3px solid ${(p) => p.$c}; background: ${(p) => p.$bg}; padding: 12px 16px; border-radius: 0 4px 4px 0;`
-const WhyLabel = styled.div`font-family: ${MONO}; font-size: 10px; letter-spacing: 0.16em; color: ${(p) => p.$c}; margin-bottom: 6px;`
+const WhyLabel = styled.div`font-family: ${MONO}; font-size: 10px; letter-spacing: 0.16em; color: ${(p) => p.$c}; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px;`
+const WhyOrca = styled.span`font-family: ${MONO}; font-size: 9px; letter-spacing: 0.12em; color: ${K.teal}; opacity: 0.9; flex: none;`
 const WhyText = styled.p`font-size: 14px; line-height: 1.55; color: ${K.body2}; margin: 0;`
 const ChartCard = styled.div`width: 312px; flex: none; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 5px; padding: 16px; background: ${K.chartCard}; @media (max-width: 760px) { width: 100%; }`
 const ChartTop = styled.div`display: flex; align-items: baseline; justify-content: space-between;`
@@ -491,6 +540,7 @@ export default function NewsTerminal({ initialNews = [] }) {
   const [index, setIndex] = useState(null)
   const [clock, setClock] = useState('')
   const [orcaQ, setOrcaQ] = useState('')
+  const [heroWhy, setHeroWhy] = useState('')
 
   // Live clock (UPDATED hh:mm:ss)
   useEffect(() => {
@@ -543,8 +593,9 @@ export default function NewsTerminal({ initialNews = [] }) {
         const res = await fetch('/api/social/feed?limit=200&sort=interactions')
         const data = await res.json()
         if (!data?.posts) return
-        setSocialPosts(data.posts)
-        const topXPosts = data.posts
+        const quality = data.posts.filter(isQualitySocial)
+        setSocialPosts(quality)
+        const topXPosts = quality
           .filter((p) => p.interactions > 500 || p.category === 'tracked_creator')
           .slice(0, 30)
           .map((p) => {
@@ -808,6 +859,11 @@ export default function NewsTerminal({ initialNews = [] }) {
       .join(' ')
     return {
       article,
+      id: article.id || article.url || article.title,
+      source: article.source || '',
+      coinSym: coin ? coin.sym : '',
+      pctNum,
+      macroNote,
       title: article.title || '',
       summary: article.description || 'Tap to read the full report.',
       tokens: codes.slice(0, 3),
@@ -829,6 +885,37 @@ export default function NewsTerminal({ initialNews = [] }) {
       linePath: paths.line,
     }
   }, [filteredArticles, articles, coinBySym, coins, macroFactors])
+
+  // ORCA "why it moved" — a real LLM explanation for the breaking story, grounded
+  // in its facts. Fetched once per story (not per price tick); the static factual
+  // line stays as the visible fallback until/unless ORCA returns.
+  useEffect(() => {
+    setHeroWhy('')
+    if (!hero || !hero.title) return
+    let alive = true
+    fetch('/api/news/why', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: hero.title,
+        description: hero.summary,
+        source: hero.source,
+        token: hero.coinSym,
+        pct: hero.pctNum,
+        sentiment: hero.sent,
+        macro: hero.macroNote,
+      }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (alive && d && d.why) setHeroWhy(d.why)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hero?.id, hero?.coinSym])
 
   const macroSent = macroFactors?.overall_sentiment
     ? SENT[macroFactors.overall_sentiment] || SENT.neutral
@@ -1018,8 +1105,11 @@ export default function NewsTerminal({ initialNews = [] }) {
                         <HeroTitle>{hero.title}</HeroTitle>
                         <HeroSummary>{hero.summary}</HeroSummary>
                         <WhyBox $c={hero.accent} $bg={hero.accentBg}>
-                          <WhyLabel $c={hero.accent}>▼ WHY IT MOVED</WhyLabel>
-                          <WhyText>{hero.why}</WhyText>
+                          <WhyLabel $c={hero.accent}>
+                            <span>▼ WHY IT MOVED</span>
+                            <WhyOrca>{heroWhy ? 'ORCA' : 'ORCA · analyzing…'}</WhyOrca>
+                          </WhyLabel>
+                          <WhyText>{heroWhy || hero.why}</WhyText>
                         </WhyBox>
                       </HeroLeft>
                       <ChartCard>
