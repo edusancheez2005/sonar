@@ -16,6 +16,7 @@ import {
 } from '../coingecko/history'
 import { getEvmTransfers, QUOTE_CONTRACTS, type RawEvmTransfer } from '../wallet/transfers'
 import { getSolanaSwaps, type RawSolSwap } from '../wallet/sol-swaps'
+import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 const FEE_BPS = 30          // 30 bps round-trip per trade
 const DUST_USD = 25         // ignore trade legs worth less than $25
@@ -34,6 +35,49 @@ const AVG_BLOCK_SECS: Record<BacktestChain, number> = {
   ethereum: 12,
   polygon: 2,
   solana: 0, // unused; Solana fetcher uses timestamp directly
+}
+
+// Maps a backtest chain to the `blockchain` label variants stored in
+// all_whale_transactions, so we can filter the stored tape to the
+// requested chain.
+const CHAIN_DB_ALIASES: Record<BacktestChain, Set<string>> = {
+  ethereum: new Set(['ethereum', 'eth', 'mainnet', 'ethereum-mainnet']),
+  polygon: new Set(['polygon', 'polygon-pos', 'matic', 'pol']),
+  solana: new Set(['solana', 'sol']),
+}
+
+// Stored whale rows carry a `token_symbol` but frequently an EMPTY
+// `token_address`, so we can't price them by contract. Map the symbol to a
+// CoinGecko coin id (the same universe the price pipeline tracks). Anything
+// not listed falls back to the lower-cased symbol as a best-effort id; if
+// that 404s the token is simply left unpriced (marked to zero).
+const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
+  BTC: 'bitcoin', WBTC: 'wrapped-bitcoin', ETH: 'ethereum', WETH: 'weth',
+  BNB: 'binancecoin', SOL: 'solana', XRP: 'ripple', ADA: 'cardano',
+  DOGE: 'dogecoin', AVAX: 'avalanche-2', DOT: 'polkadot', LINK: 'chainlink',
+  UNI: 'uniswap', ATOM: 'cosmos', LTC: 'litecoin', BCH: 'bitcoin-cash',
+  FIL: 'filecoin', NEAR: 'near', APT: 'aptos', ARB: 'arbitrum', OP: 'optimism',
+  AAVE: 'aave', MKR: 'maker', CRV: 'curve-dao-token', SNX: 'synthetix-network-token',
+  COMP: 'compound-governance-token', SUSHI: 'sushi', ALGO: 'algorand',
+  FTM: 'fantom', SAND: 'the-sandbox', MANA: 'decentraland', AXS: 'axie-infinity',
+  GRT: 'the-graph', SHIB: 'shiba-inu', PEPE: 'pepe', WLD: 'worldcoin-wld',
+  SUI: 'sui', SEI: 'sei-network', TIA: 'celestia', INJ: 'injective-protocol',
+  STX: 'blockstack', IMX: 'immutable-x', RENDER: 'render-token', RNDR: 'render-token',
+  FET: 'fetch-ai', JUP: 'jupiter-exchange-solana', WIF: 'dogwifcoin', BONK: 'bonk',
+  FLOKI: 'floki', JASMY: 'jasmycoin', ENA: 'ethena', PENDLE: 'pendle',
+  TAO: 'bittensor', ONDO: 'ondo-finance', TRX: 'tron', TON: 'the-open-network',
+  ETC: 'ethereum-classic', XLM: 'stellar', HBAR: 'hedera-hashgraph', VET: 'vechain',
+  ICP: 'internet-computer', THETA: 'theta-token', RUNE: 'thorchain',
+  ENS: 'ethereum-name-service', MATIC: 'matic-network', POL: 'matic-network',
+  LDO: 'lido-dao', DYDX: 'dydx', GMX: 'gmx', BAT: 'basic-attention-token',
+  ZRX: '0x', BLUR: 'blur', LRC: 'loopring', ENJ: 'enjincoin', CHZ: 'chiliz',
+  APE: 'apecoin', GALA: 'gala', QNT: 'quant-network', FLOW: 'flow', XTZ: 'tezos',
+  CAKE: 'pancakeswap-token', YFI: 'yearn-finance', '1INCH': '1inch', BAL: 'balancer',
+  ROSE: 'oasis-network', ANKR: 'ankr', MASK: 'mask-network', PYTH: 'pyth-network',
+  EIGEN: 'eigenlayer', ETHFI: 'ether-fi', STRK: 'starknet', JTO: 'jito-governance-token',
+  W: 'wormhole', AERO: 'aerodrome-finance', MORPHO: 'morpho', ZK: 'zksync',
+  SAFE: 'safe', GMT: 'stepn', OCEAN: 'ocean-protocol', BAND: 'band-protocol',
+  KAVA: 'kava', ROOK: 'rook', SKL: 'skale', STORJ: 'storj', API3: 'api3',
 }
 
 function nowMs() { return Date.now() }
@@ -588,6 +632,140 @@ async function hodlBenchmark(coinId: string, capital: number, startMs: number, e
   }
 }
 
+// ─── Stored-trade source (Supabase all_whale_transactions) ───────────────
+// Tracked wallets already have their full BUY/SELL tape in Supabase — it's
+// the same data that powers the holdings table on the wallet page. Using it
+// as the PRIMARY source means the common case needs ZERO calls to the
+// on-chain transfer providers (Alchemy / Helius), which are the components
+// that rate-limit (HTTP 429) and previously failed the entire backtest.
+// CoinGecko still supplies prices for sizing + mark-to-market + benchmarks;
+// it has a Pro key and backoff so it is far more reliable.
+async function buildStoredTrades(
+  address: string,
+  chain: BacktestChain,
+  startMs: number,
+  endMs: number,
+): Promise<{ trades: CanonicalTrade[]; warnings: string[] }> {
+  const warnings: string[] = []
+  const startIso = new Date(startMs).toISOString()
+  const endIso = new Date(endMs).toISOString()
+
+  let rows: any[] = []
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('all_whale_transactions')
+      .select('token_symbol, token_address, classification, usd_value, timestamp, blockchain')
+      .eq('whale_address', address)
+      .gte('timestamp', startIso)
+      .lte('timestamp', endIso)
+      .order('timestamp', { ascending: true })
+      .limit(5000)
+    if (error) {
+      warnings.push('Stored trade history was unavailable; fell back to on-chain history.')
+      return { trades: [], warnings }
+    }
+    rows = data || []
+  } catch {
+    return { trades: [], warnings }
+  }
+
+  const aliases = CHAIN_DB_ALIASES[chain]
+  const native = NATIVE_COINGECKO[chain]
+  const wrapped = NATIVE_WRAP_SYMBOLS[chain]
+  const isEvm = chain === 'ethereum' || chain === 'polygon'
+  const NATIVE_SYMS = new Set(['ETH', 'WETH', 'MATIC', 'POL', 'WMATIC', 'SOL', 'WSOL'])
+
+  // Keep only BUY/SELL legs on the requested chain. classification casing is
+  // not guaranteed in storage (the holdings route also upper-cases it), so we
+  // normalise in JS rather than filtering case-sensitively in the query.
+  const inChain = rows
+    .map((r) => ({ ...r, _cls: String(r.classification || '').toUpperCase() }))
+    .filter((r) => {
+      if (r._cls !== 'BUY' && r._cls !== 'SELL') return false
+      const bc = r.blockchain ? String(r.blockchain).toLowerCase() : ''
+      return !bc || aliases.has(bc)
+    })
+  if (inChain.length === 0) return { trades: [], warnings }
+
+  // Resolve a CoinGecko-priceable reference for a stored row. Stored rows
+  // usually have an empty token_address, so symbol → coin id is the main path.
+  const refForRow = (r: any): { ref: TokenRef; coingeckoId: string | null; contract: string | null } | null => {
+    const sym = String(r.token_symbol || '').toUpperCase()
+    const addr = r.token_address ? String(r.token_address).trim() : ''
+    const looksEvmContract = /^0x[a-fA-F0-9]{40}$/.test(addr)
+    // Native chain asset (ETH / MATIC / SOL and wrapped variants).
+    if (NATIVE_SYMS.has(sym) || wrapped.has(sym)) {
+      return { ref: { kind: 'coin_id', id: native }, coingeckoId: native, contract: null }
+    }
+    // Explicit contract address (rare on EVM stored rows; common Solana mints).
+    if (isEvm && looksEvmContract) {
+      const c = addr.toLowerCase()
+      return { ref: { kind: 'contract', chain, contract: c }, coingeckoId: null, contract: c }
+    }
+    if (!isEvm && addr) {
+      return { ref: { kind: 'contract', chain, contract: addr }, coingeckoId: null, contract: addr }
+    }
+    // Symbol-only row — resolve a CoinGecko coin id (mapped, else lower-cased).
+    if (!sym) return null
+    const id = SYMBOL_TO_COINGECKO_ID[sym] || sym.toLowerCase()
+    return { ref: { kind: 'coin_id', id }, coingeckoId: id, contract: null }
+  }
+
+  // Prefetch unique price series with bounded concurrency.
+  const uniqueRefs = new Map<string, TokenRef>()
+  for (const r of inChain) {
+    const rr = refForRow(r)
+    if (rr) uniqueRefs.set(holdingKey(rr.ref), rr.ref)
+  }
+  const seriesByKey = new Map<string, PricePoint[]>()
+  const refEntries = Array.from(uniqueRefs.entries())
+  const SERIES_CONCURRENCY = 6
+  let refCursor = 0
+  await Promise.all(
+    Array.from({ length: Math.min(SERIES_CONCURRENCY, refEntries.length) }, async () => {
+      while (true) {
+        const i = refCursor++
+        if (i >= refEntries.length) return
+        const [key, ref] = refEntries[i]
+        try {
+          seriesByKey.set(key, await getSeries(ref, startMs, endMs + 86400000))
+        } catch {
+          seriesByKey.set(key, [])
+        }
+      }
+    }),
+  )
+
+  const trades: CanonicalTrade[] = []
+  for (const r of inChain) {
+    const rr = refForRow(r)
+    if (!rr) continue
+    const key = holdingKey(rr.ref)
+    const ts = typeof r.timestamp === 'string' ? r.timestamp : new Date(r.timestamp).toISOString()
+    const tsMs = new Date(ts).getTime()
+    if (!Number.isFinite(tsMs)) continue
+    const usd = Number(r.usd_value) || 0
+    if (usd < DUST_USD) continue
+    const px = priceAt(seriesByKey.get(key) || [], tsMs)
+    // Unpriceable token (rug / unlisted) → we couldn't have copied it with
+    // confidence, so leave it out. Matches the disclaimer shown on the panel.
+    if (px == null || px <= 0) continue
+    trades.push({
+      ts,
+      tx_hash: '',
+      action: r._cls === 'BUY' ? 'BUY' : 'SELL',
+      token_symbol: r.token_symbol || null,
+      token_contract: rr.contract,
+      token_coingecko_id: rr.coingeckoId,
+      qty: usd / px,
+      usd_value: usd,
+    })
+  }
+
+  trades.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
+  return { trades, warnings }
+}
+
 // ─── Public entrypoint ──────────────────────────────────────────────────
 export interface RunBacktestArgs {
   address: string
@@ -610,7 +788,16 @@ export async function runBacktest(args: RunBacktestArgs): Promise<RunBacktestOut
   const warnings: string[] = []
 
   let trades: CanonicalTrade[] = []
-  if (chain === 'ethereum' || chain === 'polygon') {
+
+  // Primary source: the wallet's stored BUY/SELL tape (no rate-limited
+  // on-chain provider needed). Fall back to live transfer fetchers only
+  // when we have no stored trades for this wallet (e.g. an untracked
+  // address a user pasted in).
+  const stored = await buildStoredTrades(address, chain, start_ms, end_ms)
+  if (stored.trades.length > 0) {
+    trades = stored.trades
+    warnings.push(...stored.warnings)
+  } else if (chain === 'ethereum' || chain === 'polygon') {
     const r = await buildEvmTrades(address, chain, start_ms, end_ms)
     trades = r.trades
     warnings.push(...r.warnings)
