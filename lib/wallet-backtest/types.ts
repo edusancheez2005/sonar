@@ -49,6 +49,18 @@ export interface BenchmarkResult {
   total_return_pct: number
 }
 
+// Market-maker / exchange-routing assessment for a wallet. When a wallet's
+// tracked activity is mostly CEX deposits/withdrawals, a copy-trade backtest
+// is not meaningful and the UI surfaces a caveat from this.
+export interface CexRoutingInfo {
+  is_cex_router: boolean
+  venue: string | null            // dominant exchange brand, e.g. 'Binance'
+  top_counterparty_pct: number    // % of tracked volume via the single top counterparty
+  sell_to_cex_pct: number         // % of SELL volume deposited into exchanges
+  deposits_usd: number            // volume sent to exchanges (sells into CEX)
+  withdrawals_usd: number         // volume received from exchanges (buys from CEX)
+}
+
 export interface BacktestResponse {
   address: string
   chain: BacktestChain
@@ -65,4 +77,5 @@ export interface BacktestResponse {
   computed_in_ms: number
   cache_hit: boolean
   warnings: string[]
+  cex_routing?: CexRoutingInfo | null
 }

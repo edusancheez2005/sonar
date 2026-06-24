@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runBacktest } from '@/lib/wallet-backtest/engine'
+import { detectCexRouting } from '@/lib/wallet/cexRouting'
 import type { BacktestChain, BacktestResponse } from '@/lib/wallet-backtest/types'
 
 export const dynamic = 'force-dynamic'
@@ -136,7 +137,10 @@ export async function GET(
   }
 
   try {
-    const out = await runBacktest({ address, chain, capital_usd, start_ms, end_ms })
+    const [out, cexRouting] = await Promise.all([
+      runBacktest({ address, chain, capital_usd, start_ms, end_ms }),
+      detectCexRouting(address, chain).catch(() => null),
+    ])
     const payload: BacktestResponse = {
       address,
       chain,
@@ -150,6 +154,7 @@ export async function GET(
       computed_in_ms: Date.now() - t0,
       cache_hit: false,
       warnings: out.warnings,
+      cex_routing: cexRouting,
     }
     resultCache.set(key, { fetchedAt: now, payload })
     return NextResponse.json(payload, {

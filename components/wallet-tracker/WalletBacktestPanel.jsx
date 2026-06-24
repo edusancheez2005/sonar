@@ -203,6 +203,10 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
     (totalReturn <= -90 && tradeCount < 30) ||
     tradeCount < 5
   )
+  // Market-maker / exchange-routing wallets: their tracked "trades" are mostly
+  // CEX deposits/withdrawals, so the copy-trade replay isn't meaningful.
+  const cexRouting = data?.cex_routing
+  const isCexRouter = !!cexRouting?.is_cex_router
 
   return (
     <section
@@ -324,6 +328,15 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
       {/* Result */}
       {data && !error ? (
         <>
+          {isCexRouter ? (
+            <div role="status" style={{ marginTop: '1rem', padding: '0.8rem 0.95rem', background: 'rgba(34, 211, 238, 0.08)', border: '1px solid rgba(34, 211, 238, 0.35)', borderRadius: '12px', color: '#bdeffb', fontSize: '0.85rem', lineHeight: 1.5 }}>
+              <strong style={{ color: 'var(--neon-bright)' }}>🏦 Market-maker / exchange-routing wallet.</strong>{' '}
+              About {cexRouting.top_counterparty_pct}% of this wallet&apos;s tracked volume moves through {cexRouting.venue}&apos;s hot wallets
+              {cexRouting.deposits_usd > 0 ? <> — it deposited {formatUsd(cexRouting.deposits_usd)} to {cexRouting.venue} and withdrew {formatUsd(cexRouting.withdrawals_usd)}</> : null}.
+              Its on-chain &ldquo;trades&rdquo; are mostly exchange transfers (deposit = sell, withdrawal = buy), so this copy-trade
+              simulation isn&apos;t meaningful for it — the numbers below are shown for transparency only.
+            </div>
+          ) : null}
           {lowQuality ? (
             <div role="status" style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', background: 'rgba(247, 147, 26, 0.10)', border: '1px solid rgba(247, 147, 26, 0.45)', borderRadius: '10px', color: '#f7c97a', fontSize: '0.85rem', lineHeight: 1.45 }}>
               ⚠ <strong>Backtest unreliable for this wallet.</strong>{' '}
