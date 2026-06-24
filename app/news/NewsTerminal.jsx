@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import styled, { keyframes, createGlobalStyle } from 'styled-components'
-import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
-import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 // ─── DESIGN DIRECTION ───────────────────────────────────────────────
 // The one deliberately-open decision from the design handoff:
@@ -690,50 +688,29 @@ export default function NewsTerminal({ initialNews = [] }) {
     return () => clearInterval(iv)
   }, [])
 
-  // Additional DB news articles (merged + deduped).
+  // Live, real-time crypto news from publisher RSS (Cointelegraph/CoinDesk/Decrypt…).
+  // The Supabase news_items feed lags and its recent rows are untitled LunarCrush
+  // records, so this is what guarantees a genuinely fresh (<24h) breaking story.
   useEffect(() => {
     const load = async () => {
       try {
-        const sb = supabaseBrowser()
-        const { data } = await sb
-          .from('news_items')
-          .select('id,title,description,published_at,source,url,image,tokens_mentioned,ticker,sentiment_llm')
-          .order('published_at', { ascending: false })
-          .limit(200)
-        if (data && data.length > 0) {
-          const mapped = data
-            .filter((n) => {
-              const codes = n.tokens_mentioned && n.tokens_mentioned.length ? n.tokens_mentioned : n.ticker ? [n.ticker] : []
-              if (!codes.length) return true
-              const text = `${n.title || ''} ${n.description || ''}`
-              return codes.some((c) => isCryptoRelevant(text, String(c)))
-            })
-            .map((n) => ({
-              id: n.id,
-              title: n.title || '',
-              description: n.description || '',
-              published_at: n.published_at,
-              source: n.source || 'Unknown',
-              url: n.url || '',
-              image: n.image || '',
-              instruments: (n.tokens_mentioned || []).map((t) => ({ code: t })),
-              sentiment_llm: n.sentiment_llm,
-              kind: 'news',
-            }))
-          setArticles((prev) => {
-            const existing = new Set(prev.map((p) => p.url || p.id))
-            const newItems = mapped.filter((m) => !existing.has(m.url || m.id))
-            const merged = [...prev, ...newItems]
-            merged.sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
-            return merged.slice(0, 200)
-          })
-        }
+        const res = await fetch('/api/news/live', { cache: 'no-store' })
+        const data = await res.json()
+        if (!Array.isArray(data?.articles) || data.articles.length === 0) return
+        setArticles((prev) => {
+          const existing = new Set(prev.map((p) => p.url || p.id))
+          const fresh = data.articles.filter((a) => !existing.has(a.url || a.id))
+          if (!fresh.length) return prev
+          const merged = [...fresh, ...prev]
+          merged.sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
+          return merged.slice(0, 200)
+        })
       } catch {
         /* ignore */
       }
     }
     load()
-    const iv = setInterval(load, 10 * 60 * 1000)
+    const iv = setInterval(load, 5 * 60 * 1000)
     return () => clearInterval(iv)
   }, [])
 
@@ -866,7 +843,7 @@ export default function NewsTerminal({ initialNews = [] }) {
     // Breaking must be RECENT: only real news articles from the last 24h qualify.
     // If none are that fresh, fall back to the top recent story but label it
     // "TOP STORY" rather than lying with a "BREAKING · 6d ago" tag.
-    const news = pool.filter((a) => a.kind !== 'x-post' && a.kind !== 'social')
+    const news = pool.filter((a) => a.kind !== 'x-post' && a.kind !== 'social' && a.title && a.title !== 'Untitled')
     const fresh = news.filter((a) => ageHours(a) <= 24)
     const scorePool = (fresh.length ? fresh : news).slice(0, 80)
     if (!scorePool.length) return null
