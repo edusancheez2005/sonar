@@ -5,17 +5,37 @@ import styled from 'styled-components'
 import { shortenAddress, formatUsd } from '@/lib/wallet-tracker'
 
 const Card = styled.div`
-  background: var(--background-card);
-  border-radius: 12px;
+  position: relative;
+  background: linear-gradient(180deg, rgba(13, 33, 52, 0.72) 0%, rgba(8, 16, 25, 0.62) 100%);
+  border: 1px solid var(--neon-border);
+  border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 `
 
 const Title = styled.h3`
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-weight: 700;
+  color: var(--neon-bright);
   margin-bottom: 1rem;
+
+  &::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 10px var(--neon-glow);
+  }
 `
 
 const Table = styled.table`

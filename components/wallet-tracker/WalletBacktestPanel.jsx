@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 // WalletBacktestPanel
 // "If you had copied <name> with $X starting <date>, you would have $Y."
@@ -119,12 +119,16 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [errorTransient, setErrorTransient] = useState(false)
   const [autoRan, setAutoRan] = useState(false)
+  const retryRef = useRef(0)
 
   const runBacktest = async () => {
     if (!address) return
     setLoading(true)
     setError(null)
+    setErrorTransient(false)
+    let scheduledRetry = false
     try {
       const params = new URLSearchParams({
         chain,
@@ -136,16 +140,37 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
       const res = await fetch(url, { cache: 'no-store' })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(json?.error || `Request failed (${res.status})`)
+        const transient = res.status === 429 || res.status === 503 || json?.rate_limited === true
         setData(null)
+        // Auto-retry once on a transient upstream hiccup (rate limit) before
+        // surfacing anything to the user — most clear within a few seconds.
+        if (transient && retryRef.current < 1) {
+          retryRef.current += 1
+          setErrorTransient(true)
+          setError(json?.error || 'The data provider is busy. Retrying…')
+          scheduledRetry = true
+          setTimeout(runBacktest, 4000)
+          return
+        }
+        setErrorTransient(transient)
+        setError(json?.error || `Request failed (${res.status})`)
         return
       }
+      retryRef.current = 0
       setData(json)
     } catch (e) {
+      setErrorTransient(false)
       setError(e?.message || 'Unexpected error')
     } finally {
-      setLoading(false)
+      if (!scheduledRetry) setLoading(false)
     }
+  }
+
+  // Manual retry resets the auto-retry budget so a click always gets a
+  // fresh attempt (and another automatic retry if it's still busy).
+  const retryNow = () => {
+    retryRef.current = 0
+    runBacktest()
   }
 
   // Auto-run once with defaults so the panel is useful at first paint.
@@ -182,24 +207,34 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
   return (
     <section
       style={{
-        background: 'linear-gradient(135deg, #0d2134 0%, #112a40 100%)',
-        border: '1px solid rgba(54, 166, 186, 0.25)',
-        borderRadius: '20px',
+        position: 'relative',
+        overflow: 'hidden',
+        background:
+          'radial-gradient(620px 220px at 100% 0%, rgba(34, 211, 238, 0.1), transparent 60%), linear-gradient(180deg, rgba(13, 33, 52, 0.72) 0%, rgba(8, 16, 25, 0.62) 100%)',
+        border: '1px solid var(--neon-border)',
+        borderRadius: '18px',
         padding: '1.5rem',
         margin: '1.5rem 0',
         color: 'var(--text-primary)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>
-            🔁 Copy-trade backtest
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '1.4px', fontWeight: 700, color: 'var(--neon-bright)', margin: 0 }}>
+            <span aria-hidden="true" style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--neon-cyan)', boxShadow: '0 0 10px var(--neon-glow)' }} />
+            Copy-trade backtest
           </h3>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-            Replays this wallet&apos;s trades to estimate copy-trader P&amp;L.
+          <div style={{ color: 'var(--text-primary)', fontSize: '1.05rem', fontWeight: 700, marginTop: '0.5rem' }}>
+            Replay this wallet&apos;s trades as if you&apos;d copied them
+          </div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.15rem' }}>
+            Estimates a copy-trader&apos;s P&amp;L from on-chain history.
           </div>
         </div>
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', maxWidth: '320px', textAlign: 'right' }}>
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', maxWidth: '300px', textAlign: 'right', lineHeight: 1.5 }}>
           30bps fee assumed. Prices via CoinGecko. Tokens with no price history are marked to zero.
         </div>
       </div>
@@ -251,15 +286,17 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
           disabled={loading}
           style={{
             marginLeft: 'auto',
-            padding: '0.5rem 1.1rem',
-            background: '#36a6ba',
+            padding: '0.55rem 1.3rem',
+            background: loading ? 'rgba(34, 211, 238, 0.25)' : 'linear-gradient(135deg, #22d3ee, #36a6ba)',
             border: 'none',
-            borderRadius: '8px',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: '0.88rem',
+            borderRadius: '10px',
+            color: loading ? 'var(--text-secondary)' : '#04141b',
+            fontWeight: 800,
+            fontSize: '0.85rem',
+            letterSpacing: '0.3px',
             cursor: loading ? 'wait' : 'pointer',
-            opacity: loading ? 0.6 : 1,
+            boxShadow: loading ? 'none' : '0 6px 18px rgba(34, 211, 238, 0.3)',
+            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
           }}
         >
           {loading ? 'Running…' : '▶ Run backtest'}
@@ -267,7 +304,21 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
       </div>
 
       {error ? (
-        <div role="alert" style={errorStyle}>{error}</div>
+        <div role="alert" style={errorTransient ? transientStyle : errorStyle}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {errorTransient && loading ? (
+              <span style={spinnerStyle} aria-hidden="true" />
+            ) : (
+              <span aria-hidden="true">{errorTransient ? '⏳' : '⚠'}</span>
+            )}
+            <span>{error}</span>
+          </span>
+          {!loading ? (
+            <button type="button" onClick={retryNow} style={retryBtnStyle}>
+              ↻ Retry
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {/* Result */}
@@ -312,7 +363,7 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
           </div>
 
           {/* Equity chart */}
-          <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(13, 33, 52, 0.6)', borderRadius: '12px', border: '1px solid rgba(54, 166, 186, 0.18)' }}>
+          <div style={{ marginTop: '1rem', padding: '0.85rem', background: 'rgba(6, 14, 22, 0.5)', borderRadius: '14px', border: '1px solid var(--neon-border)' }}>
             <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
               <Legend color="#36a6ba" label="Wallet (copy-trade)" solid />
               <Legend color="#f7931a" label="BTC HODL" />
@@ -336,8 +387,15 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
         </>
       ) : null}
 
+      {loading && !data && !error ? (
+        <div style={{ marginTop: '1rem', padding: '1.4rem', background: 'rgba(6, 14, 22, 0.5)', borderRadius: '14px', border: '1px solid var(--neon-border)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
+          <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid rgba(34, 211, 238, 0.25)', borderTopColor: 'var(--neon-cyan)', display: 'inline-block', animation: 'sonar-spin 0.8s linear infinite' }} aria-hidden="true" />
+          Replaying on-chain trades…
+        </div>
+      ) : null}
+
       {!data && !error && !loading ? (
-        <div style={{ marginTop: '1rem', padding: '1.25rem', background: 'rgba(13, 33, 52, 0.5)', borderRadius: '12px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
+        <div style={{ marginTop: '1rem', padding: '1.4rem', background: 'rgba(6, 14, 22, 0.5)', borderRadius: '14px', border: '1px solid var(--neon-border)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
           Configure capital and date range above, then run a backtest.
         </div>
       ) : null}
@@ -350,13 +408,13 @@ function Stat({ label, value, sub, tone }) {
   return (
     <div
       style={{
-        padding: '0.75rem 0.85rem',
-        background: 'rgba(13, 33, 52, 0.7)',
-        border: '1px solid rgba(54, 166, 186, 0.2)',
-        borderRadius: '12px',
+        padding: '0.8rem 0.9rem',
+        background: 'rgba(6, 14, 22, 0.55)',
+        border: '1px solid var(--neon-border)',
+        borderRadius: '14px',
       }}
     >
-      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+      <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 600 }}>
         {label}
       </div>
       <div style={{ marginTop: '0.2rem', fontSize: '1.08rem', fontWeight: 800, color }}>
@@ -390,17 +448,20 @@ function Legend({ color, label, solid, dashed }) {
 const labelStyle = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '0.25rem',
-  fontSize: '0.78rem',
+  gap: '0.32rem',
+  fontSize: '0.7rem',
+  fontFamily: 'var(--font-mono)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.7px',
   fontWeight: 600,
   color: 'var(--text-secondary)',
 }
 
 const inputStyle = {
-  padding: '0.5rem 0.65rem',
-  background: 'rgba(13, 33, 52, 0.7)',
-  border: '1px solid rgba(54, 166, 186, 0.3)',
-  borderRadius: '8px',
+  padding: '0.55rem 0.7rem',
+  background: 'rgba(6, 14, 22, 0.6)',
+  border: '1px solid var(--neon-border)',
+  borderRadius: '10px',
   color: 'var(--text-primary)',
   fontSize: '0.88rem',
   outline: 'none',
@@ -408,25 +469,60 @@ const inputStyle = {
 
 function presetStyle(active) {
   return {
-    padding: '0.35rem 0.7rem',
-    background: active ? 'rgba(54, 166, 186, 0.22)' : 'rgba(54, 166, 186, 0.06)',
-    border: `1px solid ${active ? '#36a6ba' : 'rgba(54, 166, 186, 0.2)'}`,
+    padding: '0.4rem 0.8rem',
+    background: active ? 'rgba(34, 211, 238, 0.16)' : 'rgba(34, 211, 238, 0.05)',
+    border: `1px solid ${active ? 'var(--neon-line)' : 'var(--neon-border)'}`,
     borderRadius: '999px',
-    color: active ? '#36a6ba' : 'var(--text-secondary)',
+    color: active ? 'var(--neon-bright)' : 'var(--text-secondary)',
     fontWeight: active ? 700 : 500,
     fontSize: '0.78rem',
     cursor: 'pointer',
+    transition: 'all 0.15s',
   }
 }
 
 const errorStyle = {
   marginTop: '0.85rem',
-  padding: '0.75rem 0.9rem',
+  padding: '0.7rem 0.9rem',
   background: 'rgba(231, 76, 60, 0.1)',
   border: '1px solid rgba(231, 76, 60, 0.4)',
   borderRadius: '10px',
   color: '#e74c3c',
   fontSize: '0.85rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '0.75rem',
+  flexWrap: 'wrap',
+}
+
+const transientStyle = {
+  ...errorStyle,
+  background: 'rgba(247, 147, 26, 0.1)',
+  border: '1px solid rgba(247, 147, 26, 0.4)',
+  color: '#f7c97a',
+}
+
+const retryBtnStyle = {
+  flexShrink: 0,
+  padding: '0.35rem 0.8rem',
+  background: 'rgba(34, 211, 238, 0.1)',
+  border: '1px solid var(--neon-border)',
+  borderRadius: '8px',
+  color: 'var(--neon-bright)',
+  fontSize: '0.8rem',
+  fontWeight: 700,
+  cursor: 'pointer',
+}
+
+const spinnerStyle = {
+  width: '13px',
+  height: '13px',
+  borderRadius: '50%',
+  border: '2px solid rgba(247, 201, 122, 0.3)',
+  borderTopColor: '#f7c97a',
+  display: 'inline-block',
+  animation: 'sonar-spin 0.8s linear infinite',
 }
 
 const warnStyle = {

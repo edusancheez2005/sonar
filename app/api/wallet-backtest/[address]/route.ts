@@ -159,10 +159,30 @@ export async function GET(
     // Common upstream failures: missing ALCHEMY_API_KEY, COINGECKO 429,
     // Helius 401. Surface a generic message to clients but log details.
     console.error('wallet-backtest failed:', e?.stack || e?.message || e)
+    const debug = url.searchParams.get('debug') === '1'
+
+    // Transient upstream rate-limit (Alchemy / CoinGecko / Helius). Answer
+    // with a retryable 429 + Retry-After so the client can show a friendly
+    // "engine busy, retrying" state instead of a scary permanent failure.
+    const rateLimited =
+      e?.isRateLimit === true ||
+      /\b429\b|rate.?limit|too many|capacity|throughput/i.test(String(e?.message || ''))
+    if (rateLimited) {
+      const ra = Number(e?.retryAfterSec)
+      const retryAfter = Number.isFinite(ra) && ra > 0 ? Math.min(30, Math.max(1, Math.ceil(ra))) : 6
+      return NextResponse.json(
+        {
+          error: 'The on-chain data provider is busy right now. Retrying shortly…',
+          rate_limited: true,
+          ...(debug ? { debug_message: String(e?.message || e).slice(0, 1000) } : {}),
+        },
+        { status: 429, headers: { 'Retry-After': String(retryAfter), 'Cache-Control': 'no-store' } }
+      )
+    }
+
     // Opt-in debug: ?debug=1 returns the underlying error message.
     // Useful for the nightly cron's /admin diagnostic view; never
     // wired into the public client.
-    const debug = url.searchParams.get('debug') === '1'
     return NextResponse.json(
       debug
         ? {

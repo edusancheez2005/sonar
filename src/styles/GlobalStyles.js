@@ -69,6 +69,7 @@ const GlobalStyles = createGlobalStyle`
   .slide-in { transform: translateY(20px); opacity: 0; animation: slideIn 0.5s forwards; }
   @keyframes fadeIn { to { opacity: 1; } }
   @keyframes slideIn { to { transform: translateY(0); opacity: 1; } }
+  @keyframes sonar-spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 768px) {
     h1 { font-size: 1.5rem; }

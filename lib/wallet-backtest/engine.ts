@@ -154,10 +154,10 @@ async function buildEvmTrades(
   // which produces block numbers in the hundreds of millions — well
   // beyond any real chain head — so Alchemy rejects with
   // "fromBlock cannot be greater than toBlock".
-  // We page from block 0 (Alchemy returns oldest-first by default and
-  // we cap at MAX_PAGES) and rely on the ts filter just below to
-  // narrow into the requested window.
-  const transfers = await getEvmTransfers(address, chain, 0, 'latest')
+  // We page from block 0 (Alchemy returns newest-first via order:'desc')
+  // and pass startMs so the fetcher can stop early once it pages past the
+  // requested window — fewer Alchemy calls means fewer rate-limit hits.
+  const transfers = await getEvmTransfers(address, chain, 0, 'latest', startMs)
 
   const inRange = transfers.filter((t) => {
     const tsMs = new Date(t.ts).getTime()
