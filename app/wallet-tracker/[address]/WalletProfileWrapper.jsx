@@ -272,11 +272,35 @@ const STAT_ICONS = {
   ),
 }
 
-function StatTile({ label, value, color, accent, icon }) {
+const REALIZED_HINT =
+  "Realized profit/loss on this wallet's tracked round-trip trades, priced at execution with FIFO cost basis and a 0.3% fee. Sells of inventory acquired before tracking (and tokens we can't price) are excluded — that's why it differs from raw buy/sell flow."
+
+const InfoDot = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  margin-left: 0.4rem;
+  border-radius: 50%;
+  border: 1px solid var(--neon-border);
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  vertical-align: middle;
+`
+
+function StatTile({ label, value, color, accent, icon, hint }) {
   return (
     <StatCard $accent={accent}>
       <StatHead>
-        <StatLabel>{label}</StatLabel>
+        <StatLabel>
+          {label}
+          {hint ? <InfoDot title={hint}>i</InfoDot> : null}
+        </StatLabel>
         {icon ? <StatIcon $accent={accent}>{STAT_ICONS[icon]}</StatIcon> : null}
       </StatHead>
       <StatValue $color={color}>{value}</StatValue>
@@ -288,6 +312,7 @@ export default function WalletProfileWrapper({ address }) {
   const [profile, setProfile] = useState(null)
   const [counterparties, setCounterparties] = useState([])
   const [loading, setLoading] = useState(true)
+  const [realizedPnl, setRealizedPnl] = useState(undefined) // undefined = loading
   const [showWatchlistModal, setShowWatchlistModal] = useState(false)
   const [showAlertModal, setShowAlertModal] = useState(false)
 
@@ -324,6 +349,22 @@ export default function WalletProfileWrapper({ address }) {
     fetchCounterparties()
   }, [fetchProfile, fetchCounterparties])
 
+  // Compute the honest, price-aware realized PnL out-of-band so it never
+  // blocks first paint. Only for tracked EVM wallets (the stored profile's
+  // pnl_estimated_usd is the misleading net-flow figure we're replacing).
+  useEffect(() => {
+    if (!profile || profile.unknown || profile.source === 'polymarket') return
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return
+    let cancelled = false
+    setRealizedPnl(undefined)
+    const chain = profile.chain || 'ethereum'
+    fetch(`/api/wallet-tracker/${encodeURIComponent(address)}/realized-pnl?chain=${encodeURIComponent(chain)}`)
+      .then((r) => r.json())
+      .then((j) => { if (!cancelled) setRealizedPnl(j) })
+      .catch(() => { if (!cancelled) setRealizedPnl(null) })
+    return () => { cancelled = true }
+  }, [address, profile])
+
   if (loading) {
     return (
       <PageContainer>
@@ -355,6 +396,15 @@ export default function WalletProfileWrapper({ address }) {
   const topTokens = profile.top_tokens || []
   const pnlColor = profile.pnl_estimated_usd > 0 ? '#00d4aa' : profile.pnl_estimated_usd < 0 ? '#ff6b6b' : 'var(--text-primary)'
   const displayName = profile.entity_name || shortenAddress(address)
+
+  // Realized-PnL tile state (EVM tracked wallets).
+  const realizedLoading = realizedPnl === undefined
+  const realizedVal = realizedPnl && Number.isFinite(realizedPnl.realized_pnl_usd) ? realizedPnl.realized_pnl_usd : null
+  const realizedDisplay = realizedLoading ? '…' : (realizedVal != null ? formatUsd(realizedVal) : '—')
+  const realizedColor = realizedLoading
+    ? 'var(--text-secondary)'
+    : (realizedVal > 0 ? '#00d4aa' : realizedVal < 0 ? '#ff6b6b' : 'var(--text-primary)')
+  const realizedAccent = realizedVal != null && realizedVal < 0 ? '#ff6b6b' : '#00d4aa'
 
   return (
     <PageContainer>
@@ -408,7 +458,7 @@ export default function WalletProfileWrapper({ address }) {
           <>
             <StatsGrid>
               <StatTile label="Portfolio Value" value={formatUsd(profile.portfolio_value_usd)} accent="#22d3ee" icon="wallet" />
-              <StatTile label="Estimated PnL" value={formatUsd(profile.pnl_estimated_usd)} color={pnlColor} accent={profile.pnl_estimated_usd >= 0 ? '#00d4aa' : '#ff6b6b'} icon="pnl" />
+              <StatTile label="Realized PnL" value={realizedDisplay} color={realizedColor} accent={realizedAccent} icon="pnl" hint={REALIZED_HINT} />
               <StatTile label="30d Volume" value={formatUsd(profile.total_volume_usd_30d)} accent="#36a6ba" icon="volume" />
               <StatTile label="Transactions" value={profile.tx_count ?? profile.tx_count_30d ?? '—'} accent="#7af8ff" icon="tx" />
             </StatsGrid>

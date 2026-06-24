@@ -766,6 +766,81 @@ async function buildStoredTrades(
   return { trades, warnings }
 }
 
+// ─── Realized PnL (the wallet's OWN performance) ─────────────────────────
+// Sums realized gains/losses on the wallet's tracked round-trips using FIFO
+// cost basis and real execution prices. This is the honest replacement for
+// the legacy "Estimated PnL" = Σ max(0, sell−buy), which had no cost basis
+// or price awareness and therefore reported pure distribution (selling
+// previously-acquired inventory) as fictitious profit.
+//
+// Sells with no matching tracked BUY are EXCLUDED from realized PnL — their
+// cost basis predates our data, so counting them would re-introduce exactly
+// that bias. We surface their size separately as `unmatched_sell_usd` for
+// transparency.
+export interface RealizedPnlResult {
+  realized_pnl_usd: number | null
+  priced_trade_count: number
+  matched_sell_usd: number
+  unmatched_sell_usd: number
+}
+
+export async function estimateRealizedPnl(args: {
+  address: string
+  chain: BacktestChain
+  startMs?: number
+  endMs?: number
+}): Promise<RealizedPnlResult> {
+  const endMs = args.endMs ?? Date.now()
+  // Cover the full tracked window (the unified tape starts ~2026-03).
+  const startMs = args.startMs ?? endMs - 400 * 86400000
+  const { trades } = await buildStoredTrades(args.address, args.chain, startMs, endMs)
+  if (trades.length === 0) {
+    return { realized_pnl_usd: null, priced_trade_count: 0, matched_sell_usd: 0, unmatched_sell_usd: 0 }
+  }
+
+  const lots = new Map<string, Array<{ qty: number; cost: number }>>()
+  let realized = 0
+  let matchedSell = 0
+  let unmatchedSell = 0
+
+  for (const t of trades) {
+    const key = t.token_coingecko_id || t.token_contract || t.token_symbol || 'x'
+    if (t.action === 'BUY') {
+      const arr = lots.get(key) || []
+      arr.push({ qty: t.qty, cost: t.usd_value })
+      lots.set(key, arr)
+    } else if (t.action === 'SELL') {
+      const sellPrice = t.qty > 0 ? t.usd_value / t.qty : 0
+      const arr = lots.get(key) || []
+      let qtyToSell = t.qty
+      let matchedQty = 0
+      let costMatched = 0
+      while (qtyToSell > 1e-12 && arr.length > 0) {
+        const lot = arr[0]
+        const unitCost = lot.qty > 0 ? lot.cost / lot.qty : 0
+        const take = Math.min(lot.qty, qtyToSell)
+        costMatched += take * unitCost
+        matchedQty += take
+        lot.qty -= take
+        lot.cost -= take * unitCost
+        qtyToSell -= take
+        if (lot.qty <= 1e-12) arr.shift()
+      }
+      const proceeds = matchedQty * sellPrice
+      realized += proceeds - costMatched
+      matchedSell += proceeds
+      unmatchedSell += Math.max(0, qtyToSell) * sellPrice
+    }
+  }
+
+  return {
+    realized_pnl_usd: round2(realized),
+    priced_trade_count: trades.length,
+    matched_sell_usd: round2(matchedSell),
+    unmatched_sell_usd: round2(unmatchedSell),
+  }
+}
+
 // ─── Public entrypoint ──────────────────────────────────────────────────
 export interface RunBacktestArgs {
   address: string
