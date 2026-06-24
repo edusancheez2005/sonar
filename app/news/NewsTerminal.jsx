@@ -291,6 +291,7 @@ const ECOSYSTEM_BY_KEY = Object.fromEntries(TOKEN_CHIPS.map((t) => [t.key, t.tok
 const marquee = keyframes`from{transform:translateX(0)}to{transform:translateX(-50%)}`
 const pulse = keyframes`0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}`
 const shimmer = keyframes`0%{background-position:-200% 0}100%{background-position:200% 0}`
+const spin = keyframes`to{transform:rotate(360deg)}`
 
 const Fonts = createGlobalStyle`
   .son-root *::-webkit-scrollbar{width:8px;height:8px}
@@ -525,6 +526,55 @@ const OrcaChip = styled.button`font-family: ${MONO}; font-size: 10px; color: #90
 // Skeletons
 const Sk = styled.div`height: ${(p) => p.$h || '12px'}; width: ${(p) => p.$w || '100%'}; border-radius: 3px; margin-bottom: ${(p) => p.$mb || '0'}; background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 25%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.04) 75%); background-size: 200% 100%; animation: ${shimmer} 1.5s ease infinite;`
 
+// Ask ORCA button (teal) + analysis modal
+const OrcaBtn = styled.button`
+  display: inline-flex; align-items: center; gap: 5px; font-family: ${MONO}; font-size: 10px;
+  font-weight: 600; letter-spacing: 0.08em; color: ${K.teal}; background: rgba(31, 182, 166, 0.08);
+  border: 1px solid rgba(31, 182, 166, 0.4); padding: 3px 9px; border-radius: 3px; cursor: pointer;
+  transition: all 0.12s; white-space: nowrap;
+  &:hover { background: ${K.teal}; color: #fff; border-color: ${K.teal}; }
+`
+const Overlay = styled.div`
+  position: fixed; inset: 0; z-index: 50; background: rgba(8, 10, 14, 0.62); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+`
+const Modal = styled.div`
+  width: 100%; max-width: 640px; max-height: 85vh; overflow-y: auto; background: ${K.dark};
+  border: 1px solid rgba(31, 182, 166, 0.3); border-radius: 8px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+`
+const ModalHead = styled.div`display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); position: sticky; top: 0; background: ${K.dark};`
+const ModalBrand = styled.div`display: flex; align-items: center; gap: 8px; font-family: ${MONO}; font-size: 12px; letter-spacing: 0.18em; color: ${K.teal};`
+const ModalClose = styled.button`background: none; border: none; color: #7a818b; font-size: 18px; line-height: 1; cursor: pointer; &:hover { color: #fff; }`
+const ModalBody = styled.div`padding: 18px;`
+const ModalTitle = styled.div`font-family: ${HL}; font-weight: ${FEED_WEIGHT}; font-size: 17px; line-height: 1.3; color: #eceef1;`
+const ModalSource = styled.div`font-family: ${MONO}; font-size: 10px; color: #7a818b; letter-spacing: 0.06em; margin: 4px 0 16px;`
+const Section = styled.div`margin-bottom: 13px;`
+const SectionLabel = styled.div`font-family: ${MONO}; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; color: ${K.teal}; margin-bottom: 3px;`
+const SectionText = styled.div`font-size: 13.5px; line-height: 1.55; color: #c2c8d0;`
+const Loading = styled.div`display: flex; align-items: center; gap: 10px; padding: 14px 0; font-family: ${MONO}; font-size: 12px; color: #9097a0;`
+const Spinner = styled.span`width: 13px; height: 13px; flex: none; border: 2px solid rgba(31, 182, 166, 0.25); border-top-color: ${K.teal}; border-radius: 50%; animation: ${spin} 0.7s linear infinite;`
+const ModalFoot = styled.div`display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px 18px; flex-wrap: wrap;`
+const ModalLink = styled.a`font-family: ${MONO}; font-size: 11px; color: #9097a0; text-decoration: none; &:hover { color: ${K.teal}; }`
+const ModalCta = styled.button`font-family: ${MONO}; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: ${K.teal}; background: rgba(31, 182, 166, 0.08); border: 1px solid rgba(31, 182, 166, 0.4); padding: 7px 12px; border-radius: 4px; cursor: pointer; transition: all 0.12s; &:hover { background: ${K.teal}; color: #fff; }`
+
+// Parse ORCA's plain-text "LABEL: text" analysis into labeled sections.
+function parseAnalysis(text) {
+  if (!text) return []
+  return text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const idx = line.indexOf(':')
+      const head = idx > 0 ? line.slice(0, idx) : ''
+      if (idx > 0 && idx <= 24 && head === head.toUpperCase() && /[A-Z]/.test(head)) {
+        return { label: head.trim(), text: line.slice(idx + 1).trim() }
+      }
+      return { label: '', text: line.replace(/^[-*]\s*/, '') }
+    })
+    .filter((s) => s.text)
+}
+
 // ─── COMPONENT ──────────────────────────────────────────────────────
 export default function NewsTerminal({ initialNews = [] }) {
   const [tab, setTab] = useState('articles')
@@ -541,6 +591,7 @@ export default function NewsTerminal({ initialNews = [] }) {
   const [clock, setClock] = useState('')
   const [orcaQ, setOrcaQ] = useState('')
   const [heroWhy, setHeroWhy] = useState('')
+  const [orcaModal, setOrcaModal] = useState(null)
 
   // Live clock (UPDATED hh:mm:ss)
   useEffect(() => {
@@ -778,6 +829,7 @@ export default function NewsTerminal({ initialNews = [] }) {
           title: p.body || '',
           body: '',
           byline: `@${p.creator_screen_name || 'x'} · ${timeAgo(p.published_at)}`,
+          source: `@${p.creator_screen_name || 'x'}`,
           sent: s,
           token: t ? String(t).toUpperCase() : '',
           url: p.url || '',
@@ -792,6 +844,7 @@ export default function NewsTerminal({ initialNews = [] }) {
         title: a.title || '',
         body: a.description || '',
         byline: `${a.source || 'Unknown'} · ${timeAgo(a.published_at)}`,
+        source: a.source || '',
         sent: s,
         token: t ? String(t.code).toUpperCase() : '',
         url: a.url || '',
@@ -928,6 +981,39 @@ export default function NewsTerminal({ initialNews = [] }) {
     if (!v) return
     window.location.href = `/ai-advisor?q=${encodeURIComponent(v)}`
   }
+
+  // Per-article ORCA analysis modal: "walk me through how this moved the market".
+  const openOrca = (item) => {
+    if (!item || !item.title) return
+    const coin = item.token ? coinBySym.get(item.token) : null
+    const pct = coin && coin.open ? (coin.price / coin.open - 1) * 100 : undefined
+    setOrcaModal({ title: item.title, source: item.source || '', url: item.url || '', loading: true, analysis: '', error: false })
+    fetch('/api/news/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: item.title,
+        description: item.body || item.summary || '',
+        source: item.source || '',
+        token: item.token || '',
+        pct,
+        sentiment: item.sent || '',
+      }),
+    })
+      .then((r) => r.json())
+      .then((d) => setOrcaModal((m) => (m ? { ...m, loading: false, analysis: (d && d.analysis) || '', error: !(d && d.analysis) } : m)))
+      .catch(() => setOrcaModal((m) => (m ? { ...m, loading: false, error: true } : m)))
+  }
+  const closeOrca = () => setOrcaModal(null)
+
+  useEffect(() => {
+    if (!orcaModal) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOrcaModal(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [orcaModal])
 
   const tickerRows = railRows.length ? railRows : []
 
@@ -1094,11 +1180,20 @@ export default function NewsTerminal({ initialNews = [] }) {
                         </BreakingPill>
                         <HeroTime>{hero.time}</HeroTime>
                       </span>
-                      <HeroTokens>
-                        {hero.tokens.map((tok) => (
-                          <HeroTokenChip key={tok}>{tok}</HeroTokenChip>
-                        ))}
-                      </HeroTokens>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <HeroTokens>
+                          {hero.tokens.map((tok) => (
+                            <HeroTokenChip key={tok}>{tok}</HeroTokenChip>
+                          ))}
+                        </HeroTokens>
+                        <OrcaBtn
+                          onClick={() =>
+                            openOrca({ title: hero.title, body: hero.summary, source: hero.source, token: hero.coinSym, sent: hero.sent, url: hero.url })
+                          }
+                        >
+                          ✦ ASK ORCA
+                        </OrcaBtn>
+                      </span>
                     </HeroTop>
                     <HeroBody href={hero.url || undefined} target={hero.url ? '_blank' : undefined} rel="noopener noreferrer">
                       <HeroLeft>
@@ -1163,6 +1258,15 @@ export default function NewsTerminal({ initialNews = [] }) {
                               {s.label}
                             </RowSent>
                             {it.token && <RowToken>{it.token}</RowToken>}
+                            <OrcaBtn
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                openOrca(it)
+                              }}
+                            >
+                              ✦ ASK ORCA
+                            </OrcaBtn>
                           </RowMeta>
                         </div>
                       </Row>
@@ -1274,6 +1378,57 @@ export default function NewsTerminal({ initialNews = [] }) {
             </ContentRow>
           </Light>
         </Body>
+
+        {orcaModal && (
+          <Overlay onClick={closeOrca}>
+            <Modal onClick={(e) => e.stopPropagation()}>
+              <ModalHead>
+                <ModalBrand>
+                  <OrcaDot />
+                  ✦ ASK_ORCA
+                </ModalBrand>
+                <ModalClose onClick={closeOrca} aria-label="Close">
+                  ✕
+                </ModalClose>
+              </ModalHead>
+              <ModalBody>
+                <ModalTitle>{orcaModal.title}</ModalTitle>
+                {orcaModal.source && <ModalSource>{orcaModal.source}</ModalSource>}
+                {orcaModal.loading ? (
+                  <Loading>
+                    <Spinner />
+                    ORCA is analyzing the article…
+                  </Loading>
+                ) : orcaModal.error || !orcaModal.analysis ? (
+                  <SectionText>ORCA couldn’t analyze this one right now — try the full chat below.</SectionText>
+                ) : (
+                  parseAnalysis(orcaModal.analysis).map((sec, i) => (
+                    <Section key={i}>
+                      {sec.label && <SectionLabel>{sec.label}</SectionLabel>}
+                      <SectionText>{sec.text}</SectionText>
+                    </Section>
+                  ))
+                )}
+              </ModalBody>
+              <ModalFoot>
+                {orcaModal.url ? (
+                  <ModalLink href={orcaModal.url} target="_blank" rel="noopener noreferrer">
+                    Read full article ↗
+                  </ModalLink>
+                ) : (
+                  <span />
+                )}
+                <ModalCta
+                  onClick={() =>
+                    goOrca(`Analyze this crypto news and walk me through how it affects the market: "${orcaModal.title}"${orcaModal.url ? ` (${orcaModal.url})` : ''}`)
+                  }
+                >
+                  Continue in ORCA chat →
+                </ModalCta>
+              </ModalFoot>
+            </Modal>
+          </Overlay>
+        )}
       </Root>
     </>
   )
