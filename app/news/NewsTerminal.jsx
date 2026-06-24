@@ -374,12 +374,14 @@ const RailLive = styled.span`font-family: ${MONO}; font-size: 10px; letter-spaci
 const IndexCard = styled.div`padding: 12px 13px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 4px; margin-bottom: 18px; background: ${K.cardWhite}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);`
 const IndexTop = styled.div`display: flex; align-items: baseline; justify-content: space-between;`
 const IndexName = styled.span`font-family: ${MONO}; font-size: 10px; letter-spacing: 0.14em; color: #7a818b;`
-const IndexState = styled.span`font-family: ${MONO}; font-size: 11px; color: ${(p) => p.$c}; letter-spacing: 0.08em;`
+const IndexState = styled.span`font-family: ${MONO}; font-size: 11px; color: ${(p) => p.$c}; letter-spacing: 0.08em; white-space: nowrap;`
 const IndexRow = styled.div`display: flex; align-items: baseline; gap: 6px; margin: 5px 0 9px;`
 const IndexValue = styled.span`font-family: ${MONO}; font-size: 26px; font-weight: 600; color: ${K.ink};`
-const IndexDelta = styled.span`font-family: ${MONO}; font-size: 11px; color: ${(p) => p.$c};`
+const IndexMax = styled.span`font-family: ${MONO}; font-size: 12px; color: ${K.muted4}; font-weight: 500;`
+const IndexDelta = styled.span`font-family: ${MONO}; font-size: 11px; color: ${(p) => p.$c}; margin-left: auto; white-space: nowrap;`
 const IndexBarTrack = styled.div`height: 4px; border-radius: 3px; background: rgba(0, 0, 0, 0.08); overflow: hidden;`
 const IndexBarFill = styled.div`width: ${(p) => p.$w}%; height: 100%; background: ${(p) => p.$g};`
+const IndexScale = styled.div`display: flex; justify-content: space-between; margin-top: 5px; font-family: ${MONO}; font-size: 8.5px; letter-spacing: 0.12em; color: ${K.muted4};`
 const RailCoins = styled.div`
   @media (max-width: ${BREAK}px) { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 20px; }
   @media (max-width: 560px) { grid-template-columns: 1fr; }
@@ -1092,16 +1094,21 @@ export default function NewsTerminal({ initialNews = [] }) {
               </IndexTop>
               <IndexRow>
                 <IndexValue>{index?.value ?? '—'}</IndexValue>
-                {index && (
-                  <IndexDelta $c={index.delta >= 0 ? K.posText : K.negText}>
-                    {index.delta >= 0 ? '+' : '−'}
-                    {Math.abs(index.delta)} / 24h
+                <IndexMax>/100</IndexMax>
+                {index && index.delta !== 0 && (
+                  <IndexDelta $c={K.muted3}>
+                    {index.delta > 0 ? '▲' : '▼'}
+                    {Math.abs(index.delta)} pts · 24h
                   </IndexDelta>
                 )}
               </IndexRow>
               <IndexBarTrack>
                 <IndexBarFill $w={index?.bar ?? 0} $g={idxTheme.grad} />
               </IndexBarTrack>
+              <IndexScale>
+                <span>FEAR</span>
+                <span>GREED</span>
+              </IndexScale>
             </IndexCard>
 
             <RailCoins>
