@@ -569,6 +569,11 @@ const OrcaBtn = styled.button`
   transition: all 0.12s; white-space: nowrap;
   &:hover { background: ${K.teal}; color: #fff; border-color: ${K.teal}; }
 `
+const OrcaPickTag = styled.span`
+  display: inline-flex; align-items: center; gap: 5px; font-family: ${MONO}; font-size: 10px;
+  font-weight: 600; letter-spacing: 0.12em; color: ${K.teal}; background: rgba(31, 182, 166, 0.12);
+  border: 1px solid rgba(31, 182, 166, 0.45); padding: 3px 9px; border-radius: 3px; white-space: nowrap; cursor: default;
+`
 const Overlay = styled.div`
   position: fixed; inset: 0; z-index: 50; background: rgba(8, 10, 14, 0.62); backdrop-filter: blur(2px);
   display: flex; align-items: center; justify-content: center; padding: 24px;
@@ -882,13 +887,20 @@ export default function NewsTerminal({ initialNews = [] }) {
     const fresh = news.filter((a) => ageHours(a) <= 24)
     const scorePool = (fresh.length ? fresh : news).slice(0, 80)
     if (!scorePool.length) return null
+    // Prefer ORCA's editorial pick (flagged server-side on the live feed); fall
+    // back to the importance heuristic when ORCA hasn't ranked this set.
     let article = null
-    let best = -Infinity
-    for (const a of scorePool) {
-      const sc = importanceScore(a)
-      if (sc > best) {
-        best = sc
-        article = a
+    const orcaPicks = scorePool.filter((a) => a.orcaPick).sort((a, b) => ageHours(a) - ageHours(b))
+    if (orcaPicks.length) {
+      article = orcaPicks[0]
+    } else {
+      let best = -Infinity
+      for (const a of scorePool) {
+        const sc = importanceScore(a)
+        if (sc > best) {
+          best = sc
+          article = a
+        }
       }
     }
     if (!article) return null
@@ -1203,12 +1215,17 @@ export default function NewsTerminal({ initialNews = [] }) {
                 {hero && (
                   <Hero>
                     <HeroTop>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <BreakingPill $c={hero.breaking ? hero.accent : K.muted3}>
                           {hero.breaking && <BreakingDot />}
                           {hero.breaking ? 'BREAKING' : 'TOP STORY'}
                         </BreakingPill>
                         <HeroTime>{hero.time}</HeroTime>
+                        {hero.article && hero.article.orcaPick && (
+                          <OrcaPickTag title={hero.article.orcaReason || 'Chosen by ORCA as the top story'}>
+                            ✦ ORCA&apos;S PICK
+                          </OrcaPickTag>
+                        )}
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <HeroTokens>

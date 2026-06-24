@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import OpenAI from 'openai'
 
 /**
  * GET /api/news/live
@@ -101,6 +102,53 @@ let cache = null
 let cacheAt = 0
 const TTL = 5 * 60 * 1000
 
+// ORCA ranks the single most important "breaking" story among the freshest
+// candidates — a judgment call a keyword heuristic can't make (event > analysis).
+async function pickBreaking(candidates) {
+  const xaiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY
+  const openaiKey = process.env.OPENAI_API_KEY
+  let ai
+  let model
+  if (xaiKey) {
+    ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
+    model = 'grok-3-fast'
+  } else if (openaiKey) {
+    ai = new OpenAI({ apiKey: openaiKey })
+    model = 'gpt-4o-mini'
+  } else {
+    return null
+  }
+  const list = candidates.map((a, i) => `${i}. [${a.source}] ${a.title}`).join('\n')
+  const system =
+    "You are ORCA, Sonar's crypto news editor. From the numbered headlines, pick the SINGLE most " +
+    'important, market-moving "breaking" story right now — the one a serious crypto trader most needs ' +
+    'to see. Prefer hard market/macro events (Fed/rates, ETF flows or approvals, regulation/SEC, ' +
+    'hacks/exploits, large liquidations, major price moves, exchange/treasury news) over routine ' +
+    'price-analysis, opinion columns, recaps or explainers. Respond with ONLY compact JSON: ' +
+    '{"index": <number>, "reason": "<max 12 words on why it is the top story>"}.'
+  const user = `Headlines:\n${list}\n\nReturn the JSON now:`
+  try {
+    const c = await ai.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      temperature: 0.2,
+      max_tokens: 120,
+    })
+    const txt = (c?.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim()
+    const m = txt.match(/\{[\s\S]*\}/)
+    if (!m) return null
+    const parsed = JSON.parse(m[0])
+    const idx = Number(parsed.index)
+    if (!Number.isInteger(idx) || idx < 0 || idx >= candidates.length) return null
+    return { url: candidates[idx].url, reason: String(parsed.reason || '').slice(0, 120) }
+  } catch {
+    return null
+  }
+}
+
 export async function GET() {
   if (cache && Date.now() - cacheAt < TTL) {
     return NextResponse.json(cache)
@@ -138,12 +186,26 @@ export async function GET() {
       }
     }
     articles.sort((x, y) => new Date(y.published_at) - new Date(x.published_at))
-    const payload = { articles: articles.slice(0, 80), updated: new Date().toISOString() }
-    if (articles.length > 0) {
+    const top = articles.slice(0, 80)
+    // ORCA picks the most important breaking story among the freshest candidates.
+    try {
+      const pick = await pickBreaking(top.slice(0, 14))
+      if (pick) {
+        const target = top.find((a) => a.url === pick.url)
+        if (target) {
+          target.orcaPick = true
+          target.orcaReason = pick.reason
+        }
+      }
+    } catch {
+      /* non-fatal: client falls back to the heuristic */
+    }
+    const payload = { articles: top, updated: new Date().toISOString() }
+    if (top.length > 0) {
       cache = payload
       cacheAt = Date.now()
     }
-    return NextResponse.json(articles.length > 0 ? payload : cache || payload)
+    return NextResponse.json(top.length > 0 ? payload : cache || payload)
   } catch {
     if (cache) return NextResponse.json(cache)
     return NextResponse.json({ articles: [], updated: new Date().toISOString() }, { status: 500 })
