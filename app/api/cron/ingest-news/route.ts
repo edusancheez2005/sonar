@@ -265,39 +265,63 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
 
     for (const item of data.data.slice(0, 10)) { // Limit to 10 most recent
       try {
-        const articleTitle = item.title || 'Untitled'
-        const articleText = `${articleTitle} ${item.content || item.summary || ''}`
-        
+        // LunarCrush news items use post_* field names (post_title/post_link/
+        // post_created/...), NOT title/url. Reading the wrong fields previously
+        // stored titleless, urlless "Untitled" junk rows with published_at=now.
+        // Map the correct fields and skip anything that isn't a real article.
+        const title = item.post_title || item.title
+        const url2 = item.post_link || item.url
+        if (!title || title === 'Untitled' || !url2) {
+          skipped++
+          continue
+        }
+        // Pure tweets belong in social_posts, not the news feed.
+        if (/(?:twitter\.com|x\.com)\//i.test(url2)) {
+          skipped++
+          continue
+        }
+
+        const body = item.post_description || item.post_content || item.content || item.summary || ''
+        const articleText = `${title} ${body}`
+
         // Filter out irrelevant content (e.g., Honda CR-V for CRV ticker)
         if (!isCryptoRelevant(articleText, ticker)) {
           skipped++
-          console.log(`  ⏭️  Skipping irrelevant for ${ticker}: "${articleTitle.substring(0, 60)}..."`) 
           continue
         }
+
+        // LunarCrush sentiment is 1..5 → normalize to -1..+1.
+        let sentimentRaw: number | null = null
+        if (typeof item.post_sentiment === 'number') sentimentRaw = (item.post_sentiment - 3) / 2
+        else if (typeof item.sentiment === 'number') sentimentRaw = (item.sentiment - 3) / 2
+
+        const publishedIso = item.post_created
+          ? new Date(item.post_created * 1000).toISOString()
+          : item.published_at || item.created_at || new Date().toISOString()
 
         const { error } = await supabase
           .from('news_items')
           .insert({
             source: 'lunarcrush',
-            external_id: item.id || item.url, // Use URL as fallback ID
+            external_id: String(item.id || item.post_link || url2),
             ticker: ticker,
-            title: item.title || 'Untitled',
-            url: item.url,
-            published_at: item.published_at || item.created_at || new Date().toISOString(),
-            content: item.content || item.summary,
-            author: item.author || item.source?.name,
-            sentiment_raw: item.sentiment || null,
+            title,
+            url: url2,
+            published_at: publishedIso,
+            content: body || null,
+            author: item.creator_display_name || item.creator_name || item.author || null,
+            sentiment_raw: sentimentRaw,
             metadata: {
               source_type: 'lunarcrush',
-              interactions: item.interactions_24h,
-              creator_id: item.creator_id
-            }
+              interactions: item.interactions_24h || item.interactions_total,
+              creator_id: item.creator_id,
+            },
           })
 
         if (!error) {
           inserted++
         } else if (!error.message.includes('duplicate key')) {
-          console.error(`Error inserting LunarCrush news for ${ticker}:`, error)
+          console.error(`Error inserting LunarCrush news for ${ticker}:`, error.message)
         }
       } catch (insertError) {
         console.error(`Failed to insert LunarCrush item for ${ticker}:`, insertError)
