@@ -133,40 +133,75 @@ function guessSentiment(item) {
 const RAIL_SYMS = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'LINK']
 const RAIL_SET = new Set(RAIL_SYMS)
 
-// Market-moving signals that make a story "breaking" rather than background chatter.
+// High-impact event signals that make a story genuinely "breaking".
 const IMPORTANCE_KEYWORDS = [
-  'fomc', 'federal reserve', 'fed ', 'rate cut', 'rate hike', 'interest rate', 'inflation',
-  'cpi', 'pce', 'jobs report', 'powell', 'treasury', 'etf', 'blackrock', 'ibit', 'fbtc',
-  'sec ', 'lawsuit', 'approval', 'halving', 'liquidation', 'all-time high', 'record high',
-  'hack', 'exploit', 'inflow', 'outflow', 'spot etf', 'tariff', 'sanction', 'default',
+  'fomc', 'federal reserve', 'fed ', 'rate cut', 'rate hike', 'interest rate', 'hawkish', 'dovish',
+  'inflation', 'cpi', 'pce', 'jobs report', 'powell', 'treasury', 'liquidity',
+  'etf', 'spot etf', 'blackrock', 'ibit', 'fbtc', 'grayscale',
+  'sec', 'cftc', 'lawsuit', 'sues', 'subpoena', 'ruling', 'court', 'regulation', 'ban', 'banned',
+  'approval', 'approves', 'approved', 'launches', 'listing', 'delisting',
+  'hack', 'hacked', 'exploit', 'breach', 'stolen', 'drained', 'halt', 'bankrupt', 'insolvent',
+  'default', 'sanction', 'tariff', 'halving', 'all-time high', 'record high', 'ath',
+  'crash', 'plunge', 'collapse', 'surge', 'soar', 'liquidation', 'liquidations',
+  'acquisition', 'acquires', 'partnership', 'billion', 'trillion',
 ]
 const STRONG_SOURCES = [
   'cointelegraph', 'coindesk', 'the block', 'blockworks', 'decrypt', 'bloomberg', 'reuters',
   'cnbc', 'wall street journal', 'financial times', 'forbes', 'the defiant',
 ]
+// Routine / low-news formats that should never headline as "breaking".
+const ROUTINE_TITLE = [
+  'long & short', 'long and short', 'market wrap', 'price analysis', 'price prediction',
+  'weekly recap', 'daily recap', 'roundup', 'round-up', '5 things', 'things to watch',
+  'what to watch', 'week ahead', 'recap', 'newsletter', 'op-ed', 'opinion', 'explained',
+  'how to', 'beginner', 'guide', 'sponsored', 'press release',
+]
 
 // Rank a story's fitness to headline the breaking hero (higher = more important).
-// Excludes social posts; rewards macro keywords, a chartable token, clear
-// sentiment, a reputable source, and recency.
+// Weights high-impact EVENT language (Fed/ETF/SEC/hack/crash/$billions) far higher
+// when it's in the headline, plus recency, $ scale, a chartable token, sentiment and
+// source; and PENALIZES routine columns/recaps and social posts so a recurring
+// newsletter never outranks a real market-moving event.
 function importanceScore(article) {
-  if (!article || !article.title) return -Infinity
-  const text = `${article.title} ${article.description || ''}`.toLowerCase()
+  if (!article || !article.title || article.title === 'Untitled') return -Infinity
+  const title = String(article.title).toLowerCase()
+  const body = String(article.description || '').toLowerCase()
   const codes = (article.instruments || []).map((i) => String(i.code).toUpperCase())
   let score = 0
-  if (codes.some((c) => RAIL_SET.has(c))) score += 4
-  else if (codes.length) score += 1
-  let kw = 0
-  for (const k of IMPORTANCE_KEYWORDS) if (text.includes(k)) kw++
-  score += Math.min(kw, 4) * 2
-  if (guessSentiment(article) !== 'neutral') score += 2
-  const src = (article.source || '').toLowerCase()
-  if (STRONG_SOURCES.some((s) => src.includes(s))) score += 2
+
+  // High-impact event keywords — a match in the HEADLINE counts triple vs the body.
+  let titleHits = 0
+  let bodyHits = 0
+  for (const k of IMPORTANCE_KEYWORDS) {
+    if (title.includes(k)) titleHits++
+    else if (body.includes(k)) bodyHits++
+  }
+  score += Math.min(titleHits, 3) * 3
+  score += Math.min(bodyHits, 3) * 1
+
+  // Scale: a dollar magnitude in the headline (e.g. "$530M", "$1.3 trillion").
+  if (/\$\s?\d[\d,.]*\s?(?:m|mn|million|b|bn|billion|t|tn|trillion)\b/i.test(article.title)) score += 3
+
+  // Recency — the hero is already capped to 24h; fresher reads as more breaking.
   const ageH = article.published_at ? (Date.now() - new Date(article.published_at).getTime()) / 3.6e6 : 999
-  if (ageH < 3) score += 4
+  if (ageH < 1) score += 5
+  else if (ageH < 3) score += 4
   else if (ageH < 8) score += 3
   else if (ageH < 16) score += 2
-  else if (ageH < 36) score += 1
-  if (article.kind === 'x-post' || article.kind === 'social') score -= 8
+  else score += 1
+
+  // Chartable token (so the hero chart matches) — modest, not dominant.
+  if (codes.some((c) => RAIL_SET.has(c))) score += 2
+  else if (codes.length) score += 1
+
+  if (guessSentiment(article) !== 'neutral') score += 1
+  const src = (article.source || '').toLowerCase()
+  if (STRONG_SOURCES.some((s) => src.includes(s))) score += 2
+
+  // Routine columns / newsletters / explainers aren't "breaking".
+  if (ROUTINE_TITLE.some((r) => title.includes(r))) score -= 6
+  if (article.kind === 'x-post' || article.kind === 'social') score -= 10
+
   return score
 }
 
