@@ -388,15 +388,20 @@ function PortfolioPanel({ sel, walletsLoading }) {
             <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: 12, fontFamily: FONT_MONO }}>
               {netFlow != null ? (
                 <span
-                  title={`Cumulative net on-chain USD flow over the last ${days} days. Not a holdings valuation.`}
-                  style={{ fontSize: '1.3rem', fontWeight: 800, color: netFlow >= 0 ? C.green : C.red }}
+                  title={`Cumulative net on-chain USD flow (buys − sells) over the last ${days} days — i.e. accumulation vs distribution. This is NOT profit/loss or a holdings valuation.`}
+                  style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}
                 >
-                  {fmtSigned(netFlow)}
+                  <span style={{ fontSize: '1.3rem', fontWeight: 800, color: netFlow >= 0 ? C.green : C.red }}>
+                    {fmtSigned(netFlow)}
+                  </span>
+                  <span style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: 'rgba(160, 178, 198, 0.7)' }}>
+                    net flow
+                  </span>
                 </span>
               ) : null}
               {Number.isFinite(selPnl) && selPnl !== 0 ? (
                 <span style={{ fontSize: '0.76rem', fontWeight: 700, color: selPnl > 0 ? C.green : C.red, whiteSpace: 'nowrap' }}>
-                  {selPnl > 0 ? '▲' : '▼'} {fmtSigned(selPnl).replace(/^[+−]/, '')} est pnl
+                  {selPnl > 0 ? '▲' : '▼'} {fmtSigned(selPnl).replace(/^[+−]/, '')} realized pnl
                 </span>
               ) : null}
             </span>
@@ -684,7 +689,7 @@ export default function ResearchTerminal() {
             <FlowBars rows={flowRows} />
           </TermPanel>
 
-          <TermPanel label="Top movers · est pnl">
+          <TermPanel label="Top movers · realized pnl">
             {movers.length === 0 ? (
               <Notice style={{ border: 'none' }}>
                 {wallets === null ? 'LOADING…' : 'NO PNL DATA YET'}
