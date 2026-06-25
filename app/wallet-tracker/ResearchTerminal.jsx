@@ -502,7 +502,7 @@ function WhaleTable({ rows, sparks, selected, onSelect }) {
             <Th>Chain</Th>
             <Th>Score</Th>
             <Th $right>30d Vol</Th>
-            <Th $right>Est PnL</Th>
+            <Th $right>Realized PnL</Th>
             <Th $right>Tx 30d</Th>
             <Th>Tags</Th>
             <Th>7d</Th>

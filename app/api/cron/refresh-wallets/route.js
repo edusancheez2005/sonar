@@ -12,7 +12,6 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { estimateRealizedPnl } from '@/lib/wallet-backtest/engine'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 mins — may need to process many wallets
@@ -30,12 +29,67 @@ export async function GET(request) {
       process.env.SUPABASE_SERVICE_ROLE
     )
 
-    // 1. Get all wallet addresses from wallet_profiles
-    const { data: wallets, error: wErr } = await supabase
-      .from('wallet_profiles')
-      .select('address, chain')
+    // 1. Choose which wallets to refresh this run. The table has ~42k rows
+    //    and we can only process a slice per run, so prioritise wallets that
+    //    actually traded recently (from the LIVE tape) — those are what users
+    //    look at on the leaderboard / terminal. Among the active set we take
+    //    the STALEST first (oldest updated_at) and bump updated_at on write,
+    //    so coverage rotates and every active wallet stays fresh within a few
+    //    runs. The old behaviour (arbitrary first 1000 by PK) left ~98% of
+    //    active wallets stale for weeks.
+    const REFRESH_CAP = 500
+    const activeSince = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
 
-    if (wErr) throw new Error(`Failed to fetch wallets: ${wErr.message}`)
+    let activeAddrs = []
+    try {
+      const { data: recent } = await supabase
+        .from('all_whale_transactions')
+        .select('whale_address')
+        .gte('timestamp', activeSince)
+        .order('timestamp', { ascending: false })
+        .limit(30000)
+      activeAddrs = [...new Set((recent || []).map((r) => r.whale_address).filter(Boolean))]
+    } catch (e) {
+      // Non-fatal: fall back to stale-rotation below.
+    }
+
+    // Fetch profile rows for the active addresses (chunked — `in` lists can't
+    // be unbounded), carrying updated_at so we can refresh stalest-first.
+    const walletMap = new Map()
+    const CHUNK = 200
+    for (let i = 0; i < activeAddrs.length; i += CHUNK) {
+      const slice = activeAddrs.slice(i, i + CHUNK)
+      const { data: rows } = await supabase
+        .from('wallet_profiles')
+        .select('address, chain, updated_at')
+        .in('address', slice)
+      for (const r of rows || []) walletMap.set(r.address, r)
+    }
+
+    let wallets = [...walletMap.values()].sort((a, b) => {
+      const ta = a.updated_at ? Date.parse(a.updated_at) : 0
+      const tb = b.updated_at ? Date.parse(b.updated_at) : 0
+      return ta - tb // stalest first
+    })
+
+    // Top up with the globally stalest profiles so dormant wallets also cycle
+    // through a refresh eventually.
+    if (wallets.length < REFRESH_CAP) {
+      const { data: stale } = await supabase
+        .from('wallet_profiles')
+        .select('address, chain, updated_at')
+        .order('updated_at', { ascending: true, nullsFirst: true })
+        .limit(REFRESH_CAP - wallets.length + 200)
+      for (const r of stale || []) {
+        if (!walletMap.has(r.address)) {
+          walletMap.set(r.address, r)
+          wallets.push(r)
+        }
+      }
+    }
+
+    wallets = wallets.slice(0, REFRESH_CAP)
+
     if (!wallets || wallets.length === 0) {
       return NextResponse.json({ message: 'No wallets to process', updated: 0 })
     }
@@ -192,40 +246,21 @@ export async function GET(request) {
           topTokens.sort((a, b) => b.volume - a.volume)
           const top5 = topTokens.slice(0, 5).map(t => t.symbol)
 
-          // Honest realized PnL (FIFO cost basis, priced at execution) on the
-          // wallet's tracked round-trips. Replaces the legacy Σ(sell−buy)
-          // "estimate" that mislabeled distribution of pre-acquired inventory
-          // as profit. Only EVM-mainnet + Solana are priceable today; other
-          // chains get null rather than a fabricated number.
-          let realizedPnl = null
-          const btChain =
-            wallet.chain === 'polygon' ? 'polygon'
-            : wallet.chain === 'solana' ? 'solana'
-            : wallet.chain === 'ethereum' ? 'ethereum'
-            : null
-          if (btChain) {
-            try {
-              const rp = await estimateRealizedPnl({ address: wallet.address, chain: btChain })
-              realizedPnl = Number.isFinite(rp?.realized_pnl_usd)
-                ? Math.round(rp.realized_pnl_usd * 100) / 100
-                : null
-            } catch {
-              realizedPnl = null
-            }
-          }
-
-          // Upsert into wallet_profiles
+          // Refresh the cheap volatile stats. Realized PnL (pnl_estimated_usd)
+          // is intentionally NOT recomputed here — it's price-aware/expensive
+          // (CoinGecko) and recomputing it for every wallet inline blew past
+          // the function time budget, which is what left wallets stale. It's
+          // maintained out-of-band by /api/admin/backfill-wallet-pnl, and the
+          // per-wallet page computes it live, so we leave the stored value
+          // untouched here.
           const updateFields = {
             portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
             total_volume_usd_30d: Math.round(totalVol30d * 100) / 100,
             tx_count_30d: txCount30d,
             last_active: lastActive,
             top_tokens: top5,
+            updated_at: new Date().toISOString(),
           }
-          // Only overwrite PnL when we actually computed one. A transient
-          // pricing failure returns null — it must not wipe a previously
-          // correct realized PnL (which would churn the leaderboard).
-          if (realizedPnl != null) updateFields.pnl_estimated_usd = realizedPnl
           const { error: upErr } = await supabase
             .from('wallet_profiles')
             .update(updateFields)

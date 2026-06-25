@@ -65,6 +65,34 @@ export async function GET(req, { params }) {
         if (rec?.entity_id)   data.arkham_entity_id   = rec.entity_id
       }
     }
+    // Freshen volatile stats from the LIVE tape. wallet_profiles is only
+    // re-aggregated by an hourly cron that can't keep all 42k rows current,
+    // so the stored last_active / 30d volume / tx counts can lag by days.
+    // The viewed wallet must always show up-to-date numbers.
+    try {
+      const since30 = new Date(Date.now() - 30 * 86400000).toISOString()
+      const { data: liveTx } = await supabaseAdmin
+        .from('all_whale_transactions')
+        .select('usd_value, timestamp')
+        .eq('whale_address', address)
+        .order('timestamp', { ascending: false })
+        .limit(5000)
+      if (Array.isArray(liveTx) && liveTx.length > 0) {
+        let vol30 = 0
+        let tx30 = 0
+        for (const t of liveTx) {
+          if (t.timestamp >= since30) {
+            vol30 += Number(t.usd_value) || 0
+            tx30 += 1
+          }
+        }
+        data.last_active = liveTx[0].timestamp
+        data.total_volume_usd_30d = Math.round(vol30 * 100) / 100
+        data.tx_count_30d = tx30
+      }
+    } catch {
+      // Non-fatal — fall back to the stored (possibly stale) values.
+    }
     return NextResponse.json(
       { data },
       { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }
