@@ -94,6 +94,26 @@ export async function GET(request) {
       return NextResponse.json({ message: 'No wallets to process', updated: 0 })
     }
 
+    // Batch real holdings valuations from the labeled-address balance snapshot
+    // so the leaderboard Portfolio column reflects actual balances (the
+    // flow-derived estimate is 0 for net distributors).
+    const balanceMap = new Map()
+    {
+      const addrs = wallets.map((w) => w.address)
+      const BCHUNK = 200
+      for (let i = 0; i < addrs.length; i += BCHUNK) {
+        const slice = addrs.slice(i, i + BCHUNK)
+        const { data: balRows } = await supabase
+          .from('addresses')
+          .select('address, balance_usd')
+          .in('address', slice)
+        for (const r of balRows || []) {
+          const b = Number(r.balance_usd)
+          if (Number.isFinite(b) && b > 0) balanceMap.set(r.address, Math.round(b * 100) / 100)
+        }
+      }
+    }
+
     // 2. Get latest price for each token from price_snapshots
     const { data: priceRows, error: pErr } = await supabase
       .from('price_snapshots')
@@ -254,7 +274,7 @@ export async function GET(request) {
           // per-wallet page computes it live, so we leave the stored value
           // untouched here.
           const updateFields = {
-            portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
+            portfolio_value_usd: balanceMap.get(wallet.address) ?? (Math.round(portfolioValue * 100) / 100),
             total_volume_usd_30d: Math.round(totalVol30d * 100) / 100,
             tx_count_30d: txCount30d,
             last_active: lastActive,

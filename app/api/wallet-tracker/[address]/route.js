@@ -93,6 +93,20 @@ export async function GET(req, { params }) {
     } catch {
       // Non-fatal — fall back to the stored (possibly stale) values.
     }
+    // Prefer a real holdings valuation from the labeled-address balance
+    // snapshot when we have one. The flow-derived portfolio_value_usd is a
+    // partial estimate (0 for net distributors), so a real balance is better.
+    try {
+      const { data: bal } = await supabaseAdmin
+        .from('addresses')
+        .select('balance_usd')
+        .eq('address', address)
+        .limit(1)
+      const b = bal && bal[0] ? Number(bal[0].balance_usd) : 0
+      if (Number.isFinite(b) && b > 0) data.portfolio_value_usd = Math.round(b * 100) / 100
+    } catch {
+      // Non-fatal.
+    }
     return NextResponse.json(
       { data },
       { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }

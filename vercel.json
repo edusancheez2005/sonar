@@ -41,6 +41,10 @@
       "schedule": "0 * * * *"
     },
     {
+      "path": "/api/cron/refresh-wallet-pnl",
+      "schedule": "0 5 * * *"
+    },
+    {
       "path": "/api/cron/poll-tracked-addresses",
       "schedule": "10 * * * *"
     },
@@ -75,10 +79,6 @@
     {
       "path": "/api/cron/check-user-alerts",
       "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/polymarket",
-      "schedule": "7,22,37,52 * * * *"
     }
   ]
 }
