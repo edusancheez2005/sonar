@@ -78,6 +78,16 @@ const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
   W: 'wormhole', AERO: 'aerodrome-finance', MORPHO: 'morpho', ZK: 'zksync',
   SAFE: 'safe', GMT: 'stepn', OCEAN: 'ocean-protocol', BAND: 'band-protocol',
   KAVA: 'kava', ROOK: 'rook', SKL: 'skale', STORJ: 'storj', API3: 'api3',
+  // 2026-06-25 audit: high-volume symbols that were nulling realized PnL
+  // (every id below verified live against CoinGecko before adding).
+  CVX: 'convex-finance', MNT: 'mantle', CRO: 'crypto-com-chain', SSV: 'ssv-network',
+  NMR: 'numeraire', AXL: 'axelar', METIS: 'metis-token', RPL: 'rocket-pool',
+  QUICK: 'quickswap',
+  // Solana
+  JITO: 'jito-governance-token', TRUMP: 'official-trump', MSOL: 'msol',
+  BSOL: 'blazestake-staked-sol', SAMO: 'samoyedcoin', ATLAS: 'star-atlas',
+  RAY: 'raydium', POPCAT: 'popcat', ORCA: 'orca', PENGU: 'pudgy-penguins',
+  FARTCOIN: 'fartcoin',
 }
 
 function nowMs() { return Date.now() }
