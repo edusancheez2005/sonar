@@ -2,14 +2,8 @@ import React from 'react'
 import HomeClient from './HomeClient'
 
 export const metadata = {
-  title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',
-  description: 'Track crypto whale transactions in real-time across 10+ blockchains. On-chain analytics and ORCA 2.0 research assistant. $7.99/month. Not investment advice.',
-  keywords: [
-    'crypto tracker', 'whale wallet tracker', 'crypto whale tracker',
-    'whale transaction tracker', 'real time whale alerts', 'crypto intelligence platform',
-    'on chain analytics', 'sonar tracker', 'orca ai crypto',
-    'best whale tracking tool', 'blockchain analytics tool', 'whale movement tracker'
-  ],
+  title: { absolute: 'Sonar Tracker — Real-Time Crypto Whale Intelligence' },
+  description: 'Track crypto whale transactions in real-time across 10+ blockchains. On-chain analytics and ORCA 2.0 research assistant. Free tier; Pro $7.99/month. Not investment advice.',
   alternates: { canonical: 'https://www.sonartracker.io' },
   openGraph: {
     title: 'Sonar Tracker — Real-Time Crypto Whale Intelligence',

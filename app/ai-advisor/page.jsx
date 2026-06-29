@@ -5,7 +5,7 @@ import React from 'react'
 import AskOrcaClient from '@/app/ai/AskOrcaClient'
 
 export const metadata = {
-  title: 'ORCA AI Crypto Analyst — AI-Powered Whale Intelligence | Sonar Tracker',
+  title: { absolute: 'ORCA AI Crypto Analyst — AI-Powered Whale Intelligence | Sonar Tracker' },
   description: 'Chat with ORCA AI to get real-time crypto whale analysis. AI-powered insights on whale movements, market sentiment, and on-chain data across 10+ blockchains.',
   alternates: { canonical: 'https://www.sonartracker.io/ai-advisor' },
   openGraph: {

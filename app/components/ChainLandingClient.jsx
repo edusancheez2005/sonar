@@ -1090,6 +1090,7 @@ export default function ChainLandingClient({
       </SectionWrapper>
 
       {/* ===================== COMPARISON ===================== */}
+      {Array.isArray(comparisons) && comparisons.length > 0 && Array.isArray(compToolNames) && compToolNames.length >= 2 && (
       <SectionWrapper>
         <AnimatedSection>
           <SectionTag variants={fadeUp} $color={accentColor}>
@@ -1129,6 +1130,7 @@ export default function ChainLandingClient({
           </motion.div>
         </AnimatedSection>
       </SectionWrapper>
+      )}
 
       {/* ===================== BLOG LINK ===================== */}
       <SectionWrapper style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>

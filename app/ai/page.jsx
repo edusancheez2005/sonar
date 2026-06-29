@@ -4,7 +4,7 @@ import AskOrcaClient from './AskOrcaClient'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Ask ORCA — Crypto AI Copilot | Sonar Tracker',
+  title: { absolute: 'Ask ORCA — Crypto AI Copilot | Sonar Tracker' },
   description: 'Ask ORCA anything about crypto: token research, whale flows, news, your watchlist. Long-form, sourced answers powered by Sonar Tracker on-chain data.',
   alternates: { canonical: 'https://www.sonartracker.io/ai' },
   openGraph: {

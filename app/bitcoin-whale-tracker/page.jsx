@@ -1,7 +1,7 @@
 import ChainLandingClient from '../components/ChainLandingClient'
 
 export const metadata = {
-  title: 'Bitcoin Whale Tracker — Real-Time BTC Whale Alerts | Sonar Tracker',
+  title: { absolute: 'Bitcoin Whale Tracker — Real-Time BTC Whale Alerts | Sonar Tracker' },
   description: 'Track Bitcoin whale transactions in real-time. Monitor exchange flows, miner activity, and dormant wallet movements. AI-powered BTC whale intelligence from $7.99/mo.',
   keywords: 'bitcoin whale tracker, btc whale tracker, bitcoin whale alerts, track bitcoin whales, btc whale movements, bitcoin whale transactions',
   alternates: { canonical: 'https://www.sonartracker.io/bitcoin-whale-tracker' },
@@ -70,16 +70,6 @@ export default function BitcoinWhaleTrackerPage() {
           { title: 'Miner Behavior as Context', desc: 'Miner outflow magnitudes and hashrate changes are reported. Historical patterns are educational context only — not predictive of future cycles.' },
           { title: 'Coin Age — Unique to Bitcoin', desc: 'Bitcoin\'s UTXO model uniquely allows tracking how long coins have been dormant. Movement of old coins is a descriptive metric, not a buy or sell instruction.' },
         ]}
-        comparisons={[
-          { feature: 'Real-time BTC tracking', sonar: '✓', tool2: '✓', tool3: '✓' },
-          { feature: 'AI inflow/outflow classification', sonar: '✓', tool2: '✗', tool3: '✗' },
-          { feature: 'AI analyst (ORCA)', sonar: '✓', tool2: '✗', tool3: '✗' },
-          { feature: 'Exchange flow monitoring', sonar: '✓', tool2: '✓', tool3: 'Limited' },
-          { feature: 'Miner activity tracking', sonar: '✓', tool2: '✓', tool3: '✗' },
-          { feature: 'Multi-chain coverage', sonar: '10+ chains', tool2: 'BTC only', tool3: '✗' },
-          { feature: 'Price/month', sonar: '$7.99', tool2: '$29+', tool3: 'Free' },
-        ]}
-        compToolNames={['Glassnode', 'Mempool']}
         faqs={[
           { q: 'Why is Bitcoin whale tracking different from Ethereum?', a: 'Bitcoin\'s UTXO model means one entity can control hundreds of addresses. BTC lacks smart contracts, so whale behavior is buy/hold/sell rather than complex DeFi interactions. Exchange flow and coin age are the most reliable BTC-specific signals.' },
           { q: 'What happens when a Satoshi-era wallet moves?', a: 'Old-coin movements typically generate news coverage regardless of the amount. ORCA AI describes the magnitude and destination of the transfer. Informational only — not a recommendation.' },

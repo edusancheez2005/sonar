@@ -86,10 +86,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   // SEO landing pages
+  // NOTE: /nansen-alternative and /arkham-alternative were pulled 2026-04-21
+  // (Lanham Act §43(a) counsel hold) and now noindex + redirect to /pricing —
+  // so they are intentionally excluded here to avoid advertising noindex URLs.
   const landingPages: MetadataRoute.Sitemap = [
     { url: `${BASE}/whale-tracker`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${BASE}/nansen-alternative`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${BASE}/arkham-alternative`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE}/best-free-whale-tracker`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE}/chains`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/ai-crypto-signals`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE}/solana-whale-tracker`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE}/ethereum-whale-tracker`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
@@ -118,6 +121,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const { data: dynamicBlogs } = await sb
         .from('blog_posts')
         .select('slug, updated_at')
+        .eq('published', true)
         .order('created_at', { ascending: false })
         .limit(500)
       if (dynamicBlogs) {
@@ -148,25 +152,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // truly important pages weren't being crawled. Quality > quantity for
   // sitemap inclusion. Re-expand only when these pages have rich, unique
   // content per address (entity name, transaction history blurb, etc).
-  let whalePages: MetadataRoute.Sitemap = []
-  if (sb) {
-    try {
-      const { data: whales } = await sb
-        .from('addresses')
-        .select('address')
-        .not('entity_name', 'is', null)
-        .order('balance_usd', { ascending: false, nullsFirst: false })
-        .limit(50)
-      if (whales) {
-        whalePages = whales.map((w: any) => ({
-          url: `${BASE}/wallet-tracker/${encodeURIComponent(w.address)}`,
-          lastModified: now,
-          changeFrequency: 'weekly' as const,
-          priority: 0.5,
-        }))
-      }
-    } catch (_) { /* skip */ }
-  }
+  // 2026-06-28: wallet pages removed from the sitemap. /wallet-tracker/[address]
+  // is auth-gated (AuthGuard renders null for signed-out crawlers) and is now
+  // noindex, so listing these URLs only wasted crawl budget ("Crawled/Discovered
+  // - currently not indexed"). Re-add only with public, rich per-address content.
+  const whalePages: MetadataRoute.Sitemap = []
 
   // Programmatic SEO: top tokens — trimmed from 500 → 50 (same reason as whales)
   let tokenPages: MetadataRoute.Sitemap = []

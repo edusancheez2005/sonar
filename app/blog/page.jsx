@@ -18,6 +18,7 @@ async function getDynamicPosts() {
     const { data, error } = await sb
       .from('blog_posts')
       .select('slug,title,description,category,cover_image,content,created_at')
+      .eq('published', true)
       .order('created_at', { ascending: false })
       .limit(200)
     if (error) {

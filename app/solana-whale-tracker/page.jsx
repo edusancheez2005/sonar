@@ -1,7 +1,7 @@
 import ChainLandingClient from '../components/ChainLandingClient'
 
 export const metadata = {
-  title: 'Solana Whale Tracker — Real-Time SOL Whale Alerts | Sonar Tracker',
+  title: { absolute: 'Solana Whale Tracker — Real-Time SOL Whale Alerts | Sonar Tracker' },
   description: 'Track Solana whale transactions in real-time. Monitor large SOL movements, staking flows, and DeFi interactions. AI-powered alerts from ORCA. From $7.99/mo.',
   keywords: 'solana whale tracker, sol whale tracker, solana whale alerts, track solana whales, sol whale movements, solana whale transactions',
   alternates: { canonical: 'https://www.sonartracker.io/solana-whale-tracker' },
@@ -70,16 +70,6 @@ export default function SolanaWhaleTrackerPage() {
           { title: 'Memecoin Whale Culture', desc: 'Solana\'s low fees make it the home of memecoin trading. Tracking sniper wallets helps you avoid rug pulls and identify early trends before they go viral.' },
           { title: 'Active DeFi Ecosystem', desc: 'Jupiter, Raydium, Marinade, and Jito whale interactions reveal strategic positioning. Large liquidity events foreshadow market movements.' },
         ]}
-        comparisons={[
-          { feature: 'Real-time SOL tracking', sonar: '✓', tool2: '✓', tool3: '✓' },
-          { feature: 'AI buy/sell classification', sonar: '✓', tool2: '✗', tool3: '✗' },
-          { feature: 'AI analyst (ORCA)', sonar: '✓', tool2: '✗', tool3: '✗' },
-          { feature: 'Staking flow monitoring', sonar: '✓', tool2: 'Limited', tool3: '✗' },
-          { feature: 'Memecoin whale tracking', sonar: '✓', tool2: '✓', tool3: '✗' },
-          { feature: 'Custom alerts', sonar: '✓', tool2: 'Limited', tool3: '✓' },
-          { feature: 'Price/month', sonar: '$7.99', tool2: '$150+', tool3: 'Free' },
-        ]}
-        compToolNames={['Nansen', 'Solscan']}
         faqs={[
           { q: 'What is the minimum SOL transaction tracked?', a: 'Sonar Tracker monitors Solana transactions with a minimum USD value of $10,000. This threshold captures meaningful whale activity while filtering out retail noise.' },
           { q: 'Can I track Solana memecoin whale wallets?', a: 'Yes. Use the Wallet Tracker to paste any Solana wallet address — including known memecoin sniper wallets. You\'ll see all their transactions, token swaps, and DeFi interactions in real time.' },

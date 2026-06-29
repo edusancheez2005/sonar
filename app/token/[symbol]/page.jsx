@@ -11,10 +11,24 @@ export async function generateMetadata({ params }) {
   const title = `${symbol} Whale Activity & Price Analysis | Sonar Tracker`
   const description = `Track ${symbol} whale transactions, buy/sell pressure, social sentiment, Galaxy Score, and real-time price charts. Institutional-grade crypto analytics by Sonar.`
   const url = `https://www.sonartracker.io/token/${encodeURIComponent(symbol)}`
+
+  // Only index tokens that actually have recent whale data. Empty/thin token
+  // pages were being "Crawled - currently not indexed" by Google and wasting
+  // crawl budget. noindex (but follow) until the token has real activity.
+  let hasData = true
+  try {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const { count } = await supabaseAdmin
+      .from('all_whale_transactions')
+      .select('transaction_hash', { count: 'exact', head: true })
+      .eq('token_symbol', symbol)
+      .gte('timestamp', since)
+    hasData = (count || 0) >= 3
+  } catch { hasData = true }
+
   return {
-    title,
+    title: { absolute: title },
     description,
-    keywords: `${symbol}, ${symbol} whale tracking, ${symbol} price, ${symbol} sentiment, crypto whale tracker, ${symbol} analysis`,
     alternates: { canonical: url },
     openGraph: { 
       title, 
@@ -28,7 +42,9 @@ export async function generateMetadata({ params }) {
       description,
       card: 'summary',
     },
-    robots: { index: true, follow: true },
+    robots: hasData
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
   }
 }
 

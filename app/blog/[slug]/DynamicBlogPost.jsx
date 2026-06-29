@@ -50,17 +50,20 @@ const Loading = styled.div`
   text-align: center; color: var(--text-secondary);
 `
 
-export default function DynamicBlogPost({ slug }) {
-  const [post, setPost] = useState(null)
-  const [loading, setLoading] = useState(true)
+export default function DynamicBlogPost({ slug, initialPost = null }) {
+  const [post, setPost] = useState(initialPost)
+  const [loading, setLoading] = useState(!initialPost)
   const [error, setError] = useState(false)
 
   useEffect(() => {
+    // When the server already supplied the post (server-rendered for SEO),
+    // skip the client fetch so the article body is present in the initial HTML.
+    if (initialPost) return
     fetch(`/api/blog?slug=${encodeURIComponent(slug)}`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => { setPost(data); setLoading(false) })
       .catch(() => { setError(true); setLoading(false) })
-  }, [slug])
+  }, [slug, initialPost])
 
   if (loading) return <Loading>Loading article...</Loading>
   if (error || !post) return <Loading>Article not found.</Loading>

@@ -76,7 +76,6 @@ export async function generateMetadata({ params }) {
   return {
     title: `What Is ${entry.term}? — Crypto Glossary`,
     description: entry.definition.substring(0, 152) + '...',
-    keywords: `${entry.term.toLowerCase()}, ${entry.term.toLowerCase()} meaning, ${entry.term.toLowerCase()} crypto, crypto glossary, blockchain terms`,
     alternates: { canonical: `https://www.sonartracker.io/glossary/${slug}` },
     openGraph: {
       title: `What Is ${entry.term}? — Crypto Glossary | Sonar Tracker`,

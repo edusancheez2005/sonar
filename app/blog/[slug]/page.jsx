@@ -7,7 +7,7 @@ async function getDynamicPost(slug) {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null
   try {
     const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
-    const { data } = await sb.from('blog_posts').select('slug,title,description,cover_image,created_at,updated_at').eq('slug', slug).maybeSingle()
+    const { data } = await sb.from('blog_posts').select('slug,title,description,content,tags,cover_image,created_at,updated_at').eq('slug', slug).eq('published', true).maybeSingle()
     return data || null
   } catch { return null }
 }
@@ -142,7 +142,7 @@ export default async function BlogPost({ params }) {
     <>
       {isStaticPost && <BlogPostSchema slug={params.slug} />}
       {!isStaticPost && dyn && <DynamicBlogSchema post={dyn} slug={params.slug} />}
-      {isStaticPost ? <BlogPostClient slug={params.slug} /> : <DynamicBlogPost slug={params.slug} />}
+      {isStaticPost ? <BlogPostClient slug={params.slug} /> : <DynamicBlogPost slug={params.slug} initialPost={dyn} />}
     </>
   )
 }

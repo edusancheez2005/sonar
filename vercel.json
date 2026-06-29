@@ -79,6 +79,10 @@
     {
       "path": "/api/cron/check-user-alerts",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/seo-article",
+      "schedule": "0 8 * * *"
     }
   ]
 }

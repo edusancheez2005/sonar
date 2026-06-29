@@ -13,17 +13,11 @@ const productSchema = {
     availability: 'https://schema.org/InStock',
     url: 'https://www.sonartracker.io/subscribe',
   },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    reviewCount: '127',
-  },
 }
 
 export const metadata = {
   title: 'Pricing — Whale Tracking Plans',
   description: 'Sonar Tracker: free whale tracking, signals, and analytics. Pro at $7.99/month for unlimited AI conversations and enhanced analytics.',
-  keywords: 'sonar tracker pricing, crypto whale tracker price, whale tracking subscription, cheap whale tracker, crypto analytics pricing',
   alternates: { canonical: 'https://www.sonartracker.io/subscribe' },
   openGraph: {
     title: 'Pricing — Whale Tracking Plans | Sonar Tracker',

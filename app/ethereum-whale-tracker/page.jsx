@@ -1,7 +1,7 @@
 import ChainLandingClient from '../components/ChainLandingClient'
 
 export const metadata = {
-  title: 'Ethereum Whale Tracker — Real-Time ETH Whale Alerts | Sonar Tracker',
+  title: { absolute: 'Ethereum Whale Tracker — Real-Time ETH Whale Alerts | Sonar Tracker' },
   description: 'Track Ethereum whale transactions in real-time. Monitor staking flows, DeFi interactions, and exchange deposits. AI-powered ETH whale intelligence from $7.99/mo.',
   keywords: 'ethereum whale tracker, eth whale tracker, ethereum whale alerts, track ethereum whales, eth whale movements, ethereum whale transactions',
   alternates: { canonical: 'https://www.sonartracker.io/ethereum-whale-tracker' },
@@ -70,16 +70,6 @@ export default function EthereumWhaleTrackerPage() {
           { title: 'Deepest DeFi Ecosystem', desc: 'Whale interactions with Aave, Uniswap, Lido, and Eigenlayer reveal leveraging, deleveraging, and strategic repositioning before it shows in the price.' },
           { title: 'ETF Flow Transparency', desc: 'Spot ETH ETF custodial wallets (BlackRock, Fidelity) show institutional demand in real time on-chain. Sonar tracks these flows alongside organic whale activity.' },
         ]}
-        comparisons={[
-          { feature: 'Real-time ETH tracking', sonar: '✓', tool2: '✓', tool3: '✓' },
-          { feature: 'AI inflow/outflow classification', sonar: '✓', tool2: '✗', tool3: '✗' },
-          { feature: 'AI analyst (ORCA)', sonar: '✓', tool2: '✗', tool3: '✗' },
-          { feature: 'Staking flow monitoring', sonar: '✓', tool2: '✓', tool3: '✗' },
-          { feature: 'DeFi interaction tracking', sonar: '✓', tool2: '✓', tool3: 'Limited' },
-          { feature: 'Custom alerts', sonar: '✓', tool2: '✓', tool3: '✗' },
-          { feature: 'Price/month', sonar: '$7.99', tool2: '$150+', tool3: 'Free' },
-        ]}
-        compToolNames={['Nansen', 'Etherscan']}
         faqs={[
           { q: 'What can I learn from ETH staking-queue data?', a: 'Unstaking events are publicly recorded; ETH becomes liquid after 1-14 days. Sonar reports the queue size and post-withdrawal destination addresses. This is descriptive on-chain data, not a prediction of price movement.' },
           { q: 'What\'s the difference between ETH and ERC-20 tracking?', a: 'ETH tracking focuses on native Ether — staking flows, exchange deposits, and ETH-specific DeFi. ERC-20 tracking covers all tokens on Ethereum (UNI, LINK, AAVE, etc.). Sonar covers both comprehensively.' },
