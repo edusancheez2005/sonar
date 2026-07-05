@@ -191,6 +191,21 @@ const ActionBtn = styled.button`
   }
 `
 
+const MirrorBtn = styled(ActionBtn)`
+  border: none;
+  background: linear-gradient(135deg, #7af8ff 0%, #22d3ee 60%, #36a6ba 100%);
+  color: #0a1621;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(34, 211, 238, 0.35);
+
+  &:hover {
+    background: linear-gradient(135deg, #7af8ff 0%, #22d3ee 60%, #36a6ba 100%);
+    filter: brightness(1.08);
+    box-shadow: 0 6px 20px rgba(34, 211, 238, 0.5);
+    transform: translateY(-1px);
+  }
+`
+
 // Deterministic gradient avatar derived from the address — gives each
 // wallet a recognizable visual identity without any network call.
 function avatarGradient(address = '') {
@@ -202,7 +217,7 @@ function avatarGradient(address = '') {
   return `linear-gradient(135deg, hsl(${h} 75% 55%), hsl(${h2} 78% 42%))`
 }
 
-export default function WalletProfileHeader({ profile, onAddToWatchlist, onSetAlert }) {
+export default function WalletProfileHeader({ profile, onAddToWatchlist, onSetAlert, onMirror }) {
   const [copied, setCopied] = useState(false)
 
   const copyAddress = () => {
@@ -236,6 +251,9 @@ export default function WalletProfileHeader({ profile, onAddToWatchlist, onSetAl
           </div>
         </Identity>
         <Actions>
+          {onMirror && (
+            <MirrorBtn onClick={onMirror}>⚡ Mirror Wallet</MirrorBtn>
+          )}
           <FollowButton address={profile.address} />
           {onAddToWatchlist && (
             <ActionBtn onClick={onAddToWatchlist}>+ Watchlist</ActionBtn>

@@ -5,6 +5,29 @@ import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// Subscription statuses that keep a user on the premium plan. 'trialing' is
+// the free-trial window; 'past_due' is a grace period while Stripe retries a
+// failed card so a hiccup doesn't instantly lock a paying user out.
+const PREMIUM_STATUSES = new Set(['trialing', 'active', 'past_due'])
+
+async function resolveUserId(stripe, subscription) {
+  if (subscription.metadata?.supabase_user_id) return subscription.metadata.supabase_user_id
+  try {
+    const customer = await stripe.customers.retrieve(subscription.customer)
+    if (!customer.deleted && customer.metadata?.supabase_user_id) {
+      return customer.metadata.supabase_user_id
+    }
+  } catch (err) {
+    console.error('Could not retrieve customer for subscription', subscription.id, err.message)
+  }
+  const { data } = await supabaseAdmin
+    .from('user_subscriptions')
+    .select('user_id')
+    .eq('stripe_customer_id', subscription.customer)
+    .maybeSingle()
+  return data?.user_id || null
+}
+
 export async function POST(req) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
     return new NextResponse('Stripe not configured', { status: 503 })
@@ -41,54 +64,63 @@ export async function POST(req) {
             })
             .eq('id', userId)
 
+          // Persist the ids only — status/trial fields belong to the
+          // customer.subscription.* events, so arrival order doesn't matter.
+          await supabaseAdmin
+            .from('user_subscriptions')
+            .upsert({
+              user_id: userId,
+              stripe_customer_id: customerId || null,
+              stripe_subscription_id: subscriptionId || null,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id' })
+
           console.log(`✅ Subscription activated for user ${userId} - plan set to premium`)
         }
         break
       }
       case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object
-        const customerId = subscription.customer
-        const status = subscription.status // active, past_due, canceled, etc.
-        
-        // Get user ID from customer metadata
-        const customer = await stripe.customers.retrieve(customerId)
-        const userId = customer.metadata?.supabase_user_id
-
-        if (userId) {
-          const plan = (status === 'active') ? 'premium' : 'free'
-          
-          await supabaseAdmin
-            .from('profiles')
-            .update({
-              plan: plan,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', userId)
-
-          console.log(`✅ Subscription ${status} for user ${userId} - plan set to ${plan}`)
-        }
-        break
-      }
+      case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const subscription = event.data.object
-        const customerId = subscription.customer
-        
-        // Get user ID from customer metadata
-        const customer = await stripe.customers.retrieve(customerId)
-        const userId = customer.metadata?.supabase_user_id
-
-        if (userId) {
-          await supabaseAdmin
-            .from('profiles')
-            .update({
-              plan: 'free',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', userId)
-
-          console.log(`❌ Subscription canceled for user ${userId} - plan set to free`)
+        const userId = await resolveUserId(stripe, subscription)
+        if (!userId) {
+          console.log(`Subscription event ${event.type} with no resolvable user, skipping`)
+          break
         }
+
+        const status = event.type === 'customer.subscription.deleted' ? 'canceled' : subscription.status
+        // Newer Stripe API versions expose current_period_end on the item
+        const periodEnd = subscription.current_period_end
+          ?? subscription.items?.data?.[0]?.current_period_end
+          ?? null
+
+        await supabaseAdmin
+          .from('user_subscriptions')
+          .upsert({
+            user_id: userId,
+            stripe_customer_id: subscription.customer,
+            stripe_subscription_id: subscription.id,
+            status,
+            price_id: subscription.items?.data?.[0]?.price?.id ?? null,
+            cancel_at_period_end: !!subscription.cancel_at_period_end,
+            current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+            trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            // Permanent one-trial-per-account memory; row survives deletion
+            ...(subscription.trial_end ? { trial_used: true } : {}),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' })
+
+        const plan = PREMIUM_STATUSES.has(status) ? 'premium' : 'free'
+        await supabaseAdmin
+          .from('profiles')
+          .update({
+            plan,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', userId)
+
+        console.log(`✅ Subscription ${status} for user ${userId} - plan set to ${plan}`)
         break
       }
       default:

@@ -440,6 +440,7 @@ export default function SubscribePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [openFAQ, setOpenFAQ] = useState(null)
+  const [subStatus, setSubStatus] = useState({ isActive: false, trialEligible: true })
   const router = useRouter()
 
   useEffect(() => {
@@ -448,6 +449,23 @@ export default function SubscribePage() {
       const { data: { session } } = await sb.auth.getSession()
       setIsAuthenticated(!!session?.user)
       setCheckingAuth(false)
+
+      if (session?.access_token) {
+        try {
+          const res = await fetch('/api/subscription/status', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          })
+          if (res.ok) {
+            const data = await res.json()
+            setSubStatus({
+              isActive: !!data.isActive,
+              trialEligible: data.trialEligible !== false,
+            })
+          }
+        } catch {
+          // keep defaults — server enforces eligibility anyway
+        }
+      }
     }
     checkAuth()
   }, [])
@@ -656,13 +674,16 @@ export default function SubscribePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <Badge>SUPPORT SONAR</Badge>
+            <Badge>7-DAY FREE TRIAL</Badge>
             <PlanName>Pro</PlanName>
             <PriceContainer>
               <Price>
                 $7.99<span>/month</span>
               </Price>
             </PriceContainer>
+            <p style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600, margin: '0.25rem 0 0.75rem', textAlign: 'center' }}>
+              7 days free, then $7.99/month — cancel anytime
+            </p>
             <FeatureList>
               <li>Everything in Free, plus:</li>
               <li>Priority access to new features</li>
@@ -673,7 +694,7 @@ export default function SubscribePage() {
             </FeatureList>
             <Button
               $featured={true}
-              onClick={handleSubscribe}
+              onClick={subStatus.isActive ? () => router.push('/profile') : handleSubscribe}
               disabled={loading || !isAuthenticated}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -684,6 +705,10 @@ export default function SubscribePage() {
                 </>
               ) : !isAuthenticated ? (
                 'Log In to Subscribe'
+              ) : subStatus.isActive ? (
+                "You're on Pro ✓"
+              ) : subStatus.trialEligible ? (
+                'Start 7-Day Free Trial'
               ) : (
                 'Subscribe Now'
               )}
@@ -886,6 +911,26 @@ export default function SubscribePage() {
           {/* FAQ Section */}
           <SectionTitle>Frequently Asked Questions</SectionTitle>
           <FAQSection>
+            <FAQItem onClick={() => setOpenFAQ(openFAQ === 8 ? null : 8)}>
+              <FAQQuestion className={openFAQ === 8 ? 'open' : ''}>
+                <h3>How does the 7-day free trial work?</h3>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </FAQQuestion>
+              <AnimatePresence>
+                {openFAQ === 8 && (
+                  <FAQAnswer
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <p>Start your trial by entering your card details — you won't be charged anything for 7 days, and you get full access to every Pro feature right away. If Sonar Pro isn't for you, cancel any time before the trial ends from your Profile → Manage billing and you'll pay nothing. If you do nothing, your subscription starts automatically at $7.99/month after the trial. Stripe emails you a reminder before your trial ends. One free trial per account. The trial is separate from your 14-day cooling-off rights described below.</p>
+                  </FAQAnswer>
+                )}
+              </AnimatePresence>
+            </FAQItem>
+
             <FAQItem onClick={() => setOpenFAQ(openFAQ === 0 ? null : 0)}>
               <FAQQuestion className={openFAQ === 0 ? 'open' : ''}>
                 <h3>Can I cancel my subscription at any time?</h3>

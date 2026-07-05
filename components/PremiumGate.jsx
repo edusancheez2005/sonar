@@ -141,8 +141,8 @@ export default function PremiumGate({ isPremium, feature = 'this feature', child
         <GateTitle>Premium feature</GateTitle>
         <GateDescription>Upgrade to access {feature}</GateDescription>
         <TeaserText>{teaser}</TeaserText>
-        <UpgradeButton href="/subscribe">Upgrade →</UpgradeButton>
-        <PriceTag>$7.99/mo · Cancel anytime</PriceTag>
+        <UpgradeButton href="/subscribe">Try free for 7 days →</UpgradeButton>
+        <PriceTag>7 days free, then $7.99/mo · Cancel anytime</PriceTag>
       </Overlay>
     </GateWrapper>
   )

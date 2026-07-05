@@ -9,6 +9,7 @@ import HoldingsTable from '@/components/wallet-tracker/HoldingsTable'
 import WalletFlowGraph from '@/components/wallet-tracker/WalletFlowGraph'
 import WatchlistModal from '@/components/wallet-tracker/WatchlistModal'
 import AlertModal from '@/components/wallet-tracker/AlertModal'
+import MirrorWalletModal from '@/components/wallet-tracker/MirrorWalletModal'
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 import ErrorBoundary from '@/components/wallet-tracker/ErrorBoundary'
 import WalletBacktestPanel from '@/components/wallet-tracker/WalletBacktestPanel'
@@ -315,6 +316,7 @@ export default function WalletProfileWrapper({ address }) {
   const [realizedPnl, setRealizedPnl] = useState(undefined) // undefined = loading
   const [showWatchlistModal, setShowWatchlistModal] = useState(false)
   const [showAlertModal, setShowAlertModal] = useState(false)
+  const [showMirrorModal, setShowMirrorModal] = useState(false)
 
   const fetchProfile = useCallback(async () => {
     setLoading(true)
@@ -419,6 +421,12 @@ export default function WalletProfileWrapper({ address }) {
           profile={profile}
           onAddToWatchlist={() => setShowWatchlistModal(true)}
           onSetAlert={() => setShowAlertModal(true)}
+          onMirror={() => {
+            if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+              window.gtag('event', 'mirror_wallet_click', { wallet_address: address })
+            }
+            setShowMirrorModal(true)
+          }}
         />
 
         {isUnknown ? (
@@ -514,6 +522,12 @@ export default function WalletProfileWrapper({ address }) {
             address={address}
             chain={profile.chain}
             onClose={() => setShowAlertModal(false)}
+          />
+        )}
+        {showMirrorModal && (
+          <MirrorWalletModal
+            address={address}
+            onClose={() => setShowMirrorModal(false)}
           />
         )}
         <BackToTop />

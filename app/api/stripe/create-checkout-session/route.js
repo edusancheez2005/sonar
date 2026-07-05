@@ -106,30 +106,76 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Invalid price ID. Please contact support.' }, { status: 400 })
     }
     
-    // Create Stripe customer (we'll store the customer ID in metadata for now)
-    console.log('Creating new Stripe customer for:', userEmail)
-    const customer = await stripe.customers.create({
-      email: userEmail,
-      metadata: { 
-        supabase_user_id: userId,
-        user_email: userEmail 
-      },
-    })
-    const customerId = customer.id
-    console.log('Stripe customer created:', customerId)
+    // Reuse the Stripe customer for this user if we have one, otherwise create it once
+    const { data: subRow } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('stripe_customer_id, stripe_subscription_id, trial_used')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    let customerId = subRow?.stripe_customer_id || null
+    if (customerId) {
+      try {
+        const existing = await stripe.customers.retrieve(customerId)
+        if (existing.deleted) customerId = null
+      } catch (retrieveErr) {
+        // Stale id or test/live mode mismatch — recreate below
+        console.log('Stored Stripe customer not retrievable, recreating:', retrieveErr.message)
+        customerId = null
+      }
+    }
+    if (!customerId) {
+      console.log('Creating new Stripe customer for:', userEmail)
+      const customer = await stripe.customers.create({
+        email: userEmail,
+        metadata: {
+          supabase_user_id: userId,
+          user_email: userEmail
+        },
+      })
+      customerId = customer.id
+      console.log('Stripe customer created:', customerId)
+      await supabaseAdmin
+        .from('user_subscriptions')
+        .upsert(
+          { user_id: userId, stripe_customer_id: customerId, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        )
+    }
+
+    // Never let one account hold two subscriptions
+    const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 100 })
+    const hasLive = subs.data.some(s => ['active', 'trialing', 'past_due', 'unpaid'].includes(s.status))
+    if (hasLive) {
+      return NextResponse.json(
+        { error: 'You already have an active subscription. Manage it from your profile page.' },
+        { status: 400 }
+      )
+    }
+
+    // One free trial per account, ever — enforced on both Stripe history and our own flag
+    const trialEligible = subs.data.length === 0
+      && !subRow?.stripe_subscription_id
+      && !subRow?.trial_used
 
     console.log('Creating Stripe checkout session with:', {
       mode: 'subscription',
       customer: customerId,
       priceId,
+      trialEligible,
       successUrl,
       cancelUrl
     })
-    
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
+      payment_method_collection: 'always',
+      subscription_data: {
+        metadata: { supabase_user_id: userId },
+        ...(trialEligible ? { trial_period_days: 7 } : {}),
+      },
       success_url: successUrl,
       cancel_url: cancelUrl,
       billing_address_collection: 'auto',

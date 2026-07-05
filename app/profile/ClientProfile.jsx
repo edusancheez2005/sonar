@@ -462,31 +462,23 @@ export default function ClientProfile({ email: initialEmail }) {
     try {
       setPortalLoading(true)
       const sb = supabaseBrowser()
-      const { data: { user } } = await sb.auth.getUser()
-      if (!user) throw new Error('Not logged in')
-
-      // Get customer ID from subscription
-      const { data: subData } = await sb
-        .from('user_subscriptions')
-        .select('stripe_customer_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!subData?.stripe_customer_id) {
-        throw new Error('No subscription found')
-      }
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session?.access_token) throw new Error('Not logged in')
 
       const res = await fetch('/api/stripe/portal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          customerId: subData.stripe_customer_id,
-          returnUrl: window.location.href
-        })
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ returnUrl: window.location.href })
       })
 
-      if (!res.ok) throw new Error('Failed to create portal session')
-      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to create portal session')
+      }
+
       const { url } = await res.json()
       if (url) window.location.href = url
     } catch (e) {
@@ -495,6 +487,11 @@ export default function ClientProfile({ email: initialEmail }) {
       setPortalLoading(false)
     }
   }
+
+  const isTrialing = subscription?.subStatus === 'trialing'
+  const trialDaysLeft = isTrialing && subscription?.trialEnd
+    ? Math.max(1, Math.ceil((new Date(subscription.trialEnd) - Date.now()) / 86400000))
+    : null
 
   if (!email) return (
     <PageWrapper>
@@ -592,11 +589,29 @@ export default function ClientProfile({ email: initialEmail }) {
               <Muted>Loading subscription details...</Muted>
             ) : subscription?.isActive ? (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <StatusBadge $active={true}>
                     <span className="dot"></span>
-                    Active Subscription
+                    {isTrialing
+                      ? `Free Trial${trialDaysLeft ? ` — ${trialDaysLeft} day${trialDaysLeft > 1 ? 's' : ''} left` : ''}`
+                      : 'Active Subscription'}
                   </StatusBadge>
+                  <button
+                    onClick={openBillingPortal}
+                    disabled={portalLoading}
+                    style={{
+                      padding: '0.45rem 1rem',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(54, 166, 186, 0.4)',
+                      background: 'rgba(54, 166, 186, 0.12)',
+                      color: 'var(--primary)',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      cursor: portalLoading ? 'wait' : 'pointer',
+                    }}
+                  >
+                    {portalLoading ? 'Opening…' : 'Manage billing'}
+                  </button>
                 </div>
                 
                 <Row>
@@ -617,20 +632,23 @@ export default function ClientProfile({ email: initialEmail }) {
                   </div>
                 </Row>
                 
-                {subscription.currentPeriodEnd && (
+                {(subscription.currentPeriodEnd || subscription.trialEnd) && (
                   <Row>
                     <label>
                       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      Next Billing Date
+                      {subscription.cancelAtPeriodEnd ? 'Cancels On' : isTrialing ? 'First Charge' : 'Next Billing Date'}
                     </label>
                     <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                      {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB', {
+                      {new Date((isTrialing && subscription.trialEnd) || subscription.currentPeriodEnd).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric'
                       })}
+                      {subscription.cancelAtPeriodEnd && isTrialing && (
+                        <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}> — you won't be charged</span>
+                      )}
                     </span>
                   </Row>
                 )}
