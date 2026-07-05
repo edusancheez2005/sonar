@@ -137,6 +137,16 @@ export async function GET(req, { params }) {
         { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }
       )
     }
+    // Live on-chain fallback: an address we've never indexed still deserves a
+    // real page. Pull current balances straight from the chain (Alchemy for
+    // EVM, Helius for Solana) and present a live snapshot.
+    const liveProfile = await buildLiveProfile(address)
+    if (liveProfile) {
+      return NextResponse.json(
+        { data: liveProfile },
+        { headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=600' } }
+      )
+    }
     return NextResponse.json({ error: 'Wallet not found' }, { status: 404 })
   }
 
@@ -179,6 +189,89 @@ export async function GET(req, { params }) {
     },
     { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }
   )
+}
+
+// Live balance snapshot for wallets with no footprint in any of our tables.
+// EVM addresses are checked on all Alchemy-supported chains in parallel;
+// Solana via Helius. Returns null when nothing is found (or providers are
+// not configured), letting the caller 404.
+const LIVE_EVM_CHAINS = ['ethereum', 'base', 'arbitrum', 'polygon', 'optimism']
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve([]), ms)),
+  ])
+}
+
+async function buildLiveProfile(address) {
+  const isEvm = /^0x[a-fA-F0-9]{40}$/.test(address)
+  const isSolana = !isEvm && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)
+
+  try {
+    let holdingsByChain = []
+    if (isEvm) {
+      const { getEvmHoldings } = await import('@/lib/wallet/alchemy')
+      const results = await Promise.allSettled(
+        LIVE_EVM_CHAINS.map((chain) => withTimeout(getEvmHoldings(chain, address), 8000))
+      )
+      holdingsByChain = results.map((r, i) => ({
+        chain: LIVE_EVM_CHAINS[i],
+        holdings: r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : [],
+      }))
+    } else if (isSolana) {
+      const { getSolanaHoldings } = await import('@/lib/wallet/helius')
+      const holdings = await withTimeout(getSolanaHoldings(address), 8000)
+      holdingsByChain = [{ chain: 'solana', holdings: Array.isArray(holdings) ? holdings : [] }]
+    } else {
+      return null // Bitcoin etc — no live balance provider wired up
+    }
+
+    const withBalances = holdingsByChain.filter((c) => c.holdings.length > 0)
+    if (withBalances.length === 0) return null
+
+    const allTokens = []
+    let portfolioValue = 0
+    let bestChain = withBalances[0].chain
+    let bestChainValue = -1
+    for (const { chain, holdings } of withBalances) {
+      let chainValue = 0
+      for (const h of holdings) {
+        const v = Number(h.value_usd) || 0
+        chainValue += v
+        allTokens.push({ symbol: h.symbol, usd_value: v })
+      }
+      portfolioValue += chainValue
+      if (chainValue > bestChainValue) {
+        bestChainValue = chainValue
+        bestChain = chain
+      }
+    }
+
+    // Merge duplicate symbols across chains, keep the top 8 by value
+    const bySymbol = new Map()
+    for (const t of allTokens) {
+      bySymbol.set(t.symbol, (bySymbol.get(t.symbol) || 0) + t.usd_value)
+    }
+    const topTokens = [...bySymbol.entries()]
+      .map(([symbol, usd_value]) => ({ symbol, usd_value: Math.round(usd_value * 100) / 100 }))
+      .sort((a, b) => b.usd_value - a.usd_value)
+      .slice(0, 8)
+
+    return {
+      address,
+      chain: bestChain,
+      chains: withBalances.map((c) => c.chain),
+      portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
+      tx_count: null,
+      last_active: null,
+      top_tokens: topTokens,
+      live_holdings_count: allTokens.length,
+      source: 'live',
+    }
+  } catch {
+    return null
+  }
 }
 
 // Build a wallet profile from the Polymarket tables we already sync

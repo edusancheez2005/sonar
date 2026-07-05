@@ -355,7 +355,7 @@ export default function WalletProfileWrapper({ address }) {
   // blocks first paint. Only for tracked EVM wallets (the stored profile's
   // pnl_estimated_usd is the misleading net-flow figure we're replacing).
   useEffect(() => {
-    if (!profile || profile.unknown || profile.source === 'polymarket') return
+    if (!profile || profile.unknown || profile.source === 'polymarket' || profile.source === 'live') return
     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return
     let cancelled = false
     setRealizedPnl(undefined)
@@ -394,6 +394,7 @@ export default function WalletProfileWrapper({ address }) {
 
   const isUnknown = profile.unknown
   const isPolymarket = profile.source === 'polymarket'
+  const isLiveSnapshot = profile.source === 'live'
   const isEvm = /^0x[a-fA-F0-9]{40}$/.test(address)
   const topTokens = profile.top_tokens || []
   const pnlColor = profile.pnl_estimated_usd > 0 ? '#00d4aa' : profile.pnl_estimated_usd < 0 ? '#ff6b6b' : 'var(--text-primary)'
@@ -443,12 +444,79 @@ export default function WalletProfileWrapper({ address }) {
             marginBottom: '1.5rem',
           }}>
             <p style={{ color: 'var(--text-primary)', fontSize: '1.05rem', marginBottom: '0.6rem', fontWeight: 600 }}>
-              No tracked data for this wallet yet.
+              This wallet has no on-chain footprint yet.
+            </p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', maxWidth: '520px', margin: '0 auto 0.4rem' }}>
+              We checked our whale index and live balances on Ethereum, Base, Arbitrum, Polygon,
+              Optimism and Solana — nothing to show so far. It may be brand new or empty.
             </p>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-              Add it to a watchlist or set an alert to start tracking.
+              Add it to a watchlist or set an alert and Sonar will catch its first moves.
             </p>
           </div>
+        ) : isLiveSnapshot ? (
+          <>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              flexWrap: 'wrap',
+              background: 'rgba(34, 211, 238, 0.06)',
+              border: '1px solid var(--neon-border)',
+              borderRadius: '12px',
+              padding: '0.75rem 1rem',
+              marginBottom: '1.5rem',
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-mono, monospace)',
+                fontSize: '0.62rem',
+                letterSpacing: '0.12em',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '999px',
+                border: '1px solid var(--neon-border)',
+                background: 'rgba(34, 211, 238, 0.1)',
+                color: 'var(--neon-bright)',
+                fontWeight: 700,
+              }}>
+                LIVE SNAPSHOT
+              </span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                Current on-chain balances, fetched just now. This wallet isn't in Sonar's whale index yet —
+                follow it or add it to a watchlist and we'll start tracking its trades.
+              </span>
+            </div>
+
+            <StatsGrid>
+              <StatTile label="Portfolio Value" value={formatUsd(profile.portfolio_value_usd)} accent="#22d3ee" icon="wallet" />
+              <StatTile label="Tokens Held" value={profile.live_holdings_count ?? '—'} accent="#7af8ff" icon="tx" />
+              <StatTile label="Active Chains" value={(profile.chains || []).length || '—'} accent="#36a6ba" icon="markets" />
+              <StatTile label="Top Asset" value={topTokens[0]?.symbol || '—'} accent="#00d4aa" icon="volume" />
+            </StatsGrid>
+
+            {topTokens.length > 0 && (
+              <TopTokensCard>
+                <PanelLabel>Current Holdings</PanelLabel>
+                <TokenGrid>
+                  {topTokens.map((t, i) => (
+                    <TokenChip key={typeof t === 'string' ? t : t.symbol || i}>
+                      <TokenDot />
+                      {typeof t === 'string' ? t : `${t.symbol || '?'} ${t.usd_value ? formatUsd(t.usd_value) : ''}`}
+                    </TokenChip>
+                  ))}
+                </TokenGrid>
+              </TopTokensCard>
+            )}
+
+            {isEvm && (
+              <ErrorBoundary fallbackMessage="Failed to load backtest">
+                <WalletBacktestPanel
+                  address={address}
+                  defaultChain={profile.chain === 'polygon' ? 'polygon' : 'ethereum'}
+                  autoRun={false}
+                />
+              </ErrorBoundary>
+            )}
+          </>
         ) : isPolymarket ? (
           <>
             <StatsGrid>
