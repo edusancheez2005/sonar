@@ -1,42 +1,54 @@
 // Email utility for Sonar Tracker
-// Configure your preferred email service here
+// Transactional sends go through Brevo (same account as the weekly
+// campaign crons). Without BREVO_API_KEY these degrade to console.log,
+// and they never throw — callers treat email as fire-and-forget.
+
+async function sendTransactionalEmail({ to, subject, html }) {
+  const brevoKey = process.env.BREVO_API_KEY
+  if (!brevoKey) {
+    console.log(`📧 [email disabled — no BREVO_API_KEY] Would send "${subject}" to: ${to}`)
+    return false
+  }
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: {
+          name: process.env.BREVO_SENDER_NAME || 'Sonar',
+          email: process.env.BREVO_SENDER_EMAIL || 'eduardo@sonartracker.io',
+        },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    })
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error(`Brevo transactional send failed (${res.status}): ${errText.slice(0, 300)}`)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('Brevo transactional send error:', err?.message || err)
+    return false
+  }
+}
 
 export async function sendWelcomeEmail(email, name = '') {
-  // This is a placeholder - integrate with your preferred email service
-  console.log(`📧 Sending welcome email to: ${email}`)
-
-  // Example implementations:
-
-  // 1. SendGrid
-  // const sgMail = require('@sendgrid/mail')
-  // sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-  // await sgMail.send({
-  //   to: email,
-  //   from: 'welcome@sonartracker.io',
-  //   subject: 'Welcome to Sonar Tracker!',
-  //   html: getWelcomeEmailHTML(email, name)
-  // })
-
-  // 2. Resend
-  // import { Resend } from 'resend'
-  // const resend = new Resend(process.env.RESEND_API_KEY)
-  // await resend.emails.send({
-  //   from: 'welcome@sonartracker.io',
-  //   to: email,
-  //   subject: 'Welcome to Sonar Tracker!',
-  //   html: getWelcomeEmailHTML(email, name)
-  // })
-
-  return true
+  return sendTransactionalEmail({
+    to: email,
+    subject: 'Welcome to Sonar Tracker 🐋',
+    html: getWelcomeEmailHTML(email, name),
+  })
 }
 
 export async function sendWaitlistConfirmation(email) {
-  console.log(`📧 Sending Orca waitlist confirmation to: ${email}`)
-
-  // Placeholder for waitlist confirmation email
-  // Integrate with your email service here
-
-  return true
+  return sendTransactionalEmail({
+    to: email,
+    subject: "You're on the waitlist 🐋",
+    html: getWaitlistEmailHTML(email),
+  })
 }
 
 function getWelcomeEmailHTML(email, name = '') {
@@ -87,12 +99,12 @@ function getWelcomeEmailHTML(email, name = '') {
             <a href="https://sonartracker.io/dashboard" class="button">Access Your Dashboard →</a>
 
             <p style="margin-top: 30px; font-size: 16px;">
-              <strong>Questions?</strong> Reach out to us at <a href="mailto:saif@sonartracker.io">saif@sonartracker.io</a>
+              <strong>Questions?</strong> Reach out to us at <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>
             </p>
           </div>
 
           <div class="footer">
-            <p>© 2024 Sonar Tracker. All rights reserved.</p>
+            <p>© 2026 Sonar Tracker. All rights reserved.</p>
             <p>This email was sent to ${email}. If you didn't create this account, please ignore this email.</p>
           </div>
         </div>

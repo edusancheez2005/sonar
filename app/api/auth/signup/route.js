@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { sendWelcomeEmail } from '@/app/lib/email'
 
 function isValidEmail(email) {
   if (typeof email !== 'string') return false
@@ -106,6 +107,11 @@ export async function POST(req) {
         console.error('[api/auth/signup] profile update failed for', data.user.id, profileErr.message)
       }
     }
+
+    // Fire-and-forget welcome email (never blocks or fails the signup)
+    try {
+      await sendWelcomeEmail(email, displayName)
+    } catch {}
 
     return NextResponse.json({ ok: true, userId: data?.user?.id || null })
   } catch (err) {

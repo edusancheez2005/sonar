@@ -83,6 +83,10 @@
     {
       "path": "/api/cron/seo-article",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/sync-brevo-contacts",
+      "schedule": "15 2 * * *"
     }
   ]
 }
