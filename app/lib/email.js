@@ -89,6 +89,59 @@ export async function sendWaitlistConfirmation(email) {
   })
 }
 
+// Personal daily digest: the user's FOLLOWED wallets' trades in the last 24h.
+// Only called when there is at least one move (no empty digests).
+// moves: [{ address, display_name, classification, token, usd_value, timestamp }]
+export async function sendPersonalDigest(email, { moves = [], totalCount = 0 }) {
+  const top = moves.slice(0, 5)
+  const rows = top.map((m) => {
+    const verb = String(m.classification || '').toUpperCase() === 'BUY' ? 'bought' : 'sold'
+    const when = timeAgo(m.timestamp)
+    return linkRow(
+      `https://www.sonartracker.io/wallet-tracker/${m.address}`,
+      `${escapeHtml(m.display_name)} ${verb} ${fmtUsdCompact(Number(m.usd_value) || 0)} of ${escapeHtml(m.token || '?')}`,
+      `${when} — open the wallet to see the full move`
+    )
+  }).join('')
+
+  const more = totalCount > top.length
+    ? `<p style="margin:10px 0 0;color:#9ca3af;font-size:13px;">+ ${totalCount - top.length} more trades from your whales in the last 24 hours.</p>`
+    : ''
+
+  const bodyHtml = `
+    <p style="margin:0 0 16px;color:#d1d5db;font-size:14px;line-height:1.7;">
+      The wallets you follow made ${totalCount} trade${totalCount === 1 ? '' : 's'} in the
+      last 24 hours. The biggest moves:
+    </p>
+    ${rows}
+    ${more}
+    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px 0 8px;">
+      <tr><td style="border-radius:8px;background:#22d3ee;">
+        <a href="https://www.sonartracker.io/dashboard" style="display:inline-block;padding:11px 24px;color:#0a1621;font-weight:700;font-size:14px;text-decoration:none;">See all their moves &rarr;</a>
+      </td></tr>
+    </table>`
+
+  return sendTransactionalEmail({
+    to: email,
+    subject: `Your whales moved — ${totalCount} trade${totalCount === 1 ? '' : 's'} in the last 24h`,
+    html: renderEmailShell({
+      title: 'Your whales moved',
+      subtitle: 'Daily briefing on the wallets you follow',
+      bodyHtml,
+      footerNote: `You're receiving this because you follow these wallets on Sonar Tracker. To stop daily briefings, set your notification style to Quiet at <a href="https://www.sonartracker.io/personalize" style="color:#22d3ee;">sonartracker.io/personalize</a>. Market data is informational only — not investment advice.`,
+    }),
+  })
+}
+
+function timeAgo(ts) {
+  const ms = Date.now() - new Date(ts).getTime()
+  if (!Number.isFinite(ms) || ms < 0) return 'just now'
+  const h = Math.floor(ms / 3600000)
+  if (h < 1) return `${Math.max(1, Math.floor(ms / 60000))}m ago`
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
+}
+
 // Shared dark shell — same skin as the weekly campaign emails.
 function renderEmailShell({ title, subtitle, bodyHtml, footerNote }) {
   return `<!doctype html>
