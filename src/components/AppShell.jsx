@@ -1081,7 +1081,13 @@ export default function AppShell({ children, onLogout }) {
 
   useEffect(() => () => clearRailPeekLeaveTimer(), [clearRailPeekLeaveTimer])
 
-  if (!mounted) return null
+  // NOTE: do NOT `if (!mounted) return null` here. That renders the entire
+  // shell — and every page inside {children} — as empty HTML on the server,
+  // so crawlers (and first paint) get nothing. It was the root cause of the
+  // site-wide "empty HTML / CSR bailout" and the SEO collapse. All shell
+  // state (railCollapsed, isNarrow, session, …) is read in effects with
+  // server-safe defaults, so the first client render matches the server
+  // render and there is no hydration mismatch — children render server-side.
 
   const isAuthenticated = !!(session || user)
   const showCollapsedRail = !isNarrow && railCollapsed
