@@ -571,10 +571,12 @@ export default function AskOrcaClient({
     const question = (rawQuestion || '').trim()
     if (!question) return
     if (!session) {
+      // /auth/signin does not exist — the canonical login flow is the
+      // landing-page modal, same as AuthGuard uses.
       const redirectTo = typeof window !== 'undefined'
         ? window.location.pathname + window.location.search
         : '/ai'
-      window.location.href = `/auth/signin?redirect=${encodeURIComponent(redirectTo)}`
+      window.location.href = `/?login=1&required=${encodeURIComponent(redirectTo)}`
       return
     }
     setError(null)
@@ -604,6 +606,12 @@ export default function AskOrcaClient({
         await consumeSse(res, question)
       } else {
         const data = await res.json().catch(() => ({}))
+        if (res.status === 401) {
+          // Stale/expired session — send them through login and back.
+          const redirectTo = window.location.pathname + window.location.search
+          window.location.href = `/?login=1&required=${encodeURIComponent(redirectTo)}`
+          return
+        }
         if (!res.ok) {
           throw new Error(data?.error || data?.message || `HTTP ${res.status}`)
         }

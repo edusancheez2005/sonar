@@ -780,10 +780,10 @@ export default function ClientOrca() {
     const question = exampleQuery || input.trim()
     if (!question) return
 
-    // Check if logged in
+    // Check if logged in — send through the real login flow (the landing-page
+    // modal); /auth/signin does not exist.
     if (!session) {
-      alert('Please log in to use ORCA AI')
-      window.location.href = '/auth/signin?redirect=/ai-advisor'
+      window.location.href = '/?login=1&required=%2Fai-advisor'
       return
     }
 
