@@ -1,23 +1,25 @@
 import React from 'react'
+import { GET as getTokenLeaderboard } from '@/app/api/tokens/leaderboard/route'
 
-export const metadata = { 
+export const dynamic = 'force-dynamic'
+
+export const metadata = {
   title: 'Token Leaderboard — Most Traded & Net Inflows (24h)',
   description: 'Explore the most traded crypto tokens and top net inflows over the last 24 hours. Drill into token pages for whale trades, volume, and net flow.',
   alternates: { canonical: 'https://www.sonartracker.io/tokens' }
 }
 
 export default async function TokensPage() {
-  // Server-side self-fetch needs an absolute URL; fall back to the canonical
-  // domain so SSR works even when the env vars are unset. A failed fetch
-  // renders an empty table instead of erroring the whole page.
-  const base = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sonartracker.io'
+  // Call the API handler in-process. An HTTP self-fetch to our own domain
+  // hangs inside the lambda (same serverless pool), which left this page
+  // streaming forever with no content. A failure renders an empty table.
   let rows = []
   try {
-    const res = await fetch(`${base}/api/tokens/leaderboard`, { cache: 'no-store' })
+    const res = await getTokenLeaderboard()
     const json = await res.json()
     rows = json?.data || []
   } catch (err) {
-    console.error('tokens SSR fetch failed:', err?.message)
+    console.error('tokens data load failed:', err?.message)
   }
 
   return (

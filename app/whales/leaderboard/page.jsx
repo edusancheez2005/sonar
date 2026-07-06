@@ -1,23 +1,25 @@
 import React from 'react'
+import { GET as getLeaderboard } from '@/app/api/whales/leaderboard/route'
 
-export const metadata = { 
+export const dynamic = 'force-dynamic'
+
+export const metadata = {
   title: 'Whale Leaderboard — Top Net Flow Wallets (24h)',
   description: 'See the top crypto whale wallets by 24h net USD flow, tokens traded, buy/sell balance, and Whale Score. Featuring named entities like Vitalik, Justin Sun, Wintermute.',
   alternates: { canonical: 'https://www.sonartracker.io/whales/leaderboard' }
 }
 
 export default async function WhalesLeaderboardPage() {
-  // Server-side self-fetch needs an absolute URL; fall back to the canonical
-  // domain so SSR works even when the env vars are unset. A failed fetch
-  // renders an empty table instead of erroring the whole page.
-  const base = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sonartracker.io'
+  // Call the API handler in-process. An HTTP self-fetch to our own domain
+  // hangs inside the lambda (same serverless pool), which left this page
+  // streaming forever with no content. A failure renders an empty table.
   let rows = []
   try {
-    const res = await fetch(`${base}/api/whales/leaderboard`, { cache: 'no-store' })
+    const res = await getLeaderboard()
     const json = await res.json()
     rows = json?.data || []
   } catch (err) {
-    console.error('whales/leaderboard SSR fetch failed:', err?.message)
+    console.error('whales/leaderboard data load failed:', err?.message)
   }
 
   return (
