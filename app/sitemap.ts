@@ -146,17 +146,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // Programmatic SEO: top whale addresses
-  // 2025-04-24: trimmed from 2000 → 50 because Google reported 850 pages as
-  // "Discovered, currently not indexed" — almost all auto-generated whale
-  // pages. Crawl budget was being wasted on low-value templated URLs and the
-  // truly important pages weren't being crawled. Quality > quantity for
-  // sitemap inclusion. Re-expand only when these pages have rich, unique
-  // content per address (entity name, transaction history blurb, etc).
-  // 2026-06-28: wallet pages removed from the sitemap. /wallet-tracker/[address]
-  // is auth-gated (AuthGuard renders null for signed-out crawlers) and is now
-  // noindex, so listing these URLs only wasted crawl budget ("Crawled/Discovered
-  // - currently not indexed"). Re-add only with public, rich per-address content.
-  const whalePages: MetadataRoute.Sitemap = []
+  // 2025-04-24: trimmed from 2000 → 50 (crawl-budget waste on thin pages).
+  // 2026-06-28: removed entirely while /wallet-tracker/[address] was
+  // auth-gated + noindex (crawlers saw empty pages).
+  // 2026-07-06: re-added. Wallet pages are now PUBLIC (auth removed) and
+  // index-when-tracked (generateMetadata checks wallet_profiles), so the top
+  // wallets by 30d volume are real, content-rich landing pages again.
+  let whalePages: MetadataRoute.Sitemap = []
+  if (sb) {
+    try {
+      const { data: whales } = await sb
+        .from('wallet_profiles')
+        .select('address, total_volume_usd_30d')
+        .not('address', 'is', null)
+        .order('total_volume_usd_30d', { ascending: false, nullsFirst: false })
+        .limit(200)
+      if (whales) {
+        whalePages = whales.map((w: any) => ({
+          url: `${BASE}/wallet-tracker/${w.address}`,
+          lastModified: now,
+          changeFrequency: 'daily' as const,
+          priority: 0.6,
+        }))
+      }
+    } catch (_) { /* skip */ }
+  }
 
   // Programmatic SEO: top tokens — trimmed from 500 → 50 (same reason as whales)
   let tokenPages: MetadataRoute.Sitemap = []

@@ -1,5 +1,4 @@
 import React from 'react'
-import AuthGuard from '@/app/components/AuthGuard'
 import EntitiesClient from './EntitiesClient'
 
 export const metadata = {
@@ -9,9 +8,5 @@ export const metadata = {
 }
 
 export default function EntitiesPage() {
-  return (
-    <AuthGuard>
-      <EntitiesClient />
-    </AuthGuard>
-  )
+  return <EntitiesClient />
 }

@@ -1,6 +1,5 @@
 import React from 'react'
 import Statistics from '@/src/views/Statistics'
-import AuthGuard from '@/app/components/AuthGuard'
 
 export const metadata = {
   title: 'Crypto Whale Scanner — Live Filters by Token, Chain, USD',
@@ -9,9 +8,5 @@ export const metadata = {
 }
 
 export default function StatisticsPage() {
-  return (
-    <AuthGuard>
-      <Statistics />
-    </AuthGuard>
-  )
+  return <Statistics />
 }

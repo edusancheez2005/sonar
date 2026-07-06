@@ -1,6 +1,5 @@
 import React from 'react'
 import NewsTerminal from './NewsTerminal'
-import AuthGuard from '@/app/components/AuthGuard'
 import { createClient } from '@supabase/supabase-js'
 import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
@@ -221,9 +220,5 @@ export default async function NewsPage() {
     }
   } catch {}
 
-  return (
-    <AuthGuard>
-      <NewsTerminal initialNews={initialNews} />
-    </AuthGuard>
-  )
+  return <NewsTerminal initialNews={initialNews} />
 }

@@ -1,5 +1,4 @@
 import React from 'react'
-import AuthGuard from '@/app/components/AuthGuard'
 
 export const metadata = { 
   title: 'Token Leaderboard — Most Traded & Net Inflows (24h)',
@@ -13,8 +12,7 @@ export default async function TokensPage() {
   const rows = json?.data || []
 
   return (
-    <AuthGuard>
-      <main className="container" style={{ padding: '2rem' }}>
+    <main className="container" style={{ padding: '2rem' }}>
         <div className="card">
           <h1>Token Leaderboard (24h)</h1>
           <table>
@@ -40,7 +38,6 @@ export default async function TokensPage() {
             </tbody>
           </table>
         </div>
-      </main>
-    </AuthGuard>
+    </main>
   )
 } 

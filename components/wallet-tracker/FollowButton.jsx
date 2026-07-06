@@ -70,7 +70,11 @@ export default function FollowButton({ address, onToggle }) {
 
   const toggle = async () => {
     const headers = await getAuthHeaders()
-    if (!headers.Authorization) return
+    if (!headers.Authorization) {
+      // Wallet pages are public — send signed-out visitors to login
+      window.location.href = `/?login=1&required=${encodeURIComponent(window.location.pathname)}`
+      return
+    }
     setLoading(true)
     try {
       if (followed) {

@@ -5,7 +5,6 @@ import Link from 'next/link'
 import styled, { keyframes } from 'styled-components'
 import { motion } from 'framer-motion'
 import TokenIcon from '@/components/TokenIcon'
-import AuthGuard from '@/app/components/AuthGuard'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
@@ -430,7 +429,7 @@ export default function TrendingPage() {
   }
 
   return (
-    <AuthGuard>
+    <>
       <PageWrapper>
         <Container>
           <motion.div variants={fadeUp} initial="hidden" animate="visible">
@@ -820,6 +819,6 @@ export default function TrendingPage() {
           )}
         </Container>
       </PageWrapper>
-    </AuthGuard>
+    </>
   )
 }

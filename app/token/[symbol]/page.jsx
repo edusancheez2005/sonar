@@ -1,7 +1,6 @@
 import React from 'react'
 import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
-import AuthGuard from '@/app/components/AuthGuard'
 import TokenDetailClient from './TokenDetailClient'
 
 export const revalidate = 15
@@ -180,7 +179,7 @@ export default async function TokenDetail({ params, searchParams }) {
   }
 
   return (
-    <AuthGuard>
+    <>
       <BreadcrumbJsonLd symbol={symbol} />
       <TokenDetailClient 
         symbol={symbol}
@@ -189,6 +188,6 @@ export default async function TokenDetail({ params, searchParams }) {
         whaleMetrics={whaleMetrics}
         sentiment={dataReliable ? sentiment : { label: 'NEUTRAL', color: '#f39c12', score: 0, details: { buyPct: 50, sellPct: 50 } }}
       />
-    </AuthGuard>
+    </>
   )
 } 

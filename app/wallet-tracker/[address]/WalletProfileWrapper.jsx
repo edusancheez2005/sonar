@@ -16,6 +16,7 @@ import WalletBacktestPanel from '@/components/wallet-tracker/WalletBacktestPanel
 import PolymarketWalletPanel from '@/components/wallet-tracker/PolymarketWalletPanel'
 import BackToTop from '@/components/BackToTop'
 import { formatUsd, shortenAddress } from '@/lib/wallet-tracker'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const PageContainer = styled.div`
   position: relative;
@@ -336,6 +337,23 @@ export default function WalletProfileWrapper({ address }) {
     }
   }, [address])
 
+  // Wallet pages are public; actions require login. Gate every action
+  // callback so signed-out visitors land on login and come straight back.
+  const requireAuth = useCallback(async (openAction) => {
+    try {
+      const sb = supabaseBrowser()
+      const { data } = await sb.auth.getSession()
+      if (!data?.session) {
+        window.location.href = `/?login=1&required=${encodeURIComponent(`/wallet-tracker/${address}`)}`
+        return
+      }
+    } catch {
+      window.location.href = '/?login=1'
+      return
+    }
+    openAction()
+  }, [address])
+
   const fetchCounterparties = useCallback(async () => {
     try {
       const res = await fetch(`/api/wallet-tracker/${encodeURIComponent(address)}/counterparties`)
@@ -420,13 +438,13 @@ export default function WalletProfileWrapper({ address }) {
 
         <WalletProfileHeader
           profile={profile}
-          onAddToWatchlist={() => setShowWatchlistModal(true)}
-          onSetAlert={() => setShowAlertModal(true)}
+          onAddToWatchlist={() => requireAuth(() => setShowWatchlistModal(true))}
+          onSetAlert={() => requireAuth(() => setShowAlertModal(true))}
           onMirror={() => {
             if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
               window.gtag('event', 'mirror_wallet_click', { wallet_address: address })
             }
-            setShowMirrorModal(true)
+            requireAuth(() => setShowMirrorModal(true))
           }}
         />
 

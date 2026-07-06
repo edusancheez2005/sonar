@@ -1,5 +1,4 @@
 import React from 'react'
-import AuthGuard from '@/app/components/AuthGuard'
 
 export const metadata = { 
   title: 'Whale Leaderboard — Top Net Flow Wallets (24h)',
@@ -13,7 +12,7 @@ export default async function WhalesLeaderboardPage() {
   const rows = json?.data || []
 
   return (
-    <AuthGuard>
+    <>
       <main className="container" style={{ padding: '2rem' }}>
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -87,6 +86,6 @@ export default async function WhalesLeaderboardPage() {
           </table>
         </div>
       </main>
-    </AuthGuard>
+    </>
   )
 } 

@@ -2,7 +2,6 @@
 
 import React from 'react'
 import styled from 'styled-components'
-import AuthGuard from '@/app/components/AuthGuard'
 import Link from 'next/link'
 
 const Container = styled.div`
@@ -191,8 +190,7 @@ const BackLink = styled(Link)`
 
 export default function GlossaryPage() {
   return (
-    <AuthGuard>
-      <Container>
+    <Container>
         <Header>
           <Title>📖 Transaction Types Glossary</Title>
           <Subtitle>
@@ -413,8 +411,7 @@ export default function GlossaryPage() {
           </svg>
           Back to Dashboard
         </BackLink>
-      </Container>
-    </AuthGuard>
+    </Container>
   )
 }
 
