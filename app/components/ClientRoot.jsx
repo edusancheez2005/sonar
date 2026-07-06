@@ -42,7 +42,9 @@ const WALLET_ROUTES = ['/dashboard', '/personalize', '/profile', '/wallet-tracke
 export default function ClientRoot({ children }) {
   const pathname = usePathname()
   const hideFeedback = pathname === '/ai-advisor'
-  const isLandingPage = pathname === '/'
+  // Bare pages render without the app shell: the landing page and the /try
+  // cold-traffic WTP page (a distraction-free ad landing).
+  const isLandingPage = pathname === '/' || pathname === '/try'
   const useLegacyTopNav = process.env.NEXT_PUBLIC_LEGACY_TOP_NAV === '1'
   const inShell = !isLandingPage && !useLegacyTopNav
   // Boundary-aware match: '/whale' must cover /whale/0x… but NOT /whales/*
