@@ -1,5 +1,11 @@
 import 'server-only'
-import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+// Use the cacheable admin client (NOT ...Fresh): supabaseAdminFresh issues
+// `cache: 'no-store'` fetches, which Next treats as a dynamic-render signal
+// and forces the whole page to client-side render (empty SSR HTML). The
+// cacheable client keeps these pages statically renderable / ISR-friendly,
+// exactly like the working token page. Freshness comes from the 30s
+// revalidate on the pages and force-dynamic on the API routes.
+import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 // Shared leaderboard aggregations. Called BOTH by the API routes (for the
 // dashboard/client fetches) and directly by the server-rendered pages

@@ -1,7 +1,10 @@
 import React from 'react'
 import { getWhaleLeaderboard } from '@/app/lib/leaderboardData'
 
-export const dynamic = 'force-dynamic'
+// ISR, matching the working token page — NOT force-dynamic, which bailed the
+// whole page to client-side render (empty SSR HTML). 30s cache is fine for a
+// 24h rolling window and cuts DB load.
+export const revalidate = 30
 
 export const metadata = {
   title: 'Whale Leaderboard — Top Net Flow Wallets (24h)',
