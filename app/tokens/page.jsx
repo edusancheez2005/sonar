@@ -7,9 +7,18 @@ export const metadata = {
 }
 
 export default async function TokensPage() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/tokens/leaderboard`, { cache: 'no-store' })
-  const json = await res.json()
-  const rows = json?.data || []
+  // Server-side self-fetch needs an absolute URL; fall back to the canonical
+  // domain so SSR works even when the env vars are unset. A failed fetch
+  // renders an empty table instead of erroring the whole page.
+  const base = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sonartracker.io'
+  let rows = []
+  try {
+    const res = await fetch(`${base}/api/tokens/leaderboard`, { cache: 'no-store' })
+    const json = await res.json()
+    rows = json?.data || []
+  } catch (err) {
+    console.error('tokens SSR fetch failed:', err?.message)
+  }
 
   return (
     <main className="container" style={{ padding: '2rem' }}>
