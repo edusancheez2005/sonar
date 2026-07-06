@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React, { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { StyleSheetManager } from 'styled-components'
@@ -13,11 +13,12 @@ import CookieConsent from '@/components/CookieConsent'
 import { ActiveWalletProvider } from '@/components/wallet/ActiveWalletContext'
 import { PersonalizedDashboardProvider } from '@/components/wallet/PersonalizedDashboardContext'
 
-// WalletProvider (wagmi + rainbowkit) is heavy & browser-only. Lazy-load only on routes
-// where the wallet UI is actually used.
-const WalletProvider = dynamic(() => import('@/components/wallet/WalletProvider'), {
-  ssr: false,
-})
+// WalletProvider (wagmi + rainbowkit) is heavy — lazy-load only on routes
+// where the wallet UI is actually used. It MUST stay server-renderable (the
+// wagmi config sets ssr:true): with { ssr: false } this wrapper bailed the
+// ENTIRE page tree to client-side rendering on wallet routes, serving empty
+// HTML to crawlers and blank first paints to users.
+const WalletProvider = dynamic(() => import('@/components/wallet/WalletProvider'))
 
 // OrcaDrawer (Stage D): floating "Ask ORCA" pill + slide-in chat. The
 // component itself decides whether to render (hidden on /ai, /ai-advisor,
@@ -44,7 +45,8 @@ export default function ClientRoot({ children }) {
   const isLandingPage = pathname === '/'
   const useLegacyTopNav = process.env.NEXT_PUBLIC_LEGACY_TOP_NAV === '1'
   const inShell = !isLandingPage && !useLegacyTopNav
-  const needsWallet = pathname && WALLET_ROUTES.some((r) => pathname.startsWith(r))
+  // Boundary-aware match: '/whale' must cover /whale/0x… but NOT /whales/*
+  const needsWallet = pathname && WALLET_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
   const showOnboarding =
     !isLandingPage &&
     pathname &&
@@ -74,8 +76,17 @@ export default function ClientRoot({ children }) {
       )}
       {!hideFeedback && <FeedbackWidget hideTrigger={inShell} />}
       <CookieConsent />
-      <OrcaDrawer />
-      {showOnboarding && <OnboardingGate />}
+      {/* ssr:false leaves must sit inside their own Suspense boundary so the
+          CSR bailout stays contained to a null hole instead of climbing to
+          the root and de-SSR-ing the whole page. */}
+      <Suspense fallback={null}>
+        <OrcaDrawer />
+      </Suspense>
+      {showOnboarding && (
+        <Suspense fallback={null}>
+          <OnboardingGate />
+        </Suspense>
+      )}
     </StyleSheetManager>
   )
 
