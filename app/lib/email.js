@@ -2,6 +2,10 @@
 // Transactional sends go through Brevo (same account as the weekly
 // campaign crons). Without BREVO_API_KEY these degrade to console.log,
 // and they never throw — callers treat email as fire-and-forget.
+//
+// Style contract: emails match the dark "Sonar · Whale Pulse" campaign
+// template (see app/api/cron/weekly-top-wallets/route.ts) — dark card,
+// cyan accents, no emojis, compact compliance footer.
 
 async function sendTransactionalEmail({ to, subject, html }) {
   const brevoKey = process.env.BREVO_API_KEY
@@ -35,137 +39,154 @@ async function sendTransactionalEmail({ to, subject, html }) {
   }
 }
 
+// Live hook for the welcome email: how much the tracked whales moved in the
+// last 24h. Real number from our own tape — never fabricated. Any failure
+// (or slow query) falls back to evergreen copy.
+async function fetch24hWhaleStats() {
+  try {
+    const { supabaseAdminFresh } = await import('@/app/lib/supabaseAdmin')
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+    const { data } = await Promise.race([
+      supabaseAdminFresh
+        .from('all_whale_transactions')
+        .select('usd_value')
+        .gte('timestamp', since)
+        .order('usd_value', { ascending: false })
+        .limit(5000),
+      new Promise((resolve) => setTimeout(() => resolve({ data: null }), 2500)),
+    ])
+    if (!Array.isArray(data) || data.length === 0) return null
+    let total = 0
+    for (const t of data) total += Number(t.usd_value) || 0
+    if (!(total > 0)) return null
+    return { totalUsd: total }
+  } catch {
+    return null
+  }
+}
+
+function fmtUsdCompact(n) {
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`
+  if (n >= 1e6) return `$${Math.round(n / 1e6)}M`
+  if (n >= 1e3) return `$${Math.round(n / 1e3)}K`
+  return `$${Math.round(n).toLocaleString()}`
+}
+
 export async function sendWelcomeEmail(email, name = '') {
+  const stats = await fetch24hWhaleStats()
   return sendTransactionalEmail({
     to: email,
-    subject: 'Welcome to Sonar Tracker 🐋',
-    html: getWelcomeEmailHTML(email, name),
+    subject: 'Welcome to Sonar — the whales are already moving',
+    html: getWelcomeEmailHTML(email, name, stats),
   })
 }
 
 export async function sendWaitlistConfirmation(email) {
   return sendTransactionalEmail({
     to: email,
-    subject: "You're on the waitlist 🐋",
+    subject: "You're in — we'll ping you at early access",
     html: getWaitlistEmailHTML(email),
   })
 }
 
-function getWelcomeEmailHTML(email, name = '') {
+// Shared dark shell — same skin as the weekly campaign emails.
+function renderEmailShell({ title, subtitle, bodyHtml, footerNote }) {
+  return `<!doctype html>
+<html><body style="margin:0;padding:0;background:#060c14;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#e5e7eb;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#060c14;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#0b1422;border:1px solid #1f2937;border-radius:12px;">
+        <tr><td style="padding:24px 28px 8px;">
+          <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#22d3ee;font-weight:700;">Sonar Tracker</div>
+          <h1 style="margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:800;">${title}</h1>
+          ${subtitle ? `<div style="margin:6px 0 0;color:#9ca3af;font-size:13px;">${subtitle}</div>` : ''}
+        </td></tr>
+        <tr><td style="padding:12px 28px 8px;">
+          ${bodyHtml}
+        </td></tr>
+        <tr><td style="padding:18px 28px 24px;color:#6b7280;font-size:11px;line-height:1.6;border-top:1px solid #1f2937;">
+          ${footerNote}
+          <br/>Questions? <a href="mailto:eduardo@sonartracker.io" style="color:#22d3ee;">eduardo@sonartracker.io</a>
+          &nbsp;·&nbsp; © 2026 Sonar Tracker
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`
+}
+
+function linkRow(href, label, description) {
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #1f2937;">
+          <a href="${href}" style="color:#22d3ee;text-decoration:none;font-weight:600;font-size:15px;">${label}</a>
+          <div style="color:#9ca3af;font-size:13px;margin-top:2px;">${description}</div>
+        </td>
+      </tr>
+    </table>`
+}
+
+function getWelcomeEmailHTML(email, name = '', stats = null) {
   const displayName = name || email.split('@')[0]
 
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to Sonar Tracker</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f6f9fc; }
-          .container { max-width: 600px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #3498db, #2c3e50); padding: 40px 30px; text-align: center; }
-          .logo { width: 80px; height: auto; margin-bottom: 20px; }
-          .content { padding: 40px 30px; color: #333; line-height: 1.6; }
-          .button { display: inline-block; background: #3498db; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
-          .footer { background: #f8f9fa; padding: 30px; text-align: center; color: #666; font-size: 14px; }
-          .highlight { background: rgba(52, 152, 219, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <img src="https://www.sonartracker.io/logo2.png" alt="Sonar Logo" class="logo">
-            <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Sonar Tracker!</h1>
-          </div>
+  const hook = stats?.totalUsd
+    ? `Hi ${escapeHtml(displayName)} — in the last 24 hours, the whales Sonar tracks moved
+       <strong style="color:#ffffff;">${fmtUsdCompact(stats.totalUsd)}+</strong> on-chain.
+       Most people find out what they did days later. You get to watch it live.`
+    : `Hi ${escapeHtml(displayName)} — whales move markets long before the headlines catch up.
+       Your account is live: from now on you can watch every big on-chain move as it happens.`
 
-          <div class="content">
-            <h2>Hi ${displayName},</h2>
+  const bodyHtml = `
+    <p style="margin:0 0 16px;color:#d1d5db;font-size:14px;line-height:1.7;">
+      ${hook}
+    </p>
+    <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#6b7280;font-weight:700;margin:0 0 2px;">Start here</div>
+    ${linkRow('https://www.sonartracker.io/wallet-tracker', 'Open the Whale Terminal', 'Pick any wallet and crack it open — live holdings, every entry and exit, and a backtest of what mirroring it would have looked like.')}
+    ${linkRow('https://www.sonartracker.io/trending', 'See what they’re buying', 'Tokens whales are rotating into right now — ranked by real net flow, not social-media noise.')}
+    ${linkRow('https://www.sonartracker.io/news', 'Read the tape, not the takes', 'Real-time headlines scored by market sentiment, next to what the big wallets actually did.')}
+    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px 0 8px;">
+      <tr><td style="border-radius:8px;background:#22d3ee;">
+        <a href="https://www.sonartracker.io/dashboard" style="display:inline-block;padding:11px 24px;color:#0a1621;font-weight:700;font-size:14px;text-decoration:none;">See what whales are doing right now &rarr;</a>
+      </td></tr>
+    </table>`
 
-            <p>Welcome to Sonar Tracker! 🎉 You're now part of our community of traders and investors who rely on real-time whale transaction monitoring and market intelligence.</p>
-
-            <div class="highlight">
-              <h3 style="margin-top: 0; color: #3498db;">What you can do now:</h3>
-              <ul>
-                <li>Monitor whale transactions in real-time</li>
-                <li>Access advanced market analytics</li>
-                <li>Track institutional trading patterns</li>
-                <li>Get insights from our AI-powered analysis</li>
-              </ul>
-            </div>
-
-            <p>Ready to dive into the world of cryptocurrency intelligence?</p>
-
-            <a href="https://sonartracker.io/dashboard" class="button">Access Your Dashboard →</a>
-
-            <p style="margin-top: 30px; font-size: 16px;">
-              <strong>Questions?</strong> Reach out to us at <a href="mailto:eduardo@sonartracker.io">eduardo@sonartracker.io</a>
-            </p>
-          </div>
-
-          <div class="footer">
-            <p>© 2026 Sonar Tracker. All rights reserved.</p>
-            <p>This email was sent to ${email}. If you didn't create this account, please ignore this email.</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `
+  return renderEmailShell({
+    title: 'Welcome to Sonar Tracker',
+    subtitle: 'You can see what the biggest wallets on-chain are doing. They can’t see you.',
+    bodyHtml,
+    footerNote: `You're receiving this because an account was created on Sonar Tracker with ${escapeHtml(email)}. If this wasn't you, you can ignore this email. Market data is informational only — not investment advice.`,
+  })
 }
 
 function getWaitlistEmailHTML(email) {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>You're on the Orca Waitlist!</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f6f9fc; }
-          .container { max-width: 600px; margin: 0 auto; background-color: white; }
-          .header { background: linear-gradient(135deg, #9b59b6, #3498db); padding: 40px 30px; text-align: center; }
-          .logo { width: 80px; height: auto; margin-bottom: 20px; }
-          .content { padding: 40px 30px; color: #333; line-height: 1.6; }
-          .highlight { background: rgba(155, 89, 182, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .footer { background: #f8f9fa; padding: 30px; text-align: center; color: #666; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <img src="https://www.sonartracker.io/logo2.png" alt="Sonar Logo" class="logo">
-            <h1 style="color: white; margin: 0; font-size: 28px;">You're on the Orca Waitlist! 🐋</h1>
-          </div>
+  const bodyHtml = `
+    <p style="margin:0 0 16px;color:#d1d5db;font-size:14px;line-height:1.7;">
+      Your spot is locked in. The moment early access opens, you'll be the first to know —
+      one email, no spam in between.
+    </p>
+    <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#6b7280;font-weight:700;margin:0 0 2px;">While you wait, the whales are live</div>
+    ${linkRow('https://www.sonartracker.io/wallet-tracker', 'Open the Whale Terminal', 'Pick any wallet and crack it open — live holdings, every entry and exit.')}
+    ${linkRow('https://www.sonartracker.io/trending', 'See what they’re buying', 'Tokens whales are rotating into right now, ranked by real net flow.')}
+    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px 0 8px;">
+      <tr><td style="border-radius:8px;background:#22d3ee;">
+        <a href="https://www.sonartracker.io/wallet-tracker" style="display:inline-block;padding:11px 24px;color:#0a1621;font-weight:700;font-size:14px;text-decoration:none;">Watch the whales live &rarr;</a>
+      </td></tr>
+    </table>`
 
-          <div class="content">
-            <h2>Thanks for joining the Orca revolution!</h2>
+  return renderEmailShell({
+    title: "You're in",
+    subtitle: 'Early access, reserved. Here’s what you can already do today.',
+    bodyHtml,
+    footerNote: `You're receiving this because ${escapeHtml(email)} joined a Sonar Tracker waitlist. You can unsubscribe at any time.`,
+  })
+}
 
-            <p>You've successfully subscribed to our Orca AI waitlist. Be among the first to experience the next generation of cryptocurrency intelligence powered by advanced AI.</p>
-
-            <div class="highlight">
-              <h3 style="margin-top: 0; color: #9b59b6;">What to expect:</h3>
-              <ul>
-                <li>Early access to Orca AI features</li>
-                <li>Exclusive beta testing opportunities</li>
-                <li>Direct communication from our team</li>
-                <li>Priority support and feature requests</li>
-              </ul>
-            </div>
-
-            <p>We'll notify you as soon as Orca is ready for your early access. In the meantime, feel free to explore our current dashboard and analytics tools.</p>
-
-            <p style="margin-top: 30px; font-size: 16px;">
-              <strong>Stay connected!</strong> Follow us for updates and be the first to know when Orca launches.
-            </p>
-          </div>
-
-          <div class="footer">
-            <p>© 2024 Sonar Tracker. All rights reserved.</p>
-            <p>This email was sent to ${email}. You can unsubscribe at any time.</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
