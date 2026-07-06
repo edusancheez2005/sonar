@@ -1,5 +1,5 @@
 import React from 'react'
-import { GET as getTokenLeaderboard } from '@/app/api/tokens/leaderboard/route'
+import { getTokenLeaderboard } from '@/app/lib/leaderboardData'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,14 +10,12 @@ export const metadata = {
 }
 
 export default async function TokensPage() {
-  // Call the API handler in-process. An HTTP self-fetch to our own domain
-  // hangs inside the lambda (same serverless pool), which left this page
-  // streaming forever with no content. A failure renders an empty table.
+  // Query the data directly (shared server-only function), the same pattern as
+  // the token page. Importing the route handler instead bailed the whole page
+  // to client-side render and served empty HTML.
   let rows = []
   try {
-    const res = await getTokenLeaderboard()
-    const json = await res.json()
-    rows = json?.data || []
+    rows = await getTokenLeaderboard()
   } catch (err) {
     console.error('tokens data load failed:', err?.message)
   }
