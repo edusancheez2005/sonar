@@ -405,18 +405,58 @@ const FlowDot = styled.span`
   background: ${props => props.$color || COLORS.textMuted}; flex-shrink: 0;
 `
 
-const RankBadge = styled.div`
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 50%; font-weight: 800;
-  font-size: 0.75rem; font-family: ${FONT_MONO}; flex-shrink: 0;
-  background: ${p => p.$rank === 1 ? 'linear-gradient(135deg, #FFD700, #FFA500)' :
-    p.$rank === 2 ? 'linear-gradient(135deg, #C0C0C0, #808080)' :
-    p.$rank === 3 ? 'linear-gradient(135deg, #CD7F32, #8B4513)' : 'rgba(0, 229, 255, 0.1)'};
-  color: ${p => p.$rank <= 3 ? '#0a0e17' : COLORS.textMuted};
-  border: 1px solid ${p => p.$rank === 1 ? 'rgba(255, 215, 0, 0.4)' :
-    p.$rank === 2 ? 'rgba(192, 192, 192, 0.4)' :
-    p.$rank === 3 ? 'rgba(205, 127, 50, 0.4)' : 'rgba(0, 229, 255, 0.1)'};
+// ─── WHALE IDENTITY (leaderboard-style) ─────────────────────────────────────
+const RankNum = styled.span`
+  font-family: ${FONT_MONO}; font-size: 0.8rem; font-weight: 700;
+  color: ${p => p.$rank === 1 ? '#f1c40f' : p.$rank === 2 ? '#c0c8d4' : p.$rank === 3 ? '#cd7f32' : COLORS.textMuted};
 `
+
+const WhoCell = styled.a`
+  display: flex; align-items: center; gap: 0.7rem; text-decoration: none; min-width: 210px;
+  &:hover .nm { color: ${COLORS.cyan}; }
+`
+
+const WhaleAvatar = styled.span`
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: ${FONT_MONO}; font-size: 0.72rem; font-weight: 800;
+  color: rgba(8, 14, 22, 0.85); border: 1px solid rgba(255, 255, 255, 0.14);
+`
+
+const WhaleNameBlock = styled.span`
+  display: flex; flex-direction: column; min-width: 0;
+  .nm { font-weight: 600; color: ${COLORS.textPrimary}; display: flex; align-items: center; gap: 0.4rem; font-family: ${FONT_SANS}; font-size: 0.88rem; line-height: 1.2; transition: color 0.12s ease; }
+  .sub { font-family: ${FONT_MONO}; font-size: 0.72rem; color: ${COLORS.textMuted}; margin-top: 0.15rem; }
+  .star { color: #f1c40f; font-size: 0.8rem; }
+`
+
+const BsWrap = styled.span`
+  display: inline-flex; flex-direction: column; align-items: flex-end; gap: 0.28rem;
+  .lbl { font-family: ${FONT_MONO}; font-size: 0.68rem; color: ${COLORS.textMuted}; }
+`
+
+const ScoreWrap = styled.span`
+  display: inline-flex; align-items: center; gap: 0.45rem; justify-content: flex-end;
+  .bar { width: 42px; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); overflow: hidden; display: inline-block; }
+  .fill { display: block; height: 100%; border-radius: 999px; }
+  .val { font-family: ${FONT_MONO}; font-size: 0.8rem; font-weight: 600; }
+`
+
+// Deterministic avatar gradient per address (same scheme as /whales/leaderboard)
+const avatarHues = (str) => {
+  let h = 0
+  for (let i = 0; i < (str || '').length; i++) h = ((h * 31) + str.charCodeAt(i)) >>> 0
+  const h1 = h % 360
+  return [h1, (h1 + 45 + ((h >> 8) % 70)) % 360]
+}
+
+const whaleMonogram = (name, address) => {
+  if (name && name.trim()) {
+    const words = name.trim().split(/\s+/)
+    return ((words[0][0] || '') + (words[1]?.[0] || words[0][1] || '')).toUpperCase()
+  }
+  return (address || '??').slice(2, 4).toUpperCase()
+}
 
 const TokenPill = styled.span`
   display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem;
@@ -1441,7 +1481,12 @@ const TopWhalesSection = () => {
             <TerminalPrompt>Top Whales</TerminalPrompt>
             <PanelSubtext>Most active whale wallets in the past 7 days</PanelSubtext>
           </div>
-          <PanelBadge>7-DAY ACTIVITY</PanelBadge>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <PanelBadge>7-DAY ACTIVITY</PanelBadge>
+            <a href="/whales/leaderboard" style={{ fontSize: '0.8rem', fontWeight: 600, color: COLORS.cyan, textDecoration: 'none' }}>
+              Full leaderboard →
+            </a>
+          </div>
         </PanelHeader>
 
         {loading ? (
@@ -1459,18 +1504,24 @@ const TopWhalesSection = () => {
             <table>
               <thead>
                 <tr>
-                  <th style={{ width: '50px' }}>Rank</th>
-                  <th>Address</th>
+                  <th style={{ width: '44px' }}>#</th>
+                  <th>Whale</th>
                   <th className="right">Net Flow (7d)</th>
-                  <th className="center" style={{ width: '90px' }}>Buy/Sell</th>
+                  <th className="right" style={{ width: '110px' }}>Buy / Sell</th>
                   <th>Top Tokens</th>
+                  <th className="right" style={{ width: '110px' }}>Score</th>
                   <th className="right">Last Active</th>
                 </tr>
               </thead>
               <tbody>
                 {whales.map((whale, idx) => {
                   const rank = idx + 1
-                  const buyPct = parseInt(whale.buySellRatio?.split('/')[0]) || 50
+                  const parsedBuyPct = parseInt(whale.buySellRatio?.split('/')[0], 10)
+                  const buyPct = Number.isFinite(parsedBuyPct) ? Math.max(0, Math.min(100, parsedBuyPct)) : null
+                  const displayName = whale.entity_name || `${whale.address.slice(0, 6)}…${whale.address.slice(-4)}`
+                  const [h1, h2] = avatarHues(whale.address)
+                  const score = whale.whaleScore != null ? Math.max(0, Math.min(100, Number(whale.whaleScore))) : null
+                  const scoreColor = score == null ? COLORS.textMuted : score >= 75 ? COLORS.green : score >= 45 ? COLORS.cyan : COLORS.textMuted
 
                   return (
                     <motion.tr
@@ -1479,51 +1530,54 @@ const TopWhalesSection = () => {
                       variants={rowVariant}
                       initial="hidden"
                       animate="visible"
-                      onClick={() => window.location.href = `/whale/${encodeURIComponent(whale.address)}`}
+                      onClick={() => window.location.href = `/wallet-tracker/${encodeURIComponent(whale.address)}`}
                     >
                       <td>
-                        <RankBadge $rank={rank}>{rank}</RankBadge>
+                        <RankNum $rank={rank}>{rank}</RankNum>
                       </td>
                       <td>
-                        <Link
-                          href={`/whale/${encodeURIComponent(whale.address)}`}
-                          style={{
-                            color: COLORS.cyan,
-                            textDecoration: 'none',
-                            fontWeight: 700,
-                            fontFamily: FONT_MONO,
-                            fontSize: '0.85rem',
-                          }}
+                        <WhoCell
+                          href={`/wallet-tracker/${encodeURIComponent(whale.address)}`}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {whale.address.slice(0, 6)}…{whale.address.slice(-4)}
-                        </Link>
+                          <WhaleAvatar style={{ background: `linear-gradient(135deg, hsl(${h1} 75% 62%), hsl(${h2} 70% 38%))` }}>
+                            {whaleMonogram(whale.entity_name, whale.address)}
+                          </WhaleAvatar>
+                          <WhaleNameBlock>
+                            <span className="nm">
+                              {whale.is_famous && <span className="star">★</span>}
+                              {displayName}
+                            </span>
+                            <span className="sub">
+                              {whale.entity_name
+                                ? `${whale.address.slice(0, 8)}…${whale.address.slice(-6)}`
+                                : 'Unnamed wallet'}
+                            </span>
+                          </WhaleNameBlock>
+                        </WhoCell>
                       </td>
                       <td className="right">
                         <span style={{
-                          fontWeight: 800,
+                          fontWeight: 700,
                           fontSize: '0.9rem',
-                          color: whale.netUsd > 0 ? COLORS.green : whale.netUsd < 0 ? COLORS.red : COLORS.textPrimary,
+                          color: whale.netUsd > 0 ? COLORS.green : whale.netUsd < 0 ? COLORS.red : COLORS.textMuted,
                           fontFamily: FONT_MONO,
                         }}>
                           {formatUSD(whale.netUsd)}
                         </span>
                       </td>
-                      <td className="center">
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
-                          <span style={{
-                            fontSize: '0.7rem',
-                            fontFamily: FONT_MONO,
-                            fontWeight: 600,
-                            color: buyPct > 65 ? COLORS.green : buyPct < 35 ? COLORS.red : COLORS.amber,
-                          }}>
-                            {whale.buySellRatio}
-                          </span>
-                          <MiniBar $width="60px">
-                            <MiniBarFill $color={COLORS.green} style={{ width: `${buyPct}%` }} />
-                            <MiniBarFill $color={COLORS.red} style={{ width: `${100 - buyPct}%` }} />
-                          </MiniBar>
-                        </div>
+                      <td className="right">
+                        {buyPct == null ? (
+                          <span style={{ color: COLORS.textMuted }}>—</span>
+                        ) : (
+                          <BsWrap>
+                            <MiniBar $width="72px">
+                              <MiniBarFill $color={COLORS.green} style={{ width: `${buyPct}%` }} />
+                              <MiniBarFill $color={COLORS.red} style={{ width: `${100 - buyPct}%` }} />
+                            </MiniBar>
+                            <span className="lbl">{buyPct}% buys</span>
+                          </BsWrap>
+                        )}
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
@@ -1537,6 +1591,16 @@ const TopWhalesSection = () => {
                             <TokenPill>+{whale.tokens.length - 3}</TokenPill>
                           )}
                         </div>
+                      </td>
+                      <td className="right">
+                        <ScoreWrap>
+                          {score != null && (
+                            <span className="bar">
+                              <span className="fill" style={{ width: `${score}%`, background: scoreColor }} />
+                            </span>
+                          )}
+                          <span className="val" style={{ color: scoreColor }}>{score != null ? score : '—'}</span>
+                        </ScoreWrap>
                       </td>
                       <td className="right muted" style={{ fontSize: '0.8rem', fontFamily: FONT_MONO }}>
                         {whale.lastSeen ? timeAgo(whale.lastSeen) : '—'}
