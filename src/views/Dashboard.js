@@ -50,11 +50,6 @@ const pulseGlow = keyframes`
   50% { opacity: 0.4; box-shadow: 0 0 8px #00e676, 0 0 16px rgba(0, 230, 118, 0.3); }
 `
 
-const scrollTicker = keyframes`
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-`
-
 // ─── STYLED COMPONENTS ────────────────────────────────────────────────────────
 const DashboardShell = styled.div`
   min-height: 100vh;
@@ -469,35 +464,6 @@ const TokenPill = styled.span`
 const EmptyState = styled.div`
   text-align: center; padding: 3rem 1rem; color: ${COLORS.textMuted};
   font-family: ${FONT_SANS}; font-size: 0.9rem;
-`
-
-// ─── LIVE WHALE FEED (Scrolling Ticker) ─────────────────────────────────────
-const TickerStrip = styled.div`
-  overflow: hidden; white-space: nowrap; position: relative;
-  background: rgba(0, 229, 255, 0.02); border-bottom: 1px solid ${COLORS.borderSubtle};
-  padding: 0.5rem 0; margin-bottom: 1.5rem; border-radius: 6px;
-  &::before, &::after {
-    content: ''; position: absolute; top: 0; bottom: 0; width: 60px; z-index: 2; pointer-events: none;
-  }
-  &::before { left: 0; background: linear-gradient(to right, #0a0e17, transparent); }
-  &::after { right: 0; background: linear-gradient(to left, #0a0e17, transparent); }
-`
-
-const TickerTrack = styled.div`
-  display: inline-flex; gap: 2.5rem; animation: ${scrollTicker} ${props => props.$duration || 30}s linear infinite;
-  &:hover { animation-play-state: paused; }
-`
-
-const TickerItem = styled.a`
-  display: inline-flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
-  font-family: ${FONT_MONO}; font-size: 0.8rem; color: ${COLORS.textPrimary};
-  text-decoration: none; cursor: pointer; transition: color 0.15s ease;
-  &:hover { color: ${COLORS.cyan}; }
-`
-
-const TickerDot = styled.span`
-  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-  background: ${props => props.$color || COLORS.cyan};
 `
 
 // ─── SMART MONEY CONSENSUS GAUGE ────────────────────────────────────────────
@@ -946,15 +912,6 @@ const Dashboard = ({ isPremium = false }) => {
               <span className="label">VOL:</span>
               ${formatCompact(Math.abs(overall.totalVolume || 0))}
             </StatChip>
-            <CmdDivider>|</CmdDivider>
-            <StatChip>
-              <span className="label">BUYS:</span>
-              <span style={{ color: COLORS.green }}>{overall.buyCount || 0}</span>
-            </StatChip>
-            <StatChip>
-              <span className="label">SELLS:</span>
-              <span style={{ color: COLORS.red }}>{overall.sellCount || 0}</span>
-            </StatChip>
           </CommandBarCenter>
 
           <CommandBarRight>
@@ -980,47 +937,6 @@ const Dashboard = ({ isPremium = false }) => {
         </CommandBar>
 
 
-
-        {/* ─── LIVE WHALE FEED (Scrolling Ticker) ──────────────────── */}
-        {transactions.length > 0 && (
-          <TickerStrip>
-            <TickerTrack $duration={transactions.length > 5 ? 40 : 25}>
-              {[...transactions, ...transactions].map((tx, i) => {
-                const side = (tx.action || '').toUpperCase()
-                const color = side === 'BUY' ? COLORS.green : side === 'SELL' ? COLORS.red : COLORS.amber
-                const icon = side === 'BUY' ? '▲' : side === 'SELL' ? '▼' : '↔'
-                const timeAgo = (() => {
-                  try {
-                    const t = tx.time
-                    if (!t) return ''
-                    const parsed = typeof t === 'string' && t.includes(':') ? new Date(`1970-01-01T${t}`) : new Date(t)
-                    if (isNaN(parsed.getTime())) return ''
-                    // If time-only string, just show the time
-                    if (typeof t === 'string' && !t.includes('-') && !t.includes('/') && !t.includes('T')) return t
-                    const diff = Date.now() - parsed.getTime()
-                    if (diff < 0 || diff > 86400000 * 7) return ''
-                    const mins = Math.floor(diff / 60000)
-                    if (mins < 1) return 'just now'
-                    if (mins < 60) return `${mins}m ago`
-                    return `${Math.floor(mins / 60)}h ago`
-                  } catch { return '' }
-                })()
-                const addr = tx.from_address || ''
-                const label = tx.whale_entity || (addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '')
-                return (
-                  <TickerItem key={`${tx.id}-${i}`} href={`/token/${encodeURIComponent(tx.coin)}`}>
-                    <TickerDot $color={color} />
-                    <span style={{ color, fontWeight: 700 }}>{icon} {side}</span>
-                    <span style={{ fontWeight: 700 }}>{tx.coin}</span>
-                    <span style={{ color: COLORS.cyan, fontWeight: 700 }}>${tx.usdValue}</span>
-                    {label && <span style={{ color: COLORS.textMuted, fontSize: '0.75rem' }}>· {label}</span>}
-                    {timeAgo && <span style={{ color: COLORS.textMuted, fontSize: '0.72rem' }}>· {timeAgo}</span>}
-                  </TickerItem>
-                )
-              })}
-            </TickerTrack>
-          </TickerStrip>
-        )}
 
         <DashboardContainer>
             {/* ─── KEY MACRO FACTORS (top of dashboard) ────────────── */}
