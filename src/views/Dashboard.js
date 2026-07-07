@@ -61,18 +61,6 @@ const DashboardShell = styled.div`
   background: #0a0e17;
   position: relative;
   overflow-x: hidden;
-
-  &::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 2px,
-      rgba(0, 229, 255, 0.008) 2px, rgba(0, 229, 255, 0.008) 4px
-    );
-    pointer-events: none;
-    z-index: 0;
-  }
 `
 
 const DashboardContainer = styled.div`
@@ -146,14 +134,14 @@ const TimeBadge = styled.span`
 `
 
 const UserChip = styled.span`
-  font-size: 0.75rem; color: ${COLORS.textMuted}; font-weight: 400;
+  font-size: 0.8rem; color: ${COLORS.textMuted}; font-weight: 400;
   strong { color: #8a9ab0; font-weight: 600; }
 `
 
 const TutorialBtn = styled.button`
   background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.15);
   border-radius: 4px; padding: 0.25rem 0.65rem; color: ${COLORS.cyan};
-  font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: ${FONT_MONO};
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: ${FONT_MONO};
   transition: all 0.15s ease; display: flex; align-items: center; gap: 0.35rem;
   &:hover { background: rgba(0, 229, 255, 0.15); border-color: rgba(0, 229, 255, 0.3); }
 `
@@ -161,7 +149,7 @@ const TutorialBtn = styled.button`
 const OrcaNavBtn = styled(Link)`
   background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.15);
   border-radius: 4px; padding: 0.25rem 0.65rem; color: ${COLORS.cyan};
-  font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: ${FONT_MONO};
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: ${FONT_MONO};
   transition: all 0.15s ease; display: flex; align-items: center; gap: 0.35rem;
   text-decoration: none;
   &:hover { background: rgba(0, 229, 255, 0.15); border-color: rgba(0, 229, 255, 0.3); }
@@ -172,14 +160,14 @@ const OrcaNavBtn = styled(Link)`
 const FrontierNavBtn = styled(Link)`
   background: rgba(255, 45, 149, 0.08); border: 1px solid rgba(255, 45, 149, 0.25);
   border-radius: 4px; padding: 0.25rem 0.65rem; color: #ff2d95;
-  font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: ${FONT_MONO};
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; font-family: ${FONT_MONO};
   transition: all 0.15s ease; display: flex; align-items: center; gap: 0.4rem;
   text-decoration: none; letter-spacing: 0.5px;
   &:hover { background: rgba(255, 45, 149, 0.18); border-color: rgba(255, 45, 149, 0.45); }
   & .live {
     background: rgba(0, 230, 118, 0.15); color: #00e676;
     border: 1px solid rgba(0, 230, 118, 0.35);
-    font-size: 0.55rem; padding: 0.05rem 0.3rem; border-radius: 2px;
+    font-size: 0.6rem; padding: 0.05rem 0.3rem; border-radius: 2px;
     letter-spacing: 1.2px;
   }
 `
@@ -251,10 +239,9 @@ const PanelHeader = styled.div`
 `
 
 const TerminalPrompt = styled.h2`
-  font-family: ${FONT_MONO}; font-size: 0.85rem; font-weight: 700; color: ${COLORS.cyan};
-  letter-spacing: 1px; text-transform: uppercase; margin: 0;
+  font-family: ${FONT_SANS}; font-size: 1.02rem; font-weight: 600; color: ${COLORS.textPrimary};
+  margin: 0;
   display: flex; align-items: center; gap: 0.5rem;
-  &::before { content: '>'; color: ${COLORS.green}; font-weight: 800; }
 `
 
 const PanelBadge = styled.span`
@@ -264,14 +251,14 @@ const PanelBadge = styled.span`
 `
 
 const PanelSubtext = styled.p`
-  font-size: 0.8rem; color: ${COLORS.textMuted}; margin: 0.25rem 0 0 1.1rem; font-family: ${FONT_SANS};
+  font-size: 0.82rem; color: ${COLORS.textMuted}; margin: 0.3rem 0 0; font-family: ${FONT_SANS};
 `
 
 // ─── KPI STRIP ──────────────────────────────────────────────────────────────
 const KPIStrip = styled.div`
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
   background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
-  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem;
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; overflow: hidden; margin-bottom: 2rem;
   @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
 `
 
@@ -289,20 +276,19 @@ const KPICell = styled.div`
 `
 
 const KPILabel = styled.div`
-  font-size: 0.65rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   color: ${COLORS.textMuted}; margin-bottom: 0.5rem; font-family: ${FONT_SANS};
 `
 
 const KPIValue = styled.div`
   font-size: 2.4rem; font-weight: 800; font-family: ${FONT_MONO};
   color: ${props => props.$color || COLORS.textPrimary};
-  text-shadow: 0 0 24px ${props => (props.$color || COLORS.cyan) + '55'},
-               0 0 48px ${props => (props.$color || COLORS.cyan) + '22'};
+  text-shadow: 0 0 20px ${props => (props.$color || COLORS.cyan) + '2e'};
   line-height: 1; margin-bottom: 0.45rem;
 `
 
 const KPISub = styled.div`
-  font-size: 0.72rem; color: ${props => props.$color || COLORS.textMuted};
+  font-size: 0.78rem; color: ${props => props.$color || COLORS.textMuted};
   font-family: ${FONT_MONO}; font-weight: 500;
   display: inline-flex; align-items: center; gap: 0.3rem; justify-content: center;
 `
@@ -326,15 +312,15 @@ const StickyWatchlist = styled.div`
   position: sticky; top: 60px;
 `
 
-const SectionGap = styled.div`margin-bottom: 1.5rem;`
+const SectionGap = styled.div`margin-bottom: 2rem;`
 
 // ─── DATA TABLE ─────────────────────────────────────────────────────────────
 const DataTable = styled.div`
   width: 100%; overflow-x: auto;
   table { width: 100%; border-collapse: collapse; font-family: ${FONT_MONO}; }
   thead th {
-    padding: 0.75rem 1rem; text-align: left; font-size: 0.7rem; font-weight: 600;
-    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 1px;
+    padding: 0.75rem 1rem; text-align: left; font-size: 0.72rem; font-weight: 600;
+    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.06em;
     border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
     white-space: nowrap; font-family: ${FONT_SANS};
   }
@@ -346,7 +332,7 @@ const DataTable = styled.div`
   }
   tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
   tbody td {
-    padding: 0.75rem 1rem; font-size: 0.85rem; color: ${COLORS.textPrimary}; white-space: nowrap;
+    padding: 0.8rem 1rem; font-size: 0.9rem; color: ${COLORS.textPrimary}; white-space: nowrap;
   }
   tbody td.right { text-align: right; }
   tbody td.center { text-align: center; }
@@ -376,12 +362,10 @@ const HBarTrack = styled.div`
 const HBarFill = styled(motion.div)`
   height: 100%; border-radius: 999px;
   background: ${props => `linear-gradient(90deg, ${(props.$color || COLORS.cyan)}55 0%, ${(props.$color || COLORS.cyan)} 60%, ${(props.$color || COLORS.cyan)} 100%)`};
-  box-shadow: 0 0 12px ${props => (props.$color || COLORS.cyan) + '99'},
-              0 0 4px ${props => (props.$color || COLORS.cyan) + 'cc'} inset;
 `
 
 const HBarValue = styled.div`
-  font-size: 0.8rem; font-weight: 600; color: ${props => props.$color || COLORS.textPrimary};
+  font-size: 0.85rem; font-weight: 600; color: ${props => props.$color || COLORS.textPrimary};
   font-family: ${FONT_MONO}; text-align: right;
 `
 
@@ -465,7 +449,7 @@ const TickerTrack = styled.div`
 
 const TickerItem = styled.a`
   display: inline-flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
-  font-family: ${FONT_MONO}; font-size: 0.75rem; color: ${COLORS.textPrimary};
+  font-family: ${FONT_MONO}; font-size: 0.8rem; color: ${COLORS.textPrimary};
   text-decoration: none; cursor: pointer; transition: color 0.15s ease;
   &:hover { color: ${COLORS.cyan}; }
 `
@@ -503,7 +487,7 @@ const ConsensusStats = styled.div`
 
 const ConsensusStat = styled.div`
   text-align: center;
-  .label { font-family: ${FONT_SANS}; font-size: 0.65rem; color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.5px; }
+  .label { font-family: ${FONT_SANS}; font-size: 0.7rem; color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.5px; }
   .value { font-family: ${FONT_MONO}; font-size: 0.9rem; font-weight: 700; color: ${props => props.$color || COLORS.textPrimary}; }
 `
 
@@ -538,18 +522,18 @@ const NewsItem = styled.a`
 `
 
 const NewsHeadline = styled.div`
-  font-family: ${FONT_SANS}; font-size: 0.8rem; font-weight: 600;
+  font-family: ${FONT_SANS}; font-size: 0.875rem; font-weight: 600;
   color: ${COLORS.textPrimary}; line-height: 1.3;
   overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
   -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 `
 
 const NewsMeta = styled.div`
-  display: flex; align-items: center; gap: 0.5rem; font-size: 0.65rem; font-family: ${FONT_MONO};
+  display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; font-family: ${FONT_MONO};
 `
 
 const SentimentBadge = styled.span`
-  padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.6rem; font-weight: 700;
+  padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.66rem; font-weight: 700;
   font-family: ${FONT_MONO}; letter-spacing: 0.5px;
   color: ${props => props.$sentiment === 'bullish' ? COLORS.green : props.$sentiment === 'bearish' ? COLORS.red : COLORS.amber};
   background: ${props => props.$sentiment === 'bullish' ? 'rgba(0,230,118,0.08)' : props.$sentiment === 'bearish' ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)'};
@@ -557,7 +541,7 @@ const SentimentBadge = styled.span`
 `
 
 const BreakingTag = styled.span`
-  padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.55rem; font-weight: 800;
+  padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.62rem; font-weight: 800;
   font-family: ${FONT_MONO}; letter-spacing: 1px; color: #ff1744;
   background: rgba(255,23,68,0.1); border: 1px solid rgba(255,23,68,0.2);
 `
@@ -988,8 +972,8 @@ const Dashboard = ({ isPremium = false }) => {
                     <span style={{ color, fontWeight: 700 }}>{icon} {side}</span>
                     <span style={{ fontWeight: 700 }}>{tx.coin}</span>
                     <span style={{ color: COLORS.cyan, fontWeight: 700 }}>${tx.usdValue}</span>
-                    {label && <span style={{ color: COLORS.textMuted, fontSize: '0.7rem' }}>· {label}</span>}
-                    {timeAgo && <span style={{ color: COLORS.textMuted, fontSize: '0.65rem' }}>· {timeAgo}</span>}
+                    {label && <span style={{ color: COLORS.textMuted, fontSize: '0.75rem' }}>· {label}</span>}
+                    {timeAgo && <span style={{ color: COLORS.textMuted, fontSize: '0.72rem' }}>· {timeAgo}</span>}
                   </TickerItem>
                 )
               })}
@@ -1011,12 +995,10 @@ const Dashboard = ({ isPremium = false }) => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem' }}>
                     <span style={{
-                      fontSize: '0.85rem', fontWeight: 700, color: COLORS.cyan, fontFamily: FONT_MONO,
-                      textTransform: 'uppercase', letterSpacing: '1px',
+                      fontSize: '1.02rem', fontWeight: 600, color: COLORS.textPrimary, fontFamily: FONT_SANS,
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
                     }}>
-                      <span style={{ color: COLORS.green, fontWeight: 800 }}>&gt;</span>
-                      MACRO_FACTORS
+                      Macro Factors
                     </span>
                     {macroFactors.overall_sentiment && (
                       <span style={{
@@ -1031,7 +1013,7 @@ const Dashboard = ({ isPremium = false }) => {
                     <Link
                       href={`/ai-advisor?q=${encodeURIComponent('Explain each of these macro factors in simple terms. What does each one mean and how could it affect the overall crypto market? Do NOT analyze any specific coin or pull price data — just explain the macro picture in plain English:\n\n' + macroFactors.factors.map(f => '• ' + f.title + ' (' + f.impact + '): ' + f.summary).join('\n'))}`}
                       style={{
-                        marginLeft: 'auto', fontSize: '0.6rem', fontWeight: 700, fontFamily: FONT_MONO,
+                        marginLeft: 'auto', fontSize: '0.7rem', fontWeight: 700, fontFamily: FONT_MONO,
                         color: COLORS.cyan, background: 'rgba(0,229,255,0.06)', border: `1px solid rgba(0,229,255,0.15)`,
                         borderRadius: 4, padding: '0.2rem 0.55rem', textDecoration: 'none', letterSpacing: '0.3px',
                         display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap',
@@ -1062,10 +1044,9 @@ const Dashboard = ({ isPremium = false }) => {
                             width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
                             background: dotColor, boxShadow: `0 0 8px ${dotColor}88`,
                           }}/>
-                          <span style={{ color: COLORS.textMuted, fontSize: '0.7rem', fontFamily: FONT_MONO }}>&#9656;</span>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: COLORS.textPrimary }}>{f.title}</span>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: COLORS.textPrimary }}>{f.title}</span>
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: COLORS.textMuted, lineHeight: 1.5 }}>{f.summary}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#8a9ab0', lineHeight: 1.55 }}>{f.summary}</div>
                       </div>
                       )
                     })}
@@ -1140,7 +1121,7 @@ const Dashboard = ({ isPremium = false }) => {
                     {/* Inflows Panel */}
                     <Panel>
                       <PanelHeader>
-                        <TerminalPrompt>NET_INFLOWS</TerminalPrompt>
+                        <TerminalPrompt>Net Inflows</TerminalPrompt>
                         <PanelBadge>24H</PanelBadge>
                       </PanelHeader>
                       {tokenInflows.length === 0 ? (
@@ -1183,7 +1164,7 @@ const Dashboard = ({ isPremium = false }) => {
                     {/* Outflows Panel */}
                     <Panel>
                       <PanelHeader>
-                        <TerminalPrompt>NET_OUTFLOWS</TerminalPrompt>
+                        <TerminalPrompt>Net Outflows</TerminalPrompt>
                         <PanelBadge>24H</PanelBadge>
                       </PanelHeader>
                       {tokenOutflows.length === 0 ? (
@@ -1234,7 +1215,7 @@ const Dashboard = ({ isPremium = false }) => {
                       <GridContainer>
                         <Panel>
                           <PanelHeader>
-                            <TerminalPrompt>BUY_PRESSURE</TerminalPrompt>
+                            <TerminalPrompt>Buy Pressure</TerminalPrompt>
                           </PanelHeader>
                           {topBuys.map((item, index) => (
                             <Link key={`buy-${item.coin}-${index}`} href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
@@ -1246,7 +1227,7 @@ const Dashboard = ({ isPremium = false }) => {
                                 <PressureBar>
                                   <PressureFill $color={COLORS.green} style={{ width: `${item.percentage}%` }} />
                                 </PressureBar>
-                                <span style={{ fontFamily: FONT_MONO, fontWeight: 700, color: COLORS.green, fontSize: '0.8rem', textAlign: 'right' }}>
+                                <span style={{ fontFamily: FONT_MONO, fontWeight: 700, color: COLORS.green, fontSize: '0.85rem', textAlign: 'right' }}>
                                   {item.percentage.toFixed(1)}%
                                 </span>
                               </PressureRow>
@@ -1256,7 +1237,7 @@ const Dashboard = ({ isPremium = false }) => {
 
                         <Panel>
                           <PanelHeader>
-                            <TerminalPrompt>SELL_PRESSURE</TerminalPrompt>
+                            <TerminalPrompt>Sell Pressure</TerminalPrompt>
                           </PanelHeader>
                           {topSells.map((item, index) => (
                             <Link key={`sell-${item.coin}-${index}`} href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
@@ -1268,7 +1249,7 @@ const Dashboard = ({ isPremium = false }) => {
                                 <PressureBar>
                                   <PressureFill $color={COLORS.red} style={{ width: `${item.percentage}%` }} />
                                 </PressureBar>
-                                <span style={{ fontFamily: FONT_MONO, fontWeight: 700, color: COLORS.red, fontSize: '0.8rem', textAlign: 'right' }}>
+                                <span style={{ fontFamily: FONT_MONO, fontWeight: 700, color: COLORS.red, fontSize: '0.85rem', textAlign: 'right' }}>
                                   {item.percentage.toFixed(1)}%
                                 </span>
                               </PressureRow>
@@ -1286,7 +1267,7 @@ const Dashboard = ({ isPremium = false }) => {
                       <Panel>
                         <PanelHeader>
                           <div>
-                            <TerminalPrompt>MOST_TRADED_TOKENS</TerminalPrompt>
+                            <TerminalPrompt>Most Traded Tokens</TerminalPrompt>
                             <PanelSubtext>Top tokens by institutional whale transaction volume — 24H</PanelSubtext>
                           </div>
                           <PanelBadge>LAST 24H</PanelBadge>
@@ -1335,7 +1316,7 @@ const Dashboard = ({ isPremium = false }) => {
                                       <td className="right" style={{ fontWeight: 700, color: COLORS.cyan }}>{t.txCount || 0}</td>
                                       <td className="right" style={{ fontWeight: 600 }}>${formatCompact(t.volume || 0)}</td>
                                       <td className="center">
-                                        <span style={{ fontSize: '0.75rem', color: isBuyHeavy ? COLORS.green : isSellHeavy ? COLORS.red : COLORS.textMuted }}>
+                                        <span style={{ fontSize: '0.78rem', color: isBuyHeavy ? COLORS.green : isSellHeavy ? COLORS.red : COLORS.textMuted }}>
                                           {buyRatio.toFixed(0)}/{(100 - buyRatio).toFixed(0)}
                                         </span>
                                       </td>
@@ -1372,7 +1353,7 @@ const Dashboard = ({ isPremium = false }) => {
                   <Panel>
                     <PanelHeader>
                       <div>
-                        <TerminalPrompt>WHALE_TOKEN_HEATMAP</TerminalPrompt>
+                        <TerminalPrompt>Whale Token Heatmap</TerminalPrompt>
                         <PanelSubtext>Token activity heatmap sized by volume, colored by whale sentiment</PanelSubtext>
                       </div>
                       <PanelBadge>LIVE</PanelBadge>
@@ -1457,7 +1438,7 @@ const TopWhalesSection = () => {
       <Panel>
         <PanelHeader>
           <div>
-            <TerminalPrompt>TOP_WHALES</TerminalPrompt>
+            <TerminalPrompt>Top Whales</TerminalPrompt>
             <PanelSubtext>Most active whale wallets in the past 7 days</PanelSubtext>
           </div>
           <PanelBadge>7-DAY ACTIVITY</PanelBadge>

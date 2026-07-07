@@ -431,7 +431,7 @@ const MainColumn = styled.div`
       linear-gradient(90deg, rgba(34, 211, 238, 0.034) 1px, transparent 1px);
     background-size: 56px 56px;
     mask-image: radial-gradient(900px 70% at 50% 0%, black, transparent 85%);
-    opacity: 0.55;
+    opacity: 0.22;
   }
   > footer {
     position: relative;
