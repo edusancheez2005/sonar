@@ -428,6 +428,7 @@ const WhaleNameBlock = styled.span`
   .nm { font-weight: 600; color: ${COLORS.textPrimary}; display: flex; align-items: center; gap: 0.4rem; font-family: ${FONT_SANS}; font-size: 0.88rem; line-height: 1.2; transition: color 0.12s ease; }
   .sub { font-family: ${FONT_MONO}; font-size: 0.72rem; color: ${COLORS.textMuted}; margin-top: 0.15rem; }
   .star { color: #f1c40f; font-size: 0.8rem; }
+  .cat { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: ${COLORS.textMuted}; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 4px; padding: 0.08rem 0.35rem; }
 `
 
 const BsWrap = styled.span`
@@ -1435,29 +1436,39 @@ const TopWhalesSection = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchTopWhales = async () => {
+    // Same volume-ranked, entity-enriched list as /whales/leaderboard — the
+    // old /api/whales/top-7day feed surfaced small wallets with extreme
+    // buy/sell ratios, which wasn't useful for tracking the big players.
+    const fetchLeaderboard = async () => {
       try {
-        const res = await fetch('/api/whales/top-7day')
-        const data = await res.json()
-        setWhales(data?.whales || [])
+        const res = await fetch('/api/whales/leaderboard')
+        const json = await res.json()
+        setWhales((json?.data || []).slice(0, 12))
       } catch (err) {
-        console.error('Failed to fetch top whales:', err)
+        console.error('Failed to fetch whale leaderboard:', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchTopWhales()
+    fetchLeaderboard()
   }, [])
 
   const formatUSD = (value) => {
-    const num = Number(value)
+    const num = Number(value) || 0
     const abs = Math.abs(num)
-    const sign = num >= 0 ? '+' : ''
-    
-    if (abs >= 1e9) return `${sign}$${(num / 1e9).toFixed(2)}B`
-    if (abs >= 1e6) return `${sign}$${(num / 1e6).toFixed(2)}M`
-    if (abs >= 1e3) return `${sign}$${(num / 1e3).toFixed(2)}K`
-    return `${sign}$${num.toFixed(2)}`
+    const sign = num > 0 ? '+' : num < 0 ? '-' : ''
+    if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(2)}B`
+    if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(2)}M`
+    if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(1)}K`
+    return `${sign}$${Math.round(abs).toLocaleString()}`
+  }
+
+  const formatVol = (value) => {
+    const abs = Math.abs(Number(value) || 0)
+    if (abs >= 1e9) return `$${(abs / 1e9).toFixed(2)}B`
+    if (abs >= 1e6) return `$${(abs / 1e6).toFixed(2)}M`
+    if (abs >= 1e3) return `$${(abs / 1e3).toFixed(1)}K`
+    return `$${Math.round(abs).toLocaleString()}`
   }
 
   const timeAgo = (timestamp) => {
@@ -1478,11 +1489,11 @@ const TopWhalesSection = () => {
       <Panel>
         <PanelHeader>
           <div>
-            <TerminalPrompt>Top Whales</TerminalPrompt>
-            <PanelSubtext>Most active whale wallets in the past 7 days</PanelSubtext>
+            <TerminalPrompt>Whale Leaderboard</TerminalPrompt>
+            <PanelSubtext>The biggest whales of the last 24 hours, ranked by trading volume — exchanges and stablecoins filtered out</PanelSubtext>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <PanelBadge>7-DAY ACTIVITY</PanelBadge>
+            <PanelBadge>24H VOLUME</PanelBadge>
             <a href="/whales/leaderboard" style={{ fontSize: '0.8rem', fontWeight: 600, color: COLORS.cyan, textDecoration: 'none' }}>
               Full leaderboard →
             </a>
@@ -1497,7 +1508,7 @@ const TopWhalesSection = () => {
           <EmptyState>
             <div style={{ opacity: 0.4, fontSize: '2.5rem', marginBottom: '1rem' }}>⊘</div>
             <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#8a9ab0' }}>No Whale Activity</div>
-            No significant whale transactions detected in the past 7 days.
+            No significant whale transactions detected in the past 24 hours.
           </EmptyState>
         ) : (
           <DataTable>
@@ -1506,18 +1517,20 @@ const TopWhalesSection = () => {
                 <tr>
                   <th style={{ width: '44px' }}>#</th>
                   <th>Whale</th>
-                  <th className="right">Net Flow (7d)</th>
+                  <th className="right">Net Flow</th>
+                  <th className="right">Volume</th>
                   <th className="right" style={{ width: '110px' }}>Buy / Sell</th>
-                  <th>Top Tokens</th>
+                  <th>Tokens</th>
                   <th className="right" style={{ width: '110px' }}>Score</th>
-                  <th className="right">Last Active</th>
+                  <th className="right">Active</th>
                 </tr>
               </thead>
               <tbody>
                 {whales.map((whale, idx) => {
                   const rank = idx + 1
-                  const parsedBuyPct = parseInt(whale.buySellRatio?.split('/')[0], 10)
-                  const buyPct = Number.isFinite(parsedBuyPct) ? Math.max(0, Math.min(100, parsedBuyPct)) : null
+                  const bv = Number(whale.buyVolume || 0)
+                  const sv = Number(whale.sellVolume || 0)
+                  const buyPct = bv + sv > 0 ? Math.round((bv / (bv + sv)) * 100) : null
                   const displayName = whale.entity_name || `${whale.address.slice(0, 6)}…${whale.address.slice(-4)}`
                   const [h1, h2] = avatarHues(whale.address)
                   const score = whale.whaleScore != null ? Math.max(0, Math.min(100, Number(whale.whaleScore))) : null
@@ -1547,6 +1560,9 @@ const TopWhalesSection = () => {
                             <span className="nm">
                               {whale.is_famous && <span className="star">★</span>}
                               {displayName}
+                              {whale.entity_name && whale.entity_category && (
+                                <span className="cat">{whale.entity_category}</span>
+                              )}
                             </span>
                             <span className="sub">
                               {whale.entity_name
@@ -1565,6 +1581,14 @@ const TopWhalesSection = () => {
                         }}>
                           {formatUSD(whale.netUsd)}
                         </span>
+                      </td>
+                      <td className="right">
+                        <span style={{ fontFamily: FONT_MONO, fontWeight: 600, fontSize: '0.88rem', color: '#8a9ab0' }}>
+                          {formatVol(whale.totalVolume)}
+                        </span>
+                        <div style={{ fontSize: '0.7rem', color: COLORS.textMuted, fontFamily: FONT_MONO, marginTop: '0.12rem' }}>
+                          {whale.tradeCount} trades
+                        </div>
                       </td>
                       <td className="right">
                         {buyPct == null ? (
