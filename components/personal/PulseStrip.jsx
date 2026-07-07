@@ -65,13 +65,11 @@ const Tile = styled.article`
 `
 
 const TileLabel = styled.span`
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(0,229,255,0.75);
-  font-family: ${MONO};
   font-weight: 600;
-  &::before { content: '▸ '; opacity: 0.6; }
 `
 
 const TileBody = styled.div`
@@ -100,7 +98,7 @@ const Tkr = styled.span`
 const Pct = styled.span`
   color: ${(p) => (p.$v > 0 ? '#4ade80' : p.$v < 0 ? '#ff7a7a' : '#8896a6')};
   font-weight: 700;
-  font-size: 12px;
+  font-size: 0.8rem;
   font-family: ${MONO};
   font-variant-numeric: tabular-nums;
 `
@@ -118,8 +116,8 @@ const Pip = styled.span`
 
 const Headline = styled.p`
   margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 0.8rem;
+  line-height: 1.45;
   color: #8896a6;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -129,17 +127,15 @@ const Headline = styled.p`
 
 const Empty = styled.p`
   margin: 0;
-  font-size: 12px;
+  font-size: 0.8rem;
   color: #8896a6;
   line-height: 1.45;
 `
 
 const MacroPin = styled.div`
-  font-size: 12px;
+  font-size: 0.8rem;
   color: #cfd6df;
   line-height: 1.55;
-  font-family: ${MONO};
-  &::before { content: '$ '; color: rgba(0,229,255,0.55); font-weight: 700; }
 `
 
 function fmtPct(n) {

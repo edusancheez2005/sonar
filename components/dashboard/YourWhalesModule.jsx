@@ -44,12 +44,9 @@ const Head = styled.div`
 `
 
 const Kicker = styled.span`
-  font-family: var(--font-mono, monospace);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: ${C.cyan};
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: ${C.text};
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -57,7 +54,7 @@ const Kicker = styled.span`
 
 const CountPill = styled.span`
   font-family: var(--font-mono, monospace);
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   padding: 0.2rem 0.55rem;
@@ -69,9 +66,8 @@ const CountPill = styled.span`
 
 const ViewAll = styled(Link)`
   margin-left: auto;
-  font-family: var(--font-mono, monospace);
-  font-size: 0.62rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: ${C.cyan};
   text-decoration: none;
   border: 1px solid rgba(0, 229, 255, 0.15);
@@ -98,7 +94,7 @@ const MoveRow = styled(Link)`
 const Who = styled.div`
   min-width: 0;
   .name { color: ${C.text}; font-weight: 700; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sub { color: ${C.muted}; font-size: 0.74rem; margin-top: 0.1rem; }
+  .sub { color: ${C.muted}; font-size: 0.78rem; margin-top: 0.1rem; }
 `
 
 const Amount = styled.div`
@@ -213,7 +209,7 @@ export default function YourWhalesModule() {
     return (
       <Panel>
         <Head>
-          <Kicker><span style={{ color: C.green }}>&gt;</span> FOLLOW YOUR FIRST WHALES</Kicker>
+          <Kicker>Follow Your First Whales</Kicker>
         </Head>
         <Body>
           Follow a wallet and Sonar tells you the moment it moves — on your dashboard and in your inbox.
@@ -232,7 +228,7 @@ export default function YourWhalesModule() {
     return (
       <Panel>
         <Head>
-          <Kicker><span style={{ color: C.green }}>&gt;</span> YOUR WHALES</Kicker>
+          <Kicker>Your Whales</Kicker>
           <ViewAll href="/dashboard/personal">View all →</ViewAll>
         </Head>
         <Body>
@@ -255,7 +251,7 @@ export default function YourWhalesModule() {
   return (
     <Panel>
       <Head>
-        <Kicker><span style={{ color: C.green }}>&gt;</span> YOUR WHALES MOVED</Kicker>
+        <Kicker>Your Whales Moved</Kicker>
         <CountPill>{moves.length} TRADE{moves.length === 1 ? '' : 'S'} · 24H</CountPill>
         <ViewAll href="/dashboard/personal">View all →</ViewAll>
       </Head>

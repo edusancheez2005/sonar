@@ -30,11 +30,6 @@ const PageWrapper = styled.div`
   background: #0a0e17;
   padding: 2rem;
   position: relative;
-  &::before {
-    content: ''; position: fixed; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.008) 2px, rgba(0, 229, 255, 0.008) 4px);
-    pointer-events: none; z-index: 0;
-  }
 `
 
 const Container = styled.div`max-width: 1440px; margin: 0 auto; position: relative; z-index: 1;`
@@ -55,8 +50,8 @@ const SideColumn = styled.div`
 
 const BackLink = styled(Link)`
   display: inline-flex; align-items: center; gap: 0.4rem; color: ${COLORS.cyan};
-  text-decoration: none; font-weight: 600; margin-bottom: 1.5rem; font-family: ${FONT_MONO};
-  font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;
+  text-decoration: none; font-weight: 600; margin-bottom: 1.5rem;
+  font-size: 0.85rem;
   &:hover { text-decoration: underline; }
 `
 
@@ -66,10 +61,9 @@ const Panel = styled.div`
 `
 
 const TerminalPrompt = styled.h2`
-  font-family: ${FONT_MONO}; font-size: 0.85rem; font-weight: 700; color: ${COLORS.cyan};
-  letter-spacing: 1px; text-transform: uppercase; margin: 0 0 1.25rem 0;
+  font-family: ${FONT_SANS}; font-size: 1.02rem; font-weight: 600; color: ${COLORS.textPrimary};
+  margin: 0 0 1.25rem 0;
   display: flex; align-items: center; gap: 0.5rem;
-  &::before { content: '>'; color: ${COLORS.green}; font-weight: 800; }
 `
 
 const Header = styled(Panel)``
@@ -188,8 +182,8 @@ const MetricCard = styled.div`
 `
 
 const MetricLabel = styled.div`
-  font-size: 0.6rem; color: ${COLORS.textMuted}; margin-bottom: 0.4rem; text-transform: uppercase;
-  letter-spacing: 1.5px; font-family: ${FONT_SANS}; font-weight: 600;
+  font-size: 0.7rem; color: ${COLORS.textMuted}; margin-bottom: 0.4rem; text-transform: uppercase;
+  letter-spacing: 0.06em; font-family: ${FONT_SANS}; font-weight: 600;
 `
 
 const MetricValue = styled.div`font-size: 1.1rem; font-weight: 700; color: ${COLORS.textPrimary}; font-family: ${FONT_MONO};`
@@ -197,7 +191,7 @@ const MetricValue = styled.div`font-size: 1.1rem; font-weight: 700; color: ${COL
 const TimeFilters = styled.div`display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.5rem;`
 
 const TimeButton = styled(Link)`
-  padding: 0.4rem 0.85rem; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 0.75rem;
+  padding: 0.4rem 0.85rem; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 0.8rem;
   font-family: ${FONT_MONO}; transition: all 0.15s ease;
   background: ${props => props.$active ? 'rgba(0, 229, 255, 0.15)' : 'transparent'};
   color: ${props => props.$active ? COLORS.cyan : COLORS.textMuted};
@@ -256,9 +250,8 @@ const SentimentSection = styled(motion.div)`
 `
 
 const SectionTitle = styled.h2`
-  font-family: ${FONT_MONO}; font-size: 0.85rem; font-weight: 700; color: ${COLORS.cyan};
-  letter-spacing: 1px; text-transform: uppercase; margin: 0 0 1.25rem 0;
-  &::before { content: '> '; color: ${COLORS.green}; font-weight: 800; }
+  font-family: ${FONT_SANS}; font-size: 1.02rem; font-weight: 600; color: ${COLORS.textPrimary};
+  margin: 0 0 1.25rem 0;
 `
 
 const ChartsSection = styled(motion.div)`
@@ -362,8 +355,8 @@ const Table = styled.table`
   width: 100%; border-collapse: collapse; font-family: ${FONT_MONO};
   table-layout: fixed;
   th {
-    padding: 0.65rem 0.5rem; text-align: left; font-size: 0.6rem; font-weight: 600;
-    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 0.65rem 0.5rem; text-align: left; font-size: 0.68rem; font-weight: 600;
+    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.04em;
     border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
     white-space: nowrap; font-family: ${FONT_SANS};
   }
@@ -381,7 +374,7 @@ const Table = styled.table`
   }
   tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
   td {
-    padding: 0.5rem 0.5rem; color: ${COLORS.textPrimary}; font-size: 0.75rem;
+    padding: 0.55rem 0.5rem; color: ${COLORS.textPrimary}; font-size: 0.8rem;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   a { color: ${COLORS.cyan}; text-decoration: none; font-weight: 600; &:hover { text-decoration: underline; } }
@@ -1002,7 +995,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
   return (
     <PageWrapper>
       <Container>
-        <BackLink href="/dashboard">&lt; BACK TO DASHBOARD</BackLink>
+        <BackLink href="/dashboard">← Back to Dashboard</BackLink>
 
         <Header>
           <TokenTitle>
@@ -1031,7 +1024,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
             >
               <span style={{ marginRight: '0.5rem' }}>●</span>{displaySentiment.label}
               {displaySentiment.confidence > 0 && (
-                <span style={{ marginLeft: '0.5rem', fontSize: '0.6rem', opacity: 0.7 }}>
+                <span style={{ marginLeft: '0.5rem', fontSize: '0.68rem', opacity: 0.7 }}>
                   {displaySentiment.confidence}%
                 </span>
               )}
@@ -1043,7 +1036,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               color: scoreInfo.color, background: scoreInfo.color + '15', border: `1px solid ${scoreInfo.color}30`,
             }}>
               <span style={{ fontSize: '1rem', fontWeight: 800 }}>{tokenScore}</span>
-              <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>/100</span>
+              <span style={{ fontSize: '0.68rem', opacity: 0.7 }}>/100</span>
               <span>{scoreInfo.label}</span>
             </div>
             {/* Experimental research-context badge (Workstream A demote, n=4,465). */}
@@ -1367,13 +1360,13 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         {!patternsLoading && whalePatterns.length > 0 && (
           <PremiumGate isPremium={isPremium} feature="Whale Pattern Analysis">
           <Panel style={{ marginBottom: '1.5rem' }}>
-            <TerminalPrompt style={{ marginBottom: '1rem' }}>WHALE_PATTERNS</TerminalPrompt>
+            <TerminalPrompt style={{ marginBottom: '1rem' }}>Whale Patterns</TerminalPrompt>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FONT_MONO, fontSize: '0.75rem' }}>
                 <thead>
                   <tr>
                     {['Address','Txns','Volume','Net Flow','Pattern'].map(h => (
-                      <th key={h} style={{ padding: '0.4rem', textAlign: h === 'Address' || h === 'Pattern' ? 'left' : 'right', fontSize: '0.6rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: `1px solid ${COLORS.borderSubtle}` }}>{h}</th>
+                      <th key={h} style={{ padding: '0.4rem', textAlign: h === 'Address' || h === 'Pattern' ? 'left' : 'right', fontSize: '0.68rem', fontWeight: 600, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${COLORS.borderSubtle}` }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1385,7 +1378,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                       <td style={{ padding: '0.4rem', textAlign: 'right' }}>{formatUSD(w.totalVolume)}</td>
                       <td style={{ padding: '0.4rem', textAlign: 'right', fontWeight: 700, color: w.netFlow >= 0 ? COLORS.green : COLORS.red }}>{w.netFlow >= 0 ? '+' : ''}{formatUSD(w.netFlow)}</td>
                       <td style={{ padding: '0.4rem' }}>
-                        <span style={{ fontSize: '0.6rem', fontFamily: FONT_MONO, fontWeight: 600, padding: '0.15rem 0.4rem', borderRadius: '3px', color: w.pattern.includes('ACCUMUL') ? COLORS.green : w.pattern.includes('DISTRIBUT') ? COLORS.red : COLORS.amber, background: w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.08)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)', border: `1px solid ${w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.12)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.12)' : 'rgba(255,171,0,0.12)'}` }}>{w.pattern}</span>
+                        <span style={{ fontSize: '0.66rem', fontFamily: FONT_MONO, fontWeight: 600, padding: '0.15rem 0.4rem', borderRadius: '3px', color: w.pattern.includes('ACCUMUL') ? COLORS.green : w.pattern.includes('DISTRIBUT') ? COLORS.red : COLORS.amber, background: w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.08)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)', border: `1px solid ${w.pattern.includes('ACCUMUL') ? 'rgba(0,230,118,0.12)' : w.pattern.includes('DISTRIBUT') ? 'rgba(255,23,68,0.12)' : 'rgba(255,171,0,0.12)'}` }}>{w.pattern}</span>
                       </td>
                     </tr>
                   ))}
@@ -1401,7 +1394,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
 
         {/* ─── LIVE WHALE FEED ───────────────────────────────────── */}
         <Panel style={{ marginBottom: '1.5rem', padding: '1rem' }}>
-          <TerminalPrompt style={{ marginBottom: '0.75rem' }}>LIVE_WHALE_FEED</TerminalPrompt>
+          <TerminalPrompt style={{ marginBottom: '0.75rem' }}>Live Whale Feed</TerminalPrompt>
           <WhaleTransactionFeed symbol={symbol} limit={20} pollInterval={10000} />
         </Panel>
 
@@ -1409,7 +1402,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         {!socialLoading && socialData && (
           <PremiumGate isPremium={isPremium} feature="Social Intelligence">
           <Panel style={{ marginBottom: '1.5rem' }}>
-            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>SOCIAL_INTELLIGENCE</TerminalPrompt>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>Social Intelligence</TerminalPrompt>
             <MetricsGrid>
               {socialData.galaxy_score != null && (
                 <MetricCard>
@@ -1471,7 +1464,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.75rem' }}>
                 {socialData.categories.slice(0, 6).map(cat => (
                   <span key={cat} style={{
-                    padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem',
+                    padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem',
                     fontFamily: FONT_MONO, fontWeight: 600, color: COLORS.cyan,
                     background: 'rgba(0, 229, 255, 0.06)', border: `1px solid ${COLORS.borderSubtle}`,
                     textTransform: 'uppercase', letterSpacing: '0.5px'
@@ -1487,7 +1480,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         {/* ─── NEWS ARTICLES ─────────────────────────────────────── */}
         {!newsLoading && newsArticles.length > 0 && (
           <Panel style={{ marginBottom: '1.5rem' }}>
-            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>LATEST_NEWS</TerminalPrompt>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>Latest News</TerminalPrompt>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {newsArticles.slice(0, isPremium ? 8 : 4).map((article, idx) => (
                 <a
@@ -1523,7 +1516,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                   </div>
                   {article.sentiment != null && (
                     <span style={{
-                      fontSize: '0.65rem', fontFamily: FONT_MONO, fontWeight: 600, flexShrink: 0,
+                      fontSize: '0.7rem', fontFamily: FONT_MONO, fontWeight: 600, flexShrink: 0,
                       padding: '0.15rem 0.4rem', borderRadius: '3px',
                       color: article.sentiment > 0.1 ? COLORS.green : article.sentiment < -0.1 ? COLORS.red : COLORS.amber,
                       background: article.sentiment > 0.1 ? 'rgba(0, 230, 118, 0.08)' : article.sentiment < -0.1 ? 'rgba(255, 23, 68, 0.08)' : 'rgba(255, 171, 0, 0.08)',
@@ -1542,7 +1535,7 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
         {/* ─── TOP SOCIAL POSTS (LunarCrush) ─────────────────────── */}
         {socialData?.top_posts && socialData.top_posts.length > 0 && (
           <Panel style={{ marginBottom: '1.5rem' }}>
-            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>SOCIAL_BUZZ</TerminalPrompt>
+            <TerminalPrompt style={{ marginBottom: '1.25rem' }}>Social Buzz</TerminalPrompt>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {socialData.top_posts.map((post, idx) => (
                 <a
@@ -1903,19 +1896,19 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
                   }}>
                     {priceData.volume24h > 0 && (
                       <div>
-                        <div style={{ fontSize: '0.6rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: FONT_SANS, fontWeight: 600 }}>24h Volume</div>
+                        <div style={{ fontSize: '0.7rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: FONT_SANS, fontWeight: 600 }}>24h Volume</div>
                         <div style={{ fontSize: '1rem', fontWeight: 700, color: COLORS.cyan, fontFamily: FONT_MONO }}>{formatUSD(priceData.volume24h)}</div>
                       </div>
                     )}
                     {priceData.marketCap > 0 && (
                       <div>
-                        <div style={{ fontSize: '0.6rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: FONT_SANS, fontWeight: 600 }}>Market Cap</div>
+                        <div style={{ fontSize: '0.7rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: FONT_SANS, fontWeight: 600 }}>Market Cap</div>
                         <div style={{ fontSize: '1rem', fontWeight: 700, color: COLORS.cyan, fontFamily: FONT_MONO }}>{formatUSD(priceData.marketCap)}</div>
                       </div>
                     )}
                     {priceData.change24h !== undefined && priceData.change24h !== null && (
                       <div>
-                        <div style={{ fontSize: '0.6rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '1px', fontFamily: FONT_SANS, fontWeight: 600 }}>24h Change</div>
+                        <div style={{ fontSize: '0.7rem', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: FONT_SANS, fontWeight: 600 }}>24h Change</div>
                         <div style={{ fontSize: '1rem', fontWeight: 700, color: priceData.change24h >= 0 ? COLORS.green : COLORS.red, fontFamily: FONT_MONO }}>
                           {priceData.change24h >= 0 ? '+' : ''}{priceData.change24h.toFixed(2)}%
                         </div>

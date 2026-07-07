@@ -57,9 +57,9 @@ const CloseBtn = styled.button`
 
 const Kicker = styled.div`
   font-family: var(--font-mono, monospace);
-  font-size: 0.6rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #22d3ee;
   margin-bottom: 0.35rem;

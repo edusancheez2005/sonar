@@ -35,9 +35,9 @@ const Page = styled.main`
   padding: 24px 20px 60px;
   color: #e0e6ed;
   background-image:
-    radial-gradient(1200px 600px at 50% -200px, rgba(0,229,255,0.06), transparent 60%),
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    radial-gradient(1200px 600px at 50% -200px, rgba(0,229,255,0.05), transparent 60%),
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
   background-size: auto, 40px 40px, 40px 40px;
   min-height: 100vh;
 `
@@ -50,27 +50,20 @@ const TopBar = styled.div`
   margin-bottom: 14px;
   flex-wrap: wrap;
   padding-bottom: 12px;
-  border-bottom: 1px dashed rgba(0,229,255,0.18);
+  border-bottom: 1px solid rgba(0,229,255,0.12);
 `
 
 const Heading = styled.h1`
   margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #00e5ff;
-  font-family: ${MONO};
-  &::before { content: '[ '; color: rgba(0,229,255,0.55); }
-  &::after  { content: ' ]'; color: rgba(0,229,255,0.55); }
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #e0e6ed;
 `
 
 const HeaderNote = styled.p`
   margin: 6px 0 0;
-  font-size: 12px;
-  color: #6b7a8c;
-  font-family: ${MONO};
-  &::before { content: '> '; color: rgba(0,229,255,0.5); }
+  font-size: 0.85rem;
+  color: #8a9ab0;
 `
 
 const StatusRow = styled.div`
@@ -78,7 +71,7 @@ const StatusRow = styled.div`
   align-items: center;
   gap: 14px;
   font-family: ${MONO};
-  font-size: 11px;
+  font-size: 0.72rem;
   color: #6b7a8c;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -99,12 +92,10 @@ const LiveDot = styled.span`
 `
 
 const BackLink = styled(Link)`
-  font-size: 11px;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: #00e5ff;
   text-decoration: none;
-  font-family: ${MONO};
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   padding: 6px 10px;
   border: 1px solid rgba(0,229,255,0.25);
   border-radius: 4px;
@@ -127,24 +118,8 @@ const Card = styled.section`
   position: relative;
   background: linear-gradient(180deg, rgba(13,20,33,0.78) 0%, rgba(8,14,24,0.78) 100%);
   border: 1px solid rgba(0,229,255,0.12);
-  border-radius: 6px;
-  padding: 18px 20px;
-  box-shadow: 0 0 0 1px rgba(0,229,255,0.04), inset 0 1px 0 rgba(255,255,255,0.03);
-  &::before {
-    content: '';
-    position: absolute; left: -1px; top: -1px; right: -1px; height: 2px;
-    background: linear-gradient(90deg, transparent, #00e5ff 50%, transparent);
-    opacity: 0.6;
-  }
-  &::after {
-    content: '┌┐              ┌┐';
-    position: absolute; top: 4px; left: 8px; right: 8px;
-    font-family: ${MONO};
-    font-size: 10px;
-    color: rgba(0,229,255,0.25);
-    display: flex; justify-content: space-between;
-    pointer-events: none;
-  }
+  border-radius: 8px;
+  padding: 20px 22px;
 `
 
 const TabBar = styled.div`
@@ -162,16 +137,12 @@ const TabBtn = styled.button`
   color: ${(p) => (p.$active ? '#00e5ff' : '#6b7a8c')};
   border-bottom: 2px solid ${(p) => (p.$active ? '#00e5ff' : 'transparent')};
   padding: 8px 14px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-family: ${MONO};
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 100ms ease;
   &:hover { color: #00e5ff; background: rgba(0,229,255,0.05); }
   &:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
-  &::before { content: '${(p) => (p.$active ? '▸ ' : '')}'; }
 `
 
 const StickyCol = styled.div`
@@ -271,7 +242,7 @@ function PersonalShell() {
     <Page>
       <TopBar>
         <div>
-          <Heading>Personal terminal</Heading>
+          <Heading>Personal Terminal</Heading>
           <HeaderNote>
             Live feed scoped to your watchlist. Global view is unchanged.
           </HeaderNote>
@@ -279,7 +250,7 @@ function PersonalShell() {
         <StatusRow>
           <span><LiveDot /> &nbsp;LIVE</span>
           <span>{tickers.length} TRACKED</span>
-          <BackLink href="/dashboard">← GLOBAL</BackLink>
+          <BackLink href="/dashboard">← Global</BackLink>
         </StatusRow>
       </TopBar>
 

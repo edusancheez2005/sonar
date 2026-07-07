@@ -27,15 +27,6 @@ const StatisticsContainer = styled.div`
   background: #0a0e17;
   padding: 2rem;
   position: relative;
-
-  &::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.008) 2px, rgba(0, 229, 255, 0.008) 4px);
-    pointer-events: none;
-    z-index: 0;
-  }
 `;
 
 const Container = styled.div`
@@ -55,14 +46,11 @@ const PageTitle = styled.div`
 `
 
 const TitleText = styled.h1`
-  font-family: ${MONO_FONT};
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: ${COLORS.cyan};
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+  font-family: ${SANS_FONT};
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: ${COLORS.textPrimary};
   margin: 0;
-  &::before { content: '> '; color: ${COLORS.green}; font-weight: 800; }
 `
 
 const LiveDot = styled.span`
@@ -97,9 +85,9 @@ const Field = styled.div`
   gap: 0.4rem;
   label {
     color: ${COLORS.textMuted};
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    letter-spacing: 1.5px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     font-family: ${SANS_FONT};
     padding-left: 0.1rem;
@@ -160,7 +148,7 @@ const Presets = styled.div`
     border-radius: 4px;
     padding: 0.4rem 0.85rem;
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-family: ${MONO_FONT};
     cursor: pointer;
     transition: all 0.15s ease;
@@ -182,7 +170,7 @@ const GhostButton = styled.button`
   border-radius: 4px;
   padding: 0.4rem 0.85rem;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-family: ${MONO_FONT};
   cursor: pointer;
   transition: all 0.15s ease;
@@ -198,8 +186,8 @@ const DataTable = styled.div`
   width: 100%; overflow-x: auto;
   table { width: 100%; border-collapse: collapse; font-family: ${MONO_FONT}; }
   thead th {
-    padding: 0.75rem 1rem; text-align: left; font-size: 0.7rem; font-weight: 600;
-    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 1px;
+    padding: 0.75rem 1rem; text-align: left; font-size: 0.72rem; font-weight: 600;
+    color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.06em;
     border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
     white-space: nowrap; font-family: ${SANS_FONT};
   }
@@ -210,7 +198,7 @@ const DataTable = styled.div`
   }
   tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
   tbody td {
-    padding: 0.65rem 1rem; font-size: 0.8rem; color: ${COLORS.textPrimary}; white-space: nowrap;
+    padding: 0.75rem 1rem; font-size: 0.88rem; color: ${COLORS.textPrimary}; white-space: nowrap;
   }
   tbody td.right { text-align: right; }
   tbody td.muted { color: ${COLORS.textMuted}; }
@@ -435,7 +423,7 @@ export default function Statistics() {
       <Container>
       <motion.div variants={fadeUp} initial="hidden" animate="visible">
         <PageTitle>
-          <TitleText>MARKET_STATISTICS</TitleText>
+          <TitleText>Market Statistics</TitleText>
           <LiveDot>LIVE</LiveDot>
         </PageTitle>
       </motion.div>
@@ -448,7 +436,7 @@ export default function Statistics() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem', fontWeight: 700, color: '#00e5ff', letterSpacing: '1px', textTransform: 'uppercase' }}>WHALE WHISPER</span>
+              <span style={{ fontSize: '1.02rem', fontWeight: 600, color: '#e0e6ed' }}>Whale Whisper</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <span style={{
@@ -458,12 +446,12 @@ export default function Statistics() {
                 color: whisperData.market_bias === 'bullish' ? '#00e676' : whisperData.market_bias === 'bearish' ? '#ff1744' : '#00e5ff',
                 border: `1px solid ${whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.2)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.2)' : 'rgba(0,229,255,0.1)'}`,
               }}>{whisperData.market_bias === 'bullish' ? 'NET INFLOW' : whisperData.market_bias === 'bearish' ? 'NET OUTFLOW' : 'BALANCED'}</span>
-              <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{whisperData.confidence}%</span>
-              <span style={{ fontSize: '0.65rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span style={{ fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{whisperData.confidence}%</span>
+              <span style={{ fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
           {/* Narrative with highlighted keywords and staggered paragraphs */}
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.78rem', lineHeight: 1.75, color: '#c0cad6' }}>
+          <div style={{ fontSize: '0.875rem', lineHeight: 1.65, color: '#c0cad6' }}>
             {whisperData.narrative.split('\n\n').filter(Boolean).map((para, idx) => (
               <motion.p key={idx} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.15 + idx * 0.2 }}
                 style={{ margin: idx > 0 ? '0.75rem 0 0' : 0, padding: '0.5rem 0.75rem', borderLeft: `2px solid ${idx === 0 ? 'rgba(0,229,255,0.3)' : idx === whisperData.narrative.split('\n\n').filter(Boolean).length - 1 ? (whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.4)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.4)' : 'rgba(0,229,255,0.3)') : 'rgba(255,255,255,0.06)'}`, borderRadius: '0 4px 4px 0', background: idx === 0 ? 'rgba(0,229,255,0.02)' : 'transparent' }}
@@ -491,7 +479,7 @@ export default function Statistics() {
           </div>
           {whisperData.summary && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-              style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.8rem', color: '#8a9ab0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
               {whisperData.summary}
             </motion.div>
