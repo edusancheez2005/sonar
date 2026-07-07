@@ -19,7 +19,6 @@ import {
   Legend
 } from 'chart.js'
 import TokenIcon from '@/components/TokenIcon'
-import YourWhalesModule from '@/components/dashboard/YourWhalesModule'
 import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import TokenHeatmap from '@/components/wallet-tracker/TokenHeatmap'
 import PremiumGate from '@/components/PremiumGate'
@@ -999,9 +998,6 @@ const Dashboard = ({ isPremium = false }) => {
         )}
 
         <DashboardContainer>
-            {/* ─── YOUR WHALES MOVED (personalization / retention) ──── */}
-            <YourWhalesModule />
-
             {/* ─── KEY MACRO FACTORS (top of dashboard) ────────────── */}
             {macroFactors?.factors && (() => {
               const sentColor = macroFactors.overall_sentiment === 'bullish' ? COLORS.green

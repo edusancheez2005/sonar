@@ -24,6 +24,7 @@ import SignalsTab from '@/components/personal/SignalsTab'
 import AlertsTab from '@/components/personal/AlertsTab'
 import CopilotPane from '@/components/personal/CopilotPane'
 import Tray from '@/components/personal/Tray'
+import YourWhalesModule from '@/components/dashboard/YourWhalesModule'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const MONO = "'JetBrains Mono', 'Fira Code', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace"
@@ -283,6 +284,10 @@ function PersonalShell() {
       </TopBar>
 
       <PulseStrip />
+
+      {/* Your followed whales' last-24h moves — lives here in the Personal
+          terminal (moved off the global dashboard per founder review). */}
+      <YourWhalesModule />
 
       <MainGrid>
         <Card aria-label="Your portfolio surfaces">
