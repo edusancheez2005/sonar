@@ -65,6 +65,10 @@
       "schedule": "0 */4 * * *"
     },
     {
+      "path": "/api/cron/refresh-macro",
+      "schedule": "0 */6 * * *"
+    },
+    {
       "path": "/api/cron/cache-derivatives",
       "schedule": "*/5 * * * *"
     },

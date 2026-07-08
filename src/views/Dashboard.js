@@ -797,10 +797,11 @@ const Dashboard = ({ isPremium = false }) => {
   }, [])
 
   // Fetch macro factors for dashboard panel
+  const [macroLoading, setMacroLoading] = useState(true)
   useEffect(() => {
     fetch('/api/social/macro').then(r => r.json()).then(d => {
       if (d?.factors) setMacroFactors(d)
-    }).catch(() => {})
+    }).catch(() => {}).finally(() => setMacroLoading(false))
   }, [])
 
   useEffect(() => {
@@ -1014,9 +1015,10 @@ const Dashboard = ({ isPremium = false }) => {
 
         <DashboardContainer>
             {/* ─── KEY MACRO FACTORS (top of dashboard) ────────────── */}
-            {macroFactors?.factors && (() => {
-              const sentColor = macroFactors.overall_sentiment === 'bullish' ? COLORS.green
-                : macroFactors.overall_sentiment === 'bearish' ? COLORS.red : COLORS.textMuted
+            {(macroLoading || macroFactors?.factors) && (() => {
+              const sentColor = macroFactors?.overall_sentiment === 'bullish' ? COLORS.green
+                : macroFactors?.overall_sentiment === 'bearish' ? COLORS.red : COLORS.textMuted
+              const hasFactors = Boolean(macroFactors?.factors?.length)
               return (
               <div style={{ marginBottom: '1rem', paddingTop: '1rem' }}>
                 <div style={{
@@ -1031,7 +1033,7 @@ const Dashboard = ({ isPremium = false }) => {
                     }}>
                       Macro Factors
                     </span>
-                    {macroFactors.overall_sentiment && (
+                    {macroFactors?.overall_sentiment && (
                       <span style={{
                         fontSize: '0.65rem', fontWeight: 700, padding: '0.25rem 0.6rem', borderRadius: 4,
                         letterSpacing: '1px', textTransform: 'uppercase', fontFamily: FONT_MONO,
@@ -1041,7 +1043,7 @@ const Dashboard = ({ isPremium = false }) => {
                         {macroFactors.overall_sentiment.toUpperCase()}
                       </span>
                     )}
-                    {!macroCollapsed && <Link
+                    {!macroCollapsed && hasFactors && <Link
                       href={`/ai-advisor?q=${encodeURIComponent('Explain each of these macro factors in simple terms. What does each one mean and how could it affect the overall crypto market? Do NOT analyze any specific coin or pull price data — just explain the macro picture in plain English:\n\n' + macroFactors.factors.map(f => '• ' + f.title + ' (' + f.impact + '): ' + f.summary).join('\n'))}`}
                       style={{
                         marginLeft: 'auto', fontSize: '0.7rem', fontWeight: 700, fontFamily: FONT_MONO,
@@ -1055,7 +1057,7 @@ const Dashboard = ({ isPremium = false }) => {
                     >
                       🐋 Ask ORCA
                     </Link>}
-                    <CollapseBtn
+                    {hasFactors && <CollapseBtn
                       type="button"
                       aria-expanded={!macroCollapsed}
                       aria-label={macroCollapsed ? 'Expand Macro Factors' : 'Collapse Macro Factors'}
@@ -1063,9 +1065,14 @@ const Dashboard = ({ isPremium = false }) => {
                       style={{ marginLeft: macroCollapsed ? 'auto' : undefined }}
                     >
                       {macroCollapsed ? '▸ Show' : '▾ Hide'}
-                    </CollapseBtn>
+                    </CollapseBtn>}
                   </div>
-                  {!macroCollapsed && <div style={{
+                  {!hasFactors && (
+                    <div style={{ fontSize: '0.82rem', color: '#8a9ab0', padding: '0.3rem 0 0.1rem' }}>
+                      Scanning the latest macro headlines…
+                    </div>
+                  )}
+                  {!macroCollapsed && hasFactors && <div style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${Math.min(macroFactors.factors.length, 3)}, 1fr)`,
                     gap: 0,

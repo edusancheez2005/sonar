@@ -54,6 +54,51 @@ let cachedResult: MacroFactorsResult | null = null
 let cachedAt = 0
 let cachedVersion = ''
 
+// Shared cross-instance cache row (Supabase). In-memory cache alone is
+// useless on serverless: every cold instance started empty and paid the full
+// 30s+ Grok generation on a live user request.
+const DB_CACHE_KEY = `macro_factors_${CACHE_VERSION}`
+let inFlight: Promise<MacroFactorsResult> | null = null
+
+function serviceClient() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) return null
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, { auth: { persistSession: false } })
+}
+
+async function readDbCache(): Promise<{ result: MacroFactorsResult; ageMs: number } | null> {
+  const supabase = serviceClient()
+  if (!supabase) return null
+  try {
+    const { data } = await supabase
+      .from('app_cache')
+      .select('value, updated_at')
+      .eq('key', DB_CACHE_KEY)
+      .maybeSingle()
+    const value = data?.value as MacroFactorsResult | undefined
+    if (!value || !Array.isArray(value.factors) || value.factors.length === 0) return null
+    const t = new Date(data!.updated_at).getTime()
+    const ageMs = Number.isFinite(t) ? Date.now() - t : 0
+    return { result: { ...value, stale: false }, ageMs }
+  } catch {
+    // Table missing or transient error — behave like no cache.
+    return null
+  }
+}
+
+async function writeDbCache(result: MacroFactorsResult): Promise<void> {
+  const supabase = serviceClient()
+  if (!supabase) return
+  try {
+    await supabase.from('app_cache').upsert({
+      key: DB_CACHE_KEY,
+      value: result,
+      updated_at: new Date().toISOString(),
+    })
+  } catch {
+    /* cache write is best-effort */
+  }
+}
+
 async function fetchRecentHeadlines(): Promise<string[]> {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) return []
   try {
@@ -103,12 +148,30 @@ function normaliseResult(parsed: any, today: string): MacroFactorsResult {
  * Fetch (or serve cached) live macro factors. Throws MacroUnavailableError on
  * a hard failure when there is no cached fallback available.
  */
-export async function getMacroFactors(): Promise<MacroFactorsResult> {
-  // Fresh cache hit.
-  if (cachedResult && cachedVersion === CACHE_VERSION && Date.now() - cachedAt < CACHE_TTL) {
-    return { ...cachedResult, stale: false }
+export async function getMacroFactors(opts?: { forceRefresh?: boolean }): Promise<MacroFactorsResult> {
+  if (!opts?.forceRefresh) {
+    // Fresh in-memory hit (same warm instance).
+    if (cachedResult && cachedVersion === CACHE_VERSION && Date.now() - cachedAt < CACHE_TTL) {
+      return { ...cachedResult, stale: false }
+    }
+    // Shared Supabase cache: cold instances answer instantly from here.
+    const db = await readDbCache()
+    if (db) {
+      cachedResult = db.result
+      cachedAt = Date.now() - db.ageMs
+      cachedVersion = CACHE_VERSION
+      // Even past-TTL data is served immediately (stale: true) — the
+      // refresh-macro cron owns regeneration; users never wait on Grok.
+      return { ...db.result, stale: db.ageMs >= CACHE_TTL }
+    }
+    // No cache anywhere (first ever run): generate synchronously below.
   }
+  if (inFlight) return inFlight
+  inFlight = generateFresh().finally(() => { inFlight = null })
+  return inFlight
+}
 
+async function generateFresh(): Promise<MacroFactorsResult> {
   const xaiKey = process.env.XAI_API_KEY
   if (!xaiKey) {
     if (cachedResult) return { ...cachedResult, stale: true }
@@ -219,5 +282,6 @@ Rules:
   cachedResult = result
   cachedAt = Date.now()
   cachedVersion = CACHE_VERSION
+  await writeDbCache(result)
   return { ...result, stale: false }
 }
