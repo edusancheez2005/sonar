@@ -592,6 +592,37 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
   return <>{prefix}{formatNumber(animated)}{suffix}</>
 }
 
+// ─── COLLAPSIBLE SECTIONS ───────────────────────────────────────────────────
+// Per-section collapse state, remembered in localStorage. Server render is
+// always "expanded"; stored state applies after mount to avoid hydration
+// mismatches.
+const useCollapsed = (key) => {
+  const [collapsed, setCollapsed] = useState(false)
+  useEffect(() => {
+    try { if (localStorage.getItem(key) === '1') setCollapsed(true) } catch { /* ignore */ }
+  }, [key])
+  const toggle = () => setCollapsed(c => {
+    const next = !c
+    try { localStorage.setItem(key, next ? '1' : '0') } catch { /* ignore */ }
+    return next
+  })
+  return [collapsed, toggle]
+}
+
+const CollapseBtn = styled.button`
+  width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
+  border: 1px solid rgba(0, 229, 255, 0.15); background: rgba(0, 229, 255, 0.06);
+  color: ${COLORS.cyan}; cursor: pointer; font-size: 0.7rem; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease;
+  &:hover { background: rgba(0, 229, 255, 0.12); border-color: rgba(0, 229, 255, 0.3); }
+`
+
+const PulseHeader = styled.div`
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  .t { font-family: ${FONT_SANS}; font-size: 1.02rem; font-weight: 600; color: ${COLORS.textPrimary}; }
+`
+
 // ─── MOTION VARIANTS ────────────────────────────────────────────────────────
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -665,6 +696,10 @@ const Dashboard = ({ isPremium = false }) => {
   const [newsArticles, setNewsArticles] = useState([])
   const [signals, setSignals] = useState([])
   const [macroFactors, setMacroFactors] = useState(null)
+
+  // Collapsible sections (state persists per browser)
+  const [macroCollapsed, toggleMacro] = useCollapsed('sonar-collapse-macro')
+  const [pulseCollapsed, togglePulse] = useCollapsed('sonar-collapse-pulse')
 
   // Fetch user info and check tutorial state
   useEffect(() => {
@@ -950,7 +985,7 @@ const Dashboard = ({ isPremium = false }) => {
                   border: `1px solid ${COLORS.borderSubtle}`,
                   borderRadius: 8, padding: '1rem 1.25rem',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: macroCollapsed ? 0 : '0.85rem' }}>
                     <span style={{
                       fontSize: '1.02rem', fontWeight: 600, color: COLORS.textPrimary, fontFamily: FONT_SANS,
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -967,7 +1002,7 @@ const Dashboard = ({ isPremium = false }) => {
                         {macroFactors.overall_sentiment.toUpperCase()}
                       </span>
                     )}
-                    <Link
+                    {!macroCollapsed && <Link
                       href={`/ai-advisor?q=${encodeURIComponent('Explain each of these macro factors in simple terms. What does each one mean and how could it affect the overall crypto market? Do NOT analyze any specific coin or pull price data — just explain the macro picture in plain English:\n\n' + macroFactors.factors.map(f => '• ' + f.title + ' (' + f.impact + '): ' + f.summary).join('\n'))}`}
                       style={{
                         marginLeft: 'auto', fontSize: '0.7rem', fontWeight: 700, fontFamily: FONT_MONO,
@@ -980,9 +1015,18 @@ const Dashboard = ({ isPremium = false }) => {
                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,229,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.15)' }}
                     >
                       🐋 Ask ORCA
-                    </Link>
+                    </Link>}
+                    <CollapseBtn
+                      type="button"
+                      aria-expanded={!macroCollapsed}
+                      aria-label={macroCollapsed ? 'Expand Macro Factors' : 'Collapse Macro Factors'}
+                      onClick={toggleMacro}
+                      style={{ marginLeft: macroCollapsed ? 'auto' : undefined }}
+                    >
+                      {macroCollapsed ? '▸' : '▾'}
+                    </CollapseBtn>
                   </div>
-                  <div style={{
+                  {!macroCollapsed && <div style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${Math.min(macroFactors.factors.length, 3)}, 1fr)`,
                     gap: 0,
@@ -1007,7 +1051,7 @@ const Dashboard = ({ isPremium = false }) => {
                       </div>
                       )
                     })}
-                  </div>
+                  </div>}
                 </div>
               </div>
               )
@@ -1024,8 +1068,19 @@ const Dashboard = ({ isPremium = false }) => {
 
               {/* ─── KPI TICKER STRIP (MARKET PULSE) ─────────────────── */}
               <motion.div variants={fadeUp} ref={marketPulseRef} data-tutorial="market-pulse">
-                {loading && !hasLoadedOnce.current && <SkeletonKPIStrip />}
-                <KPIStrip style={{ display: loading && !hasLoadedOnce.current ? 'none' : undefined }}>
+                <PulseHeader style={{ marginBottom: pulseCollapsed ? '2rem' : '0.6rem' }}>
+                  <span className="t">Market Pulse</span>
+                  <CollapseBtn
+                    type="button"
+                    aria-expanded={!pulseCollapsed}
+                    aria-label={pulseCollapsed ? 'Expand Market Pulse' : 'Collapse Market Pulse'}
+                    onClick={togglePulse}
+                  >
+                    {pulseCollapsed ? '▸' : '▾'}
+                  </CollapseBtn>
+                </PulseHeader>
+                {!pulseCollapsed && loading && !hasLoadedOnce.current && <SkeletonKPIStrip />}
+                {!pulseCollapsed && <KPIStrip style={{ display: loading && !hasLoadedOnce.current ? 'none' : undefined }}>
                   <KPICell>
                     <KPILabel>Strong Accumulation</KPILabel>
                     <KPIValue $color={COLORS.green}>
@@ -1065,7 +1120,7 @@ const Dashboard = ({ isPremium = false }) => {
                       {overall.totalCount || 0} Transactions
                     </KPISub>
                   </KPICell>
-                </KPIStrip>
+                </KPIStrip>}
               </motion.div>
 
               {/* Free user conversion banner */}

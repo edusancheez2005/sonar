@@ -263,6 +263,18 @@ export default function Statistics() {
   const [isPremium, setIsPremium] = useState(true) // All features unlocked
   const [whisperData, setWhisperData] = useState(null)
 
+  // Whale Whisper collapse state, remembered per browser. Server render is
+  // always "expanded"; stored state applies after mount.
+  const [whisperCollapsed, setWhisperCollapsed] = useState(false)
+  useEffect(() => {
+    try { if (localStorage.getItem('sonar-collapse-whisper') === '1') setWhisperCollapsed(true) } catch { /* ignore */ }
+  }, [])
+  const toggleWhisper = () => setWhisperCollapsed(c => {
+    const next = !c
+    try { localStorage.setItem('sonar-collapse-whisper', next ? '1' : '0') } catch { /* ignore */ }
+    return next
+  })
+
   const debounceRef = useRef(null)
   const prevFiltersRef = useRef({ token:'', side:'', chain:'', minUsd:'', maxUsd:'', sinceHours:24 })
 
@@ -433,7 +445,7 @@ export default function Statistics() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           style={{ marginBottom: '1.5rem', padding: '1.25rem 1.5rem', background: 'rgba(13, 17, 28, 0.8)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0, 229, 255, 0.08)', borderRadius: '8px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: whisperData.market_bias === 'bullish' ? '#00e676' : whisperData.market_bias === 'bearish' ? '#ff1744' : '#00e5ff' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: whisperCollapsed ? 0 : '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
               <span style={{ fontSize: '1.02rem', fontWeight: 600, color: '#e0e6ed' }}>Whale Whisper</span>
@@ -448,10 +460,24 @@ export default function Statistics() {
               }}>{whisperData.market_bias === 'bullish' ? 'NET INFLOW' : whisperData.market_bias === 'bearish' ? 'NET OUTFLOW' : 'BALANCED'}</span>
               <span style={{ fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{whisperData.confidence}%</span>
               <span style={{ fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <button
+                type="button"
+                aria-expanded={!whisperCollapsed}
+                aria-label={whisperCollapsed ? 'Expand Whale Whisper' : 'Collapse Whale Whisper'}
+                onClick={toggleWhisper}
+                style={{
+                  width: 26, height: 26, borderRadius: 6, flexShrink: 0,
+                  border: '1px solid rgba(0,229,255,0.15)', background: 'rgba(0,229,255,0.06)',
+                  color: '#00e5ff', cursor: 'pointer', fontSize: '0.7rem', lineHeight: 1,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {whisperCollapsed ? '▸' : '▾'}
+              </button>
             </div>
           </div>
           {/* Narrative with highlighted keywords and staggered paragraphs */}
-          <div style={{ fontSize: '0.875rem', lineHeight: 1.65, color: '#c0cad6' }}>
+          {!whisperCollapsed && <div style={{ fontSize: '0.875rem', lineHeight: 1.65, color: '#c0cad6' }}>
             {whisperData.narrative.split('\n\n').filter(Boolean).map((para, idx) => (
               <motion.p key={idx} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.15 + idx * 0.2 }}
                 style={{ margin: idx > 0 ? '0.75rem 0 0' : 0, padding: '0.5rem 0.75rem', borderLeft: `2px solid ${idx === 0 ? 'rgba(0,229,255,0.3)' : idx === whisperData.narrative.split('\n\n').filter(Boolean).length - 1 ? (whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.4)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.4)' : 'rgba(0,229,255,0.3)') : 'rgba(255,255,255,0.06)'}`, borderRadius: '0 4px 4px 0', background: idx === 0 ? 'rgba(0,229,255,0.02)' : 'transparent' }}
@@ -476,8 +502,8 @@ export default function Statistics() {
                   })
                 }} />
             ))}
-          </div>
-          {whisperData.summary && (
+          </div>}
+          {!whisperCollapsed && whisperData.summary && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
               style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.8rem', color: '#8a9ab0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
