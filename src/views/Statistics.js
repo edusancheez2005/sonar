@@ -267,11 +267,11 @@ export default function Statistics() {
   // always "expanded"; stored state applies after mount.
   const [whisperCollapsed, setWhisperCollapsed] = useState(false)
   useEffect(() => {
-    try { if (localStorage.getItem('sonar-collapse-whisper') === '1') setWhisperCollapsed(true) } catch { /* ignore */ }
+    try { if (localStorage.getItem('sonar-collapse2-whisper') === '1') setWhisperCollapsed(true) } catch { /* ignore */ }
   }, [])
   const toggleWhisper = () => setWhisperCollapsed(c => {
     const next = !c
-    try { localStorage.setItem('sonar-collapse-whisper', next ? '1' : '0') } catch { /* ignore */ }
+    try { localStorage.setItem('sonar-collapse2-whisper', next ? '1' : '0') } catch { /* ignore */ }
     return next
   })
 
@@ -466,13 +466,16 @@ export default function Statistics() {
                 aria-label={whisperCollapsed ? 'Expand Whale Whisper' : 'Collapse Whale Whisper'}
                 onClick={toggleWhisper}
                 style={{
-                  width: 26, height: 26, borderRadius: 6, flexShrink: 0,
-                  border: '1px solid rgba(0,229,255,0.15)', background: 'rgba(0,229,255,0.06)',
-                  color: '#00e5ff', cursor: 'pointer', fontSize: '0.7rem', lineHeight: 1,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0,
+                  padding: '0.34rem 0.85rem', borderRadius: 999,
+                  border: '1px solid rgba(0,229,255,0.3)', background: 'rgba(0,229,255,0.08)',
+                  color: '#00e5ff', cursor: 'pointer', whiteSpace: 'nowrap',
+                  fontSize: '0.78rem', fontWeight: 700, lineHeight: 1, fontFamily: SANS_FONT,
                 }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,229,255,0.16)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.5)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,229,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)' }}
               >
-                {whisperCollapsed ? '▸' : '▾'}
+                {whisperCollapsed ? '▸ Show' : '▾ Hide'}
               </button>
             </div>
           </div>

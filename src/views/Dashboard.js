@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
@@ -609,18 +609,45 @@ const useCollapsed = (key) => {
   return [collapsed, toggle]
 }
 
+const attentionPulse = keyframes`
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.45); }
+  50% { box-shadow: 0 0 0 7px rgba(34, 211, 238, 0); }
+`
+
 const CollapseBtn = styled.button`
-  width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
-  border: 1px solid rgba(0, 229, 255, 0.15); background: rgba(0, 229, 255, 0.06);
-  color: ${COLORS.cyan}; cursor: pointer; font-size: 0.7rem; line-height: 1;
-  display: inline-flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; gap: 0.35rem; flex-shrink: 0;
+  padding: 0.34rem 0.85rem; border-radius: 999px;
+  border: 1px solid rgba(0, 229, 255, 0.3); background: rgba(0, 229, 255, 0.08);
+  color: ${COLORS.cyan}; cursor: pointer; white-space: nowrap;
+  font-size: 0.78rem; font-weight: 700; line-height: 1; font-family: ${FONT_SANS};
   transition: all 0.15s ease;
-  &:hover { background: rgba(0, 229, 255, 0.12); border-color: rgba(0, 229, 255, 0.3); }
+  &:hover { background: rgba(0, 229, 255, 0.16); border-color: rgba(0, 229, 255, 0.5); }
+  ${p => p.$attention && css`animation: ${attentionPulse} 1.8s ease-in-out infinite;`}
 `
 
 const PulseHeader = styled.div`
+  position: relative;
   display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
   .t { font-family: ${FONT_SANS}; font-size: 1.02rem; font-weight: 600; color: ${COLORS.textPrimary}; }
+`
+
+const HintBubble = styled.div`
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 30;
+  background: #0d1a26; border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 10px; padding: 0.6rem 0.8rem;
+  font-size: 0.8rem; color: #cfe8ee; font-family: ${FONT_SANS};
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 18px rgba(34, 211, 238, 0.12);
+  display: flex; align-items: center; gap: 0.6rem;
+  &::before {
+    content: ''; position: absolute; top: -5px; right: 26px; width: 8px; height: 8px;
+    background: #0d1a26; transform: rotate(45deg);
+    border-left: 1px solid rgba(34, 211, 238, 0.35); border-top: 1px solid rgba(34, 211, 238, 0.35);
+  }
+  button {
+    border: none; background: rgba(34, 211, 238, 0.15); color: #7af8ff; font-weight: 700;
+    font-size: 0.72rem; padding: 0.28rem 0.65rem; border-radius: 6px; cursor: pointer; flex-shrink: 0;
+  }
+  button:hover { background: rgba(34, 211, 238, 0.28); }
 `
 
 // ─── MOTION VARIANTS ────────────────────────────────────────────────────────
@@ -697,9 +724,21 @@ const Dashboard = ({ isPremium = false }) => {
   const [signals, setSignals] = useState([])
   const [macroFactors, setMacroFactors] = useState(null)
 
-  // Collapsible sections (state persists per browser)
-  const [macroCollapsed, toggleMacro] = useCollapsed('sonar-collapse-macro')
-  const [pulseCollapsed, togglePulse] = useCollapsed('sonar-collapse-pulse')
+  // Collapsible sections (state persists per browser). v2 keys: the v1 keys
+  // shipped with a barely-visible toggle, so anyone who clicked it got stuck
+  // collapsed — fresh keys reset everyone to expanded.
+  const [macroCollapsed, toggleMacro] = useCollapsed('sonar-collapse2-macro')
+  const [pulseCollapsed, togglePulse] = useCollapsed('sonar-collapse2-pulse')
+
+  // One-time callout teaching the collapse control
+  const [showCollapseHint, setShowCollapseHint] = useState(false)
+  useEffect(() => {
+    try { if (localStorage.getItem('sonar-collapse-hint') !== '1') setShowCollapseHint(true) } catch { /* ignore */ }
+  }, [])
+  const dismissCollapseHint = () => {
+    setShowCollapseHint(false)
+    try { localStorage.setItem('sonar-collapse-hint', '1') } catch { /* ignore */ }
+  }
 
   // Fetch user info and check tutorial state
   useEffect(() => {
@@ -1020,10 +1059,10 @@ const Dashboard = ({ isPremium = false }) => {
                       type="button"
                       aria-expanded={!macroCollapsed}
                       aria-label={macroCollapsed ? 'Expand Macro Factors' : 'Collapse Macro Factors'}
-                      onClick={toggleMacro}
+                      onClick={() => { dismissCollapseHint(); toggleMacro() }}
                       style={{ marginLeft: macroCollapsed ? 'auto' : undefined }}
                     >
-                      {macroCollapsed ? '▸' : '▾'}
+                      {macroCollapsed ? '▸ Show' : '▾ Hide'}
                     </CollapseBtn>
                   </div>
                   {!macroCollapsed && <div style={{
@@ -1074,10 +1113,17 @@ const Dashboard = ({ isPremium = false }) => {
                     type="button"
                     aria-expanded={!pulseCollapsed}
                     aria-label={pulseCollapsed ? 'Expand Market Pulse' : 'Collapse Market Pulse'}
-                    onClick={togglePulse}
+                    onClick={() => { dismissCollapseHint(); togglePulse() }}
+                    $attention={showCollapseHint}
                   >
-                    {pulseCollapsed ? '▸' : '▾'}
+                    {pulseCollapsed ? '▸ Show' : '▾ Hide'}
                   </CollapseBtn>
+                  {showCollapseHint && (
+                    <HintBubble role="status">
+                      <span>New — tap <strong>Hide</strong> to tuck away sections you don&apos;t need.</span>
+                      <button type="button" onClick={dismissCollapseHint}>Got it</button>
+                    </HintBubble>
+                  )}
                 </PulseHeader>
                 {!pulseCollapsed && loading && !hasLoadedOnce.current && <SkeletonKPIStrip />}
                 {!pulseCollapsed && <KPIStrip style={{ display: loading && !hasLoadedOnce.current ? 'none' : undefined }}>
