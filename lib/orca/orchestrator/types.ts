@@ -182,4 +182,8 @@ export interface ModelClient {
 
 export interface SupabaseLike {
   from: (table: string) => any
+  /** Postgres RPC (exact server-side aggregates). Optional so test mocks that
+   *  only stub `from` still satisfy the type; tools fall back to a row scan
+   *  when it's absent. */
+  rpc?: (fn: string, args?: Record<string, unknown>) => any
 }

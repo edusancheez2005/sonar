@@ -49,6 +49,40 @@ export async function run(
   const limit = clampLimit(args.limit)
   const sinceIso = new Date(now().getTime() - WINDOWS[window]).toISOString()
 
+  // Preferred: exact server-side aggregation (no 1,000-row cap). Falls back to
+  // the row-scan below if the RPC is unavailable (migration not run / test mock).
+  if (typeof supabase.rpc === 'function') {
+    try {
+      const { data: aggRows, error: rpcErr } = await supabase.rpc('most_active_wallets', {
+        p_since: sinceIso,
+        p_limit: limit,
+      })
+      if (!rpcErr && Array.isArray(aggRows) && aggRows.length > 0) {
+        const wallets = aggRows.map((r: any, i: number) => ({
+          rank: i + 1,
+          address: String(r.whale_address),
+          address_short: shortAddress(String(r.whale_address)),
+          tx_count: Number(r.tx_count) || 0,
+          total_usd: Math.round(Number(r.total_usd) || 0),
+          buy_usd: Math.round(Number(r.buy_usd) || 0),
+          sell_usd: Math.round(Number(r.sell_usd) || 0),
+          net_usd: Math.round(Number(r.net_usd) || 0),
+          tokens: Array.isArray(r.tokens) ? r.tokens.slice(0, 8) : [],
+        }))
+        const labels = await fetchEntityLabels(supabase, wallets.map((w) => w.address))
+        const labelledWallets = wallets.map((w) => applyLabel(w, labels))
+        return {
+          ok: true,
+          data: { window, count: labelledWallets.length, wallets: labelledWallets },
+          source: 'all_whale_transactions',
+          fetched_at,
+        }
+      }
+    } catch {
+      // fall through to the row-scan path
+    }
+  }
+
   try {
     const { data, error } = await supabase
       .from('all_whale_transactions')

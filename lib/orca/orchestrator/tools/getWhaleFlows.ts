@@ -102,6 +102,31 @@ export async function run(
       }
     }
 
+    // The row scan above (capped at 1,000 by PostgREST, ordered by value) is
+    // used only for the top individual buy/sell transactions — those are always
+    // the highest-value rows, so the cap doesn't affect them. The AGGREGATE
+    // totals must be exact, so override them with a server-side sum when the RPC
+    // is available. Falls back to the (capped) JS sums otherwise.
+    let uniqueWhales = whales.size
+    if (typeof supabase.rpc === 'function') {
+      try {
+        const { data: aggRows, error: rpcErr } = await supabase.rpc('ticker_flow_agg', {
+          p_symbol: ticker,
+          p_since: sinceIso,
+        })
+        const agg = Array.isArray(aggRows) ? aggRows[0] : aggRows
+        if (!rpcErr && agg) {
+          buyUsd = Number(agg.buy_usd) || 0
+          sellUsd = Number(agg.sell_usd) || 0
+          buys = Number(agg.buy_count) || 0
+          sells = Number(agg.sell_count) || 0
+          uniqueWhales = Number(agg.unique_whales) || 0
+        }
+      } catch {
+        // keep the JS-computed (capped) sums
+      }
+    }
+
     const net = buyUsd - sellUsd
     if (buys === 0 && sells === 0) {
       return {
@@ -142,7 +167,7 @@ export async function run(
         direction,
         buy_count: buys,
         sell_count: sells,
-        unique_whales: whales.size,
+        unique_whales: uniqueWhales,
         top_buys: topBuys.map(decorate),
         top_sells: topSells.map(decorate),
       },

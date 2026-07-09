@@ -93,6 +93,7 @@ export async function run(
 
     let buyUsd = 0
     let sellUsd = 0
+    let txCount = rows.length
     const tokens = new Set<string>()
     for (const r of rows as any[]) {
       const v = Number(r?.usd_value)
@@ -101,6 +102,33 @@ export async function run(
       if (c.startsWith('buy')) buyUsd += v
       else if (c.startsWith('sell')) sellUsd += v
       if (r?.token_symbol) tokens.add(String(r.token_symbol).toUpperCase())
+    }
+    // The row scan (capped) is used only for the top transactions — always the
+    // highest-value rows. Override the aggregate totals with exact server-side
+    // sums so ORCA agrees with the wallet page (same canonical definition:
+    // BUY/SELL, stablecoins excluded). Falls back to the capped JS sums.
+    let tokensList = Array.from(tokens).slice(0, 20)
+    if (typeof supabase.rpc === 'function') {
+      try {
+        const [{ data: statRows }, { data: flowRows }] = await Promise.all([
+          supabase.rpc('wallet_tx_stats', { p_address: address, p_since: sinceIso }),
+          supabase.rpc('wallet_token_flows', { p_address: address, p_since: sinceIso }),
+        ])
+        const stat = Array.isArray(statRows) ? statRows[0] : statRows
+        if (stat) {
+          buyUsd = Number(stat.buy_volume) || 0
+          sellUsd = Number(stat.sell_volume) || 0
+          txCount = Number(stat.tx_count) || 0
+        }
+        if (Array.isArray(flowRows) && flowRows.length > 0) {
+          tokensList = flowRows
+            .map((f: any) => String(f.token_symbol || '').toUpperCase())
+            .filter(Boolean)
+            .slice(0, 20)
+        }
+      } catch {
+        // keep the JS-computed (capped) sums
+      }
     }
     const topTxs = rows.slice(0, TOP_TX_COUNT).map((r: any) => ({
       usd_value: Math.round(Number(r?.usd_value) || 0),
@@ -158,11 +186,11 @@ export async function run(
         label: userLabel ?? arkhamLabel ?? null,
         label_source: userLabel ? 'user' : arkhamLabel ? 'arkham' : null,
         window: '24h',
-        tx_count: rows.length,
+        tx_count: txCount,
         buy_usd: Math.round(buyUsd),
         sell_usd: Math.round(sellUsd),
         net_flow_usd: Math.round(buyUsd - sellUsd),
-        tokens_touched: Array.from(tokens).slice(0, 20),
+        tokens_touched: tokensList,
         top_txs: topTxs,
       },
       source: 'wallet_activity',
