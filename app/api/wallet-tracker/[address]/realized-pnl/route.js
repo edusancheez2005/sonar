@@ -6,7 +6,9 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/
-const SOL_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+// Case-lenient (allows lowercase 'l'): Solana whale_addresses are stored
+// lowercased, so match that form. See solana-addresses-lowercased note.
+const SOL_ADDRESS = /^[1-9A-Za-z]{32,44}$/
 const VALID_CHAINS = new Set(['ethereum', 'polygon', 'solana'])
 
 // Process-local cache (1h). The realized PnL only changes as the wallet
