@@ -59,7 +59,7 @@ const DashboardShell = styled.div`
 `
 
 const DashboardContainer = styled.div`
-  padding: 0 2rem 4rem 2rem;
+  padding: 0 1.5rem 3rem 1.5rem;
   max-width: 1440px;
   margin: 0 auto;
   position: relative;
@@ -223,18 +223,18 @@ const BlurredContent = styled.div`
 // ─── PANEL (GLASS CARD) ──────────────────────────────────────────────────────
 const Panel = styled.div`
   background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
-  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.5rem;
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.1rem 1.2rem;
   transition: border-color 0.2s ease;
   &:hover { border-color: rgba(0, 229, 255, 0.12); }
 `
 
 const PanelHeader = styled.div`
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;
+  margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;
 `
 
 const TerminalPrompt = styled.h2`
-  font-family: ${FONT_SANS}; font-size: 1.02rem; font-weight: 600; color: ${COLORS.textPrimary};
+  font-family: ${FONT_SANS}; font-size: 0.95rem; font-weight: 600; color: ${COLORS.textPrimary};
   margin: 0;
   display: flex; align-items: center; gap: 0.5rem;
 `
@@ -246,19 +246,19 @@ const PanelBadge = styled.span`
 `
 
 const PanelSubtext = styled.p`
-  font-size: 0.82rem; color: ${COLORS.textMuted}; margin: 0.3rem 0 0; font-family: ${FONT_SANS};
+  font-size: 0.78rem; color: ${COLORS.textMuted}; margin: 0.25rem 0 0; font-family: ${FONT_SANS};
 `
 
 // ─── KPI STRIP ──────────────────────────────────────────────────────────────
 const KPIStrip = styled.div`
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
   background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
-  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; overflow: hidden; margin-bottom: 2rem;
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; overflow: hidden; margin-bottom: 1.1rem;
   @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
 `
 
 const KPICell = styled.div`
-  padding: 1.25rem 1.5rem; text-align: center; position: relative;
+  padding: 0.85rem 1rem; text-align: center; position: relative;
   &:not(:last-child)::after {
     content: ''; position: absolute; right: 0; top: 20%; height: 60%; width: 1px;
     background: ${COLORS.borderSubtle};
@@ -272,14 +272,14 @@ const KPICell = styled.div`
 
 const KPILabel = styled.div`
   font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-  color: ${COLORS.textMuted}; margin-bottom: 0.5rem; font-family: ${FONT_SANS};
+  color: ${COLORS.textMuted}; margin-bottom: 0.35rem; font-family: ${FONT_SANS};
 `
 
 const KPIValue = styled.div`
-  font-size: 2.4rem; font-weight: 800; font-family: ${FONT_MONO};
+  font-size: 1.85rem; font-weight: 800; font-family: ${FONT_MONO};
   color: ${props => props.$color || COLORS.textPrimary};
   text-shadow: 0 0 20px ${props => (props.$color || COLORS.cyan) + '2e'};
-  line-height: 1; margin-bottom: 0.45rem;
+  line-height: 1; margin-bottom: 0.3rem;
 `
 
 const KPISub = styled.div`
@@ -290,12 +290,12 @@ const KPISub = styled.div`
 
 // ─── LAYOUTS ────────────────────────────────────────────────────────────────
 const GridContainer = styled.div`
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
   @media (max-width: 768px) { grid-template-columns: 1fr; }
 `;
 
 const DashboardWithSidebar = styled.div`
-  display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem;
+  display: grid; grid-template-columns: 1fr 300px; gap: 1rem;
   @media (max-width: 1024px) { grid-template-columns: 1fr; }
 `
 
@@ -307,14 +307,14 @@ const StickyWatchlist = styled.div`
   position: sticky; top: 60px;
 `
 
-const SectionGap = styled.div`margin-bottom: 2rem;`
+const SectionGap = styled.div`margin-bottom: 1.1rem;`
 
 // ─── DATA TABLE ─────────────────────────────────────────────────────────────
 const DataTable = styled.div`
   width: 100%; overflow-x: auto;
   table { width: 100%; border-collapse: collapse; font-family: ${FONT_MONO}; }
   thead th {
-    padding: 0.75rem 1rem; text-align: left; font-size: 0.72rem; font-weight: 600;
+    padding: 0.5rem 0.85rem; text-align: left; font-size: 0.68rem; font-weight: 600;
     color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.06em;
     border-bottom: 1px solid rgba(0, 229, 255, 0.06); background: rgba(0, 229, 255, 0.02);
     white-space: nowrap; font-family: ${FONT_SANS};
@@ -327,7 +327,7 @@ const DataTable = styled.div`
   }
   tbody tr:hover { background: rgba(0, 229, 255, 0.04); }
   tbody td {
-    padding: 0.8rem 1rem; font-size: 0.9rem; color: ${COLORS.textPrimary}; white-space: nowrap;
+    padding: 0.5rem 0.85rem; font-size: 0.82rem; color: ${COLORS.textPrimary}; white-space: nowrap;
   }
   tbody td.right { text-align: right; }
   tbody td.center { text-align: center; }
@@ -412,7 +412,7 @@ const WhoCell = styled.a`
 `
 
 const WhaleAvatar = styled.span`
-  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
   font-family: ${FONT_MONO}; font-size: 0.72rem; font-weight: 800;
   color: rgba(8, 14, 22, 0.85); border: 1px solid rgba(255, 255, 255, 0.14);
@@ -420,7 +420,7 @@ const WhaleAvatar = styled.span`
 
 const WhaleNameBlock = styled.span`
   display: flex; flex-direction: column; min-width: 0;
-  .nm { font-weight: 600; color: ${COLORS.textPrimary}; display: flex; align-items: center; gap: 0.4rem; font-family: ${FONT_SANS}; font-size: 0.88rem; line-height: 1.2; transition: color 0.12s ease; }
+  .nm { font-weight: 600; color: ${COLORS.textPrimary}; display: flex; align-items: center; gap: 0.4rem; font-family: ${FONT_SANS}; font-size: 0.82rem; line-height: 1.2; transition: color 0.12s ease; }
   .sub { font-family: ${FONT_MONO}; font-size: 0.72rem; color: ${COLORS.textMuted}; margin-top: 0.15rem; }
   .star { color: #f1c40f; font-size: 0.8rem; }
   .cat { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: ${COLORS.textMuted}; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 4px; padding: 0.08rem 0.35rem; }
@@ -469,7 +469,7 @@ const EmptyState = styled.div`
 // ─── SMART MONEY CONSENSUS GAUGE ────────────────────────────────────────────
 const ConsensusPanel = styled.div`
   background: ${COLORS.panelBg}; backdrop-filter: blur(12px);
-  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.5rem;
+  border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px; padding: 1.1rem 1.2rem;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   min-height: 260px;
 `
@@ -628,7 +628,7 @@ const CollapseBtn = styled.button`
 const PulseHeader = styled.div`
   position: relative;
   display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
-  .t { font-family: ${FONT_SANS}; font-size: 1.02rem; font-weight: 600; color: ${COLORS.textPrimary}; }
+  .t { font-family: ${FONT_SANS}; font-size: 0.95rem; font-weight: 600; color: ${COLORS.textPrimary}; }
 `
 
 const HintBubble = styled.div`
@@ -1028,7 +1028,7 @@ const Dashboard = ({ isPremium = false }) => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: macroCollapsed ? 0 : '0.85rem' }}>
                     <span style={{
-                      fontSize: '1.02rem', fontWeight: 600, color: COLORS.textPrimary, fontFamily: FONT_SANS,
+                      fontSize: '0.95rem', fontWeight: 600, color: COLORS.textPrimary, fontFamily: FONT_SANS,
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
                     }}>
                       Macro Factors
@@ -1107,7 +1107,7 @@ const Dashboard = ({ isPremium = false }) => {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              style={{ paddingTop: '1.5rem' }}
+              style={{ paddingTop: '1rem' }}
             >
 
               {/* Wallet personalization moved to /personalize (admin-gated). */}
