@@ -11,7 +11,10 @@ const VALID_CHAINS = new Set<BacktestChain>(['ethereum', 'polygon', 'solana'])
 
 // ─── Address shape validation (cheap, no network) ────────────────────────
 const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/
-const SOL_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+// Case-lenient ([1-9A-Za-z], allows lowercase 'l'): Solana whale_addresses are
+// stored lowercased, and the leaderboard links that form — the strict base58
+// pattern 400'd every Solana backtest with "Invalid address for chain".
+const SOL_ADDRESS = /^[1-9A-Za-z]{32,44}$/
 
 function isValidAddress(address: string, chain: BacktestChain): boolean {
   if (chain === 'solana') return SOL_ADDRESS.test(address)

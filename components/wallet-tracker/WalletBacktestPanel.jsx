@@ -192,8 +192,15 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
   const finalEquity = result?.final_equity_usd
   const totalReturn = result?.total_return_pct
   const win = totalReturn > 0
-  const beatBtc = totalReturn > (benchmarks?.btc_hodl?.total_return_pct ?? 0)
-  const beatEth = totalReturn > (benchmarks?.eth_hodl?.total_return_pct ?? 0)
+  // Benchmarks are only meaningful when CoinGecko actually returned a series.
+  // `available === false` marks a failed fetch, whose 0% is a placeholder — we
+  // must not render "beat/underperformed BTC" against a fake flat line.
+  const btcBench = benchmarks?.btc_hodl
+  const ethBench = benchmarks?.eth_hodl
+  const btcAvail = btcBench?.available !== false && Number.isFinite(btcBench?.total_return_pct)
+  const ethAvail = ethBench?.available !== false && Number.isFinite(ethBench?.total_return_pct)
+  const beatBtc = btcAvail && totalReturn > btcBench.total_return_pct
+  const beatEth = ethAvail && totalReturn > ethBench.total_return_pct
   // Data-quality guard: a wallet that "lost" >90% on <30 trades is almost
   // never a trader — it's a personal/founder wallet whose outgoing ETH
   // transfers (gifts, gas top-ups, contract deposits) get replayed as
@@ -359,18 +366,18 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
             />
             <Stat
               label="vs BTC HODL"
-              value={formatPct((benchmarks?.btc_hodl?.total_return_pct ?? 0))}
-              sub={beatBtc ? '✓ beat BTC' : '✗ underperformed BTC'}
-              tone={beatBtc ? 'good' : 'bad'}
+              value={btcAvail ? formatPct(btcBench.total_return_pct) : 'n/a'}
+              sub={btcAvail ? (beatBtc ? '✓ beat BTC' : '✗ underperformed BTC') : 'benchmark unavailable'}
+              tone={btcAvail ? (beatBtc ? 'good' : 'bad') : undefined}
             />
             <Stat
               label="vs ETH HODL"
-              value={formatPct((benchmarks?.eth_hodl?.total_return_pct ?? 0))}
-              sub={beatEth ? '✓ beat ETH' : '✗ underperformed ETH'}
-              tone={beatEth ? 'good' : 'bad'}
+              value={ethAvail ? formatPct(ethBench.total_return_pct) : 'n/a'}
+              sub={ethAvail ? (beatEth ? '✓ beat ETH' : '✗ underperformed ETH') : 'benchmark unavailable'}
+              tone={ethAvail ? (beatEth ? 'good' : 'bad') : undefined}
             />
             <Stat label="Trades replayed" value={String(tradeCount)} />
-            <Stat label="Win rate" value={formatPct(result?.win_rate_pct)} sub="(closed positions)" />
+            <Stat label="Win rate" value={Number.isFinite(result?.win_rate_pct) ? `${Math.round(result.win_rate_pct)}%` : '—'} sub="(closed positions)" />
             <Stat label="Max drawdown" value={formatPct(-(result?.max_drawdown_pct || 0))} tone="bad" />
             <Stat label="Sharpe (1y)" value={Number.isFinite(result?.sharpe) ? (result?.sharpe).toFixed(2) : '—'} />
           </div>

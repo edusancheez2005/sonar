@@ -532,8 +532,7 @@ async function replay(
       }
       // Record a closed-position pnl whenever we fully exit.
       if (cur.qty <= 1e-12) {
-        state.closed_positions.push({ token_key: key, pnl_usd: pnl + costPortion - cur.cost_basis_usd })
-        state.closed_positions[state.closed_positions.length - 1].pnl_usd = pnl
+        state.closed_positions.push({ token_key: key, pnl_usd: pnl })
       }
     }
 
@@ -628,17 +627,27 @@ function round2(n: number): number {
 
 // ─── Benchmarks ─────────────────────────────────────────────────────────
 async function hodlBenchmark(coinId: string, capital: number, startMs: number, endMs: number): Promise<BenchmarkResult> {
-  const series = await getSeries({ kind: 'coin_id', id: coinId }, startMs, endMs + 86400000)
+  // Never let a benchmark price fetch throw — it must not take down an
+  // otherwise-successful wallet backtest (the wallet's own replay already has
+  // its trades from Supabase). On any failure we return `available: false` so
+  // the UI shows "unavailable" rather than a fake flat 0% line.
+  let series: PricePoint[]
+  try {
+    series = await getSeries({ kind: 'coin_id', id: coinId }, startMs, endMs + 86400000)
+  } catch {
+    return { final_equity_usd: capital, total_return_pct: 0, available: false }
+  }
   const startPx = priceAt(series, startMs)
   const endPx = priceAt(series, endMs)
   if (!startPx || !endPx || startPx === 0) {
-    return { final_equity_usd: capital, total_return_pct: 0 }
+    return { final_equity_usd: capital, total_return_pct: 0, available: false }
   }
   const qty = capital / startPx
   const finalEquity = qty * endPx
   return {
     final_equity_usd: round2(finalEquity),
     total_return_pct: round2(((finalEquity - capital) / capital) * 100),
+    available: true,
   }
 }
 

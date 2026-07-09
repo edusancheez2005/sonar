@@ -47,6 +47,10 @@ export interface BacktestResult {
 export interface BenchmarkResult {
   final_equity_usd: number
   total_return_pct: number
+  /** False when the price provider (CoinGecko) returned no usable series, so
+   *  the 0% here is a placeholder, NOT a real flat market. The UI shows
+   *  "unavailable" instead of a misleading beat/underperform comparison. */
+  available?: boolean
 }
 
 // Market-maker / exchange-routing assessment for a wallet. When a wallet's
