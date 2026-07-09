@@ -277,6 +277,9 @@ const STAT_ICONS = {
 const REALIZED_HINT =
   "Realized profit/loss on this wallet's tracked round-trip trades, priced at execution with FIFO cost basis and a 0.3% fee. Sells of inventory acquired before tracking (and tokens we can't price) are excluded — that's why it differs from raw buy/sell flow."
 
+const NETFLOW_HINT =
+  "Buy volume minus sell volume over the last 24 hours (stablecoins excluded). This is the exact same figure the Whale Leaderboard ranks by — positive means net accumulation, negative means net distribution. It is not profit."
+
 const InfoDot = styled.span`
   display: inline-flex;
   align-items: center;
@@ -427,6 +430,16 @@ export default function WalletProfileWrapper({ address }) {
     : (realizedVal > 0 ? '#00d4aa' : realizedVal < 0 ? '#ff6b6b' : 'var(--text-primary)')
   const realizedAccent = realizedVal != null && realizedVal < 0 ? '#ff6b6b' : '#00d4aa'
 
+  // 24h Net Flow tile — the canonical, leaderboard-matching figure.
+  const netFlow24h = Number.isFinite(profile.net_flow_usd_24h) ? profile.net_flow_usd_24h : null
+  const netFlow24hDisplay = netFlow24h != null
+    ? `${netFlow24h > 0 ? '+' : netFlow24h < 0 ? '-' : ''}${formatUsd(Math.abs(netFlow24h))}`
+    : '—'
+  const netFlow24hColor = netFlow24h == null
+    ? 'var(--text-primary)'
+    : (netFlow24h > 0 ? '#00d4aa' : netFlow24h < 0 ? '#ff6b6b' : 'var(--text-primary)')
+  const netFlow24hAccent = netFlow24h != null && netFlow24h < 0 ? '#ff6b6b' : '#00d4aa'
+
   return (
     <PageContainer>
       <Container>
@@ -552,9 +565,17 @@ export default function WalletProfileWrapper({ address }) {
           <>
             <StatsGrid>
               <StatTile label="Portfolio Value" value={formatUsd(profile.portfolio_value_usd)} accent="#22d3ee" icon="wallet" />
+              <StatTile
+                label="24h Net Flow"
+                value={netFlow24hDisplay}
+                color={netFlow24hColor}
+                accent={netFlow24hAccent}
+                icon="volume"
+                hint={NETFLOW_HINT}
+              />
               <StatTile label="Realized PnL" value={realizedDisplay} color={realizedColor} accent={realizedAccent} icon="pnl" hint={REALIZED_HINT} />
               <StatTile label="30d Volume" value={formatUsd(profile.total_volume_usd_30d)} accent="#36a6ba" icon="volume" />
-              <StatTile label="Transactions" value={profile.tx_count ?? profile.tx_count_30d ?? '—'} accent="#7af8ff" icon="tx" />
+              <StatTile label="Transactions (30d)" value={profile.tx_count_30d ?? profile.tx_count ?? '—'} accent="#7af8ff" icon="tx" />
             </StatsGrid>
 
             {topTokens.length > 0 && (

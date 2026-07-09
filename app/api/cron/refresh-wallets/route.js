@@ -142,124 +142,52 @@ export async function GET(request) {
 
       const results = await Promise.allSettled(
         batch.map(async (wallet) => {
-          // ── Source 1: whale_alerts (has token quantities) ──────
-          // Use from_address/to_address to find this wallet's activity
-          const [{ data: alertsFrom }, { data: alertsTo }] = await Promise.all([
-            supabase
-              .from('whale_alerts')
-              .select('symbol, amount, amount_usd, transaction_type, from_owner_type, to_owner_type, timestamp')
-              .eq('from_address', wallet.address)
-              .limit(3000),
-            supabase
-              .from('whale_alerts')
-              .select('symbol, amount, amount_usd, transaction_type, from_owner_type, to_owner_type, timestamp')
-              .eq('to_address', wallet.address)
-              .limit(3000),
+          // EXACT database aggregation via RPC (fixes the 1,000-row PostgREST
+          // cap that truncated these stats — see 20260709_exact_aggregates.sql
+          // and the 2026-07-09 data-quality audit). Net token holdings come
+          // from whale_alerts (qty-based); 30d trading stats + per-token flows
+          // from all_whale_transactions — all summed server-side.
+          const [{ data: holdingsRows }, { data: statsRows }] = await Promise.all([
+            supabase.rpc('wallet_alert_holdings', { p_address: wallet.address }),
+            supabase.rpc('wallet_tx_stats', { p_address: wallet.address, p_since: thirtyDaysAgo }),
           ])
+          const stats = Array.isArray(statsRows) ? statsRows[0] : statsRows
 
-          // ── Source 2: all_whale_transactions (30d volume/count) ──
-          const { data: txs } = await supabase
-            .from('all_whale_transactions')
-            .select('token_symbol, classification, usd_value, timestamp')
-            .eq('whale_address', wallet.address)
-            .limit(5000)
-
-          // ── Aggregate token holdings from whale_alerts ─────────
-          // tokenHoldings: { symbol -> { qty: net token amount, costBasis: net USD spent } }
-          const tokenHoldings = new Map()
-
-          // Outgoing transfers = selling / sending (reduce holdings)
-          for (const alert of (alertsFrom || [])) {
-            const sym = alert.symbol
-            if (!sym) continue
-            const qty = Number(alert.amount) || 0
-            const usd = Number(alert.amount_usd) || 0
-            if (!tokenHoldings.has(sym)) tokenHoldings.set(sym, { qty: 0, costBasis: 0 })
-            const h = tokenHoldings.get(sym)
-            h.qty -= qty
-            h.costBasis -= usd
-          }
-
-          // Incoming transfers = buying / receiving (increase holdings)
-          for (const alert of (alertsTo || [])) {
-            const sym = alert.symbol
-            if (!sym) continue
-            const qty = Number(alert.amount) || 0
-            const usd = Number(alert.amount_usd) || 0
-            if (!tokenHoldings.has(sym)) tokenHoldings.set(sym, { qty: 0, costBasis: 0 })
-            const h = tokenHoldings.get(sym)
-            h.qty += qty
-            h.costBasis += usd
-          }
-
-          // ── Calculate portfolio value (qty × current price) ───
+          // ── Portfolio value (net qty × current price) ─────────
           let portfolioValue = 0
           const topTokens = []
-
-          for (const [sym, h] of tokenHoldings) {
+          for (const h of (holdingsRows || [])) {
+            const sym = h.symbol
+            if (!sym) continue
+            const netQty = Number(h.net_qty) || 0
             const price = priceMap.get(sym)
-            topTokens.push({ symbol: sym, volume: Math.abs(h.costBasis), netQty: h.qty })
-
-            if (h.qty > 0 && price) {
-              // Whale still holds tokens — value at current price
-              portfolioValue += h.qty * price
-            }
+            topTokens.push({ symbol: sym, volume: Math.abs(Number(h.gross_usd) || 0), netQty })
+            if (netQty > 0 && price) portfolioValue += netQty * price
           }
 
-          // ── Fallback: if no whale_alerts data, use all_whale_transactions
-          if (tokenHoldings.size === 0 && txs && txs.length > 0) {
-            const flowMap = new Map()
-            for (const tx of txs) {
-              const sym = tx.token_symbol
-              if (!sym) continue
-              const val = Number(tx.usd_value) || 0
-              const cls = (tx.classification || '').toUpperCase()
-              if (!flowMap.has(sym)) flowMap.set(sym, { buy: 0, sell: 0 })
-              const e = flowMap.get(sym)
-              if (cls === 'BUY') e.buy += val
-              else if (cls === 'SELL') e.sell += val
-            }
-            for (const [sym, flows] of flowMap) {
-              const net = flows.buy - flows.sell
-              topTokens.push({ symbol: sym, volume: flows.buy + flows.sell, netQty: 0 })
+          // ── Fallback: no whale_alerts holdings → per-token flows ─
+          if (topTokens.length === 0) {
+            const { data: flows } = await supabase.rpc('wallet_token_flows', {
+              p_address: wallet.address,
+              p_since: thirtyDaysAgo,
+            })
+            for (const f of (flows || [])) {
+              const net = (Number(f.buy_usd) || 0) - (Number(f.sell_usd) || 0)
+              topTokens.push({ symbol: f.token_symbol, volume: Number(f.total_usd) || 0, netQty: 0 })
               if (net > 0) portfolioValue += net
             }
           }
 
-          // ── Last-ditch fallback: if portfolioValue is still 0 but we
-          //    have ANY recent USD-valued tx volume, surface a rough
-          //    estimate so the leaderboard doesn't read "$0.00" for an
-          //    obviously active whale. We use 30d gross BUY USD as a
-          //    floor — clearly an undercount, but factually true (this
-          //    wallet acquired at least this much). Better than zero.
-          if (portfolioValue === 0 && txs && txs.length > 0) {
-            let buyFloor = 0
-            for (const tx of txs) {
-              const cls = (tx.classification || '').toUpperCase()
-              const val = Number(tx.usd_value) || 0
-              if (cls === 'BUY' && val > 0) buyFloor += val
-            }
-            if (buyFloor > 0) portfolioValue = buyFloor
-          }
+          // ── 30d metrics (exact) ───────────────────────────────
+          const totalVol30d = stats ? Number(stats.total_volume) || 0 : 0
+          const txCount30d = stats ? Number(stats.tx_count) || 0 : 0
+          const lastActive = stats?.last_active || null
 
-          // ── 30d metrics from all_whale_transactions ───────────
-          let totalVol30d = 0
-          let txCount30d = 0
-          let lastActive = null
-
-          for (const tx of (txs || [])) {
-            const val = Number(tx.usd_value) || 0
-            if (tx.timestamp >= thirtyDaysAgo) {
-              totalVol30d += val
-              txCount30d++
-            }
-            if (!lastActive || tx.timestamp > lastActive) lastActive = tx.timestamp
-          }
-
-          // Also check whale_alerts for last active
-          const allAlerts = [...(alertsFrom || []), ...(alertsTo || [])]
-          for (const a of allAlerts) {
-            if (a.timestamp && (!lastActive || a.timestamp > lastActive)) lastActive = a.timestamp
+          // ── Last-ditch: gross 30d BUY volume as a portfolio floor
+          //    so an active whale never reads "$0.00" for lack of a
+          //    balance snapshot. An undercount, but factually true.
+          if (portfolioValue === 0 && stats && Number(stats.buy_volume) > 0) {
+            portfolioValue = Number(stats.buy_volume)
           }
 
           // Sort top tokens by volume descending, take top 5

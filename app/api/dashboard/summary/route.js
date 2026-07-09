@@ -388,6 +388,25 @@ export async function GET(req) {
     if (Number.isFinite(Number(total24hCount)) && Number(total24hCount) > 0) {
       overall.totalCount = Number(total24hCount)
     }
+    // Prefer EXACT, mutually-consistent 24h totals from the database. The
+    // sampled per-chain dataset above under-counts buys/sells (only ~1,000
+    // rows survived PostgREST's cap), which made the command-bar totals
+    // contradict each other (2026-07-09 audit). tape_overall sums server-side.
+    try {
+      const since24 = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      const { data: tape } = await supabaseAdmin.rpc('tape_overall', { p_since: since24 })
+      const t = Array.isArray(tape) ? tape[0] : tape
+      if (t) {
+        overall.totalCount = Number(t.total_count) || 0
+        overall.buyCount = Number(t.buy_count) || 0
+        overall.sellCount = Number(t.sell_count) || 0
+        overall.buyVolume = Math.round(Number(t.buy_volume) || 0)
+        overall.sellVolume = Math.round(Number(t.sell_volume) || 0)
+        overall.totalVolume = Math.round(Number(t.total_volume) || 0)
+      }
+    } catch {
+      // Migration not applied yet — sampled values stand.
+    }
 
     // Top 10 largest transactions (24h) for Risk Assessment
     const topHighValueTxs = (recent24h || [])

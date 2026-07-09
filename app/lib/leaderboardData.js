@@ -9,10 +9,14 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 // Shared leaderboard aggregations. Called BOTH by the API routes (for the
 // dashboard/client fetches) and directly by the server-rendered pages
-// (/whales/leaderboard, /tokens). Rendering pages query this inline rather
-// than importing the route handler — importing a route module (with its
-// segment config) into a page bailed the whole page to client-side render
-// and served empty HTML. A direct data function does not.
+// (/whales/leaderboard, /tokens).
+//
+// Aggregation happens IN THE DATABASE via RPC functions (see
+// supabase/migrations/20260709_exact_aggregates.sql). This is the fix for the
+// 2026-07-09 data-quality audit: PostgREST caps row fetches at 1,000, so the
+// old "fetch rows, sum in JS" path silently ranked whales from ~7% of a busy
+// day's transactions. If the RPC is missing (code deployed before the SQL was
+// run), we fall back to the legacy JS aggregation so nothing breaks.
 
 const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
 
@@ -21,9 +25,113 @@ function envReady() {
          !!(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)
 }
 
+function sinceIso(hours = 24) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+}
+
+// Attach entity_name / label / category / is_famous to a set of rows keyed by
+// `.address`. Shared by both the RPC and legacy paths.
+async function enrichEntities(rows) {
+  const whaleAddresses = rows.map(r => r.address?.toLowerCase()).filter(Boolean)
+  const nameMap = {}
+  if (whaleAddresses.length > 0) {
+    const { data: nameData } = await supabaseAdmin
+      .from('addresses')
+      .select('address, entity_name, label, address_type, analysis_tags')
+      .in('address', whaleAddresses)
+      .not('entity_name', 'is', null)
+    for (const row of nameData || []) {
+      const tags = row.analysis_tags || {}
+      nameMap[row.address] = {
+        entity_name: row.entity_name,
+        label: row.label,
+        category: tags.category || null,
+        is_famous: tags.is_famous || false,
+      }
+    }
+  }
+  return rows.map(r => {
+    const info = nameMap[r.address?.toLowerCase()]
+    return {
+      ...r,
+      entity_name: info?.entity_name || null,
+      entity_label: info?.label || null,
+      entity_category: info?.category || null,
+      is_famous: info?.is_famous || false,
+    }
+  })
+}
+
 export async function getWhaleLeaderboard() {
   if (!envReady()) return []
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  // ── Preferred path: exact DB aggregation. ────────────────────────────────
+  try {
+    const { data, error } = await supabaseAdmin.rpc('whale_leaderboard_agg', {
+      p_since: sinceIso(24),
+    })
+    if (error) throw new Error(error.message)
+    if (Array.isArray(data)) {
+      const rows = data.slice(0, 100).map(r => {
+        const buys = Number(r.buys || 0)
+        const sells = Number(r.sells || 0)
+        return {
+          address: r.whale_address,
+          tradeCount: Number(r.trade_count || 0),
+          buyVolume: Math.round(Number(r.buy_volume || 0)),
+          sellVolume: Math.round(Number(r.sell_volume || 0)),
+          netUsd: Math.round(Number(r.net_usd || 0)),
+          totalVolume: Math.round(Number(r.total_volume || 0)),
+          buySellRatio: sells === 0 ? buys : +(buys / sells).toFixed(2),
+          tokens: Array.isArray(r.tokens) ? r.tokens : [],
+          whaleScore: r.whale_score != null ? Number(r.whale_score) : null,
+          lastSeen: r.last_seen,
+        }
+      })
+      return await enrichEntities(rows)
+    }
+  } catch (err) {
+    console.warn('[leaderboard] RPC whale_leaderboard_agg failed, using legacy path:', err?.message)
+  }
+
+  return await getWhaleLeaderboardLegacy()
+}
+
+export async function getTokenLeaderboard() {
+  if (!envReady()) return []
+
+  try {
+    const { data, error } = await supabaseAdmin.rpc('token_flow_agg', {
+      p_since: sinceIso(24),
+    })
+    if (error) throw new Error(error.message)
+    if (Array.isArray(data)) {
+      return data.map(r => {
+        const buys = Number(r.buys || 0)
+        const sells = Number(r.sells || 0)
+        return {
+          token: r.token_symbol || '—',
+          netUsd: Math.round(Number(r.net_usd || 0)),
+          buySellRatio: sells === 0 ? buys : +(buys / sells).toFixed(2),
+          uniqueWhales: Number(r.unique_whales || 0),
+          lastSeen: r.last_seen,
+        }
+      })
+    }
+  } catch (err) {
+    console.warn('[leaderboard] RPC token_flow_agg failed, using legacy path:', err?.message)
+  }
+
+  return await getTokenLeaderboardLegacy()
+}
+
+// ─── Legacy JS aggregation (fallback only) ──────────────────────────────────
+// Kept verbatim so a deploy that lands before the SQL migration still works.
+// Known limitation: capped at 1,000 rows by PostgREST — that's exactly the bug
+// the RPC path fixes, so this is a graceful degradation, not a correct result.
+
+async function getWhaleLeaderboardLegacy() {
+  const since = sinceIso(24)
 
   const { data, error } = await supabaseAdmin
     .from('all_whale_transactions')
@@ -76,42 +184,11 @@ export async function getWhaleLeaderboard() {
       lastSeen: r.lastSeen,
     }))
   rows.sort((a, b) => b.totalVolume - a.totalVolume)
-  const topRows = rows.slice(0, 100)
-
-  const whaleAddresses = topRows.map(r => r.address.toLowerCase()).filter(Boolean)
-  const nameMap = {}
-  if (whaleAddresses.length > 0) {
-    const { data: nameData } = await supabaseAdmin
-      .from('addresses')
-      .select('address, entity_name, label, address_type, analysis_tags')
-      .in('address', whaleAddresses)
-      .not('entity_name', 'is', null)
-    for (const row of nameData || []) {
-      const tags = row.analysis_tags || {}
-      nameMap[row.address] = {
-        entity_name: row.entity_name,
-        label: row.label,
-        category: tags.category || null,
-        is_famous: tags.is_famous || false,
-      }
-    }
-  }
-
-  return topRows.map(r => {
-    const info = nameMap[r.address.toLowerCase()]
-    return {
-      ...r,
-      entity_name: info?.entity_name || null,
-      entity_label: info?.label || null,
-      entity_category: info?.category || null,
-      is_famous: info?.is_famous || false,
-    }
-  })
+  return await enrichEntities(rows.slice(0, 100))
 }
 
-export async function getTokenLeaderboard() {
-  if (!envReady()) return []
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+async function getTokenLeaderboardLegacy() {
+  const since = sinceIso(24)
 
   const { data, error } = await supabaseAdmin
     .from('all_whale_transactions')

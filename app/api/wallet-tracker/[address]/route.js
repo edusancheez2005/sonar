@@ -65,31 +65,41 @@ export async function GET(req, { params }) {
         if (rec?.entity_id)   data.arkham_entity_id   = rec.entity_id
       }
     }
-    // Freshen volatile stats from the LIVE tape. wallet_profiles is only
-    // re-aggregated by an hourly cron that can't keep all 42k rows current,
-    // so the stored last_active / 30d volume / tx counts can lag by days.
-    // The viewed wallet must always show up-to-date numbers.
+    // Freshen volatile stats from the LIVE tape using EXACT database
+    // aggregation (RPC), so the number can't be truncated by the 1,000-row
+    // PostgREST cap the way the old inline loop was. We compute both the 24h
+    // window (matches the leaderboard's Net Flow definition exactly) and 30d.
     try {
+      const since24 = new Date(Date.now() - 86400000).toISOString() // 24h
       const since30 = new Date(Date.now() - 30 * 86400000).toISOString()
-      const { data: liveTx } = await supabaseAdmin
-        .from('all_whale_transactions')
-        .select('usd_value, timestamp')
-        .eq('whale_address', address)
-        .order('timestamp', { ascending: false })
-        .limit(5000)
-      if (Array.isArray(liveTx) && liveTx.length > 0) {
-        let vol30 = 0
-        let tx30 = 0
-        for (const t of liveTx) {
-          if (t.timestamp >= since30) {
-            vol30 += Number(t.usd_value) || 0
-            tx30 += 1
-          }
-        }
-        data.last_active = liveTx[0].timestamp
-        data.total_volume_usd_30d = Math.round(vol30 * 100) / 100
-        data.tx_count_30d = tx30
+      const [{ data: s24 }, { data: s30 }] = await Promise.all([
+        supabaseAdmin.rpc('wallet_tx_stats', { p_address: address, p_since: since24 }),
+        supabaseAdmin.rpc('wallet_tx_stats', { p_address: address, p_since: since30 }),
+      ])
+      const r24 = Array.isArray(s24) ? s24[0] : s24
+      const r30 = Array.isArray(s30) ? s30[0] : s30
+      if (r30) {
+        data.total_volume_usd_30d = Math.round(Number(r30.total_volume || 0) * 100) / 100
+        data.tx_count_30d = Number(r30.tx_count || 0)
+        data.net_flow_usd_30d = Math.round(Number(r30.net_usd || 0) * 100) / 100
+        data.buy_count_30d = Number(r30.buys || 0)
+        data.sell_count_30d = Number(r30.sells || 0)
+        if (r30.last_active) data.last_active = r30.last_active
       }
+      if (r24) {
+        // Canonical 24h Net Flow — the SAME formula as the leaderboard, so
+        // clicking a whale shows the same number the leaderboard ranked it by.
+        data.net_flow_usd_24h = Math.round(Number(r24.net_usd || 0) * 100) / 100
+        data.volume_usd_24h = Math.round(Number(r24.total_volume || 0) * 100) / 100
+        data.tx_count_24h = Number(r24.tx_count || 0)
+      }
+      // Retire the unmaintained all-time columns: no code writes them, so the
+      // stored values are frozen nonsense (e.g. all-time < 30d). Null them out
+      // rather than serve impossible numbers.
+      data.total_volume_usd_all = null
+      data.tx_count_all = null
+      data.buy_count = null
+      data.sell_count = null
     } catch {
       // Non-fatal — fall back to the stored (possibly stale) values.
     }
@@ -175,18 +185,42 @@ export async function GET(req, { params }) {
     if (net > 0) portfolioValue += net
   }
 
+  // Exact 24h/30d stats via RPC (not capped at the 2,000 rows above). Best
+  // effort: if the migration hasn't run yet, keep the JS-aggregated values.
+  const aggregated = {
+    address,
+    chains: [...chains],
+    total_volume_usd_30d: Math.round(totalVolume * 100) / 100,
+    portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
+    tx_count: txData.length,
+    last_active: lastActive,
+    source: 'aggregated',
+  }
+  try {
+    const since24 = new Date(Date.now() - 86400000).toISOString()
+    const since30 = new Date(Date.now() - 30 * 86400000).toISOString()
+    const [{ data: s24 }, { data: s30 }] = await Promise.all([
+      supabaseAdmin.rpc('wallet_tx_stats', { p_address: address, p_since: since24 }),
+      supabaseAdmin.rpc('wallet_tx_stats', { p_address: address, p_since: since30 }),
+    ])
+    const r24 = Array.isArray(s24) ? s24[0] : s24
+    const r30 = Array.isArray(s30) ? s30[0] : s30
+    if (r30) {
+      aggregated.total_volume_usd_30d = Math.round(Number(r30.total_volume || 0) * 100) / 100
+      aggregated.tx_count_30d = Number(r30.tx_count || 0)
+      aggregated.net_flow_usd_30d = Math.round(Number(r30.net_usd || 0) * 100) / 100
+    }
+    if (r24) {
+      aggregated.net_flow_usd_24h = Math.round(Number(r24.net_usd || 0) * 100) / 100
+      aggregated.volume_usd_24h = Math.round(Number(r24.total_volume || 0) * 100) / 100
+      aggregated.tx_count_24h = Number(r24.tx_count || 0)
+    }
+  } catch {
+    // Migration not applied yet — JS-aggregated (capped) values stand.
+  }
+
   return NextResponse.json(
-    {
-      data: {
-        address,
-        chains: [...chains],
-        total_volume_usd_30d: totalVolume,
-        portfolio_value_usd: Math.round(portfolioValue * 100) / 100,
-        tx_count: txData.length,
-        last_active: lastActive,
-        source: 'aggregated',
-      },
-    },
+    { data: aggregated },
     { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }
   )
 }

@@ -662,19 +662,32 @@ async function buildStoredTrades(
 
   let rows: any[] = []
   try {
-    const { data, error } = await supabaseAdmin
-      .from('all_whale_transactions')
-      .select('token_symbol, token_address, classification, usd_value, timestamp, blockchain')
-      .eq('whale_address', address)
-      .gte('timestamp', startIso)
-      .lte('timestamp', endIso)
-      .order('timestamp', { ascending: true })
-      .limit(5000)
-    if (error) {
-      warnings.push('Stored trade history was unavailable; fell back to on-chain history.')
-      return { trades: [], warnings }
+    // Paginate past PostgREST's 1,000-row cap: a FIFO PnL that only saw the
+    // oldest 1,000 trades would double-count basis and mis-state realized PnL
+    // for any active wallet (2026-07-09 data-quality audit). Page in 1,000s.
+    const PAGE = 1000
+    const MAX_PAGES = 25 // hard ceiling: 25k trades
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const from = page * PAGE
+      const { data, error } = await supabaseAdmin
+        .from('all_whale_transactions')
+        .select('token_symbol, token_address, classification, usd_value, timestamp, blockchain')
+        .eq('whale_address', address)
+        .gte('timestamp', startIso)
+        .lte('timestamp', endIso)
+        .order('timestamp', { ascending: true })
+        .range(from, from + PAGE - 1)
+      if (error) {
+        if (page === 0) {
+          warnings.push('Stored trade history was unavailable; fell back to on-chain history.')
+          return { trades: [], warnings }
+        }
+        break // partial data is still usable
+      }
+      const batch = data || []
+      rows.push(...batch)
+      if (batch.length < PAGE) break // last page
     }
-    rows = data || []
   } catch {
     return { trades: [], warnings }
   }

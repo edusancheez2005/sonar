@@ -397,6 +397,14 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
           <div style={{ marginTop: '0.6rem', fontSize: '0.72rem', color: 'var(--text-secondary)', textAlign: 'right' }}>
             {data.cache_hit ? 'cached' : `computed in ${data.computed_in_ms}ms`}
           </div>
+
+          <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid var(--neon-border)', fontSize: '0.72rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+            Hypothetical, past-performance simulation for research only — not investment
+            advice. It assumes you copied each of this wallet's tracked trades at their
+            recorded execution price with a 0.3% fee, and excludes slippage, taxes, MEV
+            and tokens we can't price. Real results would differ. Past performance does
+            not guarantee future results.
+          </div>
         </>
       ) : null}
 
