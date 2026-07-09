@@ -11,6 +11,39 @@ export async function GET(req, { params }) {
 
   const { address } = await params
 
+  // Preferred: exact server-side aggregation (no 1,000-row PostgREST cap that
+  // truncated the per-token buy/sell volumes and counts for active wallets).
+  try {
+    const { data: aggRows, error: rpcErr } = await supabaseAdmin.rpc('wallet_token_holdings_agg', {
+      p_address: address,
+    })
+    if (!rpcErr && Array.isArray(aggRows)) {
+      const holdings = aggRows.map((h) => {
+        const buy_volume = Number(h.buy_volume) || 0
+        const sell_volume = Number(h.sell_volume) || 0
+        const buy_count = Number(h.buy_count) || 0
+        const sell_count = Number(h.sell_count) || 0
+        return {
+          symbol: h.symbol,
+          chain: h.chain,
+          buy_volume,
+          sell_volume,
+          buy_count,
+          sell_count,
+          net_flow: buy_volume - sell_volume,
+          total_volume: buy_volume + sell_volume,
+          tx_count: buy_count + sell_count,
+        }
+      })
+      return NextResponse.json(
+        { data: holdings },
+        { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' } }
+      )
+    }
+  } catch {
+    // fall through to the legacy (capped) row scan
+  }
+
   const { data: txData, error } = await supabaseAdmin
     .from('all_whale_transactions')
     .select('token_symbol, classification, usd_value, blockchain')
