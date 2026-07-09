@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { getUserFromRequest } from '@/app/lib/walletAuth'
+
+function envMissing() {
+  return !(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) ||
+    !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)
+}
 
 export async function PUT(req, { params }) {
-  if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+  if (envMissing()) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
     )
   }
+
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
 
@@ -33,23 +42,30 @@ export async function PUT(req, { params }) {
     .from('wallet_alerts')
     .update(updates)
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  if (!data) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   return NextResponse.json({ data })
 }
 
 export async function DELETE(req, { params }) {
-  if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+  if (envMissing()) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
     )
   }
+
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
 
@@ -57,6 +73,7 @@ export async function DELETE(req, { params }) {
     .from('wallet_alerts')
     .delete()
     .eq('id', id)
+    .eq('user_id', user.id)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

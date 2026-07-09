@@ -414,12 +414,16 @@ export default function WalletTrackerProfile() {
         setFollowsLoading(false)
       }
 
-      // Alerts (no auth needed)
-      fetch('/api/alerts')
-        .then(r => r.ok ? r.json() : null)
-        .then(json => { if (json?.data) setAlerts(json.data) })
-        .catch(() => {})
-        .finally(() => setAlertsLoading(false))
+      // Alerts (auth required — scoped to the signed-in user)
+      if (hasAuth) {
+        fetch('/api/alerts', { headers })
+          .then(r => r.ok ? r.json() : null)
+          .then(json => { if (json?.data) setAlerts(json.data) })
+          .catch(() => {})
+          .finally(() => setAlertsLoading(false))
+      } else {
+        setAlertsLoading(false)
+      }
 
       // Chat sessions (auth required)
       if (hasAuth) {
@@ -442,7 +446,8 @@ export default function WalletTrackerProfile() {
   const deleteAlert = async (id) => {
     setDeletingId(id)
     try {
-      const res = await fetch(`/api/alerts/${id}`, { method: 'DELETE' })
+      const headers = await getAuthHeaders()
+      const res = await fetch(`/api/alerts/${id}`, { method: 'DELETE', headers })
       if (res.ok) {
         setAlerts(prev => prev.filter(a => a.id !== id))
       }

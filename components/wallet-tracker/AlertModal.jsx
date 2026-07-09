@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from 'react'
 import styled from 'styled-components'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const Overlay = styled.div`
   position: fixed;
@@ -142,9 +143,19 @@ export default function AlertModal({ address, chain, onClose }) {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const { data } = await supabaseBrowser().auth.getSession()
+      const token = data?.session?.access_token
+      if (!token) {
+        alert('Please sign in to set an alert.')
+        setSaving(false)
+        return
+      }
       await fetch('/api/alerts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           address,
           chain: chain || null,

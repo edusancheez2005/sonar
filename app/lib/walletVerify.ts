@@ -36,8 +36,21 @@ export async function consumeNonce(nonce: string, address: string, chain: string
 }
 
 export async function verifyWalletSignature(input: VerifyInput): Promise<{ ok: boolean; error?: string }> {
-  const { address, chain, signature, message } = input
+  const { address, chain, signature, nonce, message } = input
   try {
+    // Bind the signature to THIS challenge. Without this the `message` is fully
+    // attacker-controlled: any signature the wallet ever produced over any
+    // message would verify, letting an attacker replay a leaked signature and
+    // take over the account. Requiring the freshly-issued (random, single-use)
+    // nonce inside the signed message means the victim must have signed *this*
+    // specific challenge, which they never did. The address check is defence in
+    // depth so the signed message can't be for a different account.
+    if (!nonce || !message.includes(`Nonce: ${nonce}`)) {
+      return { ok: false, error: 'nonce not bound to signed message' }
+    }
+    if (!message.toLowerCase().includes(address.toLowerCase())) {
+      return { ok: false, error: 'address not bound to signed message' }
+    }
     if (chain === 'solana') {
       const sig = bs58.decode(signature)
       const pub = bs58.decode(address)

@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { getUserFromRequest } from '@/app/lib/walletAuth'
+
+function envMissing() {
+  return !(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) ||
+    !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)
+}
 
 export async function GET(req) {
-  if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+  if (envMissing()) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
     )
   }
+
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const address = searchParams.get('address') || null
@@ -15,6 +24,7 @@ export async function GET(req) {
   let query = supabaseAdmin
     .from('wallet_alerts')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   if (address) {
@@ -31,12 +41,15 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+  if (envMissing()) {
     return NextResponse.json(
       { error: 'Supabase env vars not set' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
     )
   }
+
+  const user = await getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   let body
   try {
@@ -56,6 +69,7 @@ export async function POST(req) {
   const { data, error } = await supabaseAdmin
     .from('wallet_alerts')
     .insert({
+      user_id: user.id,
       address: address.trim(),
       chain: chain || null,
       alert_type,
