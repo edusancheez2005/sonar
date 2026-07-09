@@ -7,8 +7,16 @@ import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function GET() {
+export async function GET(req) {
   try {
+    // Diagnostic endpoint runs with the service role and exposes internal row
+    // counts / sample transactions, so gate it behind CRON_SECRET like the
+    // other debug routes rather than leaving it open to the internet.
+    const auth = req.headers.get('authorization')?.replace('Bearer ', '')
+    if (auth !== process.env.CRON_SECRET) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
       return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
     }

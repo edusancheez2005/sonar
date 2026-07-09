@@ -10,7 +10,10 @@ export async function GET(req) {
   }
 
   const { searchParams } = new URL(req.url)
-  const q = (searchParams.get('q') || '').trim()
+  // Strip characters that are structural in a PostgREST .or() filter string
+  // (comma separates conditions, parens group) so a search term can't inject
+  // extra filter logic. Legit addresses / entity names never need them.
+  const q = (searchParams.get('q') || '').trim().replace(/[,()\\]/g, '')
 
   if (!q || q.length < 2) {
     return NextResponse.json({ data: [] })

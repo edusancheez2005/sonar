@@ -60,7 +60,12 @@ export async function POST(req) {
       .gte('created_at', lookbackIso)
 
     if (cleanEmail && cleanFingerprint) {
-      existingQuery = existingQuery.or(`voter_email.eq.${cleanEmail},voter_fingerprint.eq.${cleanFingerprint}`)
+      // Strip PostgREST .or() structural chars (comma / parens). The email
+      // regex above still permits them, so a crafted value could otherwise
+      // inject extra filter conditions into the dedup lookup.
+      const orEmail = cleanEmail.replace(/[,()\\]/g, '')
+      const orFingerprint = cleanFingerprint.replace(/[,()\\]/g, '')
+      existingQuery = existingQuery.or(`voter_email.eq.${orEmail},voter_fingerprint.eq.${orFingerprint}`)
     } else if (cleanEmail) {
       existingQuery = existingQuery.eq('voter_email', cleanEmail)
     } else if (cleanFingerprint) {

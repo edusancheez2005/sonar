@@ -23,7 +23,10 @@ export async function GET(req, { params }) {
   }
 
   const { address } = await params
-  if (!address || address.length < 8 || address.length > 90) {
+  // Alphanumeric only: covers 0x-hex (EVM) and base58 (Solana), and keeps
+  // structural PostgREST .or() characters (comma / parens) out of the value
+  // interpolated into the from_address/to_address fallback filter below.
+  if (!address || !/^[a-zA-Z0-9]{8,90}$/.test(address)) {
     return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
   }
 
