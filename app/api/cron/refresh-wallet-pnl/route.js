@@ -70,7 +70,12 @@ export async function GET(req) {
         const w = wallets[i]
         try {
           const rp = await estimateRealizedPnl({ address: w.address, chain: w.chain })
-          const val = Number.isFinite(rp?.realized_pnl_usd)
+          // Only persist a figure the wallet page would actually trust. When
+          // estimateRealizedPnl marks the wallet unreliable (market-maker
+          // frequency, or sells with no matching tracked buy) the detail page
+          // shows "n/a" — the stored dashboard value must match, otherwise a
+          // wallet reads e.g. $380K on the dashboard and n/a on its own page.
+          const val = (rp?.reliable && Number.isFinite(rp?.realized_pnl_usd))
             ? Math.round(rp.realized_pnl_usd * 100) / 100
             : null
           const { error: upErr } = await supabaseAdmin

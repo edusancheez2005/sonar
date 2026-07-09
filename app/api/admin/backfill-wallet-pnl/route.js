@@ -67,7 +67,10 @@ export async function GET(req) {
       const w = wallets[i]
       try {
         const rp = await estimateRealizedPnl({ address: w.address, chain: w.chain })
-        const val = Number.isFinite(rp?.realized_pnl_usd)
+        // Match the wallet detail page: don't persist a PnL it would show as
+        // "n/a". estimateRealizedPnl flags market-maker / unmatched-sell wallets
+        // as unreliable, and the stored dashboard value must agree with it.
+        const val = (rp?.reliable && Number.isFinite(rp?.realized_pnl_usd))
           ? Math.round(rp.realized_pnl_usd * 100) / 100
           : null
         const { error: upErr } = await supabaseAdmin
