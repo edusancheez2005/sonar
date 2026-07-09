@@ -147,7 +147,7 @@ Analyze ALL of this data carefully and produce a comprehensive, data-driven week
 
 Return ONLY valid JSON with this exact structure:
 {
-  "subject": "Whale Pulse: [catchy 5-8 word summary of the week's biggest story]",
+  "subject": "Whale Pulse: [clear, specific 5-8 word summary of the week's biggest story]",
   "summary": "3-4 sentence overview tying together the week's biggest themes. Reference specific numbers, tokens, and events.",
   "top_news": [
     {"title": "Full headline", "source": "source name", "impact": "2-3 sentences on WHY this matters for crypto markets and what it signals", "sentiment": "bullish/bearish/neutral"}
@@ -181,6 +181,7 @@ RULES:
 - Cross-reference: if whale accumulation happened before a price move, connect them
 - Be specific: use exact dollar amounts, percentages, dates
 - Write for sophisticated crypto traders who want alpha, not fluff
+- TONE: clean, sleek, professional. NO emojis anywhere — not in the subject, summary, titles, or narratives. No exclamation marks, no hype words ("massive", "insane", "moon"). Plain, confident, factual.
 Return ONLY valid JSON. No markdown, no code blocks.`
 
   const userPrompt = `WEEK: ${weekLabel}
@@ -264,6 +265,11 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
   } catch {
     return NextResponse.json({ error: 'Failed to parse AI response', raw: raw.slice(0, 500) }, { status: 500 })
   }
+
+  // Belt-and-suspenders: strip any emoji the model slipped in, so the email
+  // stays clean/professional even if the prompt is ignored. Founder rule:
+  // scheduled emails carry no emojis.
+  insights = stripEmojis(insights)
 
   // ─── STEP 3: Generate Email HTML ──────────────────────────────
 
@@ -463,9 +469,9 @@ function generateEmailHTML(insights: any, weekLabel: string): string {
 
   <!-- Header -->
   <tr><td style="padding:30px;text-align:center;border-bottom:1px solid #1a2d3d;">
-    <img src="https://www.sonartracker.io/logo2.png" alt="Sonar" width="140" style="display:block;margin:0 auto 12px;">
-    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:2px;text-transform:uppercase;">WHALE PULSE // WEEKLY INSIGHTS</div>
-    <div style="font-size:12px;color:#6a7a8a;margin-top:6px;">${escapeHtml(weekLabel)}</div>
+    <img src="https://www.sonartracker.io/logo2.png" alt="Sonar" width="132" style="display:block;margin:0 auto 14px;">
+    <div style="font-size:12px;color:#36a6ba;letter-spacing:1px;text-transform:uppercase;font-weight:700;">Sonar · Whale Pulse</div>
+    <div style="font-size:12px;color:#6a7a8a;margin-top:6px;">Weekly insights · ${escapeHtml(weekLabel)}</div>
   </td></tr>
 
   <!-- Summary -->
@@ -483,25 +489,25 @@ function generateEmailHTML(insights: any, weekLabel: string): string {
 
   <!-- Top News -->
   <tr><td style="padding:0 30px 20px;">
-    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:10px;">TOP NEWS</div>
+    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">TOP NEWS</div>
     <table cellpadding="0" cellspacing="0" width="100%">${topNewsHTML}</table>
   </td></tr>
 
   <!-- Whale Moves -->
   <tr><td style="padding:0 30px 20px;">
-    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:10px;">🐋 BIGGEST WHALE MOVES</div>
+    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">BIGGEST WHALE MOVES</div>
     <table cellpadding="0" cellspacing="0" width="100%">${whaleMoveHTML}</table>
   </td></tr>
 
   <!-- Price Movers -->
   <tr><td style="padding:0 30px 20px;">
-    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:10px;">📊 PRICE MOVERS</div>
+    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">PRICE MOVERS</div>
     <table cellpadding="0" cellspacing="0" width="100%">${priceMoverHTML}</table>
   </td></tr>
 
   <!-- Key Voices -->
   <tr><td style="padding:0 30px 20px;">
-    <div style="font-family:monospace;font-size:11px;color:#36a6ba;letter-spacing:1.5px;margin-bottom:10px;">🎙 KEY VOICES</div>
+    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">KEY VOICES</div>
     <table cellpadding="0" cellspacing="0" width="100%">${voicesHTML}</table>
   </td></tr>
 
@@ -538,4 +544,21 @@ function escapeHtml(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+// Recursively remove emoji / pictographs from all strings in the AI payload.
+function stripEmojis<T>(value: T): T {
+  const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}\u{200D}\u{20E3}]/gu
+  if (typeof value === 'string') {
+    return value.replace(EMOJI, '').replace(/\s{2,}/g, ' ').trim() as unknown as T
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => stripEmojis(v)) as unknown as T
+  }
+  if (value && typeof value === 'object') {
+    const out: any = {}
+    for (const [k, v] of Object.entries(value as any)) out[k] = stripEmojis(v)
+    return out
+  }
+  return value
 }
