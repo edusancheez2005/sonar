@@ -805,7 +805,16 @@ export interface RealizedPnlResult {
   priced_trade_count: number
   matched_sell_usd: number
   unmatched_sell_usd: number
+  /** False when the figure can't be trusted: very high-frequency wallets
+   *  (market makers / bots) or wallets where most sells have no matching
+   *  tracked buy. Sonar only ingests whale-sized trades, so FIFO PnL over that
+   *  partial history is meaningless for these — the UI shows "n/a" instead. */
+  reliable: boolean
 }
+
+// Above this many priced round-trip trades a wallet is effectively a
+// market-maker / algo, and our whale-only capture makes realized PnL unreliable.
+const REALIZED_MAX_TRADES = 4000
 
 export async function estimateRealizedPnl(args: {
   address: string
@@ -818,7 +827,7 @@ export async function estimateRealizedPnl(args: {
   const startMs = args.startMs ?? endMs - 400 * 86400000
   const { trades } = await buildStoredTrades(args.address, args.chain, startMs, endMs)
   if (trades.length === 0) {
-    return { realized_pnl_usd: null, priced_trade_count: 0, matched_sell_usd: 0, unmatched_sell_usd: 0 }
+    return { realized_pnl_usd: null, priced_trade_count: 0, matched_sell_usd: 0, unmatched_sell_usd: 0, reliable: true }
   }
 
   const lots = new Map<string, Array<{ qty: number; cost: number }>>()
@@ -856,11 +865,17 @@ export async function estimateRealizedPnl(args: {
     }
   }
 
+  // Unreliable when the wallet trades at market-maker frequency, or when most
+  // sells have no matching tracked buy (cost basis predates / falls outside our
+  // whale-only capture). In both cases a FIFO figure would mislead.
+  const reliable = trades.length <= REALIZED_MAX_TRADES && unmatchedSell <= matchedSell
+
   return {
     realized_pnl_usd: round2(realized),
     priced_trade_count: trades.length,
     matched_sell_usd: round2(matchedSell),
     unmatched_sell_usd: round2(unmatchedSell),
+    reliable,
   }
 }
 

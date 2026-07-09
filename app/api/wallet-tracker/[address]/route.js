@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 
-// EVM: 0x + 40 hex, Solana: base58 32-44 chars, Bitcoin: 26-62 alphanumeric
-const ADDRESS_RE = /^(0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44}|[13][a-km-zA-HJ-NP-Z1-9]{25,61}|bc1[a-zA-HJ-NP-Z0-9]{25,90})$/
+// EVM: 0x + 40 hex, Solana: base58 32-44 chars, Bitcoin: 26-62 alphanumeric.
+// The Solana branch is intentionally case-lenient ([1-9A-Za-z], allowing 'l'):
+// some Solana whale_addresses were lowercased at ingestion (a lowercase 'l'
+// isn't valid strict base58), and the strict pattern 400'd those wallets even
+// though they have full tracked history and appear on the leaderboard.
+const ADDRESS_RE = /^(0x[a-fA-F0-9]{40}|[1-9A-Za-z]{32,44}|[13][a-km-zA-HJ-NP-Z1-9]{25,61}|bc1[a-zA-HJ-NP-Z0-9]{25,90})$/
 
 export async function GET(req, { params }) {
   const ip = getClientIp(req)

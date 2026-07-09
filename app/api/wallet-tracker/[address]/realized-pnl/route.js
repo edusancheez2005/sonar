@@ -47,7 +47,7 @@ export async function GET(req, { params }) {
     // Never block the wallet page on this — return a null PnL the client
     // can render as "—".
     return NextResponse.json(
-      { realized_pnl_usd: null, priced_trade_count: 0, matched_sell_usd: 0, unmatched_sell_usd: 0, error: true },
+      { realized_pnl_usd: null, priced_trade_count: 0, matched_sell_usd: 0, unmatched_sell_usd: 0, reliable: true, error: true },
       { status: 200, headers: { 'Cache-Control': 'no-store' } }
     )
   }

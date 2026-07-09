@@ -280,6 +280,9 @@ const REALIZED_HINT =
 const NETFLOW_HINT =
   "Buy volume minus sell volume over the last 24 hours (stablecoins excluded). This is the exact same figure the Whale Leaderboard ranks by — positive means net accumulation, negative means net distribution. It is not profit."
 
+const REALIZED_UNRELIABLE_HINT =
+  "Not shown for market-maker / very high-frequency wallets. Sonar only captures whale-sized trades, so a FIFO profit/loss figure computed from that partial history would be misleading for a wallet that trades thousands of times."
+
 const InfoDot = styled.span`
   display: inline-flex;
   align-items: center;
@@ -423,12 +426,22 @@ export default function WalletProfileWrapper({ address }) {
 
   // Realized-PnL tile state (EVM tracked wallets).
   const realizedLoading = realizedPnl === undefined
-  const realizedVal = realizedPnl && Number.isFinite(realizedPnl.realized_pnl_usd) ? realizedPnl.realized_pnl_usd : null
-  const realizedDisplay = realizedLoading ? '…' : (realizedVal != null ? formatUsd(realizedVal) : '—')
-  const realizedColor = realizedLoading
+  // Suppress the figure for market-maker / high-frequency wallets where our
+  // whale-only capture makes FIFO PnL meaningless (e.g. Wintermute: 24k trades).
+  const realizedUnreliable = !!realizedPnl && realizedPnl.reliable === false
+  const realizedVal = !realizedUnreliable && realizedPnl && Number.isFinite(realizedPnl.realized_pnl_usd)
+    ? realizedPnl.realized_pnl_usd
+    : null
+  const realizedDisplay = realizedLoading
+    ? '…'
+    : realizedUnreliable
+      ? 'n/a'
+      : (realizedVal != null ? formatUsd(realizedVal) : '—')
+  const realizedColor = realizedLoading || realizedUnreliable
     ? 'var(--text-secondary)'
     : (realizedVal > 0 ? '#00d4aa' : realizedVal < 0 ? '#ff6b6b' : 'var(--text-primary)')
   const realizedAccent = realizedVal != null && realizedVal < 0 ? '#ff6b6b' : '#00d4aa'
+  const realizedHint = realizedUnreliable ? REALIZED_UNRELIABLE_HINT : REALIZED_HINT
 
   // 24h Net Flow tile — the canonical, leaderboard-matching figure.
   const netFlow24h = Number.isFinite(profile.net_flow_usd_24h) ? profile.net_flow_usd_24h : null
@@ -573,7 +586,7 @@ export default function WalletProfileWrapper({ address }) {
                 icon="volume"
                 hint={NETFLOW_HINT}
               />
-              <StatTile label="Realized PnL" value={realizedDisplay} color={realizedColor} accent={realizedAccent} icon="pnl" hint={REALIZED_HINT} />
+              <StatTile label="Realized PnL" value={realizedDisplay} color={realizedColor} accent={realizedAccent} icon="pnl" hint={realizedHint} />
               <StatTile label="30d Volume" value={formatUsd(profile.total_volume_usd_30d)} accent="#36a6ba" icon="volume" />
               <StatTile label="Transactions (30d)" value={profile.tx_count_30d ?? profile.tx_count ?? '—'} accent="#7af8ff" icon="tx" />
             </StatsGrid>
