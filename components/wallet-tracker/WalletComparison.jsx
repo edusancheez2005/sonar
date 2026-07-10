@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
-import { shortenAddress, formatUsd, timeAgo } from '@/lib/wallet-tracker'
+import { shortenAddress, formatUsd, timeAgo, REALIZED_PNL_NA_HINT } from '@/lib/wallet-tracker'
 import SmartMoneyScore from './SmartMoneyScore'
 import TagBadges from './TagBadges'
 import Sparkline from './Sparkline'
@@ -480,8 +480,12 @@ export default function WalletComparison() {
           </StatRow>
           <StatRow>
             <StatLabel>Realized PnL</StatLabel>
-            <StatValue $color={profile.pnl_estimated_usd > 0 ? '#00d4aa' : profile.pnl_estimated_usd < 0 ? '#ff6b6b' : undefined}>
-              {formatUsd(profile.pnl_estimated_usd)}
+            <StatValue
+              title={profile.pnl_estimated_usd == null ? REALIZED_PNL_NA_HINT : undefined}
+              style={profile.pnl_estimated_usd == null ? { cursor: 'help' } : undefined}
+              $color={profile.pnl_estimated_usd > 0 ? '#00d4aa' : profile.pnl_estimated_usd < 0 ? '#ff6b6b' : undefined}
+            >
+              {profile.pnl_estimated_usd == null ? 'n/a' : formatUsd(profile.pnl_estimated_usd)}
             </StatValue>
           </StatRow>
           <StatRow>

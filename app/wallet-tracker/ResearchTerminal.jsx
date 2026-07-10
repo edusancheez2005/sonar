@@ -13,7 +13,7 @@ import styled from 'styled-components'
 import { C, FONT_MONO, FONT_SANS } from '@/app/lib/terminalTheme'
 import { TermPanel, Notice, ErrorNotice, GhostButton } from '@/app/components/whale-terminal/primitives'
 import { CandleChart, AreaSpark, FlowBars, ScoreBar, ChartEmpty } from '@/app/components/whale-terminal/charts'
-import { shortenAddress, formatUsd, timeAgo, TAG_COLORS } from '@/lib/wallet-tracker'
+import { shortenAddress, formatUsd, timeAgo, TAG_COLORS, REALIZED_PNL_NA_HINT } from '@/lib/wallet-tracker'
 import { walletAnalysisHref } from '@/app/components/whale-terminal/WalletAddrActions'
 
 const SIGNAL_POLL_MS = 30000
@@ -349,6 +349,7 @@ function PortfolioPanel({ sel, walletsLoading }) {
   const [days, setDays] = useState(90)
   const { status, candles, netFlow } = usePortfolioCandles(sel?.address, days)
   const selPnl = sel ? Number(sel.pnl_estimated_usd) : null
+  const selPnlNa = sel ? sel.pnl_estimated_usd == null : false
 
   const label = sel
     ? `Portfolio · ${sel.entity_name || shortenAddress(sel.address, 6)}`
@@ -402,6 +403,10 @@ function PortfolioPanel({ sel, walletsLoading }) {
               {Number.isFinite(selPnl) && selPnl !== 0 ? (
                 <span style={{ fontSize: '0.76rem', fontWeight: 700, color: selPnl > 0 ? C.green : C.red, whiteSpace: 'nowrap' }}>
                   {selPnl > 0 ? '▲' : '▼'} {fmtSigned(selPnl).replace(/^[+−]/, '')} realized pnl
+                </span>
+              ) : selPnlNa ? (
+                <span title={REALIZED_PNL_NA_HINT} style={{ fontSize: '0.76rem', fontWeight: 700, color: C.textMuted, whiteSpace: 'nowrap', cursor: 'help' }}>
+                  n/a realized pnl
                 </span>
               ) : null}
             </span>
@@ -512,6 +517,9 @@ function WhaleTable({ rows, sparks, selected, onSelect }) {
         <tbody>
           {rows.map((w, i) => {
             const sel = selected && selected.address === w.address
+            // null (not 0) means the engine flagged the realized PnL unreliable
+            // for this wallet — render "n/a" like the detail page, not "—".
+            const pnlNa = w.pnl_estimated_usd == null
             const pnl = Number(w.pnl_estimated_usd)
             const spark = sparks ? sparks[w.address] : null
             return (
@@ -530,8 +538,11 @@ function WhaleTable({ rows, sparks, selected, onSelect }) {
                 </Td>
                 <Td><ScoreBar score={w.smart_money_score} /></Td>
                 <Td style={{ textAlign: 'right' }}>{formatUsd(w.total_volume_usd_30d)}</Td>
-                <Td style={{ textAlign: 'right', fontWeight: 700, color: !Number.isFinite(pnl) || pnl === 0 ? C.textMuted : pnl > 0 ? C.green : C.red }}>
-                  {Number.isFinite(pnl) && pnl !== 0 ? fmtSigned(pnl) : '—'}
+                <Td
+                  title={pnlNa ? REALIZED_PNL_NA_HINT : undefined}
+                  style={{ textAlign: 'right', fontWeight: 700, cursor: pnlNa ? 'help' : undefined, color: pnlNa || !Number.isFinite(pnl) || pnl === 0 ? C.textMuted : pnl > 0 ? C.green : C.red }}
+                >
+                  {pnlNa ? 'n/a' : (Number.isFinite(pnl) && pnl !== 0 ? fmtSigned(pnl) : '—')}
                 </Td>
                 <Td style={{ textAlign: 'right', color: C.textMuted }}>{w.tx_count_30d ?? '—'}</Td>
                 <Td>
