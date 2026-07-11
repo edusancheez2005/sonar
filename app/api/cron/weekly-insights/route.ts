@@ -45,25 +45,32 @@ export async function GET(request: Request) {
   const weekEndStr = weekEnd.toISOString().split('T')[0]
   const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 
-  // Check if already generated this week
-  const { data: existing } = await sb
-    .from('weekly_insights')
-    .select('id, emails_sent, html_body, subject')
-    .eq('week_start', weekStartStr)
-    .single()
-  
-  // If already generated AND already sent, skip
-  if (existing && existing.emails_sent > 0) {
-    return NextResponse.json({ message: 'Already generated and sent for this week', id: existing.id })
-  }
+  // dry_run=1: run the full pipeline (data gathering + AI + HTML) but skip the
+  // DB insert, blog post, and Brevo send. Bypasses the already-sent dedup so
+  // the pipeline can be verified mid-week without emailing the list.
+  const dryRun = searchParams.get('dry_run') === '1'
 
-  // If generated but NOT sent, retry just the Brevo send
-  if (existing && existing.emails_sent === 0 && existing.html_body) {
-    const retryResult = await sendBrevoEmail(brevoKey, existing.subject, existing.html_body, weekLabel)
-    if (retryResult.sent) {
-      await sb.from('weekly_insights').update({ emails_sent: 1 }).eq('id', existing.id)
+  if (!dryRun) {
+    // Check if already generated this week
+    const { data: existing } = await sb
+      .from('weekly_insights')
+      .select('id, emails_sent, html_body, subject')
+      .eq('week_start', weekStartStr)
+      .single()
+
+    // If already generated AND already sent, skip
+    if (existing && existing.emails_sent > 0) {
+      return NextResponse.json({ message: 'Already generated and sent for this week', id: existing.id })
     }
-    return NextResponse.json({ message: 'Retried Brevo send for existing row', id: existing.id, ...retryResult })
+
+    // If generated but NOT sent, retry just the Brevo send
+    if (existing && existing.emails_sent === 0 && existing.html_body) {
+      const retryResult = await sendBrevoEmail(brevoKey, existing.subject, existing.html_body, weekLabel)
+      if (retryResult.sent) {
+        await sb.from('weekly_insights').update({ emails_sent: 1 }).eq('id', existing.id)
+      }
+      return NextResponse.json({ message: 'Retried Brevo send for existing row', id: existing.id, ...retryResult })
+    }
   }
 
   // ─── STEP 1: Gather raw data (max context for Claude) ─────────
@@ -350,6 +357,30 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
   // ─── STEP 3: Generate Email HTML ──────────────────────────────
 
   const htmlBody = generateEmailHTML(insights, weekLabel)
+
+  if (dryRun) {
+    return NextResponse.json({
+      dry_run: true,
+      week: weekLabel,
+      ai_provider: aiProvider,
+      subject: insights.subject,
+      summary: insights.summary,
+      data_counts: {
+        news_in: (newsItems || []).length,
+        whale_txs_in: whaleData.length,
+        social_in: (topSocial || []).length,
+        price_tickers_in: priceDigest ? priceDigest.split('\n').length : 0,
+        top_news_out: (insights.top_news || []).length,
+        whale_moves_out: (insights.whale_moves || []).length,
+        price_movers_out: (insights.price_movers || []).length,
+        key_voices_out: (insights.key_voices || []).length,
+      },
+      top_news: insights.top_news || [],
+      whale_moves: insights.whale_moves || [],
+      price_movers: insights.price_movers || [],
+      html_bytes: htmlBody.length,
+    })
+  }
 
   // ─── STEP 4: Store in Supabase ────────────────────────────────
 
