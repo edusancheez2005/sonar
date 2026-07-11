@@ -79,12 +79,20 @@ export async function GET(request: Request) {
     const errors: string[] = []
     let lunarCrushQuotaExhausted = false
 
+    // Every zero-path here used to be silent (empty API response, all-duplicate
+    // batch, insert failure, per-ticker fetch error all reported as "0, no
+    // errors"), which made a week of dead ingestion invisible. Count them.
+    const stats: IngestStats = {
+      api_items: 0, empty_responses: 0, filtered: 0,
+      duplicates: 0, insert_errors: 0, fetch_errors: 0,
+    }
+
     // 1. CATEGORY-LEVEL NEWS FIRST — this is the highest-quality general crypto
     //    news.  Do it first so even if we hit the daily quota mid-run we still
     //    have great general feed content.
     for (const cat of CATEGORIES) {
       try {
-        const inserted = await fetchLunarCrushCategoryNews(cat, supabase)
+        const inserted = await fetchLunarCrushCategoryNews(cat, supabase, stats)
         if (inserted < 0) { lunarCrushQuotaExhausted = true; break }
         categoryInserted += inserted
         totalInserted += inserted
@@ -101,14 +109,14 @@ export async function GET(request: Request) {
     if (!lunarCrushQuotaExhausted) {
       for (const ticker of TOP_TICKERS) {
         try {
-          const lunarCrushInserted = await fetchLunarCrushNews(ticker, supabase)
+          const lunarCrushInserted = await fetchLunarCrushNews(ticker, supabase, stats)
           if (lunarCrushInserted < 0) { lunarCrushQuotaExhausted = true; break }
           totalInserted += lunarCrushInserted
           totalFetched += lunarCrushInserted
           await delay(500)
 
           if (!cryptoPanicDisabled) {
-            const cryptoPanicInserted = await fetchCryptoPanicNews(ticker, supabase)
+            const cryptoPanicInserted = await fetchCryptoPanicNews(ticker, supabase, stats)
             totalInserted += cryptoPanicInserted
             totalFetched += cryptoPanicInserted
             await delay(500)
@@ -139,6 +147,7 @@ export async function GET(request: Request) {
       totalInserted,
       totalFetched,
       tickers: TOP_TICKERS.length,
+      stats,
       errors: errors.length > 0 ? errors : undefined
     })
 
@@ -154,12 +163,23 @@ export async function GET(request: Request) {
   }
 }
 
+type IngestStats = {
+  api_items: number        // raw items returned by the APIs
+  empty_responses: number  // 200s with no data array / empty data
+  filtered: number         // dropped by title/url/tweet/relevance filters
+  duplicates: number       // insert hit duplicate-key (already ingested)
+  insert_errors: number    // insert failed for any other reason
+  fetch_errors: number     // per-ticker fetch threw (swallowed before)
+  first_insert_error?: string
+  first_fetch_error?: string
+}
+
 /**
  * Fetch CATEGORY-level news from LunarCrush.
  * Categories return general high-quality crypto news (not filtered to a single token).
  * Returns -1 to signal daily quota exhaustion (caller should stop).
  */
-async function fetchLunarCrushCategoryNews(category: string, supabase: any): Promise<number> {
+async function fetchLunarCrushCategoryNews(category: string, supabase: any, stats: IngestStats): Promise<number> {
   const apiKey = process.env.LUNARCRUSH_API_KEY
   if (!apiKey) throw new Error('LUNARCRUSH_API_KEY not configured')
 
@@ -173,14 +193,15 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any): Pro
   if (!response.ok) throw new Error(`LunarCrush category error: ${response.status} ${response.statusText}`)
 
   const data = await response.json()
-  if (!data?.data || !Array.isArray(data.data)) return 0
+  if (!data?.data || !Array.isArray(data.data) || data.data.length === 0) { stats.empty_responses++; return 0 }
+  stats.api_items += data.data.length
 
   let inserted = 0
   for (const item of data.data.slice(0, 25)) {
     try {
       const title = item.post_title || item.title
       const url2 = item.post_link || item.url
-      if (!title || title === 'Untitled' || !url2) continue
+      if (!title || title === 'Untitled' || !url2) { stats.filtered++; continue }
 
       // LunarCrush sentiment is 1..5 → normalize to -1..+1.
       let sentimentRaw: number | null = null
@@ -213,10 +234,15 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any): Pro
         },
       })
       if (!error) inserted++
-      else if (!error.message.includes('duplicate key')) {
+      else if (error.message.includes('duplicate key')) {
+        stats.duplicates++
+      } else {
+        stats.insert_errors++
+        stats.first_insert_error ||= error.message
         console.error(`[ingest-news] Insert error (category ${category}):`, error.message)
       }
     } catch (e) {
+      stats.insert_errors++
       console.error(`[ingest-news] Failed to insert category item:`, e)
     }
   }
@@ -228,7 +254,7 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any): Pro
  * Fetch news from LunarCrush API for a specific ticker.
  * Returns -1 on daily quota exhaustion.
  */
-async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<number> {
+async function fetchLunarCrushNews(ticker: string, supabase: any, stats: IngestStats): Promise<number> {
   try {
     const apiKey = process.env.LUNARCRUSH_API_KEY
     if (!apiKey) {
@@ -255,10 +281,12 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
 
     const data = await response.json()
     
-    if (!data.data || !Array.isArray(data.data)) {
+    if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
       console.log(`No news data from LunarCrush for ${ticker}`)
+      stats.empty_responses++
       return 0
     }
+    stats.api_items += data.data.length
 
     let inserted = 0
     let skipped = 0
@@ -273,11 +301,13 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
         const url2 = item.post_link || item.url
         if (!title || title === 'Untitled' || !url2) {
           skipped++
+          stats.filtered++
           continue
         }
         // Pure tweets belong in social_posts, not the news feed.
         if (/(?:twitter\.com|x\.com)\//i.test(url2)) {
           skipped++
+          stats.filtered++
           continue
         }
 
@@ -287,6 +317,7 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
         // Filter out irrelevant content (e.g., Honda CR-V for CRV ticker)
         if (!isCryptoRelevant(articleText, ticker)) {
           skipped++
+          stats.filtered++
           continue
         }
 
@@ -320,10 +351,15 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
 
         if (!error) {
           inserted++
-        } else if (!error.message.includes('duplicate key')) {
+        } else if (error.message.includes('duplicate key')) {
+          stats.duplicates++
+        } else {
+          stats.insert_errors++
+          stats.first_insert_error ||= error.message
           console.error(`Error inserting LunarCrush news for ${ticker}:`, error.message)
         }
       } catch (insertError) {
+        stats.insert_errors++
         console.error(`Failed to insert LunarCrush item for ${ticker}:`, insertError)
       }
     }
@@ -332,6 +368,8 @@ async function fetchLunarCrushNews(ticker: string, supabase: any): Promise<numbe
     return inserted
 
   } catch (error) {
+    stats.fetch_errors++
+    stats.first_fetch_error ||= error instanceof Error ? error.message : String(error)
     console.error(`LunarCrush fetch error for ${ticker}:`, error)
     return 0
   }
@@ -359,7 +397,7 @@ function disableCryptoPanic(reason: string): void {
   }
 }
 
-async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<number> {
+async function fetchCryptoPanicNews(ticker: string, supabase: any, stats: IngestStats): Promise<number> {
   try {
     const apiToken = process.env.CRYPTOPANIC_API_TOKEN
     if (!apiToken) {
@@ -382,10 +420,12 @@ async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<numb
 
     const data = await response.json()
 
-    if (!data.results || !Array.isArray(data.results)) {
+    if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
       console.log(`No news data from CryptoPanic for ${ticker}`)
+      stats.empty_responses++
       return 0
     }
+    stats.api_items += data.results.length
 
     let inserted = 0
 
@@ -426,10 +466,15 @@ async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<numb
 
         if (!error) {
           inserted++
-        } else if (!error.message.includes('duplicate key')) {
+        } else if (error.message.includes('duplicate key')) {
+          stats.duplicates++
+        } else {
+          stats.insert_errors++
+          stats.first_insert_error ||= error.message
           console.error(`Error inserting CryptoPanic news for ${ticker}:`, error)
         }
       } catch (insertError) {
+        stats.insert_errors++
         console.error(`Failed to insert CryptoPanic item for ${ticker}:`, insertError)
       }
     }
@@ -437,6 +482,8 @@ async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<numb
     return inserted
 
   } catch (error) {
+    stats.fetch_errors++
+    stats.first_fetch_error ||= error instanceof Error ? error.message : String(error)
     console.error(`CryptoPanic fetch error for ${ticker}:`, error)
     return 0
   }
