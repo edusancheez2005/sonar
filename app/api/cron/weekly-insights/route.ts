@@ -78,7 +78,10 @@ export async function GET(request: Request) {
   // ALL news articles from the week
   const { data: newsItems } = await sb
     .from('news_items')
-    .select('title, source, sentiment_llm, tokens_mentioned, published_at')
+    // NB: selecting a non-existent column (the old tokens_mentioned) makes
+    // PostgREST fail the whole query and return null — news_in was 0 on every
+    // run since launch because of it. Only select columns that exist.
+    .select('title, source, sentiment_llm, ticker, published_at')
     .gte('published_at', weekStart.toISOString())
     .order('published_at', { ascending: false })
     .limit(500)
@@ -108,7 +111,7 @@ export async function GET(request: Request) {
   // ALL sentiment scores for the week
   const { data: sentimentData } = await sb
     .from('news_items')
-    .select('sentiment_llm, tokens_mentioned, published_at')
+    .select('sentiment_llm, published_at')
     .gte('published_at', weekStart.toISOString())
     .not('sentiment_llm', 'is', null)
 
@@ -174,7 +177,7 @@ export async function GET(request: Request) {
   const newsDigest = (newsItems || [])
     .filter(n => n.title && n.title.length > 10 && !n.title.toLowerCase().startsWith('untitled'))
     .map(n =>
-    `[sent:${n.sentiment_llm?.toFixed(2) || '?'}] ${n.title} | ${n.source} | tokens: ${(n.tokens_mentioned || []).join(',')} | ${n.published_at}`
+    `[sent:${n.sentiment_llm?.toFixed(2) || '?'}] ${n.title} | ${n.source} | ticker: ${n.ticker || 'general'} | ${n.published_at}`
   ).join('\n')
 
   // Collapse repeated transfers along the same route into one line. One entity
