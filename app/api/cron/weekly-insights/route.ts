@@ -113,6 +113,54 @@ export async function GET(request: Request) {
     .order('interactions', { ascending: false })
     .limit(50)
 
+  // 7-day price changes from price_snapshots (majors + tokens whales touched).
+  // Without this the model has no price data at all, and the never-fabricate
+  // rule makes it correctly return an empty price_movers array — which is why
+  // the PRICE MOVERS section came out blank.
+  const priceTickers = [...new Set([
+    'BTC', 'ETH', 'SOL', 'XRP', 'BNB', 'DOGE', 'ADA', 'LINK', 'AVAX', 'TRX',
+    ...whaleData.map(w => (w.symbol || '').toUpperCase()).filter(Boolean),
+  ])].slice(0, 40)
+
+  let priceDigest = ''
+  try {
+    const [{ data: earlyRows }, { data: lateRows }] = await Promise.all([
+      sb.from('price_snapshots')
+        .select('ticker, price_usd, timestamp')
+        .in('ticker', priceTickers)
+        .gte('timestamp', weekStart.toISOString())
+        .order('timestamp', { ascending: true })
+        .limit(priceTickers.length * 5),
+      sb.from('price_snapshots')
+        .select('ticker, price_usd, timestamp')
+        .in('ticker', priceTickers)
+        .order('timestamp', { ascending: false })
+        .limit(priceTickers.length * 5),
+    ])
+    // Keep the first row seen per ticker (rows are already sorted).
+    const firstPerTicker = (rows: any[] | null) => {
+      const out: Record<string, { price: number; ts: string }> = {}
+      for (const r of rows || []) {
+        const t = (r.ticker || '').toUpperCase()
+        const p = Number(r.price_usd)
+        if (!t || !p || t in out) continue
+        out[t] = { price: p, ts: r.timestamp }
+      }
+      return out
+    }
+    const early = firstPerTicker(earlyRows)
+    const late = firstPerTicker(lateRows)
+    priceDigest = Object.keys(late)
+      .filter(t => early[t] && early[t].ts !== late[t].ts)
+      .map(t => {
+        const pct = ((late[t].price - early[t].price) / early[t].price) * 100
+        return `${t}: $${early[t].price} (${early[t].ts.slice(0, 10)}) → $${late[t].price} (${late[t].ts.slice(0, 10)}) | ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`
+      })
+      .join('\n')
+  } catch (e: any) {
+    console.error('Price digest failed (non-fatal):', e.message)
+  }
+
   // ─── STEP 2: AI Analysis (Claude primary, Grok fallback) ───────
 
   // Feed ALL the data — Claude Opus has huge context
@@ -122,9 +170,22 @@ export async function GET(request: Request) {
     `[sent:${n.sentiment_llm?.toFixed(2) || '?'}] ${n.title} | ${n.source} | tokens: ${(n.tokens_mentioned || []).join(',')} | ${n.published_at}`
   ).join('\n')
 
-  const whaleDigest = whaleData.map(w =>
-    `${w.chain} | ${w.symbol || '?'} | ${w.transaction_type || 'transfer'} | $${(w.value_usd / 1e6).toFixed(1)}M | from: ${w.from_label || '?'} → to: ${w.to_label || '?'} | ${w.timestamp}`
-  ).join('\n')
+  // Collapse repeated transfers along the same route into one line. One entity
+  // shuffling funds can produce dozens of near-identical rows — the Jul 11
+  // email headlined ~50 same-route WBTC transfers as 50 separate accumulation
+  // events. Aggregating gives the model the honest picture: one flow, N txs.
+  const flows = new Map<string, { count: number; total: number; sample: any }>()
+  for (const w of whaleData) {
+    const key = `${w.chain}|${w.symbol}|${w.transaction_type}|${w.from_label || '?'}|${w.to_label || '?'}`
+    const f = flows.get(key)
+    if (f) { f.count++; f.total += w.value_usd }
+    else flows.set(key, { count: 1, total: w.value_usd, sample: w })
+  }
+  const whaleDigest = [...flows.values()]
+    .sort((a, b) => b.total - a.total)
+    .map(({ count, total, sample: w }) =>
+      `${w.chain} | ${w.symbol || '?'} | ${w.transaction_type || 'transfer'} | ${count === 1 ? `$${(total / 1e6).toFixed(1)}M | ${w.timestamp}` : `${count} txs totaling $${(total / 1e6).toFixed(1)}M across the week`} | from: ${w.from_label || '?'} → to: ${w.to_label || '?'}`
+    ).join('\n')
 
   const sentStats = (() => {
     if (!sentimentData || sentimentData.length === 0) return 'No sentiment data'
@@ -174,7 +235,8 @@ Return ONLY valid JSON with this exact structure:
 RULES:
 - Include 5-7 top_news (the most market-moving stories)
 - Include 5-6 whale_moves (biggest and most significant) — ONLY if whale data is provided. If no whale data, return an empty array []
-- Include 5-6 price_movers (top gainers AND losers)
+- Whale data lines marked "N txs totaling $X" are repeated transfers along the SAME route (same from/to) — that is ONE entity's flow. Report it as a single move, never as N separate events, and be skeptical: same-owner shuffling, custody rotation, or wrapping is NOT market accumulation unless the counterparties suggest otherwise
+- Include 5-6 price_movers (top gainers AND losers) — ONLY from the PRICE DATA section provided. If no price data, return an empty array []
 - Include 4-5 key_voices (most influential statements)
 - Use REAL data from the inputs — NEVER fabricate numbers, volumes, or events
 - If a section has no data, use an empty array — do NOT invent placeholder entries
@@ -202,6 +264,11 @@ SENTIMENT ANALYSIS:
 ${sentStats}
 
 ═══════════════════════════════════════════
+PRICE DATA (7-day change from platform price snapshots):
+═══════════════════════════════════════════
+${priceDigest || 'No price data available'}
+
+═══════════════════════════════════════════
 TOP SOCIAL POSTS BY ENGAGEMENT (${(topSocial || []).length} total):
 ═══════════════════════════════════════════
 ${socialDigest || 'No social data available'}
@@ -209,6 +276,7 @@ ${socialDigest || 'No social data available'}
 Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cross-reference whale moves with news events. Identify patterns.`
 
   let raw = ''
+  let aiProvider = ''
 
   // Try Claude first (better for large context analysis)
   if (anthropicKey) {
@@ -221,8 +289,10 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
+          // claude-sonnet-4-20250514 retired 2026-06-15 and started 404ing,
+          // which silently pushed every send onto the Grok fallback.
+          model: 'claude-sonnet-5',
+          max_tokens: 8000,
           messages: [
             { role: 'user', content: `${systemPrompt}\n\n${userPrompt}` }
           ],
@@ -231,7 +301,12 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
       })
       if (claudeRes.ok) {
         const claudeData = await claudeRes.json()
-        raw = claudeData.content?.[0]?.text || ''
+        // Sonnet 5 runs adaptive thinking by default, so content[0] can be a
+        // thinking block — take the text block, not the first block.
+        raw = claudeData.content?.find((b: any) => b.type === 'text')?.text || ''
+        if (raw) aiProvider = 'claude'
+      } else {
+        console.error('Claude API error, falling back to Grok:', claudeRes.status, await claudeRes.text())
       }
     } catch (e: any) {
       console.error('Claude failed, falling back to Grok:', e.message)
@@ -254,6 +329,7 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
       search: { mode: 'on', max_search_results: 10 }
     })
     raw = completion.choices[0]?.message?.content || ''
+    if (raw) aiProvider = 'grok'
   }
 
   if (!raw) {
@@ -365,6 +441,19 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
     id: inserted?.id,
     week: weekLabel,
     subject: insights.subject,
+    ai_provider: aiProvider,
+    // Input/output row counts — a zero here means a data source was dry and
+    // explains a missing email section without digging through the DB.
+    data_counts: {
+      news_in: (newsItems || []).length,
+      whale_txs_in: whaleData.length,
+      social_in: (topSocial || []).length,
+      price_tickers_in: priceDigest ? priceDigest.split('\n').length : 0,
+      top_news_out: (insights.top_news || []).length,
+      whale_moves_out: (insights.whale_moves || []).length,
+      price_movers_out: (insights.price_movers || []).length,
+      key_voices_out: (insights.key_voices || []).length,
+    },
     ...brevoResult,
   })
 }
@@ -460,6 +549,14 @@ function generateEmailHTML(insights: any, weekLabel: string): string {
 
   const sentShift = insights.sentiment_shift || {}
 
+  // A section with no rows renders as a bare header (like the empty TOP NEWS /
+  // PRICE MOVERS in the Jul 11 send) — drop it from the email entirely instead.
+  const section = (title: string, rowsHTML: string) => rowsHTML ? `
+  <tr><td style="padding:0 30px 20px;">
+    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">${title}</div>
+    <table cellpadding="0" cellspacing="0" width="100%">${rowsHTML}</table>
+  </td></tr>` : ''
+
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#060c14;font-family:Inter,Arial,sans-serif;">
@@ -487,29 +584,13 @@ function generateEmailHTML(insights: any, weekLabel: string): string {
     </div>
   </td></tr>
 
-  <!-- Top News -->
-  <tr><td style="padding:0 30px 20px;">
-    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">TOP NEWS</div>
-    <table cellpadding="0" cellspacing="0" width="100%">${topNewsHTML}</table>
-  </td></tr>
+  ${section('TOP NEWS', topNewsHTML)}
 
-  <!-- Whale Moves -->
-  <tr><td style="padding:0 30px 20px;">
-    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">BIGGEST WHALE MOVES</div>
-    <table cellpadding="0" cellspacing="0" width="100%">${whaleMoveHTML}</table>
-  </td></tr>
+  ${section('BIGGEST WHALE MOVES', whaleMoveHTML)}
 
-  <!-- Price Movers -->
-  <tr><td style="padding:0 30px 20px;">
-    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">PRICE MOVERS</div>
-    <table cellpadding="0" cellspacing="0" width="100%">${priceMoverHTML}</table>
-  </td></tr>
+  ${section('PRICE MOVERS', priceMoverHTML)}
 
-  <!-- Key Voices -->
-  <tr><td style="padding:0 30px 20px;">
-    <div style="font-size:12px;font-weight:700;color:#36a6ba;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">KEY VOICES</div>
-    <table cellpadding="0" cellspacing="0" width="100%">${voicesHTML}</table>
-  </td></tr>
+  ${section('KEY VOICES', voicesHTML)}
 
   <!-- CTA -->
   <tr><td style="padding:20px 30px;text-align:center;">
