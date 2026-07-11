@@ -218,7 +218,11 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any, stat
       const { error } = await supabase.from('news_items').insert({
         source: item.creator_display_name || item.creator_name || 'lunarcrush',
         external_id: String(item.id || item.post_link || url2),
-        ticker: null, // category-level — not tied to one ticker
+        // news_items.ticker is NOT NULL — inserting null here rejected every
+        // category article since the feature shipped (the silent zero-path
+        // that emptied TOP NEWS). 'GENERAL' never collides with token pages,
+        // which filter .eq('ticker', symbol).
+        ticker: 'GENERAL',
         title,
         url: url2,
         published_at: publishedIso,

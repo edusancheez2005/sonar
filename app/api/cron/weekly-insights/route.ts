@@ -284,6 +284,7 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
 
   let raw = ''
   let aiProvider = ''
+  let claudeError = ''
 
   // Try Claude first (better for large context analysis)
   if (anthropicKey) {
@@ -313,9 +314,11 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
         raw = claudeData.content?.find((b: any) => b.type === 'text')?.text || ''
         if (raw) aiProvider = 'claude'
       } else {
-        console.error('Claude API error, falling back to Grok:', claudeRes.status, await claudeRes.text())
+        claudeError = `${claudeRes.status}: ${(await claudeRes.text()).slice(0, 300)}`
+        console.error('Claude API error, falling back to Grok:', claudeError)
       }
     } catch (e: any) {
+      claudeError = e.message
       console.error('Claude failed, falling back to Grok:', e.message)
     }
   }
@@ -363,6 +366,7 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
       dry_run: true,
       week: weekLabel,
       ai_provider: aiProvider,
+      claude_error: claudeError || undefined,
       subject: insights.subject,
       summary: insights.summary,
       data_counts: {
