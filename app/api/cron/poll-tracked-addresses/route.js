@@ -60,14 +60,14 @@ const PRIORITY_ENTITY_TYPES = [
  * tend to move size and matter most for the feed; persons (CT
  * personalities) trade rarely and add noise.
  */
-async function fetchPriorityAddresses() {
+async function fetchPriorityAddresses(limit = MAX_ADDRESSES) {
   const { data, error } = await supabaseAdmin
     .from('tracked_address_universe')
     .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label')
     .in('chain', SUPPORTED_CHAINS)
     .in('arkham_entity_type', PRIORITY_ENTITY_TYPES)
     .order('arkham_entity_name', { ascending: true })
-    .limit(MAX_ADDRESSES)
+    .limit(limit)
   if (error) throw new Error(`load addresses: ${error.message}`)
   return data || []
 }
@@ -118,6 +118,9 @@ const CG_PLATFORM = {
 async function enrichTransfers(inserts, chain, budget) {
   const platform = CG_PLATFORM[chain]
   if (!platform) return 0
+  // Never let enrichment push the cron past its 300s budget — polling the
+  // addresses is the job; enrichment is best-effort garnish.
+  if (Date.now() > budget.deadline) return 0
 
   // EVM contracts are case-insensitive (normalize to lowercase); Solana
   // mints are base58 and case-SENSITIVE — lowercasing one breaks the lookup.
@@ -227,9 +230,13 @@ export async function GET(request) {
   }
 
   const t0 = Date.now()
+  // ?limit=N caps the address sweep — for ops testing a code change without
+  // waiting on the full 200-address run.
+  const url = new URL(request.url)
+  const limitParam = Math.min(MAX_ADDRESSES, Math.max(1, parseInt(url.searchParams.get('limit') || '', 10) || MAX_ADDRESSES))
   let addresses = []
   try {
-    addresses = await fetchPriorityAddresses()
+    addresses = await fetchPriorityAddresses(limitParam)
   } catch (err) {
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 })
   }
@@ -240,8 +247,9 @@ export async function GET(request) {
   let ok = 0
   let errs = 0
   const stateUpdates = []
-  // Shared CoinGecko lookup budget for this run (see enrichTransfers).
-  const cgBudget = { lookups: 0, max: 15, cache: new Map() }
+  // Shared CoinGecko lookup budget for this run (see enrichTransfers):
+  // capped lookups AND a hard deadline well inside maxDuration.
+  const cgBudget = { lookups: 0, max: 10, cache: new Map(), deadline: t0 + 240_000 }
 
   // Conservative concurrency: Alchemy free tier is ~330 CU/s.
   // getAssetTransfers ≈ 150 CU. Two calls per address (in + out) inside

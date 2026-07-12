@@ -350,9 +350,11 @@ export async function getTokenInfoByContract(
   assetPlatform: string,
   contractAddress: string
 ) {
+  // Single attempt: unknown contracts 404 deterministically, and callers
+  // (cron enrichment) negative-cache misses — retrying only burns time.
   return fetchWithRetry<any>(
     `/coins/${assetPlatform}/contract/${contractAddress}`,
-    { cacheTTL: 600 }
+    { cacheTTL: 600, retries: 1 }
   )
 }
 
