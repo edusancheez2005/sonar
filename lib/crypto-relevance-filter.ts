@@ -110,13 +110,21 @@ const nonCryptoRegex = new RegExp(NON_CRYPTO_KEYWORDS.join('|'), 'i')
 
 const cryptoRegexCache = new Map<string, RegExp>()
 
+// BTC and ETH are famous enough that the bare ticker IS the name — and the
+// letter sequences don't collide with real words the way "sol"/"link"/"ton"
+// do — so they're allowed to vouch for their own feeds. Everyone else needs
+// the full project name (or another crypto signal).
+const SELF_VOUCHING_TICKERS = new Set(['BTC', 'ETH'])
+
 /**
  * Crypto-keyword regex, excluding the ticker being checked. Articles fetched
  * from a LunarCrush topic virtually always contain the topic word itself
- * (e.g. "al sol" for SOL), so the ticker can never vouch for its own feed.
+ * (e.g. "al sol" for SOL), so the ticker can never vouch for its own feed —
+ * except BTC/ETH, see SELF_VOUCHING_TICKERS.
  */
 function getCryptoRegex(excludeTicker: string): RegExp {
-  const key = excludeTicker.toUpperCase()
+  const upper = excludeTicker.toUpperCase()
+  const key = SELF_VOUCHING_TICKERS.has(upper) ? '' : upper
   let regex = cryptoRegexCache.get(key)
   if (!regex) {
     const words = CRYPTO_KEYWORDS.filter(k => k.toUpperCase() !== key)

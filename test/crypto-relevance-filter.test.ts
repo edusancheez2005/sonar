@@ -84,6 +84,18 @@ describe('isCryptoRelevant — substring keyword leaks (2026-07-12 regression)',
   })
 })
 
+// BTC/ETH are self-vouching: the bare ticker counts as a crypto signal even
+// on its own feed, so crime/politics stories that are genuinely about the
+// asset survive the non-crypto keyword veto.
+describe('isCryptoRelevant — BTC/ETH bare tickers are self-vouching', () => {
+  it('keeps BTC-only crime story tagged BTC', () => {
+    expect(isCryptoRelevant('Police arrest suspects who stole BTC in exchange heist', 'BTC')).toBe(true)
+  })
+  it('keeps ETH-only story with non-crypto words tagged ETH', () => {
+    expect(isCryptoRelevant('Hospital fund converts donation to ETH amid covid budget shortfall', 'ETH')).toBe(true)
+  })
+})
+
 // Category-feed rows (ticker GENERAL) had no relevance gate at all, so
 // general tech/AI stories from crypto outlets flooded the terminal.
 describe('isGeneralCryptoRelevant — GENERAL category feed', () => {
