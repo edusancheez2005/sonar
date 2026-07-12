@@ -81,8 +81,11 @@ export function isRateLimitError(e: unknown): e is UpstreamRateLimitError {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const RATE_LIMIT_RE = /rate|limit|throughput|capacity|exceeded|too many/i
-// 0.6s, 1.2s, 2.4s, 4.8s, capped at 6s.
-const backoffMs = (attempt: number) => Math.min(600 * 2 ** attempt, 6000)
+// 0.6s, 1.2s, 2.4s, 4.8s, capped at 6s — with ±50% jitter. Without jitter,
+// concurrent callers that got 429'd together retry together and blow the
+// per-second budget again in lockstep, so whole batches failed terminally.
+const backoffMs = (attempt: number) =>
+  Math.min(600 * 2 ** attempt, 6000) * (0.5 + Math.random())
 
 interface AlchemyTransfer {
   blockNum: string

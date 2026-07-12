@@ -78,10 +78,13 @@ async function getLastBlockMap(rows) {
   const addrs = rows.map((r) => r.address)
   const { data } = await supabaseAdmin
     .from('tracked_address_poll_state')
-    .select('chain, address, last_block')
+    .select('chain, address, last_block, last_polled')
     .in('address', addrs)
   for (const row of data || []) {
-    out.set(`${row.chain}:${row.address}`, row.last_block || 0)
+    out.set(`${row.chain}:${row.address}`, {
+      last_block: row.last_block || 0,
+      last_polled: row.last_polled || null,
+    })
   }
   return out
 }
@@ -242,6 +245,17 @@ export async function GET(request) {
   }
 
   const lastBlocks = await getLastBlockMap(addresses)
+
+  // Least-recently-polled first. The address list is otherwise ordered
+  // alphabetically, so any deadline-skipped tail would be the SAME tail
+  // every hour and those entities would never update. Sorting by
+  // last_polled makes the sweep a fair round-robin across runs.
+  addresses.sort((a, b) => {
+    const ap = lastBlocks.get(`${a.chain}:${a.address}`)?.last_polled || ''
+    const bp = lastBlocks.get(`${b.chain}:${b.address}`)?.last_polled || ''
+    return ap < bp ? -1 : ap > bp ? 1 : 0
+  })
+
   let totalRows = 0
   let totalEnriched = 0
   let ok = 0
@@ -256,10 +270,13 @@ export async function GET(request) {
   // capped lookups AND a hard deadline well inside maxDuration.
   const cgBudget = { lookups: 0, max: 10, cache: new Map(), deadline: t0 + 240_000 }
 
-  // Conservative concurrency: Alchemy free tier is ~330 CU/s.
-  // getAssetTransfers ≈ 150 CU. Two calls per address (in + out) inside
-  // the helper. So sustained ~1 address/s keeps us safe.
-  const CONCURRENCY = 3
+  // Alchemy budget math: ~330 CU/s, getAssetTransfers ≈ 150 CU, and the
+  // helper fires in + out per address. CONCURRENCY 3 (6 in-flight calls
+  // ≈ 900 CU/s) sustained-saturated the budget — ~70% of addresses were
+  // failing with terminal `alchemy 429` even after retries. 2 in-flight
+  // calls + a short gap between batches stays inside the budget.
+  const CONCURRENCY = 1
+  const BATCH_GAP_MS = 250
   for (let i = 0; i < addresses.length; i += CONCURRENCY) {
     // Hard deadline: return a real response with partial progress instead
     // of being killed at maxDuration (a killed run reports nothing and
@@ -273,9 +290,10 @@ export async function GET(request) {
     const results = await Promise.all(
       batch.map((row) => {
         const key = `${row.chain}:${row.address}`
-        return pollAddress(row, lastBlocks.get(key) || 0, cgBudget)
+        return pollAddress(row, lastBlocks.get(key)?.last_block || 0, cgBudget)
       })
     )
+    await new Promise((r) => setTimeout(r, BATCH_GAP_MS))
     results.forEach((res, idx) => {
       const row = batch[idx]
       if (res.error) {
@@ -299,7 +317,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     ok: true,
-    addresses_polled: addresses.length,
+    addresses_polled: addresses.length - skippedForDeadline,
     addresses_ok: ok,
     addresses_err: errs,
     transfers_inserted_or_seen: totalRows,
