@@ -1,7 +1,7 @@
 import React from 'react'
 import NewsTerminal from './NewsTerminal'
 import { createClient } from '@supabase/supabase-js'
-import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
+import { isCryptoRelevant, isGeneralCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 export const metadata = {
   title: 'News Terminal — Real-Time Crypto Intelligence',
@@ -65,8 +65,12 @@ export default async function NewsPage() {
             if (!tickers.length) continue
             // Drop ambiguous-ticker false positives (e.g. SOL = Spanish "sol",
             // Costa del Sol, Sol-Gel stock) that slipped past the ingest filter.
+            // GENERAL rows aren't tied to a token, so they get the topic-level
+            // check instead (drops non-crypto tech/AI stories already in the DB).
             const relevanceText = `${row.title || ''} ${row.content || ''}`
-            if (!tickers.some(t => isCryptoRelevant(relevanceText, t.code))) continue
+            const isRelevant = t =>
+              t.code === 'GENERAL' ? isGeneralCryptoRelevant(relevanceText) : isCryptoRelevant(relevanceText, t.code)
+            if (!tickers.some(isRelevant)) continue
             lcMapped.push({
               id: row.id || row.url,
               title: row.title,

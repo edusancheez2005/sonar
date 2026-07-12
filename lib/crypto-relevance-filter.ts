@@ -50,29 +50,41 @@ const AMBIGUOUS_TICKERS: Record<string, string[]> = {
   'STORJ': [],
 }
 
-// Crypto-related keywords that indicate the content is about crypto
+// Crypto-related keywords that indicate the content is about crypto.
+// Matched as whole words (with optional plural s/es) — the old substring
+// matching let "iconic" count as ICO and "al sol" count as SOL, which
+// defeated the ambiguous-ticker checks below. Generic English words that
+// used to live here ('long', 'short', 'dip', 'moon', 'stake', 'volume',
+// 'apr'...) are gone for the same reason: with real-word collisions they
+// certified almost any article as crypto.
 const CRYPTO_KEYWORDS = [
   // Core crypto terms
-  'crypto', 'cryptocurrency', 'blockchain', 'defi', 'web3', 'nft',
-  'token', 'coin', 'altcoin', 'stablecoin', 'memecoin',
+  'crypto', 'cryptocurrency', 'cryptocurrencies', 'blockchain', 'defi', 'web3',
+  'nft', 'token', 'coin', 'altcoin', 'stablecoin', 'memecoin',
+  'onchain', 'on-chain', 'cbdc', 'satoshi',
   // Trading terms
-  'trading', 'trader', 'bullish', 'bearish', 'hodl', 'fomo',
-  'market cap', 'mcap', 'volume', 'liquidity', 'apy', 'apr', 'tvl',
-  'yield', 'staking', 'stake', 'swap', 'dex', 'cex', 'amm',
-  'long', 'short', 'leverage',
+  'bullish', 'bearish', 'hodl', 'market cap', 'mcap', 'tvl', 'liquidity',
+  'staking', 'dex', 'cex', 'amm',
   // Platforms & protocols
   'binance', 'coinbase', 'kraken', 'uniswap', 'aave', 'curve',
-  'opensea', 'metamask', 'ledger', 'phantom',
-  // Networks
-  'bitcoin', 'btc', 'ethereum', 'eth', 'solana', 'sol',
-  'polygon', 'matic', 'arbitrum', 'optimism', 'avalanche',
+  'opensea', 'metamask', 'ledger', 'phantom', 'polymarket',
+  // Networks & major assets — full names preferred; bare tickers only where
+  // the letters don't form a real word ('sol', 'ton', 'op', 'ada' stay out)
+  'bitcoin', 'btc', 'ethereum', 'eth', 'ether', 'solana',
+  'xrp', 'ripple', 'dogecoin', 'cardano', 'chainlink', 'polkadot',
+  'toncoin', 'litecoin', 'tron', 'polygon', 'matic', 'arbitrum', 'optimism',
+  'avalanche', 'avax', 'bnb', 'hedera', 'hbar', 'aptos', 'celestia',
+  'near protocol', 'shib', 'pepe',
+  'tether', 'usdt', 'usdc',
   // Financial crypto terms
-  'whale', 'rug pull', 'pump', 'dump', 'moon', 'dip',
-  'portfolio', 'airdrop', 'ico', 'ido', 'ipo',
-  'smart contract', 'dao', 'governance',
-  // Cashtags pattern
-  '\\$[A-Z]{2,}',
+  'whale', 'rug pull', 'airdrop', 'ico', 'ido',
+  'smart contract', 'dao',
+  'tokenized', 'tokenization', 'tokenisation',
 ]
+
+// Cashtags ("$SOL") are a crypto signal on their own — matched separately
+// because \b doesn't work in front of "$".
+const CASHTAG_PATTERN = '\\$[A-Za-z]{2,10}\\b'
 
 // Non-crypto topics that leak through ambiguous tickers
 const NON_CRYPTO_KEYWORDS = [
@@ -94,8 +106,25 @@ const NON_CRYPTO_KEYWORDS = [
   'recipe', 'cookbook', 'gardening',
 ]
 
-const cryptoRegex = new RegExp(CRYPTO_KEYWORDS.join('|'), 'i')
 const nonCryptoRegex = new RegExp(NON_CRYPTO_KEYWORDS.join('|'), 'i')
+
+const cryptoRegexCache = new Map<string, RegExp>()
+
+/**
+ * Crypto-keyword regex, excluding the ticker being checked. Articles fetched
+ * from a LunarCrush topic virtually always contain the topic word itself
+ * (e.g. "al sol" for SOL), so the ticker can never vouch for its own feed.
+ */
+function getCryptoRegex(excludeTicker: string): RegExp {
+  const key = excludeTicker.toUpperCase()
+  let regex = cryptoRegexCache.get(key)
+  if (!regex) {
+    const words = CRYPTO_KEYWORDS.filter(k => k.toUpperCase() !== key)
+    regex = new RegExp(`\\b(?:${words.join('|')})(?:s|es)?\\b|${CASHTAG_PATTERN}`, 'i')
+    cryptoRegexCache.set(key, regex)
+  }
+  return regex
+}
 
 /**
  * Check if a piece of content (news article or social post) is relevant
@@ -134,7 +163,7 @@ export function isCryptoRelevant(text: string, ticker: string): boolean {
   
   // Check for generic non-crypto content
   const hasNonCrypto = nonCryptoRegex.test(lower)
-  const hasCrypto = cryptoRegex.test(lower)
+  const hasCrypto = getCryptoRegex(tickerUpper).test(lower)
   
   // If it has non-crypto keywords but no crypto keywords, filter it out
   if (hasNonCrypto && !hasCrypto) return false
@@ -167,6 +196,16 @@ export function isCryptoRelevant(text: string, ticker: string): boolean {
       'PRIME': ['echelon prime'],
       'SUPER': ['superfarm', 'superverse'],
       'BLUR': ['blur nft', 'blur marketplace'],
+      'OP': ['optimism', 'op mainnet'],
+      'ONT': ['ontology'],
+      'EOS': ['eos network', 'eosio'],
+      'ICX': ['icon network'],
+      'CHZ': ['chiliz'],
+      'AUDIO': ['audius'],
+      'MASK': ['mask network'],
+      'LOOKS': ['looksrare'],
+      'REN': ['ren protocol', 'republic protocol'],
+      'ALICE': ['my neighbor alice'],
     }
     const names = fullNames[tickerUpper] || []
     const hasFullName = names.some(name => lower.includes(name))
@@ -174,6 +213,18 @@ export function isCryptoRelevant(text: string, ticker: string): boolean {
   }
   
   return true
+}
+
+/**
+ * Relevance check for content not tied to a ticker (e.g. LunarCrush category
+ * feeds, rows stored with ticker 'GENERAL'). Crypto outlets syndicate plenty
+ * of general tech/AI coverage (OpenAI lawsuits, Xbox layoffs, image-model
+ * reviews); require at least one crypto keyword or cashtag before it enters
+ * the news feed.
+ */
+export function isGeneralCryptoRelevant(text: string): boolean {
+  if (!text || text.length < 5) return false
+  return getCryptoRegex('').test(text)
 }
 
 /**

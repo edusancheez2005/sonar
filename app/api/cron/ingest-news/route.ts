@@ -6,7 +6,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
+import { isCryptoRelevant, isGeneralCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 export const dynamic = 'force-dynamic'
 
@@ -202,6 +202,12 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any, stat
       const title = item.post_title || item.title
       const url2 = item.post_link || item.url
       if (!title || title === 'Untitled' || !url2) { stats.filtered++; continue }
+
+      // Crypto outlets syndicate general tech/AI stories (OpenAI lawsuits,
+      // Xbox layoffs, image-model reviews) through LunarCrush categories;
+      // keep them out of the terminal feed.
+      const catBody = item.post_description || item.post_content || item.content || ''
+      if (!isGeneralCryptoRelevant(`${title} ${catBody}`)) { stats.filtered++; continue }
 
       // LunarCrush sentiment is 1..5 → normalize to -1..+1.
       let sentimentRaw: number | null = null
