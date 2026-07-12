@@ -246,6 +246,11 @@ export async function GET(request) {
   let totalEnriched = 0
   let ok = 0
   let errs = 0
+  let skippedForDeadline = 0
+  // Aggregate per-address errors into the response — they were only
+  // written to tracked_address_poll_state, which made a high failure
+  // rate invisible unless someone went digging in the table.
+  const errorCounts = new Map()
   const stateUpdates = []
   // Shared CoinGecko lookup budget for this run (see enrichTransfers):
   // capped lookups AND a hard deadline well inside maxDuration.
@@ -256,6 +261,14 @@ export async function GET(request) {
   // the helper. So sustained ~1 address/s keeps us safe.
   const CONCURRENCY = 3
   for (let i = 0; i < addresses.length; i += CONCURRENCY) {
+    // Hard deadline: return a real response with partial progress instead
+    // of being killed at maxDuration (a killed run reports nothing and
+    // loses all poll-state updates). Remaining addresses are picked up
+    // next hour — the per-address last_block cursor makes that lossless.
+    if (Date.now() - t0 > 260_000) {
+      skippedForDeadline = addresses.length - i
+      break
+    }
     const batch = addresses.slice(i, i + CONCURRENCY)
     const results = await Promise.all(
       batch.map((row) => {
@@ -265,8 +278,11 @@ export async function GET(request) {
     )
     results.forEach((res, idx) => {
       const row = batch[idx]
-      if (res.error) errs++
-      else ok++
+      if (res.error) {
+        errs++
+        const key = String(res.error).slice(0, 120)
+        errorCounts.set(key, (errorCounts.get(key) || 0) + 1)
+      } else ok++
       totalRows += res.rows
       totalEnriched += res.enriched || 0
       stateUpdates.push({
@@ -289,6 +305,10 @@ export async function GET(request) {
     transfers_inserted_or_seen: totalRows,
     transfers_enriched: totalEnriched,
     cg_lookups: cgBudget.lookups,
+    addresses_skipped_deadline: skippedForDeadline,
+    error_breakdown: Object.fromEntries(
+      [...errorCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)
+    ),
     elapsed_ms: Date.now() - t0,
   })
 }
