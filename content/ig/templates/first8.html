@@ -1,0 +1,648 @@
+<title>Sonar · First 8 Posts</title>
+<style>
+  @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(__ANTON__) format('woff2');}
+  :root{
+    --bg0:#070b12; --bg1:#0a1120; --card:#0e1622; --card2:#0b131e;
+    --ink:#e9f0f7; --muted:#8595a8; --faint:#5c6b7e;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.13);
+    --green:#00e08a; --cyan:#3bc9ee; --red:#ff5b6b; --amber:#ffb43d;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --disp:'Anton',"Arial Narrow","Helvetica Neue Condensed",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;} body{margin:0;}
+  .app{background:radial-gradient(1100px 640px at 50% -12%,#0d1b30 0%,transparent 60%),linear-gradient(180deg,var(--bg0),var(--bg1) 60%,var(--bg0));
+    color:var(--ink);font-family:var(--sans);min-height:100vh;padding:clamp(1.1rem,3vw,2.4rem) 1.1rem 5rem;}
+  .wrap{max-width:32rem;margin:0 auto;}
+  .brandbar{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:1.1rem;border-bottom:1px solid var(--line);margin-bottom:1.6rem;}
+  .brandbar img{height:1.1rem;} .brandbar .sp{flex:1;}
+  h1.title{font-size:clamp(1.5rem,4.6vw,2rem);line-height:1.1;margin:0 0 .5rem;letter-spacing:-.02em;text-wrap:balance;}
+  .sub{color:var(--muted);font-size:1rem;margin:0 0 1.1rem;text-wrap:pretty;}
+  .howto{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1.05rem;margin-bottom:2.4rem;font-size:.9rem;color:var(--muted);}
+  .howto b{color:var(--ink);} .howto ul{margin:.5rem 0 0;padding-left:1.1rem;} .howto li{margin:.28rem 0;}
+
+  .carousel{margin:0 0 3.4rem;}
+  .chead{display:flex;align-items:baseline;gap:.6rem;margin:0 0 1rem;}
+  .cnum{font-family:var(--mono);font-size:.74rem;color:var(--green);border:1px solid var(--line2);border-radius:6px;padding:.16rem .5rem;letter-spacing:.05em;}
+  .ctitle{font-size:1.02rem;font-weight:600;} .ctitle span{color:var(--muted);font-weight:400;}
+  .slides{display:flex;flex-direction:column;gap:.9rem;}
+
+  .slide{container-type:inline-size;position:relative;width:100%;max-width:29rem;margin:0 auto;aspect-ratio:4/5;border-radius:16px;overflow:hidden;
+    background:#080b11;border:1px solid var(--line2);box-shadow:0 18px 46px -20px rgba(0,0,0,.8);isolation:isolate;}
+  .pad{position:absolute;inset:0;z-index:2;padding:7cqw;display:flex;flex-direction:column;}
+  .grid::before{content:"";position:absolute;inset:0;z-index:0;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:8cqw 8cqw;
+    -webkit-mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);}
+
+  .photo{background-size:cover;background-position:center top;}
+  .photo::after{content:"";position:absolute;inset:0;z-index:1;
+    background:linear-gradient(180deg,rgba(4,7,12,.5) 0%,rgba(4,7,12,.06) 20%,rgba(4,7,12,.06) 44%,rgba(4,7,12,.76) 66%,rgba(4,7,12,.985) 88%,#04070c 100%);}
+  .srow{display:flex;align-items:center;gap:2.2cqw;font-family:var(--mono);font-size:2.9cqw;letter-spacing:.14em;text-transform:uppercase;color:#b9c6d4;}
+  .logoimg{height:5.4cqw;width:auto;display:block;filter:drop-shadow(0 1cqw 2cqw rgba(0,0,0,.65));}
+  .spacer{flex:1;}
+  .kick{display:inline-flex;align-items:center;gap:1.6cqw;}
+  .kick i{width:1.8cqw;height:1.8cqw;border-radius:50%;background:var(--red);font-style:normal;box-shadow:0 0 0 1.1cqw rgba(255,91,107,.22);}
+  .newsrow{display:flex;align-items:center;gap:3cqw;margin:0 0 4.2cqw;}
+  .newsrow .r{flex:1;height:1px;background:rgba(255,255,255,.26);}
+  .newsbadge{font-family:var(--mono);font-weight:700;font-size:3.1cqw;letter-spacing:.2em;background:var(--cyan);color:#04121a;padding:1.1cqw 3.2cqw;border-radius:1cqw;}
+
+  /* Anton display headline — the daytrading look */
+  .big{font-family:var(--disp);font-weight:400;text-transform:uppercase;font-size:13.2cqw;line-height:1.06;letter-spacing:.012em;margin:0;color:#fff;text-shadow:0 2cqw 7cqw rgba(0,0,0,.8);text-wrap:balance;text-align:center;}
+  .big.sm{font-size:11cqw;}
+  .hl-c{color:var(--cyan);font-style:normal;} .hl-g{color:var(--green);font-style:normal;} .hl-r{color:var(--red);font-style:normal;}
+  .foot{display:flex;align-items:center;gap:2cqw;font-family:var(--mono);font-size:2.6cqw;letter-spacing:.1em;color:#93a4b6;text-transform:uppercase;margin-top:4.6cqw;}
+  .foot .sp{flex:1;}
+  .swipe{color:#dbe6f0;font-weight:700;letter-spacing:.14em;}
+
+  /* quote card (public.com-style) */
+  .qzone{position:relative;margin-top:5cqw;}
+  .qcard{background:rgba(10,16,24,.88);border:1px solid var(--line2);border-radius:4.4cqw;padding:4.4cqw 4.6cqw;width:78%;box-shadow:0 8cqw 22cqw -8cqw rgba(0,0,0,.7);}
+  .qtop{display:flex;align-items:center;gap:2.6cqw;}
+  .qcoin{width:8.4cqw;height:8.4cqw;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:4.6cqw;color:#0a0e14;background:#f7931a;}
+  .qname{font-weight:800;font-size:3.9cqw;color:#fff;line-height:1;}
+  .qsub{font-family:var(--mono);font-size:2.5cqw;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:.6cqw;}
+  .qlive{margin-left:auto;font-family:var(--mono);font-size:2.5cqw;color:var(--green);display:flex;align-items:center;gap:1.3cqw;letter-spacing:.1em;text-transform:uppercase;}
+  .qlive i{width:1.7cqw;height:1.7cqw;border-radius:50%;background:var(--green);box-shadow:0 0 0 1cqw rgba(0,224,138,.25);}
+  .qprice{font-size:8cqw;font-weight:800;letter-spacing:-.02em;color:#fff;margin:2.4cqw 0 .8cqw;font-variant-numeric:tabular-nums;}
+  .qchg{font-family:var(--mono);font-size:2.9cqw;color:var(--green);letter-spacing:.02em;}
+  .qchart{height:17cqw;margin:2.4cqw 0 2.4cqw;}
+  .qchart canvas{width:100%;height:100%;display:block;}
+  .qpills{display:flex;gap:1.4cqw;}
+  .pill{font-family:var(--mono);font-size:2.3cqw;color:var(--faint);padding:.9cqw 2.4cqw;border-radius:1.5cqw;letter-spacing:.06em;}
+  .pill.on{background:rgba(0,224,138,.16);color:var(--green);}
+  .inset{position:absolute;right:-1cqw;top:44%;width:40cqw;height:40cqw;border-radius:50%;overflow:hidden;
+    border:1.2cqw solid rgba(255,255,255,.92);box-shadow:0 6cqw 18cqw -4cqw rgba(0,0,0,.8);}
+  .inset img{width:100%;height:100%;object-fit:cover;object-position:center 42%;display:block;}
+
+  /* orca x-post */
+  .orcabg{background:radial-gradient(90cqw 70cqw at 50% -18%,rgba(59,201,238,.13) 0%,transparent 62%),#070b12;}
+  .xcard{background:#0d141f;border:1px solid var(--line2);border-radius:4.2cqw;padding:4.6cqw 4.8cqw;box-shadow:0 10cqw 26cqw -10cqw rgba(0,0,0,.85);}
+  .xhead{display:flex;align-items:center;gap:2.8cqw;}
+  .xav{width:9.6cqw;height:9.6cqw;border-radius:50%;flex:none;background:radial-gradient(120% 120% at 30% 25%,#123048 0%,#0a1622 70%);border:1px solid rgba(59,201,238,.35);display:flex;align-items:center;justify-content:center;}
+  .xav svg{width:5.8cqw;height:5.8cqw;display:block;} .xav{overflow:hidden;} .xav img{width:100%;height:100%;object-fit:cover;display:block;}
+  .xname{display:flex;align-items:center;gap:1.6cqw;font-weight:800;font-size:3.9cqw;color:#fff;line-height:1.15;}
+  .xname svg{width:3.7cqw;height:3.7cqw;flex:none;}
+  .xsub{font-family:var(--mono);font-size:2.6cqw;color:var(--faint);letter-spacing:.05em;margin-top:.6cqw;}
+  .xdiv{height:1px;background:var(--line);margin:3.4cqw 0;}
+  .xsec{margin:0 0 3.6cqw;} .xsec:last-of-type{margin-bottom:0;}
+  .xsec .t{font-family:var(--mono);font-size:2.6cqw;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);margin:0 0 1.3cqw;}
+  .xsec .b{font-size:3.5cqw;line-height:1.45;color:#d9e3ee;margin:0;text-wrap:pretty;}
+  .tc{color:var(--cyan);font-weight:600;} .tg{color:var(--green);font-weight:600;} .tr{color:var(--red);font-weight:600;} .tm{color:var(--muted);}
+  .xtime{font-family:var(--mono);font-size:2.5cqw;color:var(--faint);letter-spacing:.06em;margin-top:3.2cqw;white-space:nowrap;}
+  .disc{font-family:var(--mono);font-size:2.5cqw;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;}
+
+  /* cta */
+  .cta{background:#060a10;}
+  .rings::before{content:"";position:absolute;inset:-30%;z-index:0;opacity:.5;
+    background:repeating-radial-gradient(circle at 50% 46%,rgba(59,201,238,.11) 0 1px,transparent 1px 11cqw);
+    -webkit-mask-image:radial-gradient(70cqw 70cqw at 50% 46%,#000 0%,transparent 72%);mask-image:radial-gradient(70cqw 70cqw at 50% 46%,#000 0%,transparent 72%);}
+  .ctamid{margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;gap:5cqw;position:relative;}
+  .ctamid img{width:38cqw;height:auto;filter:drop-shadow(0 2cqw 8cqw rgba(59,201,238,.25));}
+  .ctaline{font-size:5.2cqw;font-weight:700;letter-spacing:-.01em;color:#eef4fa;line-height:1.32;max-width:76cqw;text-wrap:balance;margin:0;}
+  .ctaline b{color:var(--cyan);font-weight:800;}
+  .ctaurl{display:flex;flex-direction:column;gap:1.6cqw;align-items:center;}
+  .ctaurl .lm{font-family:var(--mono);font-size:2.8cqw;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);}
+  .ctaurl .u{font-family:var(--mono);font-size:4.6cqw;font-weight:700;color:var(--cyan);letter-spacing:.04em;}
+
+  .caption{margin-top:1.2rem;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;}
+  .caption .cap-h{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .6rem;}
+  .caption pre{margin:0;white-space:pre-wrap;font-family:var(--sans);font-size:.9rem;line-height:1.5;color:#cdd8e3;}
+  .tag{color:var(--cyan);}
+  footer{margin-top:2rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--faint);font-family:var(--mono);font-size:.74rem;}
+  @media (max-width:520px){ .slide{max-width:100%;} }
+
+  /* chart-slide stats (editorial carousels) */
+  .statlbl{font-family:var(--mono);font-size:2.7cqw;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:6cqw 0 1.2cqw;}
+  .statrow{display:flex;align-items:baseline;gap:3.4cqw;flex-wrap:wrap;}
+  .statbig{font-size:11.4cqw;font-weight:800;letter-spacing:-.03em;color:#fff;font-variant-numeric:tabular-nums;line-height:1;}
+  .statchg{font-family:var(--mono);font-size:3.3cqw;font-weight:700;letter-spacing:.02em;}
+  .statsub{font-family:var(--mono);font-size:2.7cqw;color:var(--muted);letter-spacing:.06em;margin-top:1.6cqw;}
+  .chartwrap{flex:1;position:relative;margin-top:4cqw;min-height:0;}
+  .up{color:var(--green);} .down{color:var(--red);}
+</style>
+
+<div class="app"><div class="wrap">
+  <div class="brandbar"><img src="__LOGO__" alt="Sonar"><span class="sp"></span><span>First 8 posts · 2/day · from 12 Jul 2026</span></div>
+  <h1 class="title">The first 8 posts — ready to screenshot</h1>
+  <p class="sub">Four days at two posts a day: data post midday, shareable in the evening. Screenshot each 4:5 slide in order; captions sit under every post.</p>
+  <div class="howto"><b>Posting notes:</b><ul>
+    <li>Midday slot ~11am–1pm · evening slot ~7–10pm.</li>
+    <li>Carousels = 4 screenshots posted together, in order. Singles = 1.</li>
+    <li>Every caption uses the "Comment WHALE" keyword — reply to those comments by DM manually until ManyChat is set up.</li>
+    <li>Charts show real data pulled 11 Jul 2026 — <b>ping me before Day 3–4 to refresh the numbers</b> so nothing goes out stale.</li></ul></div>
+<section class="carousel">
+    <div class="chead"><span class="cnum">1</span><span class="ctitle">Day 1 · Midday — Treasury dump <span>· $BTC · 4-slide carousel</span></span></div>
+    <div class="slides">
+
+      <!-- s1 hero -->
+      <div class="slide photo" style="background-image:url('__BG1__')">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Breaking</span></div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">NEWS</span><span class="r"></span></div>
+          <h2 class="big">A <em class="hl-c">BITCOIN</em> TREASURY FIRM JUST <em class="hl-r">SOLD HALF</em> ITS STACK</h2>
+          <div class="foot"><span>Source: CoinDesk · Decrypt</span><span class="sp"></span><span class="swipe">Swipe →</span></div>
+        </div>
+      </div>
+
+      <!-- s2 chart -->
+      <div class="slide grid">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>BTC/USD · 7D · 4H</span></div>
+          <p class="statlbl">Bitcoin · last price</p>
+          <div class="statrow"><span class="statbig">$64,350</span><span class="statchg up">▲ +2.2% / 7D</span></div>
+          <p class="statsub">+0.3% last 24h · holding near the weekly high</p>
+          <div class="chartwrap"><canvas id="btc"></canvas></div>
+          <div class="foot"><span>Source: Binance · 11 Jul 2026 20:00 UTC</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+
+      <!-- s3 orca -->
+      <div class="slide orcabg grid">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>Analysis</span></div>
+          <span class="spacer"></span>
+          <div class="xcard">
+            <div class="xhead">
+              <span class="xav"><img src="__ORCA__" alt="Orca AI"></span>
+              <div><div class="xname">Orca AI <svg viewBox="0 0 24 24" fill="#3bc9ee"><path d="M12 1.7 14.9 4l3.6-.5 1 3.5 3.2 1.8-1.6 3.2 1.6 3.2-3.2 1.8-1 3.5-3.6-.5L12 22.3 9.1 20l-3.6.5-1-3.5L1.3 15.2 2.9 12 1.3 8.8 4.5 7l1-3.5L9.1 4 12 1.7z"/><path d="m10.7 14.6-2.3-2.2-1.2 1.2 3.5 3.4 6-6-1.2-1.2-4.8 4.8z" fill="#04121a"/></svg></div>
+              <div class="xsub">by Sonar · @sonartracker</div></div>
+            </div>
+            <div class="xdiv"></div>
+            <div class="xsec"><p class="t">The signal</p><p class="b">Nasdaq-listed <span class="tc">Empery Digital</span> has sold <span class="tr">~1,400 BTC</span> (~$87M) since May — about half its treasury — to fund AI data centers.</p></div>
+            <div class="xsec"><p class="t">Why it matters</p><p class="b">Corporate treasuries were a steady bid. Swapping BTC for AI infrastructure adds <span class="tr">fresh supply</span> and chips at the accumulation narrative.</p></div>
+            <div class="xsec"><p class="t">What to watch</p><p class="b">Whether other treasury firms follow — and whether <span class="tg">ETF inflows</span> absorb the extra supply.</p></div>
+            <p class="xtime">11 Jul 2026 · Orca AI by Sonar</p>
+          </div>
+          <span class="spacer"></span>
+          <div class="foot"><span class="disc">Not financial advice</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+
+      <!-- s4 cta -->
+      <div class="slide cta rings">
+        <div class="pad">
+          <div class="srow" style="justify-content:center"><span style="color:var(--faint)">Whale &amp; treasury flows · live</span></div>
+          <div class="ctamid">
+            <img src="__LOGO__" alt="Sonar">
+            <p class="ctaline">Track the wallets moving the market.</p>
+            <div class="ctaurl"><span class="lm">Learn more at</span><span class="u">sonartracker.io</span></div>
+          </div>
+          <div class="foot" style="justify-content:center"><span class="disc">Not financial advice</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>🐋 A Bitcoin treasury company just sold about half its stack.
+
+Nasdaq-listed Empery Digital has offloaded ~1,400 BTC (~$87M) since May, pivoting from a bitcoin-treasury strategy toward AI data centers.
+
+BTC is still holding near its weekly high (~$64.3K) — but corporate treasury selling is a fresh supply overhang worth watching.
+
+Track whale &amp; treasury flows in real time on Sonar → link in bio.
+
+Not financial advice.
+
+<span class="tag">#Bitcoin #BTC #CryptoWhales #OnChain #CryptoNews #Sonar #WhaleAlert</span></pre></div>
+  </section>
+<section class="carousel">
+    <div class="chead"><span class="cnum">2</span><span class="ctitle">Day 1 · Evening — Wake up babe <span>· meme · 1 slide</span></span></div>
+    <div class="slides">
+      <div class="slide photo" style="background-image:url('__MEMEA__')">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span></div>
+          <span class="spacer"></span>
+          <h2 class="big" style="font-size:10.4cqw">WAKE UP BABE, A <em class="hl-c">WHALE</em> JUST MOVED <em class="hl-g">$87M</em> IN BITCOIN.</h2>
+          <div class="foot"><span>@sonartracker</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>Some of us have alerts for this. 🐋
+
+(Real flow: a Nasdaq-listed treasury firm has moved ~1,400 BTC — about $87M — since May.)
+
+Comment "WHALE" and Orca will DM you the breakdown.
+
+Not financial advice.
+
+<span class="tag">#CryptoMemes #Bitcoin #BTC #WhaleAlert #CryptoTrading #Sonar</span></pre></div>
+  </section>
+<section class="carousel">
+    <div class="chead"><span class="cnum">3</span><span class="ctitle">Day 2 · Midday — Tokenization bid <span>· $ETH · 4-slide carousel</span></span></div>
+    <div class="slides">
+
+      <div class="slide photo" style="background-image:url('__BG2__')">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>Markets</span></div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">NEWS</span><span class="r"></span></div>
+          <h2 class="big sm"><em class="hl-c">ETHEREUM</em> CLIMBS <em class="hl-g">6%</em> AS THE TOKENIZATION TRADE HEATS UP</h2>
+          <div class="foot"><span>Source: Cointelegraph</span><span class="sp"></span><span class="swipe">Swipe →</span></div>
+        </div>
+      </div>
+
+      <div class="slide grid">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>ETH/USD · 7D · 4H</span></div>
+          <p class="statlbl">Ethereum · last price</p>
+          <div class="statrow"><span class="statbig">$1,825</span><span class="statchg up">▲ +6.5% off 7D low</span></div>
+          <p class="statsub">+1.6% last 24h · pressing the weekly high</p>
+          <div class="chartwrap"><canvas id="eth"></canvas></div>
+          <div class="foot"><span>Source: Binance · 11 Jul 2026 20:00 UTC</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+
+      <div class="slide orcabg grid">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>Analysis</span></div>
+          <span class="spacer"></span>
+          <div class="xcard">
+            <div class="xhead">
+              <span class="xav"><img src="__ORCA__" alt="Orca AI"></span>
+              <div><div class="xname">Orca AI <svg viewBox="0 0 24 24" fill="#3bc9ee"><path d="M12 1.7 14.9 4l3.6-.5 1 3.5 3.2 1.8-1.6 3.2 1.6 3.2-3.2 1.8-1 3.5-3.6-.5L12 22.3 9.1 20l-3.6.5-1-3.5L1.3 15.2 2.9 12 1.3 8.8 4.5 7l1-3.5L9.1 4 12 1.7z"/><path d="m10.7 14.6-2.3-2.2-1.2 1.2 3.5 3.4 6-6-1.2-1.2-4.8 4.8z" fill="#04121a"/></svg></div>
+              <div class="xsub">by Sonar · @sonartracker</div></div>
+            </div>
+            <div class="xdiv"></div>
+            <div class="xsec"><p class="t">The signal</p><p class="b"><span class="tc">ETH</span> has climbed <span class="tg">~6%</span> off Wednesday's $1,713 low as real-world-asset tokenization gains and institutions keep accumulating.</p></div>
+            <div class="xsec"><p class="t">Why it matters</p><p class="b">Spot demand looks real, but <span class="tr">on-chain activity and derivatives remain soft</span> — rallies without confirming flows tend to stay fragile.</p></div>
+            <div class="xsec"><p class="t">What to watch</p><p class="b">Whether <span class="tg">$1,800 holds as support</span> — and whether tokenization inflows keep building.</p></div>
+            <p class="xtime">11 Jul 2026 · Orca AI by Sonar</p>
+          </div>
+          <span class="spacer"></span>
+          <div class="foot"><span class="disc">Not financial advice</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+
+      <div class="slide cta rings">
+        <div class="pad">
+          <div class="srow" style="justify-content:center"><span style="color:var(--faint)">On-chain flows · decoded daily</span></div>
+          <div class="ctamid">
+            <img src="__LOGO__" alt="Sonar">
+            <p class="ctaline">Go beyond price. Follow the flows.</p>
+            <div class="ctaurl"><span class="lm">Learn more at</span><span class="u">sonartracker.io</span></div>
+          </div>
+          <div class="foot" style="justify-content:center"><span class="disc">Not financial advice</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>📈 Ethereum is up ~6% off this week's low as the tokenization trade heats up.
+
+Real-world-asset tokenization gains and steady institutional accumulation pushed ETH from $1,713 back above $1,800 — but on-chain activity and derivatives remain soft, so the flows still need to confirm.
+
+Strong spot, cautious plumbing. We're watching whether $1,800 holds as support.
+
+See the on-chain picture on Sonar → link in bio.
+
+Not financial advice.
+
+<span class="tag">#Ethereum #ETH #Tokenization #RWA #CryptoNews #Sonar #Altcoins</span></pre></div>
+  </section>
+  <section class="carousel">
+    <div class="chead"><span class="cnum">4</span><span class="ctitle">Day 2 · Evening — Sold the bottom <span>· meme · 1 slide</span></span></div>
+    <div class="slides">
+      <div class="slide photo" style="background-image:url('__MEME7__')">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span></div>
+          <span class="spacer"></span>
+          <h2 class="big" style="font-size:10.4cqw">WHEN ETH BOUNCES <em class="hl-g">6%</em> AND YOU <em class="hl-r">SOLD THE BOTTOM.</em></h2>
+          <div class="foot"><span>@sonartracker</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>The bounce was real: $1,713 → $1,825 this week. 🫠
+
+Whales set alerts so this doesn't happen. Comment "WHALE" and Orca will DM you how they saw it coming.
+
+Not financial advice.
+
+<span class="tag">#CryptoMemes #Ethereum #ETH #CryptoTrading #BuyHighSellLow #Sonar</span></pre></div>
+  </section>
+
+<section class="carousel">
+    <div class="chead"><span class="cnum">5</span><span class="ctitle">Day 3 · Midday — Stablecoin goes bank <span>· Circle · 4-slide carousel</span></span></div>
+    <div class="slides">
+
+      <div class="slide photo" style="background-image:url('__BG3__')">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>Regulation</span></div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">NEWS</span><span class="r"></span></div>
+          <h2 class="big sm"><em class="hl-c">CIRCLE</em> JUST WON A US <em class="hl-g">NATIONAL BANK</em> CHARTER</h2>
+          <div class="foot"><span>Source: Decrypt · CoinDesk</span><span class="sp"></span><span class="swipe">Swipe →</span></div>
+        </div>
+      </div>
+
+      <div class="slide grid">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>CRCL · NYSE · 1M · Daily</span></div>
+          <p class="statlbl">Circle Internet Group · close</p>
+          <div class="statrow"><span class="statbig">$66.14</span><span class="statchg up">▲ +5.0% on the news</span></div>
+          <p class="statsub">First green close after a month-long slide</p>
+          <div class="chartwrap"><canvas id="crcl"></canvas></div>
+          <div class="foot"><span>Source: NYSE close · 10 Jul 2026</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+
+      <div class="slide orcabg grid">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>Analysis</span></div>
+          <span class="spacer"></span>
+          <div class="xcard">
+            <div class="xhead">
+              <span class="xav"><img src="__ORCA__" alt="Orca AI"></span>
+              <div><div class="xname">Orca AI <svg viewBox="0 0 24 24" fill="#3bc9ee"><path d="M12 1.7 14.9 4l3.6-.5 1 3.5 3.2 1.8-1.6 3.2 1.6 3.2-3.2 1.8-1 3.5-3.6-.5L12 22.3 9.1 20l-3.6.5-1-3.5L1.3 15.2 2.9 12 1.3 8.8 4.5 7l1-3.5L9.1 4 12 1.7z"/><path d="m10.7 14.6-2.3-2.2-1.2 1.2 3.5 3.4 6-6-1.2-1.2-4.8 4.8z" fill="#04121a"/></svg></div>
+              <div class="xsub">by Sonar · @sonartracker</div></div>
+            </div>
+            <div class="xdiv"></div>
+            <div class="xsec"><p class="t">The signal</p><p class="b">The OCC granted <span class="tc">Circle</span> final approval for a national trust bank charter. <span class="tc">CRCL</span> closed <span class="tg">+5%</span> on the news.</p></div>
+            <div class="xsec"><p class="t">Why it matters</p><p class="b"><span class="tc">USDC</span>'s $73.2B moves further inside the regulated banking perimeter — <span class="tm">custody powers first; no deposits or loans yet.</span></p></div>
+            <div class="xsec"><p class="t">What to watch</p><p class="b">The <span class="tg">GENIUS Act deadline on July 18</span>, and which stablecoin issuers clear the bar next.</p></div>
+            <p class="xtime">11 Jul 2026 · Orca AI by Sonar</p>
+          </div>
+          <span class="spacer"></span>
+          <div class="foot"><span class="disc">Not financial advice</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+
+      <div class="slide cta rings">
+        <div class="pad">
+          <div class="srow" style="justify-content:center"><span style="color:var(--faint)">Stablecoins · regulation · flows</span></div>
+          <div class="ctamid">
+            <img src="__LOGO__" alt="Sonar">
+            <p class="ctaline">See the signal before it becomes the headline.</p>
+            <div class="ctaurl"><span class="lm">Learn more at</span><span class="u">sonartracker.io</span></div>
+          </div>
+          <div class="foot" style="justify-content:center"><span class="disc">Not financial advice</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>🏦 Circle just won final approval for a US national trust bank.
+
+The OCC charter lets Circle custody assets under a federal license — though it can't take ordinary deposits or make loans yet. CRCL closed +5% on the news, and USDC's $73.2B sits further inside the regulated perimeter.
+
+A legitimacy milestone for stablecoins, with the GENIUS Act deadline landing July 18.
+
+Follow the money on Sonar → link in bio.
+
+Not financial advice.
+
+<span class="tag">#Circle #USDC #Stablecoins #CryptoRegulation #CryptoNews #Sonar</span></pre></div>
+  </section>
+  <section class="carousel">
+    <div class="chead"><span class="cnum">6</span><span class="ctitle">Day 3 · Evening — Orca goes banking <span>· stat single · 1 slide</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Regulation</span></div>
+          <div class="qzone">
+            <div class="qcard">
+              <div class="qtop"><span class="qcoin" style="background:#2775ca;color:#fff">C</span><div><div class="qname">Circle</div><div class="qsub">CRCL · NYSE</div></div><span class="qlive"><i></i>Close</span></div>
+              <div class="qprice">$66.14</div>
+              <div class="qchg">▲ +5.0% on charter approval</div>
+              <div class="qchart"><canvas id="qcrcl"></canvas></div>
+              <div class="qpills"><span class="pill">1D</span><span class="pill">1W</span><span class="pill on">1M</span><span class="pill">1Y</span></div>
+            </div>
+            <div class="inset"><img src="__ORCABANK__" alt="" style="object-position:center 46%"></div>
+          </div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">NEWS</span><span class="r"></span></div>
+          <h2 class="big sm"><em class="hl-c">CIRCLE</em> JUST BECAME A <em class="hl-g">BANK.</em> (KIND OF.)</h2>
+          <div class="foot"><span>Source: Decrypt · NYSE</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>The OCC just gave Circle final approval for a national trust bank charter. Custody powers under a federal license — no deposits or loans yet, hence the "kind of." 🏦
+
+CRCL closed +5% on the news, and USDC's $73.2B moved further inside the regulated system. GENIUS Act deadline: July 18.
+
+Comment "WHALE" and Orca will DM you what it means for stablecoins.
+
+Not financial advice.
+
+<span class="tag">#Circle #USDC #Stablecoins #CryptoRegulation #CryptoNews #Sonar</span></pre></div>
+  </section>
+
+<section class="carousel">
+    <div class="chead"><span class="cnum">7</span><span class="ctitle">Day 4 · Midday — Whale receipts <span>· $BTC · 4-slide carousel</span></span></div>
+    <div class="slides">
+
+      <div class="slide photo" style="background-image:url('__BG1__')">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Receipts</span></div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">ON-CHAIN</span><span class="r"></span></div>
+          <h2 class="big">THE RECEIPTS: <em class="hl-r">1,400 BTC</em> OUT THE DOOR SINCE MAY</h2>
+          <div class="foot"><span>Source: CoinDesk · Decrypt</span><span class="sp"></span><span class="swipe">Swipe →</span></div>
+        </div>
+      </div>
+
+      <div class="slide grid">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>BTC/USD · 7D · 4H</span></div>
+          <p class="statlbl" style="font-family:var(--mono);font-size:2.7cqw;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:6cqw 0 1.2cqw;">And the price didn't flinch</p>
+          <div style="display:flex;align-items:baseline;gap:3.4cqw;flex-wrap:wrap;"><span style="font-size:11.4cqw;font-weight:800;letter-spacing:-.03em;color:#fff;font-variant-numeric:tabular-nums;line-height:1;">$64,350</span><span style="font-family:var(--mono);font-size:3.3cqw;font-weight:700;color:var(--green);">▲ +2.2% / 7D</span></div>
+          <p style="font-family:var(--mono);font-size:2.7cqw;color:var(--muted);letter-spacing:.06em;margin:1.6cqw 0 0;">supply hit the tape · buyers showed up</p>
+          <div style="flex:1;position:relative;margin-top:4cqw;min-height:0;"><canvas id="btc2"></canvas></div>
+          <div class="foot"><span>Source: Binance · 11 Jul 2026 20:00 UTC</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+
+      <div class="slide orcabg grid">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span>Analysis</span></div>
+          <span class="spacer"></span>
+          <div class="xcard">
+            <div class="xhead">
+              <span class="xav"><img src="__ORCA__" alt="Orca AI"></span>
+              <div><div class="xname">Orca AI <svg viewBox="0 0 24 24" fill="#3bc9ee"><path d="M12 1.7 14.9 4l3.6-.5 1 3.5 3.2 1.8-1.6 3.2 1.6 3.2-3.2 1.8-1 3.5-3.6-.5L12 22.3 9.1 20l-3.6.5-1-3.5L1.3 15.2 2.9 12 1.3 8.8 4.5 7l1-3.5L9.1 4 12 1.7z"/><path d="m10.7 14.6-2.3-2.2-1.2 1.2 3.5 3.4 6-6-1.2-1.2-4.8 4.8z" fill="#04121a"/></svg></div>
+              <div class="xsub">by Sonar · @sonartracker</div></div>
+            </div>
+            <div class="xdiv"></div>
+            <div class="xsec"><p class="t">The signal</p><p class="b"><span class="tc">Empery Digital</span>'s treasury outflow now totals <span class="tr">~1,400 BTC (~$87M)</span> since May, per CoinDesk and Decrypt reporting.</p></div>
+            <div class="xsec"><p class="t">Why it matters</p><p class="b">That's steady sell-side supply hitting the tape — yet <span class="tc">BTC</span> closed the week <span class="tg">+2.2%</span>, holding near $64.3K. Someone kept bidding.</p></div>
+            <div class="xsec"><p class="t">What to watch</p><p class="b">Whether <span class="tg">ETF inflows</span> keep absorbing corporate supply — and which treasury moves next.</p></div>
+            <p class="xtime">11 Jul 2026 · Orca AI by Sonar</p>
+          </div>
+          <span class="spacer"></span>
+          <div class="foot"><span class="disc">Not financial advice</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+
+      <div class="slide cta rings">
+        <div class="pad">
+          <div class="srow" style="justify-content:center"><span style="color:var(--faint)">Whale flows · tracked live</span></div>
+          <div class="ctamid">
+            <img src="__LOGO__" alt="Sonar">
+            <p class="ctaline">Comment <b>"WHALE"</b> and Orca DMs you the watchlist.</p>
+            <div class="ctaurl"><span class="lm">Learn more at</span><span class="u">sonartracker.io</span></div>
+          </div>
+          <div class="foot" style="justify-content:center"><span class="disc">Not financial advice</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>🧾 The receipts: ~1,400 BTC out the door since May.
+
+Nasdaq-listed Empery Digital has offloaded about $87M of Bitcoin to fund its AI pivot — and the market ate it. BTC closed the week +2.2%, holding near $64.3K.
+
+Supply hit the tape. Buyers showed up. That's the story.
+
+Comment "WHALE" and Orca will DM you the whale watchlist.
+
+Not financial advice.
+
+<span class="tag">#Bitcoin #BTC #WhaleAlert #OnChain #CryptoNews #SmartMoney #Sonar</span></pre></div>
+  </section>
+<section class="carousel">
+    <div class="chead"><span class="cnum">8</span><span class="ctitle">Day 4 · Evening — Absorbed the dump <span>· stat single · 1 slide</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Markets</span></div>
+          <div class="qzone">
+            <div class="qcard">
+              <div class="qtop"><span class="qcoin">₿</span><div><div class="qname">Bitcoin</div><div class="qsub">BTC · USD</div></div><span class="qlive"><i></i>Live</span></div>
+              <div class="qprice">$64,350</div>
+              <div class="qchg">▲ +2.2% past 7 days</div>
+              <div class="qchart"><canvas id="qbtc"></canvas></div>
+              <div class="qpills"><span class="pill">1D</span><span class="pill on">1W</span><span class="pill">1M</span><span class="pill">3M</span><span class="pill">1Y</span></div>
+            </div>
+            <div class="inset"><img src="__MEMEB__" alt=""></div>
+          </div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">NEWS</span><span class="r"></span></div>
+          <h2 class="big sm"><em class="hl-c">BITCOIN</em> ABSORBED AN <em class="hl-r">$87M DUMP</em> WITHOUT BLINKING</h2>
+          <div class="foot"><span>Source: Binance · CoinDesk</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>A treasury firm has sold ~1,400 BTC (~$87M) since May — and Bitcoin still closed the week +2.2%, holding near $64.3K.
+
+Someone is on the other side of that trade. 👀
+
+Comment "WHALE" and Orca will DM you who's been absorbing the supply.
+
+Not financial advice.
+
+<span class="tag">#Bitcoin #BTC #CryptoNews #WhaleWatch #OnChain #Sonar</span></pre></div>
+  </section>  <footer>Sonar Tracker · first-8 posting pack · Anton (OFL) · art via gpt-image-1 · BTC/ETH candles (Binance) &amp; CRCL closes (NYSE) 11 Jul 2026</footer>
+</div></div>
+<script>
+__DATA__
+function fit(cv){const box=cv.parentElement.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  if(box.width<4||box.height<4)return null;cv.width=Math.round(box.width*dpr);cv.height=Math.round(box.height*dpr);return dpr;}
+const GREEN='#00e08a',RED='#ff5b6b',CYAN='#3bc9ee',MUTE='#64748b';
+const usd0=v=>'$'+Math.round(v).toLocaleString('en-US');
+const usd2=v=>'$'+v.toFixed(2);
+function chip(ctx,x,y,text,color,align,fs){
+  ctx.font='700 '+fs+'px ui-monospace,Menlo,monospace';
+  const w=ctx.measureText(text).width,padX=fs*0.55,h=fs*1.75;
+  let bx=align==='right'?x-w-padX*2:align==='center'?x-w/2-padX:x;
+  bx=Math.max(2,Math.min(bx,ctx.canvas.width-w-padX*2-2));
+  ctx.fillStyle='rgba(6,10,16,0.85)';
+  ctx.beginPath();ctx.roundRect(bx,y-h/2,w+padX*2,h,fs*0.4);ctx.fill();
+  ctx.fillStyle=color;ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText(text,bx+padX,y+fs*0.06);
+}
+function candles(id,data,fmt){
+  const cv=document.getElementById(id);if(!cv)return;const dpr=fit(cv);if(!dpr)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  const fs=Math.max(9*dpr,W*0.024);
+  const padT=fs*2.4,padB=fs*1.2,padL=fs*0.5,padR=fs*6.4;
+  let hi=-1e18,lo=1e18,hiI=0,loI=0;
+  data.forEach((d,i)=>{if(d[1]>hi){hi=d[1];hiI=i;} if(d[2]<lo){lo=d[2];loI=i;}});
+  const hiV=hi,loV=lo,rng=(hi-lo)||1;hi+=rng*0.10;lo-=rng*0.14;
+  const Y=v=>padT+(1-(v-lo)/(hi-lo))*(H-padT-padB);
+  const n=data.length,cw=(W-padL-padR)/n,bw=cw*0.55,X=i=>padL+cw*i+cw/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.font=fs+'px ui-monospace,Menlo,monospace';ctx.textBaseline='middle';
+  for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,y=Y(v);
+    ctx.strokeStyle='rgba(255,255,255,0.055)';ctx.lineWidth=1*dpr;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR+fs*0.6,y);ctx.stroke();
+    ctx.fillStyle=MUTE;ctx.textAlign='left';ctx.fillText(fmt(v),W-padR+fs,y);}
+  data.forEach((d,i)=>{const x=X(i),o=Y(d[0]),h=Y(d[1]),l=Y(d[2]),c=Y(d[3]);
+    const col=d[3]>=d[0]?GREEN:RED;ctx.strokeStyle=col;ctx.lineWidth=Math.max(1,1.1*dpr);
+    ctx.beginPath();ctx.moveTo(x,h);ctx.lineTo(x,l);ctx.stroke();
+    ctx.fillStyle=col;const top=Math.min(o,c),bh=Math.max(Math.abs(c-o),1.3*dpr);ctx.fillRect(x-bw/2,top,bw,bh);});
+  const lx=X(loI),ly=Y(loV);
+  ctx.strokeStyle='rgba(255,91,107,.7)';ctx.lineWidth=1*dpr;
+  ctx.beginPath();ctx.moveTo(lx,ly+fs*0.5);ctx.lineTo(lx,ly+fs*1.5);ctx.stroke();
+  chip(ctx,lx,ly+fs*2.4,'7D LOW '+fmt(loV),RED,loI<n*0.25?'left':'center',fs);
+  const hx=X(hiI),hy=Y(hiV);
+  ctx.strokeStyle='rgba(233,240,247,.55)';ctx.lineWidth=1*dpr;
+  ctx.beginPath();ctx.moveTo(hx,hy-fs*0.5);ctx.lineTo(hx,hy-fs*1.5);ctx.stroke();
+  chip(ctx,hx,hy-fs*2.4,'7D HIGH '+fmt(hiV),'#e9f0f7',hiI<n*0.25?'left':'center',fs);
+  const last=data[n-1][3],lyy=Y(last);
+  ctx.strokeStyle='rgba(0,224,138,0.5)';ctx.setLineDash([4*dpr,4*dpr]);ctx.lineWidth=1*dpr;
+  ctx.beginPath();ctx.moveTo(padL,lyy);ctx.lineTo(W-padR+fs*0.6,lyy);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=GREEN;const tagW=padR-fs*0.4;
+  ctx.beginPath();ctx.roundRect(W-padR+fs*0.6,lyy-fs*0.95,tagW,fs*1.9,fs*0.35);ctx.fill();
+  ctx.fillStyle='#04120c';ctx.textAlign='center';ctx.font='700 '+fs+'px ui-monospace,Menlo,monospace';
+  ctx.fillText(fmt(last),W-padR+fs*0.6+tagW/2,lyy+fs*0.06);
+}
+function lineChart(id,data,fmt,eventIdx,eventLabel){
+  const cv=document.getElementById(id);if(!cv)return;const dpr=fit(cv);if(!dpr)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  const fs=Math.max(9*dpr,W*0.024);
+  const padT=fs*2.4,padB=fs*1.2,padL=fs*0.5,padR=fs*6.4;
+  const ys=data.map(d=>d[1]);
+  let lo=Math.min(...ys),hi=Math.max(...ys);const loV=lo,loI=ys.indexOf(lo),r=(hi-lo)||1;lo-=r*0.16;hi+=r*0.12;
+  const X=i=>padL+i/(data.length-1)*(W-padL-padR-fs*0.5);
+  const Y=v=>padT+(1-(v-lo)/(hi-lo))*(H-padT-padB);
+  ctx.clearRect(0,0,W,H);
+  ctx.font=fs+'px ui-monospace,Menlo,monospace';ctx.textBaseline='middle';
+  for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,y=Y(v);
+    ctx.strokeStyle='rgba(255,255,255,0.055)';ctx.lineWidth=1*dpr;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR+fs*0.6,y);ctx.stroke();
+    ctx.fillStyle=MUTE;ctx.textAlign='left';ctx.fillText(fmt(v),W-padR+fs,y);}
+  const g=ctx.createLinearGradient(0,padT,0,H);g.addColorStop(0,'rgba(59,201,238,0.20)');g.addColorStop(1,'rgba(59,201,238,0)');
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.lineTo(X(ys.length-1),H-padB);ctx.lineTo(X(0),H-padB);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle=CYAN;ctx.lineWidth=2.2*dpr;ctx.lineJoin='round';ctx.stroke();
+  const lx=X(loI),ly=Y(loV);
+  ctx.beginPath();ctx.arc(lx,ly,3.2*dpr,0,7);ctx.fillStyle=RED;ctx.fill();
+  ctx.strokeStyle='#060a10';ctx.lineWidth=2*dpr;ctx.stroke();
+  chip(ctx,lx,ly+fs*2.1,'1M LOW '+fmt(loV),RED,'center',fs);
+  const ex=X(eventIdx),ev=ys[eventIdx],ey=Y(ev);
+  ctx.beginPath();ctx.arc(ex,ey,4*dpr,0,7);ctx.fillStyle=GREEN;ctx.fill();
+  ctx.strokeStyle='#060a10';ctx.lineWidth=2*dpr;ctx.stroke();
+  ctx.strokeStyle='rgba(0,224,138,.65)';ctx.lineWidth=1*dpr;
+  ctx.beginPath();ctx.moveTo(ex,ey-fs*0.8);ctx.lineTo(ex,ey-fs*2.2);ctx.stroke();
+  chip(ctx,ex,ey-fs*3.1,eventLabel,GREEN,'right',fs);
+  const last=ys[ys.length-1],lyy=Y(last);
+  ctx.strokeStyle='rgba(59,201,238,0.45)';ctx.setLineDash([4*dpr,4*dpr]);ctx.lineWidth=1*dpr;
+  ctx.beginPath();ctx.moveTo(padL,lyy);ctx.lineTo(W-padR+fs*0.6,lyy);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=CYAN;const tagW=padR-fs*0.4;
+  ctx.beginPath();ctx.roundRect(W-padR+fs*0.6,lyy-fs*0.95,tagW,fs*1.9,fs*0.35);ctx.fill();
+  ctx.fillStyle='#04121a';ctx.textAlign='center';ctx.font='700 '+fs+'px ui-monospace,Menlo,monospace';
+  ctx.fillText(fmt(last),W-padR+fs*0.6+tagW/2,lyy+fs*0.06);
+}
+function mini(id,ys){
+  const cv=document.getElementById(id);if(!cv)return;const dpr=fit(cv);if(!dpr)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,p=3*dpr;
+  let lo=Math.min(...ys),hi=Math.max(...ys);const r=(hi-lo)||1;lo-=r*0.12;hi+=r*0.12;
+  const X=i=>p+i/(ys.length-1)*(W-2*p),Y=v=>p+(1-(v-lo)/(hi-lo))*(H-2*p);
+  ctx.clearRect(0,0,W,H);
+  const up=ys[ys.length-1]>=ys[0],col=up?'#00e08a':'#ff5b6b',ca=up?'0,224,138':'255,91,107';
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba('+ca+',0.32)');g.addColorStop(1,'rgba('+ca+',0)');
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.lineTo(X(ys.length-1),H);ctx.lineTo(X(0),H);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle=col;ctx.lineWidth=2.4*dpr;ctx.lineJoin='round';ctx.stroke();
+  const lx=X(ys.length-1),ly=Y(ys[ys.length-1]);ctx.beginPath();ctx.arc(lx,ly,3.4*dpr,0,7);ctx.fillStyle=col;ctx.fill();
+  ctx.strokeStyle='#0a1018';ctx.lineWidth=2*dpr;ctx.stroke();
+}
+function drawAll(){
+  candles('btc',BTC.map(d=>[d[0],d[1],d[2],d[3]]),usd0);
+  candles('btc2',BTC.map(d=>[d[0],d[1],d[2],d[3]]),usd0);
+  candles('eth',ETH.map(d=>[d[0],d[1],d[2],d[3]]),usd0);
+  lineChart('crcl',CRCL.map((d,i)=>[i,d[1]]),usd2,CRCL.length-1,'OCC CHARTER +5.0%');
+  mini('qbtc',BTC.slice(-28).map(d=>d[3]));
+  mini('qcrcl',CRCL.map(d=>d[1]));
+}
+requestAnimationFrame(()=>requestAnimationFrame(drawAll));
+window.addEventListener('load',drawAll);window.addEventListener('resize',drawAll);
+</script>
