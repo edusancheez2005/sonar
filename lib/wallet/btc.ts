@@ -1,5 +1,6 @@
 import 'server-only'
 import type { Holding } from './types'
+import { cgRequest } from '@/lib/coingecko/client'
 
 export async function getBitcoinHoldings(address: string): Promise<Holding[]> {
   try {
@@ -13,7 +14,8 @@ export async function getBitcoinHoldings(address: string): Promise<Holding[]> {
     const btc = sats / 1e8
     let price: number | null = null
     try {
-      const p = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', { next: { revalidate: 60 } } as any)
+      const cg = cgRequest('/simple/price?ids=bitcoin&vs_currencies=usd')
+      const p = await fetch(cg.url, { headers: cg.headers, next: { revalidate: 60 } } as any)
       if (p.ok) {
         const pj = await p.json()
         price = pj?.bitcoin?.usd ?? null

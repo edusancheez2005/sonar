@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
+import { cgRequest } from '@/lib/coingecko/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -178,10 +179,13 @@ export async function GET(req) {
           signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 }
         }).catch(() => null),
         cgId
-          ? fetch(
-              `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true`,
-              { signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 } }
-            ).catch(() => null)
+          ? (() => {
+              const cgReq = cgRequest(`/coins/${cgId}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true`)
+              return fetch(cgReq.url, {
+                headers: cgReq.headers,
+                signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 },
+              }).catch(() => null)
+            })()
           : Promise.resolve(null),
       ])
 

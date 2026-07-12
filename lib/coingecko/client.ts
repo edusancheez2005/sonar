@@ -18,6 +18,27 @@ interface CacheEntry<T> {
 // In-memory cache (consider Redis for production)
 const cache = new Map<string, CacheEntry<any>>()
 
+/**
+ * Build a CoinGecko request against the paid Pro API when the key is
+ * configured, falling back to the free tier otherwise. Use this for every
+ * one-off fetch outside this client — free-tier calls from Vercel's shared
+ * egress IPs get randomly 429'd while our paid quota sits idle.
+ * The key goes in the x-cg-pro-api-key header (not the query string) so it
+ * stays out of logs and cached URLs.
+ */
+export function cgRequest(pathAndQuery: string): { url: string; headers: Record<string, string> } {
+  if (API_KEY) {
+    return {
+      url: `https://pro-api.coingecko.com/api/v3${pathAndQuery}`,
+      headers: { Accept: 'application/json', 'x-cg-pro-api-key': API_KEY },
+    }
+  }
+  return {
+    url: `https://api.coingecko.com/api/v3${pathAndQuery}`,
+    headers: { Accept: 'application/json' },
+  }
+}
+
 interface FetchOptions {
   cacheTTL?: number // seconds
   retries?: number
@@ -49,13 +70,10 @@ async function fetchWithRetry<T>(
 
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const url = `${BASE_URL}${endpoint}`
-      const separator = endpoint.includes('?') ? '&' : '?'
-      const fullUrl = `${url}${separator}x_cg_pro_api_key=${API_KEY}`
-
-      const response = await fetch(fullUrl, {
+      const response = await fetch(`${BASE_URL}${endpoint}`, {
         headers: {
           'Accept': 'application/json',
+          ...(API_KEY ? { 'x-cg-pro-api-key': API_KEY } : {}),
         },
       })
 

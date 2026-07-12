@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
+import { cgRequest } from '@/lib/coingecko/client'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -84,12 +85,15 @@ export async function GET(req) {
       fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=1d&limit=30`, {
         signal: AbortSignal.timeout(8000), cache: 'no-store', next: { revalidate: 0 }
       }).catch(() => null),
-      // CoinGecko free tier — metadata only (market cap, supply, ATH/ATL, links)
-      // 5min revalidate is FINE here — metadata, not price.
-      fetch(
-        `https://api.coingecko.com/api/v3/coins/${cgId}?localization=false&tickers=false&community_data=true&developer_data=true`,
-        { signal: AbortSignal.timeout(8000), next: { revalidate: 300 } }
-      ).catch(() => null),
+      // CoinGecko metadata (market cap, supply, ATH/ATL, links) via the paid
+      // key when configured. 5min revalidate is FINE here — metadata, not price.
+      (() => {
+        const cgReq = cgRequest(`/coins/${cgId}?localization=false&tickers=false&community_data=true&developer_data=true`)
+        return fetch(cgReq.url, {
+          headers: cgReq.headers,
+          signal: AbortSignal.timeout(8000), next: { revalidate: 300 },
+        }).catch(() => null)
+      })(),
     ])
 
     if (!ticker24hRes || !ticker24hRes.ok) {

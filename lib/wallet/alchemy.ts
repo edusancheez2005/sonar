@@ -1,6 +1,7 @@
 import 'server-only'
 import type { Chain, Holding } from './types'
 import { STABLECOINS } from './types'
+import { cgRequest } from '@/lib/coingecko/client'
 
 // Heuristic: many airdrop-spam tokens hide their nature in their NAME or
 // SYMBOL with claim instructions, URLs, or visit-prompts. We hard-drop any
@@ -86,9 +87,9 @@ async function priceForContracts(
   // Chunk to keep URL under limit
   for (let i = 0; i < contracts.length; i += 50) {
     const chunk = contracts.slice(i, i + 50).map((c) => c.toLowerCase())
-    const url = `https://api.coingecko.com/api/v3/simple/token_price/${platform}?contract_addresses=${chunk.join(',')}&vs_currencies=usd`
+    const cg = cgRequest(`/simple/token_price/${platform}?contract_addresses=${chunk.join(',')}&vs_currencies=usd`)
     try {
-      const res = await fetch(url, { next: { revalidate: 60 } } as any)
+      const res = await fetch(cg.url, { headers: cg.headers, next: { revalidate: 60 } } as any)
       if (!res.ok) continue
       const j: CoingeckoPrice = await res.json()
       for (const [addr, v] of Object.entries(j)) {
@@ -101,7 +102,9 @@ async function priceForContracts(
 
 async function priceForCoingeckoId(id: string): Promise<number | null> {
   try {
-    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`, {
+    const cg = cgRequest(`/simple/price?ids=${id}&vs_currencies=usd`)
+    const res = await fetch(cg.url, {
+      headers: cg.headers,
       next: { revalidate: 60 },
     } as any)
     if (!res.ok) return null

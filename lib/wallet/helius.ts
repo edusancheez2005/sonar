@@ -1,5 +1,6 @@
 import 'server-only'
 import type { Holding } from './types'
+import { cgRequest } from '@/lib/coingecko/client'
 
 export async function getSolanaHoldings(address: string): Promise<Holding[]> {
   const key = process.env.HELIUS_API_KEY
@@ -19,7 +20,8 @@ export async function getSolanaHoldings(address: string): Promise<Holding[]> {
     const lamports = Number(j?.result?.value || 0)
     if (lamports > 0) {
       const sol = lamports / 1e9
-      const price = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd', { next: { revalidate: 60 } } as any)
+      const cg = cgRequest('/simple/price?ids=solana&vs_currencies=usd')
+      const price = await fetch(cg.url, { headers: cg.headers, next: { revalidate: 60 } } as any)
         .then((r) => r.ok ? r.json() : null).then((j) => j?.solana?.usd ?? null).catch(() => null)
       out.push({
         symbol: 'SOL',

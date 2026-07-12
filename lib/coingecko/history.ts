@@ -51,15 +51,18 @@ function buildUrl(path: string, params: Record<string, string | number>) {
     : 'https://api.coingecko.com/api/v3'
   const qs = new URLSearchParams()
   for (const [k, v] of Object.entries(params)) qs.set(k, String(v))
-  if (apiKey) qs.set('x_cg_pro_api_key', apiKey)
   return `${base}${path}?${qs.toString()}`
 }
 
 async function fetchJson(url: string, retries = 2): Promise<any> {
+  const apiKey = process.env.COINGECKO_API_KEY
   let lastErr: any = null
   for (let i = 0; i <= retries; i += 1) {
     try {
-      const res = await fetch(url, { cache: 'no-store' })
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: apiKey ? { 'x-cg-pro-api-key': apiKey } : undefined,
+      })
       if (res.status === 429) {
         // Backoff briefly on rate limits before retrying.
         await new Promise((r) => setTimeout(r, 1500 * (i + 1)))

@@ -1018,57 +1018,69 @@ async function fetchBinanceLivePrice(tokenSymbol) {
 
 
 async function fetchSocialData(tokenSymbol) {
+  const map = await fetchSocialDataBulk()
+  return map?.get(String(tokenSymbol).toUpperCase()) || null
+}
+
+// One /coins/list/v1 call covers every token we compute signals for.
+// The per-token /coins/{symbol}/v1 loop this replaces burned up to 50
+// LunarCrush calls per run (≤4800/day vs the 2000/day Individual cap,
+// and 50 back-to-back calls vs the 10/min cap — the main source of our
+// 429s). Bulk: at most 1 call per run = ≤96/day. 30-min TTL because the
+// metrics refresh ~hourly upstream; single-flight so concurrent tokens
+// on a cold instance trigger exactly one fetch.
+async function fetchSocialDataBulk() {
   const apiKey = process.env.LUNARCRUSH_API_KEY
   if (!apiKey) return null
-
-  // In-process cache: LunarCrush /coins/{symbol}/v1 only refreshes
-  // every ~hour upstream, but compute-signals runs every 15 min and
-  // hits this endpoint once per token. Caching for 30 min cuts our
-  // LunarCrush spend ~50% (4 runs/hr → 2 fresh fetches/hr per token)
-  // without losing material freshness. The Individual plan ceiling is
-  // 2000 calls/day; ~30 tokens × 2 = ~1440/day fits comfortably.
-  if (!global.__lcSocialCache) global.__lcSocialCache = new Map()
-  const cache = global.__lcSocialCache
+  if (!global.__lcBulkCache) global.__lcBulkCache = { ts: 0, map: null, inflight: null }
+  const c = global.__lcBulkCache
   const TTL_MS = 30 * 60 * 1000
-  const cached = cache.get(tokenSymbol)
-  if (cached && Date.now() - cached.ts < TTL_MS) {
-    return cached.data
-  }
+  const STALE_MS = 6 * 60 * 60 * 1000
+  if (c.map && Date.now() - c.ts < TTL_MS) return c.map
+  if (c.inflight) return c.inflight
 
-  try {
-    const res = await fetch(
-      `https://lunarcrush.com/api4/public/coins/${tokenSymbol}/v1`,
-      {
+  c.inflight = (async () => {
+    try {
+      const res = await fetch('https://lunarcrush.com/api4/public/coins/list/v1', {
         headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!res.ok) {
+        // On quota/error serve stale (up to 6h) rather than degrade signals.
+        if (c.map && Date.now() - c.ts < STALE_MS) {
+          console.warn(`[SignalEngine] LunarCrush ${res.status}, serving stale bulk (${Math.round((Date.now() - c.ts) / 60000)} min old)`)
+          return c.map
+        }
+        return null
       }
-    )
-
-    // On 429 quota, serve stale cache (up to 6h) instead of returning
-    // null and degrading the signal. If no cache exists, return null.
-    if (!res.ok) {
-      if (res.status === 429 && cached && Date.now() - cached.ts < 6 * 60 * 60 * 1000) {
-        console.warn(`[SignalEngine] LunarCrush 429 for ${tokenSymbol}, serving stale (${Math.round((Date.now() - cached.ts) / 60000)} min old)`)
-        return cached.data
+      const json = await res.json()
+      const map = new Map()
+      for (const d of json?.data || []) {
+        const sym = String(d?.symbol || '').toUpperCase()
+        if (!sym) continue
+        // Symbols collide across coins; keep the larger market cap.
+        const prev = map.get(sym)
+        if (prev && (prev.market_cap || 0) >= (d.market_cap || 0)) continue
+        map.set(sym, {
+          galaxy_score: d.galaxy_score || null,
+          alt_rank: d.alt_rank || null,
+          sentiment: d.sentiment || null,
+          social_dominance: d.social_dominance || null,
+          interactions_24h: d.interactions_24h || null,
+          market_cap: d.market_cap || null,
+        })
       }
-      return null
+      c.map = map
+      c.ts = Date.now()
+      return map
+    } catch (err) {
+      console.error('[SignalEngine] LunarCrush bulk error:', err.message)
+      return c.map && Date.now() - c.ts < STALE_MS ? c.map : null
+    } finally {
+      c.inflight = null
     }
-    const json = await res.json()
-    const d = json.data
-
-    const data = {
-      galaxy_score: d?.galaxy_score || null,
-      alt_rank: d?.alt_rank || null,
-      sentiment: d?.sentiment || null,
-      social_dominance: d?.social_dominance || null,
-      interactions_24h: d?.interactions_24h || null,
-    }
-    cache.set(tokenSymbol, { data, ts: Date.now() })
-    return data
-  } catch (err) {
-    console.error(`[SignalEngine] LunarCrush error for ${tokenSymbol}:`, err.message)
-    return null
-  }
+  })()
+  return c.inflight
 }
 
 
