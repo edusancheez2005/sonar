@@ -16,6 +16,7 @@
  * `stale: true` rather than erroring.
  */
 import { createClient } from '@supabase/supabase-js'
+import { getGlobalData, type GlobalMarketData } from '@/lib/coingecko/client'
 
 export type MacroImpact = 'bullish' | 'bearish' | 'neutral'
 
@@ -29,6 +30,9 @@ export interface MacroFactorsResult {
   factors: MacroFactor[]
   overall_sentiment: MacroImpact
   last_updated: string
+  /** Authoritative market-structure numbers from CoinGecko /global —
+   *  present when the fetch succeeded at generation time. */
+  market?: GlobalMarketData
   /** True when the data is served from cache past its freshness window
    *  (upstream refresh failed) — callers should note it may be a little behind. */
   stale: boolean
@@ -47,7 +51,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABAS
 const SUPABASE_SERVICE_ROLE =
   process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const CACHE_VERSION = 'v3-responses-web_search-2026-05-04'
+const CACHE_VERSION = 'v4-cg-global-2026-07-12'
 const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
 
 let cachedResult: MacroFactorsResult | null = null
@@ -192,6 +196,26 @@ async function generateFresh(): Promise<MacroFactorsResult> {
         .join('\n')}\n\nUse these AS A STARTING POINT but ALSO search the web for anything more recent.`
     : ''
 
+  // Authoritative market-structure numbers from CoinGecko /global. Grounds
+  // the "market structure" factor with exact figures instead of making the
+  // model search the web for (and occasionally misquote) them. Best-effort:
+  // macro generation must not fail because CoinGecko hiccuped.
+  let market: GlobalMarketData | undefined
+  try {
+    market = await getGlobalData()
+  } catch (err: any) {
+    console.warn('[macro] CoinGecko /global unavailable:', err?.message || err)
+  }
+  const fmtT = (v: number | null) => (v != null ? `$${(v / 1e12).toFixed(2)}T` : 'n/a')
+  const fmtB = (v: number | null) => (v != null ? `$${(v / 1e9).toFixed(0)}B` : 'n/a')
+  const fmtPct = (v: number | null) => (v != null ? `${v.toFixed(1)}%` : 'n/a')
+  const marketBlock = market && market.total_market_cap_usd != null
+    ? `\n\nVERIFIED market-structure data as of right now (from CoinGecko — use these exact figures for any market-structure factor; do NOT search the web for these numbers):
+- Total crypto market cap: ${fmtT(market.total_market_cap_usd)} (${fmtPct(market.market_cap_change_percentage_24h_usd)} in 24h)
+- BTC dominance: ${fmtPct(market.btc_dominance_pct)} | ETH dominance: ${fmtPct(market.eth_dominance_pct)}
+- Total 24h volume: ${fmtB(market.total_volume_24h_usd)}`
+    : ''
+
   const prompt = `Today is ${today}.
 
 You are a concise crypto macro analyst. Search the web RIGHT NOW for the most important macro factors affecting crypto markets in the last 7 days.
@@ -203,7 +227,7 @@ Cover these areas (only include a factor if you find real, recent data — skip 
 4. ETF flows: BTC/ETH ETF inflows/outflows
 5. Institutional moves: MicroStrategy/Strategy, BlackRock, corporate buys
 6. Market structure: BTC dominance, total crypto market cap, stablecoin supply
-7. Any breaking macro event from the last 48 hours${headlinesBlock}
+7. Any breaking macro event from the last 48 hours${headlinesBlock}${marketBlock}
 
 Return ONLY a valid JSON object — no prose, no markdown fences:
 {
@@ -274,6 +298,7 @@ Rules:
   }
 
   const result = normaliseResult(parsed, today)
+  if (market) result.market = market
   if (result.factors.length === 0) {
     if (cachedResult) return { ...cachedResult, stale: true }
     throw new MacroUnavailableError('macro_empty')

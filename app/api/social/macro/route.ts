@@ -25,6 +25,7 @@ export async function GET() {
         factors: result.factors,
         overall_sentiment: result.overall_sentiment,
         last_updated: result.last_updated,
+        market: result.market ?? null,
         stale: result.stale,
       },
       {

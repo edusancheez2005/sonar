@@ -22,6 +22,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { getEvmTransfers } from '@/lib/wallet/transfers'
 import { getSolanaTrackedTransfers } from '@/lib/wallet/sol-tracked-transfers'
+import { getTokenInfoByContract } from '@/lib/coingecko/client'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 min — Vercel pro plan
@@ -100,7 +101,67 @@ async function fetchTransfersForRow(row, lastBlock) {
   return { transfers, source: 'alchemy' }
 }
 
-async function pollAddress(row, lastBlock) {
+// CoinGecko asset-platform ids for the chains this cron polls.
+const CG_PLATFORM = {
+  ethereum: 'ethereum',
+  polygon: 'polygon-pos',
+  solana: 'solana',
+}
+
+/**
+ * Fill token_symbol and amount_usd on transfers Alchemy/Helius couldn't
+ * identify, via CoinGecko's contract lookup. Budgeted per run (shared
+ * across addresses) so a burst of exotic tokens can't eat API credits:
+ * ≤15 lookups/run × 24 runs/day ≈ 360 credits/day of our 100K/mo plan.
+ * Unknown contracts (CG 404s) are negative-cached for the run.
+ */
+async function enrichTransfers(inserts, chain, budget) {
+  const platform = CG_PLATFORM[chain]
+  if (!platform) return 0
+
+  // EVM contracts are case-insensitive (normalize to lowercase); Solana
+  // mints are base58 and case-SENSITIVE — lowercasing one breaks the lookup.
+  const normalize = (c) => (platform === 'solana' ? c : c.toLowerCase())
+
+  const byContract = new Map()
+  for (const r of inserts) {
+    if (!r.contract) continue
+    if (r.token_symbol && r.amount_usd != null) continue
+    const key = `${platform}:${normalize(r.contract)}`
+    if (!byContract.has(key)) byContract.set(key, [])
+    byContract.get(key).push(r)
+  }
+
+  let enriched = 0
+  for (const [key, rows] of byContract) {
+    let info = budget.cache.get(key)
+    if (info === undefined) {
+      if (budget.lookups >= budget.max) continue
+      budget.lookups++
+      try {
+        info = await getTokenInfoByContract(platform, key.slice(platform.length + 1))
+      } catch {
+        info = null // not on CG (or transient) — skip for this run
+      }
+      budget.cache.set(key, info)
+    }
+    if (!info) continue
+    const symbol = info.symbol ? String(info.symbol).toUpperCase() : null
+    const price = info.market_data?.current_price?.usd ?? null
+    for (const r of rows) {
+      let touched = false
+      if (!r.token_symbol && symbol) { r.token_symbol = symbol; touched = true }
+      if (r.amount_usd == null && price != null && Number.isFinite(r.amount)) {
+        r.amount_usd = r.amount * price
+        touched = true
+      }
+      if (touched) enriched++
+    }
+  }
+  return enriched
+}
+
+async function pollAddress(row, lastBlock, budget) {
   let transfers = []
   let source = 'alchemy'
   try {
@@ -124,12 +185,14 @@ async function pollAddress(row, lastBlock) {
     counterparty: t.direction === 'in' ? t.from : t.to,
     token_symbol: t.symbol,
     amount: Number.isFinite(t.amount) ? t.amount : null,
-    amount_usd: null, // best-effort enrichment can be added later
+    amount_usd: null, // filled below by enrichTransfers when CG knows the token
     arkham_entity_name: row.arkham_entity_name,
     arkham_entity_type: row.arkham_entity_type,
     arkham_label: row.arkham_label,
     source,
   }))
+
+  const enrichedCount = await enrichTransfers(inserts, row.chain, budget)
 
   // ON CONFLICT requires a real constraint name; we created a UNIQUE
   // INDEX so use ignoreDuplicates (PostgREST `Prefer: resolution=ignore-duplicates`).
@@ -144,7 +207,7 @@ async function pollAddress(row, lastBlock) {
   }
 
   const maxBlock = transfers.reduce((m, t) => (t.block > m ? t.block : m), lastBlock || 0)
-  return { rows: inserts.length, maxBlock, error: null }
+  return { rows: inserts.length, maxBlock, enriched: enrichedCount, error: null }
 }
 
 async function updatePollState(state) {
@@ -173,9 +236,12 @@ export async function GET(request) {
 
   const lastBlocks = await getLastBlockMap(addresses)
   let totalRows = 0
+  let totalEnriched = 0
   let ok = 0
   let errs = 0
   const stateUpdates = []
+  // Shared CoinGecko lookup budget for this run (see enrichTransfers).
+  const cgBudget = { lookups: 0, max: 15, cache: new Map() }
 
   // Conservative concurrency: Alchemy free tier is ~330 CU/s.
   // getAssetTransfers ≈ 150 CU. Two calls per address (in + out) inside
@@ -186,7 +252,7 @@ export async function GET(request) {
     const results = await Promise.all(
       batch.map((row) => {
         const key = `${row.chain}:${row.address}`
-        return pollAddress(row, lastBlocks.get(key) || 0)
+        return pollAddress(row, lastBlocks.get(key) || 0, cgBudget)
       })
     )
     results.forEach((res, idx) => {
@@ -194,6 +260,7 @@ export async function GET(request) {
       if (res.error) errs++
       else ok++
       totalRows += res.rows
+      totalEnriched += res.enriched || 0
       stateUpdates.push({
         chain: row.chain,
         address: row.address,
@@ -212,6 +279,8 @@ export async function GET(request) {
     addresses_ok: ok,
     addresses_err: errs,
     transfers_inserted_or_seen: totalRows,
+    transfers_enriched: totalEnriched,
+    cg_lookups: cgBudget.lookups,
     elapsed_ms: Date.now() - t0,
   })
 }

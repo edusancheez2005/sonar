@@ -102,6 +102,34 @@ async function fetchWithRetry<T>(
 }
 
 /**
+ * Global market data: total market cap, 24h change, BTC/ETH dominance,
+ * total volume. One cheap call — powers the macro strip and grounds the
+ * macro-factors prompt with authoritative numbers instead of web search.
+ */
+export interface GlobalMarketData {
+  total_market_cap_usd: number | null
+  total_volume_24h_usd: number | null
+  market_cap_change_percentage_24h_usd: number | null
+  btc_dominance_pct: number | null
+  eth_dominance_pct: number | null
+  active_cryptocurrencies: number | null
+}
+
+export async function getGlobalData(): Promise<GlobalMarketData> {
+  const raw = await fetchWithRetry<{ data: any }>('/global', { cacheTTL: 600 })
+  const d = raw?.data || {}
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+  return {
+    total_market_cap_usd: num(d.total_market_cap?.usd),
+    total_volume_24h_usd: num(d.total_volume?.usd),
+    market_cap_change_percentage_24h_usd: num(d.market_cap_change_percentage_24h_usd),
+    btc_dominance_pct: num(d.market_cap_percentage?.btc),
+    eth_dominance_pct: num(d.market_cap_percentage?.eth),
+    active_cryptocurrencies: num(d.active_cryptocurrencies),
+  }
+}
+
+/**
  * Get list of all coins (with optional filters)
  */
 interface CoinListItem {
