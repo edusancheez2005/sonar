@@ -118,10 +118,13 @@ export async function getEvmHoldings(chain: Chain, address: string): Promise<Hol
   if (!url) return []
   const native = NATIVE_SYMBOL[chain]
   const out: Holding[] = []
+  let nativeOk = false
+  let tokensOk = false
 
   // 1. Native balance
   try {
     const hex: string = await jsonRpc(url, 'eth_getBalance', [address, 'latest'])
+    nativeOk = true
     const { decimal, numeric } = fromHexBalance(hex, native!.decimals)
     if (numeric > 0) {
       const price = await priceForCoingeckoId(native!.coingeckoId)
@@ -142,8 +145,18 @@ export async function getEvmHoldings(chain: Chain, address: string): Promise<Hol
   let tokenBalances: Array<{ contractAddress: string; tokenBalance: string }> = []
   try {
     const result = await jsonRpc(url, 'alchemy_getTokenBalances', [address, 'erc20'])
+    tokensOk = true
     tokenBalances = (result?.tokenBalances || []).filter((t: any) => t.tokenBalance && t.tokenBalance !== '0x0' && t.tokenBalance !== '0x')
   } catch { /* ignore */ }
+
+  // If BOTH core reads failed we know nothing about this wallet — the
+  // provider is down or quota-capped, not the wallet empty. Returning []
+  // here presented (and cached) fake $0 portfolios: Vitalik's wallet
+  // scanned as $0 across all chains during the 2026-07 Alchemy quota
+  // exhaustion. Throw so callers surface an error state instead.
+  if (!nativeOk && !tokensOk) {
+    throw new Error(`alchemy_unavailable:${chain}`)
+  }
 
   // 3. Metadata in parallel (cap to top 60 by length to control cost)
   const sliced = tokenBalances.slice(0, 60)
