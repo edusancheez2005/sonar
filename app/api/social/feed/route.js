@@ -37,7 +37,9 @@ export async function GET(req) {
     }
 
     if (ticker) {
-      query = query.contains('tickers_mentioned', [ticker])
+      // tickers_mentioned is JSONB — containment needs a JSON literal, not a
+      // JS array (which PostgREST sends as cs.{BTC}, rejected as invalid JSON).
+      query = query.contains('tickers_mentioned', JSON.stringify([ticker]))
     }
 
     if (sort === 'recent') {

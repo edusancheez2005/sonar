@@ -13,7 +13,7 @@ import {
  * Minimal chainable Supabase query mock. Every chain method returns `this`;
  * the builder is thenable so `await` resolves to { data }.
  */
-function makeSupabase(byTable: Record<string, any[]>) {
+function makeSupabase(byTable: Record<string, any[]>, calls?: { contains?: any[] }) {
   return {
     from(table: string) {
       const rows = byTable[table] ?? []
@@ -22,7 +22,10 @@ function makeSupabase(byTable: Record<string, any[]>) {
         eq: () => builder,
         gte: () => builder,
         or: () => builder,
-        contains: () => builder,
+        contains: (col: string, val: any) => {
+          if (calls) (calls.contains ??= []).push([col, val])
+          return builder
+        },
         order: () => builder,
         limit: () => Promise.resolve({ data: rows }),
         then: (resolve: any) => resolve({ data: rows }),
@@ -210,5 +213,14 @@ describe('evaluateSocialPost', () => {
   it('returns null with no posts', async () => {
     const sb = makeSupabase({ social_posts: [] })
     expect(await evaluateSocialPost('SOL', sb, NOW)).toBeNull()
+  })
+  // tickers_mentioned is JSONB: containment must be a JSON string literal
+  // ('["SOL"]'), not a JS array. A JS array makes PostgREST emit cs.{SOL},
+  // which Postgres rejects with "invalid input syntax for type json".
+  it('queries containment with a JSON literal, not a JS array', async () => {
+    const calls: { contains?: any[] } = {}
+    const sb = makeSupabase({ social_posts: [] }, calls)
+    await evaluateSocialPost('SOL', sb, NOW)
+    expect(calls.contains).toEqual([['tickers_mentioned', '["SOL"]']])
   })
 })

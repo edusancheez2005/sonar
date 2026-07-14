@@ -1107,23 +1107,29 @@ async function fetchCommunityVotes(tokenSymbol) {
 // ─── STORAGE ─────────────────────────────────────────────────────────────
 
 async function storeSignal(signal) {
+  // token_signals.score/confidence/raw_score and every tier*_score/
+  // tier*_confidence column is INTEGER. Tier scores and confidence are
+  // computed as fractions (e.g. 41.665), and Postgres rejects the whole
+  // row with "invalid input syntax for type integer" before writing —
+  // silently dropping the signal. Round every integer-typed field here.
+  const int = (v) => Math.round(Number(v) || 0)
   const row = {
     token: signal.token,
     signal: signal.signal,
-    score: signal.score,
-    confidence: signal.confidence,
-    raw_score: signal.rawScore,
+    score: int(signal.score),
+    confidence: int(signal.confidence),
+    raw_score: int(signal.rawScore),
     price_at_signal: signal.price_at_signal,
     market_cap: signal.market_cap,
     timeframe: signal.timeframe,
-    tier1_score: signal.tiers?.tier1?.score || 0,
-    tier1_confidence: signal.tiers?.tier1?.confidence || 0,
-    tier2_score: signal.tiers?.tier2?.score || 0,
-    tier2_confidence: signal.tiers?.tier2?.confidence || 0,
-    tier3_score: signal.tiers?.tier3?.score || 0,
-    tier3_confidence: signal.tiers?.tier3?.confidence || 0,
-    tier4_score: signal.tiers?.tier4?.score || 0,
-    tier4_confidence: signal.tiers?.tier4?.confidence || 0,
+    tier1_score: int(signal.tiers?.tier1?.score),
+    tier1_confidence: int(signal.tiers?.tier1?.confidence),
+    tier2_score: int(signal.tiers?.tier2?.score),
+    tier2_confidence: int(signal.tiers?.tier2?.confidence),
+    tier3_score: int(signal.tiers?.tier3?.score),
+    tier3_confidence: int(signal.tiers?.tier3?.confidence),
+    tier4_score: int(signal.tiers?.tier4?.score),
+    tier4_confidence: int(signal.tiers?.tier4?.confidence),
     top_factors: signal.factors,
     traps: signal.traps,
     tier1_factors: signal.tiers?.tier1?.factors || {},

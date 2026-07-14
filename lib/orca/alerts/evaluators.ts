@@ -285,7 +285,10 @@ export async function evaluateSocialPost(
     const { data } = await supabase
       .from('social_posts')
       .select('body, creator_screen_name, url, published_at, interactions')
-      .contains('tickers_mentioned', [ticker])
+      // tickers_mentioned is JSONB, so containment needs a JSON literal.
+      // Passing a JS array makes PostgREST send a Postgres array literal
+      // (cs.{BTC}), which the jsonb @> operator rejects as invalid JSON.
+      .contains('tickers_mentioned', JSON.stringify([ticker]))
       .gte('published_at', sinceIso)
       .order('published_at', { ascending: false })
       .limit(5)
