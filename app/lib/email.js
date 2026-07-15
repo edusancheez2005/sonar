@@ -150,7 +150,7 @@ function renderEmailShell({ title, subtitle, bodyHtml, footerNote }) {
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#0b1422;border:1px solid #1f2937;border-radius:12px;">
         <tr><td style="padding:24px 28px 8px;">
-          <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#22d3ee;font-weight:700;">Sonar Tracker</div>
+          <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#22d3ee;font-weight:700;"><span style="font-size:14px;">&#9673;</span>&nbsp; Sonar Tracker</div>
           <h1 style="margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:800;">${title}</h1>
           ${subtitle ? `<div style="margin:6px 0 0;color:#9ca3af;font-size:13px;">${subtitle}</div>` : ''}
         </td></tr>

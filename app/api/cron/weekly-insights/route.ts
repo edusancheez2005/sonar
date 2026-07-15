@@ -610,7 +610,7 @@ function generateEmailHTML(insights: any, weekLabel: string): string {
   <!-- Header -->
   <tr><td style="padding:30px;text-align:center;border-bottom:1px solid #1a2d3d;">
     <img src="https://www.sonartracker.io/logo2.png" alt="Sonar" width="132" style="display:block;margin:0 auto 14px;">
-    <div style="font-size:12px;color:#36a6ba;letter-spacing:1px;text-transform:uppercase;font-weight:700;">Sonar · Whale Pulse</div>
+    <div style="font-size:12px;color:#36a6ba;letter-spacing:1px;text-transform:uppercase;font-weight:700;"><span style="font-size:14px;">&#9673;</span>&nbsp; Sonar · Whale Pulse</div>
     <div style="font-size:12px;color:#6a7a8a;margin-top:6px;">Weekly insights · ${escapeHtml(weekLabel)}</div>
   </td></tr>
 
