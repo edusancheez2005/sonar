@@ -12,6 +12,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { extractTickers } from '@/lib/orca/ticker-extractor'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
@@ -131,7 +132,11 @@ export async function GET(request: Request) {
               interactions: p.interactions_24h || p.interactions_total || 0,
               likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
               category: ['dogecoin', 'pepe'].includes(topic) ? 'memecoins' : topic === 'defi' ? 'defi' : 'cryptocurrencies',
-              tickers_mentioned: p.coins_mentioned || null,
+              // LunarCrush posts carry no coins_mentioned field, so this was
+              // always null and broke ticker-filtered alerts/feed. Extract
+              // from the post text ourselves (high precision — cashtags +
+              // coin names, no ambiguous bare tickers).
+              tickers_mentioned: extractTickers(`${p.post_title || ''} ${body}`),
               published_at: p.post_created ? (typeof p.post_created === 'number' ? new Date(p.post_created * 1000).toISOString() : (String(p.post_created).match(/^\d{10,}$/) ? new Date(Number(p.post_created) * 1000).toISOString() : p.post_created)) : new Date().toISOString(),
               ingested_at: new Date().toISOString(),
             }
@@ -175,6 +180,7 @@ export async function GET(request: Request) {
             interactions: p.interactions_24h || 0,
             likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
             category: 'tracked_creator',
+            tickers_mentioned: extractTickers(`${p.post_title || ''} ${body}`),
             published_at: p.post_created ? (typeof p.post_created === 'number' ? new Date(p.post_created * 1000).toISOString() : (String(p.post_created).match(/^\d{10,}$/) ? new Date(Number(p.post_created) * 1000).toISOString() : p.post_created)) : new Date().toISOString(),
             ingested_at: new Date().toISOString(),
           }, { onConflict: 'post_id,network' })

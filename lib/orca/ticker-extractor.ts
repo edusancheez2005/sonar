@@ -273,6 +273,59 @@ export function extractTicker(message: string): TickerExtractionResult {
   }
 }
 
+// Full coin names that are also common English words — matching these in
+// prose reintroduces the ambiguous-ticker false positives we filter out of
+// the news feed ("yield curve" → CRV, "compound interest" → COMP). Excluded
+// from name-based extraction; a cashtag ($CRV) still counts.
+const AMBIGUOUS_NAME_WORDS = new Set([
+  'curve', 'compound', 'render', 'maker', 'gala', 'stacks', 'mask', 'blur',
+])
+
+/**
+ * Extract ALL crypto tickers mentioned in a block of text (a social post,
+ * headline, etc.), returning a deduped array of canonical symbols.
+ *
+ * High-precision by design — bare tickers like SOL/LINK/OP/APE are NOT
+ * matched, because as plain words they collide with ordinary language
+ * ("al sol", "vital link") and would repopulate tickers_mentioned with the
+ * same noise we strip from the news feed. Only three signals are trusted:
+ *   1. Cashtags ($BTC, $pepe) whose symbol is a known valid ticker.
+ *   2. Full coin names as whole words ("bitcoin", "solana", "dogecoin"),
+ *      excluding names that are also English words (see AMBIGUOUS_NAME_WORDS).
+ *   3. BTC and ETH as bare uppercase words — unambiguous household symbols.
+ */
+export function extractTickers(text: string): string[] {
+  if (!text || typeof text !== 'string') return []
+  const found = new Set<string>()
+
+  // 1. Cashtags: $BTC, $pepe, $Wif
+  const cashtagRe = /\$([A-Za-z]{2,10})\b/g
+  let m: RegExpExecArray | null
+  while ((m = cashtagRe.exec(text)) !== null) {
+    const sym = m[1].toUpperCase()
+    if (VALID_TICKERS.has(sym)) found.add(sym)
+  }
+
+  const lower = text.toLowerCase()
+
+  // 2. Full coin names as whole words. Skip TICKER_MAP keys that are
+  //    themselves valid tickers (the bare-symbol aliases like 'sol'/'link')
+  //    and the English-word names above — those are the ambiguous ones.
+  for (const [name, ticker] of Object.entries(TICKER_MAP)) {
+    if (VALID_TICKERS.has(name.toUpperCase())) continue
+    if (AMBIGUOUS_NAME_WORDS.has(name)) continue
+    const re = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+    if (re.test(lower)) found.add(ticker)
+  }
+
+  // 3. BTC / ETH as bare words (any case) — famous enough that "btc"/"eth"
+  //    in a post is unambiguous, unlike sol/link/op.
+  if (/\bbtc\b/i.test(text)) found.add('BTC')
+  if (/\beth\b/i.test(text)) found.add('ETH')
+
+  return Array.from(found)
+}
+
 /**
  * Validate if a ticker is supported
  */
