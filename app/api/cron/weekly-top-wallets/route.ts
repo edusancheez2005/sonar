@@ -72,15 +72,22 @@ export async function GET(request: Request) {
     .filter((x: Performer | null): x is Performer => Boolean(x))
     .slice(0, 5)
 
-  if (performers.length === 0) {
-    return NextResponse.json({ ok: true, sent: false, reason: 'no_positive_performers' })
+  // A "Top 5" email with one or two rows reads as broken. Below three
+  // positive performers, skip the week instead of sending a thin digest.
+  if (performers.length < 3) {
+    return NextResponse.json({ ok: true, sent: false, reason: 'not_enough_performers', performers_count: performers.length })
   }
 
   const weekEnd = new Date()
   const weekStart = new Date(weekEnd.getTime() - 7 * 24 * 60 * 60 * 1000)
   const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
 
-  const subject = `Top 5 wallets this week (${weekLabel})`
+  // Cron retries and manual re-runs must not email the list twice.
+  if (await alreadySentThisWeek(brevoKey, weekLabel)) {
+    return NextResponse.json({ ok: true, sent: false, reason: 'already_sent_this_week' })
+  }
+
+  const subject = `Top ${performers.length} wallets this week (${weekLabel})`
   const html = renderHtml(performers, weekLabel)
 
   const sendResult = await sendBrevoCampaign(brevoKey, subject, html, weekLabel)
@@ -112,7 +119,7 @@ function renderHtml(performers: Performer[], weekLabel: string): string {
       <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#0b1422;border:1px solid #1f2937;border-radius:12px;">
         <tr><td style="padding:24px 28px 8px;">
           <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#22d3ee;font-weight:700;">Sonar · Whale Pulse</div>
-          <h1 style="margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:800;">Top 5 wallets this week</h1>
+          <h1 style="margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:800;">Top ${performers.length} wallets this week</h1>
           <div style="margin:6px 0 0;color:#9ca3af;font-size:13px;">${escapeHtml(weekLabel)} · backtested 7d return on $10k of paper capital</div>
         </td></tr>
         <tr><td style="padding:8px 18px;">
@@ -136,6 +143,24 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+
+// True if a campaign for this week already went out (or is mid-send). A
+// campaign that exists but failed before sendNow doesn't count, so a retry
+// can still pick it up.
+async function alreadySentThisWeek(brevoKey: string, weekLabel: string): Promise<boolean> {
+  try {
+    const res = await fetch('https://api.brevo.com/v3/emailCampaigns?limit=25&sort=desc', {
+      headers: { 'api-key': brevoKey },
+    })
+    if (!res.ok) return false
+    const data = await res.json()
+    return (data.campaigns || []).some(
+      (c: any) => c.name === `Top Wallets ${weekLabel}` && ['sent', 'in_process', 'queued'].includes(c.status),
+    )
+  } catch {
+    return false
+  }
 }
 
 async function sendBrevoCampaign(brevoKey: string, subject: string, htmlBody: string, weekLabel: string) {

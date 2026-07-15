@@ -65,7 +65,7 @@ export async function GET(request: Request) {
 
     // If generated but NOT sent, retry just the Brevo send
     if (existing && existing.emails_sent === 0 && existing.html_body) {
-      const retryResult = await sendBrevoEmail(brevoKey, existing.subject, existing.html_body, weekLabel)
+      const retryResult = await sendBrevoEmail(brevoKey, sanitizeSubject(existing.subject, weekLabel), existing.html_body, weekLabel)
       if (retryResult.sent) {
         await sb.from('weekly_insights').update({ emails_sent: 1 }).eq('id', existing.id)
       }
@@ -218,7 +218,7 @@ Analyze ALL of this data carefully and produce a comprehensive, data-driven week
 
 Return ONLY valid JSON with this exact structure:
 {
-  "subject": "Whale Pulse: [clear, specific 5-8 word summary of the week's biggest story]",
+  "subject": "Whale Pulse: [clear, specific 5-8 word summary of the week's biggest story — describe, don't dramatize. Banned in subjects: massive, huge, insane, shocking, explosive, unprecedented, dominates, soars, skyrockets]",
   "summary": "3-4 sentence overview tying together the week's biggest themes. Reference specific numbers, tokens, and events.",
   "top_news": [
     {"title": "Full headline", "source": "source name", "impact": "2-3 sentences on WHY this matters for crypto markets and what it signals", "sentiment": "bullish/bearish/neutral"}
@@ -359,6 +359,11 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
   // stays clean/professional even if the prompt is ignored. Founder rule:
   // scheduled emails carry no emojis.
   insights = stripEmojis(insights)
+
+  // Same story for hype words: the prompt bans them, yet 6 of the last 8
+  // subjects said "Massive". Enforce in code — the sanitized subject is what
+  // gets stored, blogged, and sent.
+  insights.subject = sanitizeSubject(insights.subject, weekLabel)
 
   // ─── STEP 3: Generate Email HTML ──────────────────────────────
 
@@ -663,6 +668,19 @@ function escapeHtml(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+// Drop hype adjectives the model keeps sneaking into subjects despite the
+// prompt ban. Falls back to a neutral subject if nothing usable remains.
+function sanitizeSubject(subject: string, weekLabel: string): string {
+  const HYPE = /\b(massive|huge|insane|shocking|explosive|unprecedented|epic|monster|wild|crazy|parabolic)\b/gi
+  const cleaned = String(subject || '')
+    .replace(HYPE, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([,:;.])/g, '$1')
+    .trim()
+  if (!cleaned || /^whale pulse:?$/i.test(cleaned)) return `Whale Pulse: Week of ${weekLabel}`
+  return cleaned
 }
 
 // Recursively remove emoji / pictographs from all strings in the AI payload.
