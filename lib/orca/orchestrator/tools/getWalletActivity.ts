@@ -1,12 +1,28 @@
 /**
  * Tool: getWalletActivity (W3)
  * =============================================================================
- * Aggregates the last-24h on-chain activity for a single wallet address on
- * a single chain. Returns label (if known), tx count, net USD flow, the
+ * Aggregates recent on-chain activity for a single wallet address on a
+ * single chain. Returns label (if known), tx count, net USD flow, the
  * top transactions by USD value, and the set of tokens touched.
  *
+ * Window behaviour: defaults to 24h but AUTO-WIDENS to 7d then 30d when the
+ * wallet has no activity in the smaller window (driven by the wallet's real
+ * last_active from wallet_tx_stats, so a dormant wallet costs no extra
+ * probing). A lifetime summary rides along so the renderer can always say
+ * something factual ("738 txs all-time, net seller, last active Jul 10")
+ * instead of a bare "0 transactions". An explicit `since` arg disables
+ * widening.
+ *
+ * Case: whale_address is stored lowercased for every chain (verified in
+ * prod 2026-07-17 — zero rows contain an uppercase char), so all DB lookups
+ * use the lowercased address. Base58/checksummed input from users is
+ * therefore matched correctly; the original casing is echoed back in
+ * `address` for display.
+ *
  * Sources:
- *   - all_whale_transactions  (canonical multi-chain view)
+ *   - all_whale_transactions   (canonical multi-chain view)
+ *   - wallet_tx_stats / wallet_token_flows RPCs (exact server-side sums —
+ *     same canonical definition as the wallet page)
  *   - tracked_address_universe (Arkham-labelled name, if any)
  *   - user_wallets             (user's own nickname, if any)
  *
@@ -18,11 +34,19 @@ import type { SupabaseLike, ToolResult } from '../types'
 const ROW_LIMIT = 200
 const TOP_TX_COUNT = 5
 
+const WINDOWS: Array<{ label: '24h' | '7d' | '30d'; ms: number }> = [
+  { label: '24h', ms: 24 * 60 * 60 * 1000 },
+  { label: '7d', ms: 7 * 24 * 60 * 60 * 1000 },
+  { label: '30d', ms: 30 * 24 * 60 * 60 * 1000 },
+]
+
+const LIFETIME_SINCE = '1970-01-01T00:00:00.000Z'
+
 export interface GetWalletActivityArgs {
   address?: unknown
   chain?: unknown
   userId?: unknown
-  /** Optional ISO timestamp; defaults to now-24h. */
+  /** Optional ISO timestamp; when set, that exact window is used (no auto-widening). */
   since?: unknown
 }
 
@@ -51,12 +75,17 @@ function normaliseUserId(v: unknown): string | null {
   return s
 }
 
-function normaliseSince(v: unknown, now: Date): string {
-  if (typeof v === 'string') {
-    const d = new Date(v)
-    if (!isNaN(d.getTime())) return d.toISOString()
-  }
-  return new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+function parseSince(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const d = new Date(v)
+  return isNaN(d.getTime()) ? null : d.toISOString()
+}
+
+interface WindowStats {
+  txCount: number
+  buyUsd: number
+  sellUsd: number
+  lastActive: string | null
 }
 
 export async function run(
@@ -77,19 +106,89 @@ export async function run(
       error: 'invalid_args',
     }
   }
-  const sinceIso = normaliseSince(args.since, now())
+  // whale_address is stored lowercased for every chain; the user may paste
+  // a checksummed / base58 form. Query with the lowercase form, echo the
+  // original back for display.
+  const dbAddress = address.toLowerCase()
+  const explicitSince = parseSince(args.since)
+  const nowMs = now().getTime()
 
-  try {
-    // Activity (whale_address may be lowercase in the view; we match both).
-    const { data: txRows } = await supabase
+  const hasRpc = typeof supabase.rpc === 'function'
+
+  const rpcStats = async (sinceIso: string): Promise<WindowStats | null> => {
+    try {
+      const { data } = await supabase.rpc('wallet_tx_stats', {
+        p_address: dbAddress,
+        p_since: sinceIso,
+      })
+      const stat = Array.isArray(data) ? data[0] : data
+      if (!stat) return null
+      return {
+        txCount: Number(stat.tx_count) || 0,
+        buyUsd: Number(stat.buy_volume) || 0,
+        sellUsd: Number(stat.sell_volume) || 0,
+        lastActive: typeof stat.last_active === 'string' ? stat.last_active : null,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  const fetchRows = async (sinceIso: string) => {
+    const { data } = await supabase
       .from('all_whale_transactions')
       .select('usd_value, classification, token_symbol, timestamp, transaction_hash')
-      .eq('whale_address', address)
+      .eq('whale_address', dbAddress)
       .gte('timestamp', sinceIso)
       .order('usd_value', { ascending: false })
       .limit(ROW_LIMIT)
+    return Array.isArray(data) ? data : []
+  }
 
-    const rows = Array.isArray(txRows) ? txRows : []
+  try {
+    // 1. Pick the window. With the RPC available, the wallet's lifetime
+    //    last_active decides it in one call; without it, probe row counts.
+    let windowLabel: string = explicitSince ?? '24h'
+    let sinceIso = explicitSince ?? new Date(nowMs - WINDOWS[0].ms).toISOString()
+    let widened = false
+    let lifetime: WindowStats | null = null
+
+    if (hasRpc) lifetime = await rpcStats(LIFETIME_SINCE)
+
+    if (!explicitSince && lifetime) {
+      const lastMs = lifetime.lastActive ? new Date(lifetime.lastActive).getTime() : NaN
+      const fit = Number.isFinite(lastMs)
+        ? WINDOWS.find((w) => lastMs >= nowMs - w.ms)
+        : undefined
+      if (fit) {
+        windowLabel = fit.label
+        sinceIso = new Date(nowMs - fit.ms).toISOString()
+        widened = fit.label !== '24h'
+      } else {
+        // Dormant >30d (or never seen): report the widest window's zeros;
+        // the lifetime block carries the story.
+        windowLabel = '30d'
+        sinceIso = new Date(nowMs - WINDOWS[2].ms).toISOString()
+        widened = true
+      }
+    }
+
+    // 2. Rows for the chosen window (top txs + no-RPC fallback sums).
+    let rows = await fetchRows(sinceIso)
+
+    // No-RPC widening: probe the larger windows only when 24h came back empty.
+    if (!explicitSince && !lifetime && rows.length === 0) {
+      for (const w of WINDOWS.slice(1)) {
+        const probe = await fetchRows(new Date(nowMs - w.ms).toISOString())
+        if (probe.length > 0) {
+          rows = probe
+          windowLabel = w.label
+          sinceIso = new Date(nowMs - w.ms).toISOString()
+          widened = true
+          break
+        }
+      }
+    }
 
     let buyUsd = 0
     let sellUsd = 0
@@ -103,23 +202,22 @@ export async function run(
       else if (c.startsWith('sell')) sellUsd += v
       if (r?.token_symbol) tokens.add(String(r.token_symbol).toUpperCase())
     }
-    // The row scan (capped) is used only for the top transactions — always the
-    // highest-value rows. Override the aggregate totals with exact server-side
-    // sums so ORCA agrees with the wallet page (same canonical definition:
-    // BUY/SELL, stablecoins excluded). Falls back to the capped JS sums.
+
+    // 3. Exact server-side sums for the chosen window (same canonical
+    //    definition as the wallet page). Falls back to the capped JS sums.
     let tokensList = Array.from(tokens).slice(0, 20)
-    if (typeof supabase.rpc === 'function') {
+    if (hasRpc) {
+      const stat = await rpcStats(sinceIso)
+      if (stat) {
+        buyUsd = stat.buyUsd
+        sellUsd = stat.sellUsd
+        txCount = stat.txCount
+      }
       try {
-        const [{ data: statRows }, { data: flowRows }] = await Promise.all([
-          supabase.rpc('wallet_tx_stats', { p_address: address, p_since: sinceIso }),
-          supabase.rpc('wallet_token_flows', { p_address: address, p_since: sinceIso }),
-        ])
-        const stat = Array.isArray(statRows) ? statRows[0] : statRows
-        if (stat) {
-          buyUsd = Number(stat.buy_volume) || 0
-          sellUsd = Number(stat.sell_volume) || 0
-          txCount = Number(stat.tx_count) || 0
-        }
+        const { data: flowRows } = await supabase.rpc('wallet_token_flows', {
+          p_address: dbAddress,
+          p_since: sinceIso,
+        })
         if (Array.isArray(flowRows) && flowRows.length > 0) {
           tokensList = flowRows
             .map((f: any) => String(f.token_symbol || '').toUpperCase())
@@ -127,9 +225,10 @@ export async function run(
             .slice(0, 20)
         }
       } catch {
-        // keep the JS-computed (capped) sums
+        // keep the JS-computed (capped) tokens
       }
     }
+
     const topTxs = rows.slice(0, TOP_TX_COUNT).map((r: any) => ({
       usd_value: Math.round(Number(r?.usd_value) || 0),
       classification: r?.classification ?? null,
@@ -138,15 +237,22 @@ export async function run(
       transaction_hash: r?.transaction_hash ?? null,
     }))
 
+    // Label tables may store the address in either case — match both forms.
+    // (.in falls back to .eq when unavailable, e.g. in test stubs.)
+    const addrFilter = (q: any) =>
+      dbAddress === address || typeof q.in !== 'function'
+        ? q.eq('address', address)
+        : q.in('address', [address, dbAddress])
+
     // Arkham label (chain, address).
     let arkhamLabel: string | null = null
     try {
-      const { data: tauRows } = await supabase
-        .from('tracked_address_universe')
-        .select('arkham_entity_name, arkham_label')
-        .eq('chain', chain)
-        .eq('address', address)
-        .limit(1)
+      const { data: tauRows } = await addrFilter(
+        supabase
+          .from('tracked_address_universe')
+          .select('arkham_entity_name, arkham_label')
+          .eq('chain', chain)
+      ).limit(1)
       const tau = Array.isArray(tauRows) ? tauRows[0] : null
       if (tau) {
         arkhamLabel =
@@ -162,13 +268,13 @@ export async function run(
     let userLabel: string | null = null
     if (userId) {
       try {
-        const { data: uwRows } = await supabase
-          .from('user_wallets')
-          .select('label')
-          .eq('user_id', userId)
-          .eq('address', address)
-          .eq('chain', chain)
-          .limit(1)
+        const { data: uwRows } = await addrFilter(
+          supabase
+            .from('user_wallets')
+            .select('label')
+            .eq('user_id', userId)
+            .eq('chain', chain)
+        ).limit(1)
         const uw = Array.isArray(uwRows) ? uwRows[0] : null
         if (uw && typeof uw.label === 'string' && uw.label.trim()) {
           userLabel = uw.label.trim()
@@ -185,13 +291,23 @@ export async function run(
         chain,
         label: userLabel ?? arkhamLabel ?? null,
         label_source: userLabel ? 'user' : arkhamLabel ? 'arkham' : null,
-        window: '24h',
+        window: windowLabel,
+        window_auto_widened: widened,
         tx_count: txCount,
         buy_usd: Math.round(buyUsd),
         sell_usd: Math.round(sellUsd),
         net_flow_usd: Math.round(buyUsd - sellUsd),
         tokens_touched: tokensList,
         top_txs: topTxs,
+        lifetime: lifetime
+          ? {
+              tx_count: lifetime.txCount,
+              buy_usd: Math.round(lifetime.buyUsd),
+              sell_usd: Math.round(lifetime.sellUsd),
+              net_flow_usd: Math.round(lifetime.buyUsd - lifetime.sellUsd),
+              last_active: lifetime.lastActive,
+            }
+          : null,
       },
       source: 'wallet_activity',
       fetched_at,

@@ -79,6 +79,131 @@ describe('executeTool: getWalletActivity', () => {
   })
 })
 
+/**
+ * Param-aware stub for the window-widening + case tests: records eq/in/rpc
+ * arguments and lets the rpc handler answer per (fn, params).
+ */
+function stubSupabaseW3(
+  tables: Record<string, any>,
+  rpc?: (fn: string, params: any) => any
+) {
+  const calls = { filters: [] as Array<[string, any]>, rpc: [] as Array<[string, any]> }
+  function builder(table: string) {
+    const chain: any = {
+      select() { return chain },
+      eq(col: string, val: any) { calls.filters.push([col, val]); return chain },
+      in(col: string, vals: any) { calls.filters.push([col, vals]); return chain },
+      gte() { return chain },
+      order() { return chain },
+      limit() { return chain },
+      then(resolve: any) { resolve(tables[table] ?? { data: [] }) },
+    }
+    return chain
+  }
+  const sb: any = { from: builder, calls }
+  if (rpc) {
+    sb.rpc = async (fn: string, params: any) => {
+      calls.rpc.push([fn, params])
+      return { data: rpc(fn, params) }
+    }
+  }
+  return sb
+}
+
+describe('executeTool: getWalletActivity — window widening + address case', () => {
+  // now = 2026-06-02T12:00Z. Wallet last active 2026-05-30 → outside 24h,
+  // inside 7d. Whale addresses are stored lowercased in the DB.
+  const MIXED = '2YrKs4XgZgKqPgEpXuRcC5zTtXgXqUnDmWc9kF9nDpNz'
+  const LOWER = MIXED.toLowerCase()
+
+  const rpcHandler = (fn: string, params: any) => {
+    if (fn === 'wallet_tx_stats' && String(params.p_since).startsWith('1970')) {
+      return [{ tx_count: 738, buy_volume: 2600000, sell_volume: 4700000, last_active: '2026-05-30T12:00:00Z' }]
+    }
+    if (fn === 'wallet_tx_stats') {
+      return [{ tx_count: 12, buy_volume: 10000, sell_volume: 5000, last_active: '2026-05-30T12:00:00Z' }]
+    }
+    if (fn === 'wallet_token_flows') {
+      return [{ token_symbol: 'bonk', buy_usd: 10000, sell_usd: 5000, total_usd: 15000 }]
+    }
+    return []
+  }
+
+  it('lowercases the address for every DB lookup and echoes the original back', async () => {
+    const sb = stubSupabaseW3(
+      { all_whale_transactions: { data: [] } },
+      rpcHandler
+    )
+    const r = await executeTool(
+      { tool: 'getWalletActivity', args: { address: MIXED, chain: 'sol' } },
+      sb,
+      now
+    )
+    expect(r.ok).toBe(true)
+    expect((r.data as any).address).toBe(MIXED)
+    // every whale_address filter and every rpc p_address must be lowercase
+    const addrFilters = sb.calls.filters.filter(([c]: any) => c === 'whale_address')
+    expect(addrFilters.length).toBeGreaterThan(0)
+    for (const [, v] of addrFilters) expect(v).toBe(LOWER)
+    for (const [, params] of sb.calls.rpc) expect(params.p_address).toBe(LOWER)
+  })
+
+  it('auto-widens to 7d when the last activity is older than 24h', async () => {
+    const sb = stubSupabaseW3(
+      {
+        all_whale_transactions: {
+          data: [{ usd_value: 8000, classification: 'BUY', token_symbol: 'bonk', timestamp: 't1', transaction_hash: 'h1' }],
+        },
+      },
+      rpcHandler
+    )
+    const r = await executeTool(
+      { tool: 'getWalletActivity', args: { address: LOWER, chain: 'sol' } },
+      sb,
+      now
+    )
+    expect(r.ok).toBe(true)
+    const d = r.data as any
+    expect(d.window).toBe('7d')
+    expect(d.window_auto_widened).toBe(true)
+    expect(d.tx_count).toBe(12)
+    expect(d.net_flow_usd).toBe(5000)
+    expect(d.tokens_touched).toContain('BONK')
+    expect(d.lifetime).toEqual({
+      tx_count: 738,
+      buy_usd: 2600000,
+      sell_usd: 4700000,
+      net_flow_usd: -2100000,
+      last_active: '2026-05-30T12:00:00Z',
+    })
+  })
+
+  it('reports 30d zeros plus the lifetime story for a dormant wallet', async () => {
+    const dormantRpc = (fn: string, params: any) => {
+      if (fn === 'wallet_tx_stats' && String(params.p_since).startsWith('1970')) {
+        return [{ tx_count: 50, buy_volume: 100000, sell_volume: 40000, last_active: '2026-01-15T00:00:00Z' }]
+      }
+      if (fn === 'wallet_tx_stats') {
+        return [{ tx_count: 0, buy_volume: 0, sell_volume: 0, last_active: null }]
+      }
+      return []
+    }
+    const sb = stubSupabaseW3({ all_whale_transactions: { data: [] } }, dormantRpc)
+    const r = await executeTool(
+      { tool: 'getWalletActivity', args: { address: LOWER, chain: 'sol' } },
+      sb,
+      now
+    )
+    expect(r.ok).toBe(true)
+    const d = r.data as any
+    expect(d.window).toBe('30d')
+    expect(d.window_auto_widened).toBe(true)
+    expect(d.tx_count).toBe(0)
+    expect(d.lifetime.tx_count).toBe(50)
+    expect(d.lifetime.last_active).toBe('2026-01-15T00:00:00Z')
+  })
+})
+
 describe('executeTool: getArticleContext', () => {
   it('rejects when no id or url is supplied', async () => {
     const r = await executeTool(
