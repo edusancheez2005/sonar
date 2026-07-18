@@ -125,20 +125,23 @@ async function executeConfirmedWrites(
 export const maxDuration = 60
 
 // Use Grok (xAI) as primary AI, fallback to OpenAI if no xAI key.
-// Model selection prioritises the largest context window available so the
-// full ORCA context block (price + chart + whale + sentiment + 10 news
-// articles + LunarCrush + dev/community data) survives without truncation.
-//   - Grok primary:  grok-4-fast-reasoning   (2,000,000 token context, reasoning)
-//   - Grok mini:     grok-4-fast-non-reasoning (2,000,000 ctx, lower latency)
+//   - Grok primary:  grok-4.5  (flagship, 500K ctx — xAI's fastest + most
+//     capable as of 2026-07; the old grok-4-fast-* IDs are gone from the
+//     current model docs and only survive as legacy aliases)
+//   - Grok mini:     grok-4.3  (1M ctx, ~half the price — runs the router
+//     and planner hops where latency and cost matter more than depth)
 //   - OpenAI fallback: gpt-4.1 (1,000,000 token context)
+// Both Grok IDs can be overridden from Vercel env without a deploy
+// (ORCA_GROK_MODEL / ORCA_GROK_MINI_MODEL) so a bad model swap is a
+// config revert, not a rollback.
 const getAIClient = () => {
   const xaiKey = process.env.XAI_API_KEY
   console.log(`🤖 AI Provider: ${xaiKey ? 'Grok (xAI)' : 'OpenAI (fallback)'}`)
   if (xaiKey) {
     return {
       client: new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' }),
-      model: 'grok-4-fast-reasoning',
-      miniModel: 'grok-4-fast-non-reasoning',
+      model: process.env.ORCA_GROK_MODEL || 'grok-4.5',
+      miniModel: process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3',
       provider: 'grok'
     }
   }
