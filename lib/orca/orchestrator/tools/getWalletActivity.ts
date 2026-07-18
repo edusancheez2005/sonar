@@ -113,11 +113,14 @@ export async function run(
   const explicitSince = parseSince(args.since)
   const nowMs = now().getTime()
 
-  const hasRpc = typeof supabase.rpc === 'function'
+  // Capture the optional method once so TS can narrow it inside closures.
+  const rpcFn = typeof supabase.rpc === 'function' ? supabase.rpc.bind(supabase) : null
+  const hasRpc = rpcFn !== null
 
   const rpcStats = async (sinceIso: string): Promise<WindowStats | null> => {
+    if (!rpcFn) return null
     try {
-      const { data } = await supabase.rpc('wallet_tx_stats', {
+      const { data } = await rpcFn('wallet_tx_stats', {
         p_address: dbAddress,
         p_since: sinceIso,
       })
@@ -206,7 +209,7 @@ export async function run(
     // 3. Exact server-side sums for the chosen window (same canonical
     //    definition as the wallet page). Falls back to the capped JS sums.
     let tokensList = Array.from(tokens).slice(0, 20)
-    if (hasRpc) {
+    if (rpcFn) {
       const stat = await rpcStats(sinceIso)
       if (stat) {
         buyUsd = stat.buyUsd
@@ -214,7 +217,7 @@ export async function run(
         txCount = stat.txCount
       }
       try {
-        const { data: flowRows } = await supabase.rpc('wallet_token_flows', {
+        const { data: flowRows } = await rpcFn('wallet_token_flows', {
           p_address: dbAddress,
           p_since: sinceIso,
         })
