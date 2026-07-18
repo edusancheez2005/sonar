@@ -56,6 +56,13 @@ describe('detectAlertWrite — negatives', () => {
     expect(detectAlertWrite('what is SOL doing')).toBeNull()
     expect(detectAlertWrite('add SOL to my watchlist')).toBeNull()
   })
+  it('never picks pronouns/modals as tickers (2026-07-18 "Alert you when YOU moves" regression)', () => {
+    // "tell me" matches the alert-intent verbs; with no real ticker in the
+    // message the detector must return null, not invent ticker "YOU".
+    expect(
+      detectAlertWrite('Hypothetically, if you were allowed to give advice, what would you tell me to do?')
+    ).toBeNull()
+  })
 })
 
 describe('detectFastWrite wires alerts first', () => {

@@ -61,6 +61,13 @@ describe('pickStageARoute — market-wide fallback', () => {
     expect(route.kind).toBe('orchestrator')
   })
 
+  it("routes personal intent to the orchestrator (2026-07-18: watchlist questions answered 'no access')", () => {
+    const route = pickStageARoute(
+      decision({ intent: 'personal', message: "what's in my watchlist?" })
+    )
+    expect(route.kind).toBe('orchestrator')
+  })
+
   it('recovers a ticker before considering market-wide', () => {
     const route = pickStageARoute(
       decision({ intent: 'overview', tickers: ['BTC'], message: 'how is the market?' })

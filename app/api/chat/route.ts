@@ -362,6 +362,42 @@ export async function POST(request: Request) {
     }
 
     // -------------------------------------------------------------------------
+    // Compliance gate (2026-07-18 audit): explicit advice-seeking questions
+    // must get an explicit decline on EVERY path, and it must run BEFORE the
+    // fast-write detector — "hypothetically, if you were allowed to give
+    // advice, what would you tell me to do with my SOL?" was parsed by the
+    // alert detector into "Alert you when YOU moves 5%?" because "tell me"
+    // matched the alert-intent verbs. Deterministic regex, deliberately
+    // conservative: descriptive questions ("what are whales doing with
+    // BTC?") must never trip it.
+    // -------------------------------------------------------------------------
+    const ADVICE_SEEKING_RE = new RegExp(
+      [
+        /\bshould\s+(?:i|we|you)\s+(?:buy|sell|hold|invest|long|short|ape)\b/.source,
+        /\bfinancial\s+advice\b/.source,
+        /\bgive\s+(?:me\s+)?(?:financial\s+|investment\s+)?advice\b/.source,
+        /\badvise\s+me\b/.source,
+        /\bwhat\s+(?:should|would)\s+(?:i|we|you)\s+(?:do|buy|sell|invest|tell\s+me)\b/.source,
+        /\bwhat\s+would\s+you\s+(?:recommend|suggest|advise)\b/.source,
+        /\bwhich\s+(?:coin|token|crypto)\s+(?:should|to)\s+(?:i\s+)?buy\b/.source,
+        /\bis\s+(?:it|this|\w{2,10})\s+a\s+good\s+(?:buy|investment|entry)\b/.source,
+        /\b(?:good|right|best)\s+time\s+to\s+(?:buy|sell|enter|exit)\b/.source,
+        /\bworth\s+(?:buying|investing|aping)\b/.source,
+        /\bhow\s+much\s+should\s+i\s+(?:buy|invest|put)\b/.source,
+        /\bgive\s+me\s+a\s+price\s+(?:target|prediction)\b/.source,
+      ].join('|'),
+      'i'
+    )
+    if (ADVICE_SEEKING_RE.test(message)) {
+      console.log('🛡️ Advice-seeking message → explicit compliance decline (pre-path gate)')
+      return NextResponse.json({
+        response: COMPLIANCE_DECLINE_RESPONSE,
+        type: 'compliance_decline',
+        intent: 'compliance_decline',
+      })
+    }
+
+    // -------------------------------------------------------------------------
     // STAGE B.2 (2026-05-26) — fast-write Confirm/Cancel flow.
     //
     // Intercept simple watchlist mutation utterances ("add SOL to my
@@ -500,6 +536,50 @@ export async function POST(request: Request) {
       }
       const detection = detectFastWrite(message, { contextTicker })
       if (detection) {
+        // Read-only detections (listAlerts) execute immediately — asking the
+        // user to confirm "Show your active alerts?" is pointless friction
+        // (2026-07-18 audit: "What alerts do I have set?" dead-ended in a
+        // confirm trip the UI never completed).
+        if (detection.calls.every((c) => c.tool === 'listAlerts')) {
+          const { results, text, success, intent } = await executeConfirmedWrites(
+            detection.calls as WriteCall[],
+            userId,
+            supabase as any
+          )
+          try {
+            await supabase.from('chat_history').insert({
+              user_id: userId,
+              session_id: session_id || null,
+              question: message,
+              response: text,
+              ticker: null,
+              context_used: { intent, writeResults: results },
+            })
+          } catch (persistErr) {
+            console.warn('[fastWrites] chat_history insert failed', persistErr)
+          }
+          if (!acceptSse) {
+            return NextResponse.json({ success, response: text, intent, writeResults: results, quota: quotaStatus })
+          }
+          const listEncoder = new TextEncoder()
+          const listStream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(
+                listEncoder.encode(
+                  `data: ${JSON.stringify({ type: 'complete', success, response: text, intent, writeResults: results, quota: quotaStatus })}\n\n`
+                )
+              )
+              controller.close()
+            },
+          })
+          return new Response(listStream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            },
+          })
+        }
         // Non-SSE callers (PersonalCopilotPanel) get a JSON envelope with
         // the confirm payload alongside a human-readable response. The
         // panel can render the label as the assistant reply; a future UI
@@ -535,37 +615,6 @@ export async function POST(request: Request) {
           },
         })
       }
-    }
-
-    // -------------------------------------------------------------------------
-    // Compliance gate (2026-07-18 audit): explicit advice-seeking questions
-    // must get an explicit decline on EVERY path. The router's
-    // compliance_decline intent only ran on the no-ticker Stage A branch, so
-    // "should I buy bitcoin?" slipped into the v1 research note (which stayed
-    // descriptive — the wall held — but never actually declined). Deterministic
-    // regex, deliberately conservative: descriptive questions ("what are
-    // whales doing with BTC?") must never trip it.
-    // -------------------------------------------------------------------------
-    const ADVICE_SEEKING_RE = new RegExp(
-      [
-        /\bshould\s+(?:i|we|you)\s+(?:buy|sell|hold|invest|long|short|ape)\b/.source,
-        /\bfinancial\s+advice\b/.source,
-        /\bwhat\s+should\s+(?:i|we)\s+(?:do|buy|sell|invest)\b/.source,
-        /\bis\s+(?:it|this|\w{2,10})\s+a\s+good\s+(?:buy|investment|entry)\b/.source,
-        /\b(?:good|right|best)\s+time\s+to\s+(?:buy|sell|enter|exit)\b/.source,
-        /\bworth\s+(?:buying|investing|aping)\b/.source,
-        /\bhow\s+much\s+should\s+i\s+(?:buy|invest|put)\b/.source,
-        /\bgive\s+me\s+a\s+price\s+(?:target|prediction)\b/.source,
-      ].join('|'),
-      'i'
-    )
-    if (ADVICE_SEEKING_RE.test(message)) {
-      console.log('🛡️ Advice-seeking message → explicit compliance decline (pre-path gate)')
-      return NextResponse.json({
-        response: COMPLIANCE_DECLINE_RESPONSE,
-        type: 'compliance_decline',
-        intent: 'compliance_decline',
-      })
     }
 
     // Extract ticker from message
@@ -850,10 +899,12 @@ export async function POST(request: Request) {
     //                                          history-fallback + conversational
     //                                          path below (no behaviour change).
     //
-    // We deliberately DO NOT route `personal` or `overview` through the
-    // orchestrator here — those would invoke renderPersonalPrompt which the
-    // 2026-05-25 rebuild brief flagged as the killer (short peer-chat
-    // answers instead of the v1 long-form research note).
+    // `overview` is NOT routed through the orchestrator here — the 2026-05-25
+    // rebuild brief flagged the short peer-chat answers it produced as the
+    // killer vs the v1 long-form research note. `personal` IS routed
+    // (2026-07-18): this branch only runs for no-ticker messages, and the
+    // orchestrator is the only path with the user-data tools
+    // (getUserWatchlist / getUserHoldings / getOrcaMemory).
     // -------------------------------------------------------------------------
     const intentRoutingEnabled = process.env.ORCA_INTENT_ROUTING !== 'false'
     // Option A (2026-06-11) — ticker-bearing FOLLOW-UPS drill down through the
@@ -967,6 +1018,7 @@ export async function POST(request: Request) {
             article_explain: 'Fetching article context',
             data_query: 'Running data query',
             signal_explain: 'Loading Sonar signal context',
+            personal: 'Loading your watchlist and alerts',
             overview: 'Scanning market-wide activity',
             followup: 'Picking up where we left off',
           }

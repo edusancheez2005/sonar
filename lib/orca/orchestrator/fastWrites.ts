@@ -196,6 +196,12 @@ const TICKER_STOPWORDS = new Set<string>([
   'TRACKING', 'UNTRACK', 'WALLET', 'ADDRESS', 'WHALE', 'MINUTE', 'MINUTES',
   'WEEK', 'WEEKS', 'DAYS', 'THIS', 'THAT', 'THEM', 'WK', 'HR', 'HRS',
   'ALERTING', 'PINGING', 'NOTIFYING', 'TELLING', 'SILENCING', 'SUPPRESSING',
+  // Pronouns / modals / advice words — "what would YOU tell me to do with my
+  // SOL?" once picked "YOU" as the alert ticker (2026-07-18 audit).
+  'YOU', 'YOUR', 'YOURS', 'WE', 'US', 'OUR', 'THEY', 'THEIR', 'HE', 'SHE',
+  'WOULD', 'COULD', 'SHOULD', 'WERE', 'WAS', 'WILL', 'CAN', 'MAY', 'MIGHT',
+  'DO', 'DOES', 'DID', 'HAVE', 'HAS', 'HAD', 'BEEN', 'WITH', 'NOT', 'ANY',
+  'SOME', 'HOW', 'WHO', 'WHY', 'WHERE', 'WHICH', 'ADVICE', 'GIVE', 'ALLOWED',
 ])
 
 function pickTickerAnywhere(text: string): string | null {

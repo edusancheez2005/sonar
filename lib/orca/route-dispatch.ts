@@ -40,6 +40,14 @@ const RENDERED_INTENTS = new Set([
   'article_explain',
   'data_query',
   'signal_explain',
+  // personal (2026-07-18 audit): "what's in my watchlist?" previously fell
+  // through to the legacy path, which has no user-data tools and answered
+  // "I don't have access to a personal watchlist". The orchestrator's
+  // agentic loop schedules getUserWatchlist/getUserHoldings/getOrcaMemory
+  // (userId injected server-side). This dispatch only runs for no-ticker
+  // messages, so the 2026-05-25 concern (personal renderer shortchanging
+  // ticker research notes) does not apply.
+  'personal',
 ])
 
 const PURE_GREETING =
