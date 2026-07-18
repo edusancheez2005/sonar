@@ -27,7 +27,7 @@ function buildModel() {
   const client = xaiKey
     ? new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1', dangerouslyAllowBrowser: true })
     : new OpenAI({ apiKey: process.env.OPENAI_API_KEY, dangerouslyAllowBrowser: true })
-  const miniModel = xaiKey ? 'grok-4-fast-non-reasoning' : 'gpt-4.1-mini'
+  const miniModel = xaiKey ? process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3' : 'gpt-4.1-mini'
   return {
     routerCall: async (sys: string, usr: string) => {
       const r = await client.chat.completions.create({

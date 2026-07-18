@@ -331,7 +331,7 @@ Analyze ALL of this data and generate the comprehensive weekly insights JSON. Cr
     const OpenAI = (await import('openai')).default
     const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
     const completion = await ai.chat.completions.create({
-      model: 'grok-3-fast',
+      model: process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3', // grok-3-fast retired from xAI docs
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }

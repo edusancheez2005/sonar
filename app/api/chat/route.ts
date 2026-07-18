@@ -537,6 +537,37 @@ export async function POST(request: Request) {
       }
     }
 
+    // -------------------------------------------------------------------------
+    // Compliance gate (2026-07-18 audit): explicit advice-seeking questions
+    // must get an explicit decline on EVERY path. The router's
+    // compliance_decline intent only ran on the no-ticker Stage A branch, so
+    // "should I buy bitcoin?" slipped into the v1 research note (which stayed
+    // descriptive — the wall held — but never actually declined). Deterministic
+    // regex, deliberately conservative: descriptive questions ("what are
+    // whales doing with BTC?") must never trip it.
+    // -------------------------------------------------------------------------
+    const ADVICE_SEEKING_RE = new RegExp(
+      [
+        /\bshould\s+(?:i|we|you)\s+(?:buy|sell|hold|invest|long|short|ape)\b/.source,
+        /\bfinancial\s+advice\b/.source,
+        /\bwhat\s+should\s+(?:i|we)\s+(?:do|buy|sell|invest)\b/.source,
+        /\bis\s+(?:it|this|\w{2,10})\s+a\s+good\s+(?:buy|investment|entry)\b/.source,
+        /\b(?:good|right|best)\s+time\s+to\s+(?:buy|sell|enter|exit)\b/.source,
+        /\bworth\s+(?:buying|investing|aping)\b/.source,
+        /\bhow\s+much\s+should\s+i\s+(?:buy|invest|put)\b/.source,
+        /\bgive\s+me\s+a\s+price\s+(?:target|prediction)\b/.source,
+      ].join('|'),
+      'i'
+    )
+    if (ADVICE_SEEKING_RE.test(message)) {
+      console.log('🛡️ Advice-seeking message → explicit compliance decline (pre-path gate)')
+      return NextResponse.json({
+        response: COMPLIANCE_DECLINE_RESPONSE,
+        type: 'compliance_decline',
+        intent: 'compliance_decline',
+      })
+    }
+
     // Extract ticker from message
     let tickerResult = extractTicker(message)
 

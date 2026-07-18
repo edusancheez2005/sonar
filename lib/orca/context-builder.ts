@@ -1026,7 +1026,7 @@ function processWhaleAlertsData(alertsData: any[]): WhaleAlertsData {
       accumulation_signals++
       if (alert.amount_usd >= 10000000) {
         notable_movements.push(
-          `🟢 ACCUMULATION: ${formatLargeNumber(alert.amount_usd)} ${alert.symbol} moved from ${alert.from_owner || 'exchange'} to wallet`
+          `🟢 ACCUMULATION: $${formatLargeNumber(alert.amount_usd)} of ${String(alert.symbol || '').toUpperCase()} moved from ${alert.from_owner || 'exchange'} to wallet`
         )
       }
     }
@@ -1036,7 +1036,7 @@ function processWhaleAlertsData(alertsData: any[]): WhaleAlertsData {
       distribution_signals++
       if (alert.amount_usd >= 10000000) {
         notable_movements.push(
-          `🔴 DISTRIBUTION: ${formatLargeNumber(alert.amount_usd)} ${alert.symbol} moved to ${alert.to_owner || 'exchange'} from wallet`
+          `🔴 DISTRIBUTION: $${formatLargeNumber(alert.amount_usd)} of ${String(alert.symbol || '').toUpperCase()} moved to ${alert.to_owner || 'exchange'} from wallet`
         )
       }
     }
@@ -1206,7 +1206,7 @@ WHALE FLOW vs PRICE DIVERGENCE CHECK:
 Price 24h change: ${context.price.change_24h > 0 ? '+' : ''}${context.price.change_24h?.toFixed(2)}%
 Whale net flow: ${context.whales.net_flow_24h > 0 ? 'POSITIVE' : 'NEGATIVE'} (${formatCurrency(Math.abs(context.whales.net_flow_24h))})
 ${(context.whales.net_flow_24h > 0 && context.price.change_24h < 0) ? '[DIVERGENCE OBSERVED] Whale wallets show net inflow while spot price moved down over the same window. Describe this as a descriptive observation only. Do NOT advise the user to act on it. Do NOT use phrases like "smart money", "accumulation signal", "load up", "buy the dip", or any forward-looking price prediction. Remind the user this is informational only and not a recommendation.' : ''}${(context.whales.net_flow_24h < 0 && context.price.change_24h > 0) ? '[DIVERGENCE OBSERVED] Whale wallets show net outflow while spot price moved up over the same window. Describe this as a descriptive observation only. Do NOT advise the user to act on it. Do NOT use phrases like "smart money exit", "distribution into strength", "warn", or any forward-looking price prediction. Remind the user this is informational only and not a recommendation.' : ''}${((context.whales.net_flow_24h > 0 && context.price.change_24h > 0) || (context.whales.net_flow_24h < 0 && context.price.change_24h < 0)) ? '[ALIGNED] Whale flow direction and 24h price direction agree. Describe this as a descriptive observation only \u2014 it is not a recommendation and not predictive of future price.' : ''}
-Whale volume as % of total 24h volume: ${context.price.volume_24h ? (context.whales.total_volume_usd / context.price.volume_24h * 100).toFixed(1) + '%' : 'N/A'} (whales are NOT the entire market — explain this)` : ''}
+Whale volume vs Binance spot pair volume: ${context.price.volume_24h ? (context.whales.total_volume_usd / context.price.volume_24h * 100).toFixed(1) + '%' : 'N/A'} — CAUTION: the denominator is ONE Binance spot pair, while whale flow spans all venues and chains, so this ratio can legitimately exceed 100%. NEVER present it as "% of total market volume"; if it is large, describe whale flow as "large relative to Binance spot volume" and note the different coverage.` : ''}
 
 Top Whale Moves:
 ${formatWhaleMovesDetailed(context.whales.top_moves)}
@@ -1224,16 +1224,16 @@ The ERC-20 whale_transactions ingest covers ETH-based ERC-20 tokens; the multi-c
   // the primary on-chain whale source, so we annotate accordingly.
   const whaleAlertsSection = context.whaleAlerts && context.whaleAlerts.recent_alerts.length > 0 ? `
 WHALE ALERT API DATA${!isERC20 ? ' (PRIMARY on-chain source for this asset)' : ' (Multi-Chain supplement)'} — $500k+ transactions, 24h window:
-Total 24h Volume Tracked: ${formatLargeNumber(context.whaleAlerts.total_volume_usd)}
+Total 24h Volume Tracked: $${formatLargeNumber(context.whaleAlerts.total_volume_usd)} (USD)
 Accumulation Signals: ${context.whaleAlerts.accumulation_signals} (exchange → wallet movements)
 Distribution Signals: ${context.whaleAlerts.distribution_signals} (wallet → exchange movements)
 Net On-Chain Bias (24h): ${context.whaleAlerts.accumulation_signals > context.whaleAlerts.distribution_signals ? `NET ACCUMULATION (${context.whaleAlerts.accumulation_signals - context.whaleAlerts.distribution_signals} more inflow tx than outflow)` : context.whaleAlerts.distribution_signals > context.whaleAlerts.accumulation_signals ? `NET DISTRIBUTION (${context.whaleAlerts.distribution_signals - context.whaleAlerts.accumulation_signals} more outflow tx than inflow)` : 'BALANCED'}
-${context.price?.volume_24h ? `Tracked whale volume vs total 24h volume: ${(context.whaleAlerts.total_volume_usd / context.price.volume_24h * 100).toFixed(1)}% (whales are NOT the entire market)` : ''}
+${context.price?.volume_24h ? `Tracked whale volume vs Binance spot pair volume: ${(context.whaleAlerts.total_volume_usd / context.price.volume_24h * 100).toFixed(1)}% — CAUTION: denominator is ONE Binance spot pair; whale flow spans all venues/chains, so >100% is possible. Never call it a share of total market volume.` : ''}
 Notable Movements (>$10M):
 ${context.whaleAlerts.notable_movements.map(s => s.replace(/[\u{1F7E2}\u{1F534}\u{1F535}\u{1F7E1}\u{1F7E0}]/gu, '').trim()).join('\n') || 'No single tx above $10M in window'}
 Recent Largest Transactions:
 ${context.whaleAlerts.recent_alerts.slice(0, 5).map((a: any) => 
-  `- ${formatLargeNumber(a.amount_usd)} ${a.symbol} | ${a.type ? a.type.toUpperCase() : 'TRANSFER'} | ${a.from || 'unknown'} -> ${a.to || 'unknown'} | chain: ${a.blockchain || 'n/a'}`
+  `- $${formatLargeNumber(a.amount_usd)} of ${String(a.symbol || '').toUpperCase()} | ${a.type ? a.type.toUpperCase() : 'TRANSFER'} | ${a.from || 'unknown'} -> ${a.to || 'unknown'} | chain: ${a.blockchain || 'n/a'}`
 ).join('\n')}
 ` : ''
 

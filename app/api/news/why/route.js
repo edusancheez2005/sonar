@@ -54,7 +54,7 @@ export async function POST(req) {
     let model
     if (xaiKey) {
       ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
-      model = 'grok-3-fast'
+      model = process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3' // grok-3-fast retired from xAI docs
     } else if (openaiKey) {
       ai = new OpenAI({ apiKey: openaiKey })
       model = 'gpt-4o-mini'

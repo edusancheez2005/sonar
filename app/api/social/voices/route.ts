@@ -184,7 +184,9 @@ Rules:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'grok-4-fast-reasoning',
+        // Flagship (not mini): this call drives the web_search agentic tool.
+        // grok-4-fast-* IDs are retired from xAI's current docs.
+        model: process.env.ORCA_GROK_MODEL || 'grok-4.5',
         input: prompt,
         tools: [{ type: 'web_search' }],
       }),
