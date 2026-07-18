@@ -5,6 +5,7 @@
  * (the table the ingest-news cron actually writes to).
  */
 import type { SupabaseLike, ToolResult } from '../types'
+import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 const DEFAULT_LIMIT = 5
 const NEWS_TABLE = 'news_items'
@@ -42,11 +43,18 @@ export async function run(
     const rows = Array.isArray(data) ? data : []
     const filtered = rows
       .filter((r: any) => {
+        const blob = `${r?.title ?? ''}\n${r?.content ?? ''}`
+        // Canonical relevance filter — the same one the news page and token
+        // pages apply at read time. Without it this tool re-surfaced junk
+        // ingested before the 2026-07-13 filter fix ("al sol" soccer articles
+        // tagged SOL, OpenAI "Sol" model coverage, etc.).
+        if (!isCryptoRelevant(blob, ticker)) return false
         if (!AMBIGUOUS_SHORT_TICKERS.has(ticker)) return true
-        // Extra disambiguation for collision-prone short tickers.
-        const blob = `${r?.title ?? ''}\n${r?.content ?? ''}`.toLowerCase()
-        if (CRYPTO_TERMS_RE.test(blob)) return true
-        if (blob.includes(`$${ticker.toLowerCase()}`)) return true
+        // Extra disambiguation for collision-prone short tickers the
+        // canonical filter doesn't track ('IT', 'ON', 'AI', ...).
+        const lower = blob.toLowerCase()
+        if (CRYPTO_TERMS_RE.test(lower)) return true
+        if (lower.includes(`$${ticker.toLowerCase()}`)) return true
         return false
       })
       .slice(0, limit)

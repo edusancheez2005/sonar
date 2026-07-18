@@ -36,14 +36,40 @@ describe('executeTool: getWalletActivity', () => {
     expect(r.error).toBe('invalid_args')
   })
 
-  it('rejects unknown chain', async () => {
+  it('proceeds chainless when the chain arg is unrecognisable (address query needs no chain)', async () => {
     const r = await executeTool(
       { tool: 'getWalletActivity', args: { address: '0xabc', chain: 'doge' } },
       stubSupabase({}),
       now
     )
-    expect(r.ok).toBe(false)
-    expect(r.error).toBe('invalid_args')
+    expect(r.ok).toBe(true)
+    expect((r.data as any).chain).toBeNull()
+  })
+
+  it('accepts planner-style chain aliases like "solana" (2026-07-18 invalid_args regression)', async () => {
+    const r = await executeTool(
+      {
+        tool: 'getWalletActivity',
+        args: { address: '2yrks4xgzgkqpgepxurcc5zttxgxqundmwc9kf9ndpnz', chain: 'solana' },
+      },
+      stubSupabase({ all_whale_transactions: { data: [] } }),
+      now
+    )
+    expect(r.ok).toBe(true)
+    expect((r.data as any).chain).toBe('sol')
+  })
+
+  it('infers the chain from the address shape when no chain is given', async () => {
+    const r = await executeTool(
+      {
+        tool: 'getWalletActivity',
+        args: { address: '0x28c6c06298d514db089934071355e5743bf21d60' },
+      },
+      stubSupabase({ all_whale_transactions: { data: [] } }),
+      now
+    )
+    expect(r.ok).toBe(true)
+    expect((r.data as any).chain).toBe('eth')
   })
 
   it('aggregates buy/sell USD and reports labels + top txs', async () => {

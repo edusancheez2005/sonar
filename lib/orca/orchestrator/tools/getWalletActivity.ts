@@ -30,6 +30,7 @@
  * of any other user. user_wallets is consulted ONLY for the calling user.
  */
 import type { SupabaseLike, ToolResult } from '../types'
+import { detectAddress } from '../detectAddress'
 
 const ROW_LIMIT = 200
 const TOP_TX_COUNT = 5
@@ -50,9 +51,22 @@ export interface GetWalletActivityArgs {
   since?: unknown
 }
 
-const VALID_CHAINS = new Set([
-  'eth', 'btc', 'sol', 'base', 'arb', 'polygon', 'bsc', 'tron', 'xrp',
-])
+// The agentic planner's LLM emits chain names in whatever form it thinks of
+// ("solana", "ethereum", "SOL"...). Rejecting those made the tool fail with
+// invalid_args nondeterministically (trace 2026-07-18: thought said "default
+// to solana" → invalid_args → "That data isn't available right now").
+// Accept every common alias and map to the canonical short form.
+const CHAIN_ALIASES: Record<string, string> = {
+  eth: 'eth', ethereum: 'eth', mainnet: 'eth', 'erc-20': 'eth', erc20: 'eth',
+  btc: 'btc', bitcoin: 'btc',
+  sol: 'sol', solana: 'sol',
+  base: 'base',
+  arb: 'arb', arbitrum: 'arb',
+  polygon: 'polygon', matic: 'polygon',
+  bsc: 'bsc', bnb: 'bsc', binance: 'bsc', 'bnb chain': 'bsc',
+  tron: 'tron', trx: 'tron',
+  xrp: 'xrp', ripple: 'xrp',
+}
 
 function normaliseAddress(v: unknown): string | null {
   if (typeof v !== 'string') return null
@@ -64,8 +78,7 @@ function normaliseAddress(v: unknown): string | null {
 
 function normaliseChain(v: unknown): string | null {
   if (typeof v !== 'string') return null
-  const c = v.trim().toLowerCase()
-  return VALID_CHAINS.has(c) ? c : null
+  return CHAIN_ALIASES[v.trim().toLowerCase()] ?? null
 }
 
 function normaliseUserId(v: unknown): string | null {
@@ -95,9 +108,8 @@ export async function run(
 ): Promise<ToolResult> {
   const fetched_at = now().toISOString()
   const address = normaliseAddress(args.address)
-  const chain = normaliseChain(args.chain)
   const userId = normaliseUserId(args.userId)
-  if (!address || !chain) {
+  if (!address) {
     return {
       ok: false,
       data: null,
@@ -106,6 +118,10 @@ export async function run(
       error: 'invalid_args',
     }
   }
+  // Chain is only needed for the label lookups (the tx query matches by
+  // address alone), so never fail on it: accept aliases, else infer from
+  // the address shape, else proceed chainless.
+  const chain = normaliseChain(args.chain) ?? detectAddress(address)?.chain ?? null
   // whale_address is stored lowercased for every chain; the user may paste
   // a checksummed / base58 form. Query with the lowercase form, echo the
   // original back for display.
@@ -247,15 +263,14 @@ export async function run(
         ? q.eq('address', address)
         : q.in('address', [address, dbAddress])
 
-    // Arkham label (chain, address).
+    // Arkham label (chain narrows the match when known).
     let arkhamLabel: string | null = null
     try {
-      const { data: tauRows } = await addrFilter(
-        supabase
-          .from('tracked_address_universe')
-          .select('arkham_entity_name, arkham_label')
-          .eq('chain', chain)
-      ).limit(1)
+      let tauQ = supabase
+        .from('tracked_address_universe')
+        .select('arkham_entity_name, arkham_label')
+      if (chain) tauQ = tauQ.eq('chain', chain)
+      const { data: tauRows } = await addrFilter(tauQ).limit(1)
       const tau = Array.isArray(tauRows) ? tauRows[0] : null
       if (tau) {
         arkhamLabel =
@@ -271,13 +286,12 @@ export async function run(
     let userLabel: string | null = null
     if (userId) {
       try {
-        const { data: uwRows } = await addrFilter(
-          supabase
-            .from('user_wallets')
-            .select('label')
-            .eq('user_id', userId)
-            .eq('chain', chain)
-        ).limit(1)
+        let uwQ = supabase
+          .from('user_wallets')
+          .select('label')
+          .eq('user_id', userId)
+        if (chain) uwQ = uwQ.eq('chain', chain)
+        const { data: uwRows } = await addrFilter(uwQ).limit(1)
         const uw = Array.isArray(uwRows) ? uwRows[0] : null
         if (uw && typeof uw.label === 'string' && uw.label.trim()) {
           userLabel = uw.label.trim()
