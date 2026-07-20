@@ -61,6 +61,54 @@ function normaliseTitleQuery(v: unknown): string | null {
   return s
 }
 
+/**
+ * Best-effort direct fetch of the article body. `news_items.content` is null
+ * for most ingested rows, and delegating "read this URL" to agentic web
+ * search proved slow and flaky (42s+ timeouts — 2026-07-20). A plain fetch +
+ * tag-strip fills the excerpt in ~1-3s for most news sites. Returns null on
+ * any failure; SSRF-guarded to public http(s) hostnames only.
+ */
+async function fetchArticleText(url: string): Promise<string | null> {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    if (
+      /^(localhost|.*\.local|.*\.internal)$/.test(host) ||
+      /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ||
+      host.includes('[') // IPv6 literal
+    ) {
+      return null
+    }
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SonarTracker/1.0; +https://www.sonartracker.io)',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(6_000),
+    })
+    if (!resp.ok) return null
+    const html = await resp.text()
+    // Prefer the <article> block when present — the tag-stripped full page is
+    // mostly navigation chrome.
+    const articleMatch = html.match(/<article[\s>][\s\S]*?<\/article>/i)
+    const scoped = articleMatch ? articleMatch[0] : html
+    const text = scoped
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;|&#160;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#8217;|&rsquo;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim()
+    return text.length >= 300 ? text.slice(0, 2500) : null
+  } catch {
+    return null
+  }
+}
+
 export async function run(
   args: GetArticleContextArgs,
   supabase: SupabaseLike,
@@ -110,11 +158,44 @@ export async function run(
     const { data } = await query
     const row = Array.isArray(data) ? data[0] : null
     if (!row) {
+      // Not ingested (or aged out) — but if the user gave a URL we can still
+      // read the piece directly.
+      const webText = url ? await fetchArticleText(url) : null
+      if (webText) {
+        return {
+          ok: true,
+          data: {
+            found: true,
+            id: null,
+            headline: null,
+            source: null,
+            author: null,
+            published_at: null,
+            url,
+            excerpt: webText,
+            excerpt_source: 'live_page_fetch',
+            sentiment_score: null,
+            related_tickers: [],
+          },
+          source: 'web_fetch',
+          fetched_at,
+        }
+      }
       return {
         ok: true,
         data: { found: false, reason: 'not_found_or_older_than_30d' },
         source: NEWS_TABLE,
         fetched_at,
+      }
+    }
+    let excerpt = typeof row.content === 'string' && row.content.trim() ? row.content.trim().slice(0, 800) : null
+    let excerptSource = excerpt ? 'ingested' : null
+    if (!excerpt) {
+      const pageUrl = typeof row.url === 'string' && row.url ? row.url : url
+      const webText = pageUrl ? await fetchArticleText(pageUrl) : null
+      if (webText) {
+        excerpt = webText
+        excerptSource = 'live_page_fetch'
       }
     }
     return {
@@ -127,7 +208,8 @@ export async function run(
         author: typeof row.author === 'string' ? row.author : null,
         published_at: row.published_at ?? null,
         url: typeof row.url === 'string' ? row.url : null,
-        excerpt: typeof row.content === 'string' ? row.content.trim().slice(0, 800) : null,
+        excerpt,
+        excerpt_source: excerptSource,
         sentiment_score:
           typeof row.sentiment_raw === 'number' ? row.sentiment_raw : null,
         related_tickers: parseTickers(row.ticker),
