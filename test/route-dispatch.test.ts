@@ -103,13 +103,16 @@ describe('pickStageARoute', () => {
     }
   })
 
-  it('falls through for personal intent with no tickers', () => {
+  it('routes personal intent to the orchestrator (user-data tools live there — 2026-07-18)', () => {
     const route = pickStageARoute({
       intent: 'personal',
       tickers: [],
       confidence: 0.7,
     })
-    expect(route.kind).toBe('fallthrough')
+    expect(route.kind).toBe('orchestrator')
+    if (route.kind === 'orchestrator') {
+      expect(route.intent).toBe('personal')
+    }
   })
 
   it('falls through for unknown intent with no tickers', () => {

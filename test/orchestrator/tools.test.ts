@@ -91,7 +91,7 @@ describe('executeTool: getNews', () => {
     )
     expect(r.ok).toBe(true)
     expect((r.data as any).items).toHaveLength(1)
-    expect((r.data as any).items[0].title).toBe('Headline')
+    expect((r.data as any).items[0].title).toBe('Bitcoin ETF inflows resume')
   })
 })
 
