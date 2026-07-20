@@ -54,23 +54,23 @@ describe('getNews: short-ticker disambiguation', () => {
     const r = await executeTool(
       { tool: 'getNews', args: { ticker: 'OP' } },
       stubSupabase({
-        news_articles: {
+        news_items: {
           data: [
             {
               title: 'Pakistan sells JF-17 fighter jets during Op Sindoor',
               url: 'https://x/1',
               source: 'HT',
               published_at: '2026-06-01',
-              summary: 'Geopolitics article.',
-              related_tickers: 'OP,XYZ',
+              content: 'Geopolitics article.',
+              ticker: 'OP',
             },
             {
               title: 'Optimism Layer-2 token OP rallies on airdrop',
               url: 'https://x/2',
               source: 'TheBlock',
               published_at: '2026-06-01',
-              summary: 'Crypto coverage of the OP token on the Optimism rollup.',
-              related_tickers: 'OP',
+              content: 'Crypto coverage of the OP token on the Optimism rollup.',
+              ticker: 'OP',
             },
           ],
         },
@@ -87,10 +87,10 @@ describe('getNews: short-ticker disambiguation', () => {
     const r = await executeTool(
       { tool: 'getNews', args: { ticker: 'BTC' } },
       stubSupabase({
-        news_articles: {
+        news_items: {
           data: [
-            { title: 'Plain headline', url: 'u1', source: 's', published_at: 'p', summary: 's', related_tickers: 'BTC' },
-            { title: 'Another headline', url: 'u2', source: 's', published_at: 'p', summary: 's', related_tickers: 'BTC,ETH' },
+            { title: 'Bitcoin steadies above $60K', url: 'u1', source: 's', published_at: 'p', content: 'BTC market recap', ticker: 'BTC' },
+            { title: 'Bitcoin miners expand capacity', url: 'u2', source: 's', published_at: 'p', content: 'Mining coverage', ticker: 'BTC' },
           ],
         },
       }),
@@ -100,19 +100,19 @@ describe('getNews: short-ticker disambiguation', () => {
     expect((r.data as any).items).toHaveLength(2)
   })
 
-  it('drops rows whose related_tickers contains the ticker as a substring only', async () => {
+  it('keeps an ambiguous-ticker row when the cashtag form appears', async () => {
     const r = await executeTool(
       { tool: 'getNews', args: { ticker: 'OP' } },
       stubSupabase({
-        news_articles: {
+        news_items: {
           data: [
-            { title: 'crypto news', url: 'u', source: 's', published_at: 'p', summary: 'blockchain', related_tickers: 'OPUL,STOP' },
+            { title: '$OP breaks out of its range', url: 'u', source: 's', published_at: 'p', content: 'Token coverage with $OP cashtag.', ticker: 'OP' },
           ],
         },
       }),
       now
     )
     expect(r.ok).toBe(true)
-    expect((r.data as any).items).toHaveLength(0)
+    expect((r.data as any).items).toHaveLength(1)
   })
 })

@@ -83,8 +83,8 @@ describe('executeTool: getNews', () => {
     const r = await executeTool(
       { tool: 'getNews', args: { ticker: 'BTC' } },
       stubSupabase({
-        news_articles: {
-          data: [{ title: 'Headline', url: 'https://x', source: 's', published_at: 'p', summary: 'sum' }],
+        news_items: {
+          data: [{ title: 'Bitcoin ETF inflows resume', url: 'https://x', source: 's', published_at: 'p', content: 'Spot Bitcoin ETFs saw inflows.', ticker: 'BTC' }],
         },
       }),
       now

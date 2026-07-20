@@ -119,3 +119,35 @@ describe('planner: W3 intents', () => {
     }
   })
 })
+
+describe('planner: article_explain headline references (2026-07-19 audit)', () => {
+  it('plans a titleQuery lookup for a free-text article reference', () => {
+    const calls = planToolCalls({
+      router: decision({
+        intent: 'article_explain',
+        entities: ['CLARITY Act altcoins article'],
+        tickers: [],
+      }),
+      profile: null,
+      userId: 'u1',
+    })
+    const article = calls.find((c) => c.tool === 'getArticleContext')
+    expect(article).toBeDefined()
+    expect(article!.args.titleQuery).toBe('CLARITY Act altcoins article')
+  })
+
+  it('still plans an articleId lookup for a uuid entity', () => {
+    const calls = planToolCalls({
+      router: decision({
+        intent: 'article_explain',
+        entities: ['5f0e8a3c-1b2d-4c5e-9f0a-1b2c3d4e5f60'],
+        tickers: [],
+      }),
+      profile: null,
+      userId: 'u1',
+    })
+    const article = calls.find((c) => c.tool === 'getArticleContext')
+    expect(article).toBeDefined()
+    expect(article!.args.articleId).toBe('5f0e8a3c-1b2d-4c5e-9f0a-1b2c3d4e5f60')
+  })
+})

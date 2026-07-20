@@ -39,7 +39,7 @@ export const TOOL_CATALOGUE: ToolSpec[] = [
   { name: 'getMacroFactors', purpose: 'Live macro factors affecting crypto this week.', args: {}, marketWide: true, cost: 'cheap' },
   { name: 'explainMacroFactor', purpose: 'Definition of a named macro term (CPI, FOMC, ETF…).', args: { entities: 'string[]' }, cost: 'cheap' },
   { name: 'getSignalContext', purpose: 'Current Sonar signal + why, for ONE ticker.', args: { ticker: 'string' }, cost: 'medium' },
-  { name: 'getArticleContext', purpose: 'Fetch a specific article by url or id.', args: { url: 'string?', articleId: 'string?' }, cost: 'cheap' },
+  { name: 'getArticleContext', purpose: 'Fetch a specific article by url, id, or headline keywords.', args: { url: 'string?', articleId: 'string?', titleQuery: 'string?' }, cost: 'cheap' },
   { name: 'findTrackedWallets', purpose: "Search the user's tracked wallets by label/query.", args: { query: 'string' }, cost: 'cheap' },
   { name: 'getUserHoldings', purpose: "The signed-in user's holdings.", args: {}, cost: 'cheap' },
   { name: 'getUserWatchlist', purpose: "The signed-in user's watchlist.", args: {}, cost: 'cheap' },

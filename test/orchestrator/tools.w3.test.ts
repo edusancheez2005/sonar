@@ -243,29 +243,30 @@ describe('executeTool: getArticleContext', () => {
 
   it('returns found=false when the article is missing', async () => {
     const r = await executeTool(
-      { tool: 'getArticleContext', args: { articleId: 'abc123' } },
-      stubSupabase({ news_articles: { data: [] } }),
+      { tool: 'getArticleContext', args: { articleId: '5f0e8a3c-1b2d-4c5e-9f0a-1b2c3d4e5f60' } },
+      stubSupabase({ news_items: { data: [] } }),
       now
     )
     expect(r.ok).toBe(true)
     expect((r.data as any).found).toBe(false)
   })
 
-  it('shapes a found article with related tickers', async () => {
+  it('shapes a found article from news_items columns', async () => {
     const r = await executeTool(
-      { tool: 'getArticleContext', args: { articleId: 'abc123' } },
+      { tool: 'getArticleContext', args: { articleId: '5f0e8a3c-1b2d-4c5e-9f0a-1b2c3d4e5f60' } },
       stubSupabase({
-        news_articles: {
+        news_items: {
           data: [
             {
-              id: 'abc123',
+              id: '5f0e8a3c-1b2d-4c5e-9f0a-1b2c3d4e5f60',
               title: 'Fed holds rates',
               url: 'https://news.example/x',
               source: 'Reuters',
               published_at: '2026-06-02T10:00:00Z',
-              summary: 'The Fed held rates...',
-              related_tickers: 'BTC,ETH',
-              sentiment_score: 0.2,
+              content: 'The Fed held rates...',
+              ticker: 'BTC',
+              author: 'Reuters Desk',
+              sentiment_raw: 0.2,
             },
           ],
         },
@@ -276,8 +277,65 @@ describe('executeTool: getArticleContext', () => {
     const d = r.data as any
     expect(d.found).toBe(true)
     expect(d.headline).toBe('Fed holds rates')
-    expect(d.related_tickers).toEqual(['BTC', 'ETH'])
+    expect(d.excerpt).toBe('The Fed held rates...')
+    expect(d.related_tickers).toEqual(['BTC'])
     expect(d.sentiment_score).toBe(0.2)
+  })
+
+  it('reroutes a non-uuid articleId into a title search instead of a uuid cast error', async () => {
+    const r = await executeTool(
+      { tool: 'getArticleContext', args: { articleId: 'CLARITY' } },
+      stubSupabase({
+        news_items: {
+          data: [
+            {
+              id: '5f0e8a3c-1b2d-4c5e-9f0a-1b2c3d4e5f60',
+              title: 'Top 3 Altcoins That Could Benefit Most if the CLARITY Act Passes',
+              url: 'https://news.example/clarity',
+              source: 'CoinGape',
+              published_at: '2026-06-02T10:00:00Z',
+              content: null,
+              ticker: 'BTC',
+              author: null,
+              sentiment_raw: null,
+            },
+          ],
+        },
+      }),
+      now
+    )
+    expect(r.ok).toBe(true)
+    const d = r.data as any
+    expect(d.found).toBe(true)
+    expect(d.headline).toContain('CLARITY Act')
+  })
+
+  it('finds an article by titleQuery keywords', async () => {
+    const r = await executeTool(
+      { tool: 'getArticleContext', args: { titleQuery: 'CLARITY Act altcoins' } },
+      stubSupabase({
+        news_items: {
+          data: [
+            {
+              id: '5f0e8a3c-1b2d-4c5e-9f0a-1b2c3d4e5f60',
+              title: 'Top 3 Altcoins That Could Benefit Most if the CLARITY Act Passes',
+              url: 'https://news.example/clarity',
+              source: 'CoinGape',
+              published_at: '2026-06-02T10:00:00Z',
+              content: 'Congress weighs the CLARITY Act…',
+              ticker: 'BTC',
+              author: null,
+              sentiment_raw: 0.4,
+            },
+          ],
+        },
+      }),
+      now
+    )
+    expect(r.ok).toBe(true)
+    const d = r.data as any
+    expect(d.found).toBe(true)
+    expect(d.headline).toContain('CLARITY Act')
   })
 })
 

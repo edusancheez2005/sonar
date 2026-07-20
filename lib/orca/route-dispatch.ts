@@ -108,6 +108,12 @@ export function isTickerFollowUp(message: string | undefined, hasHistory: boolea
 }
 
 
+// Real-world events whose crypto impact the user is asking about. Deliberately
+// noun-driven (never verbs like "affect") so plain ticker overviews ("tell me
+// about BTC") keep the v1 long-form path.
+const MACRO_EVENT_RE =
+  /\b(fed|fomc|cpi|ppi|inflation|interest rates?|rate (?:cuts?|hikes?)|tariffs?|sanctions?|geopolit\w*|war|strikes?|invasion|conflict|attack|election|shutdown|treasury|regulat\w*|lawsuit|etf (?:in|out)?flows?|hack(?:ed|s)?|exploit|depeg|bankruptcy|collapse|halving|macro)\b/i
+
 /**
  * Decide what to do with a router decision. Intent always wins over
  * incidental ticker matches — see file-level comment.
@@ -125,6 +131,19 @@ export function pickStageARoute(decision: StageADecision): StageARoute {
   }
   if (RENDERED_INTENTS.has(decision.intent)) {
     return { kind: 'orchestrator', intent: decision.intent }
+  }
+  // Macro/news-event questions that happen to name a ticker ("how did the US
+  // strikes on Iran affect Bitcoin?") must NOT fall into the v1 long-form
+  // ticker note — that template describes price structure and never addresses
+  // the event (2026-07-19 audit). Send them to the orchestrator, whose router
+  // emits macro/news datapoints and whose planner schedules getMacroFactors +
+  // getNews alongside price.
+  if (
+    decision.tickers.length > 0 &&
+    decision.message !== undefined &&
+    MACRO_EVENT_RE.test(decision.message)
+  ) {
+    return { kind: 'orchestrator', intent: 'data_query' }
   }
   if (decision.tickers.length > 0) {
     return {

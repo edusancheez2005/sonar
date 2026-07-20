@@ -117,12 +117,14 @@ async function executeConfirmedWrites(
 }
 
 // Vercel function timeout. The legacy v1 path fans out to multiple upstream
-// APIs (Binance + CG + LunarCrush + news + whale alerts) and Grok-4-fast can
-// take 20-40s for a 1,500-word note. The default 10s cap was surfacing to the
-// browser as "Network error talking to ORCA" in PersonalCopilotPanel. Set to
-// 60s — supported on Vercel Pro. If you are on Hobby, lower to 60 here AND in
-// the Vercel dashboard (Hobby maxes at 60s on Node runtime as of 2026-05).
-export const maxDuration = 60
+// APIs (Binance + CG + LunarCrush + news + whale alerts) and the Grok writer
+// takes 20-40s for a 1,500-word note — observed p50 for a full ticker note is
+// ~45s, so the previous 60s cap meant any slow writer call got the function
+// KILLED mid-SSE-stream: no error event, no close, the client just hangs on a
+// half-open stream (2026-07-19 audit caught streams dangling for 40+ min).
+// 180s gives the long tail room; refresh-macro already runs at 120s on this
+// plan. If you are on Hobby, lower to 60 here AND in the Vercel dashboard.
+export const maxDuration = 180
 
 // Use Grok (xAI) as primary AI, fallback to OpenAI if no xAI key.
 //   - Grok primary:  grok-4.5  (flagship, 500K ctx — xAI's fastest + most

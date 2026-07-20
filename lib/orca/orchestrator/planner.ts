@@ -338,8 +338,12 @@ function planArticleExplain(input: PlannerInput): ToolCall[] {
     if (!s) continue
     if (/^https?:\/\//i.test(s)) {
       calls.push({ tool: 'getArticleContext', args: { url: s } })
-    } else if (/^[A-Za-z0-9_-]{1,64}$/.test(s)) {
+    } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) {
       calls.push({ tool: 'getArticleContext', args: { articleId: s } })
+    } else if (s.length >= 3) {
+      // Users reference articles by headline far more often than by URL —
+      // "that CLARITY Act article" arrives here as a free-text entity.
+      calls.push({ tool: 'getArticleContext', args: { titleQuery: s } })
     }
   }
   // Also fetch supporting headlines for any tickers the article references.

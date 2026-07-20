@@ -51,6 +51,16 @@ export async function run(
   }
   const userId = normaliseUserId(args.userId)
   const like = `%${query}%`
+  // "Robinhood cold wallet" spans TWO columns (entity_name "Robinhood" +
+  // label "Cold Wallet"), so a single full-phrase ilike matches nothing
+  // (2026-07-19 audit). Each meaningful word must match SOME field; generic
+  // filler ("wallet", "address") is dropped so it doesn't demand a match.
+  const GENERIC_WORDS = new Set(['wallet', 'wallets', 'address', 'addresses', 'the', 'account'])
+  const words = query
+    .split(/\s+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length >= 2 && !GENERIC_WORDS.has(w.toLowerCase()))
+    .slice(0, 5)
 
   type Match = {
     address: string
@@ -64,12 +74,18 @@ export async function run(
   // 1) User's own wallets first (highest priority).
   if (userId) {
     try {
-      const { data } = await supabase
+      let uwQ = supabase
         .from('user_wallets')
         .select('address, chain, label')
         .eq('user_id', userId)
-        .or(`address.ilike.${like},label.ilike.${like},chain.ilike.${like}`)
-        .limit(RESULT_LIMIT)
+      if (words.length > 1) {
+        for (const w of words) {
+          uwQ = uwQ.or(`address.ilike.%${w}%,label.ilike.%${w}%,chain.ilike.%${w}%`)
+        }
+      } else {
+        uwQ = uwQ.or(`address.ilike.${like},label.ilike.${like},chain.ilike.${like}`)
+      }
+      const { data } = await uwQ.limit(RESULT_LIMIT)
       const rows = Array.isArray(data) ? data : []
       for (const r of rows as any[]) {
         const address = String(r?.address ?? '').trim()
@@ -94,13 +110,20 @@ export async function run(
   if (matches.length < RESULT_LIMIT) {
     try {
       const remaining = RESULT_LIMIT - matches.length
-      const { data } = await supabase
+      let tauQ = supabase
         .from('tracked_address_universe')
         .select('address, chain, arkham_entity_name, arkham_label')
-        .or(
+      if (words.length > 1) {
+        // AND of per-word ORs: every word must appear in some label field.
+        for (const w of words) {
+          tauQ = tauQ.or(`address.ilike.%${w}%,arkham_entity_name.ilike.%${w}%,arkham_label.ilike.%${w}%`)
+        }
+      } else {
+        tauQ = tauQ.or(
           `address.ilike.${like},arkham_entity_name.ilike.${like},arkham_label.ilike.${like}`
         )
-        .limit(remaining)
+      }
+      const { data } = await tauQ.limit(remaining)
       const rows = Array.isArray(data) ? data : []
       for (const r of rows as any[]) {
         const address = String(r?.address ?? '').trim()

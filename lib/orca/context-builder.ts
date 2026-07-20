@@ -19,6 +19,7 @@ import { getKlines, get24hrTicker, getRollingTicker } from '@/lib/binance/client
 import type { BinanceKline, Binance24hrTicker } from '@/lib/binance/client'
 import { symbolToPair, daysToInterval } from '@/lib/binance/symbol-map'
 import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
+import { symbolVariants } from '@/lib/wallet/symbol-aliases'
 import { 
   formatWhaleMovesDetailed,
   formatThemes,
@@ -404,7 +405,9 @@ async function fetchWhaleActivity(ticker: string, supabase: any): Promise<any[]>
         reasoning,
         timestamp
       `)
-      .eq('token_symbol', ticker.toUpperCase())
+      // Wrapped variants included: ETH/BTC exposure is stored as WETH/WBTC —
+      // the literal symbols have zero rows, which read as "no whale activity".
+      .in('token_symbol', symbolVariants(ticker.toUpperCase()))
       .gte('timestamp', last24Hours)
       .order('timestamp', { ascending: false })
       .limit(200) // Match token page limit for complete data

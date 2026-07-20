@@ -64,8 +64,32 @@ const CHAIN_ALIASES: Record<string, string> = {
   arb: 'arb', arbitrum: 'arb',
   polygon: 'polygon', matic: 'polygon',
   bsc: 'bsc', bnb: 'bsc', binance: 'bsc', 'bnb chain': 'bsc',
+  avax: 'avax', avalanche: 'avax',
   tron: 'tron', trx: 'tron',
   xrp: 'xrp', ripple: 'xrp',
+}
+
+// The label tables don't share one chain vocabulary: `tracked_address_universe`
+// stores Arkham's long forms ('bitcoin', 'arbitrum_one', 'avalanche') while
+// `user_wallets` stores short forms ('eth'). Filtering either with the
+// canonical short form silently missed every long-form row (2026-07-19 audit:
+// Robinhood's bitcoin cold wallet had a label but eq('chain','btc') never
+// found it). Match all known spellings of the canonical chain instead.
+const CHAIN_DB_FORMS: Record<string, string[]> = {
+  eth: ['eth', 'ethereum'],
+  btc: ['btc', 'bitcoin'],
+  sol: ['sol', 'solana'],
+  base: ['base'],
+  arb: ['arb', 'arbitrum', 'arbitrum_one'],
+  polygon: ['polygon', 'matic'],
+  bsc: ['bsc', 'bnb'],
+  avax: ['avax', 'avalanche'],
+  tron: ['tron', 'trx'],
+  xrp: ['xrp', 'ripple'],
+}
+
+function chainDbForms(chain: string): string[] {
+  return CHAIN_DB_FORMS[chain] ?? [chain]
 }
 
 function normaliseAddress(v: unknown): string | null {
@@ -263,15 +287,25 @@ export async function run(
         ? q.eq('address', address)
         : q.in('address', [address, dbAddress])
 
-    // Arkham label (chain narrows the match when known).
+    // Arkham label. Matched by ADDRESS ALONE: the guessed chain for a 0x
+    // address is 'eth', but the labelled row may live under 'bsc'/'base'/
+    // 'arbitrum_one' (the universe stores Arkham's long chain names, not our
+    // short forms — 2026-07-19 audit: Binance's bsc hot wallet had a label
+    // that a chain='eth' filter could never find). When several chains carry
+    // the address, prefer the one matching the caller's chain; the entity
+    // behind an EVM address is the same across chains in practice.
     let arkhamLabel: string | null = null
     try {
-      let tauQ = supabase
+      const tauQ = supabase
         .from('tracked_address_universe')
-        .select('arkham_entity_name, arkham_label')
-      if (chain) tauQ = tauQ.eq('chain', chain)
-      const { data: tauRows } = await addrFilter(tauQ).limit(1)
-      const tau = Array.isArray(tauRows) ? tauRows[0] : null
+        .select('arkham_entity_name, arkham_label, chain')
+      const { data: tauRows } = await addrFilter(tauQ).limit(10)
+      const rows = Array.isArray(tauRows) ? tauRows : []
+      const preferredForms = chain ? chainDbForms(chain) : []
+      const tau =
+        rows.find((r: any) => preferredForms.includes(String(r?.chain ?? '').toLowerCase())) ??
+        rows[0] ??
+        null
       if (tau) {
         arkhamLabel =
           (typeof tau.arkham_entity_name === 'string' && tau.arkham_entity_name) ||
@@ -286,11 +320,12 @@ export async function run(
     let userLabel: string | null = null
     if (userId) {
       try {
-        let uwQ = supabase
+        // user_id + address is already precise; a chain filter only re-adds
+        // the guessed-chain mismatch (see the Arkham lookup above).
+        const uwQ = supabase
           .from('user_wallets')
           .select('label')
           .eq('user_id', userId)
-        if (chain) uwQ = uwQ.eq('chain', chain)
         const { data: uwRows } = await addrFilter(uwQ).limit(1)
         const uw = Array.isArray(uwRows) ? uwRows[0] : null
         if (uw && typeof uw.label === 'string' && uw.label.trim()) {

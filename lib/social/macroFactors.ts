@@ -16,6 +16,7 @@
  * `stale: true` rather than erroring.
  */
 import { createClient } from '@supabase/supabase-js'
+import { waitUntil } from '@vercel/functions'
 import { getGlobalData, type GlobalMarketData } from '@/lib/coingecko/client'
 
 export type MacroImpact = 'bullish' | 'bearish' | 'neutral'
@@ -164,9 +165,23 @@ export async function getMacroFactors(opts?: { forceRefresh?: boolean }): Promis
       cachedResult = db.result
       cachedAt = Date.now() - db.ageMs
       cachedVersion = CACHE_VERSION
-      // Even past-TTL data is served immediately (stale: true) — the
-      // refresh-macro cron owns regeneration; users never wait on Grok.
-      return { ...db.result, stale: db.ageMs >= CACHE_TTL }
+      // Even past-TTL data is served immediately (stale: true) — users never
+      // wait on Grok. The refresh-macro cron owns regeneration, but it can
+      // silently miss (2026-07-19 audit: prod served July-12 factors for six
+      // days straight), so a stale read also kicks off a background
+      // regeneration. Single-flight via `inFlight`; waitUntil keeps the
+      // serverless instance alive past the response.
+      const isStale = db.ageMs >= CACHE_TTL
+      if (isStale && !inFlight) {
+        inFlight = generateFresh().finally(() => { inFlight = null })
+        const silenced = inFlight.catch(() => {})
+        try {
+          waitUntil(silenced)
+        } catch {
+          // non-Vercel runtime (tests, plain node): best-effort fire-and-forget
+        }
+      }
+      return { ...db.result, stale: isStale }
     }
     // No cache anywhere (first ever run): generate synchronously below.
   }

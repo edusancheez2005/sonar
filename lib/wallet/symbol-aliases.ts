@@ -33,3 +33,22 @@ export function canonicalSymbolList(symbols: Array<string | null | undefined>): 
   }
   return Array.from(out)
 }
+
+// Reverse index: canonical symbol → every symbol that maps to it.
+const VARIANTS: Record<string, string[]> = {}
+for (const [wrapped, canonical] of Object.entries(ALIASES)) {
+  ;(VARIANTS[canonical] ||= [canonical]).push(wrapped)
+}
+
+/**
+ * All `token_symbol` values that represent the same underlying exposure as
+ * `symbol`, including itself. `all_whale_transactions` stores wrapped symbols
+ * as-is (there are zero ETH/BTC rows — only WETH/WBTC/…), so any per-ticker
+ * read of that table must query the full variant list or it silently returns
+ * "no whale activity" for the majors.
+ */
+export function symbolVariants(symbol: string | null | undefined): string[] {
+  const c = canonicalSymbol(symbol)
+  if (!c) return []
+  return VARIANTS[c] ? [...VARIANTS[c]] : [c]
+}

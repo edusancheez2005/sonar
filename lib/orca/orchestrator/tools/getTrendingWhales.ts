@@ -11,6 +11,10 @@
  * Per-ticker whale lookups still go through getWhaleFlows.
  */
 import type { SupabaseLike, ToolResult } from '../types'
+import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
+
+// Same protocol-scale sanity cap as getWhaleFlows (see comment there).
+const MAX_SANE_TX_USD = 150_000_000
 
 const WINDOWS = {
   '24h': 24 * 60 * 60 * 1000,
@@ -81,10 +85,13 @@ export async function run(
 
     const buckets = new Map<string, Bucket>()
     for (const row of data as Array<any>) {
-      const ticker = String(row?.token_symbol ?? '').toUpperCase().trim()
+      // Group wrapped variants under their canonical symbol so the
+      // leaderboard says "BTC", not "WBTC" + "CBBTC" as separate rows.
+      const ticker = canonicalSymbol(String(row?.token_symbol ?? '').trim()) ?? ''
       if (!ticker || !/^[A-Z0-9._-]{1,12}$/.test(ticker)) continue
       const v = Number(row?.usd_value)
       if (!Number.isFinite(v) || v <= 0) continue
+      if (v > MAX_SANE_TX_USD) continue
       const c = String(row?.classification ?? '').toLowerCase()
       let b = buckets.get(ticker)
       if (!b) {

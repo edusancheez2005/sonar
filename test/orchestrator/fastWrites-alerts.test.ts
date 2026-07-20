@@ -92,3 +92,24 @@ describe('sanitiseConfirmCalls — alert tools', () => {
     expect(out![0].tool).toBe('listAlerts')
   })
 })
+
+describe('detectAlertWrite — article questions are not alerts (2026-07-19 audit)', () => {
+  it('does not mint an ARTICLE alert from "tell me about that article …"', () => {
+    expect(
+      detectAlertWrite(
+        'Tell me about that article on the top 3 altcoins that could benefit if the CLARITY Act passes'
+      )
+    ).toBeNull()
+  })
+
+  it('does not treat content nouns as tickers', () => {
+    expect(detectAlertWrite('alert me about the latest headlines')).toBeNull()
+    expect(detectAlertWrite('tell me more about that story')).toBeNull()
+  })
+
+  it('still creates a conditional alert with "tell me when"', () => {
+    const d = detectAlertWrite('tell me when SOL moves 5%')
+    expect(d).not.toBeNull()
+    expect(d!.calls[0]).toMatchObject({ tool: 'createAlert', args: { ticker: 'SOL', kind: 'price_move' } })
+  })
+})

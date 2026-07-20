@@ -138,3 +138,35 @@ describe('isTickerFollowUp (Option A — ticker drill-down routing)', () => {
     ).toBe(false)
   })
 })
+
+describe('pickStageARoute — macro/news events that name a ticker (2026-07-19 audit)', () => {
+  it('routes a macro-incident question about Bitcoin to the orchestrator, not the v1 note', () => {
+    const route = pickStageARoute(
+      decision({
+        intent: 'overview',
+        tickers: ['BTC'],
+        message: 'How did the recent US strikes on Iran affect Bitcoin?',
+      })
+    )
+    expect(route.kind).toBe('orchestrator')
+    if (route.kind === 'orchestrator') expect(route.intent).toBe('data_query')
+  })
+
+  it('routes rate-cut / ETF-flow questions with a ticker to the orchestrator', () => {
+    for (const msg of [
+      'what would a Fed rate cut mean for ETH?',
+      'are ETF outflows hurting BTC?',
+      'did the exploit news hit SOL today?',
+    ]) {
+      const route = pickStageARoute(decision({ intent: 'overview', tickers: ['ETH'], message: msg }))
+      expect(route.kind).toBe('orchestrator')
+    }
+  })
+
+  it('keeps plain ticker overviews on the v1 long-form path', () => {
+    for (const msg of ['tell me about BTC', 'full ETH analysis', 'how is the market?']) {
+      const route = pickStageARoute(decision({ intent: 'overview', tickers: ['BTC'], message: msg }))
+      expect(route.kind).toBe('v1_with_ticker')
+    }
+  })
+})

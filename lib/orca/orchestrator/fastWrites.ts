@@ -173,7 +173,9 @@ export interface DetectFastWriteOptions {
 // ── Alert detection ─────────────────────────────────────────────────────────
 // Net-add (Proactive Alerts stage). Detects "alert me when SOL moves 5%",
 // "notify me about BTC whale flow over $1M", "ping me on ETH signal flips",
-// "tell me about SOL news", plus "remove my SOL alert" and "list my alerts".
+// "tell me WHEN SOL news drops", plus "remove my SOL alert" and "list my
+// alerts". ("tell me ABOUT SOL news" is a question, not an alert — it routes
+// to the normal chat path and gets headlines.)
 
 const ALERT_INTENT_RE = /\b(alert|notify|ping|tell me|let me know|remind|warn)\b|\balerts?\b/i
 const LIST_ALERTS_RE = /\b(list|show|view|see|what(?:'s| is| are)?)\b[^.?!]*\balerts?\b/i
@@ -202,6 +204,14 @@ const TICKER_STOPWORDS = new Set<string>([
   'WOULD', 'COULD', 'SHOULD', 'WERE', 'WAS', 'WILL', 'CAN', 'MAY', 'MIGHT',
   'DO', 'DOES', 'DID', 'HAVE', 'HAS', 'HAD', 'BEEN', 'WITH', 'NOT', 'ANY',
   'SOME', 'HOW', 'WHO', 'WHY', 'WHERE', 'WHICH', 'ADVICE', 'GIVE', 'ALLOWED',
+  // Content nouns — "tell me about that ARTICLE …" minted an "ARTICLE" alert
+  // (2026-07-19 audit). Anything describing the content itself, plus common
+  // discourse words that survive the earlier filters.
+  'ARTICLE', 'ARTICLES', 'HEADLINE', 'HEADLINES', 'STORY', 'STORIES', 'POST',
+  'POSTS', 'TWEET', 'TWEETS', 'REPORT', 'REPORTS', 'PIECE', 'READ', 'EXPLAIN',
+  'SUMMARY', 'SUMMARIZE', 'SUMMARISE', 'MEAN', 'MEANS', 'SAYS', 'SAID', 'SAY',
+  'TOP', 'BEST', 'MOST', 'MORE', 'LESS', 'THAN', 'THOSE', 'THESE', 'BENEFIT',
+  'COULD', 'PASSES', 'PASSED', 'ACT', 'BILL', 'LAW', 'RECENT', 'LATEST',
 ])
 
 function pickTickerAnywhere(text: string): string | null {
@@ -252,6 +262,13 @@ export function detectAlertWrite(
   const msg = message.trim()
   if (!msg || msg.length > 200) return null
   if (!ALERT_INTENT_RE.test(msg)) return null
+
+  // "tell me about/more …" is a QUESTION, not an alert command, even when the
+  // sentence also contains a conditional ("…that could benefit IF the CLARITY
+  // Act passes" — 2026-07-19 audit). Only a hard alert word overrides this.
+  if (/\btell me (?:about|more)\b/i.test(msg) && !/\b(alert|notify|ping|warn|remind)\b/i.test(msg)) {
+    return null
+  }
 
   const contextTicker = opts.contextTicker ? normaliseTicker(opts.contextTicker) : null
 
