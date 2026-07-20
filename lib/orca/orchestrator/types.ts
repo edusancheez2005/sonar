@@ -177,7 +177,15 @@ export interface ModelClient {
    * stored body, an article not found at all, or a macro-event question the
    * cached factors don't cover (2026-07-20 audit).
    */
-  writerSearchCall?: (systemPrompt: string, userMessage: string) => Promise<string>
+  writerSearchCall?: (
+    systemPrompt: string,
+    userMessage: string,
+    opts?: {
+      /** True when the task needs the flagship model (reading a specific
+       *  article URL); event lookups run on the faster mini. */
+      deep?: boolean
+    }
+  ) => Promise<string>
   routerCall: (prompt: string, userMessage: string) => Promise<string>
   writerCall: (systemPrompt: string, userMessage: string) => Promise<string>
   /**

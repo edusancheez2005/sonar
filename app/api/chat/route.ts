@@ -133,9 +133,16 @@ export const maxDuration = 180
  * dead (silently ignored historically; 410 "deprecated" as of 2026-07).
  * Throws on any failure — runOrchestrator falls back to the plain writer.
  */
-async function grokSearchWriter(sys: string, usr: string): Promise<string> {
+async function grokSearchWriter(sys: string, usr: string, opts?: { deep?: boolean }): Promise<string> {
   const xaiKey = process.env.XAI_API_KEY
   if (!xaiKey) throw new Error('no_xai_key')
+  // Mini for event lookups (the flagship's agentic search blew a 40s budget;
+  // the mini does the same in ~10-20s). Flagship for `deep` — reading a
+  // specific article URL: the mini skimmed and answered "only headline
+  // available" while the flagship actually pulled the piece (2026-07-20).
+  const model = opts?.deep
+    ? process.env.ORCA_GROK_MODEL || 'grok-4.5'
+    : process.env.ORCA_GROK_SEARCH_MODEL || process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3'
   const resp = await fetch('https://api.x.ai/v1/responses', {
     method: 'POST',
     headers: {
@@ -143,11 +150,7 @@ async function grokSearchWriter(sys: string, usr: string): Promise<string> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      // Mini by default: the flagship's agentic search regularly blew a 40s
-      // budget (observed 2026-07-20 — macro-event queries timed out and fell
-      // back to "not covered"); the mini finishes the same searches in
-      // ~10-20s and the renderer prompt does the heavy lifting anyway.
-      model: process.env.ORCA_GROK_SEARCH_MODEL || process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3',
+      model,
       input: `${sys}\n\n${usr}`,
       tools: [{ type: 'web_search' }],
     }),
@@ -1149,9 +1152,9 @@ export async function POST(request: Request) {
                       // Live-search writer (see the non-SSE site for rationale).
                       ...(stageAProvider === 'grok'
                         ? {
-                            writerSearchCall: async (sys: string, usr: string) => {
+                            writerSearchCall: async (sys: string, usr: string, opts?: { deep?: boolean }) => {
                               send({ type: 'status', step: 'ai_thinking', message: 'ORCA searching the live web...' })
-                              return grokSearchWriter(sys, usr)
+                              return grokSearchWriter(sys, usr, opts)
                             },
                           }
                         : {}),
@@ -1528,16 +1531,31 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           // actually remains and fail as a proper `error` event instead. The
           // fan-out above typically eats 15-25s, so the budget floor keeps a
           // usable window even on a slow start.
+          const raceWriter = (body: any, budgetMs: number) =>
+            Promise.race([
+              ai.chat.completions.create(body),
+              new Promise<never>((_, reject) =>
+                setTimeout(
+                  () => reject(new Error('ORCA took too long writing this note — please ask again.')),
+                  budgetMs
+                )
+              ),
+            ])
           const writerBudgetMs = Math.max(15_000, 56_000 - (Date.now() - startTime))
-          const completion = await Promise.race([
-            ai.chat.completions.create(requestBody),
-            new Promise<never>((_, reject) =>
-              setTimeout(
-                () => reject(new Error('ORCA took too long writing this note — please ask again.')),
-                writerBudgetMs
-              )
-            ),
-          ])
+          let completion: any
+          try {
+            completion = await raceWriter(requestBody, writerBudgetMs)
+          } catch (budgetErr) {
+            // Salvage: a shorter mini-model note beats an apology, but only
+            // when enough of the ~60s platform budget remains to try.
+            const remaining = 56_000 - (Date.now() - startTime)
+            if (remaining < 10_000) throw budgetErr
+            send({ type: 'status', step: 'ai_thinking', message: 'Trimming the note to fit...' })
+            completion = await raceWriter(
+              { ...requestBody, model: miniModel, max_tokens: 1200 },
+              remaining
+            )
+          }
           const orcaResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.'
 
           // Increment quota + log in parallel (non-blocking for the user)

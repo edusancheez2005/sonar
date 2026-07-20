@@ -234,7 +234,7 @@ export async function runOrchestrator(
   try {
     if (useLiveSearch) {
       try {
-        draft = await deps.model.writerSearchCall!(systemPrompt, input.message)
+        draft = await deps.model.writerSearchCall!(systemPrompt, input.message, { deep: articleThin })
       } catch (searchErr: any) {
         // Search upstream flaked — a plain tool-grounded answer beats an
         // apology. Note the downgrade in the trace.
