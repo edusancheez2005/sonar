@@ -770,7 +770,7 @@ export async function POST(request: Request) {
                         ],
                         temperature: 0.5,
                         max_tokens: 2000,
-                        search: { mode: 'on', max_search_results: 10 },
+                        search_parameters: { mode: 'on', max_search_results: 10, return_citations: true },
                       } as any)
                       return r.choices[0]?.message?.content ?? ''
                     },
@@ -1132,7 +1132,7 @@ export async function POST(request: Request) {
                                 ],
                                 temperature: 0.5,
                                 max_tokens: 3000,
-                                search: { mode: 'on', max_search_results: 10 },
+                                search_parameters: { mode: 'on', max_search_results: 10, return_citations: true },
                               } as any)
                               return r.choices[0]?.message?.content ?? ''
                             },
@@ -1495,7 +1495,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           }
 
           if (provider === 'grok') {
-            requestBody.search = { mode: 'on', max_search_results: 15 }
+            requestBody.search_parameters = { mode: 'on', max_search_results: 15, return_citations: true }
           }
 
           // 2026-07-20 audit: the platform hard-kills this function at ~60s
