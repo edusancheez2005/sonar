@@ -126,6 +126,45 @@ async function executeConfirmedWrites(
 // plan. If you are on Hobby, lower to 60 here AND in the Vercel dashboard.
 export const maxDuration = 180
 
+/**
+ * Live-search writer over the xAI Responses API (`/v1/responses` +
+ * `web_search` tool) — the pattern lib/social/macroFactors.ts already runs in
+ * production. The chat-completions `search`/`search_parameters` fields are
+ * dead (silently ignored historically; 410 "deprecated" as of 2026-07).
+ * Throws on any failure — runOrchestrator falls back to the plain writer.
+ */
+async function grokSearchWriter(sys: string, usr: string): Promise<string> {
+  const xaiKey = process.env.XAI_API_KEY
+  if (!xaiKey) throw new Error('no_xai_key')
+  const resp = await fetch('https://api.x.ai/v1/responses', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${xaiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: process.env.ORCA_GROK_MODEL || 'grok-4.5',
+      input: `${sys}\n\n${usr}`,
+      tools: [{ type: 'web_search' }],
+    }),
+    // The platform kills the whole function at ~60s; leave room for the
+    // fan-out that ran before the writer.
+    signal: AbortSignal.timeout(40_000),
+  })
+  if (!resp.ok) throw new Error(`xai_responses_${resp.status}`)
+  const json: any = await resp.json()
+  let out = ''
+  for (const item of json.output || []) {
+    if (Array.isArray(item?.content)) {
+      for (const c of item.content) {
+        if (c?.type === 'output_text' && typeof c.text === 'string') out += c.text
+      }
+    }
+  }
+  if (!out.trim()) throw new Error('xai_responses_empty')
+  return out
+}
+
 // Use Grok (xAI) as primary AI, fallback to OpenAI if no xAI key.
 //   - Grok primary:  grok-4.5  (flagship, 500K ctx — xAI's fastest + most
 //     capable as of 2026-07; the old grok-4-fast-* IDs are gone from the
@@ -759,23 +798,7 @@ export async function POST(request: Request) {
               // local tools can't fulfil the ask (article body missing, macro
               // event not in cached factors). Grok-only; absent on the OpenAI
               // fallback so the orchestrator sticks to the plain writer.
-              ...(aiProvider === 'grok'
-                ? {
-                    writerSearchCall: async (sys: string, usr: string) => {
-                      const r = await ai.chat.completions.create({
-                        model: aiModel,
-                        messages: [
-                          { role: 'system', content: sys },
-                          { role: 'user', content: usr },
-                        ],
-                        temperature: 0.5,
-                        max_tokens: 2000,
-                        search_parameters: { mode: 'on', max_search_results: 10, return_citations: true },
-                      } as any)
-                      return r.choices[0]?.message?.content ?? ''
-                    },
-                  }
-                : {}),
+              ...(aiProvider === 'grok' ? { writerSearchCall: grokSearchWriter } : {}),
             },
           }
         )
@@ -1124,17 +1147,7 @@ export async function POST(request: Request) {
                         ? {
                             writerSearchCall: async (sys: string, usr: string) => {
                               send({ type: 'status', step: 'ai_thinking', message: 'ORCA searching the live web...' })
-                              const r = await ai.chat.completions.create({
-                                model: aiModel,
-                                messages: [
-                                  { role: 'system', content: sys },
-                                  { role: 'user', content: usr },
-                                ],
-                                temperature: 0.5,
-                                max_tokens: 3000,
-                                search_parameters: { mode: 'on', max_search_results: 10, return_citations: true },
-                              } as any)
-                              return r.choices[0]?.message?.content ?? ''
+                              return grokSearchWriter(sys, usr)
                             },
                           }
                         : {}),
@@ -1494,9 +1507,12 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             max_tokens: isFollowUp ? 2000 : 6000
           }
 
-          if (provider === 'grok') {
-            requestBody.search_parameters = { mode: 'on', max_search_results: 15, return_citations: true }
-          }
+          // NOTE: no live-search here. The old `search:` field was silently
+          // ignored by xAI, and both `search`/`search_parameters` are now 410
+          // "deprecated — use the Agent Tools API". Live search runs on the
+          // orchestrator paths via grokSearchWriter (/v1/responses +
+          // web_search tool); this long-form note is grounded in the fan-out
+          // data above and doesn't need it.
 
           // 2026-07-20 audit: the platform hard-kills this function at ~60s
           // regardless of the maxDuration export (plan/dashboard cap), and a

@@ -230,10 +230,25 @@ export async function runOrchestrator(
 
   const tWriter = Date.now()
   let draft: string
+  let liveSearchUsed = useLiveSearch
   try {
-    draft = useLiveSearch
-      ? await deps.model.writerSearchCall!(systemPrompt, input.message)
-      : await deps.model.writerCall(systemPrompt, input.message)
+    if (useLiveSearch) {
+      try {
+        draft = await deps.model.writerSearchCall!(systemPrompt, input.message)
+      } catch (searchErr: any) {
+        // Search upstream flaked — a plain tool-grounded answer beats an
+        // apology. Note the downgrade in the trace.
+        trace.push({
+          stage: 'writer',
+          payload: { live_search_error: searchErr?.message ?? 'search_writer_failed' },
+          latency_ms: Date.now() - tWriter,
+        })
+        liveSearchUsed = false
+        draft = await deps.model.writerCall(systemPrompt, input.message)
+      }
+    } else {
+      draft = await deps.model.writerCall(systemPrompt, input.message)
+    }
   } catch (err: any) {
     trace.push({
       stage: 'writer',
@@ -250,7 +265,7 @@ export async function runOrchestrator(
   }
   trace.push({
     stage: 'writer',
-    payload: { chars: draft.length, live_search: useLiveSearch },
+    payload: { chars: draft.length, live_search: liveSearchUsed },
     latency_ms: Date.now() - tWriter,
   })
 

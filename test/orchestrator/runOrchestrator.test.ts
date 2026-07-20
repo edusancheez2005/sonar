@@ -275,3 +275,20 @@ describe('runOrchestrator — live-search writer fallback (2026-07-20 audit)', (
     expect(writerSearchCall).not.toHaveBeenCalled()
   })
 })
+
+describe('runOrchestrator — live-search failure falls back to the plain writer', () => {
+  it('answers from tools when writerSearchCall throws', async () => {
+    const routerCall = vi.fn().mockResolvedValue(
+      JSON.stringify({ intent: 'data_query', tickers: [], entities: [], datapoints: ['macro'], persona_hint: null, confidence: 0.9 })
+    )
+    const writerCall = vi.fn().mockResolvedValue('grounded answer')
+    const writerSearchCall = vi.fn().mockRejectedValue(new Error('xai_responses_410'))
+    const out = await runOrchestrator(
+      { message: 'did the Fed rate cut move the market?', userId: 'u1', chatHistory: [], profile: null },
+      { supabase: stubSupabase(), model: { routerCall, writerCall, writerSearchCall }, now }
+    )
+    expect(writerSearchCall).toHaveBeenCalledOnce()
+    expect(writerCall).toHaveBeenCalledOnce()
+    expect(out.text).toContain('grounded answer')
+  })
+})
