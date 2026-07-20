@@ -143,13 +143,17 @@ async function grokSearchWriter(sys: string, usr: string): Promise<string> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: process.env.ORCA_GROK_MODEL || 'grok-4.5',
+      // Mini by default: the flagship's agentic search regularly blew a 40s
+      // budget (observed 2026-07-20 — macro-event queries timed out and fell
+      // back to "not covered"); the mini finishes the same searches in
+      // ~10-20s and the renderer prompt does the heavy lifting anyway.
+      model: process.env.ORCA_GROK_SEARCH_MODEL || process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3',
       input: `${sys}\n\n${usr}`,
       tools: [{ type: 'web_search' }],
     }),
     // The platform kills the whole function at ~60s; leave room for the
     // fan-out that ran before the writer.
-    signal: AbortSignal.timeout(40_000),
+    signal: AbortSignal.timeout(42_000),
   })
   if (!resp.ok) throw new Error(`xai_responses_${resp.status}`)
   const json: any = await resp.json()
@@ -1504,7 +1508,10 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
               { role: 'user', content: gptContext }
             ],
             temperature: 0.6,
-            max_tokens: isFollowUp ? 2000 : 6000
+            // 6000 was the latency hog: ~2,000 tokens is already a full
+            // 1,500-word note, and every extra token eats the ~60s platform
+            // budget (2026-07-20: notes started tripping the writer deadline).
+            max_tokens: isFollowUp ? 1500 : 2600
           }
 
           // NOTE: no live-search here. The old `search:` field was silently
@@ -1521,7 +1528,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           // actually remains and fail as a proper `error` event instead. The
           // fan-out above typically eats 15-25s, so the budget floor keeps a
           // usable window even on a slow start.
-          const writerBudgetMs = Math.max(15_000, 52_000 - (Date.now() - startTime))
+          const writerBudgetMs = Math.max(15_000, 56_000 - (Date.now() - startTime))
           const completion = await Promise.race([
             ai.chat.completions.create(requestBody),
             new Promise<never>((_, reject) =>
