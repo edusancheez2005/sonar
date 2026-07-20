@@ -225,7 +225,7 @@ export async function runOrchestrator(
     typeof deps.model.writerSearchCall === 'function' && (articleThin || macroEventAsk)
   if (useLiveSearch) {
     systemPrompt +=
-      '\n\nLIVE SEARCH ENABLED FOR THIS REPLY: the local dataset could not fully answer the question. You may supplement the tool data above with current public web/X reporting. Attribute anything you pull in ("According to [source], [date]…"), never contradict the tool data with searched claims, and say plainly when even search turns up nothing. All compliance rules still apply.'
+      '\n\nLIVE SEARCH ENABLED FOR THIS REPLY: the local dataset could not fully answer the question, so you MUST use web search before answering. Run at least 2-3 query variants for the specific article/event the user named (do not restrict to the last few days — the event may be weeks old). Attribute what you pull in ("According to [source], [date]…"), never contradict the tool data with searched claims, and only say nothing was found after multiple searches failed. Deliver ONLY the final answer — never narrate your searching or fetching process ("let me fetch…", "the page returned…").'
   }
 
   const tWriter = Date.now()
