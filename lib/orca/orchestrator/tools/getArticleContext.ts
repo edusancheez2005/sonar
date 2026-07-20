@@ -88,21 +88,42 @@ async function fetchArticleText(url: string): Promise<string | null> {
     })
     if (!resp.ok) return null
     const html = await resp.text()
-    // Prefer the <article> block when present — the tag-stripped full page is
-    // mostly navigation chrome.
+
+    // 1) JSON-LD articleBody — the cleanest source; most news CMSes embed it
+    //    (verified live on coingape 2026-07-20: the whole piece is in there
+    //    while the visible DOM is price-ticker chrome).
+    const ld = html.match(/"articleBody"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+    if (ld) {
+      try {
+        const body = String(JSON.parse(`"${ld[1]}"`)).replace(/\s+/g, ' ').trim()
+        if (body.length >= 300) return body.slice(0, 2500)
+      } catch {
+        // fall through to DOM extraction
+      }
+    }
+
+    // 2) Prose paragraphs, scoped to <article> when present. Chrome
+    //    paragraphs rarely form full sentences, so require some length and a
+    //    sentence break.
     const articleMatch = html.match(/<article[\s>][\s\S]*?<\/article>/i)
-    const scoped = articleMatch ? articleMatch[0] : html
-    const text = scoped
+    const scoped = (articleMatch ? articleMatch[0] : html)
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
       .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;|&#160;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/&#8217;|&rsquo;/g, "'")
-      .replace(/\s+/g, ' ')
-      .trim()
+    const paras: string[] = []
+    for (const m of scoped.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)) {
+      const t = m[1]
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;|&#160;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#8217;|&rsquo;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (t.length >= 80 && /\.\s/.test(t + ' ')) paras.push(t)
+      if (paras.join(' ').length > 2500) break
+    }
+    const text = paras.join(' ').trim()
     return text.length >= 300 ? text.slice(0, 2500) : null
   } catch {
     return null
