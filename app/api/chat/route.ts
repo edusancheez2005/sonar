@@ -705,7 +705,7 @@ export async function POST(request: Request) {
           console.warn('[orchestrator] could not load user_profile', profileErr)
         }
 
-        const { client: ai, model: aiModel, miniModel } = getAIClient()
+        const { client: ai, model: aiModel, miniModel, provider: aiProvider } = getAIClient()
 
         // §4.1 — prior-turn subject carry-over (priorIntent / priorTickers) is
         // derived once in the outer scope from the server-loaded history, so a
@@ -755,6 +755,27 @@ export async function POST(request: Request) {
                 })
                 return r.choices[0]?.message?.content ?? ''
               },
+              // Live web/X search writer — used by runOrchestrator only when
+              // local tools can't fulfil the ask (article body missing, macro
+              // event not in cached factors). Grok-only; absent on the OpenAI
+              // fallback so the orchestrator sticks to the plain writer.
+              ...(aiProvider === 'grok'
+                ? {
+                    writerSearchCall: async (sys: string, usr: string) => {
+                      const r = await ai.chat.completions.create({
+                        model: aiModel,
+                        messages: [
+                          { role: 'system', content: sys },
+                          { role: 'user', content: usr },
+                        ],
+                        temperature: 0.5,
+                        max_tokens: 2000,
+                        search: { mode: 'on', max_search_results: 10 },
+                      } as any)
+                      return r.choices[0]?.message?.content ?? ''
+                    },
+                  }
+                : {}),
             },
           }
         )
@@ -934,7 +955,7 @@ export async function POST(request: Request) {
           : '🧭 No ticker found — running intent router...'
       )
       try {
-        const { client: ai, miniModel, model: aiModel } = getAIClient()
+        const { client: ai, miniModel, model: aiModel, provider: stageAProvider } = getAIClient()
         const routerStart = Date.now()
         // For a ticker follow-up we synthesise the router decision (intent
         // followup + the extracted ticker) and skip the LLM router call — it is
@@ -1098,6 +1119,25 @@ export async function POST(request: Request) {
                         })
                         return r.choices[0]?.message?.content ?? ''
                       },
+                      // Live-search writer (see the non-SSE site for rationale).
+                      ...(stageAProvider === 'grok'
+                        ? {
+                            writerSearchCall: async (sys: string, usr: string) => {
+                              send({ type: 'status', step: 'ai_thinking', message: 'ORCA searching the live web...' })
+                              const r = await ai.chat.completions.create({
+                                model: aiModel,
+                                messages: [
+                                  { role: 'system', content: sys },
+                                  { role: 'user', content: usr },
+                                ],
+                                temperature: 0.5,
+                                max_tokens: 3000,
+                                search: { mode: 'on', max_search_results: 10 },
+                              } as any)
+                              return r.choices[0]?.message?.content ?? ''
+                            },
+                          }
+                        : {}),
                     },
                   }
                 )

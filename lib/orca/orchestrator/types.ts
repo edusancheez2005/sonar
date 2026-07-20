@@ -170,6 +170,14 @@ export interface AgenticHopPlan {
 // Dependency-injected clients (test-friendly)
 
 export interface ModelClient {
+  /**
+   * Optional writer with LIVE WEB/X SEARCH enabled (Grok `search` param).
+   * runOrchestrator falls back to `writerCall` when absent. Used only when
+   * the local tool data cannot fulfil the question: an article row with no
+   * stored body, an article not found at all, or a macro-event question the
+   * cached factors don't cover (2026-07-20 audit).
+   */
+  writerSearchCall?: (systemPrompt: string, userMessage: string) => Promise<string>
   routerCall: (prompt: string, userMessage: string) => Promise<string>
   writerCall: (systemPrompt: string, userMessage: string) => Promise<string>
   /**

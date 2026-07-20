@@ -113,3 +113,16 @@ describe('detectAlertWrite — article questions are not alerts (2026-07-19 audi
     expect(d!.calls[0]).toMatchObject({ tool: 'createAlert', args: { ticker: 'SOL', kind: 'price_move' } })
   })
 })
+
+describe('detectAlertWrite — bare single letters are never tickers (2026-07-20)', () => {
+  it('does not mint ticker "I" from "can i add an alert?"', () => {
+    expect(detectAlertWrite('can i add an alert?')).toBeNull()
+    expect(detectAlertWrite('can i an add alert?')).toBeNull()
+  })
+
+  it('still accepts a cashtagged single letter', () => {
+    const d = detectAlertWrite('alert me when $X moves 5%')
+    expect(d).not.toBeNull()
+    expect(d!.calls[0].args.ticker).toBe('X')
+  })
+})

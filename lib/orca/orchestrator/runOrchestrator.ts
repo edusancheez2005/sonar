@@ -10,6 +10,7 @@
  * touching Supabase or the model SDK.
  */
 import { COMPLIANCE_DECLINE_RESPONSE, applyGuardrails } from './guardrails'
+import { mentionsMacroEvent } from '../route-dispatch'
 import { planToolCalls } from './planner'
 import { runAgenticPlan } from './agenticPlanner'
 import { routeMessage } from './router'
@@ -158,6 +159,37 @@ export async function runOrchestrator(
     )
   }
 
+  // 2026-07-20 audit — a label search alone answers "show me Robinhood's
+  // cold wallet" with a bare address table and no activity. When
+  // findTrackedWallets produced matches and nothing fetched activity this
+  // turn, auto-fetch it for the top match so the answer includes real
+  // (or honestly-zero) flows.
+  const searchHit = toolResults.find(
+    (r) =>
+      r.call.tool === 'findTrackedWallets' &&
+      r.result.ok &&
+      Array.isArray((r.result.data as any)?.matches) &&
+      ((r.result.data as any).matches as any[]).length > 0
+  )
+  const activityAlreadyFetched = toolResults.some((r) => r.call.tool === 'getWalletActivity')
+  if (searchHit && !activityAlreadyFetched) {
+    const top = ((searchHit.result.data as any).matches as any[])[0]
+    if (top?.address) {
+      const call: ToolCall = {
+        tool: 'getWalletActivity',
+        args: { address: top.address, chain: top.chain, userId: input.userId },
+      }
+      const tTool = Date.now()
+      const result = await executeTool(call, deps.supabase, now)
+      trace.push({
+        stage: 'tool',
+        payload: { tool: call.tool, ok: result.ok, source: result.source, args: redactArgs(call.args), error: result.error ?? null, followup_for: 'findTrackedWallets' },
+        latency_ms: Date.now() - tTool,
+      })
+      toolResults = [...toolResults, { call, result }]
+    }
+  }
+
   // Collect the full wallet addresses surfaced this turn (most-prominent
   // first) so the caller can persist them for next-turn pronoun resolution
   // ("track this wallet"). Chat text only ever shows the shortened form.
@@ -168,14 +200,40 @@ export async function runOrchestrator(
   // cross-cutting tools that don't map to one intent renderer); the
   // deterministic path uses the per-intent renderer exactly as before.
   const renderArgs = { toolResults, profile: input.profile, message: input.message, chatHistory: input.chatHistory }
-  const systemPrompt = useAgentic
+  let systemPrompt = useAgentic
     ? renderSynthesisPrompt(renderArgs, router.intent)
     : selectRenderer(router.intent)(renderArgs)
+
+  // 2026-07-20 audit — live-search fallback. When the local tools cannot
+  // fulfil the question, let the writer use Grok live web/X search instead of
+  // answering "that isn't available here":
+  //   - an article row exists but has no stored body (news_items.content is
+  //     null for most ingested rows), or the article wasn't found at all;
+  //   - a macro-event question ("how did the US strikes on Iran affect BTC?")
+  //     that the cached weekly factors don't necessarily cover.
+  // Whale/wallet questions never qualify — that data is on-chain and local.
+  const articleThin = toolResults.some((r) => {
+    if (r.call.tool !== 'getArticleContext') return false
+    if (!r.result.ok) return true
+    const d = r.result.data as any
+    return !d?.found || !d?.excerpt
+  })
+  const macroEventAsk =
+    mentionsMacroEvent(input.message) &&
+    (router.intent === 'data_query' || router.intent === 'overview' || router.intent === 'followup' || router.intent === 'explainer')
+  const useLiveSearch =
+    typeof deps.model.writerSearchCall === 'function' && (articleThin || macroEventAsk)
+  if (useLiveSearch) {
+    systemPrompt +=
+      '\n\nLIVE SEARCH ENABLED FOR THIS REPLY: the local dataset could not fully answer the question. You may supplement the tool data above with current public web/X reporting. Attribute anything you pull in ("According to [source], [date]…"), never contradict the tool data with searched claims, and say plainly when even search turns up nothing. All compliance rules still apply.'
+  }
 
   const tWriter = Date.now()
   let draft: string
   try {
-    draft = await deps.model.writerCall(systemPrompt, input.message)
+    draft = useLiveSearch
+      ? await deps.model.writerSearchCall!(systemPrompt, input.message)
+      : await deps.model.writerCall(systemPrompt, input.message)
   } catch (err: any) {
     trace.push({
       stage: 'writer',
@@ -192,7 +250,7 @@ export async function runOrchestrator(
   }
   trace.push({
     stage: 'writer',
-    payload: { chars: draft.length },
+    payload: { chars: draft.length, live_search: useLiveSearch },
     latency_ms: Date.now() - tWriter,
   })
 

@@ -212,6 +212,7 @@ const TICKER_STOPWORDS = new Set<string>([
   'SUMMARY', 'SUMMARIZE', 'SUMMARISE', 'MEAN', 'MEANS', 'SAYS', 'SAID', 'SAY',
   'TOP', 'BEST', 'MOST', 'MORE', 'LESS', 'THAN', 'THOSE', 'THESE', 'BENEFIT',
   'COULD', 'PASSES', 'PASSED', 'ACT', 'BILL', 'LAW', 'RECENT', 'LATEST',
+  'ADD', 'CREATE', 'MAKE', 'WANT', 'NEED', 'ONE',
 ])
 
 function pickTickerAnywhere(text: string): string | null {
@@ -223,8 +224,10 @@ function pickTickerAnywhere(text: string): string | null {
     if (!t) continue
     // A `$`-prefixed symbol is always a ticker. Otherwise reject common English
     // command/filler words and bare numbers so "alert me WHEN SOL moves 8%"
-    // doesn't pick "WHEN" or "8".
-    if (!hadDollar && (TICKER_STOPWORDS.has(t) || /^\d+$/.test(t))) continue
+    // doesn't pick "WHEN" or "8". Bare single letters are never tickers either
+    // — "can I add an alert?" minted ticker "I" (2026-07-20); real one-letter
+    // symbols must be cashtagged ($X).
+    if (!hadDollar && (t.length < 2 || TICKER_STOPWORDS.has(t) || /^\d+$/.test(t))) continue
     return t
   }
   return null

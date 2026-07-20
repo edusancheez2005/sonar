@@ -133,6 +133,18 @@ export function wantsFocusedDataAnswer(message: string | undefined): boolean {
 }
 
 /**
+ * True when the message asks about a real-world macro/news event. Used by
+ * runOrchestrator to decide whether the writer may use live web search when
+ * the cached macro factors don't cover the event (whale questions never
+ * qualify — that data is on-chain and local).
+ */
+export function mentionsMacroEvent(message: string | undefined): boolean {
+  const m = (message ?? '').trim()
+  if (!m) return false
+  return MACRO_EVENT_RE.test(m)
+}
+
+/**
  * Decide what to do with a router decision. Intent always wins over
  * incidental ticker matches — see file-level comment.
  */

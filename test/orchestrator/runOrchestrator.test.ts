@@ -223,3 +223,55 @@ describe('runOrchestrator', () => {
     expect(out.walletAddresses![0]).toBe(FULL_ADDR)
   })
 })
+describe('runOrchestrator — live-search writer fallback (2026-07-20 audit)', () => {
+  const router = (intent: string, entities: string[] = [], datapoints: string[] = ['news']) =>
+    vi.fn().mockResolvedValue(
+      JSON.stringify({ intent, tickers: [], entities, datapoints, persona_hint: null, confidence: 0.9 })
+    )
+
+  it('uses writerSearchCall when the article body is missing locally', async () => {
+    const writerCall = vi.fn().mockResolvedValue('plain answer')
+    const writerSearchCall = vi.fn().mockResolvedValue('searched answer')
+    const out = await runOrchestrator(
+      { message: 'what does this article say: https://news.example/x', userId: 'u1', chatHistory: [], profile: null },
+      {
+        supabase: stubSupabase(),
+        model: { routerCall: router('article_explain', ['https://news.example/x']), writerCall, writerSearchCall },
+        now,
+      }
+    )
+    expect(writerSearchCall).toHaveBeenCalledOnce()
+    expect(writerCall).not.toHaveBeenCalled()
+    expect(out.text).toContain('searched answer')
+  })
+
+  it('uses writerSearchCall for macro-event questions', async () => {
+    const writerCall = vi.fn().mockResolvedValue('plain answer')
+    const writerSearchCall = vi.fn().mockResolvedValue('searched answer')
+    await runOrchestrator(
+      { message: 'How did the recent US strikes on Iran affect Bitcoin?', userId: 'u1', chatHistory: [], profile: null },
+      {
+        supabase: stubSupabase(),
+        model: { routerCall: router('data_query', [], ['macro', 'news']), writerCall, writerSearchCall },
+        now,
+      }
+    )
+    expect(writerSearchCall).toHaveBeenCalledOnce()
+    expect(writerCall).not.toHaveBeenCalled()
+  })
+
+  it('sticks to the plain writer for ordinary data questions', async () => {
+    const writerCall = vi.fn().mockResolvedValue('plain answer')
+    const writerSearchCall = vi.fn().mockResolvedValue('searched answer')
+    await runOrchestrator(
+      { message: 'btc price?', userId: 'u1', chatHistory: [], profile: null },
+      {
+        supabase: stubSupabase(),
+        model: { routerCall: router('data_query', [], ['price']), writerCall, writerSearchCall },
+        now,
+      }
+    )
+    expect(writerCall).toHaveBeenCalledOnce()
+    expect(writerSearchCall).not.toHaveBeenCalled()
+  })
+})
