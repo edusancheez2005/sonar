@@ -114,6 +114,24 @@ export function isTickerFollowUp(message: string | undefined, hasHistory: boolea
 const MACRO_EVENT_RE =
   /\b(fed|fomc|cpi|ppi|inflation|interest rates?|rate (?:cuts?|hikes?)|tariffs?|sanctions?|geopolit\w*|war|strikes?|invasion|conflict|attack|election|shutdown|treasury|regulat\w*|lawsuit|etf (?:in|out)?flows?|hack(?:ed|s)?|exploit|depeg|bankruptcy|collapse|halving|macro)\b/i
 
+// Focused whale/flow questions about a ticker ("what are whales doing with
+// ETH?") — the v1 template buries the answer in a generic research note; the
+// orchestrator's getWhaleFlows path answers them directly.
+const WHALE_FOCUS_RE =
+  /\b(whales?|whale (?:flows?|activity|moves?)|big (?:buyers?|sellers?)|smart money|accumulat\w*|distribut\w*|net (?:buy|sell)\w*|(?:in|out)flows?)\b/i
+
+/**
+ * True when a ticker-bearing message is a focused data question (macro-event
+ * impact or whale flows) that must reach the LLM router + orchestrator instead
+ * of short-circuiting into the v1 long-form ticker note. Used by the route
+ * handler BEFORE the extracted ticker would otherwise skip the router.
+ */
+export function wantsFocusedDataAnswer(message: string | undefined): boolean {
+  const m = (message ?? '').trim()
+  if (!m) return false
+  return MACRO_EVENT_RE.test(m) || WHALE_FOCUS_RE.test(m)
+}
+
 /**
  * Decide what to do with a router decision. Intent always wins over
  * incidental ticker matches — see file-level comment.
@@ -141,7 +159,7 @@ export function pickStageARoute(decision: StageADecision): StageARoute {
   if (
     decision.tickers.length > 0 &&
     decision.message !== undefined &&
-    MACRO_EVENT_RE.test(decision.message)
+    (MACRO_EVENT_RE.test(decision.message) || WHALE_FOCUS_RE.test(decision.message))
   ) {
     return { kind: 'orchestrator', intent: 'data_query' }
   }

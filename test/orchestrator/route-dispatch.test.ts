@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   pickStageARoute,
   wantsMarketWideAnswer,
+  wantsFocusedDataAnswer,
   isTickerFollowUp,
   type StageADecision,
 } from '@/lib/orca/route-dispatch'
@@ -168,5 +169,19 @@ describe('pickStageARoute — macro/news events that name a ticker (2026-07-19 a
       const route = pickStageARoute(decision({ intent: 'overview', tickers: ['BTC'], message: msg }))
       expect(route.kind).toBe('v1_with_ticker')
     }
+  })
+})
+
+describe('wantsFocusedDataAnswer — extracted-ticker bypass guard (2026-07-20 audit)', () => {
+  it('fires for macro-event and whale-flow questions', () => {
+    expect(wantsFocusedDataAnswer('How did the recent US strikes on Iran affect Bitcoin?')).toBe(true)
+    expect(wantsFocusedDataAnswer('What are whales doing with ETH in the last 24 hours?')).toBe(true)
+    expect(wantsFocusedDataAnswer('Who were the biggest BTC whale buyers this week?')).toBe(true)
+  })
+
+  it('stays quiet for plain ticker overviews', () => {
+    expect(wantsFocusedDataAnswer('tell me about BTC')).toBe(false)
+    expect(wantsFocusedDataAnswer('full ETH analysis')).toBe(false)
+    expect(wantsFocusedDataAnswer("what's the price of SOL?")).toBe(false)
   })
 })

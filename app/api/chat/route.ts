@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
 import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
-import { pickStageARoute, isTickerFollowUp } from '@/lib/orca/route-dispatch'
+import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer } from '@/lib/orca/route-dispatch'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
@@ -918,7 +918,16 @@ export async function POST(request: Request) {
       !!tickerResult.ticker &&
       process.env.ORCA_TICKER_FOLLOWUP !== 'false' &&
       isTickerFollowUp(message, recentTurns.length > 0)
-    if ((!tickerResult.ticker || tickerFollowUp) && intentRoutingEnabled) {
+    // Focused macro-event / whale-flow questions that NAME a ticker ("how did
+    // the US strikes on Iran affect Bitcoin?", "what are whales doing with
+    // ETH?") must reach the LLM router + orchestrator: the extracted ticker
+    // previously short-circuited them into the v1 long-form note, which
+    // recites price structure and never answers the actual question
+    // (2026-07-20 audit). pickStageARoute then routes them to the
+    // orchestrator's data_query plan.
+    const focusedDataQuestion =
+      !!tickerResult.ticker && !tickerFollowUp && wantsFocusedDataAnswer(message)
+    if ((!tickerResult.ticker || tickerFollowUp || focusedDataQuestion) && intentRoutingEnabled) {
       console.log(
         tickerFollowUp
           ? `🧭 ticker follow-up "${tickerResult.ticker}" → drill-down via orchestrator (skipping long-form note)`
@@ -1449,7 +1458,23 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             requestBody.search = { mode: 'on', max_search_results: 15 }
           }
 
-          const completion = await ai.chat.completions.create(requestBody)
+          // 2026-07-20 audit: the platform hard-kills this function at ~60s
+          // regardless of the maxDuration export (plan/dashboard cap), and a
+          // killed function leaves the SSE stream half-open with no error and
+          // no close — the UI just spins. Give the writer only the time that
+          // actually remains and fail as a proper `error` event instead. The
+          // fan-out above typically eats 15-25s, so the budget floor keeps a
+          // usable window even on a slow start.
+          const writerBudgetMs = Math.max(15_000, 52_000 - (Date.now() - startTime))
+          const completion = await Promise.race([
+            ai.chat.completions.create(requestBody),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () => reject(new Error('ORCA took too long writing this note — please ask again.')),
+                writerBudgetMs
+              )
+            ),
+          ])
           const orcaResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.'
 
           // Increment quota + log in parallel (non-blocking for the user)

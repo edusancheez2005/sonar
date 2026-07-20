@@ -67,7 +67,18 @@ let inFlight: Promise<MacroFactorsResult> | null = null
 
 function serviceClient() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) return null
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, { auth: { persistSession: false } })
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
+    auth: { persistSession: false },
+    // Next 14 pins fetches made inside GET route handlers into the Data
+    // Cache (even under `dynamic = 'force-dynamic'` — supabase-js calls fetch
+    // in a way that dodges the segment default). Result observed in prod
+    // 2026-07-20: /api/social/macro served the July-12 cache row for EIGHT
+    // DAYS while the cron kept writing fresh rows — POST routes (ORCA chat)
+    // read the same table and saw fresh data the whole time. Force no-store.
+    global: {
+      fetch: (url: any, opts: any) => fetch(url, { ...opts, cache: 'no-store' }),
+    },
+  })
 }
 
 async function readDbCache(): Promise<{ result: MacroFactorsResult; ageMs: number } | null> {
@@ -105,11 +116,9 @@ async function writeDbCache(result: MacroFactorsResult): Promise<void> {
 }
 
 async function fetchRecentHeadlines(): Promise<string[]> {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) return []
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
-      auth: { persistSession: false },
-    })
+    const supabase = serviceClient()
+    if (!supabase) return []
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const { data } = await supabase
       .from('news_items')
