@@ -74,6 +74,9 @@ def main() -> None:
         "__MEMEB__": uri(ASSETS / "memeB.jpg", "image/jpeg"),
         "__MEME7__": uri(ASSETS / "meme7.jpg", "image/jpeg"),
         "__ORCABANK__": uri(ASSETS / "orcabank.jpg", "image/jpeg"),
+        "__CAPITOL__": uri(ASSETS / "hero-capitol.jpg", "image/jpeg"),
+        "__WHALEOCEAN__": uri(ASSETS / "hero-whale-ocean.jpg", "image/jpeg"),
+        "__BTCBULL__": uri(ASSETS / "hero-btc-bull.jpg", "image/jpeg"),
         "__DATA__": (HERE / "templates" / "data.js").read_text(),
     }
     for key, value in replacements.items():
