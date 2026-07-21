@@ -33,8 +33,9 @@ narration fits. If fal or OpenAI credit is exhausted, fall back to the $0
 formats and flag the refill in the notification (fal ~$20/3 weeks,
 OpenAI ~$10/6 weeks).
 - **Sound on reels**: bake in an OpenAI TTS voiceover when the story suits
-  narration (model `gpt-4o-mini-tts`, voice `onyx`, documentary instructions —
-  see `sonar-receipts-reel-VO.mp4`, 21 Jul). RULES: script must finish ≥1s
+  narration (model `gpt-4o-mini-tts`; default voice `ash` with the confident-storyteller
+  instructions — onyx was rejected as too flat; candidates ash/verse/ballad in
+  Reels/2026-07-21/voice-samples/, swap the default when Eduardo picks). RULES: script must finish ≥1s
   before the video ends (TTS a draft, CHECK duration with ffmpeg, tighten and
   regenerate if long); ship BOTH versions (silent + `-VO`) so Eduardo can
   choose; trending in-app audio can still be layered over either at post
