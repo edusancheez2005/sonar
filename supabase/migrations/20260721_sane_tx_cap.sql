@@ -16,7 +16,11 @@
 
 -- Single source of truth. A single whale trade above $150M does not exist on
 -- the real tape; anything bigger is protocol infrastructure.
-CREATE OR REPLACE FUNCTION public.is_sane_whale_tx(p_usd numeric)
+-- Param is double precision because all_whale_transactions.usd_value is
+-- float8 and Postgres won't implicitly cast float8 -> numeric during function
+-- resolution (numeric args DO coerce to float8, so one overload suffices).
+DROP FUNCTION IF EXISTS public.is_sane_whale_tx(numeric);
+CREATE OR REPLACE FUNCTION public.is_sane_whale_tx(p_usd double precision)
 RETURNS boolean
 LANGUAGE sql IMMUTABLE
 AS $$
