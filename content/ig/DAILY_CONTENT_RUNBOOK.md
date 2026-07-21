@@ -66,7 +66,9 @@ OpenAI ~$10/6 weeks).
   regenerate if long); ship BOTH versions (silent + `-VO`) so Eduardo can
   choose; trending in-app audio can still be layered over either at post
   time. Never synthesize music; never rip copyrighted tracks.
-- **Every day ends with the email drop**: run
+- **Every day ends with the email drop — exactly ONE email** (Eduardo's rule:
+  never split the day's content across multiple emails; the single drop
+  contains ALL slots' files + captions): run
   `python3 ~/Desktop/Sonar/tools/send_daily_email.py` — uploads the day's
   files to the public bucket and emails download links + captions to
   Eduardo's gmail + KCL inboxes (Brevo). If it exits 2, BREVO_API_KEY is
