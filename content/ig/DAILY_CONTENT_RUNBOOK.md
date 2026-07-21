@@ -16,11 +16,37 @@ exactly. Deviating from it is how output regresses to slop.
 - Headless Chrome for slide/overlay rendering:
   `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new …`
 
-## Cadence (Eduardo, 21 Jul, rev 2): ONE reel EVERY day + one static — reel TYPE rotates
+## Programming grid (Eduardo, 21 Jul, rev 3): five daily SLOTS — a channel, not posts
 
-Every day ships: one static post (carousel/stat/meme per the format rotation)
-AND one reel. The reel type rotates between paid and free formats so the
-budget stays ≈$9-12/week (~$45/month):
+Sonar posts like a TV network: fixed daily shows in fixed slots. Variety lives
+in the STORY; consistency lives in the FORMAT. Slots (local Madrid times):
+
+1. **~11:00 · The Morning Card** — live market-card static (BTC/ETH quote card
+   or one macro number, e.g. "Inflation blinked twice. Bitcoin broke $65K.").
+2. **~13:30 · The Story** — the day's news editorial (single or 4-slide
+   carousel; "Japan just filed Bitcoin next to stocks and bonds" energy).
+3. **~17:00 · The Tape** — product/data post from the product-pack rotation
+   (receipt ticket / Orca chat tile / live-feed tile / dashboard flex).
+4. **~20:00 · The Reel** — one reel daily; TYPE rotates (below).
+5. **~22:00 · The Nightcap** — optional shareable (meme/gag), 3-4×/week only
+   when there's a genuinely good one. Never force it.
+
+**Weekly anchor series** (identical skeleton every time — recognition builds
+the channel): Friday = "One Week on the Tape" timeline · Sunday = "The Whale
+Receipt" ticket (the most distinctive Sonar format — protect it) · one
+Orca Story-Time episode per week in the reel slot.
+
+**Grid rules**: never two of the same character/visual world in adjacent grid
+tiles (check the last ~6 posts' looks in the run log); alternate photo-hero
+tiles and dark-card tiles so the grid checkerboards; series covers never
+deviate from their skeleton.
+
+Budget at full programming: ≈$13-16/week (~$60/month). The reel is the only
+real spend; statics are ≈$0-0.75/day total.
+
+### Reel-type rotation (slot 4)
+
+The reel type rotates between paid and free formats:
 
 - **Cinematic Seedance reel** (~$1.90: 2 stills + 2 clips + optional TTS VO) —
   max 2×/week, for the strongest stories.
