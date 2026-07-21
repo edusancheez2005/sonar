@@ -14,6 +14,7 @@ import { cgRequest } from '@/lib/coingecko/client'
 
 const TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
 const TOKEN_2022_PROGRAM = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'
+const WSOL_MINT = 'So11111111111111111111111111111111111111112'
 const MIN_LIQUIDITY_USD = 1000
 const MAX_MINTS = 200 // exchange-scale wallets hold thousands of dust mints
 
@@ -126,9 +127,12 @@ export async function getSolanaHoldings(address: string): Promise<Holding[]> {
     const price = typeof m.usdPrice === 'number' && Number(m.liquidity || 0) >= MIN_LIQUIDITY_USD
       ? m.usdPrice
       : null
+    // Jupiter labels the wrapped-SOL mint plain "SOL", which rendered as a
+    // confusing second SOL row next to the native balance.
+    const isWsol = mint === WSOL_MINT
     out.push({
-      symbol: String(m.symbol).toUpperCase(),
-      name: m.name || m.symbol,
+      symbol: isWsol ? 'WSOL' : String(m.symbol).toUpperCase(),
+      name: isWsol ? 'Wrapped SOL' : (m.name || m.symbol),
       contract: mint,
       balance: balance.toString(),
       decimals,
