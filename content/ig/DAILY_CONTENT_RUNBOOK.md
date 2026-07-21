@@ -16,6 +16,22 @@ exactly. Deviating from it is how output regresses to slop.
 - Headless Chrome for slide/overlay rendering:
   `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new …`
 
+## Cadence (Eduardo, 21 Jul): full Reels every OTHER day
+
+- **Full-reel days** (odd days of the month): the complete pipeline below —
+  gpt-image-2 stills → Seedance clips → assembled cinematic Reel (~$2).
+- **Static days** (even days): carousel/stat/meme posts only via gpt-image-2 +
+  templates — BUT still ship one **lite reel**: render the day's strongest
+  slide(s) as a 6-8s vertical video with a slow ffmpeg zoompan (Ken Burns) and
+  a 1.5s end card. Costs $0 (no Seedance), takes 2 min, and exists because
+  static posts don't get Reels-tab distribution — this way every day has
+  something that reaches non-followers.
+- **Every day ends with the email drop**: run
+  `python3 ~/Desktop/Sonar/tools/send_daily_email.py` — uploads the day's
+  files to the public bucket and emails download links + captions to
+  Eduardo's gmail + KCL inboxes (Brevo). If it exits 2, BREVO_API_KEY is
+  missing from .env.local — say so in the notification.
+
 ## The run (morning, ~25 min)
 
 1. **Research** (30 min window max): WebSearch today's 2-3 crypto stories;
