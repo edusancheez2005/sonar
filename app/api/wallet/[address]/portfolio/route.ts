@@ -34,6 +34,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ address:
   const chain = (searchParams.get('chain') || 'ethereum').toLowerCase()
   if (!isSupportedChain(chain)) return NextResponse.json({ error: 'Unsupported chain' }, { status: 400 })
   const includeStables = searchParams.get('includeStables') === '1'
+  const includeUnpriced = searchParams.get('includeUnpriced') === '1'
   const force = searchParams.get('refresh') === '1'
 
   const cacheKey = chain === 'bitcoin' || chain === 'solana' ? address : address.toLowerCase()
@@ -74,6 +75,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ address:
     // Always keep the chain's native asset (ETH/MATIC/etc) regardless of
     // value — a wallet with only gas should still be visible.
     if (h.contract == null) return true
+    // Unpriced ERC-20s are overwhelmingly airdrop spam (Vitalik's wallet: 45
+    // of 47 Base holdings). They carry $0 value either way, so hide them
+    // unless explicitly requested.
+    if (h.price_usd == null && !includeUnpriced) return false
     if (h.value_usd < MIN_VALUE_USD && h.price_usd) return false
     if (STABLECOINS.has(h.symbol.toUpperCase())) {
       if (!includeStables && h.value_usd < MIN_STABLE_VALUE_USD) return false

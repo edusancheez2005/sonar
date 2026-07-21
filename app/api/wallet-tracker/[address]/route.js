@@ -265,6 +265,12 @@ async function buildLiveProfile(address) {
       return null // Bitcoin etc — no live balance provider wired up
     }
 
+    // Unpriced ERC-20s are overwhelmingly airdrop spam and carry $0 value —
+    // drop them so "Tokens Held" and top_tokens reflect real positions
+    // (Vitalik's live profile counted 168 "tokens", ~160 of them spam).
+    for (const c of holdingsByChain) {
+      c.holdings = c.holdings.filter((h) => h.contract == null || (Number(h.value_usd) || 0) > 0)
+    }
     const withBalances = holdingsByChain.filter((c) => c.holdings.length > 0)
     if (withBalances.length === 0) return null
 

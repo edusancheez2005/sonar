@@ -9,6 +9,10 @@ export async function GET() {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     
     const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
+    // Same protocol-scale sanity cap as ORCA + the 24h leaderboard: single
+    // transfers above $150M are vault/bridge traffic misclassified as BUYs
+    // (the 0xbbbb… contract's ~$308M WBTC pulls), not tradeable whales.
+    const MAX_SANE_TX_USD = 150_000_000
 
     // Fetch whale transactions from past 7 days
     const { data, error } = await supabaseAdmin
@@ -31,6 +35,7 @@ export async function GET() {
     for (const row of data || []) {
       const addr = row.whale_address
       if (!addr) continue
+      if (Number(row.usd_value || 0) > MAX_SANE_TX_USD) continue
       
       if (!whaleMap.has(addr)) {
         whaleMap.set(addr, {

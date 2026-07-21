@@ -4,9 +4,14 @@ import { cgRequest } from '@/lib/coingecko/client'
 
 export async function getSolanaHoldings(address: string): Promise<Holding[]> {
   const key = process.env.HELIUS_API_KEY
-  if (!key) return []
+  // No key ≠ empty wallet. Returning [] here presented (and cached) fake $0
+  // portfolios for every Solana wallet — same failure mode as the Alchemy
+  // quota exhaustion. Throw so callers surface an error state instead.
+  if (!key) throw new Error('helius_unavailable:no_key')
   const url = `https://mainnet.helius-rpc.com/?api-key=${key}`
   const out: Holding[] = []
+  let nativeOk = false
+  let tokensOk = false
 
   // 1. Native SOL via getBalance
   try {
@@ -16,7 +21,10 @@ export async function getSolanaHoldings(address: string): Promise<Holding[]> {
       body: JSON.stringify({ id: 1, jsonrpc: '2.0', method: 'getBalance', params: [address] }),
       cache: 'no-store',
     })
+    if (!res.ok) throw new Error(`getBalance ${res.status}`)
     const j = await res.json()
+    if (j?.error) throw new Error(j.error.message)
+    nativeOk = true
     const lamports = Number(j?.result?.value || 0)
     if (lamports > 0) {
       const sol = lamports / 1e9
@@ -54,7 +62,10 @@ export async function getSolanaHoldings(address: string): Promise<Holding[]> {
       }),
       cache: 'no-store',
     })
+    if (!res.ok) throw new Error(`getAssetsByOwner ${res.status}`)
     const j = await res.json()
+    if (j?.error) throw new Error(j.error.message)
+    tokensOk = true
     const items: any[] = j?.result?.items || []
     for (const it of items) {
       const interface_ = it.interface
@@ -79,6 +90,12 @@ export async function getSolanaHoldings(address: string): Promise<Holding[]> {
       })
     }
   } catch { /* ignore */ }
+
+  // Both core reads failed — provider down, bad key, or RPC error. We know
+  // nothing about this wallet; don't present it as empty.
+  if (!nativeOk && !tokensOk) {
+    throw new Error('helius_unavailable:solana')
+  }
 
   return out.filter((h) => h.symbol)
 }

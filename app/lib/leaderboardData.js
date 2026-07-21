@@ -20,6 +20,17 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
 
+// Protocol-scale sanity cap, same as ORCA's getWhaleFlows/getTrendingWhales:
+// no tradeable whale moves >$150M in ONE transaction — those rows are vault/
+// bridge contracts the ingestion classifier mislabels as BUYs (e.g. the
+// 0xbbbb… vanity contract receiving ~$308M WBTC hourly, which topped the
+// leaderboard with $3.7B of fake daily "buys").
+const MAX_SANE_TX_USD = 150_000_000
+// Aggregate-level guard for the RPC path (which can't see single rows until
+// the 20260721_sane_tx_cap migration is applied in Supabase): a wallet whose
+// 24h buy or sell volume exceeds $1B is protocol infrastructure, not a whale.
+const MAX_SANE_SIDE_VOLUME_USD = 1_000_000_000
+
 function envReady() {
   return !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) &&
          !!(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)
@@ -72,7 +83,12 @@ export async function getWhaleLeaderboard() {
     })
     if (error) throw new Error(error.message)
     if (Array.isArray(data)) {
-      const rows = data.slice(0, 100).map(r => {
+      const rows = data
+        .filter(r =>
+          Number(r.buy_volume || 0) <= MAX_SANE_SIDE_VOLUME_USD &&
+          Number(r.sell_volume || 0) <= MAX_SANE_SIDE_VOLUME_USD
+        )
+        .slice(0, 100).map(r => {
         const buys = Number(r.buys || 0)
         const sells = Number(r.sells || 0)
         return {
@@ -152,6 +168,7 @@ async function getWhaleLeaderboardLegacy() {
   for (const r of data || []) {
     const addr = r.whale_address
     if (!addr || cexSet.has(addr.toLowerCase())) continue
+    if (Number(r.usd_value || 0) > MAX_SANE_TX_USD) continue
     const classification = (r.classification || '').toUpperCase()
     let rec = byWhale.get(addr)
     if (!rec) {
@@ -200,6 +217,7 @@ async function getTokenLeaderboardLegacy() {
 
   const byToken = new Map()
   for (const r of data || []) {
+    if (Number(r.usd_value || 0) > MAX_SANE_TX_USD) continue
     const token = r.token_symbol || '—'
     let rec = byToken.get(token)
     if (!rec) rec = { token, buys: 0, sells: 0, netUsd: 0, whales: new Set(), lastSeen: null }

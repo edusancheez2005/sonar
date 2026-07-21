@@ -246,6 +246,8 @@ export default function PortfolioPanel() {
                 {scan.grand_total > 0
                   ? `Found $${Math.round(scan.grand_total).toLocaleString()} across: ${scan.chains.filter((c) => c.total_usd > 0).map((c) => `${c.chain} $${Math.round(c.total_usd)}`).join(' · ')}`
                   : `Scanned ${scan.chains.length} chain${scan.chains.length === 1 ? '' : 's'} — nothing above the $0.05 dust threshold. If you expected to see balances, check the address is correct.`}
+                {scan.chains.some((c) => c.error) &&
+                  ` (couldn't check: ${scan.chains.filter((c) => c.error).map((c) => c.chain).join(', ')})`}
               </div>
             )}
           </div>

@@ -37,6 +37,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ address:
   type Result = { chain: string; total_usd: number; tokens: number; error?: string }
   const tasks: Promise<Result>[] = []
 
+  // Count only positions with real value (or the native asset) — unpriced
+  // ERC-20s are overwhelmingly airdrop spam and made "50 tokens on Base"
+  // claims out of 2 real holdings.
+  const countReal = (h: Holding[]) =>
+    h.filter((x) => x.contract == null || (x.value_usd || 0) > 0).length
+
   if (isEvm) {
     for (const c of evmChains) {
       tasks.push(
@@ -44,7 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ address:
           .then((h: Holding[]) => ({
             chain: c,
             total_usd: h.reduce((s, x) => s + (x.value_usd || 0), 0),
-            tokens: h.length,
+            tokens: countReal(h),
           }))
           .catch((e: any) => ({ chain: c, total_usd: 0, tokens: 0, error: e?.message || 'failed' }))
       )
@@ -56,7 +62,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ address:
         .then((h) => ({
           chain: 'solana',
           total_usd: h.reduce((s, x) => s + (x.value_usd || 0), 0),
-          tokens: h.length,
+          tokens: countReal(h),
         }))
         .catch((e: any) => ({ chain: 'solana', total_usd: 0, tokens: 0, error: e?.message || 'failed' }))
     )

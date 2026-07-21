@@ -69,7 +69,13 @@ function fromHexBalance(hex: string, decimals: number): { decimal: string; numer
   return { decimal, numeric: Number(decimal) }
 }
 
-interface CoingeckoPrice { [contract: string]: { usd?: number } }
+interface CoingeckoPrice { [contract: string]: { usd?: number; usd_24h_vol?: number } }
+
+// A CoinGecko listing is not proof a token is sellable: airdrop-spam like
+// Minereum (MNEP) carries a nominal price with ~$25/day volume, which valued
+// Vitalik's untouchable 300k-MNEP airdrop at $2,400 and topped his Polygon
+// portfolio with it. Only trust prices for tokens with real 24h liquidity.
+const MIN_24H_VOLUME_USD = 1000
 
 async function priceForContracts(
   chain: Chain,
@@ -87,13 +93,15 @@ async function priceForContracts(
   // Chunk to keep URL under limit
   for (let i = 0; i < contracts.length; i += 50) {
     const chunk = contracts.slice(i, i + 50).map((c) => c.toLowerCase())
-    const cg = cgRequest(`/simple/token_price/${platform}?contract_addresses=${chunk.join(',')}&vs_currencies=usd`)
+    const cg = cgRequest(`/simple/token_price/${platform}?contract_addresses=${chunk.join(',')}&vs_currencies=usd&include_24hr_vol=true`)
     try {
       const res = await fetch(cg.url, { headers: cg.headers, next: { revalidate: 60 } } as any)
       if (!res.ok) continue
       const j: CoingeckoPrice = await res.json()
       for (const [addr, v] of Object.entries(j)) {
-        if (typeof v?.usd === 'number') out[addr.toLowerCase()] = v.usd
+        if (typeof v?.usd !== 'number') continue
+        if (typeof v.usd_24h_vol === 'number' && v.usd_24h_vol < MIN_24H_VOLUME_USD) continue
+        out[addr.toLowerCase()] = v.usd
       }
     } catch { /* ignore */ }
   }
