@@ -16,16 +16,22 @@ exactly. Deviating from it is how output regresses to slop.
 - Headless Chrome for slide/overlay rendering:
   `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new …`
 
-## Cadence (Eduardo, 21 Jul): full Reels every OTHER day
+## Cadence (Eduardo, 21 Jul, rev 2): ONE reel EVERY day + one static — reel TYPE rotates
 
-- **Full-reel days** (odd days of the month): the complete pipeline below —
-  gpt-image-2 stills → Seedance clips → assembled cinematic Reel (~$2).
-- **Static days** (even days): carousel/stat/meme posts only via gpt-image-2 +
-  templates — BUT still ship one **lite reel**: render the day's strongest
-  slide(s) as a 6-8s vertical video with a slow ffmpeg zoompan (Ken Burns) and
-  a 1.5s end card. Costs $0 (no Seedance), takes 2 min, and exists because
-  static posts don't get Reels-tab distribution — this way every day has
-  something that reaches non-followers.
+Every day ships: one static post (carousel/stat/meme per the format rotation)
+AND one reel. The reel type rotates between paid and free formats so the
+budget stays ≈$9-12/week (~$45/month):
+
+- **Cinematic Seedance reel** (~$1.90: 2 stills + 2 clips + optional TTS VO) —
+  max 2×/week, for the strongest stories.
+- **Meme cinemagraph** (~$0.85: 1 clip over meme art) — ~2×/week.
+- **Typing-chat Orca demo reel** ($0, frame-rendered) — ~2×/week.
+- **Lite reel** ($0, ffmpeg Ken-Burns over the day's best slide + end card) —
+  fills the remaining day(s).
+Never the same reel type two days running. Ship silent + `-VO` variants when
+narration fits. If fal or OpenAI credit is exhausted, fall back to the $0
+formats and flag the refill in the notification (fal ~$20/3 weeks,
+OpenAI ~$10/6 weeks).
 - **Sound on reels**: bake in an OpenAI TTS voiceover when the story suits
   narration (model `gpt-4o-mini-tts`, voice `onyx`, documentary instructions —
   see `sonar-receipts-reel-VO.mp4`, 21 Jul). RULES: script must finish ≥1s
