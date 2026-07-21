@@ -77,6 +77,10 @@
       "schedule": "0 4 * * *"
     },
     {
+      "path": "/api/cron/backtest-whales",
+      "schedule": "30 4 * * *"
+    },
+    {
       "path": "/api/cron/weekly-top-wallets",
       "schedule": "0 15 * * 0"
     },

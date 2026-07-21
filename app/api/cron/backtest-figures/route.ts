@@ -26,6 +26,10 @@ import type { BacktestChain } from '@/lib/wallet-backtest/types'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const maxDuration = 300
+// Next's Data Cache pins Supabase GETs made inside GET route handlers (the
+// 2026-07 "stale macro" root cause): without this, the curated_entities list
+// is served from a stale cache and newly added figures are never backtested.
+export const fetchCache = 'force-no-store'
 
 const CAPITAL_USD = 10_000
 const SUPPORTED = new Set<BacktestChain>(['ethereum', 'polygon', 'solana'])

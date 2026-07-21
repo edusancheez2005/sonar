@@ -22,6 +22,9 @@ import { createClient } from '@supabase/supabase-js'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const maxDuration = 60
+// Next's Data Cache pins Supabase GETs made inside GET route handlers — the
+// email must always read this week's numbers, never a cached fetch.
+export const fetchCache = 'force-no-store'
 
 type Performer = {
   slug: string
@@ -30,6 +33,16 @@ type Performer = {
   twitter_handle: string | null
   return_pct_7d: number
 }
+
+type AnonWhale = {
+  address: string
+  chain: string
+  return_pct_7d: number
+  trades: number
+}
+
+// Written nightly by /api/cron/backtest-whales.
+const ANON_WHALES_CACHE_KEY = 'anon_whale_backtests_7d'
 
 export async function GET(request: Request) {
   const auth = request.headers.get('authorization')
@@ -72,10 +85,35 @@ export async function GET(request: Request) {
     .filter((x: Performer | null): x is Performer => Boolean(x))
     .slice(0, 5)
 
-  // A "Top 5" email with one or two rows reads as broken. Below three
-  // positive performers, skip the week instead of sending a thin digest.
-  if (performers.length < 3) {
-    return NextResponse.json({ ok: true, sent: false, reason: 'not_enough_performers', performers_count: performers.length })
+  // Anonymous smart-money whales — the wallets actually trading. Computed
+  // nightly by /api/cron/backtest-whales into app_cache. Require real fills
+  // so a wallet with one lucky trade doesn't headline the email.
+  let whales: AnonWhale[] = []
+  try {
+    const { data: cacheRow } = await sb
+      .from('app_cache')
+      .select('value, updated_at')
+      .eq('key', ANON_WHALES_CACHE_KEY)
+      .maybeSingle()
+    const ageMs = cacheRow ? Date.now() - new Date(cacheRow.updated_at).getTime() : Infinity
+    const rows: any[] = Array.isArray(cacheRow?.value?.rows) ? cacheRow.value.rows : []
+    if (ageMs < 8 * 24 * 60 * 60 * 1000) {
+      whales = rows
+        .filter((r) => Number.isFinite(r?.return_pct_7d) && r.return_pct_7d > 0 && Number(r?.trades) >= 3)
+        .slice(0, 5)
+        .map((r) => ({
+          address: String(r.address),
+          chain: String(r.chain || 'ethereum'),
+          return_pct_7d: Number(r.return_pct_7d),
+          trades: Number(r.trades),
+        }))
+    }
+  } catch { /* section simply omitted */ }
+
+  // An email with one or two rows reads as broken. Skip the week unless at
+  // least one section has three-plus positive performers.
+  if (performers.length < 3 && whales.length < 3) {
+    return NextResponse.json({ ok: true, sent: false, reason: 'not_enough_performers', performers_count: performers.length, whales_count: whales.length })
   }
 
   const weekEnd = new Date()
@@ -87,19 +125,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, sent: false, reason: 'already_sent_this_week' })
   }
 
-  const subject = `Top ${performers.length} wallets this week (${weekLabel})`
-  const html = renderHtml(performers, weekLabel)
+  const subject = `Top wallets this week (${weekLabel})`
+  const html = renderHtml(performers, whales, weekLabel)
 
   const sendResult = await sendBrevoCampaign(brevoKey, subject, html, weekLabel)
-  return NextResponse.json({ ok: true, performers_count: performers.length, ...sendResult })
+  return NextResponse.json({ ok: true, performers_count: performers.length, whales_count: whales.length, ...sendResult })
 }
 
-function renderHtml(performers: Performer[], weekLabel: string): string {
-  const rows = performers
+function renderHtml(performers: Performer[], whales: AnonWhale[], weekLabel: string): string {
+  const shorten = (a: string) => (a.length > 14 ? `${a.slice(0, 8)}…${a.slice(-4)}` : a)
+  const pctCell = (ret: number) =>
+    `<td style="padding:14px 8px;border-bottom:1px solid #1f2937;text-align:right;color:#2ecc71;font-weight:700;font-size:15px;white-space:nowrap;">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%</td>`
+
+  const figureRows = performers
     .map((p, i) => {
       const url = `https://www.sonartracker.io/figure/${encodeURIComponent(p.slug)}`
-      const ret = p.return_pct_7d
-      const sign = ret >= 0 ? '+' : ''
       return `
         <tr>
           <td style="padding:14px 8px;border-bottom:1px solid #1f2937;width:32px;color:#6b7280;font-weight:700;">#${i + 1}</td>
@@ -107,10 +147,39 @@ function renderHtml(performers: Performer[], weekLabel: string): string {
             <a href="${url}" style="color:#22d3ee;text-decoration:none;font-weight:600;font-size:15px;">${escapeHtml(p.display_name)}</a>
             <div style="color:#6b7280;font-size:12px;margin-top:2px;">${escapeHtml(p.category || '')}${p.twitter_handle ? ` · @${escapeHtml(p.twitter_handle)}` : ''}</div>
           </td>
-          <td style="padding:14px 8px;border-bottom:1px solid #1f2937;text-align:right;color:#2ecc71;font-weight:700;font-size:15px;white-space:nowrap;">${sign}${ret.toFixed(1)}%</td>
+          ${pctCell(p.return_pct_7d)}
         </tr>`
     })
     .join('')
+
+  const whaleRows = whales
+    .map((w, i) => {
+      const url = `https://www.sonartracker.io/wallet-tracker/${encodeURIComponent(w.address)}`
+      return `
+        <tr>
+          <td style="padding:14px 8px;border-bottom:1px solid #1f2937;width:32px;color:#6b7280;font-weight:700;">#${i + 1}</td>
+          <td style="padding:14px 8px;border-bottom:1px solid #1f2937;">
+            <a href="${url}" style="color:#22d3ee;text-decoration:none;font-weight:600;font-size:15px;font-family:ui-monospace,Menlo,monospace;">${escapeHtml(shorten(w.address))}</a>
+            <div style="color:#6b7280;font-size:12px;margin-top:2px;">${escapeHtml(w.chain)} · ${w.trades} trades</div>
+          </td>
+          ${pctCell(w.return_pct_7d)}
+        </tr>`
+    })
+    .join('')
+
+  // Render a section only when it has enough rows to look intentional.
+  const figureSection = performers.length >= 3
+    ? `<tr><td style="padding:8px 18px;">
+          <div style="padding:10px 10px 0;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;font-weight:700;">Famous wallets</div>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">${figureRows}</table>
+        </td></tr>`
+    : ''
+  const whaleSection = whales.length >= 3
+    ? `<tr><td style="padding:8px 18px;">
+          <div style="padding:10px 10px 0;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;font-weight:700;">Anonymous smart-money whales</div>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">${whaleRows}</table>
+        </td></tr>`
+    : ''
 
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:#060c14;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#e5e7eb;">
@@ -119,12 +188,11 @@ function renderHtml(performers: Performer[], weekLabel: string): string {
       <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#0b1422;border:1px solid #1f2937;border-radius:12px;">
         <tr><td style="padding:24px 28px 8px;">
           <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#22d3ee;font-weight:700;"><span style="font-size:14px;">&#9673;</span>&nbsp; Sonar · Whale Pulse</div>
-          <h1 style="margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:800;">Top ${performers.length} wallets this week</h1>
+          <h1 style="margin:6px 0 0;font-size:22px;color:#ffffff;font-weight:800;">Top wallets this week</h1>
           <div style="margin:6px 0 0;color:#9ca3af;font-size:13px;">${escapeHtml(weekLabel)} · backtested 7d return on $10k of paper capital</div>
         </td></tr>
-        <tr><td style="padding:8px 18px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">${rows}</table>
-        </td></tr>
+        ${whaleSection}
+        ${figureSection}
         <tr><td style="padding:18px 28px 24px;color:#6b7280;font-size:11px;line-height:1.6;">
           Past performance is not indicative of future results. Backtests assume $10k of capital deployed at the start of the window with a 30bps round-trip fee per fill and zero-mark for tokens with no on-chain price feed. Not investment advice.
           <br/><br/>
