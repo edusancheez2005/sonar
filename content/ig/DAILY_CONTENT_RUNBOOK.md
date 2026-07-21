@@ -106,6 +106,13 @@ run log each daily run appends) and actively avoid repeating:
   4. *Dashboard flex* — 4 big real numbers from 24h of tape.
   Captions for product packs point at sonartracker.io harder than usual —
   they double as product demos.
+- **Orca Story-Time episode** (weekly experiment, 21 Jul): the ChainSpeak
+  mechanic — a character narrating a story — done Sonar's way. The orca mascot
+  (cartoonish, with personality; gpt-image-2 still in the soft-shaded
+  illustration style, NEVER ripped IP) narrates THE WEEK'S REAL WHALE STORY
+  with TTS voiceover + big yellow karaoke-style subtitle overlays, ending on
+  the WHALE comment CTA. Max 1×/week, uses the week's cinematic-reel slot
+  (~$2). Retention mechanic + Sonar's data moat + product funnel.
 - **Typing-chat reel** ("professional product video" — Eduardo's ask): the
   Ask-Orca chat as VIDEO — messages appear one by one, Orca's reply types
   itself out character-by-character. Build: one HTML page that renders the
