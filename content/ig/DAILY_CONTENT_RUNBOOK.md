@@ -26,6 +26,13 @@ exactly. Deviating from it is how output regresses to slop.
   a 1.5s end card. Costs $0 (no Seedance), takes 2 min, and exists because
   static posts don't get Reels-tab distribution — this way every day has
   something that reaches non-followers.
+- **Sound on reels**: bake in an OpenAI TTS voiceover when the story suits
+  narration (model `gpt-4o-mini-tts`, voice `onyx`, documentary instructions —
+  see `sonar-receipts-reel-VO.mp4`, 21 Jul). RULES: script must finish ≥1s
+  before the video ends (TTS a draft, CHECK duration with ffmpeg, tighten and
+  regenerate if long); ship BOTH versions (silent + `-VO`) so Eduardo can
+  choose; trending in-app audio can still be layered over either at post
+  time. Never synthesize music; never rip copyrighted tracks.
 - **Every day ends with the email drop**: run
   `python3 ~/Desktop/Sonar/tools/send_daily_email.py` — uploads the day's
   files to the public bucket and emails download links + captions to
@@ -78,7 +85,27 @@ run log each daily run appends) and actively avoid repeating:
   editorial carousel → whale receipts → stat single → meme single → explainer
   carousel ("what is a cloture vote / ETF flow / funding rate" — evergreen
   saves) → data leaderboard ("top 5 whale wallets this week") → poll/question
-  post.
+  post → **product pack** (Eduardo's favorite — see below).
+- **Product-pack formats** (visual reference: the approved Batch 7 artifact,
+  https://claude.ai/code/artifact/91170ea4-edff-4694-bb28-d60de9aea020 — the
+  product IS the content; run at least 2 of these per week):
+  1. *Divergence receipts carousel* — price says one thing, whale flows say
+     the other, shown as a live product panel ("LINK fell 2.6%, whales spent
+     $72M disagreeing"). Data from the public endpoints
+     (`/api/whales/leaderboard`, `/api/v1/tokens/{sym}/whale-activity`).
+  2. *Ask-Orca chat tile* — a rendered chat exchange (dark; occasionally the
+     light-mode variant for grid contrast). Orca's voice: receipts, no
+     advice, dry one-liners ("That's a tape. Read it.").
+  3. *Live-feed tile* — timestamped whale txs as they landed.
+  4. *Dashboard flex* — 4 big real numbers from 24h of tape.
+  Captions for product packs point at sonartracker.io harder than usual —
+  they double as product demos.
+- **Typing-chat reel** ("professional product video" — Eduardo's ask): the
+  Ask-Orca chat as VIDEO — messages appear one by one, Orca's reply types
+  itself out character-by-character. Build: one HTML page that renders the
+  chat state as a function of `?frame=N`, screenshot N=0..~80 frames with
+  headless Chrome, assemble at 12-15fps with ffmpeg, add typing-dots pauses
+  and the end card. $0 in API costs. Cap at ~2/week so it stays special.
 - **Visual-world rotation** — never the same imagery two days running. Worlds
   to rotate: underwater/sonar · government/marble · trading floor/boardroom ·
   city night/macro · abstract data (charts as art) · illustration/mascot ·
