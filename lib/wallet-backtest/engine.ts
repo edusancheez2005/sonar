@@ -429,6 +429,14 @@ async function replay(
   endMs: number,
   chain: BacktestChain
 ): Promise<{ result: BacktestResult; curve: EquityPoint[] }> {
+  // Copy-trade semantics: replay swap FILLS only. Deposits and withdrawals
+  // are not trades a copier could mirror — and replaying TRANSFER_IN
+  // credited tokens to the portfolio without spending cash, so deposit-heavy
+  // wallets (bridges, treasuries, protocol mints) manufactured equity from
+  // nothing: the Jul-19 Whale Pulse ranked the Polygon PoS Bridge at
+  // +20,768% and Ethena at +31,758% on $10k. Only BUY/SELL move the book.
+  const fills = trades.filter((t) => t.action === 'BUY' || t.action === 'SELL')
+
   const state = initState(capital)
   const curve: EquityPoint[] = []
   curve.push({ ts: new Date(startMs).toISOString(), equity_usd: capital })
@@ -436,7 +444,7 @@ async function replay(
   // We need price series for every token the wallet touches so we can
   // mark to market accurately at the end.
   const needed = new Map<string, TokenRef>()
-  for (const t of trades) {
+  for (const t of fills) {
     const ref: TokenRef = t.token_coingecko_id
       ? { kind: 'coin_id', id: t.token_coingecko_id }
       : t.token_contract
@@ -462,59 +470,41 @@ async function replay(
     return { key: holdingKey(ref), ref }
   }
 
-  for (const t of trades) {
-    if (t.action === 'NOISE') continue
+  for (const t of fills) {
     const tsMs = new Date(t.ts).getTime()
     const { key, ref } = lookupKey(t)
 
-    if (t.action === 'BUY' || t.action === 'TRANSFER_IN') {
+    if (t.action === 'BUY') {
       const series = seriesByKey.get(key) || []
       const px = priceAt(series, tsMs) ?? 0
-      if (px === 0 && t.action === 'BUY') continue
+      if (px === 0) continue
 
       let usdToSpend = t.usd_value
       let qtyToReceive = t.qty
-      if (t.action === 'BUY') {
-        // Scale position if user is cash-constrained.
-        if (state.cash_usd <= 0) continue
-        if (usdToSpend > state.cash_usd) {
-          const scale = state.cash_usd / usdToSpend
-          usdToSpend = state.cash_usd
-          qtyToReceive = t.qty * scale
-        }
-        const netReceived = applyFee(usdToSpend, state)
-        const effectiveQty = px > 0 ? netReceived / px : qtyToReceive
-        state.cash_usd -= usdToSpend
-        const cur = state.holdings.get(key)
-        if (cur) {
-          cur.qty += effectiveQty
-          cur.cost_basis_usd += usdToSpend
-          cur.last_known_price = px
-        } else {
-          state.holdings.set(key, {
-            qty: effectiveQty,
-            cost_basis_usd: usdToSpend,
-            last_known_price: px,
-            coingecko_ref: ref,
-          })
-        }
-      } else {
-        // TRANSFER_IN at cost basis = current FMV (anti-airdrop bias).
-        const cur = state.holdings.get(key)
-        if (cur) {
-          cur.qty += t.qty
-          cur.cost_basis_usd += t.usd_value
-          cur.last_known_price = px
-        } else {
-          state.holdings.set(key, {
-            qty: t.qty,
-            cost_basis_usd: t.usd_value,
-            last_known_price: px,
-            coingecko_ref: ref,
-          })
-        }
+      // Scale position if user is cash-constrained.
+      if (state.cash_usd <= 0) continue
+      if (usdToSpend > state.cash_usd) {
+        const scale = state.cash_usd / usdToSpend
+        usdToSpend = state.cash_usd
+        qtyToReceive = t.qty * scale
       }
-    } else if (t.action === 'SELL' || t.action === 'TRANSFER_OUT') {
+      const netReceived = applyFee(usdToSpend, state)
+      const effectiveQty = px > 0 ? netReceived / px : qtyToReceive
+      state.cash_usd -= usdToSpend
+      const cur = state.holdings.get(key)
+      if (cur) {
+        cur.qty += effectiveQty
+        cur.cost_basis_usd += usdToSpend
+        cur.last_known_price = px
+      } else {
+        state.holdings.set(key, {
+          qty: effectiveQty,
+          cost_basis_usd: usdToSpend,
+          last_known_price: px,
+          coingecko_ref: ref,
+        })
+      }
+    } else if (t.action === 'SELL') {
       const cur = state.holdings.get(key)
       if (!cur || cur.qty <= 0) continue
       const series = seriesByKey.get(key) || []
@@ -527,9 +517,7 @@ async function replay(
       cur.qty -= qtySold
       cur.cost_basis_usd -= costPortion
       cur.last_known_price = px
-      if (t.action === 'SELL') {
-        state.cash_usd += netProceeds
-      }
+      state.cash_usd += netProceeds
       // Record a closed-position pnl whenever we fully exit.
       if (cur.qty <= 1e-12) {
         state.closed_positions.push({ token_key: key, pnl_usd: pnl })
@@ -589,7 +577,7 @@ async function replay(
       win_rate_pct: round2(winRate),
       sharpe: round2(sharpe),
       fees_paid_usd: round2(state.fees_paid_usd),
-      trade_count: trades.filter((t) => t.action === 'BUY' || t.action === 'SELL').length,
+      trade_count: fills.length,
     },
     curve,
   }
