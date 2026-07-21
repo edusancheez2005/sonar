@@ -3,7 +3,7 @@ import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 import { ADDRESS_RE, isSupportedChain } from '@/app/lib/walletAuth'
 import { getEvmHoldings } from '@/lib/wallet/alchemy'
-import { getSolanaHoldings } from '@/lib/wallet/helius'
+import { getSolanaHoldings } from '@/lib/wallet/solana'
 import { getBitcoinHoldings } from '@/lib/wallet/btc'
 import { STABLECOINS, type Holding, type Chain } from '@/lib/wallet/types'
 

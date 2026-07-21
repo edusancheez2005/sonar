@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 import { ADDRESS_RE } from '@/app/lib/walletAuth'
 import { getEvmHoldings } from '@/lib/wallet/alchemy'
-import { getSolanaHoldings } from '@/lib/wallet/helius'
+import { getSolanaHoldings } from '@/lib/wallet/solana'
 import { getBitcoinHoldings } from '@/lib/wallet/btc'
 import type { Chain, Holding } from '@/lib/wallet/types'
 
@@ -32,7 +32,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ address:
   const isSolana = !isEvm && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)
   const isBtc = !isEvm && !isSolana
 
-  const evmChains: Chain[] = ['ethereum', 'base', 'arbitrum', 'polygon', 'optimism']
+  // Optimism intentionally absent: the Alchemy key has no opt-mainnet access
+  // and Eduardo decided (2026-07-21) not to enable it rather than surface a
+  // permanently failing chain.
+  const evmChains: Chain[] = ['ethereum', 'base', 'arbitrum', 'polygon']
 
   type Result = { chain: string; total_usd: number; tokens: number; error?: string }
   const tasks: Promise<Result>[] = []

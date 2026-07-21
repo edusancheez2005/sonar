@@ -12,7 +12,6 @@ const EVM_CHAINS = [
   { id: 'base',     label: 'Base' },
   { id: 'arbitrum', label: 'Arbitrum' },
   { id: 'polygon',  label: 'Polygon' },
-  { id: 'optimism', label: 'Optimism' },
 ]
 
 const ConnectWalletModal = dynamic(() => import('./ConnectWalletModal'), { ssr: false })

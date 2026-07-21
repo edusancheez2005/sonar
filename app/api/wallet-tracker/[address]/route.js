@@ -233,7 +233,7 @@ export async function GET(req, { params }) {
 // EVM addresses are checked on all Alchemy-supported chains in parallel;
 // Solana via Helius. Returns null when nothing is found (or providers are
 // not configured), letting the caller 404.
-const LIVE_EVM_CHAINS = ['ethereum', 'base', 'arbitrum', 'polygon', 'optimism']
+const LIVE_EVM_CHAINS = ['ethereum', 'base', 'arbitrum', 'polygon'] // no optimism: key not enabled for opt-mainnet
 
 function withTimeout(promise, ms) {
   return Promise.race([
@@ -258,7 +258,7 @@ async function buildLiveProfile(address) {
         holdings: r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : [],
       }))
     } else if (isSolana) {
-      const { getSolanaHoldings } = await import('@/lib/wallet/helius')
+      const { getSolanaHoldings } = await import('@/lib/wallet/solana')
       const holdings = await withTimeout(getSolanaHoldings(address), 8000)
       holdingsByChain = [{ chain: 'solana', holdings: Array.isArray(holdings) ? holdings : [] }]
     } else {

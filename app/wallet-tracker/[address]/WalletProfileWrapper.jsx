@@ -491,8 +491,8 @@ export default function WalletProfileWrapper({ address }) {
               This wallet has no on-chain footprint yet.
             </p>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', maxWidth: '520px', margin: '0 auto 0.4rem' }}>
-              We checked our whale index and live balances on Ethereum, Base, Arbitrum, Polygon,
-              Optimism and Solana — nothing to show so far. It may be brand new or empty.
+              We checked our whale index and live balances on Ethereum, Base, Arbitrum, Polygon
+              and Solana — nothing to show so far. It may be brand new or empty.
             </p>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
               Add it to a watchlist or set an alert and Sonar will catch its first moves.

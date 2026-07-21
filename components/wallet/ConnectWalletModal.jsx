@@ -761,7 +761,6 @@ export default function ConnectWalletModal({ open, onClose, defaultAttestations,
                     <option value="polygon">Polygon</option>
                     <option value="arbitrum">Arbitrum</option>
                     <option value="base">Base</option>
-                    <option value="optimism">Optimism</option>
                     <option value="solana">Solana</option>
                     <option value="bitcoin">Bitcoin</option>
                   </Select>
