@@ -358,7 +358,8 @@ Not financial advice.
 <script>
 __DATA__
 function fit(cv){const box=cv.parentElement.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2.5);
-  if(box.width<4||box.height<4)return null;cv.width=Math.round(box.width*dpr);cv.height=Math.round(box.height*dpr);return dpr;}
+  if(box.width<4||box.height<4)return null;cv.width=Math.round(box.width*dpr);cv.height=Math.round(box.height*dpr);
+  cv.style.width=box.width+'px';cv.style.height=box.height+'px';return dpr;}
 const GREEN='#00e08a',RED='#ff5b6b',MUTE='#64748b';
 const usd0=v=>'$'+Math.round(v).toLocaleString('en-US');
 const usd3=v=>'$'+v.toFixed(3);
