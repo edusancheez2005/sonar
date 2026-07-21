@@ -37,7 +37,11 @@ exactly. Deviating from it is how output regresses to slop.
    frames before calling it done. Reels ship silent — trending audio is
    added in the IG app at post time.
 5. **Deliver**: publish/update the day's artifact with slides + captions
-   (captions per playbook §8, always the WHALE keyword CTA), then push
+   (captions per playbook §8, always the WHALE keyword CTA). Write
+   `CAPTIONS.md` into BOTH dated folders — the full set in
+   `~/Desktop/Sonar/Content/YYYY-MM-DD/` and a reels-only copy next to the
+   videos in `~/Desktop/Sonar/Reels/YYYY-MM-DD/` (Eduardo posts from the
+   folder he's standing in; captions must be beside the files). Then push
    notification to Eduardo: story headlines + file paths + artifact link.
 6. **Commit** new template/assets to the repo (never `.env.local`, never
    personal files — `git status` before `git add`).
