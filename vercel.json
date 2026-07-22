@@ -49,6 +49,10 @@
       "schedule": "10 * * * *"
     },
     {
+      "path": "/api/cron/poll-bsc-transfers",
+      "schedule": "25 * * * *"
+    },
+    {
       "path": "/api/cron/evaluate-signals",
       "schedule": "30 * * * *"
     },
@@ -82,7 +86,7 @@
     },
     {
       "path": "/api/cron/refresh-entity-balances",
-      "schedule": "0 5 * * *"
+      "schedule": "0 5 */3 * *"
     },
     {
       "path": "/api/cron/weekly-top-wallets",

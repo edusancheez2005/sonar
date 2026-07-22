@@ -1,6 +1,9 @@
 /**
- * CRON: Nightly refresh of Arkham entity-level balances for curated figures.
- * Schedule: 0 5 * * * (vercel.json) — after backtest-whales.
+ * CRON: Refresh of Arkham entity-level balances for curated figures.
+ * Schedule: 0 5 * / 3 * * (vercel.json) — every 3rd night, after
+ * backtest-whales. Each run costs ~1 Arkham credit per linked figure
+ * (~31 today), so nightly would burn ~930 credits/month for balances
+ * that move slowly; every 3 nights is plenty fresh at a third the spend.
  *
  * Figure pages headline "Total entity holdings" from the app_cache key
  * `figure_entity_balances`. Those totals CANNOT be derived from our own
