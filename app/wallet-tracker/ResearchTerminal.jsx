@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import NextLink from 'next/link'
 import styled from 'styled-components'
 import { C, FONT_MONO, FONT_SANS } from '@/app/lib/terminalTheme'
+import EntityAvatar from '@/app/components/entities/EntityAvatar'
 import { TermPanel, Notice, ErrorNotice, GhostButton } from '@/app/components/whale-terminal/primitives'
 import { CandleChart, AreaSpark, FlowBars, ScoreBar, ChartEmpty } from '@/app/components/whale-terminal/charts'
 import { shortenAddress, formatUsd, timeAgo, TAG_COLORS, REALIZED_PNL_NA_HINT } from '@/lib/wallet-tracker'
@@ -238,6 +239,134 @@ function fmtSigned(n) {
 }
 
 // ── command bar ──────────────────────────────────────────────────────
+// ── famous wallets rail ──────────────────────────────────────────────
+const FamousWrap = styled.section`
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 171, 0, 0.28);
+  background: linear-gradient(180deg, rgba(255, 171, 0, 0.05), rgba(10, 14, 23, 0.7));
+`
+
+const FamousHead = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid rgba(255, 171, 0, 0.14);
+  .title {
+    font-family: ${FONT_SANS};
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: ${C.amber};
+    letter-spacing: 0.2px;
+  }
+  a {
+    font-family: ${FONT_SANS};
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: ${C.cyan};
+    text-decoration: none;
+    white-space: nowrap;
+    &:hover { text-decoration: underline; }
+  }
+`
+
+const FamousTrack = styled.div`
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0.65rem 0.8rem;
+  scrollbar-width: thin;
+  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar-thumb { background: rgba(255, 171, 0, 0.2); }
+`
+
+const FamousCard = styled(NextLink)`
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid ${C.borderSubtle};
+  border-radius: 8px;
+  background: rgba(10, 14, 23, 0.75);
+  text-decoration: none;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+  &:hover {
+    border-color: rgba(255, 171, 0, 0.45);
+    background: rgba(16, 20, 30, 0.92);
+    transform: translateY(-1px);
+  }
+  .who { display: flex; flex-direction: column; }
+  .name {
+    font-family: ${FONT_SANS};
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: ${C.textPrimary};
+    white-space: nowrap;
+  }
+  .cat {
+    font-family: ${FONT_SANS};
+    font-size: 0.64rem;
+    color: ${C.textMuted};
+    white-space: nowrap;
+    text-transform: capitalize;
+  }
+  .ret {
+    font-family: ${FONT_SANS};
+    font-size: 0.72rem;
+    font-weight: 800;
+    white-space: nowrap;
+    margin-left: 4px;
+  }
+`
+
+function FamousWalletsRail() {
+  const [figures, setFigures] = useState(null)
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/figures/featured', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled && Array.isArray(j?.figures)) setFigures(j.figures) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+  if (!figures || figures.length < 4) return null
+  return (
+    <FamousWrap aria-label="Famous wallets">
+      <FamousHead>
+        <span className="title">★ Famous wallets — Satoshi, Vitalik, Elon, governments &amp; more</span>
+        <NextLink href="/figures">View all figures →</NextLink>
+      </FamousHead>
+      <FamousTrack>
+        {figures.map((f) => {
+          const has7 = typeof f.return_pct_7d === 'number' && Number.isFinite(f.return_pct_7d)
+          return (
+            <FamousCard key={f.slug} href={`/figure/${encodeURIComponent(f.slug)}`}>
+              <EntityAvatar
+                avatarUrl={f.avatar_url}
+                twitterHandle={f.twitter_handle}
+                displayName={f.display_name}
+                category={f.category}
+                size={30}
+              />
+              <span className="who">
+                <span className="name">{f.display_name}</span>
+                <span className="cat">{f.category}</span>
+              </span>
+              {has7 ? (
+                <span className="ret" style={{ color: f.return_pct_7d >= 0 ? C.green : C.red }}>
+                  {f.return_pct_7d >= 0 ? '+' : ''}{f.return_pct_7d.toFixed(1)}%
+                </span>
+              ) : null}
+            </FamousCard>
+          )
+        })}
+      </FamousTrack>
+    </FamousWrap>
+  )
+}
+
 function CommandBar() {
   const router = useRouter()
   const [v, setV] = useState('')
@@ -660,6 +789,8 @@ export default function ResearchTerminal() {
   return (
     <div>
       <CommandBar />
+
+      <FamousWalletsRail />
 
       <MainGrid>
         <Col>

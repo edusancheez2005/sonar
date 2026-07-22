@@ -9,6 +9,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import styled from 'styled-components'
 import EntityAvatar from '@/app/components/entities/EntityAvatar'
 import { categoryLabel, computeAddressCredibility } from '@/app/lib/entityHelpers'
+import { FEATURED_PRIORITY } from '@/app/lib/featuredFigures'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import CredibilityChip from '@/app/components/whale-terminal/CredibilityChip'
 import { C, FONT_MONO, FONT_SANS } from '@/app/lib/terminalTheme'
@@ -29,16 +30,6 @@ const SORT_OPTIONS = [
 
 const SEARCH_RESULT_CAP = 100
 const BACKTEST_CAPITAL = 10000
-
-// Hand-curated display order for the featured rail. Anything featured but
-// not listed here falls to the end alphabetically. Keep this in sync with
-// the is_featured flags in curated_entities (A-list re-curated 2026-07-22).
-const FEATURED_PRIORITY = [
-  'satoshi-nakamoto', 'vitalik-buterin', 'elon-musk', 'donald-trump',
-  'us-government', 'royal-government-of-bhutan', 'spacex', 'tesla',
-  'trump-media', 'gamestop', 'microstrategy', 'blackrock', 'el-salvador',
-  'gcr', 'james-fickel', 'mrbeast',
-]
 
 async function getAuthHeaders() {
   try {
