@@ -30,6 +30,16 @@ const SORT_OPTIONS = [
 const SEARCH_RESULT_CAP = 100
 const BACKTEST_CAPITAL = 10000
 
+// Hand-curated display order for the featured rail. Anything featured but
+// not listed here falls to the end alphabetically. Keep this in sync with
+// the is_featured flags in curated_entities (A-list re-curated 2026-07-22).
+const FEATURED_PRIORITY = [
+  'satoshi-nakamoto', 'vitalik-buterin', 'elon-musk', 'donald-trump',
+  'us-government', 'royal-government-of-bhutan', 'spacex', 'tesla',
+  'trump-media', 'gamestop', 'microstrategy', 'blackrock', 'el-salvador',
+  'gcr', 'james-fickel', 'mrbeast',
+]
+
 async function getAuthHeaders() {
   try {
     const sb = supabaseBrowser()
@@ -178,6 +188,128 @@ const CardActions = styled.div`
   .ghost:hover { background: rgba(0, 229, 255, 0.06); }
 `
 
+// ── featured rail ────────────────────────────────────────────────────
+const Rail = styled.section`
+  margin: 0 0 0.9rem;
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.045), rgba(10, 14, 23, 0.65));
+`
+
+const RailHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid ${C.borderSubtle};
+  .title {
+    font-family: ${FONT_MONO};
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: ${C.amber};
+  }
+  .hint {
+    font-family: ${FONT_MONO};
+    font-size: 0.54rem;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: ${C.textMuted};
+    white-space: nowrap;
+  }
+`
+
+const RailTrack = styled.div`
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0.6rem 0.7rem;
+  scrollbar-width: thin;
+  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.18); }
+`
+
+const RailCard = styled.a`
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid ${C.borderSubtle};
+  background: rgba(10, 14, 23, 0.72);
+  text-decoration: none;
+  min-width: 0;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+  &:hover {
+    border-color: rgba(0, 229, 255, 0.45);
+    background: rgba(10, 16, 26, 0.9);
+    transform: translateY(-1px);
+  }
+  .who { display: flex; flex-direction: column; min-width: 0; }
+  .name {
+    font-family: ${FONT_MONO};
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: ${C.cyan};
+    white-space: nowrap;
+  }
+  .cat {
+    font-family: ${FONT_MONO};
+    font-size: 0.52rem;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: ${C.textMuted};
+    white-space: nowrap;
+  }
+  .ret {
+    font-family: ${FONT_MONO};
+    font-size: 0.58rem;
+    font-weight: 800;
+    white-space: nowrap;
+    margin-left: 2px;
+  }
+`
+
+function FeaturedRail({ figures }) {
+  return (
+    <Rail aria-label="Featured figures">
+      <RailHead>
+        <span className="title">★ Famous wallets</span>
+        <span className="hint">Verified figures · scroll ›</span>
+      </RailHead>
+      <RailTrack>
+        {figures.map((f) => {
+          const has7 = typeof f.return_pct_7d === 'number' && Number.isFinite(f.return_pct_7d)
+          return (
+            <RailCard key={f.slug} href={`/figure/${encodeURIComponent(f.slug)}`}>
+              <EntityAvatar
+                avatarUrl={f.avatar_url}
+                twitterHandle={f.twitter_handle}
+                displayName={f.display_name}
+                category={f.category}
+                size={26}
+              />
+              <span className="who">
+                <span className="name">{f.display_name}</span>
+                <span className="cat">{categoryLabel(f.category)}</span>
+              </span>
+              {has7 ? (
+                <span className="ret" style={{ color: f.return_pct_7d >= 0 ? C.green : C.red }}>
+                  {f.return_pct_7d >= 0 ? '+' : ''}
+                  {f.return_pct_7d.toFixed(1)}%
+                </span>
+              ) : null}
+            </RailCard>
+          )
+        })}
+      </RailTrack>
+    </Rail>
+  )
+}
+
 const Pager = styled.nav`
   display: flex;
   align-items: center;
@@ -260,6 +392,21 @@ export default function FiguresDirectoryClient({ figures, page, totalPages, page
 
   const visible = searchActive ? searchResults : pageSlice
 
+  // Featured rail: the hand-picked famous wallets, always up top on the
+  // first page (any sort) unless the user is searching. The grid below is
+  // untouched — same cards, same pagination.
+  const featuredRail = useMemo(() => {
+    const rank = new Map(FEATURED_PRIORITY.map((s, i) => [s, i]))
+    return enriched
+      .filter((f) => f.is_featured)
+      .sort(
+        (a, b) =>
+          (rank.get(a.slug) ?? 999) - (rank.get(b.slug) ?? 999) ||
+          String(a.display_name || '').localeCompare(String(b.display_name || ''))
+      )
+  }, [enriched])
+  const showRail = !searchActive && page === 1 && featuredRail.length >= 4
+
   const pushWithParam = useCallback(
     (changes) => {
       const params = new URLSearchParams(searchParams.toString())
@@ -310,6 +457,8 @@ export default function FiguresDirectoryClient({ figures, page, totalPages, page
           </span>
         ) : null}
       </Controls>
+
+      {showRail ? <FeaturedRail figures={featuredRail} /> : null}
 
       {visible.length === 0 ? (
         <Notice>{searchActive ? `NO FIGURES MATCH “${q.trim().toUpperCase()}”` : 'NO FIGURES ON THIS PAGE'}</Notice>
