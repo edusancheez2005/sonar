@@ -5,6 +5,7 @@ import EntityAvatar from '@/app/components/entities/EntityAvatar'
 import { fetchChainTxsForAddresses } from '@/app/lib/chainFetchers'
 import WalletBacktestPanel from '@/components/wallet-tracker/WalletBacktestPanel'
 import PortfolioCandleChart from './PortfolioCandleChart'
+import LiveHoldingsPanel from './LiveHoldingsPanel'
 import CredibilityChip from '@/app/components/whale-terminal/CredibilityChip'
 import {
   CLASSIFICATION_COLORS,
@@ -916,6 +917,13 @@ export default async function FigureDetailPage({ params }) {
             </div>
           ) : null}
         </div>
+
+        {/* LIVE BALANCES — real on-chain holdings via Alchemy/Jupiter/BTC,
+            independent of the whale tape (which is empty for most famous
+            wallets: governments, treasuries, celebrities). */}
+        {hasAddresses ? (
+          <LiveHoldingsPanel addresses={addrs} displayName={figure.display_name} />
+        ) : null}
 
         {/* NO-ADDRESSES CALLOUT */}
         {!hasAddresses ? (
