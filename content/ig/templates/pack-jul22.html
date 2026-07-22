@@ -1,0 +1,246 @@
+<title>Sonar · Content Pack — 22 Jul 2026</title>
+<style>
+  @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(__ANTON__) format('woff2');}
+  :root{
+    --bg0:#070b12; --bg1:#0a1120; --card:#0e1622; --card2:#0b131e;
+    --ink:#e9f0f7; --muted:#8595a8; --faint:#5c6b7e;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.13);
+    --green:#00e08a; --cyan:#3bc9ee; --red:#ff5b6b; --amber:#ffb43d;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --disp:'Anton',"Arial Narrow","Helvetica Neue Condensed",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;} body{margin:0;}
+  .app{background:radial-gradient(1100px 640px at 50% -12%,#0d1b30 0%,transparent 60%),linear-gradient(180deg,var(--bg0),var(--bg1) 60%,var(--bg0));
+    color:var(--ink);font-family:var(--sans);min-height:100vh;padding:clamp(1.1rem,3vw,2.4rem) 1.1rem 5rem;}
+  .wrap{max-width:32rem;margin:0 auto;}
+  .brandbar{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:1.1rem;border-bottom:1px solid var(--line);margin-bottom:1.6rem;}
+  .brandbar img{height:1.1rem;} .brandbar .sp{flex:1;}
+  h1.title{font-size:clamp(1.5rem,4.6vw,2rem);line-height:1.1;margin:0 0 .5rem;letter-spacing:-.02em;text-wrap:balance;}
+  .sub{color:var(--muted);font-size:1rem;margin:0 0 1.1rem;text-wrap:pretty;}
+  .howto{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1.05rem;margin-bottom:2.4rem;font-size:.9rem;color:var(--muted);}
+  .howto b{color:var(--ink);} .howto ul{margin:.5rem 0 0;padding-left:1.1rem;} .howto li{margin:.28rem 0;}
+
+  .carousel{margin:0 0 3.4rem;}
+  .chead{display:flex;align-items:baseline;gap:.6rem;margin:0 0 1rem;}
+  .cnum{font-family:var(--mono);font-size:.74rem;color:var(--green);border:1px solid var(--line2);border-radius:6px;padding:.16rem .5rem;letter-spacing:.05em;}
+  .ctitle{font-size:1.02rem;font-weight:600;} .ctitle span{color:var(--muted);font-weight:400;}
+  .slides{display:flex;flex-direction:column;gap:.9rem;}
+
+  .slide{container-type:inline-size;position:relative;width:100%;max-width:29rem;margin:0 auto;aspect-ratio:4/5;border-radius:16px;overflow:hidden;
+    background:#080b11;border:1px solid var(--line2);box-shadow:0 18px 46px -20px rgba(0,0,0,.8);isolation:isolate;}
+  .pad{position:absolute;inset:0;z-index:2;padding:7cqw;display:flex;flex-direction:column;}
+  .grid::before{content:"";position:absolute;inset:0;z-index:0;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:8cqw 8cqw;
+    -webkit-mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);}
+
+  .photo{background-size:cover;background-position:center top;}
+  .photo::after{content:"";position:absolute;inset:0;z-index:1;
+    background:linear-gradient(180deg,rgba(4,7,12,.5) 0%,rgba(4,7,12,.06) 20%,rgba(4,7,12,.06) 44%,rgba(4,7,12,.76) 66%,rgba(4,7,12,.985) 88%,#04070c 100%);}
+  .srow{display:flex;align-items:center;gap:2.2cqw;font-family:var(--mono);font-size:2.9cqw;letter-spacing:.14em;text-transform:uppercase;color:#b9c6d4;}
+  .logoimg{height:5.4cqw;width:auto;display:block;filter:drop-shadow(0 1cqw 2cqw rgba(0,0,0,.65));}
+  .spacer{flex:1;}
+  .kick{display:inline-flex;align-items:center;gap:1.6cqw;}
+  .kick i{width:1.8cqw;height:1.8cqw;border-radius:50%;background:var(--red);font-style:normal;box-shadow:0 0 0 1.1cqw rgba(255,91,107,.22);}
+  .newsrow{display:flex;align-items:center;gap:3cqw;margin:0 0 4.2cqw;}
+  .newsrow .r{flex:1;height:1px;background:rgba(255,255,255,.26);}
+  .newsbadge{font-family:var(--mono);font-weight:700;font-size:3.1cqw;letter-spacing:.2em;background:var(--cyan);color:#04121a;padding:1.1cqw 3.2cqw;border-radius:1cqw;}
+
+  /* Anton display headline — the daytrading look */
+  .big{font-family:var(--disp);font-weight:400;text-transform:uppercase;font-size:13.2cqw;line-height:1.06;letter-spacing:.012em;margin:0;color:#fff;text-shadow:0 2cqw 7cqw rgba(0,0,0,.8);text-wrap:balance;text-align:center;}
+  .big.sm{font-size:11cqw;}
+  .hl-c{color:var(--cyan);font-style:normal;} .hl-g{color:var(--green);font-style:normal;} .hl-r{color:var(--red);font-style:normal;}
+  .foot{display:flex;align-items:center;gap:2cqw;font-family:var(--mono);font-size:2.6cqw;letter-spacing:.1em;color:#93a4b6;text-transform:uppercase;margin-top:4.6cqw;}
+  .foot .sp{flex:1;}
+  .swipe{color:#dbe6f0;font-weight:700;letter-spacing:.14em;}
+
+  /* quote card (public.com-style) */
+  .qzone{position:relative;margin-top:5cqw;}
+  .qcard{background:rgba(10,16,24,.88);border:1px solid var(--line2);border-radius:4.4cqw;padding:4.4cqw 4.6cqw;width:78%;box-shadow:0 8cqw 22cqw -8cqw rgba(0,0,0,.7);}
+  .qtop{display:flex;align-items:center;gap:2.6cqw;}
+  .qcoin{width:8.4cqw;height:8.4cqw;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:4.6cqw;color:#0a0e14;background:#f7931a;}
+  .qname{font-weight:800;font-size:3.9cqw;color:#fff;line-height:1;}
+  .qsub{font-family:var(--mono);font-size:2.5cqw;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:.6cqw;}
+  .qlive{margin-left:auto;font-family:var(--mono);font-size:2.5cqw;color:var(--green);display:flex;align-items:center;gap:1.3cqw;letter-spacing:.1em;text-transform:uppercase;}
+  .qlive i{width:1.7cqw;height:1.7cqw;border-radius:50%;background:var(--green);box-shadow:0 0 0 1cqw rgba(0,224,138,.25);}
+  .qprice{font-size:8cqw;font-weight:800;letter-spacing:-.02em;color:#fff;margin:2.4cqw 0 .8cqw;font-variant-numeric:tabular-nums;}
+  .qchg{font-family:var(--mono);font-size:2.9cqw;color:var(--green);letter-spacing:.02em;}
+  .qchart{height:17cqw;margin:2.4cqw 0 2.4cqw;}
+  .qchart canvas{width:100%;height:100%;display:block;}
+  .qpills{display:flex;gap:1.4cqw;}
+  .pill{font-family:var(--mono);font-size:2.3cqw;color:var(--faint);padding:.9cqw 2.4cqw;border-radius:1.5cqw;letter-spacing:.06em;}
+  .pill.on{background:rgba(0,224,138,.16);color:var(--green);}
+  .inset{position:absolute;right:-1cqw;top:44%;width:40cqw;height:40cqw;border-radius:50%;overflow:hidden;
+    border:1.2cqw solid rgba(255,255,255,.92);box-shadow:0 6cqw 18cqw -4cqw rgba(0,0,0,.8);}
+  .inset img{width:100%;height:100%;object-fit:cover;object-position:center 42%;display:block;}
+
+  /* orca x-post */
+  .orcabg{background:radial-gradient(90cqw 70cqw at 50% -18%,rgba(59,201,238,.13) 0%,transparent 62%),#070b12;}
+  .xcard{background:#0d141f;border:1px solid var(--line2);border-radius:4.2cqw;padding:4.6cqw 4.8cqw;box-shadow:0 10cqw 26cqw -10cqw rgba(0,0,0,.85);}
+  .xhead{display:flex;align-items:center;gap:2.8cqw;}
+  .xav{width:9.6cqw;height:9.6cqw;border-radius:50%;flex:none;background:radial-gradient(120% 120% at 30% 25%,#123048 0%,#0a1622 70%);border:1px solid rgba(59,201,238,.35);display:flex;align-items:center;justify-content:center;}
+  .xav svg{width:5.8cqw;height:5.8cqw;display:block;} .xav{overflow:hidden;} .xav img{width:100%;height:100%;object-fit:cover;display:block;}
+  .xname{display:flex;align-items:center;gap:1.6cqw;font-weight:800;font-size:3.9cqw;color:#fff;line-height:1.15;}
+  .xname svg{width:3.7cqw;height:3.7cqw;flex:none;}
+  .xsub{font-family:var(--mono);font-size:2.6cqw;color:var(--faint);letter-spacing:.05em;margin-top:.6cqw;}
+  .xdiv{height:1px;background:var(--line);margin:3.4cqw 0;}
+  .xsec{margin:0 0 3.6cqw;} .xsec:last-of-type{margin-bottom:0;}
+  .xsec .t{font-family:var(--mono);font-size:2.6cqw;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);margin:0 0 1.3cqw;}
+  .xsec .b{font-size:3.5cqw;line-height:1.45;color:#d9e3ee;margin:0;text-wrap:pretty;}
+  .tc{color:var(--cyan);font-weight:600;} .tg{color:var(--green);font-weight:600;} .tr{color:var(--red);font-weight:600;} .tm{color:var(--muted);}
+  .xtime{font-family:var(--mono);font-size:2.5cqw;color:var(--faint);letter-spacing:.06em;margin-top:3.2cqw;white-space:nowrap;}
+  .disc{font-family:var(--mono);font-size:2.5cqw;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;}
+
+  /* cta */
+  .cta{background:#060a10;}
+  .rings::before{content:"";position:absolute;inset:-30%;z-index:0;opacity:.5;
+    background:repeating-radial-gradient(circle at 50% 46%,rgba(59,201,238,.11) 0 1px,transparent 1px 11cqw);
+    -webkit-mask-image:radial-gradient(70cqw 70cqw at 50% 46%,#000 0%,transparent 72%);mask-image:radial-gradient(70cqw 70cqw at 50% 46%,#000 0%,transparent 72%);}
+  .ctamid{margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;gap:5cqw;position:relative;}
+  .ctamid img{width:38cqw;height:auto;filter:drop-shadow(0 2cqw 8cqw rgba(59,201,238,.25));}
+  .ctaline{font-size:5.2cqw;font-weight:700;letter-spacing:-.01em;color:#eef4fa;line-height:1.32;max-width:76cqw;text-wrap:balance;margin:0;}
+  .ctaline b{color:var(--cyan);font-weight:800;}
+  .ctaurl{display:flex;flex-direction:column;gap:1.6cqw;align-items:center;}
+  .ctaurl .lm{font-family:var(--mono);font-size:2.8cqw;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);}
+  .ctaurl .u{font-family:var(--mono);font-size:4.6cqw;font-weight:700;color:var(--cyan);letter-spacing:.04em;}
+
+  .caption{margin-top:1.2rem;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;}
+  .caption .cap-h{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .6rem;}
+  .caption pre{margin:0;white-space:pre-wrap;font-family:var(--sans);font-size:.9rem;line-height:1.5;color:#cdd8e3;}
+  .tag{color:var(--cyan);}
+  footer{margin-top:2rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--faint);font-family:var(--mono);font-size:.74rem;}
+  @media (max-width:520px){ .slide{max-width:100%;} }
+</style>
+
+<div class="app"><div class="wrap">
+  <div class="brandbar"><img src="__LOGO__" alt="Sonar"><span class="sp"></span><span>Content pack · 22 Jul 2026</span></div>
+  <h1 class="title">Tuesday pack — programming grid day 1</h1>
+  <p class="sub">Slots: A Morning Card (~11:00) · B The Story (~13:30) · C The Tape (~17:00). The Reel slot (20:00) ships separately as today's typing-chat Orca demo. No Nightcap today. Numbers verified 22 Jul ~15:05 UTC.</p>
+
+  <!-- ═══════ A · Morning Card ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">A</span><span class="ctitle">Morning Card <span>· BTC + ETF streak · 1 slide · ~11:00</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Markets</span></div>
+          <div class="qzone">
+            <div class="qcard" style="width:100%">
+              <div class="qtop"><span class="qcoin">₿</span><div><div class="qname">Bitcoin</div><div class="qsub">BTC · USD</div></div><span class="qlive"><i></i>Live</span></div>
+              <div class="qprice">$65,882</div>
+              <div class="qchg">▲ +1.4% past 7 days</div>
+              <div class="qchart"><canvas id="qbtc"></canvas></div>
+              <div class="qpills"><span class="pill">1D</span><span class="pill on">1W</span><span class="pill">1M</span><span class="pill">3M</span><span class="pill">1Y</span></div>
+            </div>
+          </div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">MARKETS</span><span class="r"></span></div>
+          <h2 class="big sm" style="font-size:9.8cqw"><em class="hl-c">BITCOIN ETFS</em>: TWO STRAIGHT WEEKS OF <em class="hl-g">INFLOWS</em>.</h2>
+          <p style="font-family:var(--mono);font-size:2.8cqw;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;text-align:center;margin:2cqw 0 0;">First time since May</p>
+          <div class="foot"><span>Source: Binance · Farside · 22 Jul 2026</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>Bitcoin ETF flows just did something they haven't done since May: two consecutive weeks of net inflows.
+
+BTC sits at $65.9K, +1.4% on the week, after tagging $66.9K — while the market waits on the CLARITY vote drama.
+
+Comment "WHALE" and Orca will DM you what the whales did about it.
+
+Not financial advice.
+
+<span class="tag">#Bitcoin #BTC #ETF #CryptoNews #Markets #Sonar</span></pre></div>
+  </section>
+
+  <!-- ═══════ B · The Story ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">B</span><span class="ctitle">The Story <span>· CLARITY twist · 1 slide · ~13:30</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Regulation</span></div>
+          <span class="spacer"></span>
+          <div style="text-align:center;">
+            <div style="font-family:var(--mono);font-size:2.8cqw;letter-spacing:.2em;color:var(--faint);text-transform:uppercase;margin-bottom:2cqw;">CLARITY ACT · 2026 PASSAGE ODDS · POLYMARKET</div>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:4cqw;">
+              <span style="font-family:var(--mono);font-size:7cqw;color:var(--faint);text-decoration:line-through;">48%</span>
+              <span style="font-family:var(--mono);font-size:7cqw;color:var(--red);">32%</span>
+              <span style="font-size:20cqw;font-weight:800;color:var(--green);letter-spacing:-.02em;">43%<span style="font-size:6cqw;vertical-align:super;">▲</span></span>
+            </div>
+            <div style="font-family:var(--mono);font-size:2.9cqw;color:var(--muted);margin-top:2cqw;">a month ago · last week · TODAY, after the ethics-deal report</div>
+          </div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">NEWS</span><span class="r"></span></div>
+          <h2 class="big sm">THE BILL EVERYONE GAVE UP ON JUST <em class="hl-g">MOVED</em>.</h2>
+          <div class="foot"><span>Source: Polymarket · The Block · 22 Jul 2026</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>Yesterday we posted the CLARITY Act obituary clock. Today it moved: Polymarket odds jumped to 43% overnight on (unverified) reports that Trump agreed to the ethics provision blocking Democratic votes.
+
+Crypto rallied on the report. And in Russia, the Duma passed its own crypto framework the same day. Regulation week is live.
+
+Comment "WHALE" and Orca will DM you the full timeline.
+
+Not financial advice.
+
+<span class="tag">#ClarityAct #CryptoNews #Regulation #Bitcoin #Polymarket #Sonar</span></pre></div>
+  </section>
+
+  <!-- ═══════ C · The Tape ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">C</span><span class="ctitle">The Tape <span>· 24h dashboard · 1 slide · ~17:00</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>On-chain</span></div>
+          <p style="font-family:var(--mono);font-size:3cqw;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);text-align:center;margin:7cqw 0 5cqw;">24 hours on Sonar</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3.4cqw;">
+            <div style="background:var(--card);border:1px solid var(--line2);border-radius:3.4cqw;padding:4.6cqw;"><div style="font-size:9.4cqw;font-weight:800;color:#fff;">$389M</div><div style="font-family:var(--mono);font-size:2.6cqw;color:var(--muted);letter-spacing:.08em;margin-top:1.2cqw;">VOLUME · 1,000 LARGEST TRANSFERS</div></div>
+            <div style="background:var(--card);border:1px solid var(--line2);border-radius:3.4cqw;padding:4.6cqw;"><div style="font-size:9.4cqw;font-weight:800;color:#fff;">804</div><div style="font-family:var(--mono);font-size:2.6cqw;color:var(--muted);letter-spacing:.08em;margin-top:1.2cqw;">UNIQUE WHALES ON THE TAPE</div></div>
+            <div style="background:var(--card);border:1px solid var(--line2);border-radius:3.4cqw;padding:4.6cqw;"><div style="font-size:8.4cqw;font-weight:800;color:var(--red);white-space:nowrap;">−$165M</div><div style="font-family:var(--mono);font-size:2.6cqw;color:var(--muted);letter-spacing:.08em;margin-top:1.2cqw;">NET SOL OUTFLOW</div></div>
+            <div style="background:var(--card);border:1px solid var(--line2);border-radius:3.4cqw;padding:4.6cqw;"><div style="font-size:9.4cqw;font-weight:800;color:var(--green);">+$7M</div><div style="font-family:var(--mono);font-size:2.6cqw;color:var(--muted);letter-spacing:.08em;margin-top:1.2cqw;">NET BTC INFLOW · LINK +$8M</div></div>
+          </div>
+          <span class="spacer"></span>
+          <h2 class="big sm" style="font-size:8cqw">THE HEADLINES SAY <em class="hl-g">RALLY</em>. THE TAPE SAYS <em class="hl-c">ROTATION</em>.</h2>
+          <div class="foot"><span>Sonar on-chain · 22 Jul 2026 15:04 UTC</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>Everyone's celebrating the CLARITY bounce. The whales? Net sellers: −$169M across Sonar's 1,000 largest tracked transfers in 24h.
+
+But look closer: $165M of SOL hit the exit while BTC, LINK, ENA and AAVE all stayed net green. The exit is a Solana story, not a market story — that's rotation, not fear.
+
+Comment "WHALE" and Orca will DM you the full flow table.
+
+Not financial advice.
+
+<span class="tag">#WhaleAlert #OnChain #Solana #Bitcoin #Chainlink #SmartMoney #Sonar</span></pre></div>
+  </section>
+
+  <footer>Sonar Tracker · 22 Jul 2026 · programming grid day 1 · numbers verified 15:05 UTC (Binance · Polymarket via CoinDesk · Farside · Sonar on-chain, $150M sanity cap)</footer>
+</div></div>
+
+<script>
+__DATA__
+function fit(cv){const box=cv.parentElement.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  if(box.width<4||box.height<4)return null;cv.width=Math.round(box.width*dpr);cv.height=Math.round(box.height*dpr);
+  cv.style.width=box.width+'px';cv.style.height=box.height+'px';return dpr;}
+function mini(id,data){
+  const cv=document.getElementById(id);if(!cv)return;const dpr=fit(cv);if(!dpr)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,p=3*dpr;
+  const ys=data.map(d=>d[3]);let lo=Math.min(...ys),hi=Math.max(...ys);const r=(hi-lo)||1;lo-=r*0.12;hi+=r*0.12;
+  const X=i=>p+i/(data.length-1)*(W-2*p),Y=v=>p+(1-(v-lo)/(hi-lo))*(H-2*p);
+  ctx.clearRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(0,224,138,0.32)');g.addColorStop(1,'rgba(0,224,138,0)');
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.lineTo(X(ys.length-1),H);ctx.lineTo(X(0),H);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle='#00e08a';ctx.lineWidth=2.4*dpr;ctx.lineJoin='round';ctx.stroke();
+  const lx=X(ys.length-1),ly=Y(ys[ys.length-1]);ctx.beginPath();ctx.arc(lx,ly,3.4*dpr,0,7);ctx.fillStyle='#00e08a';ctx.fill();
+  ctx.strokeStyle='#0a1018';ctx.lineWidth=2*dpr;ctx.stroke();
+}
+function drawAll(){ mini('qbtc',BTC.slice(-28)); }
+requestAnimationFrame(()=>requestAnimationFrame(drawAll));
+window.addEventListener('load',drawAll);window.addEventListener('resize',drawAll);
+</script>
