@@ -59,13 +59,21 @@ narration fits. If fal or OpenAI credit is exhausted, fall back to the $0
 formats and flag the refill in the notification (fal ~$20/3 weeks,
 OpenAI ~$10/6 weeks).
 - **Sound on reels**: bake in an OpenAI TTS voiceover when the story suits
-  narration (model `gpt-4o-mini-tts`; default voice `ash` with the confident-storyteller
-  instructions — onyx was rejected as too flat; candidates ash/verse/ballad in
-  Reels/2026-07-21/voice-samples/, swap the default when Eduardo picks). RULES: script must finish ≥1s
-  before the video ends (TTS a draft, CHECK duration with ffmpeg, tighten and
-  regenerate if long); ship BOTH versions (silent + `-VO`) so Eduardo can
-  choose; trending in-app audio can still be layered over either at post
-  time. Never synthesize music; never rip copyrighted tracks.
+  narration (model `gpt-4o-mini-tts`, voice `ash`). **Narration style (Eduardo,
+  22 Jul — REQUIRED for narrated reels): character-POV, NOT a newsreader.**
+  The 22 Jul confident-storyteller/anchor read was rejected as "meh"; onyx
+  earlier as too flat. Write the script in FIRST PERSON as a friendly cartoon
+  character narrating its own day while the news happens to it — usually Orca
+  ("So there I was, watching the tape, when the bill everyone buried suddenly
+  moved…"), or the asset itself as the character (BTC talking: "Everyone left
+  me for dead in May. Then two weeks of inflows and suddenly I'm at $66K…").
+  Match the TTS `instructions` to it: warm, playful, animated cartoon-character
+  energy, expressive ups and downs, light humor — not a market anchor. Scenes
+  should show what the character narrates (its POV of the story). RULES: script
+  must finish ≥1s before the video ends (TTS a draft, CHECK duration with
+  ffmpeg, tighten and regenerate if long); ship BOTH versions (silent + `-VO`)
+  so Eduardo can choose; trending in-app audio can still be layered over either
+  at post time. Never synthesize music; never rip copyrighted tracks.
 - **Every day ends with the email drop — exactly ONE email** (Eduardo's rule:
   never split the day's content across multiple emails; the single drop
   contains ALL slots' files + captions): run
