@@ -50,7 +50,7 @@
     },
     {
       "path": "/api/cron/poll-bsc-transfers",
-      "schedule": "25 * * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/evaluate-signals",
