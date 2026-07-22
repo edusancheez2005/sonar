@@ -29,6 +29,7 @@ function cacheKey(parts: string[]) {
 const PLATFORM: Partial<Record<BacktestChain, string>> = {
   ethereum: 'ethereum',
   polygon: 'polygon-pos',
+  bsc: 'binance-smart-chain',
   solana: 'solana',
 }
 
@@ -37,6 +38,7 @@ const PLATFORM: Partial<Record<BacktestChain, string>> = {
 export const NATIVE_COINGECKO: Record<BacktestChain, string> = {
   ethereum: 'ethereum',
   polygon: 'matic-network',
+  bsc: 'binancecoin',
   solana: 'solana',
 }
 

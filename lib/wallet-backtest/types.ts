@@ -4,7 +4,7 @@
 // economic event we choose to replay. Anything we can't price (or
 // classify) becomes a NOISE / TRANSFER row that the engine ignores.
 
-export type BacktestChain = 'ethereum' | 'polygon' | 'solana'
+export type BacktestChain = 'ethereum' | 'polygon' | 'bsc' | 'solana'
 
 export type TradeAction =
   | 'BUY'

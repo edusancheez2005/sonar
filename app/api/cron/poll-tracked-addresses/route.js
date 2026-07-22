@@ -32,6 +32,7 @@ export const maxDuration = 300 // 5 min — Vercel pro plan
 const ALCHEMY_CHAIN_MAP = {
   ethereum: 'ethereum',
   polygon: 'polygon',
+  bsc: 'bsc', // Alchemy bnb-mainnet (2026-07-22: Binance hot wallets live here)
   // arbitrum_one / base / optimism not yet wired in transfers.ts; can
   // be added by extending ALCHEMY_NETWORKS there.
 }
@@ -56,30 +57,34 @@ const PRIORITY_ENTITY_TYPES = [
 ]
 
 /**
- * Fetch the priority address slice. Companies / protocols / governments
- * tend to move size and matter most for the feed; persons (CT
- * personalities) trade rarely and add noise.
+ * Fetch ALL priority addresses (companies / protocols / governments move
+ * size and matter most for the feed; persons trade rarely and add noise).
+ * The per-run cap is applied AFTER sorting by last_polled — the old
+ * `.limit(200)` here meant the alphabetical top-200 were the only rows
+ * ever polled and the rest of the universe was permanently invisible
+ * (~700 eligible rows before bsc, ~920 after).
  */
-async function fetchPriorityAddresses(limit = MAX_ADDRESSES) {
+async function fetchPriorityAddresses() {
   const { data, error } = await supabaseAdmin
     .from('tracked_address_universe')
     .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label')
     .in('chain', SUPPORTED_CHAINS)
     .in('arkham_entity_type', PRIORITY_ENTITY_TYPES)
     .order('arkham_entity_name', { ascending: true })
-    .limit(limit)
+    .limit(2000)
   if (error) throw new Error(`load addresses: ${error.message}`)
   return data || []
 }
 
-async function getLastBlockMap(rows) {
+// Whole-table read: filtering with .in(900+ addresses) would blow the URL
+// length, and the table only ever holds one row per polled address. A row
+// missing here just means "never polled" → sorts to the front of the sweep.
+async function getLastBlockMap() {
   const out = new Map()
-  if (rows.length === 0) return out
-  const addrs = rows.map((r) => r.address)
   const { data } = await supabaseAdmin
     .from('tracked_address_poll_state')
     .select('chain, address, last_block, last_polled')
-    .in('address', addrs)
+    .limit(5000)
   for (const row of data || []) {
     out.set(`${row.chain}:${row.address}`, {
       last_block: row.last_block || 0,
@@ -108,6 +113,7 @@ async function fetchTransfersForRow(row, lastBlock) {
 const CG_PLATFORM = {
   ethereum: 'ethereum',
   polygon: 'polygon-pos',
+  bsc: 'binance-smart-chain',
   solana: 'solana',
 }
 
@@ -239,22 +245,22 @@ export async function GET(request) {
   const limitParam = Math.min(MAX_ADDRESSES, Math.max(1, parseInt(url.searchParams.get('limit') || '', 10) || MAX_ADDRESSES))
   let addresses = []
   try {
-    addresses = await fetchPriorityAddresses(limitParam)
+    addresses = await fetchPriorityAddresses()
   } catch (err) {
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 })
   }
 
-  const lastBlocks = await getLastBlockMap(addresses)
+  const lastBlocks = await getLastBlockMap()
 
-  // Least-recently-polled first. The address list is otherwise ordered
-  // alphabetically, so any deadline-skipped tail would be the SAME tail
-  // every hour and those entities would never update. Sorting by
-  // last_polled makes the sweep a fair round-robin across runs.
+  // Least-recently-polled first over the WHOLE priority universe, then cap
+  // to this run's slice. Never-polled rows (no state) sort to the front, so
+  // newly added chains/entities backfill before steady-state rotation.
   addresses.sort((a, b) => {
     const ap = lastBlocks.get(`${a.chain}:${a.address}`)?.last_polled || ''
     const bp = lastBlocks.get(`${b.chain}:${b.address}`)?.last_polled || ''
     return ap < bp ? -1 : ap > bp ? 1 : 0
   })
+  if (addresses.length > limitParam) addresses = addresses.slice(0, limitParam)
 
   let totalRows = 0
   let totalEnriched = 0

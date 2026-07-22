@@ -25,6 +25,7 @@ const SOL_DECIMALS = 9
 const NATIVE_WRAP_SYMBOLS: Record<BacktestChain, Set<string>> = {
   ethereum: new Set(['WETH']),
   polygon: new Set(['WMATIC']),
+  bsc: new Set(['WBNB']),
   solana: new Set(['WSOL']),
 }
 
@@ -34,6 +35,7 @@ const NATIVE_WRAP_SYMBOLS: Record<BacktestChain, Set<string>> = {
 const AVG_BLOCK_SECS: Record<BacktestChain, number> = {
   ethereum: 12,
   polygon: 2,
+  bsc: 0.75, // post-Maxwell (2025-06); older ranges over-fetch blocks, which the page cap absorbs
   solana: 0, // unused; Solana fetcher uses timestamp directly
 }
 
@@ -43,6 +45,7 @@ const AVG_BLOCK_SECS: Record<BacktestChain, number> = {
 const CHAIN_DB_ALIASES: Record<BacktestChain, Set<string>> = {
   ethereum: new Set(['ethereum', 'eth', 'mainnet', 'ethereum-mainnet']),
   polygon: new Set(['polygon', 'polygon-pos', 'matic', 'pol']),
+  bsc: new Set(['bsc', 'bnb', 'binance-smart-chain', 'binance smart chain (bep20)']),
   solana: new Set(['solana', 'sol']),
 }
 

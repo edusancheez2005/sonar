@@ -11,6 +11,7 @@ import type { BacktestChain } from '../wallet-backtest/types'
 const ALCHEMY_NETWORKS: Partial<Record<BacktestChain, string>> = {
   ethereum: 'eth-mainnet',
   polygon: 'polygon-mainnet',
+  bsc: 'bnb-mainnet',
 }
 
 // Stable / quote tokens — used by the engine to decide BUY vs SELL on
@@ -29,6 +30,13 @@ export const QUOTE_CONTRACTS: Record<BacktestChain, Set<string>> = {
     '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', // USDT
     '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063', // DAI
     '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619', // WETH
+  ]),
+  bsc: new Set([
+    '0x55d398326f99059ff775485246999027b3197955', // USDT (BSC-peg)
+    '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d', // USDC (BSC-peg)
+    '0xe9e7cea3dedca5984780bafc599bd69add087d56', // BUSD
+    '0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3', // DAI (BSC-peg)
+    '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c', // WBNB (treat as native)
   ]),
   solana: new Set(),
 }
