@@ -192,7 +192,10 @@ export async function getEvmHoldings(chain: Chain, address: string): Promise<Hol
     const name = t.meta.name || t.meta.symbol || 'Unknown'
     if (isSpamToken(symbol, name)) continue
     const priced = prices[t.contractAddress.toLowerCase()] ?? null
-    let price = priced?.price ?? null
+    // Explicit annotation: prices[...] indexes as non-nullable (no
+    // noUncheckedIndexedAccess), so inference collapses this to `number`
+    // and the mcap guard's `price = null` below fails to compile.
+    let price: number | null = priced?.price ?? null
     // Fallback: known stablecoins are pegged to $1. CoinGecko occasionally
     // misses the per-network contract listing (e.g. native USDC on Polygon),
     // so without this the panel showed a real $53 USDC balance as $0 and

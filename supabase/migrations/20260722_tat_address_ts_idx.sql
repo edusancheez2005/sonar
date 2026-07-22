@@ -7,10 +7,13 @@
 -- the ~8s statement timeout (observed 2026-07-22 during the BSC backfill).
 -- A composite btree makes that query a bounded seek in every case.
 --
--- Run manually in the Supabase SQL editor. CONCURRENTLY cannot run inside a
--- transaction — execute each statement on its own.
+-- Run in the Supabase SQL editor. Plain CREATE INDEX (not CONCURRENTLY): the
+-- editor wraps statements in a transaction, which CONCURRENTLY refuses
+-- (error 25001, hit 2026-07-22). The build takes a write lock for its
+-- duration (~tens of seconds at 11M rows) — harmless here, the only writer
+-- is the hourly cron at :10 and a blocked run just retries next hour.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS tat_address_ts_idx
+CREATE INDEX IF NOT EXISTS tat_address_ts_idx
   ON tracked_address_transfers (address, timestamp DESC);
 
 -- Refresh planner stats after the July 22 bulk backfill (~122k rows/run
