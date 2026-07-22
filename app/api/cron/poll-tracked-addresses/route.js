@@ -7,9 +7,9 @@
  * on entity pages and the wallet tracker.
  *
  * Tier 2 of the post-Arkham strategy: zero Arkham calls. Alchemy
- * powers EVM chains; Helius powers Solana (native SOL + SPL transfers,
- * decoded server-side via the enhanced /v0/addresses endpoint).
- * BTC / Tron / others can be added later.
+ * powers eth/polygon; Etherscan V2 powers BSC (needs ETHERSCAN_API_KEY);
+ * Helius powers Solana (native SOL + SPL transfers, decoded server-side
+ * via the enhanced /v0/addresses endpoint). BTC / Tron / others later.
  *
  * Scope: priority addresses first (companies + protocols + governments),
  * capped at MAX_ADDRESSES per run. Each address gets one Alchemy
@@ -21,6 +21,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { getEvmTransfers } from '@/lib/wallet/transfers'
+import { getEtherscanTransfers, ETHERSCAN_CHAIN_IDS } from '@/lib/wallet/etherscan-transfers'
 import { getSolanaTrackedTransfers } from '@/lib/wallet/sol-tracked-transfers'
 import { getTokenInfoByContract } from '@/lib/coingecko/client'
 
@@ -32,9 +33,10 @@ export const maxDuration = 300 // 5 min — Vercel pro plan
 const ALCHEMY_CHAIN_MAP = {
   ethereum: 'ethereum',
   polygon: 'polygon',
-  bsc: 'bsc', // Alchemy bnb-mainnet (2026-07-22: Binance hot wallets live here)
   // arbitrum_one / base / optimism not yet wired in transfers.ts; can
   // be added by extending ALCHEMY_NETWORKS there.
+  // bsc is NOT here: Eduardo's Alchemy plan has no bnb-mainnet (every call
+  // 403'd on 2026-07-22) — BSC routes through Etherscan V2 instead.
 }
 
 // Solana is polled via Helius. Cap rows we ask for per address per
@@ -42,7 +44,11 @@ const ALCHEMY_CHAIN_MAP = {
 const SOLANA_CHAINS = new Set(['solana'])
 
 // Combined chain set the cron will load from tracked_address_universe.
-const SUPPORTED_CHAINS = [...Object.keys(ALCHEMY_CHAIN_MAP), ...SOLANA_CHAINS]
+const SUPPORTED_CHAINS = [
+  ...Object.keys(ALCHEMY_CHAIN_MAP),
+  ...Object.keys(ETHERSCAN_CHAIN_IDS),
+  ...SOLANA_CHAINS,
+]
 
 const MAX_ADDRESSES = 200          // top-N per run; bumped later when stable
 const FROM_BLOCK_LOOKBACK = 50_000 // ~7 days on Ethereum at 12 s blocks
@@ -97,6 +103,14 @@ async function getLastBlockMap() {
 async function fetchTransfersForRow(row, lastBlock) {
   if (SOLANA_CHAINS.has(row.chain)) {
     return { transfers: await getSolanaTrackedTransfers(row.address), source: 'helius' }
+  }
+  const etherscanChainId = ETHERSCAN_CHAIN_IDS[row.chain]
+  if (etherscanChainId) {
+    const fromBlock = Math.max(0, (lastBlock || 0) - 1000)
+    return {
+      transfers: await getEtherscanTransfers(row.address, etherscanChainId, fromBlock),
+      source: 'etherscan',
+    }
   }
   const backtestChain = ALCHEMY_CHAIN_MAP[row.chain]
   if (!backtestChain) {
