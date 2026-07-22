@@ -44,11 +44,11 @@ const ALCHEMY_CHAIN_MAP = {
 const SOLANA_CHAINS = new Set(['solana'])
 
 // Combined chain set the cron will load from tracked_address_universe.
-const SUPPORTED_CHAINS = [
-  ...Object.keys(ALCHEMY_CHAIN_MAP),
-  ...Object.keys(ETHERSCAN_CHAIN_IDS),
-  ...SOLANA_CHAINS,
-]
+// bsc is NOT included: Etherscan's free tier turned out to reject chainid
+// 56 entirely ("upgrade your plan"), so BSC is swept in bulk by the
+// dedicated /api/cron/poll-bsc-transfers getLogs cron instead. The
+// etherscan branch in fetchTransfersForRow stays for a future paid key.
+const SUPPORTED_CHAINS = [...Object.keys(ALCHEMY_CHAIN_MAP), ...SOLANA_CHAINS]
 
 const MAX_ADDRESSES = 200          // top-N per run; bumped later when stable
 const FROM_BLOCK_LOOKBACK = 50_000 // ~7 days on Ethereum at 12 s blocks
