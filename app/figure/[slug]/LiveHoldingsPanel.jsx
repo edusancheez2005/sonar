@@ -18,7 +18,7 @@ function fmtUsd(n) {
   return `$${n.toFixed(2)}`
 }
 
-export default function LiveHoldingsPanel({ addresses, displayName }) {
+export default function LiveHoldingsPanel({ addresses, displayName, entityBalance }) {
   const targets = useMemo(
     () =>
       (Array.isArray(addresses) ? addresses : [])
@@ -65,7 +65,19 @@ export default function LiveHoldingsPanel({ addresses, displayName }) {
     return { total, tokens, checked: state.rows.length }
   }, [state.rows])
 
-  if (state.status === 'empty') return null
+  // Prefer the Arkham entity-level total when it exceeds what the sampled
+  // addresses hold: Bhutan's treasury BTC never shows up in the handful of
+  // operational addresses we track, but the entity snapshot has it.
+  const entityTotal = Number(entityBalance?.total_usd) || 0
+  const entityAssets = Array.isArray(entityBalance?.assets) ? entityBalance.assets : []
+  const useEntity = entityTotal > total && entityAssets.length > 0
+
+  if (state.status === 'empty' && !useEntity) return null
+
+  const headline = useEntity ? entityTotal : total
+  const chips = useEntity
+    ? entityAssets.filter((a) => a.usd > 0).slice(0, 10).map((a) => ({ symbol: a.symbol, usd: a.usd }))
+    : tokens
 
   return (
     <div
@@ -80,24 +92,26 @@ export default function LiveHoldingsPanel({ addresses, displayName }) {
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-            Live on-chain balance
+            {useEntity ? 'Total entity holdings' : 'Live on-chain balance'}
           </div>
           <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-            {state.status === 'loading' ? '…' : fmtUsd(total)}
+            {state.status === 'loading' && !useEntity ? '…' : fmtUsd(headline)}
           </div>
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'right' }}>
-          {state.status === 'loading'
-            ? `Checking ${targets.length} address${targets.length === 1 ? '' : 'es'} on-chain…`
-            : state.status === 'error'
-              ? 'Balance providers unavailable right now.'
-              : `${checked} of ${targets.length} address${targets.length === 1 ? '' : 'es'} checked · refreshed every 5 min`}
+          {useEntity
+            ? 'All attributed wallets (Arkham) · repriced live'
+            : state.status === 'loading'
+              ? `Checking ${targets.length} address${targets.length === 1 ? '' : 'es'} on-chain…`
+              : state.status === 'error'
+                ? 'Balance providers unavailable right now.'
+                : `${checked} of ${targets.length} address${targets.length === 1 ? '' : 'es'} checked · refreshed every 5 min`}
         </div>
       </div>
 
-      {tokens.length > 0 ? (
+      {chips.length > 0 ? (
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.9rem' }}>
-          {tokens.map((t) => (
+          {chips.map((t) => (
             <span
               key={t.symbol}
               style={{
@@ -121,7 +135,9 @@ export default function LiveHoldingsPanel({ addresses, displayName }) {
       ) : null}
 
       <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.75 }}>
-        Current balances at {displayName ? `${displayName}'s` : 'the'} verified addresses, priced live.
+        {useEntity
+          ? `Total holdings across every wallet Arkham attributes to ${displayName || 'this entity'}, repriced with live market data.`
+          : `Current balances at ${displayName ? `${displayName}'s` : 'the'} verified addresses, priced live.`}{' '}
         Whale-feed stats above only count tracked whale-sized trades — a quiet tape doesn&apos;t mean empty wallets.
       </div>
     </div>

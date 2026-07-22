@@ -675,7 +675,7 @@ export default async function FigureDetailPage({ params }) {
   // nothing here waits longer than ~5 s even when providers stall.
   // Stats, first-seen/last-active, and top tokens all derive from the
   // merged feed below so they agree with what's rendered on the page.
-  const [sonarRecent, chainFetch, arkhamLabels] = await Promise.all([
+  const [sonarRecent, chainFetch, arkhamLabels, entityBalance] = await Promise.all([
     hasAddresses ? fetchRecentTxs(addrs) : Promise.resolve([]),
     hasAddresses
       ? fetchChainTxsForAddresses(addrs, { limit: 20, budgetMs: 5000 })
@@ -685,6 +685,16 @@ export default async function FigureDetailPage({ params }) {
           m.fetchArkhamLabels(addrs.map((a) => a.address))
         ).catch(() => new Map())
       : Promise.resolve(new Map()),
+    // Arkham entity-level balance snapshot (app_cache, refreshed by the
+    // backfill script) — covers the treasury wallets that never appear in
+    // the figure's harvested address list.
+    supabaseAdmin
+      .from('app_cache')
+      .select('value')
+      .eq('key', 'figure_entity_balances')
+      .maybeSingle()
+      .then(({ data }) => data?.value?.[slug] ?? null)
+      .catch(() => null),
   ])
 
   // Decorate verified addresses with Arkham label (e.g. "Cold Wallet 2")
@@ -920,9 +930,14 @@ export default async function FigureDetailPage({ params }) {
 
         {/* LIVE BALANCES — real on-chain holdings via Alchemy/Jupiter/BTC,
             independent of the whale tape (which is empty for most famous
-            wallets: governments, treasuries, celebrities). */}
+            wallets: governments, treasuries, celebrities). Entity-level
+            totals come from the Arkham balances snapshot in app_cache. */}
         {hasAddresses ? (
-          <LiveHoldingsPanel addresses={addrs} displayName={figure.display_name} />
+          <LiveHoldingsPanel
+            addresses={addrs}
+            displayName={figure.display_name}
+            entityBalance={entityBalance}
+          />
         ) : null}
 
         {/* NO-ADDRESSES CALLOUT */}
