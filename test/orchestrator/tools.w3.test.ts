@@ -289,31 +289,17 @@ describe('executeTool: getWalletActivity — tracked_address_transfers fallback'
     expect((r.data as any).transfer_feed).toBeNull()
   })
 
-  it('probes the latest transfers ever when the window is empty too', async () => {
-    // Param-aware stub: the windowed query (gte called) returns nothing; the
-    // unwindowed probe returns the last recorded transfers.
-    function stubWindowEmpty() {
-      function builder(table: string) {
-        let sawGte = false
-        const chain: any = {
-          select() { return chain },
-          eq() { return chain },
-          ilike() { return chain },
-          gte() { sawGte = true; return chain },
-          order() { return chain },
-          limit() { return chain },
-          then(resolve: any) {
-            if (table !== 'tracked_address_transfers') return resolve({ data: [] })
-            resolve({ data: sawGte ? [] : TRANSFERS })
-          },
-        }
-        return chain
-      }
-      return { from: builder }
-    }
+  it('reports the last recorded movement when every transfer predates the window', async () => {
+    const STALE = TRANSFERS.map((t, i) => ({
+      ...t,
+      timestamp: i === 0 ? '2026-04-02T09:00:00Z' : '2026-04-01T09:00:00Z',
+    }))
     const r = await executeTool(
       { tool: 'getWalletActivity', args: { address: BINANCE_DEPOSIT, chain: 'eth' } },
-      stubWindowEmpty(),
+      stubSupabase({
+        all_whale_transactions: { data: [] },
+        tracked_address_transfers: { data: STALE },
+      }),
       now
     )
     expect(r.ok).toBe(true)
@@ -321,9 +307,9 @@ describe('executeTool: getWalletActivity — tracked_address_transfers fallback'
     expect(d.transfer_feed).not.toBeNull()
     expect(d.transfer_feed.tx_count).toBe(0)
     expect(d.transfer_feed.in_usd).toBe(0)
-    // probe rows keep newest-first order
+    // out-of-window rows keep newest-first order
     expect(d.transfer_feed.recent_transfers[0].tx_hash).toBe('th1')
-    expect(d.transfer_feed.last_transfer_at).toBe('2026-06-02T11:00:00Z')
+    expect(d.transfer_feed.last_transfer_at).toBe('2026-04-02T09:00:00Z')
   })
 })
 

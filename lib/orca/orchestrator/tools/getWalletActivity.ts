@@ -42,6 +42,7 @@
  * Privacy: this is a read-only aggregate; it does NOT include the user_id
  * of any other user. user_wallets is consulted ONLY for the calling user.
  */
+import { getAddress } from 'viem'
 import type { SupabaseLike, ToolResult } from '../types'
 import { detectAddress } from '../detectAddress'
 
@@ -293,20 +294,30 @@ export async function run(
       transaction_hash: r?.transaction_hash ?? null,
     }))
 
-    // Label tables may store the address in either case — match both forms.
-    // (.in falls back to .eq when unavailable, e.g. in test stubs.)
-    // EVM addresses additionally match case-insensitively via ilike (a
-    // no-wildcard ilike is an exact case-insensitive match): the cron stores
-    // whatever casing tracked_address_universe has (usually checksummed),
-    // which need not be either form the user typed. Base58 chains stay
-    // case-sensitive — lowercasing Solana addresses corrupts them.
+    // Address tables store whatever casing their source used: user input,
+    // lowercase, or (for the cron-fed tables) Arkham's EIP-55 checksummed
+    // form. Match every realistic spelling with an EXACT .in() — never ilike:
+    // a case-insensitive match can't use the case-sensitive btree on
+    // tracked_address_transfers.address, and at 11M+ rows that's a statement
+    // timeout per lookup (observed 2026-07-22). Base58 chains stay as-typed
+    // plus lowercase — lowercasing Solana addresses corrupts them, but some
+    // ingestion paths stored them lowercased anyway.
     const isEvmAddress = /^0x[0-9a-fA-F]{40}$/.test(address)
+    const addrForms = (() => {
+      const forms = new Set([address, dbAddress])
+      if (isEvmAddress) {
+        try {
+          forms.add(getAddress(dbAddress)) // EIP-55 checksummed
+        } catch {
+          // not a valid EVM address after all — the two forms suffice
+        }
+      }
+      return Array.from(forms)
+    })()
     const addrFilter = (q: any) =>
-      isEvmAddress && typeof q.ilike === 'function'
-        ? q.ilike('address', dbAddress)
-        : dbAddress === address || typeof q.in !== 'function'
-          ? q.eq('address', address)
-          : q.in('address', [address, dbAddress])
+      addrForms.length > 1 && typeof q.in === 'function'
+        ? q.in('address', addrForms)
+        : q.eq('address', address)
 
     // Transfer-feed fallback (see the header comment): only when the whale
     // feed knows nothing about this wallet at all.
@@ -315,22 +326,23 @@ export async function run(
       txCount === 0 && rows.length === 0 && (!lifetime || lifetime.txCount === 0)
     if (whaleFeedEmpty) {
       try {
-        const TRANSFER_COLS =
-          'direction, amount_usd, token_symbol, timestamp, tx_hash, counterparty, chain'
-        const fetchTransfers = async (windowedSince: string | null, limit: number) => {
-          let q = addrFilter(
-            supabase.from('tracked_address_transfers').select(TRANSFER_COLS)
-          )
-          if (windowedSince) q = q.gte('timestamp', windowedSince)
-          const { data } = await q.order('timestamp', { ascending: false }).limit(limit)
-          return Array.isArray(data) ? (data as any[]) : []
-        }
-
-        const windowRows = await fetchTransfers(sinceIso, ROW_LIMIT)
-        // Window empty → probe the latest transfers ever recorded, so the
-        // answer can still say when the wallet last moved.
-        const latestRows =
-          windowRows.length > 0 ? windowRows : await fetchTransfers(null, TOP_TX_COUNT)
+        // ONE unwindowed query (latest transfers, newest first), windowed
+        // client-side: the second "latest ever" probe the first version ran
+        // doubled the worst-case latency for exactly the wallets that are
+        // absent from this table too.
+        const { data: tData } = await addrFilter(
+          supabase
+            .from('tracked_address_transfers')
+            .select('direction, amount_usd, token_symbol, timestamp, tx_hash, counterparty, chain')
+        )
+          .order('timestamp', { ascending: false })
+          .limit(ROW_LIMIT)
+        const latestRows = Array.isArray(tData) ? (tData as any[]) : []
+        const sinceMs = new Date(sinceIso).getTime()
+        const windowRows = latestRows.filter((t) => {
+          const ms = new Date(t?.timestamp ?? 0).getTime()
+          return Number.isFinite(ms) && ms >= sinceMs
+        })
 
         if (latestRows.length > 0) {
           let inUsd = 0
