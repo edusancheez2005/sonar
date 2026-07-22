@@ -69,7 +69,7 @@ function fromHexBalance(hex: string, decimals: number): { decimal: string; numer
   return { decimal, numeric: Number(decimal) }
 }
 
-interface CoingeckoPrice { [contract: string]: { usd?: number; usd_24h_vol?: number } }
+interface CoingeckoPrice { [contract: string]: { usd?: number; usd_24h_vol?: number; usd_market_cap?: number } }
 
 // A CoinGecko listing is not proof a token is sellable: airdrop-spam like
 // Minereum (MNEP) carries a nominal price with ~$25/day volume, which valued
@@ -80,7 +80,7 @@ const MIN_24H_VOLUME_USD = 1000
 async function priceForContracts(
   chain: Chain,
   contracts: string[]
-): Promise<Record<string, number>> {
+): Promise<Record<string, { price: number; mcap: number | null }>> {
   if (contracts.length === 0) return {}
   const platform = chain === 'ethereum' ? 'ethereum'
     : chain === 'polygon' ? 'polygon-pos'
@@ -89,11 +89,11 @@ async function priceForContracts(
     : chain === 'optimism' ? 'optimistic-ethereum'
     : null
   if (!platform) return {}
-  const out: Record<string, number> = {}
+  const out: Record<string, { price: number; mcap: number | null }> = {}
   // Chunk to keep URL under limit
   for (let i = 0; i < contracts.length; i += 50) {
     const chunk = contracts.slice(i, i + 50).map((c) => c.toLowerCase())
-    const cg = cgRequest(`/simple/token_price/${platform}?contract_addresses=${chunk.join(',')}&vs_currencies=usd&include_24hr_vol=true`)
+    const cg = cgRequest(`/simple/token_price/${platform}?contract_addresses=${chunk.join(',')}&vs_currencies=usd&include_24hr_vol=true&include_market_cap=true`)
     try {
       const res = await fetch(cg.url, { headers: cg.headers, next: { revalidate: 60 } } as any)
       if (!res.ok) continue
@@ -101,7 +101,10 @@ async function priceForContracts(
       for (const [addr, v] of Object.entries(j)) {
         if (typeof v?.usd !== 'number') continue
         if (typeof v.usd_24h_vol === 'number' && v.usd_24h_vol < MIN_24H_VOLUME_USD) continue
-        out[addr.toLowerCase()] = v.usd
+        out[addr.toLowerCase()] = {
+          price: v.usd,
+          mcap: typeof v.usd_market_cap === 'number' && v.usd_market_cap > 0 ? v.usd_market_cap : null,
+        }
       }
     } catch { /* ignore */ }
   }
@@ -188,7 +191,8 @@ export async function getEvmHoldings(chain: Chain, address: string): Promise<Hol
     const symbol = (t.meta.symbol || '').toUpperCase()
     const name = t.meta.name || t.meta.symbol || 'Unknown'
     if (isSpamToken(symbol, name)) continue
-    let price = prices[t.contractAddress.toLowerCase()] ?? null
+    const priced = prices[t.contractAddress.toLowerCase()] ?? null
+    let price = priced?.price ?? null
     // Fallback: known stablecoins are pegged to $1. CoinGecko occasionally
     // misses the per-network contract listing (e.g. native USDC on Polygon),
     // so without this the panel showed a real $53 USDC balance as $0 and
@@ -196,7 +200,15 @@ export async function getEvmHoldings(chain: Chain, address: string): Promise<Hol
     if (price == null && STABLECOINS.has(symbol)) {
       price = 1
     }
-    const value = price ? numeric * price : 0
+    let value = price ? numeric * price : 0
+    // Sanity: a single position can't be worth more than the token's entire
+    // market cap — when it is, the balance belongs to a different (spam)
+    // contract than the priced listing, or the listing itself is junk.
+    // Observed: a figure address valued at $30B from one mispriced token.
+    if (priced?.mcap != null && value > priced.mcap) {
+      price = null
+      value = 0
+    }
     out.push({
       symbol,
       name,
