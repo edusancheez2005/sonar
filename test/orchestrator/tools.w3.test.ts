@@ -230,6 +230,103 @@ describe('executeTool: getWalletActivity — window widening + address case', ()
   })
 })
 
+describe('executeTool: getWalletActivity — tracked_address_transfers fallback', () => {
+  // 2026-07-22 repro: Binance deposit wallet labelled by Arkham but with zero
+  // whale-feed rows answered "this feed has nothing recorded" while the hourly
+  // poll-tracked-addresses cron had its full transfer history.
+  const BINANCE_DEPOSIT = '0xBD612a3f30F0aA2ec25b850ce8cD9E44Cb500774'
+
+  const TRANSFERS = [
+    { direction: 'in', amount_usd: 50_000, token_symbol: 'usdt', timestamp: '2026-06-02T11:00:00Z', tx_hash: 'th1', counterparty: '0xaaa', chain: 'ethereum' },
+    { direction: 'out', amount_usd: 900_000, token_symbol: 'eth', timestamp: '2026-06-02T10:00:00Z', tx_hash: 'th2', counterparty: '0xbbb', chain: 'ethereum' },
+  ]
+
+  it('surfaces the cron-fed transfer feed when the whale feed is empty', async () => {
+    const r = await executeTool(
+      { tool: 'getWalletActivity', args: { address: BINANCE_DEPOSIT, chain: 'eth' } },
+      stubSupabase({
+        all_whale_transactions: { data: [] },
+        tracked_address_transfers: { data: TRANSFERS },
+        tracked_address_universe: { data: [{ arkham_entity_name: 'Binance', arkham_label: 'Deposit' }] },
+      }),
+      now
+    )
+    expect(r.ok).toBe(true)
+    const d = r.data as any
+    expect(d.tx_count).toBe(0)
+    expect(d.label).toBe('Binance')
+    expect(d.transfer_feed).not.toBeNull()
+    expect(d.transfer_feed.tx_count).toBe(2)
+    expect(d.transfer_feed.in_usd).toBe(50_000)
+    expect(d.transfer_feed.out_usd).toBe(900_000)
+    expect(d.transfer_feed.tokens_touched).toEqual(expect.arrayContaining(['USDT', 'ETH']))
+    // biggest transfer first (mirrors top_txs ordering)
+    expect(d.transfer_feed.recent_transfers[0].amount_usd).toBe(900_000)
+    expect(d.transfer_feed.last_transfer_at).toBe('2026-06-02T11:00:00Z')
+  })
+
+  it('stays null when the whale feed already has the story', async () => {
+    const sb = stubSupabaseW3(
+      {
+        all_whale_transactions: {
+          data: [{ usd_value: 8000, classification: 'BUY', token_symbol: 'bonk', timestamp: 't1', transaction_hash: 'h1' }],
+        },
+        tracked_address_transfers: { data: TRANSFERS },
+      },
+      (fn: string, params: any) => {
+        if (fn === 'wallet_tx_stats') {
+          return [{ tx_count: 12, buy_volume: 10000, sell_volume: 5000, last_active: '2026-06-02T11:00:00Z' }]
+        }
+        return []
+      }
+    )
+    const r = await executeTool(
+      { tool: 'getWalletActivity', args: { address: BINANCE_DEPOSIT, chain: 'eth' } },
+      sb,
+      now
+    )
+    expect(r.ok).toBe(true)
+    expect((r.data as any).transfer_feed).toBeNull()
+  })
+
+  it('probes the latest transfers ever when the window is empty too', async () => {
+    // Param-aware stub: the windowed query (gte called) returns nothing; the
+    // unwindowed probe returns the last recorded transfers.
+    function stubWindowEmpty() {
+      function builder(table: string) {
+        let sawGte = false
+        const chain: any = {
+          select() { return chain },
+          eq() { return chain },
+          ilike() { return chain },
+          gte() { sawGte = true; return chain },
+          order() { return chain },
+          limit() { return chain },
+          then(resolve: any) {
+            if (table !== 'tracked_address_transfers') return resolve({ data: [] })
+            resolve({ data: sawGte ? [] : TRANSFERS })
+          },
+        }
+        return chain
+      }
+      return { from: builder }
+    }
+    const r = await executeTool(
+      { tool: 'getWalletActivity', args: { address: BINANCE_DEPOSIT, chain: 'eth' } },
+      stubWindowEmpty(),
+      now
+    )
+    expect(r.ok).toBe(true)
+    const d = r.data as any
+    expect(d.transfer_feed).not.toBeNull()
+    expect(d.transfer_feed.tx_count).toBe(0)
+    expect(d.transfer_feed.in_usd).toBe(0)
+    // probe rows keep newest-first order
+    expect(d.transfer_feed.recent_transfers[0].tx_hash).toBe('th1')
+    expect(d.transfer_feed.last_transfer_at).toBe('2026-06-02T11:00:00Z')
+  })
+})
+
 describe('executeTool: getArticleContext', () => {
   it('rejects when no id or url is supplied', async () => {
     const r = await executeTool(

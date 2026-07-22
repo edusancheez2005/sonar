@@ -23,8 +23,21 @@
  *   - all_whale_transactions   (canonical multi-chain view)
  *   - wallet_tx_stats / wallet_token_flows RPCs (exact server-side sums —
  *     same canonical definition as the wallet page)
+ *   - tracked_address_transfers (cron-fed per-entity transfer feed — the
+ *     fallback when the whale feed has nothing; see below)
  *   - tracked_address_universe (Arkham-labelled name, if any)
  *   - user_wallets             (user's own nickname, if any)
+ *
+ * Transfer-feed fallback: the whale feed only records whale-sized eth/sol
+ * transfers, so plenty of Arkham-labelled wallets (exchange deposit
+ * processors, treasuries) legitimately have zero rows there while the
+ * hourly /api/cron/poll-tracked-addresses poller has full Alchemy/Helius
+ * history for them in tracked_address_transfers. When BOTH the window and
+ * lifetime whale stats are empty, this tool consults that table and
+ * returns a `transfer_feed` block (raw in/out transfers — unclassified,
+ * NOT buys/sells) so the renderer can say something real instead of
+ * "this feed has nothing recorded" for a wallet we demonstrably track
+ * (2026-07-22: Binance deposit wallet 0xBD61…0774 repro).
  *
  * Privacy: this is a read-only aggregate; it does NOT include the user_id
  * of any other user. user_wallets is consulted ONLY for the calling user.
@@ -282,10 +295,86 @@ export async function run(
 
     // Label tables may store the address in either case — match both forms.
     // (.in falls back to .eq when unavailable, e.g. in test stubs.)
+    // EVM addresses additionally match case-insensitively via ilike (a
+    // no-wildcard ilike is an exact case-insensitive match): the cron stores
+    // whatever casing tracked_address_universe has (usually checksummed),
+    // which need not be either form the user typed. Base58 chains stay
+    // case-sensitive — lowercasing Solana addresses corrupts them.
+    const isEvmAddress = /^0x[0-9a-fA-F]{40}$/.test(address)
     const addrFilter = (q: any) =>
-      dbAddress === address || typeof q.in !== 'function'
-        ? q.eq('address', address)
-        : q.in('address', [address, dbAddress])
+      isEvmAddress && typeof q.ilike === 'function'
+        ? q.ilike('address', dbAddress)
+        : dbAddress === address || typeof q.in !== 'function'
+          ? q.eq('address', address)
+          : q.in('address', [address, dbAddress])
+
+    // Transfer-feed fallback (see the header comment): only when the whale
+    // feed knows nothing about this wallet at all.
+    let transferFeed: Record<string, unknown> | null = null
+    const whaleFeedEmpty =
+      txCount === 0 && rows.length === 0 && (!lifetime || lifetime.txCount === 0)
+    if (whaleFeedEmpty) {
+      try {
+        const TRANSFER_COLS =
+          'direction, amount_usd, token_symbol, timestamp, tx_hash, counterparty, chain'
+        const fetchTransfers = async (windowedSince: string | null, limit: number) => {
+          let q = addrFilter(
+            supabase.from('tracked_address_transfers').select(TRANSFER_COLS)
+          )
+          if (windowedSince) q = q.gte('timestamp', windowedSince)
+          const { data } = await q.order('timestamp', { ascending: false }).limit(limit)
+          return Array.isArray(data) ? (data as any[]) : []
+        }
+
+        const windowRows = await fetchTransfers(sinceIso, ROW_LIMIT)
+        // Window empty → probe the latest transfers ever recorded, so the
+        // answer can still say when the wallet last moved.
+        const latestRows =
+          windowRows.length > 0 ? windowRows : await fetchTransfers(null, TOP_TX_COUNT)
+
+        if (latestRows.length > 0) {
+          let inUsd = 0
+          let outUsd = 0
+          const feedTokens = new Set<string>()
+          for (const t of windowRows) {
+            const v = Number(t?.amount_usd)
+            if (Number.isFinite(v) && v > 0) {
+              if (String(t?.direction ?? '').toLowerCase() === 'in') inUsd += v
+              else outUsd += v
+            }
+            if (t?.token_symbol) feedTokens.add(String(t.token_symbol).toUpperCase())
+          }
+          // In-window: biggest transfers first (mirrors top_txs). Out-of-window
+          // probe: keep newest-first — recency is the story there.
+          const shown = (windowRows.length > 0
+            ? [...windowRows].sort(
+                (a, b) => (Number(b?.amount_usd) || 0) - (Number(a?.amount_usd) || 0)
+              )
+            : latestRows
+          ).slice(0, TOP_TX_COUNT)
+          transferFeed = {
+            window: windowLabel,
+            tx_count: windowRows.length, // capped at ROW_LIMIT
+            in_usd: Math.round(inUsd),
+            out_usd: Math.round(outUsd),
+            tokens_touched: Array.from(feedTokens).slice(0, 20),
+            recent_transfers: shown.map((t: any) => ({
+              direction: t?.direction ?? null,
+              amount_usd: Number.isFinite(Number(t?.amount_usd))
+                ? Math.round(Number(t.amount_usd))
+                : null,
+              token_symbol: t?.token_symbol ? String(t.token_symbol).toUpperCase() : null,
+              timestamp: t?.timestamp ?? null,
+              tx_hash: t?.tx_hash ?? null,
+              counterparty: t?.counterparty ?? null,
+            })),
+            last_transfer_at: latestRows[0]?.timestamp ?? null,
+          }
+        }
+      } catch {
+        // fallback is best-effort; the whale-feed answer stands without it
+      }
+    }
 
     // Arkham label. Matched by ADDRESS ALONE: the guessed chain for a 0x
     // address is 'eth', but the labelled row may live under 'bsc'/'base'/
@@ -351,6 +440,7 @@ export async function run(
         net_flow_usd: Math.round(buyUsd - sellUsd),
         tokens_touched: tokensList,
         top_txs: topTxs,
+        transfer_feed: transferFeed,
         lifetime: lifetime
           ? {
               tx_count: lifetime.txCount,
