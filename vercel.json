@@ -81,6 +81,10 @@
       "schedule": "30 4 * * *"
     },
     {
+      "path": "/api/cron/refresh-entity-balances",
+      "schedule": "0 5 * * *"
+    },
+    {
       "path": "/api/cron/weekly-top-wallets",
       "schedule": "0 15 * * 0"
     },
