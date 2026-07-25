@@ -431,7 +431,7 @@ const getInsightIcon = (iconName) => {
   return iconMap[iconName] || <span style={{ fontSize: '1.5rem' }}>●</span>
 }
 
-export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetrics, sentiment }) {
+export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetrics, sentiment, topHolders = [] }) {
   const [priceData, setPriceData] = useState(null)
   const [orcaAnalysis, setOrcaAnalysis] = useState(null)
   const [showOrcaModal, setShowOrcaModal] = useState(false)
@@ -1763,6 +1763,48 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
           </SentimentSection>
           </PremiumGate>
         )}
+
+        {/* Top holders — Arkham-derived, deliberately OUTSIDE the premium
+            gate (non-commercial Arkham license forbids paywalling it). */}
+        {topHolders.length > 0 ? (
+          <TransactionsSection>
+            <SectionTitle>Top Holders</SectionTitle>
+            <Table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Holder</th>
+                  <th style={{ textAlign: 'right' }}>Value</th>
+                  <th style={{ textAlign: 'right' }}>% of supply</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topHolders.map((h, i) => (
+                  <tr key={h.address || h.name || i}>
+                    <td>{i + 1}</td>
+                    <td>
+                      {h.entityName ? (
+                        <Link href={`/entity/${encodeURIComponent(h.entityName)}`}>{h.name}</Link>
+                      ) : h.name ? (
+                        h.name
+                      ) : (
+                        `${(h.address || '').slice(0, 6)}...${(h.address || '').slice(-4)}`
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {formatUSD(h.usd)}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>{(h.pct * 100).toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <div style={{ fontSize: '0.68rem', color: '#5a6a7a', marginTop: '0.5rem', lineHeight: 1.4 }}>
+              Aggregated across chains from Arkham per-chain top-holder lists; entity totals may
+              include protocol pool contracts. Source: Arkham Intelligence.
+            </div>
+          </TransactionsSection>
+        ) : null}
 
         <PremiumGate isPremium={isPremium} feature="Whale Transactions">
         <TransactionsSection>

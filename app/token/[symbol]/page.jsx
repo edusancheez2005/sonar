@@ -1,7 +1,53 @@
 import React from 'react'
 import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { SYMBOL_TO_COINGECKO_ID } from '@/lib/wallet-backtest/engine'
 import TokenDetailClient from './TokenDetailClient'
+
+// Top holders via Arkham (/token/holders/{coingeckoId}, 30 credits) —
+// cached 24h per token and fetched only when the page is viewed.
+// Aggregates the per-chain top-100 lists into one entity-ranked top 10.
+// NOT premium-gated: ARKM-derived data must stay un-paywalled while
+// ARKHAM_COMMERCIAL_USE is false (see lib/arkham/license.ts).
+async function fetchTopHolders(symbol) {
+  const id = SYMBOL_TO_COINGECKO_ID[symbol]
+  if (!id) return []
+  try {
+    const { arkhamFetch } = await import('@/lib/arkham/client')
+    const j = await arkhamFetch(`/token/holders/${encodeURIComponent(id)}`, {
+      cacheKey: `token_holders:${id}`,
+      ttlSeconds: 86400,
+      source: 'on_demand',
+      reason: 'token page top holders',
+    })
+    const byKey = new Map()
+    for (const list of Object.values(j?.addressTopHolders || {})) {
+      if (!Array.isArray(list)) continue
+      for (const h of list) {
+        const a = h?.address || {}
+        const ent = a.arkhamEntity
+        const key = ent?.id || String(a.address || '').toLowerCase()
+        if (!key) continue
+        let rec = byKey.get(key)
+        if (!rec) {
+          rec = {
+            name: ent?.name || a.arkhamLabel?.name || null,
+            entityName: ent?.name || null,
+            address: a.address || null,
+            usd: 0,
+            pct: 0,
+          }
+          byKey.set(key, rec)
+        }
+        rec.usd += Number(h.usd) || 0
+        rec.pct += Number(h.pctOfCap) || 0
+      }
+    }
+    return [...byKey.values()].sort((x, y) => y.usd - x.usd).slice(0, 10)
+  } catch {
+    return []
+  }
+}
 
 export const revalidate = 15
 
@@ -163,6 +209,7 @@ export default async function TokenDetail({ params, searchParams }) {
   }
 
   const sentiment = computeSentiment(data || [])
+  const topHolders = await fetchTopHolders(symbol)
 
   const whaleMetrics = dataReliable ? {
     totalVolume,
@@ -181,12 +228,13 @@ export default async function TokenDetail({ params, searchParams }) {
   return (
     <>
       <BreadcrumbJsonLd symbol={symbol} />
-      <TokenDetailClient 
+      <TokenDetailClient
         symbol={symbol}
         sinceHours={sinceHours}
         data={dataReliable ? (data || []) : []}
         whaleMetrics={whaleMetrics}
         sentiment={dataReliable ? sentiment : { label: 'NEUTRAL', color: '#f39c12', score: 0, details: { buyPct: 50, sellPct: 50 } }}
+        topHolders={topHolders}
       />
     </>
   )

@@ -54,7 +54,7 @@ const CHAIN_DB_ALIASES: Record<BacktestChain, Set<string>> = {
 // CoinGecko coin id (the same universe the price pipeline tracks). Anything
 // not listed falls back to the lower-cased symbol as a best-effort id; if
 // that 404s the token is simply left unpriced (marked to zero).
-const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
+export const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
   BTC: 'bitcoin', WBTC: 'wrapped-bitcoin', ETH: 'ethereum', WETH: 'weth',
   BNB: 'binancecoin', SOL: 'solana', XRP: 'ripple', ADA: 'cardano',
   DOGE: 'dogecoin', AVAX: 'avalanche-2', DOT: 'polkadot', LINK: 'chainlink',
