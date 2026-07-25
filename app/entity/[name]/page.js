@@ -159,14 +159,14 @@ async function fetchArkhamKnownWallets(name) {
   // (e.g. "MicroStrategy" vs "Microstrategy").
   const { data, error } = await supabaseAdmin
     .from('tracked_address_universe')
-    .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label, arkham_is_contract')
+    .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label, arkham_is_contract, arkham_entity_id')
     .ilike('arkham_entity_name', name)
     .limit(200)
   if (error || !data || data.length === 0) {
     // Looser fallback: substring match
     const { data: data2 } = await supabaseAdmin
       .from('tracked_address_universe')
-      .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label, arkham_is_contract')
+      .select('chain, address, arkham_entity_name, arkham_entity_type, arkham_label, arkham_is_contract, arkham_entity_id')
       .ilike('arkham_entity_name', `%${name}%`)
       .limit(200)
     return data2 || []
@@ -178,6 +178,56 @@ async function fetchArkhamKnownWallets(name) {
 // /api/cron/poll-tracked-addresses cron (Alchemy → Supabase). Returns
 // rows newest-first, deduped by tx_hash + direction (so a swap only
 // shows once even if both legs hit a tracked wallet).
+// Top counterparties (30d, both directions) via Arkham — HEAVY endpoint,
+// 50 credits per flow, so 24h-cached per entity and only fetched when an
+// entity page is actually viewed. Aggregates Arkham's per-chain lists
+// into one ranked list per direction.
+async function fetchCounterparties(entityId) {
+  if (!entityId) return { inflows: [], outflows: [] }
+  const { arkhamFetch } = await import('@/lib/arkham/client')
+  const pull = async (flow) => {
+    try {
+      const j = await arkhamFetch(
+        `/counterparties/entity/${encodeURIComponent(entityId)}?flow=${flow}&timeLast=30d&limit=10`,
+        {
+          cacheKey: `counterparties:${entityId}:${flow}`,
+          ttlSeconds: 86400,
+          source: 'on_demand',
+          reason: 'entity page counterparties',
+        }
+      )
+      const byKey = new Map()
+      for (const list of Object.values(j || {})) {
+        if (!Array.isArray(list)) continue
+        for (const item of list) {
+          const a = item?.address || {}
+          const ent = a.arkhamEntity
+          const key = ent?.id || String(a.address || '').toLowerCase()
+          if (!key) continue
+          let rec = byKey.get(key)
+          if (!rec) {
+            rec = {
+              name: ent?.name || a.arkhamLabel?.name || null,
+              entityName: ent?.name || null,
+              address: a.address || null,
+              usd: 0,
+              txCount: 0,
+            }
+            byKey.set(key, rec)
+          }
+          rec.usd += Number(item.usd) || 0
+          rec.txCount += Number(item.transactionCount) || 0
+        }
+      }
+      return [...byKey.values()].sort((x, y) => y.usd - x.usd).slice(0, 8)
+    } catch {
+      return []
+    }
+  }
+  const [inflows, outflows] = await Promise.all([pull('in'), pull('out')])
+  return { inflows, outflows }
+}
+
 async function fetchLiveTransfers(name) {
   if (!name) return []
   const { data } = await supabaseAdmin
@@ -463,6 +513,89 @@ function TxCard({ tx, entityName }) {
         </div>
       )}
     </a>
+  )
+}
+
+function CounterpartyRow({ cp }) {
+  const label = cp.name || (cp.address ? `${cp.address.slice(0, 6)}…${cp.address.slice(-4)}` : '—')
+  const inner = (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        gap: '0.5rem',
+        fontSize: '0.85rem',
+      }}
+    >
+      <span style={{ fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
+      <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', flexShrink: 0 }}>
+        {formatVolume(cp.usd)} · {cp.txCount.toLocaleString()} tx
+      </span>
+    </div>
+  )
+  return cp.entityName ? (
+    <a
+      href={`/entity/${encodeURIComponent(cp.entityName)}`}
+      style={{ textDecoration: 'none', display: 'block' }}
+    >
+      {inner}
+    </a>
+  ) : (
+    inner
+  )
+}
+
+function CounterpartiesCard({ counterparties }) {
+  const { inflows, outflows } = counterparties || { inflows: [], outflows: [] }
+  if (inflows.length === 0 && outflows.length === 0) return null
+  const col = (heading, list) => (
+    <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>
+        {heading}
+      </div>
+      {list.length === 0 ? (
+        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>None recorded.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+          {list.map((cp, i) => <CounterpartyRow key={`${cp.address || cp.name}-${i}`} cp={cp} />)}
+        </div>
+      )}
+    </div>
+  )
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(135deg, #0d2134 0%, #112a40 100%)',
+        border: '1px solid rgba(54, 166, 186, 0.2)',
+        borderRadius: '16px',
+        padding: '1.25rem',
+        marginBottom: '1rem',
+      }}
+    >
+      <div
+        style={{
+          fontSize: '0.72rem',
+          fontWeight: 700,
+          letterSpacing: '1px',
+          color: '#36a6ba',
+          textTransform: 'uppercase',
+          marginBottom: '0.85rem',
+        }}
+        title="Largest counterparties by 30-day USD volume across all chains. Source: Arkham Intelligence."
+      >
+        Top Counterparties · 30d
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
+        {col('Receives from', inflows)}
+        {col('Sends to', outflows)}
+      </div>
+      <div style={{ marginTop: '0.6rem', fontSize: '0.68rem', color: '#5a6a7a', lineHeight: 1.4 }}>
+        Largest counterparties by 30-day USD transfer volume, all chains combined. Source: Arkham Intelligence.
+      </div>
+    </div>
   )
 }
 
@@ -858,6 +991,14 @@ export default async function EntityDetailPage({ params }) {
     fetchLiveTransfers(name),
   ])
 
+  // Most common Arkham entity id among the known wallets → counterparties.
+  const idCounts = new Map()
+  for (const w of knownWallets) {
+    if (w.arkham_entity_id) idCounts.set(w.arkham_entity_id, (idCounts.get(w.arkham_entity_id) || 0) + 1)
+  }
+  const arkhamEntityId = [...idCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+  const counterparties = await fetchCounterparties(arkhamEntityId)
+
   const stats = computeEntityStats(rows)
   const recentTxs = rows.slice(0, 50)
   const topTokens = computeTopTokens(rows)
@@ -1055,6 +1196,7 @@ export default async function EntityDetailPage({ params }) {
           {/* RIGHT: Sidebar */}
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <LiveTransfersCard transfers={liveTransfers} name={name} />
+            <CounterpartiesCard counterparties={counterparties} />
             <TopTokensCard tokens={topTokens} />
             <AddressesCard addresses={associatedAddresses} />
             <KnownWalletsCard wallets={knownWallets} name={name} />
