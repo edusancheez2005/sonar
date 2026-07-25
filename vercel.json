@@ -89,6 +89,10 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/cron/arkham-label-harvest",
+      "schedule": "0 6 1,10,20 * *"
+    },
+    {
       "path": "/api/cron/weekly-top-wallets",
       "schedule": "0 15 * * 0"
     },

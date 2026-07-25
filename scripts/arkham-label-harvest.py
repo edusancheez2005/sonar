@@ -82,22 +82,23 @@ def add(addr):
     cand[lo] = addr
 
 print("collecting candidates...", flush=True)
-d30 = (now - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
-# whale feed, biggest recent players first
-for r in pages(f"all_whale_transactions?select=whale_address&timestamp=gte.{d30}"
-               f"&usd_value=gte.10000&order=usd_value.desc&limit=1000&offset={{off}}", 25):
+d90 = (now - datetime.timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
+# whale feed, biggest recent players first (90d deep, low floor — earlier
+# passes already consumed the top tiers via the negative cache)
+for r in pages(f"all_whale_transactions?select=whale_address&timestamp=gte.{d90}"
+               f"&usd_value=gte.10000&order=usd_value.desc&limit=1000&offset={{off}}", 40):
     add(r.get("whale_address"))
 print(f"  whale feed: {len(cand)}", flush=True)
 
 # transfer-feed counterparties: 2-hour slices keep each scan inside the
 # ~8s statement timeout (amount_usd is filter-only, no index).
 n0 = len(cand)
-for h in range(0, 48, 2):
+for h in range(0, 168, 2):
     t1 = (now - datetime.timedelta(hours=h+2)).strftime("%Y-%m-%dT%H:%M:%SZ")
     t2 = (now - datetime.timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = sb_get(f"tracked_address_transfers?select=counterparty"
                   f"&timestamp=gte.{t1}&timestamp=lt.{t2}"
-                  f"&amount_usd=gte.10000&order=timestamp.desc&limit=1000")
+                  f"&amount_usd=gte.5000&order=timestamp.desc&limit=1000")
     if isinstance(rows, list):
         for r in rows: add(r.get("counterparty"))
 print(f"  counterparties: +{len(cand)-n0}", flush=True)

@@ -27,7 +27,7 @@ const OG_IMAGE_URL = 'https://www.sonartracker.io/screenshots/stats-dashboard.pn
 async function fetchFigure(slug) {
   const { data, error } = await supabaseAdmin
     .from('curated_entities')
-    .select('slug, display_name, description, category, avatar_url, twitter_handle, is_featured, addresses, submission_status')
+    .select('slug, display_name, description, category, avatar_url, twitter_handle, is_featured, addresses, submission_status, arkham_entity_id')
     .eq('slug', slug)
     .maybeSingle()
   if (error) return null
@@ -102,6 +102,51 @@ function buildPortfolioCandles(txs, ownedSet) {
     close: r.close,
   }))
   return { candles, value: cumulative }
+}
+
+// Build daily OHLC candles of TOTAL portfolio USD value from Arkham's
+// /history/entity response ({chain: [{time, usd}, ...], ...}). Chains
+// start on different dates, so each chain's value is carried forward
+// onto every later date before summing. Window: last 365 days.
+function buildArkhamValueCandles(history) {
+  if (!history || typeof history !== 'object') return { candles: [], value: 0 }
+  const cutoff = Date.now() - 365 * 86400_000
+  const perChain = []
+  const dates = new Set()
+  for (const series of Object.values(history)) {
+    if (!Array.isArray(series) || series.length === 0) continue
+    const pts = series
+      .map((p) => ({ t: new Date(p.time).getTime(), usd: Number(p.usd) }))
+      .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.usd))
+      .sort((a, b) => a.t - b.t)
+    if (pts.length === 0) continue
+    perChain.push(pts)
+    for (const p of pts) if (p.t >= cutoff) dates.add(p.t)
+  }
+  const days = [...dates].sort((a, b) => a - b)
+  if (days.length < 2) return { candles: [], value: 0 }
+
+  const cursors = perChain.map(() => 0)
+  const candles = []
+  let prevTotal = null
+  for (const day of days) {
+    let total = 0
+    for (let i = 0; i < perChain.length; i++) {
+      const pts = perChain[i]
+      while (cursors[i] + 1 < pts.length && pts[cursors[i] + 1].t <= day) cursors[i]++
+      if (pts[cursors[i]].t <= day) total += pts[cursors[i]].usd
+    }
+    const open = prevTotal ?? total
+    candles.push({
+      time: new Date(day).toISOString().slice(0, 10),
+      open,
+      high: Math.max(open, total),
+      low: Math.min(open, total),
+      close: total,
+    })
+    prevTotal = total
+  }
+  return { candles, value: prevTotal ?? 0 }
 }
 
 function addrListLiteral(addrs) {
@@ -675,7 +720,7 @@ export default async function FigureDetailPage({ params }) {
   // nothing here waits longer than ~5 s even when providers stall.
   // Stats, first-seen/last-active, and top tokens all derive from the
   // merged feed below so they agree with what's rendered on the page.
-  const [sonarRecent, chainFetch, arkhamLabels, entityBalance] = await Promise.all([
+  const [sonarRecent, chainFetch, arkhamLabels, entityBalance, arkhamHistory] = await Promise.all([
     hasAddresses ? fetchRecentTxs(addrs) : Promise.resolve([]),
     hasAddresses
       ? fetchChainTxsForAddresses(addrs, { limit: 20, budgetMs: 5000 })
@@ -695,6 +740,19 @@ export default async function FigureDetailPage({ params }) {
       .maybeSingle()
       .then(({ data }) => data?.value?.[slug] ?? null)
       .catch(() => null),
+    // Real daily portfolio value history (all Arkham-attributed addresses,
+    // per chain) — 24h cache in arkham_cache, so at most one credit-cheap
+    // call per entity per day, and only for pages people actually view.
+    figure.arkham_entity_id
+      ? import('@/lib/arkham/client').then((m) =>
+          m.arkhamFetch(`/history/entity/${encodeURIComponent(figure.arkham_entity_id)}`, {
+            cacheKey: `entity_history:${figure.arkham_entity_id}`,
+            ttlSeconds: 86400,
+            source: 'on_demand',
+            reason: 'figure page portfolio history',
+          })
+        ).catch(() => null)
+      : Promise.resolve(null),
   ])
 
   // Decorate verified addresses with Arkham label (e.g. "Cold Wallet 2")
@@ -743,6 +801,10 @@ export default async function FigureDetailPage({ params }) {
     mergedAll,
     ownedSet
   )
+  // Prefer Arkham's real portfolio-value history over the synthetic
+  // net-flow curve whenever the entity is Arkham-attributed.
+  const { candles: arkhamCandles, value: arkhamValue } = buildArkhamValueCandles(arkhamHistory)
+  const hasArkhamChart = arkhamCandles.length >= 2
   const catStyle = categoryStyle(figure.category)
 
   return (
@@ -846,6 +908,9 @@ export default async function FigureDetailPage({ params }) {
 
           {hasAddresses ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+              {hasArkhamChart ? (
+                <StatCard label="Portfolio value" value={formatVolume(arkhamValue)} />
+              ) : null}
               <StatCard
                 label="Net on-chain flow"
                 value={portfolioCandles.length > 0 ? formatVolume(portfolioValue) : '—'}
@@ -975,7 +1040,16 @@ export default async function FigureDetailPage({ params }) {
             className="figure-main-grid"
           >
             <div style={{ minWidth: 0 }}>
-              <PortfolioCandleChart candles={portfolioCandles} />
+              {hasArkhamChart ? (
+                <PortfolioCandleChart
+                  candles={arkhamCandles}
+                  title="Portfolio value · 1y"
+                  tooltip="Daily total USD value of every address Arkham attributes to this entity, summed across chains."
+                  footnote="Daily USD value of all Arkham-attributed addresses for this entity, summed across chains. Source: Arkham Intelligence."
+                />
+              ) : (
+                <PortfolioCandleChart candles={portfolioCandles} />
+              )}
               {backtestAddr ? (
                 <WalletBacktestPanel
                   address={backtestAddr.address}

@@ -18,7 +18,15 @@ function fmtUsd(v) {
   return `${sign}$${a.toFixed(0)}`
 }
 
-export default function PortfolioCandleChart({ candles = [], height = 240 }) {
+export default function PortfolioCandleChart({
+  candles = [],
+  height = 240,
+  // Label set defaults to the legacy net-flow presentation; the Arkham
+  // portfolio-history variant overrides all three.
+  title = 'On-chain flow · est. equity curve',
+  tooltip = 'Cumulative net USD in/out across tracked addresses. Estimated from on-chain flow — not a holdings/portfolio valuation.',
+  footnote = 'Estimated from on-chain flow (cumulative net USD in/out across tracked addresses). Not a holdings or portfolio valuation.',
+}) {
   const containerRef = useRef(null)
   const [lwc, setLwc] = useState(null)
   const [hover, setHover] = useState(null)
@@ -165,9 +173,9 @@ export default function PortfolioCandleChart({ candles = [], height = 240 }) {
             color: '#36a6ba',
             textTransform: 'uppercase',
           }}
-          title="Cumulative net USD in/out across tracked addresses. Estimated from on-chain flow — not a holdings/portfolio valuation."
+          title={tooltip}
         >
-          On-chain flow · est. equity curve
+          {title}
         </div>
         {hover ? (
           <div style={{ fontFamily: FONT_MONO, fontSize: '0.7rem', color: '#9aa7b8' }}>
@@ -180,8 +188,7 @@ export default function PortfolioCandleChart({ candles = [], height = 240 }) {
       </div>
       <div ref={containerRef} style={{ width: '100%', height: `${height}px` }} />
       <div style={{ marginTop: '0.6rem', fontSize: '0.68rem', color: '#5a6a7a', lineHeight: 1.4 }}>
-        Estimated from on-chain flow (cumulative net USD in/out across tracked addresses).
-        Not a holdings or portfolio valuation.
+        {footnote}
       </div>
     </div>
   )
