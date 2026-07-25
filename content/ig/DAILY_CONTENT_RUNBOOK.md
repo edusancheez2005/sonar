@@ -31,6 +31,18 @@ in the STORY; consistency lives in the FORMAT. Slots (local Madrid times):
 5. **~22:00 · The Nightcap** — optional shareable (meme/gag), 3-4×/week only
    when there's a genuinely good one. Never force it.
 
+**Statics are NEWS-LED (Eduardo, 25 Jul).** Default look for slots B and C is
+an editorial news slide: AI-generated editorial hero art (playbook §5 photo
+grade — or a cartoon scene when the story suits it) + Anton headline + the
+story, like the approved Format 1 heroes. Pure data cards (stat stacks, tile
+dashboards, big-number timelines) are the EXCEPTION, used only when Sonar's
+own tape IS the story (receipts, weekly anchor) — and even then prefer pairing
+the number with imagery. Mix flexes by the day: heavy news day → more news
+slides; quiet day → more memes. Every slide must work as a STANDALONE post
+(Eduardo posts them separately), so each carries its own hook + source, never
+"see previous slide" energy. The 25 Jul B (stat stack) and C (tile dashboard)
+were flagged as too dry — that's the pattern to avoid.
+
 **Weekly anchor series** (identical skeleton every time — recognition builds
 the channel): Friday = "One Week on the Tape" timeline · Sunday = "The Whale
 Receipt" ticket (the most distinctive Sonar format — protect it) · one
@@ -49,9 +61,19 @@ real spend; statics are ≈$0-0.75/day total.
 The reel type rotates between paid and free formats:
 
 - **Cinematic Seedance reel** (~$1.90: 2 stills + 2 clips + optional TTS VO) —
-  max 2×/week, for the strongest stories.
+  max 2×/week, for the strongest stories. Two flavors, ALTERNATE them
+  (Eduardo, 25 Jul — don't run character-story reels back-to-back all week):
+  - *Character-POV story* (Orca/asset/whale narrating its own day — the
+    22-25 Jul reels).
+  - *NEWS EXPLAINER* — a real news story told visually (editorial/AI scenes
+    of the actual news, not a character's inner life) + Orca explaining WHAT
+    IT MEANS for the market: cause → effect → what to watch. VO can be Orca's
+    voice, or on-screen text beats if narration doesn't fit. This is the
+    "news + Orca explains" format Eduardo asked for.
 - **Meme cinemagraph** (~$0.85: 1 clip over meme art) — ~2×/week.
-- **Typing-chat Orca demo reel** ($0, frame-rendered) — ~2×/week.
+- **Typing-chat Orca demo reel** ($0, frame-rendered) — ~2×/week; also works
+  as the text-only version of the news explainer (headline cards + Orca's
+  typed take on what it means).
 - **Lite reel** ($0, ffmpeg Ken-Burns over the day's best slide + end card) —
   fills the remaining day(s).
 Never the same reel type two days running. Ship silent + `-VO` variants when
