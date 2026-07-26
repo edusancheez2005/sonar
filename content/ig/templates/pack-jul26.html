@@ -1,0 +1,254 @@
+<title>Sonar · Content Pack — 26 Jul 2026</title>
+<style>
+  @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(__ANTON__) format('woff2');}
+  :root{
+    --bg0:#070b12; --bg1:#0a1120; --card:#0e1622; --card2:#0b131e;
+    --ink:#e9f0f7; --muted:#8595a8; --faint:#5c6b7e;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.13);
+    --green:#00e08a; --cyan:#3bc9ee; --red:#ff5b6b; --amber:#ffb43d;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --disp:'Anton',"Arial Narrow","Helvetica Neue Condensed",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;} body{margin:0;}
+  .app{background:radial-gradient(1100px 640px at 50% -12%,#0d1b30 0%,transparent 60%),linear-gradient(180deg,var(--bg0),var(--bg1) 60%,var(--bg0));
+    color:var(--ink);font-family:var(--sans);min-height:100vh;padding:clamp(1.1rem,3vw,2.4rem) 1.1rem 5rem;}
+  .wrap{max-width:32rem;margin:0 auto;}
+  .brandbar{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:1.1rem;border-bottom:1px solid var(--line);margin-bottom:1.6rem;}
+  .brandbar img{height:1.1rem;} .brandbar .sp{flex:1;}
+  h1.title{font-size:clamp(1.5rem,4.6vw,2rem);line-height:1.1;margin:0 0 .5rem;letter-spacing:-.02em;}
+  .sub{color:var(--muted);font-size:1rem;margin:0 0 1.1rem;}
+  .carousel{margin:0 0 3.4rem;}
+  .chead{display:flex;align-items:baseline;gap:.6rem;margin:0 0 1rem;}
+  .cnum{font-family:var(--mono);font-size:.74rem;color:var(--green);border:1px solid var(--line2);border-radius:6px;padding:.16rem .5rem;letter-spacing:.05em;}
+  .ctitle{font-size:1.02rem;font-weight:600;} .ctitle span{color:var(--muted);font-weight:400;}
+  .slides{display:flex;flex-direction:column;gap:.9rem;}
+  .slide{container-type:inline-size;position:relative;width:100%;max-width:29rem;margin:0 auto;aspect-ratio:4/5;border-radius:16px;overflow:hidden;background:#080b11;border:1px solid var(--line2);box-shadow:0 18px 46px -20px rgba(0,0,0,.8);isolation:isolate;}
+  .pad{position:absolute;inset:0;z-index:2;padding:7cqw;display:flex;flex-direction:column;}
+  .grid::before{content:"";position:absolute;inset:0;z-index:0;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:8cqw 8cqw;
+    -webkit-mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);}
+  .photo{background-size:cover;background-position:center top;}
+  .photo::after{content:"";position:absolute;inset:0;z-index:1;
+    background:linear-gradient(180deg,rgba(4,7,12,.5) 0%,rgba(4,7,12,.06) 20%,rgba(4,7,12,.06) 40%,rgba(4,7,12,.72) 62%,rgba(4,7,12,.985) 86%,#04070c 100%);}
+  .srow{display:flex;align-items:center;gap:2.2cqw;font-family:var(--mono);font-size:2.9cqw;letter-spacing:.14em;text-transform:uppercase;color:#b9c6d4;}
+  .logoimg{height:5.4cqw;width:auto;display:block;filter:drop-shadow(0 1cqw 2cqw rgba(0,0,0,.65));}
+  .spacer{flex:1;}
+  .kick{display:inline-flex;align-items:center;gap:1.6cqw;}
+  .kick i{width:1.8cqw;height:1.8cqw;border-radius:50%;background:var(--red);font-style:normal;box-shadow:0 0 0 1.1cqw rgba(255,91,107,.22);}
+  .newsrow{display:flex;align-items:center;gap:3cqw;margin:0 0 4.2cqw;}
+  .newsrow .r{flex:1;height:1px;background:rgba(255,255,255,.26);}
+  .newsbadge{font-family:var(--mono);font-weight:700;font-size:3.1cqw;letter-spacing:.2em;background:var(--cyan);color:#04121a;padding:1.1cqw 3.2cqw;border-radius:1cqw;}
+  .big{font-family:var(--disp);font-weight:400;text-transform:uppercase;font-size:13.2cqw;line-height:1.06;letter-spacing:.012em;margin:0;color:#fff;text-shadow:0 2cqw 7cqw rgba(0,0,0,.8);text-wrap:balance;text-align:center;}
+  .big.sm{font-size:11cqw;}
+  .hl-c{color:var(--cyan);font-style:normal;} .hl-g{color:var(--green);font-style:normal;} .hl-r{color:var(--red);font-style:normal;} .hl-a{color:var(--amber);font-style:normal;}
+  .statline{font-family:var(--mono);font-size:2.9cqw;letter-spacing:.14em;color:#cfe0f4;text-transform:uppercase;text-align:center;margin:3.4cqw 0 0;text-shadow:0 1cqw 4cqw rgba(0,0,0,.9);}
+  .foot{display:flex;align-items:center;gap:2cqw;font-family:var(--mono);font-size:2.6cqw;letter-spacing:.1em;color:#93a4b6;text-transform:uppercase;margin-top:4.6cqw;}
+  .foot .sp{flex:1;}
+  .qzone{position:relative;margin-top:5cqw;}
+  .qcard{background:rgba(10,16,24,.88);border:1px solid var(--line2);border-radius:4.4cqw;padding:4.4cqw 4.6cqw;width:100%;box-shadow:0 8cqw 22cqw -8cqw rgba(0,0,0,.7);}
+  .qtop{display:flex;align-items:center;gap:2.6cqw;}
+  .qcoin{width:8.4cqw;height:8.4cqw;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:4.2cqw;color:#fff;background:linear-gradient(135deg,#9945ff,#14f195);}
+  .qname{font-weight:800;font-size:3.9cqw;color:#fff;line-height:1;}
+  .qsub{font-family:var(--mono);font-size:2.5cqw;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:.6cqw;}
+  .qlive{margin-left:auto;font-family:var(--mono);font-size:2.5cqw;color:var(--green);display:flex;align-items:center;gap:1.3cqw;letter-spacing:.1em;text-transform:uppercase;}
+  .qlive i{width:1.7cqw;height:1.7cqw;border-radius:50%;background:var(--green);box-shadow:0 0 0 1cqw rgba(0,224,138,.25);}
+  .qprice{font-size:8cqw;font-weight:800;letter-spacing:-.02em;color:#fff;margin:2.4cqw 0 .8cqw;font-variant-numeric:tabular-nums;}
+  .qchg{font-family:var(--mono);font-size:2.9cqw;color:var(--green);letter-spacing:.02em;}
+  .qchart{height:17cqw;margin:2.4cqw 0 2.4cqw;}
+  .qchart canvas{width:100%;height:100%;display:block;}
+  .qpills{display:flex;gap:1.4cqw;}
+  .pill{font-family:var(--mono);font-size:2.3cqw;color:var(--faint);padding:.9cqw 2.4cqw;border-radius:1.5cqw;letter-spacing:.06em;}
+  .pill.on{background:rgba(0,224,138,.16);color:var(--green);}
+
+  /* whale receipt ticket */
+  .ticketwrap{display:flex;justify-content:center;margin-top:2.4cqw;}
+  .ticket{background:#f4efe6;color:#171310;width:62cqw;border-radius:1.4cqw;padding:3.4cqw 3.8cqw 2.6cqw;font-family:var(--mono);
+    box-shadow:0 8cqw 22cqw -6cqw rgba(0,0,0,.85);position:relative;}
+  .ticket::before,.ticket::after{content:"";position:absolute;left:0;right:0;height:2.2cqw;
+    background:radial-gradient(circle at 2.2cqw 50%, transparent 1.1cqw, #f4efe6 1.2cqw);background-size:4.4cqw 2.2cqw;background-repeat:repeat-x;}
+  .ticket::before{top:-2cqw;transform:rotate(180deg);}
+  .ticket::after{bottom:-2cqw;}
+  .t-h{text-align:center;font-size:2.8cqw;font-weight:700;letter-spacing:.24em;}
+  .t-sub{text-align:center;font-size:2.1cqw;color:#6b6156;letter-spacing:.14em;margin-top:.7cqw;}
+  .t-div{border-top:2px dashed #b9ae9e;margin:1.3cqw 0;}
+  .t-row{display:flex;justify-content:space-between;font-size:2.2cqw;letter-spacing:.04em;padding:.3cqw 0;}
+  .t-row .r{font-weight:700;color:#b3261e;}
+  .t-total{display:flex;justify-content:space-between;font-size:3.2cqw;font-weight:800;letter-spacing:.06em;padding-top:1cqw;}
+  .t-total .r{color:#b3261e;}
+  .t-note{font-size:1.9cqw;color:#6b6156;letter-spacing:.08em;text-align:center;margin-top:1.6cqw;line-height:1.55;}
+  .t-bar{margin:1.5cqw auto 0;height:3.8cqw;width:70%;
+    background:repeating-linear-gradient(90deg,#171310 0 .55cqw,transparent .55cqw 1.15cqw,#171310 1.15cqw 1.5cqw,transparent 1.5cqw 2.5cqw);}
+
+  .caption{margin-top:1.2rem;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;}
+  .caption .cap-h{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .6rem;}
+  .caption pre{margin:0;white-space:pre-wrap;font-family:var(--sans);font-size:.9rem;line-height:1.5;color:#cdd8e3;}
+  .tag{color:var(--cyan);}
+  footer{margin-top:2rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--faint);font-family:var(--mono);font-size:.74rem;}
+  @media (max-width:520px){ .slide{max-width:100%;} }
+</style>
+
+<div class="app"><div class="wrap">
+  <div class="brandbar"><img src="__LOGO__" alt="Sonar"><span class="sp"></span><span>Content pack · 26 Jul 2026</span></div>
+  <h1 class="title">Sunday pack — programming grid day 5 · THE WHALE RECEIPT</h1>
+  <p class="sub">Slots: A Morning Card (~11:00) · B The Story (~13:30) · C Whale Receipt anchor (~17:00) · D Nightcap meme (~22:00). Reel (20:00): BTC's-POV cartoon. Numbers verified 26 Jul ~11:30 UTC.</p>
+
+  <!-- ═══════ A · Morning Card ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">A</span><span class="ctitle">Morning Card <span>· SOL divergence · ~11:00</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Markets</span></div>
+          <div class="qzone">
+            <div class="qcard">
+              <div class="qtop"><span class="qcoin">S</span><div><div class="qname">Solana</div><div class="qsub">SOL · USD</div></div><span class="qlive"><i></i>Live</span></div>
+              <div class="qprice">$75.07</div>
+              <div class="qchg">▲ +1.6% today</div>
+              <div class="qchart"><canvas id="qsol"></canvas></div>
+              <div class="qpills"><span class="pill">1D</span><span class="pill on">1W</span><span class="pill">1M</span><span class="pill">3M</span><span class="pill">1Y</span></div>
+            </div>
+          </div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">MARKETS</span><span class="r"></span></div>
+          <h2 class="big sm" style="font-size:9.8cqw">THE PRICE SAYS <em class="hl-g">RECOVERY</em>. THE WHALES SOLD <em class="hl-r">$339M</em> INTO IT.</h2>
+          <div class="foot"><span>Source: Binance · Sonar on-chain · 26 Jul 2026</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>SOL is bouncing: $75, +1.6% today. Nice green candle.
+
+Same 24 hours on Sonar's tape: whales moved another $339M OUT — the biggest exit day of the whole 8-day run. Someone is selling this bounce.
+
+Comment "WHALE" and Orca will DM you the receipts.
+
+Not financial advice.
+
+<span class="tag">#Solana #SOL #CryptoNews #WhaleAlert #Markets #Sonar</span></pre></div>
+  </section>
+
+  <!-- ═══════ B · The Story ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">B</span><span class="ctitle">The Story <span>· MSOL vs the exodus · ~13:30</span></span></div>
+    <div class="slides">
+      <div class="slide photo" style="background-image:url(__HEROMSOL__);">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Institutions</span></div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">NEWS</span><span class="r"></span></div>
+          <h2 class="big" style="font-size:10.6cqw">MORGAN STANLEY WANTS <em class="hl-g">IN</em>. THE WHALES WANT <em class="hl-r">OUT</em>.</h2>
+          <div class="statline">MSOL ETF · 0.14% FEE · NYSE ARCA — VS — $1.78B OUT IN 8 DAYS</div>
+          <div class="foot"><span>SEC · CryptoBriefing · Sonar · 26 Jul 2026</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>Two Solana stories, one weekend. Morgan Stanley's spot SOL ETF (MSOL, filed Jul 14) is moving toward launch: 0.14% fee, up to 100% staked, 95% of rewards to holders.
+
+Meanwhile Sonar's tape says whales moved $1.78B out of SOL in 8 days — and sold $339M more into today's bounce.
+
+Institutions arriving. Whales leaving. Someone's wrong.
+
+Comment "WHALE" and Orca will DM you both sides of the trade.
+
+Not financial advice.
+
+<span class="tag">#Solana #ETF #MorganStanley #CryptoNews #WhaleAlert #Sonar</span></pre></div>
+  </section>
+
+  <!-- ═══════ C · THE WHALE RECEIPT (Sunday anchor) ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">C</span><span class="ctitle">The Whale Receipt <span>· Sunday anchor · ~17:00</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Receipts</span></div>
+          <div class="ticketwrap">
+            <div class="ticket">
+              <div class="t-h">SONAR</div>
+              <div class="t-sub">WHALE RECEIPT · Nº 0001</div>
+              <div class="t-div"></div>
+              <div class="t-row"><span>MERCHANT: SOLANA</span><span>JUL 18–26</span></div>
+              <div class="t-div"></div>
+              <div class="t-row"><span>DAY 1 · EXIT</span><span class="r">−$221M</span></div>
+              <div class="t-row"><span>DAY 2 · EXIT</span><span class="r">−$189M</span></div>
+              <div class="t-row"><span>DAY 3 · EXIT</span><span class="r">−$132M</span></div>
+              <div class="t-row"><span>DAY 4 · EXIT</span><span class="r">−$158M</span></div>
+              <div class="t-row"><span>DAY 5 · EXIT</span><span class="r">−$190M</span></div>
+              <div class="t-row"><span>DAY 6 · EXIT</span><span class="r">−$273M</span></div>
+              <div class="t-row"><span>DAY 7 · EXIT</span><span class="r">−$280M</span></div>
+              <div class="t-row"><span>DAY 8 · EXIT ★BIGGEST</span><span class="r">−$339M</span></div>
+              <div class="t-div"></div>
+              <div class="t-total"><span>TOTAL</span><span class="r">−$1.78B</span></div>
+              <div class="t-note">CUSTOMER: 5,000+ TRACKED WHALES<br>PAYMENT: ON-CHAIN · ALL SALES FINAL</div>
+              <div class="t-bar"></div>
+            </div>
+          </div>
+          <span class="spacer"></span>
+          <h2 class="big sm" style="font-size:6.8cqw">8 DAYS. <em class="hl-r">$1.78 BILLION</em>. NO REFUNDS.</h2>
+          <div class="foot"><span>Sonar on-chain · 26 Jul 2026 11:30 UTC</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>🧾 The Whale Receipt, Sunday edition: 8 straight days of nine-figure SOL exits, itemized. Total: −$1.78B.
+
+Today was the biggest line on the receipt: −$339M — sold straight into the +1.6% bounce.
+
+Comment "WHALE" and Orca will DM you the full itemized receipt.
+
+Not financial advice.
+
+<span class="tag">#WhaleAlert #Solana #OnChain #SmartMoney #CryptoNews #Sonar</span></pre></div>
+  </section>
+
+  <!-- ═══════ D · Nightcap meme ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">D</span><span class="ctitle">Nightcap <span>· meme single · ~22:00</span></span></div>
+    <div class="slides">
+      <div class="slide photo" style="background-image:url(__MEMEREVOLV__);">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span></div>
+          <span class="spacer"></span>
+          <h2 class="big" style="font-size:10.4cqw">BOUGHT <em class="hl-a">$17M</em> OF TRUMP AT 9:00. SOLD BY <em class="hl-r">9:23</em>.</h2>
+          <p style="font-family:var(--mono);font-size:2.8cqw;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;text-align:center;margin:2cqw 0 0;">diamond hands, 2026</p>
+          <div class="foot"><span>@sonartracker</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>One wallet on today's tape: bought ~$17M of TRUMP token at 9:00 and 9:01 UTC. Sold $6.8M of it by 9:23.
+
+Twenty-three minutes. That's the hold.
+
+Comment "WHALE" and Orca will DM you the receipts, timestamped.
+
+Not financial advice.
+
+<span class="tag">#CryptoMemes #WhaleAlert #Solana #OnChain #CryptoNews #Sonar</span></pre></div>
+  </section>
+
+  <footer>Sonar Tracker · 26 Jul 2026 · programming grid day 5 · numbers verified ~11:30 UTC (Binance · Polymarket gamma API · SEC filings via CryptoBriefing · Sonar on-chain, $150M sanity cap)</footer>
+</div></div>
+
+<script>
+__DATA__
+function fit(cv){const box=cv.parentElement.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  if(box.width<4||box.height<4)return null;cv.width=Math.round(box.width*dpr);cv.height=Math.round(box.height*dpr);
+  cv.style.width=box.width+'px';cv.style.height=box.height+'px';return dpr;}
+function mini(id,data){
+  const cv=document.getElementById(id);if(!cv)return;const dpr=fit(cv);if(!dpr)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,p=3*dpr;
+  const ys=data.map(d=>d[3]);let lo=Math.min(...ys),hi=Math.max(...ys);const r=(hi-lo)||1;lo-=r*0.12;hi+=r*0.12;
+  const up=ys[ys.length-1]>=ys[0];const col=up?'#00e08a':'#ff5b6b';const colA=up?'rgba(0,224,138,':'rgba(255,91,107,';
+  const X=i=>p+i/(data.length-1)*(W-2*p),Y=v=>p+(1-(v-lo)/(hi-lo))*(H-2*p);
+  ctx.clearRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,colA+'0.32)');g.addColorStop(1,colA+'0)');
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.lineTo(X(ys.length-1),H);ctx.lineTo(X(0),H);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle=col;ctx.lineWidth=2.4*dpr;ctx.lineJoin='round';ctx.stroke();
+  const lx=X(ys.length-1),ly=Y(ys[ys.length-1]);ctx.beginPath();ctx.arc(lx,ly,3.4*dpr,0,7);ctx.fillStyle=col;ctx.fill();
+  ctx.strokeStyle='#0a1018';ctx.lineWidth=2*dpr;ctx.stroke();
+}
+function drawAll(){ mini('qsol',SOL.slice(-7)); }
+requestAnimationFrame(()=>requestAnimationFrame(drawAll));
+window.addEventListener('load',drawAll);window.addEventListener('resize',drawAll);
+</script>
