@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!-- Typing-chat reel rig. Render state is a pure function of ?frame=N.
+     Screenshot frames 0..TOTAL with headless Chrome at 1080x1920, assemble at ~13fps.
+     Edit the SCRIPT array per episode; timeline constants below control pacing. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;font-family:"Inter",-apple-system,system-ui,sans-serif;
+  background:linear-gradient(180deg,#070b12,#0a1120 60%,#070b12)}
+.head{display:flex;align-items:center;gap:26px;padding:64px 56px 40px;border-bottom:1px solid rgba(255,255,255,.08)}
+.head img.logo{height:52px}
+.head .av{width:96px;height:96px;border-radius:50%;overflow:hidden;border:2px solid rgba(59,201,238,.4);margin-left:auto}
+.head .av img{width:100%;height:100%;object-fit:cover}
+.head .who{margin-left:22px}
+.head .who b{color:#fff;font-size:34px;display:flex;align-items:center;gap:12px}
+.head .who b svg{width:30px;height:30px}
+.head .who span{font-family:"SF Mono",Menlo,monospace;font-size:24px;color:#5c6b7e;letter-spacing:.08em}
+.chat{padding:56px;display:flex;flex-direction:column;gap:34px}
+.msg{max-width:78%;padding:30px 36px;border-radius:30px;font-size:34px;line-height:1.5;
+  opacity:0;transform:translateY(24px);transition:none}
+.msg.on{opacity:1;transform:none}
+.msg.user{align-self:flex-end;background:#123048;color:#e9f0f7;border-bottom-right-radius:8px}
+.msg.orca{align-self:flex-start;background:#0e1622;border:1px solid rgba(255,255,255,.1);color:#d9e3ee;border-bottom-left-radius:8px}
+.msg.orca .hl{color:#3bc9ee;font-weight:600}
+.msg.orca .g{color:#00e08a;font-weight:600}
+.msg.orca .r{color:#ff5b6b;font-weight:600}
+.dots{align-self:flex-start;background:#0e1622;border:1px solid rgba(255,255,255,.1);border-radius:30px;border-bottom-left-radius:8px;
+  padding:34px 42px;display:none}
+.dots.on{display:flex;gap:14px}
+.dots i{width:16px;height:16px;border-radius:50%;background:#5c6b7e;display:block}
+.dots i:nth-child(2){opacity:.7}.dots i:nth-child(3){opacity:.4}
+.inputbar{position:absolute;left:56px;right:56px;bottom:120px;background:#0d141f;border:1px solid rgba(255,255,255,.12);
+  border-radius:26px;padding:30px 40px;color:#5c6b7e;font-size:30px;display:flex;align-items:center}
+.inputbar span{margin-left:auto;color:#3bc9ee;font-weight:700}
+.url{position:absolute;bottom:48px;left:0;right:0;text-align:center;font-family:"SF Mono",Menlo,monospace;
+  font-size:26px;letter-spacing:.18em;color:#5c6b7e}
+.cur{display:inline-block;width:4px;height:1em;background:#3bc9ee;vertical-align:-3px;margin-left:2px}
+</style>
+</head>
+<body>
+<div class="head">
+  <img class="logo" src="logo.png">
+  <div class="av"><img src="orca-mascot.png"></div>
+  <div class="who"><b>Orca AI <svg viewBox="0 0 24 24" fill="#3bc9ee"><path d="M12 2l2.4 2.4 3.4-.5 1 3.3 3.2 1-.5 3.4L24 12l-2.5 2.4.5 3.4-3.2 1-1 3.3-3.4-.5L12 24l-2.4-2.4-3.4.5-1-3.3-3.2-1 .5-3.4L0 12l2.5-2.4-.5-3.4 3.2-1 1-3.3 3.4.5z"/><path d="M10.2 16.4l-3.3-3.3 1.4-1.4 1.9 1.9 5.5-5.5 1.4 1.4z" fill="#04121a"/></svg></b>
+  <span>by Sonar · @sonartracker</span></div>
+</div>
+<div class="chat" id="chat"></div>
+<div class="inputbar">Ask Orca anything…<span>▶</span></div>
+<div class="url">SONARTRACKER.IO</div>
+<script>
+// ---- EPISODE SCRIPT (27 Jul 2026) ----
+const SCRIPT=[
+ {who:'user', text:"orca, who's buying the solana exodus?"},
+ {who:'orca', text:"Day 9: another <span class='r'>$314M</span> left <span class='hl'>SOL</span>. Total: <span class='r'>−$2.1B</span> in 9 days.<br><br>But check today's buy side — <span class='hl'>LINK</span> <span class='g'>+$19M</span> · <span class='hl'>AAVE</span> <span class='g'>+$10M</span> · <span class='hl'>WBTC</span> <span class='g'>+$10M</span>.<br><br>The exit has buyers."},
+ {who:'user', text:"so is the exodus over?"},
+ {who:'orca', text:"The tape will tell us before the headlines do. 🐋"}
+];
+// ---- TIMELINE (frames @13fps) ----
+// [start, type]  type: 'msg' idx appears | 'dots' on | 'type' idx typing until end frame
+const T=[
+ {f:10,  ev:'msg', i:0},
+ {f:18,  ev:'dots'},
+ {f:32,  ev:'type', i:1, until:100},
+ {f:112, ev:'msg', i:2},
+ {f:120, ev:'dots'},
+ {f:132, ev:'type', i:3, until:150}
+];
+const TOTAL=170;
+const frame=Math.min(parseInt(new URLSearchParams(location.search).get('frame')||'0'), TOTAL);
+const chat=document.getElementById('chat');
+function textLen(html){const d=document.createElement('div');d.innerHTML=html;return d.textContent.length;}
+function slice(html,n){ // reveal first n visible chars, keeping tags
+  let out='',count=0,i=0;
+  while(i<html.length&&count<n){
+    if(html[i]==='<'){const j=html.indexOf('>',i);out+=html.slice(i,j+1);i=j+1;}
+    else{out+=html[i];i++;count++;}
+  }
+  return out;
+}
+let dotsOn=false;
+for(const t of T){
+  if(frame<t.f) break;
+  if(t.ev==='msg'){dotsOn=false;const m=SCRIPT[t.i];const d=document.createElement('div');d.className='msg on '+m.who;d.innerHTML=m.text;chat.appendChild(d);}
+  if(t.ev==='dots'){dotsOn=true;}
+  if(t.ev==='type'){dotsOn=false;const m=SCRIPT[t.i];const total=textLen(m.text);
+    const prog=Math.min(1,(frame-t.f)/(t.until-t.f));const n=Math.ceil(total*prog);
+    const d=document.createElement('div');d.className='msg on '+m.who;
+    d.innerHTML=slice(m.text,n)+(prog<1?'<span class="cur"></span>':'');chat.appendChild(d);}
+}
+if(dotsOn){const d=document.createElement('div');d.className='dots on';d.innerHTML='<i></i><i></i><i></i>';chat.appendChild(d);}
+</script>
+</body>
+</html>
