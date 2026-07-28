@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
+import { SYMBOL_TO_COINGECKO_ID } from '@/lib/wallet-backtest/engine'
 
 const BASE = 'https://www.sonartracker.io'
 
@@ -83,6 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/wallet-tracker`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${BASE}/backtest`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE}/community`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
+    { url: `${BASE}/pricing`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
   ]
 
   // SEO landing pages
@@ -172,36 +174,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     } catch (_) { /* skip */ }
   }
 
-  // Programmatic SEO: top tokens — trimmed from 500 → 50 (same reason as whales)
-  let tokenPages: MetadataRoute.Sitemap = []
+  // Programmatic SEO: token pages. Every symbol in the curated CoinGecko
+  // mapping is indexable (generateMetadata mirrors this rule — the sitemap
+  // must never advertise noindex URLs), plus the most-active symbols from
+  // the whale feed over the last 30 days.
+  // 2026-07-28: re-expanded from 50 — the Apr/Jun trims removed the pages
+  // that were driving the Mar–Apr search-impression peak.
+  const tokenSymbols = new Set<string>(Object.keys(SYMBOL_TO_COINGECKO_ID))
   if (sb) {
     try {
       const { data: tokens } = await sb
         .from('all_whale_transactions')
         .select('token_symbol')
-        .gte('timestamp', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .gte('timestamp', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .not('token_symbol', 'is', null)
         .limit(10000)
       if (tokens) {
-        // Count occurrences and keep only the top 50 most-active symbols.
+        // Count occurrences and add the top 100 most-active symbols.
         const counts: Record<string, number> = {}
         for (const t of tokens) {
           const sym = (t as any).token_symbol
           if (sym) counts[sym] = (counts[sym] || 0) + 1
         }
-        const topSymbols = Object.entries(counts)
+        Object.entries(counts)
           .sort((a, b) => b[1] - a[1])
-          .slice(0, 50)
-          .map(([sym]) => sym)
-        tokenPages = topSymbols.map(sym => ({
-          url: `${BASE}/token/${encodeURIComponent(sym)}`,
-          lastModified: now,
-          changeFrequency: 'daily' as const,
-          priority: 0.7,
-        }))
+          .slice(0, 100)
+          .forEach(([sym]) => tokenSymbols.add(sym))
       }
     } catch (_) { /* skip */ }
   }
+  const tokenPages: MetadataRoute.Sitemap = [...tokenSymbols].map(sym => ({
+    url: `${BASE}/token/${encodeURIComponent(sym.toUpperCase())}`,
+    lastModified: now,
+    changeFrequency: 'daily' as const,
+    priority: 0.7,
+  }))
 
   return [
     ...corePages,

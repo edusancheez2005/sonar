@@ -57,19 +57,24 @@ export async function generateMetadata({ params }) {
   const description = `Track ${symbol} whale transactions, buy/sell pressure, social sentiment, Galaxy Score, and real-time price charts. Institutional-grade crypto analytics by Sonar.`
   const url = `https://www.sonartracker.io/token/${encodeURIComponent(symbol)}`
 
-  // Only index tokens that actually have recent whale data. Empty/thin token
-  // pages were being "Crawled - currently not indexed" by Google and wasting
-  // crawl budget. noindex (but follow) until the token has real activity.
-  let hasData = true
-  try {
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    const { count } = await supabaseAdmin
-      .from('all_whale_transactions')
-      .select('transaction_hash', { count: 'exact', head: true })
-      .eq('token_symbol', symbol)
-      .gte('timestamp', since)
-    hasData = (count || 0) >= 3
-  } catch { hasData = true }
+  // Index tokens that are real, priced assets (curated CoinGecko mapping) or
+  // have any recent whale data. The old ≥3-txs-in-30d bar noindexed 300+
+  // pages ("Excluded by 'noindex'" in Search Console) because
+  // all_whale_transactions only covers ethereum+solana, so majors on other
+  // chains failed it. Pages for mapped tokens render full price/sentiment
+  // content even with zero whale rows, so they are not thin.
+  let hasData = Boolean(SYMBOL_TO_COINGECKO_ID[symbol])
+  if (!hasData) {
+    try {
+      const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+      const { count } = await supabaseAdmin
+        .from('all_whale_transactions')
+        .select('transaction_hash', { count: 'exact', head: true })
+        .eq('token_symbol', symbol)
+        .gte('timestamp', since)
+      hasData = (count || 0) >= 1
+    } catch { hasData = true }
+  }
 
   return {
     title: { absolute: title },
