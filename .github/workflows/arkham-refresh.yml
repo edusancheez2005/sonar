@@ -1,0 +1,45 @@
+# Arkham data refresh — runs OUTSIDE Vercel on purpose.
+#
+# Arkham's WAF tarpits Vercel egress IPs (observed 2026-07-26: every
+# fetch from prod hangs to timeout while the same calls succeed from
+# anywhere else). lib/arkham/client.ts serves FRESH arkham_cache rows
+# before attempting any outbound call, so refreshing the cache from
+# GitHub Actions keeps figure-page portfolio charts, entity
+# counterparties and token top-holders live with zero Vercel→Arkham
+# traffic. The label harvest (the trial's scarce label-lookup spend)
+# runs here too, on the 1st/10th/20th.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   ARKHAM_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+name: arkham-refresh
+
+on:
+  schedule:
+    - cron: '30 4 * * *'   # daily cache refresh, 04:30 UTC
+  workflow_dispatch:
+    inputs:
+      harvest:
+        description: 'Also run the label harvest now'
+        required: false
+        default: 'false'
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ARKHAM_API_KEY: ${{ secrets.ARKHAM_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refresh arkham_cache (history, counterparties, holders)
+        run: python3 scripts/arkham-cache-refresh.py
+      - name: Label harvest (1st/10th/20th, or manual with harvest=true)
+        run: |
+          DAY=$(date -u +%d)
+          if [ "$DAY" = "01" ] || [ "$DAY" = "10" ] || [ "$DAY" = "20" ] || [ "${{ inputs.harvest }}" = "true" ]; then
+            python3 scripts/arkham-label-harvest.py
+          else
+            echo "not a harvest day (day=$DAY) — skipping"
+          fi

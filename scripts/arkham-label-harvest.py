@@ -17,10 +17,15 @@ EVM_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
 SKIP = {"0x0000000000000000000000000000000000000000",
         "0x000000000000000000000000000000000000dead"}
 
-env = {}
-for line in open(f"{REPO}/.env.local"):
-    m = re.match(r"^([A-Z0-9_]+)=(.*)$", line.strip())
-    if m: env[m.group(1)] = m.group(2).strip().strip('"').strip("'")
+# Env-var-first (GitHub Actions), .env.local fallback (local runs).
+env = dict(os.environ)
+try:
+    for line in open(f"{REPO}/.env.local"):
+        m = re.match(r"^([A-Z0-9_]+)=(.*)$", line.strip())
+        if m and m.group(1) not in env:
+            env[m.group(1)] = m.group(2).strip().strip('"').strip("'")
+except FileNotFoundError:
+    pass
 SB, SK, AK = env["SUPABASE_URL"], env["SUPABASE_SERVICE_ROLE_KEY"], env["ARKHAM_API_KEY"]
 
 def curl(args, body=None):
