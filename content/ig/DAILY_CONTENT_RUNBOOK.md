@@ -131,7 +131,19 @@ OpenAI ~$10/6 weeks).
    videos in `~/Desktop/Sonar/Reels/YYYY-MM-DD/` (Eduardo posts from the
    folder he's standing in; captions must be beside the files). Then push
    notification to Eduardo: story headlines + file paths + artifact link.
-6. **Commit** new template/assets to the repo (never `.env.local`, never
+6. **Cross-post to X** (added 2026-08-01, Eduardo's ask): post the day's
+   strongest static (meme/card) to @SonarTrackerio via
+   `python3 ~/Desktop/Sonar/tools/post_to_x.py --text "…" --media <file>`.
+   On strong days the VO reel can go as a second post (video upload verified
+   working, ≤2:20). Rules: write an X-NATIVE caption, never the IG caption
+   verbatim — ≤200 chars, $cashtags for named assets, max 2 hashtags, no
+   "comment WHALE" CTA (that's IG-only), link to the relevant sonartracker.io
+   page with `?utm_source=x&utm_medium=post&utm_campaign=content` when a page
+   fits (a link makes the post cost ~$0.20 on pay-per-use billing — fine).
+   Don't duplicate what the whale-alert cron (`/api/cron/x-whale-alerts`,
+   posts biggest moves automatically) already covers; content posts are the
+   meme/narrative layer on top. Creds live in the repo `.env.local`.
+7. **Commit** new template/assets to the repo (never `.env.local`, never
    personal files — `git status` before `git add`).
 
 ## Budget & refills

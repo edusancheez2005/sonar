@@ -61,7 +61,11 @@ export async function GET(req: Request) {
     const url = new URL(req.url)
     const dry = url.searchParams.get('dry') === '1'
     const minUsd = Number(url.searchParams.get('min')) || Number(process.env.X_ALERT_MIN_USD) || 5_000_000
-    const budget = Number(process.env.X_DAILY_POST_BUDGET) || 2
+    // Default 5 = one post per cron slot. Raised from 2 on 2026-08-01 after
+    // confirming the app is NOT on the 17-posts/day legacy free tier (no
+    // x-app-limit-24hour-* headers on live posts → pay-per-use billing,
+    // ~$0.20/link post). Override via X_DAILY_POST_BUDGET.
+    const budget = Number(process.env.X_DAILY_POST_BUDGET) || 5
 
     // 1. Daily budget check (UTC day).
     const today = new Date().toISOString().slice(0, 10)
