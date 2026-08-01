@@ -149,6 +149,70 @@ function buildArkhamValueCandles(history) {
   return { candles, value: prevTotal ?? 0 }
 }
 
+// Percent change of portfolio value over trailing windows, computed from
+// the daily Arkham candles. Null when the series doesn't reach back far
+// enough (young wallets) or the base value is ~zero.
+function computeReturns(candles) {
+  if (!Array.isArray(candles) || candles.length < 2) return []
+  const last = candles[candles.length - 1]
+  const nowMs = new Date(last.time).getTime()
+  const valueAt = (daysBack) => {
+    const target = nowMs - daysBack * 86400_000
+    let best = null
+    for (const c of candles) {
+      const t = new Date(c.time).getTime()
+      if (t <= target && (!best || t > new Date(best.time).getTime())) best = c
+    }
+    return best ? best.close : null
+  }
+  const windows = [
+    { label: '24H', days: 1 },
+    { label: '7D', days: 7 },
+    { label: '30D', days: 30 },
+    { label: '1Y', days: 364 },
+  ]
+  const out = []
+  for (const w of windows) {
+    const base = valueAt(w.days)
+    if (base == null || Math.abs(base) < 1) { out.push({ label: w.label, pct: null }); continue }
+    out.push({ label: w.label, pct: ((last.close - base) / Math.abs(base)) * 100 })
+  }
+  return out
+}
+
+function ReturnChips({ returns }) {
+  if (!returns.some((r) => r.pct != null)) return null
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+      {returns.map((r) => {
+        const has = r.pct != null
+        const up = has && r.pct >= 0
+        return (
+          <div
+            key={r.label}
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: '0.4rem',
+              background: 'linear-gradient(135deg, #0d2134 0%, #112a40 100%)',
+              border: `1px solid ${has ? (up ? 'rgba(46, 204, 113, 0.35)' : 'rgba(231, 76, 60, 0.35)') : 'rgba(54, 166, 186, 0.2)'}`,
+              borderRadius: '10px',
+              padding: '0.4rem 0.7rem',
+            }}
+          >
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.5px', color: 'var(--text-secondary)' }}>
+              {r.label}
+            </span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: has ? (up ? '#2ecc71' : '#e74c3c') : 'var(--text-secondary)' }}>
+              {has ? `${up ? '+' : ''}${r.pct >= 100 ? Math.round(r.pct) : r.pct.toFixed(1)}%` : '—'}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function addrListLiteral(addrs) {
   // PostgREST `.in.(...)` accepts comma-separated values; addresses are
   // hex or Base58 so no further escaping is needed.
@@ -805,6 +869,7 @@ export default async function FigureDetailPage({ params }) {
   // net-flow curve whenever the entity is Arkham-attributed.
   const { candles: arkhamCandles, value: arkhamValue } = buildArkhamValueCandles(arkhamHistory)
   const hasArkhamChart = arkhamCandles.length >= 2
+  const arkhamReturns = hasArkhamChart ? computeReturns(arkhamCandles) : []
   const catStyle = categoryStyle(figure.category)
 
   return (
@@ -1041,12 +1106,15 @@ export default async function FigureDetailPage({ params }) {
           >
             <div style={{ minWidth: 0 }}>
               {hasArkhamChart ? (
-                <PortfolioCandleChart
-                  candles={arkhamCandles}
-                  title="Portfolio value · 1y"
-                  tooltip="Daily total USD value of every address Arkham attributes to this entity, summed across chains."
-                  footnote="Daily USD value of all Arkham-attributed addresses for this entity, summed across chains. Source: Arkham Intelligence."
-                />
+                <>
+                  <ReturnChips returns={arkhamReturns} />
+                  <PortfolioCandleChart
+                    candles={arkhamCandles}
+                    title="Portfolio value · 1y"
+                    tooltip="Daily total USD value of every address Arkham attributes to this entity, summed across chains."
+                    footnote="Daily USD value of all Arkham-attributed addresses for this entity, summed across chains. Source: Arkham Intelligence."
+                  />
+                </>
               ) : (
                 <PortfolioCandleChart candles={portfolioCandles} />
               )}

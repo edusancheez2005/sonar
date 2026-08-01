@@ -1,6 +1,7 @@
 import React from 'react'
 import AuthGuard from '@/app/components/AuthGuard'
 import DashboardWrapper from './DashboardWrapper'
+import FamousWalletsSpotlight from './FamousWalletsSpotlight'
 
 export const metadata = {
   title: 'Crypto Dashboard — Live Whale Flows & Token Leaders',
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
             }),
           }}
         />
+        <FamousWalletsSpotlight />
         <DashboardWrapper />
       </>
     </AuthGuard>
