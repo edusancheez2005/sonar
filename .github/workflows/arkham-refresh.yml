@@ -35,10 +35,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Refresh arkham_cache (history, counterparties, holders)
         run: python3 scripts/arkham-cache-refresh.py
-      - name: Label harvest (1st/10th/20th, or manual with harvest=true)
+      - name: Label harvest (1st/5th/10th/15th/20th, or manual with harvest=true)
         run: |
           DAY=$(date -u +%d)
-          if [ "$DAY" = "01" ] || [ "$DAY" = "10" ] || [ "$DAY" = "20" ] || [ "${{ inputs.harvest }}" = "true" ]; then
+          case "$DAY" in
+            01|05|10|15|20) HARVEST=1 ;;
+            *) HARVEST=0 ;;
+          esac
+          if [ "$HARVEST" = "1" ] || [ "${{ inputs.harvest }}" = "true" ]; then
             python3 scripts/arkham-label-harvest.py
           else
             echo "not a harvest day (day=$DAY) — skipping"
