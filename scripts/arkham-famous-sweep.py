@@ -87,6 +87,12 @@ NAMES = [
     "Cynthia Lummis", "Ted Cruz", "Robert F Kennedy Jr", "Vivek Ramaswamy",
 ]
 
+# Targeted mode: pass exact Arkham entity names as argv to sweep just
+# those (used for review-list rescues where the real entity exists under
+# a variant name, e.g. "Neymar Jr", "Changpeng Zhao (CZ Binance)").
+if len(sys.argv) > 1:
+    NAMES = sys.argv[1:]
+
 existing = set()
 rows = sb("curated_entities?select=slug,arkham_entity_id,display_name&limit=1000") or []
 for r in rows:
