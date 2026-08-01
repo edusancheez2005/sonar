@@ -327,6 +327,16 @@ function fmtMoney(n) {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
+// Compact USD for portfolio headlines ($427M, $1.2B, $53K).
+function fmtMoneyCompact(n) {
+  if (!Number.isFinite(n)) return '—'
+  const a = Math.abs(n)
+  if (a >= 1e9) return `$${(n / 1e9).toFixed(a >= 1e10 ? 0 : 1)}B`
+  if (a >= 1e6) return `$${(n / 1e6).toFixed(a >= 1e7 ? 0 : 1)}M`
+  if (a >= 1e3) return `$${(n / 1e3).toFixed(a >= 1e5 ? 0 : 1)}K`
+  return `$${Math.round(n)}`
+}
+
 export default function FiguresDirectoryClient({ figures, page, totalPages, pageSize, sort }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -488,9 +498,14 @@ function FigureCard({ f }) {
   const addrCount = Array.isArray(f.addresses) ? f.addresses.length : 0
   const credibility = computeAddressCredibility(f.addresses)
   const has90 = typeof f.return_pct_90d === 'number' && Number.isFinite(f.return_pct_90d)
-  const has7 = typeof f.return_pct_7d === 'number' && Number.isFinite(f.return_pct_7d)
   const up90 = has90 && f.return_pct_90d >= 0
   const final90 = has90 ? BACKTEST_CAPITAL * (1 + f.return_pct_90d / 100) : null
+  // Real Arkham portfolio value + returns beat the $10k backtest replay as
+  // the headline — most figures never DEX-trade, so the replay reads
+  // "+0.0%" forever and made the whole directory look dead.
+  const hasPortfolio = typeof f.portfolio_usd === 'number' && Number.isFinite(f.portfolio_usd)
+  const d7 = typeof f.portfolio_d7 === 'number' && Number.isFinite(f.portfolio_d7) ? f.portfolio_d7 : null
+  const d30 = typeof f.portfolio_d30 === 'number' && Number.isFinite(f.portfolio_d30) ? f.portfolio_d30 : null
   const href = `/figure/${encodeURIComponent(f.slug)}`
 
   return (
@@ -516,19 +531,32 @@ function FigureCard({ f }) {
         <CredibilityChip stats={credibility} compact />
         {f.is_featured ? <MonoChip $color={C.amber}>★ Featured</MonoChip> : null}
         {f.twitter_handle ? <MonoChip $color={C.cyan}>@{f.twitter_handle}</MonoChip> : null}
-        {has7 ? (
-          <MonoChip $color={f.return_pct_7d >= 0 ? C.green : C.red}>
-            7d {f.return_pct_7d >= 0 ? '+' : ''}
-            {f.return_pct_7d.toFixed(1)}%
+        {d30 != null && d30 !== 0 ? (
+          <MonoChip $color={d30 >= 0 ? C.green : C.red}>
+            30d {d30 >= 0 ? '+' : ''}
+            {d30.toFixed(1)}%
           </MonoChip>
         ) : null}
       </ChipRow>
 
       {f.description ? <Desc title={f.description}>{f.description}</Desc> : null}
 
-      <BacktestBlock>
-        <span className="label">$10K copied · 90d</span>
-        {has90 ? (
+      {hasPortfolio ? (
+        <BacktestBlock>
+          <span className="label">Portfolio · live</span>
+          <span className="nums">
+            <span className="final">{fmtMoneyCompact(f.portfolio_usd)}</span>
+            {d7 != null ? (
+              <span className="pct" style={{ color: d7 >= 0 ? C.green : C.red }}>
+                {d7 >= 0 ? '▲ +' : '▼ '}
+                {Math.abs(d7).toFixed(1)}% 7d
+              </span>
+            ) : null}
+          </span>
+        </BacktestBlock>
+      ) : has90 && f.return_pct_90d !== 0 ? (
+        <BacktestBlock>
+          <span className="label">$10K copied · 90d</span>
           <span className="nums">
             <span className="final">{fmtMoney(final90)}</span>
             <span className="pct" style={{ color: up90 ? C.green : C.red }}>
@@ -536,10 +564,12 @@ function FigureCard({ f }) {
               {Math.abs(f.return_pct_90d).toFixed(1)}%
             </span>
           </span>
-        ) : (
-          <span className="pending">BACKTEST PENDING · COMPUTED NIGHTLY</span>
-        )}
-      </BacktestBlock>
+        </BacktestBlock>
+      ) : (
+        <BacktestBlock>
+          <span className="pending">TRACKING LIVE · {addrCount} WALLET{addrCount === 1 ? '' : 'S'}</span>
+        </BacktestBlock>
+      )}
 
       <CardActions>
         <a className="primary" href={href}>

@@ -85,6 +85,24 @@ async function fetchBacktestMap() {
   return new Map(data.map((r) => [r.slug, r]))
 }
 
+// Real portfolio stats ({slug: {usd, d7, d30}}) — written by
+// scripts/arkham-cache-refresh.py from Arkham daily value history. This
+// is what makes directory cards show "$427M · 7d +2.1%" instead of the
+// dead "$10,000 +0.0%" backtest placeholder most figures can never earn
+// (they don't DEX-trade, so the replay has no fills).
+async function fetchDirectoryStats() {
+  try {
+    const { data } = await supabaseAdmin
+      .from('app_cache')
+      .select('value')
+      .eq('key', 'figure_directory_stats')
+      .maybeSingle()
+    return data?.value && typeof data.value === 'object' ? data.value : {}
+  } catch {
+    return {}
+  }
+}
+
 function sortFigures(rows, sort) {
   const list = [...rows]
   const byName = (a, b) =>
@@ -105,18 +123,18 @@ function sortFigures(rows, sort) {
       )
       break
     case 'performance':
-      // Highest 90d backtested return first; figures with no backtest
-      // row yet (newly added) drop to the bottom but stay alphabetical
-      // among themselves so the page never looks empty.
+      // Real 7d portfolio movers first (Arkham value history); backtest
+      // 90d as the fallback tier; unranked rows stay alphabetical at the
+      // bottom so the page never looks empty.
       list.sort((a, b) => {
-        const ra = a.return_pct_90d
-        const rb = b.return_pct_90d
-        const aHas = typeof ra === 'number' && Number.isFinite(ra)
-        const bHas = typeof rb === 'number' && Number.isFinite(rb)
-        if (aHas && bHas) return rb - ra || byName(a, b)
-        if (aHas) return -1
-        if (bHas) return 1
-        return byName(a, b)
+        const pick = (r) => {
+          if (typeof r.portfolio_d7 === 'number' && Number.isFinite(r.portfolio_d7)) return [0, r.portfolio_d7]
+          if (typeof r.return_pct_90d === 'number' && Number.isFinite(r.return_pct_90d)) return [1, r.return_pct_90d]
+          return [2, 0]
+        }
+        const [ta, va] = pick(a)
+        const [tb, vb] = pick(b)
+        return ta - tb || vb - va || byName(a, b)
       })
       break
     case 'featured':
@@ -139,17 +157,22 @@ function parseSearchParams(searchParams) {
 
 export default async function FiguresDirectoryPage({ searchParams }) {
   const { sort, page } = parseSearchParams(searchParams || {})
-  const [all, btMap, coverage] = await Promise.all([
+  const [all, btMap, coverage, dirStats] = await Promise.all([
     fetchApprovedFigures(),
     fetchBacktestMap(),
     fetchCoverageInProgress(),
+    fetchDirectoryStats(),
   ])
   const enriched = all.map((f) => {
     const bt = btMap.get(f.slug)
+    const st = dirStats[f.slug]
     return {
       ...f,
       return_pct_7d: bt?.return_pct_7d ?? null,
       return_pct_90d: bt?.return_pct_90d ?? null,
+      portfolio_usd: typeof st?.usd === 'number' ? st.usd : null,
+      portfolio_d7: typeof st?.d7 === 'number' ? st.d7 : null,
+      portfolio_d30: typeof st?.d30 === 'number' ? st.d30 : null,
     }
   })
   const sorted = sortFigures(enriched, sort)

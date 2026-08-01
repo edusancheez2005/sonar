@@ -81,22 +81,85 @@ def refresh(path, key, cost, reason, heavy=False):
     if ok: write_cache(key, j)
     log_call(path.split("?")[0], cost if ok else 0, ok, ms, reason)
     if heavy: time.sleep(1.2)  # HEAVY endpoints: 1 rps
-    return ok
+    return j if ok else None
+
+def portfolio_stats(history):
+    """Total USD now + 7d/30d % from an Arkham /history/entity response.
+    Chains start on different dates → carry each chain's value forward
+    before summing (mirror of buildArkhamValueCandles in the figure page)."""
+    if not isinstance(history, dict): return None
+    chains = []
+    dates = set()
+    cutoff = (time.time() - 40 * 86400) * 1000
+    for series in history.values():
+        if not isinstance(series, list) or not series: continue
+        pts = []
+        for p in series:
+            try:
+                t = datetime.datetime.fromisoformat(str(p["time"]).replace("Z", "+00:00")).timestamp() * 1000
+                pts.append((t, float(p["usd"])))
+            except (KeyError, ValueError, TypeError):
+                continue
+        if not pts: continue
+        pts.sort()
+        chains.append(pts)
+        for t, _ in pts:
+            if t >= cutoff: dates.add(t)
+    days = sorted(dates)
+    if len(days) < 2: return None
+    cursors = [0] * len(chains)
+    totals = []
+    for day in days:
+        total = 0.0
+        for i, pts in enumerate(chains):
+            while cursors[i] + 1 < len(pts) and pts[cursors[i] + 1][0] <= day: cursors[i] += 1
+            if pts[cursors[i]][0] <= day: total += pts[cursors[i]][1]
+        totals.append((day, total))
+    now_ms, usd_now = totals[-1]
+    def pct(days_back):
+        target = now_ms - days_back * 86400_000
+        base = None
+        for t, v in totals:
+            if t <= target: base = v
+        if base is None or abs(base) < 1: return None
+        return round((usd_now - base) / abs(base) * 100, 2)
+    return {"usd": round(usd_now), "d7": pct(7), "d30": pct(30)}
 
 entities = sb_get("curated_entities?select=slug,arkham_entity_id"
-                  "&arkham_entity_id=not.is.null&submission_status=eq.approved&limit=200") or []
-ids = sorted({e["arkham_entity_id"] for e in entities if e.get("arkham_entity_id")})
+                  "&arkham_entity_id=not.is.null&submission_status=eq.approved&limit=500") or []
+slugs_by_id = {}
+for e in entities:
+    if e.get("arkham_entity_id"):
+        slugs_by_id.setdefault(e["arkham_entity_id"], []).append(e["slug"])
+ids = sorted(slugs_by_id)
 print(f"{len(ids)} figure entities", flush=True)
 
 hist = cp = 0
+dir_stats = {}
 for i, eid in enumerate(ids):
-    if refresh(f"/history/entity/{eid}", f"entity_history:{eid}", 1,
-               "cache-refresh history"): hist += 1
+    hj = refresh(f"/history/entity/{eid}", f"entity_history:{eid}", 1,
+                 "cache-refresh history")
+    if hj is not None:
+        hist += 1
+        st = portfolio_stats(hj)
+        if st:
+            for slug in slugs_by_id[eid]: dir_stats[slug] = st
     for flow in ("in", "out"):
         if refresh(f"/counterparties/entity/{eid}?flow={flow}&timeLast=30d&limit=10",
                    f"counterparties:{eid}:{flow}", 50,
-                   "cache-refresh counterparties", heavy=True): cp += 1
+                   "cache-refresh counterparties", heavy=True) is not None: cp += 1
     if (i + 1) % 10 == 0: print(f"  {i+1}/{len(ids)} entities", flush=True)
+
+# Directory stats map: one app_cache row the /figures page reads to show
+# REAL portfolio values + returns instead of dead backtest placeholders.
+if dir_stats:
+    row = {"key": "figure_directory_stats", "value": dir_stats,
+           "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
+    curl_json(f"{SB}/rest/v1/app_cache?on_conflict=key",
+              [f"apikey: {SK}", f"Authorization: Bearer {SK}",
+               "Prefer: resolution=merge-duplicates,return=minimal"],
+              body=[row], method="POST")
+    print(f"directory stats written for {len(dir_stats)} figures", flush=True)
 
 # Top tokens seen in the whale feed lately, mapped to CoinGecko ids the
 # token page understands (mirror of SYMBOL_TO_COINGECKO_ID's main names).
