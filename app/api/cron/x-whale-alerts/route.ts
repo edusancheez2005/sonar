@@ -294,6 +294,15 @@ export async function GET(req: Request) {
           updated_at: nowIso,
         })
       }
+      // Rolling log of what we posted — read by /api/cron/x-health-report.
+      const { data: recentRow } = await supabaseAdmin
+        .from('app_cache').select('value').eq('key', 'x_recent_posts').maybeSingle()
+      const recent: any[] = Array.isArray(recentRow?.value?.posts) ? recentRow.value.posts : []
+      await supabaseAdmin.from('app_cache').upsert({
+        key: 'x_recent_posts',
+        value: { posts: [...recent, { id: result.id, kind, text, at: nowIso }].slice(-20) },
+        updated_at: nowIso,
+      })
     }
     await supabaseAdmin.from('app_cache').upsert({
       key: 'x_quota_snapshot',

@@ -9,6 +9,10 @@
       "schedule": "50 7,11,15,19,22 * * *"
     },
     {
+      "path": "/api/cron/x-health-report",
+      "schedule": "30 8 * * *"
+    },
+    {
       "path": "/api/cron/ingest-social",
       "schedule": "30 */2 * * *"
     },
