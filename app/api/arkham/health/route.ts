@@ -7,10 +7,47 @@
  * the most recent attempt under "Health".
  */
 import { NextResponse } from 'next/server';
+import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin';
 import { arkhamFetch, ArkhamError } from '@/lib/arkham/client';
 import { ARKHAM_COMMERCIAL_USE, ARKHAM_ENABLED, ARKHAM_MONTHLY_BUDGET, ARKHAM_BUDGET_GUARD } from '@/lib/arkham/license';
 
 export const dynamic = 'force-dynamic';
+
+// Unauthenticated freshness summary: latest cache write per key family +
+// directory-stats timestamp. Timestamps only — no keys, no values. Lets
+// external monitors (cloud routines, uptime checks) verify the daily
+// GitHub-Actions Arkham refresh fired without holding any secret.
+async function publicFreshness() {
+  const latest = async (pattern: string) => {
+    const { data } = await supabaseAdminFresh
+      .from('arkham_cache')
+      .select('written_at')
+      .like('key', pattern)
+      .order('written_at', { ascending: false })
+      .limit(1);
+    return Array.isArray(data) && data[0] ? data[0].written_at : null;
+  };
+  const [history, counterparties, holders] = await Promise.all([
+    latest('entity_history:%'),
+    latest('counterparties:%'),
+    latest('token_holders:%'),
+  ]);
+  const { data: stats } = await supabaseAdminFresh
+    .from('app_cache')
+    .select('updated_at')
+    .eq('key', 'figure_directory_stats')
+    .maybeSingle();
+  return NextResponse.json({
+    ok: true,
+    public: true,
+    cache_freshness: {
+      entity_history: history,
+      counterparties,
+      token_holders: holders,
+      directory_stats: stats?.updated_at ?? null,
+    },
+  });
+}
 
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -19,7 +56,7 @@ export async function GET(request: Request) {
   }
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return publicFreshness();
   }
 
   // Subscription cancelled / paused — never make an outbound call.
