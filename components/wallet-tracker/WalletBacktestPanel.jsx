@@ -188,7 +188,15 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
 
   const result = data?.result
   const benchmarks = data?.benchmarks
-  const tradeCount = data?.trades_count ?? 0
+  // Two different counts: `trades_count` is candidate on-chain EVENTS the
+  // engine detected; `result.trade_count` is fills actually REPLAYED.
+  // Labeling detected events "Trades replayed" made Vitalik's page claim
+  // "7 trades replayed → 0.00%" when zero swaps were replayed at all.
+  const detectedCount = data?.trades_count ?? 0
+  const tradeCount = result?.trade_count ?? 0
+  // Nothing replayed → every stat is a placeholder; render an honest
+  // empty state instead of a flat $10k grid that "beat BTC".
+  const noTrades = !!data && tradeCount === 0
   const finalEquity = result?.final_equity_usd
   const totalReturn = result?.total_return_pct
   const win = totalReturn > 0
@@ -206,7 +214,7 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
   // transfers (gifts, gas top-ups, contract deposits) get replayed as
   // SELLs against a blind starting cash position. Surfacing -99% as a
   // headline number is misleading; flag instead.
-  const lowQuality = data && Number.isFinite(totalReturn) && (
+  const lowQuality = data && !noTrades && Number.isFinite(totalReturn) && (
     (totalReturn <= -90 && tradeCount < 30) ||
     tradeCount < 5
   )
@@ -333,7 +341,18 @@ export default function WalletBacktestPanel({ address, defaultChain = 'ethereum'
       ) : null}
 
       {/* Result */}
-      {data && !error ? (
+      {data && !error && noTrades ? (
+        <div role="status" style={{ marginTop: '1rem', padding: '1rem 1.1rem', background: 'rgba(54, 166, 186, 0.07)', border: '1px solid rgba(54, 166, 186, 0.3)', borderRadius: '12px', color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.55 }}>
+          <strong style={{ color: 'var(--text-primary, #e8eef4)' }}>No market trades to replay in this window.</strong>{' '}
+          {detectedCount > 0
+            ? `This wallet made ${detectedCount} on-chain movement${detectedCount === 1 ? '' : 's'}, but none were DEX swaps — it moves and holds funds rather than trading.`
+            : 'This wallet had no swap activity here — it holds or moves funds rather than trading.'}{' '}
+          The copy-trade simulation only replays real swaps, so its metrics don&apos;t apply. The portfolio
+          value chart is the real performance picture for this wallet.
+        </div>
+      ) : null}
+
+      {data && !error && !noTrades ? (
         <>
           {isCexRouter ? (
             <div role="status" style={{ marginTop: '1rem', padding: '0.8rem 0.95rem', background: 'rgba(34, 211, 238, 0.08)', border: '1px solid rgba(34, 211, 238, 0.35)', borderRadius: '12px', color: '#bdeffb', fontSize: '0.85rem', lineHeight: 1.5 }}>
