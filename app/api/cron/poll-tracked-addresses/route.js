@@ -375,6 +375,8 @@ export async function GET(request) {
 
   return NextResponse.json({
     ok: true,
+    famous_merged: famousRows.length,
+    famous_in_slice: addresses.filter(a => a.arkham_label === 'Famous wallet').length,
     addresses_polled: addresses.length - skippedForDeadline,
     addresses_ok: ok,
     addresses_err: errs,
