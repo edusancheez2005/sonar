@@ -294,10 +294,13 @@ export async function GET(request) {
   }
   // Merge famous wallets, deduping on chain:address (universe rows win —
   // their Arkham labels are richer than the curated fallback label).
+  // Famous rows go FIRST: the sort below is stable, so among never-polled
+  // rows array order decides — after a big harvest drops thousands of new
+  // never-polled universe rows, famous wallets must not queue behind them.
   const seen = new Set(addresses.map(a => `${a.chain}:${String(a.address).toLowerCase()}`))
-  for (const f of await fetchFamousAddresses()) {
-    if (!seen.has(`${f.chain}:${String(f.address).toLowerCase()}`)) addresses.push(f)
-  }
+  const famousRows = (await fetchFamousAddresses())
+    .filter(f => !seen.has(`${f.chain}:${String(f.address).toLowerCase()}`))
+  addresses = [...famousRows, ...addresses]
 
   const lastBlocks = await getLastBlockMap()
 
