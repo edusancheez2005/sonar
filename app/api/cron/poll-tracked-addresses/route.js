@@ -82,6 +82,35 @@ async function fetchPriorityAddresses() {
   return data || []
 }
 
+// Famous wallets (featured figures + persons/celebrities/governments from
+// curated_entities) — added 2026-08-01 so the X famous-move alerts and
+// figure pages get a live transfer feed. These are deliberately NOT in the
+// priority universe (persons trade rarely), but "rarely" is exactly what
+// makes their moves postable, so they join the round-robin here.
+const FAMOUS_CATEGORIES = new Set(['person', 'celebrity', 'government'])
+
+async function fetchFamousAddresses() {
+  const { data, error } = await supabaseAdmin
+    .from('curated_entities')
+    .select('slug, display_name, category, is_featured, addresses')
+  if (error) return []
+  const out = []
+  for (const e of data || []) {
+    if (!e.is_featured && !FAMOUS_CATEGORIES.has(e.category)) continue
+    for (const a of e.addresses || []) {
+      if (!a?.address || !SUPPORTED_CHAINS.includes(a.chain)) continue
+      out.push({
+        chain: a.chain,
+        address: a.address,
+        arkham_entity_name: e.display_name,
+        arkham_entity_type: e.category,
+        arkham_label: 'Famous wallet',
+      })
+    }
+  }
+  return out
+}
+
 // Whole-table read: filtering with .in(900+ addresses) would blow the URL
 // length, and the table only ever holds one row per polled address. A row
 // missing here just means "never polled" → sorts to the front of the sweep.
@@ -262,6 +291,12 @@ export async function GET(request) {
     addresses = await fetchPriorityAddresses()
   } catch (err) {
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 })
+  }
+  // Merge famous wallets, deduping on chain:address (universe rows win —
+  // their Arkham labels are richer than the curated fallback label).
+  const seen = new Set(addresses.map(a => `${a.chain}:${String(a.address).toLowerCase()}`))
+  for (const f of await fetchFamousAddresses()) {
+    if (!seen.has(`${f.chain}:${String(f.address).toLowerCase()}`)) addresses.push(f)
   }
 
   const lastBlocks = await getLastBlockMap()
