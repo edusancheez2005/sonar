@@ -190,6 +190,14 @@ export async function GET(req: Request) {
     const { data: famousRow } = await supabaseAdmin
       .from('app_cache').select('value').eq('key', famousKey).maybeSingle()
     const postedSlugs: string[] = Array.isArray(famousRow?.value?.slugs) ? famousRow.value.slugs : []
+    // X returns 403 for tweets whose text duplicates a recent post — two
+    // different transfers can compose byte-identical copy (seen 2026-08-02:
+    // a second "$6.0M in $WBTC ... unknown wallet" 403'd). Guard on the
+    // headline line of everything we posted recently.
+    const { data: recentRow } = await supabaseAdmin
+      .from('app_cache').select('value').eq('key', 'x_recent_posts').maybeSingle()
+    const recentPosts: any[] = Array.isArray(recentRow?.value?.posts) ? recentRow.value.posts : []
+    const recentHeadlines = new Set(recentPosts.map(p => String(p?.text || '').split('\n')[0]))
 
     // 3. Compose: famous move first, whale move as fallback.
     let text: string | null = null
@@ -210,14 +218,23 @@ export async function GET(req: Request) {
       const cpName = formatArkhamDisplayName(cpLabels.get(row.counterparty || '') || cpLabels.get((row.counterparty || '').toLowerCase()))
       const cpPart = cpName ? (row.direction === 'in' ? ` from ${cpName}` : ` to ${cpName}`) : ''
       const chain = row.chain ? ` on ${row.chain.charAt(0).toUpperCase()}${row.chain.slice(1)}` : ''
-      const dorm = await dormancyLine(row.address, row.timestamp)
-      const pnl = dorm ? null : await pnlLine(row.address)
-      const context = dorm || pnl
-      text =
-        `🚨 ${entity.name} just ${verb} ${fmtUsd(usd)} in $${sym}${cpPart}${chain}.` +
-        (context ? ` ${context}` : '') +
-        `\n\nTrack ${entity.name}'s wallets live → ${utm(`/figure/${entity.slug}`, 'famous_wallets')}`
-    } else {
+      const headline = `🚨 ${entity.name} just ${verb} ${fmtUsd(usd)} in $${sym}${cpPart}${chain}.`
+      if (recentHeadlines.has(headline)) {
+        // Would 403 as duplicate content — fall through to the whale feed.
+        kind = 'whale'
+        txId = null
+        famousSlug = null
+      } else {
+        const dorm = await dormancyLine(row.address, row.timestamp)
+        const pnl = dorm ? null : await pnlLine(row.address)
+        const context = dorm || pnl
+        text =
+          headline +
+          (context ? ` ${context}` : '') +
+          `\n\nTrack ${entity.name}'s wallets live → ${utm(`/figure/${entity.slug}`, 'famous_wallets')}`
+      }
+    }
+    if (!text) {
       // Whale-feed fallback (original flow).
       const since = new Date(Date.now() - WHALE_LOOKBACK_HOURS * 60 * 60 * 1000).toISOString()
       const { data: txs, error: txErr } = await supabaseAdmin
@@ -246,23 +263,32 @@ export async function GET(req: Request) {
       )
       const label = (addr: string | null) =>
         addr ? (labels.get(addr) || labels.get(addr.toLowerCase())) : undefined
-      const pick =
+      const preferred =
         candidates.find(tx => label(tx.from_address) || label(tx.to_address)) ||
         candidates[0]
-      txId = pick.transaction_hash
-      const fromName = formatArkhamDisplayName(label(pick.from_address)) || 'unknown wallet'
-      const toName = formatArkhamDisplayName(label(pick.to_address)) || 'unknown wallet'
-      const sym = String(pick.token_symbol).toUpperCase()
-      const usd = Number(pick.usd_value) || 0
-      const emoji = usd >= 50_000_000 ? '🚨🐋' : '🐋'
-      const chain = pick.blockchain ? ` on ${String(pick.blockchain).charAt(0).toUpperCase() + String(pick.blockchain).slice(1)}` : ''
-      const dorm = await dormancyLine(pick.from_address, pick.timestamp)
-      const pnl = dorm ? null : await pnlLine(pick.from_address, pick.to_address)
-      const context = dorm || pnl
-      text =
-        `${emoji} ${fmtUsd(usd)} in $${sym} moved from ${fromName} to ${toName}${chain}.` +
-        (context ? ` ${context}` : '') +
-        `\n\nLive ${sym} whale flows → ${utm(`/token/${encodeURIComponent(sym)}`, 'whale_alerts')}`
+      const ordered = [preferred, ...candidates.filter(c => c !== preferred)]
+      for (const pick of ordered) {
+        const fromName = formatArkhamDisplayName(label(pick.from_address)) || 'unknown wallet'
+        const toName = formatArkhamDisplayName(label(pick.to_address)) || 'unknown wallet'
+        const sym = String(pick.token_symbol).toUpperCase()
+        const usd = Number(pick.usd_value) || 0
+        const emoji = usd >= 50_000_000 ? '🚨🐋' : '🐋'
+        const chain = pick.blockchain ? ` on ${String(pick.blockchain).charAt(0).toUpperCase() + String(pick.blockchain).slice(1)}` : ''
+        const headline = `${emoji} ${fmtUsd(usd)} in $${sym} moved from ${fromName} to ${toName}${chain}.`
+        if (recentHeadlines.has(headline)) continue
+        txId = pick.transaction_hash
+        const dorm = await dormancyLine(pick.from_address, pick.timestamp)
+        const pnl = dorm ? null : await pnlLine(pick.from_address, pick.to_address)
+        const context = dorm || pnl
+        text =
+          headline +
+          (context ? ` ${context}` : '') +
+          `\n\nLive ${sym} whale flows → ${utm(`/token/${encodeURIComponent(sym)}`, 'whale_alerts')}`
+        break
+      }
+      if (!text) {
+        return NextResponse.json({ skipped: 'all candidates duplicate recent post text', candidates: candidates.length })
+      }
     }
 
     if (dry) {
@@ -294,13 +320,11 @@ export async function GET(req: Request) {
           updated_at: nowIso,
         })
       }
-      // Rolling log of what we posted — read by /api/cron/x-health-report.
-      const { data: recentRow } = await supabaseAdmin
-        .from('app_cache').select('value').eq('key', 'x_recent_posts').maybeSingle()
-      const recent: any[] = Array.isArray(recentRow?.value?.posts) ? recentRow.value.posts : []
+      // Rolling log of what we posted — read by /api/cron/x-health-report
+      // and by the duplicate-headline guard above.
       await supabaseAdmin.from('app_cache').upsert({
         key: 'x_recent_posts',
-        value: { posts: [...recent, { id: result.id, kind, text, at: nowIso }].slice(-20) },
+        value: { posts: [...recentPosts, { id: result.id, kind, text, at: nowIso }].slice(-20) },
         updated_at: nowIso,
       })
     }
