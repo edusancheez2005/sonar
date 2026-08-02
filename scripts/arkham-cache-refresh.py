@@ -186,3 +186,12 @@ for tid in tokens:
                "cache-refresh token holders"): th += 1
 print(f"DONE: history {hist}/{len(ids)}, counterparty flows {cp}/{len(ids)*2}, "
       f"token holders {th}/{len(tokens)}", flush=True)
+
+# A run that refreshed nothing is a FAILURE, not a success — exiting 0 here
+# let a fully-blocked run (e.g. Arkham WAF rejecting the runner's IPs) show
+# a green check while every cache row stayed stale (2026-08-02 run #6).
+if hist == 0:
+    print("ERROR: zero histories refreshed — Arkham unreachable from this "
+          "network or auth failed; failing the run so it can't look green.",
+          flush=True)
+    sys.exit(1)

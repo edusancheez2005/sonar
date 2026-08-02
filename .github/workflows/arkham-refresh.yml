@@ -46,6 +46,25 @@ jobs:
           echo "all three secrets present"
       - name: Refresh arkham_cache (history, counterparties, holders)
         run: python3 scripts/arkham-cache-refresh.py
+      - name: Verify freshness actually advanced (public endpoint)
+        run: |
+          # The refresh script could exit 0 while writes silently failed;
+          # this independent check makes such a run fail loudly. Compares
+          # the site's public freshness timestamp to the job start time.
+          FRESH=$(curl -s -m 30 https://www.sonartracker.io/api/arkham/health | python3 -c "import json,sys; print(json.load(sys.stdin)['cache_freshness']['entity_history'] or '')")
+          echo "entity_history freshness: $FRESH  (job started: $JOB_START)"
+          python3 - "$FRESH" <<'EOF'
+          import sys, datetime
+          fresh = sys.argv[1]
+          if not fresh:
+              print("::error::freshness endpoint returned no timestamp"); sys.exit(1)
+          ts = datetime.datetime.fromisoformat(fresh.replace("Z", "+00:00"))
+          age = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds()
+          if age > 3600:
+              print(f"::error::entity_history cache is {age/3600:.1f}h old — this run refreshed nothing")
+              sys.exit(1)
+          print(f"freshness OK ({age/60:.0f} min old)")
+          EOF
       - name: Label harvest (1st/5th/10th/15th/20th, or manual with harvest=true)
         run: |
           DAY=$(date -u +%d)
