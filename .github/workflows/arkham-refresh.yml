@@ -33,6 +33,17 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
+      - name: Preflight — verify repo Actions secrets exist
+        run: |
+          missing=""
+          [ -z "$ARKHAM_API_KEY" ] && missing="$missing ARKHAM_API_KEY"
+          [ -z "$SUPABASE_URL" ] && missing="$missing SUPABASE_URL"
+          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repo Actions secrets:$missing — add them (exact names) at github.com/edusancheez2005/sonar/settings/secrets/actions"
+            exit 1
+          fi
+          echo "all three secrets present"
       - name: Refresh arkham_cache (history, counterparties, holders)
         run: python3 scripts/arkham-cache-refresh.py
       - name: Label harvest (1st/5th/10th/15th/20th, or manual with harvest=true)

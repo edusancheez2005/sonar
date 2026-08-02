@@ -97,6 +97,10 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/cron/snapshot-figure-portfolios",
+      "schedule": "15 2,8,14,20 * * *"
+    },
+    {
       "path": "/api/cron/weekly-top-wallets",
       "schedule": "0 15 * * 0"
     },

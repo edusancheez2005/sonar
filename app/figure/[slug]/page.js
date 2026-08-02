@@ -784,7 +784,7 @@ export default async function FigureDetailPage({ params }) {
   // nothing here waits longer than ~5 s even when providers stall.
   // Stats, first-seen/last-active, and top tokens all derive from the
   // merged feed below so they agree with what's rendered on the page.
-  const [sonarRecent, chainFetch, arkhamLabels, entityBalance, arkhamHistory] = await Promise.all([
+  const [sonarRecent, chainFetch, arkhamLabels, entityBalance, arkhamHistory, ownSnapshots] = await Promise.all([
     hasAddresses ? fetchRecentTxs(addrs) : Promise.resolve([]),
     hasAddresses
       ? fetchChainTxsForAddresses(addrs, { limit: 20, budgetMs: 5000 })
@@ -817,6 +817,15 @@ export default async function FigureDetailPage({ params }) {
           })
         ).catch(() => null)
       : Promise.resolve(null),
+    // Self-owned daily snapshots (snapshot-figure-portfolios cron) — the
+    // chart keeps growing from these after Arkham access ends.
+    supabaseAdmin
+      .from('app_cache')
+      .select('value')
+      .eq('key', 'figure_portfolio_snapshots')
+      .maybeSingle()
+      .then(({ data }) => data?.value?.[slug] ?? null)
+      .catch(() => null),
   ])
 
   // Decorate verified addresses with Arkham label (e.g. "Cold Wallet 2")
@@ -867,7 +876,33 @@ export default async function FigureDetailPage({ params }) {
   )
   // Prefer Arkham's real portfolio-value history over the synthetic
   // net-flow curve whenever the entity is Arkham-attributed.
-  const { candles: arkhamCandles, value: arkhamValue } = buildArkhamValueCandles(arkhamHistory)
+  const { candles: arkhamOnlyCandles } = buildArkhamValueCandles(arkhamHistory)
+  // Extend Arkham's history with our own daily snapshots: any snapshot
+  // dated after Arkham's last point continues the series, so the chart
+  // survives the end of Arkham access seamlessly (and figures Arkham
+  // never covered still get a chart once snapshots accumulate).
+  let arkhamCandles = arkhamOnlyCandles
+  if (Array.isArray(ownSnapshots) && ownSnapshots.length > 0) {
+    const lastTime = arkhamCandles.length > 0 ? arkhamCandles[arkhamCandles.length - 1].time : ''
+    let prev = arkhamCandles.length > 0 ? arkhamCandles[arkhamCandles.length - 1].close : null
+    const appended = []
+    for (const p of ownSnapshots) {
+      if (!Array.isArray(p) || p.length < 2) continue
+      const [date, usd] = p
+      if (typeof date !== 'string' || !Number.isFinite(Number(usd)) || date <= lastTime) continue
+      const open = prev ?? Number(usd)
+      appended.push({
+        time: date,
+        open,
+        high: Math.max(open, Number(usd)),
+        low: Math.min(open, Number(usd)),
+        close: Number(usd),
+      })
+      prev = Number(usd)
+    }
+    if (appended.length > 0) arkhamCandles = [...arkhamCandles, ...appended]
+  }
+  const arkhamValue = arkhamCandles.length > 0 ? arkhamCandles[arkhamCandles.length - 1].close : 0
   const hasArkhamChart = arkhamCandles.length >= 2
   const arkhamReturns = hasArkhamChart ? computeReturns(arkhamCandles) : []
   const catStyle = categoryStyle(figure.category)
