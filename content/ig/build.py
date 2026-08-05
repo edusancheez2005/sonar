@@ -90,6 +90,8 @@ def main() -> None:
         "__MEMEVAN__": uri(ASSETS / "meme-newsvan.jpg", "image/jpeg"),
         "__HEROJULY__": uri(ASSETS / "hero-julyend.jpg", "image/jpeg"),
         "__MEMETROPHY__": uri(ASSETS / "meme-trophy.jpg", "image/jpeg"),
+        "__HEROCHAMBER__": uri(ASSETS / "hero-emptychamber.jpg", "image/jpeg"),
+        "__MEMEPOCKETS__": uri(ASSETS / "meme-emptypockets.jpg", "image/jpeg"),
         "__MEMEWHALESHOP__": uri(ASSETS / "meme-whaleshop.jpg", "image/jpeg"),
         "__MEMEFLINCH__": uri(ASSETS / "meme-flinch.jpg", "image/jpeg"),
         "__DATA__": (HERE / "templates" / "data.js").read_text(),

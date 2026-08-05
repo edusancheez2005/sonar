@@ -1,0 +1,232 @@
+<title>Sonar · Content Pack — 5 Aug 2026</title>
+<style>
+  @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(__ANTON__) format('woff2');}
+  :root{
+    --bg0:#070b12; --bg1:#0a1120; --card:#0e1622; --card2:#0b131e;
+    --ink:#e9f0f7; --muted:#8595a8; --faint:#5c6b7e;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.13);
+    --green:#00e08a; --cyan:#3bc9ee; --red:#ff5b6b; --amber:#ffb43d;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --disp:'Anton',"Arial Narrow","Helvetica Neue Condensed",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;} body{margin:0;}
+  .app{background:radial-gradient(1100px 640px at 50% -12%,#0d1b30 0%,transparent 60%),linear-gradient(180deg,var(--bg0),var(--bg1) 60%,var(--bg0));
+    color:var(--ink);font-family:var(--sans);min-height:100vh;padding:clamp(1.1rem,3vw,2.4rem) 1.1rem 5rem;}
+  .wrap{max-width:32rem;margin:0 auto;}
+  .brandbar{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:1.1rem;border-bottom:1px solid var(--line);margin-bottom:1.6rem;}
+  .brandbar img{height:1.1rem;} .brandbar .sp{flex:1;}
+  h1.title{font-size:clamp(1.5rem,4.6vw,2rem);line-height:1.1;margin:0 0 .5rem;letter-spacing:-.02em;}
+  .sub{color:var(--muted);font-size:1rem;margin:0 0 1.1rem;}
+  .carousel{margin:0 0 3.4rem;}
+  .chead{display:flex;align-items:baseline;gap:.6rem;margin:0 0 1rem;}
+  .cnum{font-family:var(--mono);font-size:.74rem;color:var(--green);border:1px solid var(--line2);border-radius:6px;padding:.16rem .5rem;letter-spacing:.05em;}
+  .ctitle{font-size:1.02rem;font-weight:600;} .ctitle span{color:var(--muted);font-weight:400;}
+  .slides{display:flex;flex-direction:column;gap:.9rem;}
+  .slide{container-type:inline-size;position:relative;width:100%;max-width:29rem;margin:0 auto;aspect-ratio:4/5;border-radius:16px;overflow:hidden;background:#080b11;border:1px solid var(--line2);box-shadow:0 18px 46px -20px rgba(0,0,0,.8);isolation:isolate;}
+  .pad{position:absolute;inset:0;z-index:2;padding:7cqw;display:flex;flex-direction:column;}
+  .grid::before{content:"";position:absolute;inset:0;z-index:0;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:8cqw 8cqw;
+    -webkit-mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);}
+  .photo{background-size:cover;background-position:center top;}
+  .photo::after{content:"";position:absolute;inset:0;z-index:1;
+    background:linear-gradient(180deg,rgba(4,7,12,.5) 0%,rgba(4,7,12,.06) 20%,rgba(4,7,12,.06) 40%,rgba(4,7,12,.72) 62%,rgba(4,7,12,.985) 86%,#04070c 100%);}
+  .srow{display:flex;align-items:center;gap:2.2cqw;font-family:var(--mono);font-size:2.9cqw;letter-spacing:.14em;text-transform:uppercase;color:#b9c6d4;}
+  .logoimg{height:5.4cqw;width:auto;display:block;filter:drop-shadow(0 1cqw 2cqw rgba(0,0,0,.65));}
+  .spacer{flex:1;}
+  .kick{display:inline-flex;align-items:center;gap:1.6cqw;}
+  .kick i{width:1.8cqw;height:1.8cqw;border-radius:50%;background:var(--red);font-style:normal;box-shadow:0 0 0 1.1cqw rgba(255,91,107,.22);}
+  .newsrow{display:flex;align-items:center;gap:3cqw;margin:0 0 4.2cqw;}
+  .newsrow .r{flex:1;height:1px;background:rgba(255,255,255,.26);}
+  .newsbadge{font-family:var(--mono);font-weight:700;font-size:3.1cqw;letter-spacing:.2em;background:var(--cyan);color:#04121a;padding:1.1cqw 3.2cqw;border-radius:1cqw;}
+  .big{font-family:var(--disp);font-weight:400;text-transform:uppercase;font-size:13.2cqw;line-height:1.06;letter-spacing:.012em;margin:0;color:#fff;text-shadow:0 2cqw 7cqw rgba(0,0,0,.8);text-wrap:balance;text-align:center;}
+  .big.sm{font-size:11cqw;}
+  .hl-c{color:var(--cyan);font-style:normal;} .hl-g{color:var(--green);font-style:normal;} .hl-r{color:var(--red);font-style:normal;} .hl-a{color:var(--amber);font-style:normal;}
+  .statline{font-family:var(--mono);font-size:2.9cqw;letter-spacing:.14em;color:#cfe0f4;text-transform:uppercase;text-align:center;margin:3.4cqw 0 0;text-shadow:0 1cqw 4cqw rgba(0,0,0,.9);}
+  .foot{display:flex;align-items:center;gap:2cqw;font-family:var(--mono);font-size:2.6cqw;letter-spacing:.1em;color:#93a4b6;text-transform:uppercase;margin-top:4.6cqw;}
+  .foot .sp{flex:1;}
+  .qzone{position:relative;margin-top:5cqw;}
+  .qcard{background:rgba(10,16,24,.88);border:1px solid var(--line2);border-radius:4.4cqw;padding:4.4cqw 4.6cqw;width:100%;box-shadow:0 8cqw 22cqw -8cqw rgba(0,0,0,.7);}
+  .qtop{display:flex;align-items:center;gap:2.6cqw;}
+  .qcoin{width:8.4cqw;height:8.4cqw;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:4.6cqw;color:#0a0e14;background:#f7931a;}
+  .qname{font-weight:800;font-size:3.9cqw;color:#fff;line-height:1;}
+  .qsub{font-family:var(--mono);font-size:2.5cqw;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:.6cqw;}
+  .qlive{margin-left:auto;font-family:var(--mono);font-size:2.5cqw;color:var(--green);display:flex;align-items:center;gap:1.3cqw;letter-spacing:.1em;text-transform:uppercase;}
+  .qlive i{width:1.7cqw;height:1.7cqw;border-radius:50%;background:var(--green);box-shadow:0 0 0 1cqw rgba(0,224,138,.25);}
+  .qprice{font-size:8cqw;font-weight:800;letter-spacing:-.02em;color:#fff;margin:2.4cqw 0 .8cqw;font-variant-numeric:tabular-nums;}
+  .qchg{font-family:var(--mono);font-size:2.9cqw;color:var(--green);letter-spacing:.02em;}
+  .qchart{height:17cqw;margin:2.4cqw 0 2.4cqw;}
+  .qchart canvas{width:100%;height:100%;display:block;}
+  .qpills{display:flex;gap:1.4cqw;}
+  .pill{font-family:var(--mono);font-size:2.3cqw;color:var(--faint);padding:.9cqw 2.4cqw;border-radius:1.5cqw;letter-spacing:.06em;}
+  .pill.on{background:rgba(0,224,138,.16);color:var(--green);}
+
+  /* exodus epilogue timeline */
+  .epi{background:var(--card);border:1px solid var(--line2);border-radius:4cqw;overflow:hidden;margin-top:4.6cqw;}
+  .ehead{font-family:var(--mono);font-size:2.7cqw;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);padding:3.2cqw 4.4cqw;border-bottom:1px solid var(--line);}
+  .erow{display:flex;justify-content:space-between;align-items:baseline;padding:3.1cqw 4.4cqw;border-bottom:1px solid var(--line);font-family:var(--mono);}
+  .erow:last-child{border-bottom:none;}
+  .erow .k{font-size:2.7cqw;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+  .erow .v{font-size:3.8cqw;font-weight:800;color:#fff;}
+  .erow .v.r{color:var(--red);} .erow .v.c{color:var(--cyan);} .erow .v.g{color:var(--green);}
+
+  .caption{margin-top:1.2rem;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;}
+  .caption .cap-h{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .6rem;}
+  .caption pre{margin:0;white-space:pre-wrap;font-family:var(--sans);font-size:.9rem;line-height:1.5;color:#cdd8e3;}
+  .tag{color:var(--cyan);}
+  footer{margin-top:2rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--faint);font-family:var(--mono);font-size:.74rem;}
+  @media (max-width:520px){ .slide{max-width:100%;} }
+</style>
+
+<div class="app"><div class="wrap">
+  <div class="brandbar"><img src="__LOGO__" alt="Sonar"><span class="sp"></span><span>Content pack · 5 Aug 2026</span></div>
+  <h1 class="title">Wednesday pack — THE EXODUS IS OVER</h1>
+  <p class="sub">Slots: A Morning Card (~11:00) · B The Story (~13:30) · C The Tape (~17:00) · D Nightcap meme (~22:00). Reel (20:00): SOL's redemption-arc cartoon. Numbers verified 5 Aug ~09:30 UTC.</p>
+
+  <!-- ═══════ A · Morning Card ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">A</span><span class="ctitle">Morning Card <span>· the quiet tape · ~11:00</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Markets</span></div>
+          <div class="qzone">
+            <div class="qcard">
+              <div class="qtop"><span class="qcoin">₿</span><div><div class="qname">Bitcoin</div><div class="qsub">BTC · USD</div></div><span class="qlive"><i></i>Live</span></div>
+              <div class="qprice">$64,156</div>
+              <div class="qchg">▲ +0.9% today</div>
+              <div class="qchart"><canvas id="qbtc"></canvas></div>
+              <div class="qpills"><span class="pill">1D</span><span class="pill on">1W</span><span class="pill">1M</span><span class="pill">3M</span><span class="pill">1Y</span></div>
+            </div>
+          </div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">MARKETS</span><span class="r"></span></div>
+          <h2 class="big sm" style="font-size:9.8cqw">THE TAPE WENT <em class="hl-c">QUIET</em>.</h2>
+          <p style="font-family:var(--mono);font-size:2.8cqw;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;text-align:center;margin:2cqw 0 0;">Whale volume at tracking lows · net flows green 3 days straight</p>
+          <div class="foot"><span>Source: Binance · Sonar on-chain · 5 Aug 2026</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>Something changed on the whale tape this week: it went quiet. $132M of tracked volume in 24h — the lowest since we started — and net flows have been GREEN three days straight.
+
+BTC $64.2K, +0.9%. After three weeks of sirens, silence is the signal.
+
+Comment "WHALE" and Orca will DM you what the quiet means.
+
+Not financial advice.
+
+<span class="tag">#Bitcoin #CryptoNews #WhaleAlert #OnChain #Markets #Sonar</span></pre></div>
+  </section>
+
+  <!-- ═══════ B · The Story ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">B</span><span class="ctitle">The Story <span>· CLARITY: five days, no motion · ~13:30</span></span></div>
+    <div class="slides">
+      <div class="slide photo" style="background-image:url(__HEROCHAMBER__);">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>Regulation</span></div>
+          <span class="spacer"></span>
+          <div class="newsrow"><span class="r"></span><span class="newsbadge">NEWS</span><span class="r"></span></div>
+          <h2 class="big" style="font-size:10.2cqw">FIVE DAYS LEFT. NOBODY EVEN FILED THE <em class="hl-r">MOTION</em>.</h2>
+          <div class="statline">CLARITY ODDS 14.5% · RECESS AUG 10 · NO MOTION TO PROCEED</div>
+          <div class="foot"><span>Source: Polymarket · CoinDesk · 5 Aug 2026</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>The CLARITY Act needs a Senate floor vote before the Aug 10 recess. As of today, the motion to proceed — the first procedural step — hasn't even been filed.
+
+Polymarket has 2026 passage at 14.5%. In February it was 80%. Solana Policy Institute and DCG sent letters urging a vote. The chamber is quiet.
+
+The market stopped waiting weeks ago — that's the real story.
+
+Comment "WHALE" and Orca will DM you what whales did through the whole saga.
+
+Not financial advice.
+
+<span class="tag">#ClarityAct #CryptoNews #Regulation #Bitcoin #Polymarket #Sonar</span></pre></div>
+  </section>
+
+  <!-- ═══════ C · The Tape ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">C</span><span class="ctitle">The Tape <span>· exodus epilogue · ~17:00</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>On-chain</span></div>
+          <div class="epi">
+            <div class="ehead">THE SOLANA EXODUS · EPILOGUE</div>
+            <div class="erow"><span class="k">Started</span><span class="v c">JUL 18</span></div>
+            <div class="erow"><span class="k">Peak day · Jul 26</span><span class="v r">−$339M</span></div>
+            <div class="erow"><span class="k">Total · 16 red days</span><span class="v r">−$3.2B</span></div>
+            <div class="erow"><span class="k">SOL net · last 3 days</span><span class="v g">≈$0 → GREEN</span></div>
+            <div class="erow"><span class="k">SOL price · through it all</span><span class="v">$74 · HELD</span></div>
+          </div>
+          <span class="spacer"></span>
+          <h2 class="big sm" style="font-size:8cqw">AFTER <em class="hl-r">$3.2 BILLION</em>, THE EXODUS JUST... <em class="hl-g">STOPPED</em>.</h2>
+          <div class="foot"><span>Sonar on-chain · daily 08:00 UTC windows · 5 Aug 2026</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>The story we tracked for 18 days has an ending: the Solana exodus is over. From −$339M/day at the peak to −$27M Saturday, −$15M Sunday… and then zero. SOL hasn't cracked the top flows in three days, and total whale net flow flipped GREEN (+$54M Monday, +$46M today).
+
+Final receipt: ≈$3.2B out. SOL's price through all of it: from $76 to $74. Absorbed.
+
+Comment "WHALE" and Orca will DM you what the whales rotate into next.
+
+Not financial advice.
+
+<span class="tag">#WhaleAlert #Solana #OnChain #SmartMoney #CryptoNews #Sonar</span></pre></div>
+  </section>
+
+  <!-- ═══════ D · Nightcap meme ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">D</span><span class="ctitle">Nightcap <span>· meme single · ~22:00</span></span></div>
+    <div class="slides">
+      <div class="slide photo" style="background-image:url(__MEMEPOCKETS__);">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span></div>
+          <span class="spacer"></span>
+          <h2 class="big" style="font-size:10.4cqw">THE WHALES RAN OUT OF <em class="hl-c">SOLANA</em> TO SELL.</h2>
+          <p style="font-family:var(--mono);font-size:2.8cqw;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;text-align:center;margin:2cqw 0 0;">$3.2B later · sol still standing</p>
+          <div class="foot"><span>@sonartracker</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>18 days. $3.2 billion. And then the selling just… ran out.
+
+SOL's still here. $74. The whales are turning their pockets inside out.
+
+Comment "WHALE" and Orca will DM you who's buying now.
+
+Not financial advice.
+
+<span class="tag">#Solana #CryptoMemes #WhaleAlert #OnChain #CryptoNews #Sonar</span></pre></div>
+  </section>
+
+  <footer>Sonar Tracker · 5 Aug 2026 · numbers verified ~09:30 UTC (Binance · Polymarket gamma API · CoinDesk/CryptoBriefing · Sonar on-chain daily 08:00 windows, $150M sanity cap)</footer>
+</div></div>
+
+<script>
+__DATA__
+function fit(cv){const box=cv.parentElement.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  if(box.width<4||box.height<4)return null;cv.width=Math.round(box.width*dpr);cv.height=Math.round(box.height*dpr);
+  cv.style.width=box.width+'px';cv.style.height=box.height+'px';return dpr;}
+function mini(id,data){
+  const cv=document.getElementById(id);if(!cv)return;const dpr=fit(cv);if(!dpr)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,p=3*dpr;
+  const ys=data.map(d=>d[3]);let lo=Math.min(...ys),hi=Math.max(...ys);const r=(hi-lo)||1;lo-=r*0.12;hi+=r*0.12;
+  const up=ys[ys.length-1]>=ys[0];const col=up?'#00e08a':'#ff5b6b';const colA=up?'rgba(0,224,138,':'rgba(255,91,107,';
+  const X=i=>p+i/(data.length-1)*(W-2*p),Y=v=>p+(1-(v-lo)/(hi-lo))*(H-2*p);
+  ctx.clearRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,colA+'0.32)');g.addColorStop(1,colA+'0)');
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.lineTo(X(ys.length-1),H);ctx.lineTo(X(0),H);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle=col;ctx.lineWidth=2.4*dpr;ctx.lineJoin='round';ctx.stroke();
+  const lx=X(ys.length-1),ly=Y(ys[ys.length-1]);ctx.beginPath();ctx.arc(lx,ly,3.4*dpr,0,7);ctx.fillStyle=col;ctx.fill();
+  ctx.strokeStyle='#0a1018';ctx.lineWidth=2*dpr;ctx.stroke();
+}
+function drawAll(){ mini('qbtc',BTC.slice(-28)); }
+requestAnimationFrame(()=>requestAnimationFrame(drawAll));
+window.addEventListener('load',drawAll);window.addEventListener('resize',drawAll);
+</script>
