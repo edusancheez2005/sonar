@@ -165,7 +165,9 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url)
     const dry = url.searchParams.get('dry') === '1'
-    const minUsd = Number(url.searchParams.get('min')) || Number(process.env.X_ALERT_MIN_USD) || 5_000_000
+    // Floor lowered $5M→$2M 2026-08-10: the August tape regularly went full
+    // cron days with zero $5M+ prints, leaving the account looking dead.
+    const minUsd = Number(url.searchParams.get('min')) || Number(process.env.X_ALERT_MIN_USD) || 2_000_000
     const famousMinUsd = Number(process.env.X_FAMOUS_MIN_USD) || 250_000
     // Default 5 = one post per cron slot (pay-per-use billing confirmed
     // 2026-08-01 — no legacy 17/day cap). Override via X_DAILY_POST_BUDGET.
@@ -257,19 +259,39 @@ export async function GET(req: Request) {
       if (candidates.length === 0) {
         return NextResponse.json({ skipped: 'no qualifying transfer in window', minUsd, window_hours: WHALE_LOOKBACK_HOURS })
       }
-      // Prefer the biggest transfer with at least one labeled side.
-      const labels = await fetchArkhamLabels(
-        candidates.flatMap(tx => [tx.from_address, tx.to_address]).filter(Boolean) as string[]
-      )
+      // Prefer the biggest transfer with at least one labeled side. Labels
+      // come from the legacy Etherscan-tag `addresses` table first (higher
+      // quality where it hits: exchange hot wallets etc.), then the
+      // Arkham-derived universe.
+      const addrList = candidates.flatMap(tx => [tx.from_address, tx.to_address]).filter(Boolean) as string[]
+      const labels = await fetchArkhamLabels(addrList)
+      const legacy = new Map<string, string>()
+      try {
+        const { data: legacyRows } = await supabaseAdmin
+          .from('addresses')
+          .select('address, entity_name, label')
+          .in('address', [...new Set([...addrList, ...addrList.map(a => a.toLowerCase())])])
+        for (const r of legacyRows || []) {
+          const name = r.entity_name || r.label
+          if (name) {
+            legacy.set(String(r.address), name)
+            legacy.set(String(r.address).toLowerCase(), name)
+          }
+        }
+      } catch { /* legacy table is best-effort */ }
       const label = (addr: string | null) =>
         addr ? (labels.get(addr) || labels.get(addr.toLowerCase())) : undefined
+      const displayName = (addr: string | null): string | null =>
+        addr
+          ? (legacy.get(addr) || legacy.get(addr.toLowerCase()) || formatArkhamDisplayName(label(addr)))
+          : null
       const preferred =
-        candidates.find(tx => label(tx.from_address) || label(tx.to_address)) ||
+        candidates.find(tx => displayName(tx.from_address) || displayName(tx.to_address)) ||
         candidates[0]
       const ordered = [preferred, ...candidates.filter(c => c !== preferred)]
       for (const pick of ordered) {
-        const fromName = formatArkhamDisplayName(label(pick.from_address)) || 'unknown wallet'
-        const toName = formatArkhamDisplayName(label(pick.to_address)) || 'unknown wallet'
+        const fromName = displayName(pick.from_address) || 'unknown wallet'
+        const toName = displayName(pick.to_address) || 'unknown wallet'
         const sym = String(pick.token_symbol).toUpperCase()
         const usd = Number(pick.usd_value) || 0
         const emoji = usd >= 50_000_000 ? '🚨🐋' : '🐋'
