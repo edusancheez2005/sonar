@@ -94,6 +94,25 @@ export async function GET(req: Request) {
       .lte('usd_value', 150_000_000)
     if ((whaleQualifying || 0) === 0) issues.push('Whale feed has zero qualifying $5M+ transfers in the last 8h.')
 
+    // --- ORCA / xAI canary -------------------------------------------------
+    // whale_whispers is written by a Grok-backed cron every 4h; if it goes
+    // stale, xAI is failing (credits/limit) and ORCA chat is likely down.
+    // (Added 2026-08-27 after xAI credits silently ran out on Aug 21 and
+    // ORCA was dead for 6 days before anyone noticed.)
+    let lastWhisperAgeH: number | null = null
+    try {
+      const { data: whisper } = await supabaseAdmin
+        .from('whale_whispers')
+        .select('created_at')
+        .order('created_at', { ascending: false })
+        .limit(1)
+      const t = whisper?.[0]?.created_at ? new Date(whisper[0].created_at).getTime() : NaN
+      if (Number.isFinite(t)) lastWhisperAgeH = Math.round((now.getTime() - t) / 3600_000)
+    } catch { /* flagged below via null */ }
+    if (lastWhisperAgeH === null || lastWhisperAgeH > 9) {
+      issues.push(`xAI/Grok canary stale: last Whale Whisper ${lastWhisperAgeH === null ? 'unknown' : lastWhisperAgeH + 'h'} ago (cron runs 4-hourly) — ORCA chat likely DOWN (check xAI credits at console.x.ai).`)
+    }
+
     // --- SEO spot checks ---------------------------------------------------
     let sitemapUrls = 0
     let pricingBlocked: boolean | null = null
@@ -115,6 +134,7 @@ export async function GET(req: Request) {
       recentPosts: recentPosts.slice(-8).reverse(),
       famous: { addresses: famousAddrs.length, polled: famousPolled, coveragePct: famousCoveragePct, candidates24h: famousCandidates24h },
       whaleFeed: { qualifying8h: whaleQualifying || 0 },
+      orca: { lastWhisperAgeHours: lastWhisperAgeH },
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,
     }
