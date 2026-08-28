@@ -13,12 +13,21 @@ import type { RawEvmTransfer } from './transfers'
 const BASE = 'https://api.etherscan.io/v2/api'
 
 // Etherscan V2 chainid registry for the chains we route here.
+// ethereum + polygon added 2026-08-28: the Alchemy key has been answering
+// 429 on 100% of calls since ~Aug 10 (monthly CU cap), freezing the
+// eth/polygon tracked-wallet polling. Free-tier Etherscan handles chainid 1
+// fine (only 56 was pay-walled); if 137 is rejected the rows just keep
+// failing with a clearer error than the Alchemy 429 they fail with today.
 export const ETHERSCAN_CHAIN_IDS: Record<string, number> = {
   bsc: 56,
+  ethereum: 1,
+  polygon: 137,
 }
 
 const NATIVE_SYMBOL: Record<number, string> = {
   56: 'BNB',
+  1: 'ETH',
+  137: 'POL',
 }
 
 interface EtherscanTx {
