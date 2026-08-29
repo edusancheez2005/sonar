@@ -1,5 +1,5 @@
-// CRON: SEO Article Generator - Daily AI blog posts with images
-// Schedule: Daily at 8am UTC
+// CRON: SEO Article Generator - AI blog posts with images
+// Schedule: 10x/month (days 1,4,7,...,28 at 8am UTC) — Eduardo capped cadence at ~10/mo on 29 Aug 2026
 // Generates long-form, SEO-optimized articles with DALL-E images,
 // internal links, external references, tables, FAQs, and key takeaways.
 

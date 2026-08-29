@@ -110,7 +110,7 @@
     },
     {
       "path": "/api/cron/seo-article",
-      "schedule": "0 8 * * *"
+      "schedule": "0 8 1,4,7,10,13,16,19,22,25,28 * *"
     },
     {
       "path": "/api/cron/sync-brevo-contacts",
