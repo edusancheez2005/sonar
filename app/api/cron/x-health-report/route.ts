@@ -113,6 +113,31 @@ export async function GET(req: Request) {
       issues.push(`xAI/Grok canary stale: last Whale Whisper ${lastWhisperAgeH === null ? 'unknown' : lastWhisperAgeH + 'h'} ago (cron runs 4-hourly) — ORCA chat likely DOWN (check xAI credits at console.x.ai).`)
     }
 
+    // --- Alchemy canary ----------------------------------------------------
+    // One cheap eth_blockNumber against the shared key. Quota exhaustion
+    // 429'd silently for ~3 weeks in Aug 2026 (only symptom: empty holdings
+    // panels); this puts it in the morning email on day one.
+    let alchemyOk: boolean | null = null
+    let alchemyError: string | null = null
+    try {
+      const aKey = process.env.ALCHEMY_API_KEY
+      if (aKey) {
+        const r = await fetch(`https://eth-mainnet.g.alchemy.com/v2/${aKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] }),
+          cache: 'no-store',
+          signal: AbortSignal.timeout(10000),
+        })
+        const j: any = await r.json().catch(() => null)
+        alchemyOk = Boolean(j?.result)
+        if (!alchemyOk) alchemyError = j?.error?.message?.slice(0, 120) || `HTTP ${r.status}`
+      }
+    } catch (e: any) { alchemyOk = false; alchemyError = String(e?.message || e).slice(0, 120) }
+    if (alchemyOk === false) {
+      issues.push(`Alchemy key failing: ${alchemyError} — wallet holdings panels are down.`)
+    }
+
     // --- SEO spot checks ---------------------------------------------------
     let sitemapUrls = 0
     let pricingBlocked: boolean | null = null
@@ -135,6 +160,7 @@ export async function GET(req: Request) {
       famous: { addresses: famousAddrs.length, polled: famousPolled, coveragePct: famousCoveragePct, candidates24h: famousCandidates24h },
       whaleFeed: { qualifying8h: whaleQualifying || 0 },
       orca: { lastWhisperAgeHours: lastWhisperAgeH },
+      alchemy: { ok: alchemyOk, error: alchemyError },
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,
     }
