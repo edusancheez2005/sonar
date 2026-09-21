@@ -17,6 +17,7 @@ import { run as runExplainMacroFactor } from './explainMacroFactor'
 import { run as runGetMacroFactors } from './getMacroFactors'
 import { run as runGetWalletActivity } from './getWalletActivity'
 import { run as runGetMostActiveWallets } from './getMostActiveWallets'
+import { run as runGetTopPerformingWallets } from './getTopPerformingWallets'
 import { run as runGetArticleContext } from './getArticleContext'
 import { run as runGetSignalContext } from './getSignalContext'
 import { run as runFindTrackedWallets } from './findTrackedWallets'
@@ -47,6 +48,7 @@ export const READ_ONLY_TOOLS = new Set<ToolName>([
   'getOrcaMemory',
   'getWalletActivity',
   'getMostActiveWallets',
+  'getTopPerformingWallets',
   'getArticleContext',
   'getSignalContext',
   'findTrackedWallets',
@@ -57,7 +59,10 @@ export const READ_ONLY_TOOLS = new Set<ToolName>([
 // ride all the way to the ~60s platform kill. Every tool now races a hard
 // timeout; the writer already degrades gracefully on ok:false results.
 // Override via ORCA_TOOL_TIMEOUT_MS.
-const TOOL_TIMEOUT_MS = Number(process.env.ORCA_TOOL_TIMEOUT_MS) || 6_000
+// 10s (was 6s on 2026-09-21 for a few hours): getMostActiveWallets' RPC
+// legitimately runs 6-8s and the 6s cap turned "most profitable wallet"
+// into a dead-end answer the same evening it shipped.
+const TOOL_TIMEOUT_MS = Number(process.env.ORCA_TOOL_TIMEOUT_MS) || 10_000
 
 export async function executeTool(
   call: ToolCall,
@@ -121,6 +126,8 @@ async function executeToolInner(
       return runGetWalletActivity(call.args as any, supabase, now)
     case 'getMostActiveWallets':
       return runGetMostActiveWallets(call.args as any, supabase, now)
+    case 'getTopPerformingWallets':
+      return runGetTopPerformingWallets(call.args as any, supabase, now)
     case 'getArticleContext':
       return runGetArticleContext(call.args as any, supabase, now)
     case 'getSignalContext':

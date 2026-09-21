@@ -66,6 +66,7 @@ export type ToolName =
   // W3 — agentic read-only tools.
   | 'getWalletActivity'
   | 'getMostActiveWallets'
+  | 'getTopPerformingWallets'
   | 'getArticleContext'
   | 'getSignalContext'
   | 'findTrackedWallets'
