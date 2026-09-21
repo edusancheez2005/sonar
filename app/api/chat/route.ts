@@ -1772,7 +1772,8 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             },
             metadata: {
               response_time_ms: Date.now() - startTime,
-              tokens_used: completion.usage?.total_tokens || 0
+              // Streaming API returns no usage envelope — estimate ~4 chars/token.
+              tokens_used: Math.round((sysPrompt.length + gptContext.length + orcaResponse.length) / 4)
             }
           })
 
