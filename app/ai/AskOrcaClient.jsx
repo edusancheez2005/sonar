@@ -636,6 +636,11 @@ export default function AskOrcaClient({
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    // 2026-09-21: the server now streams the answer as {type:'token'} deltas
+    // ahead of the final 'complete' envelope. Tokens render progressively
+    // into one provisional assistant message; 'complete' replaces it with
+    // the authoritative text (guardrails may adjust the tail).
+    let streamingId = null
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
@@ -651,7 +656,24 @@ export default function AskOrcaClient({
         } catch {
           continue
         }
-        if (event.type === 'status') {
+        if (event.type === 'token') {
+          setStatusText('')
+          if (!streamingId) {
+            streamingId = `a-stream-${Date.now()}`
+            const sid = streamingId
+            setMessages((prev) => [
+              ...prev,
+              { id: sid, role: 'assistant', content: event.text || '', streaming: true },
+            ])
+          } else {
+            const sid = streamingId
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === sid ? { ...m, content: m.content + (event.text || '') } : m
+              )
+            )
+          }
+        } else if (event.type === 'status') {
           setStatusText(event.message || '')
         } else if (event.type === 'confirm') {
           setMessages((prev) => [
@@ -668,16 +690,21 @@ export default function AskOrcaClient({
             },
           ])
         } else if (event.type === 'complete') {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `a-${Date.now()}`,
-              role: 'assistant',
-              content: event.response || '',
-              ticker: event.ticker || null,
-              data: event.data || null,
-            },
-          ])
+          const finalMsg = {
+            id: `a-${Date.now()}`,
+            role: 'assistant',
+            content: event.response || '',
+            ticker: event.ticker || null,
+            data: event.data || null,
+          }
+          if (streamingId) {
+            // Replace the provisional streamed message with the authoritative one.
+            const sid = streamingId
+            streamingId = null
+            setMessages((prev) => prev.map((m) => (m.id === sid ? finalMsg : m)))
+          } else {
+            setMessages((prev) => [...prev, finalMsg])
+          }
         } else if (event.type === 'error') {
           throw new Error(event.message || event.error || 'Stream error')
         }

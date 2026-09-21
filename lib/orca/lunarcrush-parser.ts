@@ -189,10 +189,13 @@ export async function fetchFreshLunarCrushData(
     const response = await fetch(
       `https://lunarcrush.ai/topic/${ticker.toLowerCase()}`,
       {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'text/html,text/markdown'
-        }
+        },
+        // 2026-09-21: hung upstream used to stall the caller until the ~60s
+        // platform kill; now it fails fast and the DB-cached data serves.
+        signal: AbortSignal.timeout(8_000)
       }
     )
     

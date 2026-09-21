@@ -826,6 +826,10 @@ export default function ClientOrca() {
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
+        // 2026-09-21: server streams the answer as {type:'token'} deltas
+        // before the final 'complete'. Render progressively; 'complete'
+        // replaces the provisional message with the authoritative text.
+        let streamingId = null
 
         while (true) {
           const { done, value } = await reader.read()
@@ -842,7 +846,24 @@ export default function ClientOrca() {
             try {
               const event = JSON.parse(line.slice(6))
 
-              if (event.type === 'status') {
+              if (event.type === 'token') {
+                if (!streamingId) {
+                  streamingId = `stream-${Date.now()}`
+                  const sid = streamingId
+                  setMessages(prev => [...prev, {
+                    id: sid,
+                    role: 'assistant',
+                    content: event.text || '',
+                    streaming: true,
+                    timestamp: new Date(),
+                  }])
+                } else {
+                  const sid = streamingId
+                  setMessages(prev => prev.map(m =>
+                    m.id === sid ? { ...m, content: m.content + (event.text || '') } : m
+                  ))
+                }
+              } else if (event.type === 'status') {
                 setAgentSteps(prev => {
                   // Avoid duplicates
                   if (prev.some(s => s.step === event.step)) return prev
@@ -873,7 +894,13 @@ export default function ClientOrca() {
                   data: event.data,
                   timestamp: new Date()
                 }
-                setMessages(prev => [...prev, orcaMessage])
+                if (streamingId) {
+                  const sid = streamingId
+                  streamingId = null
+                  setMessages(prev => prev.map(m => (m.id === sid ? orcaMessage : m)))
+                } else {
+                  setMessages(prev => [...prev, orcaMessage])
+                }
                 setQuota(event.quota)
               } else if (event.type === 'error') {
                 throw new Error(event.message)

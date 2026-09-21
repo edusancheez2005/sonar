@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { waitUntil } from '@vercel/functions'
 import { 
   parseLunarCrushAI, 
   fetchFreshLunarCrushData, 
@@ -315,12 +316,19 @@ export async function buildOrcaContext(
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE!
   const supabase = createClient(supabaseUrl, supabaseKey)
   
-  // Wrapper that reports progress when each parallel fetch completes
+  // Wrapper that reports progress when each parallel fetch completes.
+  // 2026-09-21: also records per-source wall-clock so the p95 offender in
+  // the 15-25s fan-out is identifiable from Vercel logs — this was fully
+  // unmeasured before.
+  const fanoutT0 = Date.now()
+  const sourceMs: Record<string, number> = {}
   const tracked = <T>(promise: Promise<T>, step: string, summarize?: (data: T) => string): Promise<T> =>
     promise.then(result => {
+      sourceMs[step] = Date.now() - fanoutT0
       onProgress?.(step, summarize?.(result) ?? undefined)
       return result
     }).catch(err => {
+      sourceMs[step] = Date.now() - fanoutT0
       onProgress?.(step, 'failed')
       throw err
     })
@@ -345,7 +353,11 @@ export async function buildOrcaContext(
     tracked(fetchLunarCrushEnhanced(ticker), 'lunarcrush', (d: any) => d?.coin?.galaxy_score ? `Galaxy Score ${d.coin.galaxy_score}` : 'Loaded'),
     tracked(fetchBinanceChartData(ticker), 'charts', (d: any) => d ? '7d/30d charts loaded' : 'No chart data'),
   ])
-  
+
+  console.log(
+    `[buildOrcaContext] ${ticker} fan-out ${Date.now() - fanoutT0}ms — per-source finish times: ${JSON.stringify(sourceMs)}`
+  )
+
   return {
     ticker,
     price: processPriceData(priceData),
@@ -683,14 +695,33 @@ async function fetchCryptoPanicNews(ticker: string, supabase: any): Promise<void
  */
 async function fetchNews(ticker: string, supabase: any): Promise<any[]> {
   try {
-    // Fetch from ALL THREE sources in parallel
-    console.log(`📡 Fetching fresh news for ${ticker} from 3 sources...`)
-    await Promise.allSettled([
-      fetchFreshLunarCrushData(ticker, supabase),      // LunarCrush AI (with social themes)
-      fetchLunarCrushNews(ticker, supabase),           // LunarCrush /news API
-      fetchCryptoPanicNews(ticker, supabase)           // CryptoPanic
-    ])
-    
+    // Latency (2026-09-21): ingestion used to be AWAITED inline here — three
+    // external fetches (10s timeouts) plus per-article serial DB inserts and
+    // up to 10 sequential sentiment LLM calls, 10-25s on cold tickers, all
+    // before the user saw anything. The read path now serves whatever the DB
+    // already has (the ingest-news cron keeps it warm) and the fresh ingest
+    // runs in the background via waitUntil for the NEXT turn.
+    console.log(`📡 Background-refreshing news for ${ticker} (3 sources)...`)
+    try {
+      waitUntil(
+        Promise.allSettled([
+          fetchFreshLunarCrushData(ticker, supabase),      // LunarCrush AI (with social themes)
+          fetchLunarCrushNews(ticker, supabase),           // LunarCrush /news API
+          fetchCryptoPanicNews(ticker, supabase)           // CryptoPanic
+        ]).then((results) => {
+          const failed = results.filter((r) => r.status === 'rejected').length
+          if (failed) console.warn(`[fetchNews] background ingest: ${failed}/3 sources failed for ${ticker}`)
+        })
+      )
+    } catch {
+      // waitUntil unavailable (non-Vercel runtime) — fire and forget.
+      Promise.allSettled([
+        fetchFreshLunarCrushData(ticker, supabase),
+        fetchLunarCrushNews(ticker, supabase),
+        fetchCryptoPanicNews(ticker, supabase)
+      ]).catch(() => {})
+    }
+
     console.log(`🔍 Querying database for ${ticker} articles...`)
     
     // Get all articles for this ticker, ordered by when we fetched them.
@@ -831,18 +862,22 @@ async function fetchLunarCrushAI(ticker: string): Promise<any> {
     const [aiResponse, postsResponse] = await Promise.all([
       // Main AI page
       fetch(`https://lunarcrush.ai/topic/${ticker.toLowerCase()}`, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Accept': 'text/html'
-        }
+        },
+        // 2026-09-21: no timeout meant a hung upstream stalled the whole
+        // buildOrcaContext Promise.all until the ~60s platform kill.
+        signal: AbortSignal.timeout(8_000)
       }).catch(err => {
         console.error('LunarCrush AI page error:', err)
         return null
       }),
-      
+
       // Social posts (more detailed sentiment)
       fetch(`https://lunarcrush.com/api4/public/topic/${ticker.toLowerCase()}/posts/v1`, {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(8_000)
       }).catch(err => {
         console.error('LunarCrush posts error:', err)
         return null

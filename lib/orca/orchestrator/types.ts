@@ -187,7 +187,11 @@ export interface ModelClient {
     }
   ) => Promise<string>
   routerCall: (prompt: string, userMessage: string) => Promise<string>
-  writerCall: (systemPrompt: string, userMessage: string) => Promise<string>
+  writerCall: (
+    systemPrompt: string,
+    userMessage: string,
+    meta?: { intent?: string }
+  ) => Promise<string>
   /**
    * §6.2 — JSON-mode mini-model call for the agentic planning hops. Optional
    * so existing tests/constructions compile; when absent the orchestrator

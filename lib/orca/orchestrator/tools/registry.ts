@@ -52,7 +52,42 @@ export const READ_ONLY_TOOLS = new Set<ToolName>([
   'findTrackedWallets',
 ])
 
+// Latency guard (2026-09-21): tool batches run under Promise.all, so the turn
+// waits for the SLOWEST member — and a hung Supabase/upstream call used to
+// ride all the way to the ~60s platform kill. Every tool now races a hard
+// timeout; the writer already degrades gracefully on ok:false results.
+// Override via ORCA_TOOL_TIMEOUT_MS.
+const TOOL_TIMEOUT_MS = Number(process.env.ORCA_TOOL_TIMEOUT_MS) || 6_000
+
 export async function executeTool(
+  call: ToolCall,
+  supabase: SupabaseLike,
+  now: () => Date = () => new Date()
+): Promise<ToolResult> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      executeToolInner(call, supabase, now),
+      new Promise<ToolResult>((resolve) => {
+        timer = setTimeout(
+          () =>
+            resolve({
+              ok: false,
+              data: null,
+              source: 'timeout',
+              fetched_at: now().toISOString(),
+              error: `tool_timeout:${call.tool} (${TOOL_TIMEOUT_MS}ms)`,
+            }),
+          TOOL_TIMEOUT_MS
+        )
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+async function executeToolInner(
   call: ToolCall,
   supabase: SupabaseLike,
   now: () => Date = () => new Date()

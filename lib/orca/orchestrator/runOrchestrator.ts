@@ -244,10 +244,10 @@ export async function runOrchestrator(
           latency_ms: Date.now() - tWriter,
         })
         liveSearchUsed = false
-        draft = await deps.model.writerCall(systemPrompt, input.message)
+        draft = await deps.model.writerCall(systemPrompt, input.message, { intent: router.intent })
       }
     } else {
-      draft = await deps.model.writerCall(systemPrompt, input.message)
+      draft = await deps.model.writerCall(systemPrompt, input.message, { intent: router.intent })
     }
   } catch (err: any) {
     trace.push({

@@ -277,6 +277,24 @@ export async function runAgenticPlan(
       )
       results.push(...hopResults)
       if (plan.done) break
+      // Latency (2026-09-21): the hop-2 planner LLM call (~1-3s) used to fire
+      // on almost every turn and nearly always scheduled nothing — the prompt
+      // only allows done:true "on the second call", and the zero-fresh break
+      // ran AFTER paying for that call. When every hop-1 tool succeeded there
+      // is no gap for hop 2 to patch, so finish early. The second hop still
+      // runs whenever any tool failed. Kill switch: ORCA_AGENTIC_EAGER_DONE=false.
+      if (
+        hop === 1 &&
+        hopResults.length > 0 &&
+        hopResults.every((r) => r.result.ok) &&
+        process.env.ORCA_AGENTIC_EAGER_DONE !== 'false'
+      ) {
+        trace.push({
+          stage: 'agentic_plan',
+          payload: { hop, thought: 'eager_done: all hop-1 tools succeeded', tools: [], done: true },
+        })
+        break
+      }
     }
   }
 

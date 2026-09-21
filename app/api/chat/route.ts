@@ -18,6 +18,7 @@ import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
 import type { ChatTurn, Datapoint, RouterDecision, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
 import { loadRecentHistory, type RecentTurn } from '@/lib/orca/chat/loadRecentHistory'
 import { formatHistoryForPrompt } from '@/lib/orca/chat/formatHistoryForPrompt'
+import { trimTurnsForPrompt } from '@/lib/orca/chat/trimHistory'
 import { derivePriorSubject, type LastChatRow } from '@/lib/orca/chat/priorSubject'
 import { getFollowupChips } from '@/lib/orca/suggestedChips'
 import { detectFastWrite, sanitiseConfirmCalls, type WriteCall } from '@/lib/orca/orchestrator/fastWrites'
@@ -133,7 +134,11 @@ export const maxDuration = 180
  * dead (silently ignored historically; 410 "deprecated" as of 2026-07).
  * Throws on any failure — runOrchestrator falls back to the plain writer.
  */
-async function grokSearchWriter(sys: string, usr: string, opts?: { deep?: boolean }): Promise<string> {
+async function grokSearchWriter(
+  sys: string,
+  usr: string,
+  opts?: { deep?: boolean; budgetMs?: number }
+): Promise<string> {
   const xaiKey = process.env.XAI_API_KEY
   if (!xaiKey) throw new Error('no_xai_key')
   // Mini for event lookups (the flagship's agentic search blew a 40s budget;
@@ -155,8 +160,14 @@ async function grokSearchWriter(sys: string, usr: string, opts?: { deep?: boolea
       tools: [{ type: 'web_search' }],
     }),
     // The platform kills the whole function at ~60s; leave room for the
-    // fan-out that ran before the writer.
-    signal: AbortSignal.timeout(42_000),
+    // fan-out that ran before the writer. 2026-09-21: callers now pass the
+    // budget that actually remains (56s minus elapsed) — a fixed 42s here
+    // used to guarantee a platform kill whenever pre-writer stages had
+    // already eaten 15-20s. Deep (flagship) search is additionally capped at
+    // 30s so its serial plain-writer fallback still fits the window.
+    signal: AbortSignal.timeout(
+      Math.max(8_000, Math.min(opts?.deep ? 30_000 : 42_000, opts?.budgetMs ?? 42_000))
+    ),
   })
   if (!resp.ok) throw new Error(`xai_responses_${resp.status}`)
   const json: any = await resp.json()
@@ -567,20 +578,25 @@ export async function POST(request: Request) {
       // Resolve a context ticker from prior chat_history so utterances like
       // "add it to my watchlist" pick up the most-recently-discussed token.
       let contextTicker: string | null = null
-      try {
-        const { data: lastChat } = await supabase
-          .from('chat_history')
-          .select('tickers_mentioned')
-          .eq('user_id', userId)
-          .not('tickers_mentioned', 'is', null)
-          .order('timestamp', { ascending: false })
-          .limit(1)
-          .single()
-        if (lastChat?.tickers_mentioned?.length) {
-          contextTicker = String(lastChat.tickers_mentioned[0] || '') || null
+      // Latency (2026-09-21): this round trip used to run on EVERY message.
+      // The context ticker only matters for pronoun resolution ("add it"),
+      // so skip the query when the message names no pronoun.
+      if (/\b(it|this|that|those|them)\b/i.test(message)) {
+        try {
+          const { data: lastChat } = await supabase
+            .from('chat_history')
+            .select('tickers_mentioned')
+            .eq('user_id', userId)
+            .not('tickers_mentioned', 'is', null)
+            .order('timestamp', { ascending: false })
+            .limit(1)
+            .single()
+          if (lastChat?.tickers_mentioned?.length) {
+            contextTicker = String(lastChat.tickers_mentioned[0] || '') || null
+          }
+        } catch {
+          // No prior history is fine; pronoun fallback simply won't trigger.
         }
-      } catch {
-        // No prior history is fine; pronoun fallback simply won't trigger.
       }
       const detection = detectFastWrite(message, { contextTicker })
       if (detection) {
@@ -701,25 +717,32 @@ export async function POST(request: Request) {
     // inherits the right tools instead of dead-ending on a greeting.
     // Best-effort: loadRecentHistory never throws and returns [] on any error.
     // -------------------------------------------------------------------------
-    const recentTurns: RecentTurn[] =
+    // Latency (2026-09-21): history + last-row used to be two SERIAL round
+    // trips (the second gated on the first's result). They are independent
+    // queries — run them together and just ignore the last-row when there is
+    // no history.
+    const [recentTurnsRaw, lastChatRowRaw] = await Promise.all([
       process.env.ORCA_CHAT_MEMORY !== 'false'
-        ? await loadRecentHistory(supabase, userId, session_id ?? null, 12)
-        : []
-    let lastChatRow: LastChatRow | null = null
-    if (recentTurns.length > 0) {
-      try {
-        const { data } = await supabase
-          .from('chat_history')
-          .select('tickers_mentioned, data_sources_used')
-          .eq('user_id', userId)
-          .order('timestamp', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        lastChatRow = (data ?? null) as LastChatRow | null
-      } catch {
-        // No prior row / unreadable — carry-over simply won't trigger.
-      }
-    }
+        ? loadRecentHistory(supabase, userId, session_id ?? null, 12)
+        : Promise.resolve([] as RecentTurn[]),
+      (async (): Promise<LastChatRow | null> => {
+        if (process.env.ORCA_CHAT_MEMORY === 'false') return null
+        try {
+          const { data } = await supabase
+            .from('chat_history')
+            .select('tickers_mentioned, data_sources_used')
+            .eq('user_id', userId)
+            .order('timestamp', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          return (data ?? null) as LastChatRow | null
+        } catch {
+          return null
+        }
+      })(),
+    ])
+    const recentTurns: RecentTurn[] = recentTurnsRaw
+    const lastChatRow: LastChatRow | null = recentTurns.length > 0 ? lastChatRowRaw : null
     const { priorIntent, priorTickers } = derivePriorSubject(recentTurns, lastChatRow)
 
     // -------------------------------------------------------------------------
@@ -1107,6 +1130,12 @@ export async function POST(request: Request) {
                   console.warn('[stage-a] profile load failed', profileErr)
                 }
 
+                // Latency (2026-09-21): the renderer prompts for these intents
+                // mandate 2-4 sentence answers — the mini writes them in 1-3s
+                // where the flagship took 5-20s. Long syntheses (overview,
+                // article_explain, signal_explain) keep the flagship.
+                const SHORT_WRITER_INTENTS = new Set(['followup', 'data_query', 'wallet_lookup', 'personal'])
+
                 const out = await runOrchestrator(
                   { message, userId, chatHistory: recentTurns, profile, priorIntent, priorTickers },
                   {
@@ -1136,25 +1165,47 @@ export async function POST(request: Request) {
                         })
                         return r.choices[0]?.message?.content ?? ''
                       },
-                      writerCall: async (sys, usr) => {
+                      writerCall: async (sys, usr, meta?: { intent?: string }) => {
                         send({ type: 'status', step: 'ai_thinking', message: 'ORCA writing response...' })
-                        const r = await ai.chat.completions.create({
-                          model: aiModel,
-                          messages: [
-                            { role: 'system', content: sys },
-                            { role: 'user', content: usr },
-                          ],
-                          temperature: 0.5,
-                          max_tokens: 3000,
-                        })
-                        return r.choices[0]?.message?.content ?? ''
+                        const short = SHORT_WRITER_INTENTS.has(meta?.intent ?? '')
+                        // Latency (2026-09-21): stream tokens to the client as
+                        // they generate. The full text is still accumulated and
+                        // returned so guardrails/persistence see the complete
+                        // draft; the final 'complete' event remains authoritative
+                        // (clients replace streamed text with it).
+                        const budgetMs = Math.max(10_000, 56_000 - (Date.now() - startTime))
+                        const streamResp: any = await (ai.chat.completions.create as any)(
+                          {
+                            model: short ? miniModel : aiModel,
+                            messages: [
+                              { role: 'system', content: sys },
+                              { role: 'user', content: usr },
+                            ],
+                            temperature: 0.5,
+                            max_tokens: short ? 900 : 3000,
+                            stream: true,
+                          },
+                          { signal: AbortSignal.timeout(budgetMs) }
+                        )
+                        let text = ''
+                        for await (const chunk of streamResp) {
+                          const delta = chunk?.choices?.[0]?.delta?.content
+                          if (delta) {
+                            text += delta
+                            send({ type: 'token', text: delta })
+                          }
+                        }
+                        return text
                       },
                       // Live-search writer (see the non-SSE site for rationale).
                       ...(stageAProvider === 'grok'
                         ? {
                             writerSearchCall: async (sys: string, usr: string, opts?: { deep?: boolean }) => {
                               send({ type: 'status', step: 'ai_thinking', message: 'ORCA searching the live web...' })
-                              return grokSearchWriter(sys, usr, opts)
+                              return grokSearchWriter(sys, usr, {
+                                ...opts,
+                                budgetMs: Math.max(8_000, 56_000 - (Date.now() - startTime)),
+                              })
                             },
                           }
                         : {}),
@@ -1458,6 +1509,20 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
         try {
           send({ type: 'status', step: 'start', message: `Analyzing ${ticker}...` })
 
+          // Latency (2026-09-21): start the 5 personalization queries in
+          // parallel with the 15-25s data fan-out instead of serially after
+          // it. Awaited at prompt-assembly time below.
+          const personalizationPromise =
+            process.env.ORCA_PERSONALIZATION !== 'false'
+              ? Promise.all([
+                  loadPersonalizationContext(supabase as any, userId),
+                  loadActiveAlertSummaries(supabase as any, userId),
+                ]).catch((persErr): null => {
+                  console.warn('[personalization] ticker-path load failed', persErr)
+                  return null
+                })
+              : null
+
           // Build ORCA context with progress reporting
           const context = await buildOrcaContext(ticker, userId, (step, detail) => {
             send({ type: 'status', step, message: stepLabels[step] || step, detail: detail || '' })
@@ -1479,7 +1544,11 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           // the long-form path can resolve "that" / "those" / "you said"
           // against real prior turns. Best-effort: empty when no history.
           if (process.env.ORCA_CHAT_MEMORY !== 'false') {
-            const historyBlock = formatHistoryForPrompt(recentTurns)
+            // 2026-09-21: trim before formatting — untrimmed history hit
+            // ~100KB (~25K prefill tokens) for active sessions because full
+            // ORCA notes max out the 8,000-char turn cap; trimTurnsForPrompt
+            // existed, was unit-tested, and was never wired in.
+            const historyBlock = formatHistoryForPrompt(trimTurnsForPrompt(recentTurns))
             if (historyBlock) gptContext = `${historyBlock}\n\n${gptContext}`
           }
 
@@ -1493,14 +1562,12 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           // INSIDE the stream so it cannot delay the first SSE status frame.
           // Kill switch: ORCA_PERSONALIZATION=false.
           let sysPrompt = ORCA_SYSTEM_PROMPT
-          if (process.env.ORCA_PERSONALIZATION !== 'false') {
-            try {
-              const ctx = await loadPersonalizationContext(supabase as any, userId)
-              const alertSummaries = await loadActiveAlertSummaries(supabase as any, userId)
+          if (personalizationPromise) {
+            const persResult = await personalizationPromise
+            if (persResult) {
+              const [ctx, alertSummaries] = persResult
               const block = buildPersonalizationBlock(ctx.profile, ctx.memories, ctx.tickers, alertSummaries)
               if (block) sysPrompt = `${block}\n\n${ORCA_SYSTEM_PROMPT}`
-            } catch (persErr) {
-              console.warn('[personalization] ticker-path load failed', persErr)
             }
           }
 
@@ -1531,42 +1598,66 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           // actually remains and fail as a proper `error` event instead. The
           // fan-out above typically eats 15-25s, so the budget floor keeps a
           // usable window even on a slow start.
-          const raceWriter = (body: any, budgetMs: number) =>
-            Promise.race([
-              ai.chat.completions.create(body),
-              new Promise<never>((_, reject) =>
-                setTimeout(
-                  () => reject(new Error('ORCA took too long writing this note — please ask again.')),
-                  budgetMs
-                )
-              ),
-            ])
-          const writerBudgetMs = Math.max(15_000, 56_000 - (Date.now() - startTime))
-          let completion: any
-          try {
-            completion = await raceWriter(requestBody, writerBudgetMs)
-          } catch (budgetErr) {
-            // Salvage: a shorter mini-model note beats an apology, but only
-            // when enough of the ~60s platform budget remains to try.
-            const remaining = 56_000 - (Date.now() - startTime)
-            if (remaining < 10_000) throw budgetErr
-            send({ type: 'status', step: 'ai_thinking', message: 'Trimming the note to fit...' })
-            completion = await raceWriter(
-              { ...requestBody, model: miniModel, max_tokens: 1200 },
-              remaining
+          // Latency (2026-09-21): stream the note token-by-token. Perceived
+          // wait drops from the full 20-40s generation to time-to-first-token
+          // (~1-3s after the fan-out). The buffer is kept authoritative for
+          // persistence and the final 'complete' event. On a mid-stream
+          // timeout, a partially streamed note is salvaged as-is (the user
+          // already saw it) instead of restarting on the mini.
+          let streamedBuffer = ''
+          const streamWriter = async (body: any, budgetMs: number): Promise<string> => {
+            const streamResp: any = await (ai.chat.completions.create as any)(
+              { ...body, stream: true },
+              { signal: AbortSignal.timeout(budgetMs) }
             )
+            let text = ''
+            for await (const chunk of streamResp) {
+              const delta = chunk?.choices?.[0]?.delta?.content
+              if (delta) {
+                text += delta
+                streamedBuffer += delta
+                send({ type: 'token', text: delta })
+              }
+            }
+            return text
           }
-          const orcaResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.'
+          const writerBudgetMs = Math.max(15_000, 56_000 - (Date.now() - startTime))
+          let orcaResponse: string
+          try {
+            orcaResponse = await streamWriter(requestBody, writerBudgetMs)
+          } catch (budgetErr) {
+            const remaining = 56_000 - (Date.now() - startTime)
+            if (streamedBuffer.length > 400) {
+              // Enough already reached the client — close the note rather
+              // than restart it.
+              orcaResponse = `${streamedBuffer}\n\n*(Note trimmed to fit the time budget — ask a follow-up for more.)*`
+            } else if (remaining < 10_000) {
+              throw budgetErr
+            } else {
+              // Salvage: a shorter mini-model note beats an apology.
+              send({ type: 'status', step: 'ai_thinking', message: 'Trimming the note to fit...' })
+              streamedBuffer = ''
+              orcaResponse = await streamWriter(
+                { ...requestBody, model: miniModel, max_tokens: 1200 },
+                remaining
+              )
+            }
+          }
+          if (!orcaResponse) orcaResponse = 'I apologize, but I was unable to generate a response.'
 
-          // Increment quota + log in parallel (non-blocking for the user)
-          await Promise.all([
+          // Increment quota + log — genuinely non-blocking now (2026-09-21):
+          // this used to be awaited BEFORE the 'complete' event, holding the
+          // finished note hostage to two DB round trips. tokens_used is an
+          // estimate (~4 chars/token) since the streaming API returns no
+          // usage envelope here.
+          waitUntil(Promise.all([
             incrementQuota(userId, supabaseUrl, supabaseKey),
             supabase.from('chat_history').insert({
               user_id: userId,
               session_id: session_id || null,
               user_message: message,
               orca_response: orcaResponse,
-              tokens_used: completion.usage?.total_tokens || 0,
+              tokens_used: Math.round((sysPrompt.length + gptContext.length + orcaResponse.length) / 4),
               model: aiModel,
               tickers_mentioned: [ticker],
               data_sources_used: {
@@ -1578,7 +1669,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
               },
               response_time_ms: Date.now() - startTime
             })
-          ])
+          ]).catch((logErr) => console.warn('[v1] post-write log failed', logErr)))
 
           console.log(`✅ Response generated for ${ticker} in ${Date.now() - startTime}ms`)
 
