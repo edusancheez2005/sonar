@@ -39,7 +39,7 @@ export async function GET(request) {
       // on an earlier session).
       const { data: existing } = await supabaseAdmin
         .from('profiles')
-        .select('display_name, over_18_confirmed_at, terms_accepted_at, sanctions_attestation_at, signup_ip, signup_user_agent')
+        .select('display_name, country, over_18_confirmed_at, terms_accepted_at, sanctions_attestation_at, signup_ip, signup_user_agent')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -50,6 +50,11 @@ export async function GET(request) {
       if (!existing?.sanctions_attestation_at) patch.sanctions_attestation_at = nowIso
       if (ip && !existing?.signup_ip) patch.signup_ip = ip
       if (ua && !existing?.signup_user_agent) patch.signup_user_agent = ua
+      // Country from Vercel's edge geo header (ISO-3166 alpha-2) — free,
+      // first-party, no GeoIP service. Backfill audit 2026-09-22 found 911/925
+      // profiles had no country because nothing ever captured it.
+      const geoCountry = request.headers.get('x-vercel-ip-country')
+      if (geoCountry && geoCountry !== 'XX' && !existing?.country) patch.country = geoCountry
 
       if (Object.keys(patch).length > 0) {
         const { error: upErr } = await supabaseAdmin

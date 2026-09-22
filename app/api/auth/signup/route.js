@@ -91,7 +91,10 @@ export async function POST(req) {
         signup_user_agent: req.headers.get('user-agent')?.slice(0, 500) || null,
       }
       if (displayName) profileUpdate.display_name = displayName
+      // Prefer the user's own answer; fall back to Vercel's edge geo header.
+      const geoCountry = req.headers.get('x-vercel-ip-country')
       if (country) profileUpdate.country = country
+      else if (geoCountry && geoCountry !== 'XX') profileUpdate.country = geoCountry
       if (experienceLevel) profileUpdate.experience_level = experienceLevel
       if (interests.length > 0) profileUpdate.interests = interests
 

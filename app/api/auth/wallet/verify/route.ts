@@ -92,12 +92,14 @@ export async function POST(req: Request) {
 
     const nowIso = new Date().toISOString()
     const ua = (req.headers.get('user-agent') || '').slice(0, 500)
+    const geoCountry = req.headers.get('x-vercel-ip-country')
     await supabaseAdmin.from('profiles').update({
       over_18_confirmed_at: nowIso,
       terms_accepted_at: nowIso,
       sanctions_attestation_at: nowIso,
       signup_ip: ip,
       signup_user_agent: ua,
+      ...(geoCountry && geoCountry !== 'XX' ? { country: geoCountry } : {}),
     }).eq('id', userId)
 
     await supabaseAdmin.from('wallet_identities').insert({
