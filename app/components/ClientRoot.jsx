@@ -27,6 +27,11 @@ const OrcaDrawer = dynamic(() => import('@/components/orca/OrcaDrawer'), {
   ssr: false,
 })
 
+// GeoStamp: invisible, fires once per browser session to fill
+// profiles.country from the edge geo header for signed-in users (backfills
+// pre-2026-09 profiles as their owners return).
+const GeoStamp = dynamic(() => import('@/components/GeoStamp'), { ssr: false })
+
 // OnboardingGate (Stage E): mounts the personalisation wizard for signed-in
 // users without a complete user_profile row. Already mounted inside
 // DashboardWrapper; we skip remount on /dashboard/* to avoid duplicate
@@ -78,6 +83,7 @@ export default function ClientRoot({ children }) {
       )}
       {!hideFeedback && <FeedbackWidget hideTrigger={inShell} />}
       <CookieConsent />
+      <GeoStamp />
       {/* ssr:false leaves must sit inside their own Suspense boundary so the
           CSR bailout stays contained to a null hole instead of climbing to
           the root and de-SSR-ing the whole page. */}
