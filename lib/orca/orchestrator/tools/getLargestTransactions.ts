@@ -10,7 +10,7 @@
  */
 import type { SupabaseLike, ToolResult } from '../types'
 import { applyLabel, fetchEntityLabels } from './entityLabels'
-import { isJunkAddress } from '../../junk-addresses'
+import { JUNK_ADDRESSES, isJunkAddress } from '../../junk-addresses'
 
 const MAX_SANE_TX_USD = 150_000_000
 const WINDOWS = { '1h': 3600_000, '4h': 4 * 3600_000, '24h': 24 * 3600_000, '7d': 7 * 24 * 3600_000, '30d': 30 * 24 * 3600_000 } as const
@@ -42,13 +42,24 @@ export async function run(
   const sinceIso = new Date(now().getTime() - WINDOWS[window]).toISOString()
 
   try {
-    let q: any = supabase
-      .from('all_whale_transactions')
-      .select('transaction_hash, timestamp, blockchain, token_symbol, classification, usd_value, whale_address, from_address, to_address')
-      .gte('timestamp', sinceIso)
-      .lte('usd_value', MAX_SANE_TX_USD)
-      .order('usd_value', { ascending: false })
-      .limit(limit * 4)
+    // Junk vanity-contract rows (~$100M WBTC "BUY"s every hour) dominate the
+    // top of any multi-day window; filtering them in JS after a 40-row limit
+    // returned NOTHING for 7d (battery f-02-t1). Exclude at the query level
+    // (null-safe: NOT IN would drop null addresses).
+    const junkList = `(${Array.from(JUNK_ADDRESSES).join(',')})`
+    const junkFilter = (qq: any) =>
+      typeof qq.or === 'function'
+        ? qq.or(`whale_address.is.null,whale_address.not.in.${junkList}`)
+        : qq
+    let q: any = junkFilter(
+      supabase
+        .from('all_whale_transactions')
+        .select('transaction_hash, timestamp, blockchain, token_symbol, classification, usd_value, whale_address, from_address, to_address')
+        .gte('timestamp', sinceIso)
+        .lte('usd_value', MAX_SANE_TX_USD)
+        .order('usd_value', { ascending: false })
+        .limit(limit * 6)
+    )
     if (chainKey && typeof q.in === 'function') q = q.in('blockchain', CHAIN_FORMS[chainKey])
     let { data, error } = await q
     // Trace 2026-09-23 07:15: the planner applied the USER'S profile chain
@@ -57,13 +68,15 @@ export async function run(
     // nothing falls back to all chains and says so.
     let chainFallback = false
     if (!error && chainKey && (!Array.isArray(data) || data.length === 0)) {
-      const all = await supabase
-        .from('all_whale_transactions')
-        .select('transaction_hash, timestamp, blockchain, token_symbol, classification, usd_value, whale_address, from_address, to_address')
-        .gte('timestamp', sinceIso)
-        .lte('usd_value', MAX_SANE_TX_USD)
-        .order('usd_value', { ascending: false })
-        .limit(limit * 4)
+      const all = await junkFilter(
+        supabase
+          .from('all_whale_transactions')
+          .select('transaction_hash, timestamp, blockchain, token_symbol, classification, usd_value, whale_address, from_address, to_address')
+          .gte('timestamp', sinceIso)
+          .lte('usd_value', MAX_SANE_TX_USD)
+          .order('usd_value', { ascending: false })
+          .limit(limit * 6)
+      )
       data = all.data
       error = all.error
       chainFallback = true
