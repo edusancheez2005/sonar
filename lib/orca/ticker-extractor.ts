@@ -8,6 +8,13 @@ const TICKER_MAP: Record<string, string> = {
   // Major coins
   'bitcoin': 'BTC',
   'btc': 'BTC',
+  // 2026-09-23 coverage audit — asked for, missing from the registry
+  'hyperliquid': 'HYPE',
+  'hype': 'HYPE',
+  'virtuals': 'VIRTUAL',
+  'virtuals protocol': 'VIRTUAL',
+  'virtual': 'VIRTUAL',
+  'zcash': 'ZEC',
   'ethereum': 'ETH',
   'eth': 'ETH',
   'solana': 'SOL',
@@ -123,6 +130,7 @@ const VALID_TICKERS = new Set([
   'ATOM', 'NEAR', 'ALGO', 'VET', 'FIL', 'APT', 'HBAR', 'STX', 'INJ', 'FTM',
   'ETC', 'XLM', 'FLOW', 'ICP', 'THETA', 'XTZ', 'EOS', 'KAS', 'ROSE', 'MINA',
   'LTC', 'BCH', 'BSV', 'XMR', 'ZEC', 'DASH', 'DCR', 'RVN', 'WAVES',
+  'HYPE', 'VIRTUAL',
   
   // Stablecoins
   'USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDD', 'FRAX', 'GUSD',

@@ -56,6 +56,7 @@ const CHAIN_DB_ALIASES: Record<BacktestChain, Set<string>> = {
 // that 404s the token is simply left unpriced (marked to zero).
 export const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
   BTC: 'bitcoin', WBTC: 'wrapped-bitcoin', ETH: 'ethereum', WETH: 'weth',
+  HYPE: 'hyperliquid', VIRTUAL: 'virtual-protocol', ZEC: 'zcash',
   BNB: 'binancecoin', SOL: 'solana', XRP: 'ripple', ADA: 'cardano',
   DOGE: 'dogecoin', AVAX: 'avalanche-2', DOT: 'polkadot', LINK: 'chainlink',
   UNI: 'uniswap', ATOM: 'cosmos', LTC: 'litecoin', BCH: 'bitcoin-cash',

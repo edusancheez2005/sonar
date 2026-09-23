@@ -145,7 +145,30 @@ export async function run(
   now: () => Date = () => new Date()
 ): Promise<ToolResult> {
   const fetched_at = now().toISOString()
-  const address = normaliseAddress(args.address)
+  // Coverage audit 2026-09-23: users paste the SHORTENED form ORCA itself
+  // prints ("what is 0x51c7…2a7f doing?"). Resolve prefix…suffix against
+  // the labelled universe before validation so it doesn't dead-end.
+  const rawAddr = typeof args.address === 'string' ? args.address.trim() : ''
+  const truncated = rawAddr.match(/^(0x[0-9a-fA-F]{3,10})(?:…|\.{2,3}|\u2026)([0-9a-fA-F]{3,10})$/)
+  let resolvedFrom: string | null = null
+  let resolvedAddress: string | null = null
+  if (truncated) {
+    try {
+      const { data: cands } = await supabase
+        .from('tracked_address_universe')
+        .select('address')
+        .ilike('address', `${truncated[1]}%${truncated[2]}`)
+        .limit(3)
+      const distinct = Array.from(new Set(((cands as any[]) || []).map((c) => String(c.address).toLowerCase())))
+      if (distinct.length === 1) {
+        resolvedAddress = String((cands as any[])[0].address)
+        resolvedFrom = rawAddr
+      }
+    } catch {
+      // fall through to the normal invalid_args path
+    }
+  }
+  const address = normaliseAddress(resolvedAddress ?? args.address)
   const userId = normaliseUserId(args.userId)
   if (!address) {
     return {
@@ -437,10 +460,65 @@ export async function run(
       }
     }
 
+    // Coverage audit 2026-09-23 (wallet_specific was the weakest category,
+    // 8/25 answerable): an address in NEITHER local feed used to end as
+    // "nothing recorded". For EVM addresses, pull the latest transfers live
+    // from Etherscan (free key; Alchemy's quota is exhausted) so ANY
+    // Ethereum wallet gets a real answer. Unpriced (no USD) — the renderer
+    // reports counts, tokens and directions.
+    if (transferFeed === null && whaleFeedEmpty && /^0x[0-9a-fA-F]{40}$/.test(address) && (!chain || /^(eth|ethereum)$/i.test(String(chain)))) {
+      try {
+        // Dynamic import: the helper is `server-only`, which throws when a
+        // test runner loads the tool registry statically.
+        const { getEtherscanTransfers } = await import('@/lib/wallet/etherscan-transfers')
+        const live = await Promise.race([
+          getEtherscanTransfers(address, 1, 0),
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error('etherscan_live_timeout')), 6_000)),
+        ])
+        if (Array.isArray(live) && live.length > 0) {
+          const sinceMs = new Date(sinceIso).getTime()
+          const inWindow = live.filter((t) => new Date(t.ts).getTime() >= sinceMs)
+          const shown = (inWindow.length > 0 ? inWindow : live).slice(0, TOP_TX_COUNT)
+          const tokens = new Set<string>()
+          let inCount = 0
+          let outCount = 0
+          for (const t of inWindow) {
+            if (t.symbol) tokens.add(String(t.symbol).toUpperCase())
+            if (t.direction === 'in') inCount += 1
+            else outCount += 1
+          }
+          transferFeed = {
+            window: inWindow.length > 0 ? windowLabel : 'latest',
+            tx_count: inWindow.length,
+            in_count: inCount,
+            out_count: outCount,
+            in_usd: null,
+            out_usd: null,
+            priced: false,
+            tokens_touched: Array.from(tokens).slice(0, 20),
+            last_transfer_at: live[0]?.ts ?? null,
+            top_transfers: shown.map((t) => ({
+              timestamp: t.ts,
+              direction: t.direction,
+              token_symbol: t.symbol,
+              amount: t.amount,
+              counterparty: t.direction === 'in' ? t.from : t.to,
+              tx_hash: t.hash,
+            })),
+            source: 'etherscan_live',
+            note: 'Live Ethereum transfers fetched on demand; amounts are token units (USD not priced).',
+          }
+        }
+      } catch (liveErr: any) {
+        console.warn('[getWalletActivity] etherscan live fetch failed', liveErr?.message)
+      }
+    }
+
     return {
       ok: true,
       data: {
         address,
+        resolved_from_short: resolvedFrom,
         chain,
         label: userLabel ?? arkhamLabel ?? null,
         label_source: userLabel ? 'user' : arkhamLabel ? 'arkham' : null,

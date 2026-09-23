@@ -67,6 +67,8 @@ export type ToolName =
   | 'getWalletActivity'
   | 'getMostActiveWallets'
   | 'getTopPerformingWallets'
+  | 'getLargestTransactions'
+  | 'getDerivatives'
   | 'getArticleContext'
   | 'getSignalContext'
   | 'findTrackedWallets'

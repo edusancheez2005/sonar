@@ -31,6 +31,7 @@ const ROW_LIMIT = 4000
 const MIN_NET_USD = 50_000
 
 export interface GetTrendingWhalesArgs {
+  chain?: unknown
   window?: unknown
   limit?: unknown
 }
@@ -56,12 +57,20 @@ export async function run(
   const sinceIso = new Date(now().getTime() - sinceMs).toISOString()
 
   try {
-    const { data, error } = await supabase
+    // Optional chain filter (coverage audit 2026-09-23: "solana whales only").
+    const chainForms: Record<string, string[]> = {
+      ethereum: ['ethereum', 'eth'], solana: ['solana', 'sol'], bsc: ['bsc', 'bnb'], polygon: ['polygon', 'matic'], bitcoin: ['bitcoin', 'btc'],
+    }
+    const chainArg = typeof args.chain === 'string' ? args.chain.trim().toLowerCase() : ''
+    const chainKey = Object.keys(chainForms).find((k) => k === chainArg || chainForms[k].includes(chainArg)) ?? null
+    let q: any = supabase
       .from('all_whale_transactions')
       .select('token_symbol, usd_value, classification, whale_address, timestamp')
       .gte('timestamp', sinceIso)
       .order('usd_value', { ascending: false })
       .limit(ROW_LIMIT)
+    if (chainKey && typeof q.in === 'function') q = q.in('blockchain', chainForms[chainKey])
+    const { data, error } = await q
 
     if (error) {
       return {
