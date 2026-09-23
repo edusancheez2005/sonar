@@ -9,6 +9,9 @@ import { NextResponse } from 'next/server'
 import { isCryptoRelevant, isGeneralCryptoRelevant } from '@/lib/crypto-relevance-filter'
 
 export const dynamic = 'force-dynamic'
+// Full 30-ticker sweep with the widened window runs ~56s (2026-09-23) — give
+// it headroom instead of riding the default budget.
+export const maxDuration = 120
 
 // Top 30 tickers ONLY — keeps us safely inside LunarCrush daily quota
 // (each ticker = 1 LC API call per run; 30 tickers × ~6 runs/day = 180 LC calls
