@@ -538,6 +538,20 @@ export async function POST(request: Request) {
       })
     }
 
+    // Missing-target guard (coverage audit 2026-09-23): "track this wallet" /
+    // "watch that address" with no address anywhere and no prior context used
+    // to fall through to a wallet_lookup with nothing to look up.
+    const TRACK_WALLET_RE = /\b(track|watch|follow|monitor|save)\b[^.?!]{0,40}\b(wallet|address)\b/i
+    const HAS_ANY_ADDRESS_RE = /\b(0x[a-fA-F0-9]{6,}|bc1[a-z0-9]{6,}|[13][A-HJ-NP-Za-km-z1-9]{20,}|[1-9A-HJ-NP-Za-km-z]{32,44}|T[1-9A-HJ-NP-Za-km-z]{33})\b/
+    if (TRACK_WALLET_RE.test(message) && !HAS_ANY_ADDRESS_RE.test(message) && !/\b(it|this|that|him|her|them)\b/i.test(message)) {
+      console.log('ℹ️ Track-wallet ask with no address → clarify')
+      return NextResponse.json({
+        response: 'Which wallet? Paste the full address (0x… for Ethereum/BSC/Polygon, bc1…/1…/3… for Bitcoin, or a Solana address) and I\'ll start tracking it. You can also name a labelled entity, e.g. "track the Binance 14 wallet".',
+        type: 'clarify',
+        intent: 'clarify',
+      })
+    }
+
     const ABOUT_SONAR_RE =
       /\b(?:what(?:'s| is| does| can|'?s up with| happened (?:with|to)) (?:sonar|orca)\b|about (?:sonar|orca)\b|how (?:does|do) (?:sonar|orca) work|what (?:can|do) you do|who are you|what are you)\b/i
     if (ABOUT_SONAR_RE.test(message) && !extractTicker(message).ticker) {

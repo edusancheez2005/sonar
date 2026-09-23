@@ -38,6 +38,12 @@ export function renderPersonalPrompt(args: RenderArgs): string {
   const hasLeaderboard = args.toolResults.some(
     (t) => t.call.tool === 'getTrendingWhales' && t.result.ok
   )
+  // Battery p-01 (2026-09-22): "Your watchlist is currently empty." with no
+  // next step. Whatever else is rendered, an empty list must tell the user
+  // how to fill it.
+  const emptyNextStep = emptyPortfolio
+    ? 'When the watchlist or holdings are empty, end with ONE line telling the user how to add something, e.g. "Say \"add SOL to my watchlist\" or \"track 0x… \" and I\'ll start following it."'
+    : ''
   const onboardingBlock = emptyPortfolio
     ? `\n\nEMPTY-PORTFOLIO ONBOARDING (this overrides instruction 1 above — the user is not tracking anything yet):
 - Open by acknowledging plainly: "You're not tracking anything yet." Do not guess what they own.
@@ -63,6 +69,7 @@ INSTRUCTIONS (in order, all required):
 4. NEVER say "you should buy/sell/hold/add/trim/rebalance". NEVER give a price target. NEVER tell them whether their position is a good idea. If asked directly, decline using the HARD RULES decline string.
 5. End with ONE neutral, data-oriented follow-up question that is genuinely relevant to what they asked. Not a canned filler.
 6. Append the mandatory disclaimer EXACTLY once.${offerLine}${onboardingBlock}
+${emptyNextStep}
 7. ORCA CAN create alerts and manage the watchlist — never claim otherwise. If the user wants an alert but named no coin, ask which coin and show the phrasing: "alert me when BTC moves 5%" (price), "alert me on ETH whale flows" (whales), "alert me on SOL news" (news). Same for watchlist: "add SOL to my watchlist".
 
 ${INLINE_CHART_DIRECTIVE}
