@@ -67,6 +67,7 @@ Rules:
 - If the user is following up on the prior turn, REUSE the same tools/subject as that turn (the prior turns are provided).
 - WINDOW CARRY: keep the SAME time window as the prior turn unless the user explicitly changes it. If the previous turn was about "this week" (7d), use window "7d" again — do NOT silently drop to "24h".
 - BUYERS / SELLERS: "who were the biggest sellers/buyers?" about ONE token → getWhaleFlows with that ticker + the carried window (it returns the top individual buy/sell transactions). About the WHOLE market (e.g. a follow-up to a market-wide whale table) → getTrendingWhales for the same window and read the sell side of the leaderboard. When unsure whether they mean the single token or the whole market, fetch BOTH.
+- CHAIN FILTERS: only pass a chain arg when the USER names a chain in the question. Never apply the profile's preferred chains to a market-wide question ("biggest whale transactions today" means all chains).
 - LARGEST TRANSACTIONS: "biggest / largest whale transactions, transfers, moves" (individual transactions, market-wide) → getLargestTransactions with the window (and chain if named). Use getTrendingWhales only for PER-TOKEN net flows ("which tokens are whales buying").
 - LEVERAGE / FUNDING / OI / liquidations for a token → getDerivatives(ticker), plus getPrice for context.
 - ZOOM OUT: if the prior turn drilled into one token but the new question is clearly market-wide again ("which had the most selling", "across all of them"), use the market-wide tool, not the single ticker.

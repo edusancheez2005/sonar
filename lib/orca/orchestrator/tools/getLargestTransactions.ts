@@ -50,7 +50,24 @@ export async function run(
       .order('usd_value', { ascending: false })
       .limit(limit * 4)
     if (chainKey && typeof q.in === 'function') q = q.in('blockchain', CHAIN_FORMS[chainKey])
-    const { data, error } = await q
+    let { data, error } = await q
+    // Trace 2026-09-23 07:15: the planner applied the USER'S profile chain
+    // preference (bsc) to "biggest whale transactions today" and the whale
+    // feed has no bsc rows → dead end, twice. A chain filter that matches
+    // nothing falls back to all chains and says so.
+    let chainFallback = false
+    if (!error && chainKey && (!Array.isArray(data) || data.length === 0)) {
+      const all = await supabase
+        .from('all_whale_transactions')
+        .select('transaction_hash, timestamp, blockchain, token_symbol, classification, usd_value, whale_address, from_address, to_address')
+        .gte('timestamp', sinceIso)
+        .lte('usd_value', MAX_SANE_TX_USD)
+        .order('usd_value', { ascending: false })
+        .limit(limit * 4)
+      data = all.data
+      error = all.error
+      chainFallback = true
+    }
     if (error) {
       return { ok: false, data: null, source: 'all_whale_transactions', fetched_at, error: `query_failed: ${error.message || 'unknown'}` }
     }
@@ -89,7 +106,13 @@ export async function run(
     }))
     return {
       ok: true,
-      data: { window, chain: chainKey, count: transactions.length, transactions },
+      data: {
+        window,
+        chain: chainFallback ? null : chainKey,
+        chain_fallback: chainFallback ? `no ${chainKey} transactions in the window — showing all chains` : null,
+        count: transactions.length,
+        transactions,
+      },
       source: 'all_whale_transactions',
       fetched_at,
     }
