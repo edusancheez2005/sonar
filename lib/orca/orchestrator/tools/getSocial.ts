@@ -33,7 +33,18 @@ export async function run(
     if (!row) {
       return { ok: true, data: { ticker, score: null }, source: 'sentiment_scores', fetched_at }
     }
-    return { ok: true, data: { ticker, ...row }, source: 'sentiment_scores', fetched_at }
+    // 2026-09-22 battery: an 11-day-old ETH snapshot was presented as
+    // "last 24h". Surface the age so the renderer can say so.
+    const ts = row?.timestamp ? new Date(row.timestamp).getTime() : NaN
+    const age_hours = Number.isFinite(ts) ? Math.round((now().getTime() - ts) / 3_600_000) : null
+    const stale = age_hours === null || age_hours > 24
+    return {
+      ok: true,
+      data: { ticker, ...row, age_hours, stale, snapshot_note: stale ? `latest sentiment snapshot is ${age_hours === null ? 'undated' : age_hours + 'h old'} — not a live reading` : null },
+      source: 'sentiment_scores',
+      fetched_at,
+      ...(stale ? { cache_status: 'stale' } : {}),
+    }
   } catch (err: any) {
     return {
       ok: false,

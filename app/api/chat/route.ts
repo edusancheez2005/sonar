@@ -137,7 +137,7 @@ export const maxDuration = 180
 async function grokSearchWriter(
   sys: string,
   usr: string,
-  opts?: { deep?: boolean; budgetMs?: number }
+  opts?: { deep?: boolean; budgetMs?: number; onToken?: (text: string) => void }
 ): Promise<string> {
   const xaiKey = process.env.XAI_API_KEY
   if (!xaiKey) throw new Error('no_xai_key')
@@ -148,6 +148,19 @@ async function grokSearchWriter(
   const model = opts?.deep
     ? process.env.ORCA_GROK_MODEL || 'grok-4.5'
     : process.env.ORCA_GROK_SEARCH_MODEL || process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3'
+  // 2026-09-22 battery: live-search answers were the only non-streaming path
+  // left (20-28s of blank spinner). The Responses API streams
+  // `response.output_text.delta` SSE events; when an onToken sink is given we
+  // stream and forward deltas, falling back to the buffered call on any
+  // streaming hiccup so a search answer never regresses to an error.
+  if (opts?.onToken) {
+    try {
+      const streamed = await grokSearchStream(xaiKey, model, `${sys}\n\n${usr}`, opts)
+      if (streamed.trim()) return streamed
+    } catch (streamErr: any) {
+      console.warn('[grokSearchWriter] stream failed, falling back to buffered:', streamErr?.message)
+    }
+  }
   const resp = await fetch('https://api.x.ai/v1/responses', {
     method: 'POST',
     headers: {
@@ -180,6 +193,51 @@ async function grokSearchWriter(
     }
   }
   if (!out.trim()) throw new Error('xai_responses_empty')
+  return out
+}
+
+
+/** Streaming variant of the xAI Responses call — forwards output_text deltas. */
+async function grokSearchStream(
+  xaiKey: string,
+  model: string,
+  input: string,
+  opts: { deep?: boolean; budgetMs?: number; onToken?: (text: string) => void }
+): Promise<string> {
+  const timeoutMs = Math.max(8_000, Math.min(opts.deep ? 30_000 : 42_000, opts.budgetMs ?? 42_000))
+  const resp = await fetch('https://api.x.ai/v1/responses', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${xaiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, input, tools: [{ type: 'web_search' }], stream: true }),
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+  if (!resp.ok || !resp.body) throw new Error(`xai_stream_${resp.status}`)
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+  let out = ''
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    const frames = buf.split('\n\n')
+    buf = frames.pop() ?? ''
+    for (const frame of frames) {
+      const dataLine = frame.split('\n').find((l) => l.startsWith('data:'))
+      if (!dataLine) continue
+      const payload = dataLine.slice(5).trim()
+      if (!payload || payload === '[DONE]') continue
+      let ev: any
+      try { ev = JSON.parse(payload) } catch { continue }
+      const type = String(ev?.type ?? '')
+      if (type === 'response.output_text.delta' && typeof ev.delta === 'string') {
+        out += ev.delta
+        opts.onToken?.(ev.delta)
+      } else if (type === 'response.failed' || type === 'error') {
+        throw new Error(ev?.error?.message || 'xai_stream_error')
+      }
+    }
+  }
   return out
 }
 
@@ -1248,6 +1306,7 @@ export async function POST(request: Request) {
                               return grokSearchWriter(sys, usr, {
                                 ...opts,
                                 budgetMs: Math.max(8_000, 56_000 - (Date.now() - startTime)),
+                                onToken: (text: string) => send({ type: 'token', text }),
                               })
                             },
                           }

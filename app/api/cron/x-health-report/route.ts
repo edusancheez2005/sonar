@@ -138,6 +138,22 @@ export async function GET(req: Request) {
       issues.push(`ORCA dead-end rate ${orcaDeadEnds24h}/${orcaAnswers24h} answers in 24h — writer failures or tool dead-ends spiking; check orca_traces.`)
     }
 
+    // --- Sentiment freshness canary ---------------------------------------
+    // 2026-09-22 battery: ETH's newest sentiment_scores row was 11 days old
+    // (news ingestion gap → the hourly aggregator had nothing to aggregate).
+    const staleSentiment: string[] = []
+    try {
+      for (const t of ['BTC', 'ETH', 'SOL']) {
+        const { data } = await supabaseAdmin
+          .from('sentiment_scores').select('timestamp').eq('ticker', t)
+          .order('timestamp', { ascending: false }).limit(1)
+        const ts = data?.[0]?.timestamp ? new Date(data[0].timestamp).getTime() : NaN
+        const ageH = Number.isFinite(ts) ? Math.round((now.getTime() - ts) / 3_600_000) : null
+        if (ageH === null || ageH > 36) staleSentiment.push(`${t}: ${ageH === null ? 'none' : ageH + 'h'}`)
+      }
+    } catch { /* best-effort */ }
+    if (staleSentiment.length) issues.push(`Sentiment scores stale for ${staleSentiment.join(', ')} — check ingest-news + aggregate-sentiment crons.`)
+
     // --- Alchemy canary ----------------------------------------------------
     // One cheap eth_blockNumber against the shared key. Quota exhaustion
     // 429'd silently for ~3 weeks in Aug 2026 (only symptom: empty holdings

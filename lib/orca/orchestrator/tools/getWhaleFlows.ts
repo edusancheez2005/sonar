@@ -9,6 +9,7 @@
  */
 import type { SupabaseLike, ToolResult } from '../types'
 import { applyLabel, fetchEntityLabels } from './entityLabels'
+import { isJunkAddress } from '../../junk-addresses'
 import { symbolVariants } from '@/lib/wallet/symbol-aliases'
 
 const WHALE_FLAT_THRESHOLD_USD = 100_000
@@ -113,17 +114,24 @@ export async function run(
       }
       const c = String(row?.classification ?? '').toLowerCase()
       const addr = row?.whale_address ? String(row.whale_address) : null
+      // 2026-09-22 battery: the junk vanity contract filled every "biggest
+      // buyer" slot; it is excluded from BOTH the totals and the top lists.
+      if (isJunkAddress(addr)) continue
       if (addr) whales.add(addr)
       const isBuy = c.startsWith('buy') || c.startsWith('accum')
       const isSell = c.startsWith('sell') || c.startsWith('distrib')
+      // One entry per wallet in the "biggest buyers/sellers" lists — the rows
+      // arrive ordered by value, so the first hit per address is its largest.
+      const seenBuy = new Set(topBuys.map((t) => t.address))
+      const seenSell = new Set(topSells.map((t) => t.address))
       if (isBuy) {
         buyUsd += v
         buys += 1
-        if (topBuys.length < TOP_TX_COUNT) topBuys.push({ usd_value: Math.round(v), address: addr, timestamp: row?.timestamp ?? null })
+        if (topBuys.length < TOP_TX_COUNT && !(addr && seenBuy.has(addr))) topBuys.push({ usd_value: Math.round(v), address: addr, timestamp: row?.timestamp ?? null })
       } else if (isSell) {
         sellUsd += v
         sells += 1
-        if (topSells.length < TOP_TX_COUNT) topSells.push({ usd_value: Math.round(v), address: addr, timestamp: row?.timestamp ?? null })
+        if (topSells.length < TOP_TX_COUNT && !(addr && seenSell.has(addr))) topSells.push({ usd_value: Math.round(v), address: addr, timestamp: row?.timestamp ?? null })
       }
     }
 

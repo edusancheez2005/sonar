@@ -27,6 +27,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { fetchArkhamLabels, formatArkhamDisplayName } from '@/lib/arkham/address-lookup'
 import { postTweet } from '@/lib/x/client'
+import { JUNK_ADDRESSES } from '@/lib/orca/junk-addresses'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -35,7 +36,6 @@ export const maxDuration = 60
 // Known-junk vanity contract whose hourly WBTC "BUYs" are classifier noise
 // (see ORCA audit issue #1); ORCA also excludes >$150M single transfers as
 // unreliable, so we mirror both filters here.
-const JUNK_ADDRESSES = new Set(['0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb'])
 const MAX_SANE_USD = 150_000_000
 const WHALE_LOOKBACK_HOURS = 8
 const FAMOUS_LOOKBACK_HOURS = 24

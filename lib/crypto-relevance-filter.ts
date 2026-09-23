@@ -11,6 +11,9 @@ const AMBIGUOUS_TICKERS: Record<string, string[]> = {
   // SOL collides with the Spanish/French word "sol" (sun/ground), place names
   // (Costa del Sol, Sol de Mexico), people (Sol Ruca) and Sol-Gel the pharma stock.
   'SOL': ['costa del sol', 'del sol', 'el sol', 'sol de', 'sol-gel', 'sol gel', 'matelas', 'au sol', 'sol ruca', 'plein sol'],
+  // ETH collides with ETH Zurich / ETHZ (the university) — 2026-09-22 battery
+  // surfaced an IBM/Lockheed quantum-hub story in Ethereum headlines.
+  'ETH': ['eth zurich', 'eth zürich', 'ethz', 'zurich', 'zürich', 'eidgenössische', 'swiss federal institute'],
   'ADA': ['ada lovelace', 'americans with disabilities', 'ada compliance', 'ada county'],
   'TON': ['ton of', 'tons of', 'metric ton', 'tonne', 'per ton'],
   'SUI': ['sui generis', 'sui dynasty', 'monsieur', 'ennui'],

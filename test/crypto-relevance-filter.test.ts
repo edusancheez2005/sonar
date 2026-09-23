@@ -125,3 +125,10 @@ describe('isGeneralCryptoRelevant — GENERAL category feed', () => {
     })
   }
 })
+
+describe('ETH vs ETH Zurich (2026-09-22 battery c1-09)', () => {
+  it('drops the university, keeps Ethereum', () => {
+    expect(isCryptoRelevant('IBM, Lockheed Martin Announce Swiss Quantum Innovation Hub at ETH Zurich', 'ETH')).toBe(false)
+    expect(isCryptoRelevant('Ethereum ETF inflows top $177M as ETH reclaims $2.8K', 'ETH')).toBe(true)
+  })
+})
