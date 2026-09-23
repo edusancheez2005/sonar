@@ -144,5 +144,7 @@ function hasEmptyPortfolio(toolResults: RenderArgs['toolResults']): boolean {
       if (Array.isArray(arr) && arr.length > 0) watchlistEmpty = false
     }
   }
-  return sawHoldings && sawWatchlist && holdingsEmpty && watchlistEmpty
+  // battery p-01: a watchlist-only question never saw holdings, so the
+  // onboarding/next-step block was skipped. Empty = every list we DID see is empty.
+  return (sawHoldings || sawWatchlist) && holdingsEmpty && watchlistEmpty
 }

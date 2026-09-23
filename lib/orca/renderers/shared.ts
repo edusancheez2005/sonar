@@ -38,7 +38,10 @@ export function formatToolBlock(
     const head = `# tool=${call.tool} ok=${result.ok} source=${result.source}`
     const args = `args=${truncate(JSON.stringify(call.args), 500)}`
     const body = result.ok
-      ? `data=${truncate(JSON.stringify(result.data), 4000)}`
+      // 9000 (was 4000): a 10-row labelled table is ~5-6k chars; the old cap cut
+      // tables mid-row (battery n-01/f-02-t1 'Top 10' with 8 rows). History is
+      // trimmed now, so the prompt budget has room.
+      ? `data=${truncate(JSON.stringify(result.data), 9000)}`
       : `error=${result.error ?? 'unknown'}`
     return `${head}\n${args}\n${body}`
   })

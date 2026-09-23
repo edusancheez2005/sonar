@@ -36,7 +36,9 @@ export async function run(
         source_exchange: d.source ?? null,
         funding_rate_8h: d.fundingRate,
         funding_rate_8h_pct: Number.isFinite(d.fundingRate) ? Math.round(d.fundingRate * 1e6) / 1e4 : null,
-        funding_rate_annualized_pct: Number.isFinite(d.fundingRateAnnualized) ? Math.round(d.fundingRateAnnualized * 1e4) / 1e2 : null,
+        // helper already returns a PERCENT (fundingRate*3*365*100) — the first
+        // release multiplied by 100 again and showed 441% for 4.41% (battery n-03).
+        funding_rate_annualized_pct: Number.isFinite(d.fundingRateAnnualized) ? Math.round(d.fundingRateAnnualized * 100) / 100 : null,
         open_interest_tokens: d.openInterest ?? null,
         open_interest_usd: d.openInterestUsd ?? null,
         long_ratio_pct: Number.isFinite(d.longRatio) ? Math.round(d.longRatio * 1000) / 10 : null,

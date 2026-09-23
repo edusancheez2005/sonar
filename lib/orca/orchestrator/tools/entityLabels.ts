@@ -70,6 +70,28 @@ export async function fetchEntityLabels(
   } catch {
     // best-effort; labels are additive
   }
+  // Fallback: the legacy Etherscan-tag `addresses` table knows the famous CEX
+  // hot wallets (Binance 14 etc.) that the Arkham universe misses — the
+  // 2026-09-23 battery showed bare addresses on the biggest transactions.
+  const missing = candidates.filter((a) => !out.has(a))
+  if (missing.length > 0) {
+    try {
+      const { data } = await supabase
+        .from('addresses')
+        .select('address, entity_name, label')
+        .in('address', missing)
+      for (const row of (Array.isArray(data) ? data : []) as any[]) {
+        const addr = typeof row?.address === 'string' ? row.address : null
+        const name = (typeof row?.entity_name === 'string' && row.entity_name.trim()) || (typeof row?.label === 'string' && row.label.trim()) || ''
+        if (!addr || !name || out.has(addr)) continue
+        const rec: EntityLabel = { label: name }
+        out.set(addr, rec)
+        out.set(addr.toLowerCase(), rec)
+      }
+    } catch {
+      // best-effort
+    }
+  }
   return out
 }
 
