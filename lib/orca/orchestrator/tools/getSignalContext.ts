@@ -58,7 +58,7 @@ export async function run(
   try {
     const { data } = await supabase
       .from('token_signals')
-      .select('signal, score, confidence, computed_at, timeframe')
+      .select('signal, score, confidence, computed_at, timeframe, breaker_suppressed')
       .eq('token', ticker)
       .gte('computed_at', sinceIso)
       .order('computed_at', { ascending: false })
@@ -71,6 +71,9 @@ export async function run(
       confidence: typeof r?.confidence === 'number' ? r.confidence : null,
       computed_at: r?.computed_at ?? null,
       timeframe: r?.timeframe ?? null,
+      // Live circuit-breaker state (2026-09-22): lets the writer describe the
+      // CURRENT engine status instead of a hardcoded historical stance.
+      breaker_suppressed: typeof r?.breaker_suppressed === 'boolean' ? r.breaker_suppressed : null,
     }))
 
     let flips = 0
@@ -88,6 +91,7 @@ export async function run(
         window_start: sinceIso,
         sample_count: recent.length,
         last_verdict: last,
+        breaker_suppressed_now: last?.breaker_suppressed ?? null,
         flip_count: flips,
         suspect: flips > SUSPECT_FLIP_THRESHOLD,
         recent_signals: recent.slice(0, 10),
