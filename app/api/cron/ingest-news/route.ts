@@ -197,7 +197,7 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any, stat
   stats.api_items += data.data.length
 
   let inserted = 0
-  for (const item of data.data.slice(0, 25)) {
+  for (const item of data.data.slice(0, 60)) { // widened from 25 (see per-ticker note)
     try {
       const title = item.post_title || item.title
       const url2 = item.post_link || item.url
@@ -301,7 +301,18 @@ async function fetchLunarCrushNews(ticker: string, supabase: any, stats: IngestS
     let inserted = 0
     let skipped = 0
 
-    for (const item of data.data.slice(0, 10)) { // Limit to 10 most recent
+    // 2026-09-23: this was slice(0, 10) — but LunarCrush does not return
+    // newest-first, so every 4h run re-examined the same 10 already-stored
+    // items and inserted NOTHING for days (ETH: 2 ingest days in 14; ~480 of
+    // 659 fetched items per run were never looked at). Sort by publish time
+    // ourselves and examine a much wider window; the url unique key makes
+    // duplicates cheap.
+    const ordered = [...data.data].sort((a: any, b: any) => {
+      const ta = Date.parse(a.post_created ? new Date(Number(a.post_created) * 1000).toISOString() : a.published_at || a.created_at || 0) || 0
+      const tb = Date.parse(b.post_created ? new Date(Number(b.post_created) * 1000).toISOString() : b.published_at || b.created_at || 0) || 0
+      return tb - ta
+    })
+    for (const item of ordered.slice(0, 40)) {
       try {
         // LunarCrush news items use post_* field names (post_title/post_link/
         // post_created/...), NOT title/url. Reading the wrong fields previously
