@@ -24,6 +24,8 @@ const TOP_TX_COUNT = 5
 const MAX_SANE_TX_USD = 150_000_000
 
 const WINDOWS = {
+  '1h': 60 * 60 * 1000,
+  '4h': 4 * 60 * 60 * 1000,
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
   '30d': 30 * 24 * 60 * 60 * 1000,
@@ -39,7 +41,9 @@ export interface GetWhaleFlowsArgs {
 function normaliseWindow(raw: unknown): WindowKey {
   if (typeof raw === 'string') {
     const w = raw.trim().toLowerCase()
-    if (w === '24h' || w === '7d' || w === '30d') return w
+    if (w === '1h' || w === '4h' || w === '24h' || w === '7d' || w === '30d') return w
+    if (/^(last |past )?(hour|1 ?h(our)?)$/.test(w)) return '1h'
+    if (/^(last |past )?(4|four) ?h(ours?)?$/.test(w)) return '4h'
     if (/\b(today|day|1d)\b/.test(w)) return '24h'
     if (/\b(week|7)\b/.test(w)) return '7d'
     if (/\b(month|30)\b/.test(w)) return '30d'

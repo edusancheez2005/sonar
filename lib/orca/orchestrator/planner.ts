@@ -226,9 +226,12 @@ export function isWriteTool(tool: ToolName): boolean {
  * Defaults to '7d' — the "top whale moves this week" prompt is the most
  * common no-ticker whale query in production.
  */
-function detectTimeWindow(message: string | undefined): '24h' | '7d' | '30d' {
+function detectTimeWindow(message: string | undefined): '1h' | '4h' | '24h' | '7d' | '30d' {
   if (!message) return '7d'
   const m = message.toLowerCase()
+  // Sub-day windows (coverage audit 2026-09-23: "last hour", "past 4 hours").
+  if (/\b(last|past|previous)\s+(hour|60 ?min(?:ute)?s?|1 ?h(?:our)?)\b|\b1h\b/.test(m)) return '1h'
+  if (/\b(last|past|previous)\s+(4|four)\s*h(?:ours?)?\b|\b4h\b/.test(m)) return '4h'
   if (/\b(today|24h|24 hours?|last day|past day|1d)\b/.test(m)) return '24h'
   if (/\b(this month|past month|last month|30d|30 days?)\b/.test(m)) return '30d'
   if (/\b(this week|past week|last week|7d|7 days?|week)\b/.test(m)) return '7d'

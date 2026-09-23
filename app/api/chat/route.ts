@@ -520,6 +520,24 @@ export async function POST(request: Request) {
     // answer — no LLM, no tools, instant. Only fires when NO ticker was
     // extracted, so "sonar signal on BTC" still reaches the orchestrator.
     // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Out-of-scope gate (coverage audit 2026-09-23): equities / options / TradFi
+    // questions with no crypto ticker got a generic crypto essay. Answer
+    // instantly with what Sonar covers and the closest crypto equivalent.
+    // -------------------------------------------------------------------------
+    const OUT_OF_SCOPE_RE =
+      /\b(stocks?|equit(?:y|ies)|s&p ?500|nasdaq|dow jones|nvda|tsla|aapl|msft|amzn|options? flow|dark pool|forex|fx pairs?|bonds?|treasur(?:y|ies) yields?|gold price|silver price|oil price)\b/i
+    const CRYPTO_WORD_RE = /\b(crypto|bitcoin|btc|eth|ethereum|solana|token|coin|whale|defi|on-?chain)\b/i
+    if (OUT_OF_SCOPE_RE.test(message) && !CRYPTO_WORD_RE.test(message) && !extractTicker(message).ticker) {
+      console.log('ℹ️ Out-of-scope (non-crypto market) question → scope answer')
+      return NextResponse.json({
+        response:
+          "Sonar only covers crypto: on-chain whale flows across Ethereum, Solana and BNB Chain, plus price, news, social and macro context for ~200 tokens. I don't track equities, options, FX or commodities.\n\nClosest things I can do: \"biggest whale transactions today\", \"which tokens are whales buying this week\", \"what changed in crypto macro today\", or a research note on any major token (\"how is BTC looking?\").",
+        type: 'out_of_scope',
+        intent: 'out_of_scope',
+      })
+    }
+
     const ABOUT_SONAR_RE =
       /\b(?:what(?:'s| is| does| can|'?s up with| happened (?:with|to)) (?:sonar|orca)\b|about (?:sonar|orca)\b|how (?:does|do) (?:sonar|orca) work|what (?:can|do) you do|who are you|what are you)\b/i
     if (ABOUT_SONAR_RE.test(message) && !extractTicker(message).ticker) {

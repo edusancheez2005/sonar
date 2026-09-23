@@ -13,7 +13,7 @@ import { applyLabel, fetchEntityLabels } from './entityLabels'
 import { isJunkAddress } from '../../junk-addresses'
 
 const MAX_SANE_TX_USD = 150_000_000
-const WINDOWS = { '24h': 24 * 3600_000, '7d': 7 * 24 * 3600_000, '30d': 30 * 24 * 3600_000 } as const
+const WINDOWS = { '1h': 3600_000, '4h': 4 * 3600_000, '24h': 24 * 3600_000, '7d': 7 * 24 * 3600_000, '30d': 30 * 24 * 3600_000 } as const
 type WindowKey = keyof typeof WINDOWS
 const CHAIN_FORMS: Record<string, string[]> = {
   ethereum: ['ethereum', 'eth'],

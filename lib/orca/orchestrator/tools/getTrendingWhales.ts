@@ -17,6 +17,8 @@ import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
 const MAX_SANE_TX_USD = 150_000_000
 
 const WINDOWS = {
+  '1h': 60 * 60 * 1000,
+  '4h': 4 * 60 * 60 * 1000,
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
   '30d': 30 * 24 * 60 * 60 * 1000,
