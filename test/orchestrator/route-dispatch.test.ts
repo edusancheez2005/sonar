@@ -248,3 +248,10 @@ describe('wantsFocusedDataAnswer — 2026-09-22 battery misses', () => {
     expect(wantsFocusedDataAnswer('tell me about SOL')).toBe(false)
   })
 })
+
+describe('wantsFocusedDataAnswer — derivatives facet (2026-09-23)', () => {
+  it('routes leverage / funding / OI questions to the orchestrator', () => {
+    expect(wantsFocusedDataAnswer('is ETH heavily leveraged right now?')).toBe(true)
+    expect(wantsFocusedDataAnswer("what's the funding rate and open interest on BTC?")).toBe(true)
+  })
+})

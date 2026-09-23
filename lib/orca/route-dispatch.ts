@@ -141,6 +141,11 @@ const SIGNAL_FOCUS_RE =
 // 56-second research essay — send it to the orchestrator's getPrice path.
 const PRICE_FOCUS_RE =
   /\b(price of|how much is|current price|price right now|trading at)\b/i
+// Leverage / funding / OI questions — getDerivatives exists since 2026-09-23;
+// without this the v1 note answered "is ETH heavily leveraged?" with a
+// price essay (battery n-07).
+const DERIV_FOCUS_RE =
+  /\b(leverag\w*|funding(?: rates?)?|open interest|\bOI\b|liquidat\w*|perps?\b|perpetuals?|long[\/ -]?short|shorts? (?:vs|and) longs?|crowded (?:longs?|shorts?))\b/i
 const COMPARE_RE =
   /\b(compare|comparison|vs\.?|versus|against|difference between|which is better|better than)\b/i
 
@@ -153,6 +158,7 @@ function isFocusedFacet(message: string): boolean {
     NEWS_FOCUS_RE.test(message) ||
     SIGNAL_FOCUS_RE.test(message) ||
     PRICE_FOCUS_RE.test(message) ||
+    DERIV_FOCUS_RE.test(message) ||
     COMPARE_RE.test(message) ||
     // Two or more distinct tickers ("BTC and ETH") — the v1 note is
     // single-ticker by construction and would silently answer only the first.

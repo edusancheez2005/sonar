@@ -466,7 +466,8 @@ export async function run(
     // from Etherscan (free key; Alchemy's quota is exhausted) so ANY
     // Ethereum wallet gets a real answer. Unpriced (no USD) — the renderer
     // reports counts, tokens and directions.
-    if (transferFeed === null && whaleFeedEmpty && /^0x[0-9a-fA-F]{40}$/.test(address) && (!chain || /^(eth|ethereum)$/i.test(String(chain)))) {
+    const trackedFeedEmpty = transferFeed === null || Number((transferFeed as any).tx_count) === 0
+    if (trackedFeedEmpty && whaleFeedEmpty && /^0x[0-9a-fA-F]{40}$/.test(address) && (!chain || /^(eth|ethereum)$/i.test(String(chain)))) {
       try {
         // Dynamic import: the helper is `server-only`, which throws when a
         // test runner loads the tool registry statically.
