@@ -173,20 +173,47 @@ export async function runOrchestrator(
   )
   const activityAlreadyFetched = toolResults.some((r) => r.call.tool === 'getWalletActivity')
   if (searchHit && !activityAlreadyFetched) {
-    const top = ((searchHit.result.data as any).matches as any[])[0]
-    if (top?.address) {
-      const call: ToolCall = {
-        tool: 'getWalletActivity',
-        args: { address: top.address, chain: top.chain, userId: input.userId },
-      }
+    // 2026-09-22 battery (case w-02): "show me Binance hot wallet activity"
+    // resolved to matches[0] — an arbitrary, quiet BSC address — and reported
+    // "no activity in 30d" while other Binance-labelled wallets were busy.
+    // Probe the top few label matches IN PARALLEL (same latency as one) and
+    // keep the most active; fall back to the first when all are empty.
+    const candidates = (((searchHit.result.data as any).matches as any[]) || [])
+      .filter((m) => m?.address)
+      .slice(0, 3)
+    if (candidates.length > 0) {
       const tTool = Date.now()
-      const result = await executeTool(call, deps.supabase, now)
+      const probed = await Promise.all(
+        candidates.map(async (m) => {
+          const call: ToolCall = {
+            tool: 'getWalletActivity',
+            args: { address: m.address, chain: m.chain, userId: input.userId },
+          }
+          const result = await executeTool(call, deps.supabase, now)
+          const d = (result.ok ? (result.data as any) : null) || {}
+          const score =
+            (Number(d.tx_count) || 0) +
+            (Number(d.lifetime?.tx_count) || 0) +
+            (Number(d.transfer_feed?.tx_count) || 0)
+          return { call, result, score }
+        })
+      )
+      const best = probed.reduce((a, b) => (b.score > a.score ? b : a), probed[0])
       trace.push({
         stage: 'tool',
-        payload: { tool: call.tool, ok: result.ok, source: result.source, args: redactArgs(call.args), error: result.error ?? null, followup_for: 'findTrackedWallets' },
+        payload: {
+          tool: best.call.tool,
+          ok: best.result.ok,
+          source: best.result.source,
+          args: redactArgs(best.call.args),
+          error: best.result.error ?? null,
+          followup_for: 'findTrackedWallets',
+          candidates_probed: probed.length,
+          candidate_scores: probed.map((p) => p.score),
+        },
         latency_ms: Date.now() - tTool,
       })
-      toolResults = [...toolResults, { call, result }]
+      toolResults = [...toolResults, { call: best.call, result: best.result }]
     }
   }
 
