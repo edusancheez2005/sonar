@@ -36,6 +36,7 @@ INSTRUCTIONS:
    - \`no_recent_news\` → "No major market-wide headlines in the last few hours."
    - \`no_wallet_activity\` → "No notable wallet activity in that window."
    - \`macro_unavailable\` → "Live macro data is temporarily unavailable; please check back shortly."
+   - an error starting with \`tool_timeout\` or containing \`timeout\`, \`fetch\`, \`ECONN\`, \`5\d\d\` → "That lookup timed out on our side — please ask again in a moment." (a TRANSIENT failure; never imply the data doesn't exist)
    - any other error → "That data isn't available right now."
    If the tool returned a \`cache_status\` of \`stale\`, add a brief note that the figures may be a little behind live.
 8. Include the as-of timestamp from the tool result when available (a short "as of \`HH:MM UTC\`" line at the end).

@@ -29,7 +29,7 @@ INSTRUCTIONS:
 - Add one plain-language line after the table summarising what the activity looks like overall (descriptive only).
 - DO NOT speculate on the wallet's intent, identity, motivation, or what they "are planning to do".
 - DO NOT name a price target, predict price impact, or recommend any action.
-- GRACEFUL DEGRADATION — never print a raw error code. If \`getMostActiveWallets\` returned \`no_wallet_activity\` say "No notable wallet activity in that window."; for any other error say "That wallet data isn't available right now." Then stop.
+- GRACEFUL DEGRADATION — never print a raw error code. If \`getMostActiveWallets\` returned \`no_wallet_activity\` say "No notable wallet activity in that window."; if the error starts with \`tool_timeout\` or mentions a timeout / fetch / connection failure, say "That wallet lookup timed out on our side — please ask again in a moment." (transient — never imply the wallet has no data); for any other error say "That wallet data isn't available right now." Then stop.
 - If no wallet data is available, say so plainly in one line and stop \u2014 do not pad.
 - Append the mandatory disclaimer exactly once at the very end.
 

@@ -1173,29 +1173,45 @@ export async function POST(request: Request) {
                         // returned so guardrails/persistence see the complete
                         // draft; the final 'complete' event remains authoritative
                         // (clients replace streamed text with it).
-                        const budgetMs = Math.max(10_000, 56_000 - (Date.now() - startTime))
-                        const streamResp: any = await (ai.chat.completions.create as any)(
-                          {
-                            model: short ? miniModel : aiModel,
-                            messages: [
-                              { role: 'system', content: sys },
-                              { role: 'user', content: usr },
-                            ],
-                            temperature: 0.5,
-                            max_tokens: short ? 900 : 3000,
-                            stream: true,
-                          },
-                          { signal: AbortSignal.timeout(budgetMs) }
-                        )
-                        let text = ''
-                        for await (const chunk of streamResp) {
-                          const delta = chunk?.choices?.[0]?.delta?.content
-                          if (delta) {
-                            text += delta
-                            send({ type: 'token', text: delta })
+                        // 2026-09-22 audit cluster 2 (11 apology answers, some in
+                        // multi-day bursts): a single upstream hiccup used to become
+                        // "I could not generate a response". Retry once on the mini
+                        // model when nothing has streamed yet and budget remains.
+                        const streamOnce = async (model: string, maxTokens: number): Promise<string> => {
+                          const budgetMs = Math.max(10_000, 56_000 - (Date.now() - startTime))
+                          const streamResp: any = await (ai.chat.completions.create as any)(
+                            {
+                              model,
+                              messages: [
+                                { role: 'system', content: sys },
+                                { role: 'user', content: usr },
+                              ],
+                              temperature: 0.5,
+                              max_tokens: maxTokens,
+                              stream: true,
+                            },
+                            { signal: AbortSignal.timeout(budgetMs) }
+                          )
+                          let text = ''
+                          for await (const chunk of streamResp) {
+                            const delta = chunk?.choices?.[0]?.delta?.content
+                            if (delta) {
+                              text += delta
+                              send({ type: 'token', text: delta })
+                            }
                           }
+                          return text
                         }
-                        return text
+                        let streamed = ''
+                        try {
+                          streamed = await streamOnce(short ? miniModel : aiModel, short ? 900 : 3000)
+                        } catch (firstErr: any) {
+                          const remaining = 56_000 - (Date.now() - startTime)
+                          if (streamed.length > 0 || remaining < 12_000) throw firstErr
+                          console.warn('[stage-a] writer retry after', firstErr?.message)
+                          streamed = await streamOnce(miniModel, short ? 900 : 1500)
+                        }
+                        return streamed
                       },
                       // Live-search writer (see the non-SSE site for rationale).
                       ...(stageAProvider === 'grok'
