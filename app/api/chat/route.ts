@@ -454,6 +454,26 @@ export async function POST(request: Request) {
       ].join('|'),
       'i'
     )
+    // -------------------------------------------------------------------------
+    // Self-description gate (2026-09-22 battery, case e-03): "what happened
+    // with sonar" / "what can you do" was routed to the news tool and
+    // dead-ended with "news items contain no information about Sonar".
+    // Questions about the platform itself get a deterministic capability
+    // answer — no LLM, no tools, instant. Only fires when NO ticker was
+    // extracted, so "sonar signal on BTC" still reaches the orchestrator.
+    // -------------------------------------------------------------------------
+    const ABOUT_SONAR_RE =
+      /\b(?:what(?:'s| is| does| can|'?s up with| happened (?:with|to)) (?:sonar|orca)\b|about (?:sonar|orca)\b|how (?:does|do) (?:sonar|orca) work|what (?:can|do) you do|who are you|what are you)\b/i
+    if (ABOUT_SONAR_RE.test(message) && !extractTicker(message).ticker) {
+      console.log('ℹ️ About-Sonar question → deterministic capability answer')
+      return NextResponse.json({
+        response:
+          "I'm ORCA, Sonar's research assistant. Sonar tracks large on-chain (\"whale\") transactions across Ethereum, Solana and BNB Chain in real time, classifies them as buys or sells, and combines that with price, news, social-momentum and macro data.\n\nThings you can ask me:\n- \"What are whales doing with ETH this week?\" — whale flows for a token\n- \"Who were the biggest BTC buyers today?\" — top individual transactions\n- \"Most profitable wallets this week\" — the smart-money leaderboard\n- \"What is 0x… doing?\" — activity for a specific wallet\n- \"Latest news on SOL\" / \"social sentiment around DOGE\"\n- \"What changed in crypto macro today?\"\n- \"How is BTC looking?\" — a full research note on one token\n\nI describe public data only — I never give buy, sell or hold advice.",
+        type: 'about_sonar',
+        intent: 'about_sonar',
+      })
+    }
+
     if (ADVICE_SEEKING_RE.test(message)) {
       console.log('🛡️ Advice-seeking message → explicit compliance decline (pre-path gate)')
       return NextResponse.json({
