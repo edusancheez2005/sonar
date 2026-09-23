@@ -113,6 +113,31 @@ export async function GET(req: Request) {
       issues.push(`xAI/Grok canary stale: last Whale Whisper ${lastWhisperAgeH === null ? 'unknown' : lastWhisperAgeH + 'h'} ago (cron runs 4-hourly) — ORCA chat likely DOWN (check xAI credits at console.x.ai).`)
     }
 
+    // --- ORCA answer-quality canary ----------------------------------------
+    // 2026-09-22 audit: writer failures surfaced as apology boilerplate for
+    // DAYS in late Aug with nobody noticing (11 of 150 audited answers).
+    // Count last-24h chat rows that are apologies / canned dead-ends and flag
+    // when they exceed a small share of traffic.
+    let orcaAnswers24h = 0
+    let orcaDeadEnds24h = 0
+    try {
+      const since24 = new Date(now.getTime() - 86_400_000).toISOString()
+      const { count: total } = await supabaseAdmin
+        .from('chat_history')
+        .select('id', { count: 'exact', head: true })
+        .gte('timestamp', since24)
+      orcaAnswers24h = total || 0
+      const { count: dead } = await supabaseAdmin
+        .from('chat_history')
+        .select('id', { count: 'exact', head: true })
+        .gte('timestamp', since24)
+        .or('orca_response.ilike.%unable to generate%,orca_response.ilike.%could not generate%,orca_response.ilike.%isn\'t available right now%')
+      orcaDeadEnds24h = dead || 0
+    } catch { /* best-effort */ }
+    if (orcaAnswers24h >= 5 && orcaDeadEnds24h / orcaAnswers24h > 0.15) {
+      issues.push(`ORCA dead-end rate ${orcaDeadEnds24h}/${orcaAnswers24h} answers in 24h — writer failures or tool dead-ends spiking; check orca_traces.`)
+    }
+
     // --- Alchemy canary ----------------------------------------------------
     // One cheap eth_blockNumber against the shared key. Quota exhaustion
     // 429'd silently for ~3 weeks in Aug 2026 (only symptom: empty holdings
@@ -161,6 +186,7 @@ export async function GET(req: Request) {
       whaleFeed: { qualifying8h: whaleQualifying || 0 },
       orca: { lastWhisperAgeHours: lastWhisperAgeH },
       alchemy: { ok: alchemyOk, error: alchemyError },
+      orcaQuality: { answers24h: orcaAnswers24h, deadEnds24h: orcaDeadEnds24h },
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,
     }
