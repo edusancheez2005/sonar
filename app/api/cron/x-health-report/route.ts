@@ -154,6 +154,22 @@ export async function GET(req: Request) {
     } catch { /* best-effort */ }
     if (staleSentiment.length) issues.push(`Sentiment scores stale for ${staleSentiment.join(', ')} — check ingest-news + aggregate-sentiment crons.`)
 
+    // --- Native-chain whale feed (Whale Alert) ----------------------------
+    // whale_alerts newest row was 2026-09-09 when checked on 09-23: the free
+    // v1 REST API returns 404 for everything (Whale Alert now sells only a
+    // $699/mo enterprise REST API or a $29.95/mo alerts websocket). Flag
+    // staleness so native BTC/XRP/DOGE coverage doesn't silently vanish again.
+    let whaleAlertsAgeH: number | null = null
+    try {
+      const { data: wa } = await supabaseAdmin
+        .from('whale_alerts').select('created_at').order('created_at', { ascending: false }).limit(1)
+      const t = wa?.[0]?.created_at ? new Date(wa[0].created_at).getTime() : NaN
+      if (Number.isFinite(t)) whaleAlertsAgeH = Math.round((now.getTime() - t) / 3_600_000)
+    } catch { /* best-effort */ }
+    if (whaleAlertsAgeH === null || whaleAlertsAgeH > 6) {
+      issues.push(`Whale Alert feed stale (${whaleAlertsAgeH === null ? 'no rows' : whaleAlertsAgeH + 'h'}) — native BTC/XRP/DOGE whale data not updating (free API discontinued; needs a replacement source).`)
+    }
+
     // --- Alchemy canary ----------------------------------------------------
     // One cheap eth_blockNumber against the shared key. Quota exhaustion
     // 429'd silently for ~3 weeks in Aug 2026 (only symptom: empty holdings
