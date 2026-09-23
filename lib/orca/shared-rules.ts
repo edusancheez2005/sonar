@@ -23,7 +23,8 @@ export const HARD_RULES = `HARD RULES (must never be violated):
 5. Never use the words: recommend, recommendation, advice, advise, conviction, alpha, edge, guaranteed, will (in a predictive sense), profit, pump, dump, hedge fund, institutional-grade.
 6. Never claim ORCA, Sonar, or the user has an "information edge" over other market participants.
 7. Convert any directional judgement into a neutral factual description of the observed data.
-8. Do not invent, fabricate, or hallucinate citations, tweets, quotes, studies, regulations, or rulings.`
+8. Do not invent, fabricate, or hallucinate citations, tweets, quotes, studies, regulations, or rulings.
+9. Reply in the language the user wrote in (Spanish question → Spanish answer, Indonesian → Indonesian). Keep tickers, numbers and the disclaimer's meaning intact; translate the disclaimer too.`
 
 export const NO_EMOJI_RULE =
   'No emojis. Wrap all numbers, prices, percentages and metrics in `backticks`.'

@@ -120,7 +120,7 @@ const MACRO_EVENT_RE =
 // ETH?") — the v1 template buries the answer in a generic research note; the
 // orchestrator's getWhaleFlows path answers them directly.
 const WHALE_FOCUS_RE =
-  /\b(whales?|whale (?:flows?|activity|moves?)|big (?:buyers?|sellers?)|smart money|accumulat\w*|distribut\w*|net (?:buy|sell)\w*|(?:in|out)flows?)\b/i
+  /\b(whales?|whale (?:flows?|activity|moves?)|big(?:gest)? (?:buyers?|sellers?)|top (?:buyers?|sellers?)|(?:buyers?|sellers?) of|smart money|accumulat\w*|distribut\w*|net (?:buy|sell)\w*|(?:in|out)flows?)\b/i
 
 // 2026-09-22 answer-quality audit (cluster 1 — 20 of 55 failures): this gate
 // only knew the whale + macro facets, so a sentiment / news / signal / compare
@@ -132,8 +132,15 @@ const SOCIAL_FOCUS_RE =
   /\b(social|sentiment|hype|buzz|momentum|galaxy score|alt ?rank|community|mood|people (?:saying|talking|think))\b/i
 const NEWS_FOCUS_RE =
   /\b(news|headlines?|articles?|announce\w*|press release|latest (?:on|about|with))\b/i
+// 2026-09-22 battery: "why is SOL rated the way it is by Sonar's signal?"
+// slipped through ("Sonar's" ≠ "sonar signal", "rated the way" ≠ "rated as
+// buy"). Any ticker question that says signal/rating/rated is a signal ask.
 const SIGNAL_FOCUS_RE =
-  /\b(sonar signal|signals? (?:on|for)|(?:flagged|rated|marked) (?:as )?(?:a )?(?:strong )?(?:buy|sell)|(?:buy|sell) (?:signal|rating|flag)|signal (?:history|verdict|score|context))\b/i
+  /\b(sonar'?s? signal|signals?\b|rated|rating|(?:flagged|marked) (?:as )?(?:a )?(?:strong )?(?:buy|sell))/i
+// A point price lookup ("what's the price of AVAX") wants a number, not a
+// 56-second research essay — send it to the orchestrator's getPrice path.
+const PRICE_FOCUS_RE =
+  /\b(price of|how much is|current price|price right now|trading at)\b/i
 const COMPARE_RE =
   /\b(compare|comparison|vs\.?|versus|against|difference between|which is better|better than)\b/i
 
@@ -145,6 +152,7 @@ function isFocusedFacet(message: string): boolean {
     SOCIAL_FOCUS_RE.test(message) ||
     NEWS_FOCUS_RE.test(message) ||
     SIGNAL_FOCUS_RE.test(message) ||
+    PRICE_FOCUS_RE.test(message) ||
     COMPARE_RE.test(message) ||
     // Two or more distinct tickers ("BTC and ETH") — the v1 note is
     // single-ticker by construction and would silently answer only the first.

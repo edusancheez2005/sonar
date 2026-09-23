@@ -444,6 +444,13 @@ export async function POST(request: Request) {
         /\bworth\s+(?:buying|investing|aping)\b/.source,
         /\bhow\s+much\s+should\s+i\s+(?:buy|invest|put)\b/.source,
         /\bgive\s+me\s+a\s+price\s+(?:target|prediction)\b/.source,
+        // 2026-09-22 battery: prediction asks ("will ETH hit 5k this year?")
+        // reached the v1 note, which declined in one line and then wrote
+        // 8,000 chars of analysis anyway. Prediction = advice-seeking here.
+        /\bwill\s+(?:\$?\w{2,10})\s+(?:hit|reach|go\s+to|get\s+to|break|touch|moon|pump|crash|dump|recover)\b/.source,
+        /\bprice\s+(?:prediction|target|forecast)s?\b/.source,
+        /\b(?:predict|forecast)\b[^.?!]{0,40}\bprice\b/.source,
+        /\bwhen\s+(?:will|does)\s+\w{2,10}\s+(?:moon|pump|recover|bottom|top)\b/.source,
       ].join('|'),
       'i'
     )

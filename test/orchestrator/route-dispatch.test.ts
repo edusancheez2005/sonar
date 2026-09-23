@@ -182,7 +182,9 @@ describe('wantsFocusedDataAnswer — extracted-ticker bypass guard (2026-07-20 a
   it('stays quiet for plain ticker overviews', () => {
     expect(wantsFocusedDataAnswer('tell me about BTC')).toBe(false)
     expect(wantsFocusedDataAnswer('full ETH analysis')).toBe(false)
-    expect(wantsFocusedDataAnswer("what's the price of SOL?")).toBe(false)
+    // 2026-09-22: reversed — a point price lookup now goes to the fast
+    // orchestrator getPrice path instead of a 56s research essay (battery m-03).
+    expect(wantsFocusedDataAnswer("what's the price of SOL?")).toBe(true)
   })
 })
 
@@ -225,5 +227,24 @@ describe('pickStageARoute — facet questions with a ticker go to the orchestrat
   it('keeps a plain ticker overview on the v1 note', () => {
     const route = pickStageARoute(decision({ intent: 'overview', tickers: ['BTC'], confidence: 0.8, message: 'tell me about BTC' }))
     expect(route.kind).toBe('v1_with_ticker')
+  })
+})
+
+describe('wantsFocusedDataAnswer — 2026-09-22 battery misses', () => {
+  it('catches "biggest sellers of X" and "top buyers"', () => {
+    expect(wantsFocusedDataAnswer('Who were the biggest sellers of PEPE in the last 24h?')).toBe(true)
+    expect(wantsFocusedDataAnswer('top buyers of LINK today')).toBe(true)
+  })
+  it("catches \"rated ... by Sonar's signal\" phrasing", () => {
+    expect(wantsFocusedDataAnswer("Why is SOL rated the way it is by Sonar's signal?")).toBe(true)
+    expect(wantsFocusedDataAnswer('what is the signal on ETH')).toBe(true)
+  })
+  it('sends point price lookups to the orchestrator', () => {
+    expect(wantsFocusedDataAnswer("what's the price of AVAX")).toBe(true)
+    expect(wantsFocusedDataAnswer('how much is DOGE right now')).toBe(true)
+  })
+  it('still keeps overview asks on the v1 note', () => {
+    expect(wantsFocusedDataAnswer('How is ETH looking right now?')).toBe(false)
+    expect(wantsFocusedDataAnswer('tell me about SOL')).toBe(false)
   })
 })
