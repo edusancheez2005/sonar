@@ -10,6 +10,8 @@
  * to the v1 long-form ticker note instead of the article_explain renderer.
  */
 
+import { extractTickers } from './ticker-extractor'
+
 export type StageADecision = {
   intent: string
   tickers: string[]
@@ -120,6 +122,36 @@ const MACRO_EVENT_RE =
 const WHALE_FOCUS_RE =
   /\b(whales?|whale (?:flows?|activity|moves?)|big (?:buyers?|sellers?)|smart money|accumulat\w*|distribut\w*|net (?:buy|sell)\w*|(?:in|out)flows?)\b/i
 
+// 2026-09-22 answer-quality audit (cluster 1 — 20 of 55 failures): this gate
+// only knew the whale + macro facets, so a sentiment / news / signal / compare
+// question that happened to NAME a ticker still short-circuited into the v1
+// long-form price note ("what's the social sentiment around BTC?" → a
+// consolidation essay that never mentions sentiment). Each facet below has a
+// working orchestrator tool; the question just never reached it.
+const SOCIAL_FOCUS_RE =
+  /\b(social|sentiment|hype|buzz|momentum|galaxy score|alt ?rank|community|mood|people (?:saying|talking|think))\b/i
+const NEWS_FOCUS_RE =
+  /\b(news|headlines?|articles?|announce\w*|press release|latest (?:on|about|with))\b/i
+const SIGNAL_FOCUS_RE =
+  /\b(sonar signal|signals? (?:on|for)|(?:flagged|rated|marked) (?:as )?(?:a )?(?:strong )?(?:buy|sell)|(?:buy|sell) (?:signal|rating|flag)|signal (?:history|verdict|score|context))\b/i
+const COMPARE_RE =
+  /\b(compare|comparison|vs\.?|versus|against|difference between|which is better|better than)\b/i
+
+/** A ticker-bearing message whose FACET the v1 price note cannot serve. */
+function isFocusedFacet(message: string): boolean {
+  return (
+    MACRO_EVENT_RE.test(message) ||
+    WHALE_FOCUS_RE.test(message) ||
+    SOCIAL_FOCUS_RE.test(message) ||
+    NEWS_FOCUS_RE.test(message) ||
+    SIGNAL_FOCUS_RE.test(message) ||
+    COMPARE_RE.test(message) ||
+    // Two or more distinct tickers ("BTC and ETH") — the v1 note is
+    // single-ticker by construction and would silently answer only the first.
+    extractTickers(message).length >= 2
+  )
+}
+
 /**
  * True when a ticker-bearing message is a focused data question (macro-event
  * impact or whale flows) that must reach the LLM router + orchestrator instead
@@ -129,7 +161,7 @@ const WHALE_FOCUS_RE =
 export function wantsFocusedDataAnswer(message: string | undefined): boolean {
   const m = (message ?? '').trim()
   if (!m) return false
-  return MACRO_EVENT_RE.test(m) || WHALE_FOCUS_RE.test(m)
+  return isFocusedFacet(m)
 }
 
 /**
@@ -171,7 +203,7 @@ export function pickStageARoute(decision: StageADecision): StageARoute {
   if (
     decision.tickers.length > 0 &&
     decision.message !== undefined &&
-    (MACRO_EVENT_RE.test(decision.message) || WHALE_FOCUS_RE.test(decision.message))
+    isFocusedFacet(decision.message)
   ) {
     return { kind: 'orchestrator', intent: 'data_query' }
   }

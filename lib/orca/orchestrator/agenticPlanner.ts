@@ -27,6 +27,7 @@ import {
 } from './toolCatalogue'
 import { formatProfileBlock } from '../renderers/shared'
 import { formatHistoryForPrompt } from '../chat/formatHistoryForPrompt'
+import { trimTurnsForPrompt } from '../chat/trimHistory'
 import type {
   AgenticHopPlan,
   ChatTurn,
@@ -201,7 +202,10 @@ export function compactDigest(
 }
 
 function buildUserBlock(input: AgenticPlanInput, digest: string | null): string {
-  const history = formatHistoryForPrompt(input.chatHistory ?? [])
+  // 2026-09-22: trim before formatting — the planner hop measured 4-6s in
+  // prod (vs 1-3s expected) and untrimmed turns (full 8,000-char ORCA notes)
+  // were the prefill culprit. Same fix the writer path got on 09-21.
+  const history = formatHistoryForPrompt(trimTurnsForPrompt(input.chatHistory ?? []))
   const parts: string[] = []
   if (history) parts.push(history)
   parts.push(formatProfileBlock(input.profile))

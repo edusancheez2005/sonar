@@ -185,3 +185,45 @@ describe('wantsFocusedDataAnswer — extracted-ticker bypass guard (2026-07-20 a
     expect(wantsFocusedDataAnswer("what's the price of SOL?")).toBe(false)
   })
 })
+
+describe('wantsFocusedDataAnswer — sentiment / news / signal / compare facets (2026-09-22 audit)', () => {
+  it('fires for social-sentiment questions that name a ticker', () => {
+    expect(wantsFocusedDataAnswer("What's the social sentiment around BTC right now?")).toBe(true)
+    expect(wantsFocusedDataAnswer('is there hype around SOL on social?')).toBe(true)
+  })
+  it('fires for news questions that name a ticker', () => {
+    expect(wantsFocusedDataAnswer('Latest news on SOL?')).toBe(true)
+    expect(wantsFocusedDataAnswer('any headlines about ETH today')).toBe(true)
+  })
+  it('fires for Sonar-signal questions', () => {
+    expect(wantsFocusedDataAnswer('What is the Sonar signal on BTC and why?')).toBe(true)
+    expect(wantsFocusedDataAnswer('why is SOL flagged as a strong buy')).toBe(true)
+  })
+  it('fires for comparisons and multi-ticker asks', () => {
+    expect(wantsFocusedDataAnswer('Compare BTC and ETH')).toBe(true)
+    expect(wantsFocusedDataAnswer('bitcoin vs ethereum this week')).toBe(true)
+    expect(wantsFocusedDataAnswer('what are $BTC and $ETH doing')).toBe(true)
+  })
+  it('still leaves plain overview asks on the v1 note', () => {
+    expect(wantsFocusedDataAnswer('tell me about BTC')).toBe(false)
+    expect(wantsFocusedDataAnswer('How is BTC looking right now?')).toBe(false)
+    expect(wantsFocusedDataAnswer('full ETH analysis')).toBe(false)
+  })
+})
+
+describe('pickStageARoute — facet questions with a ticker go to the orchestrator (2026-09-22)', () => {
+  it('routes sentiment / news / compare away from v1_with_ticker', () => {
+    for (const message of [
+      "What's the social sentiment around BTC right now?",
+      'Latest news on SOL?',
+      'Compare BTC and ETH',
+    ]) {
+      const route = pickStageARoute(decision({ intent: 'overview', tickers: ['BTC'], confidence: 0.8, message }))
+      expect(route.kind, message).toBe('orchestrator')
+    }
+  })
+  it('keeps a plain ticker overview on the v1 note', () => {
+    const route = pickStageARoute(decision({ intent: 'overview', tickers: ['BTC'], confidence: 0.8, message: 'tell me about BTC' }))
+    expect(route.kind).toBe('v1_with_ticker')
+  })
+})
