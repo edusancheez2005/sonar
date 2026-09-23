@@ -543,7 +543,10 @@ export async function POST(request: Request) {
     // to fall through to a wallet_lookup with nothing to look up.
     const TRACK_WALLET_RE = /\b(track|watch|follow|monitor|save)\b[^.?!]{0,40}\b(wallet|address)\b/i
     const HAS_ANY_ADDRESS_RE = /\b(0x[a-fA-F0-9]{6,}|bc1[a-z0-9]{6,}|[13][A-HJ-NP-Za-km-z1-9]{20,}|[1-9A-HJ-NP-Za-km-z]{32,44}|T[1-9A-HJ-NP-Za-km-z]{33})\b/
-    if (TRACK_WALLET_RE.test(message) && !HAS_ANY_ADDRESS_RE.test(message) && !/\b(it|this|that|him|her|them)\b/i.test(message)) {
+    // "track this wallet" with no address is still a missing target — only a
+    // bare pronoun ("track it", "watch that one") may refer to a prior turn.
+    const bareReference = /\b(it|that one|them|him|her)\b/i.test(message) && !/\b(this|that) (wallet|address)\b/i.test(message)
+    if (TRACK_WALLET_RE.test(message) && !HAS_ANY_ADDRESS_RE.test(message) && !bareReference) {
       console.log('ℹ️ Track-wallet ask with no address → clarify')
       return NextResponse.json({
         response: 'Which wallet? Paste the full address (0x… for Ethereum/BSC/Polygon, bc1…/1…/3… for Bitcoin, or a Solana address) and I\'ll start tracking it. You can also name a labelled entity, e.g. "track the Binance 14 wallet".',
