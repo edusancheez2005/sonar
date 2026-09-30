@@ -80,6 +80,11 @@ export interface AgenticPlanInput {
   userId: string
   message: string
   chatHistory: ChatTurn[]
+  /**
+   * Deterministic plan from lib/orca/fast-paths.ts. When present the planner
+   * LLM hop is skipped entirely and these calls run as hop 1.
+   */
+  preplanned?: ToolCall[]
 }
 
 export interface AgenticPlanDeps {
@@ -236,7 +241,32 @@ export async function runAgenticPlan(
   const results: Array<{ call: ToolCall; result: ToolResult }> = []
   const executed = new Set<string>()
 
-  if (typeof plannerCall === 'function') {
+  // Fast path (2026-09-30): the caller already knows the plan — run it and
+  // skip the 4-6s planner LLM hop. Same validation + tracing as an LLM hop.
+  const preplanned = validateCalls(input.preplanned ?? [])
+  if (preplanned.length > 0) {
+    const tHop = Date.now()
+    for (const c of preplanned) executed.add(callKey(c))
+    const hopResults = await Promise.all(
+      preplanned.map(async (c) => {
+        const call = injectUserId(c, input.userId)
+        const tTool = Date.now()
+        const result = await executeTool(call, deps.supabase, deps.now)
+        trace.push({
+          stage: 'tool',
+          payload: { tool: call.tool, ok: result.ok, source: result.source, error: result.error ?? null },
+          latency_ms: Date.now() - tTool,
+        })
+        return { call, result }
+      })
+    )
+    results.push(...hopResults)
+    trace.push({
+      stage: 'agentic_plan',
+      payload: { hop: 1, thought: 'fast_path: deterministic plan (planner LLM skipped)', tools: preplanned.map((c) => c.tool), done: true },
+      latency_ms: Date.now() - tHop,
+    })
+  } else if (typeof plannerCall === 'function') {
     for (let hop = 1; hop <= MAX_HOPS; hop++) {
       const digest = hop === 1 ? null : compactDigest(results)
       const tHop = Date.now()

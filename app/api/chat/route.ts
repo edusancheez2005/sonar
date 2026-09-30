@@ -9,6 +9,7 @@ import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
 import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
 import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer } from '@/lib/orca/route-dispatch'
+import { matchFastPath } from '@/lib/orca/fast-paths'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
@@ -1130,6 +1131,10 @@ export async function POST(request: Request) {
       try {
         const { client: ai, miniModel, model: aiModel, provider: stageAProvider } = getAIClient()
         const routerStart = Date.now()
+        // Deterministic fast path (2026-09-30): market-wide "what have whales
+        // been doing?" skips BOTH the LLM router and the planner LLM hop.
+        const fastPath = !tickerFollowUp && !tickerResult.ticker ? matchFastPath(message, false) : null
+        if (fastPath) console.log(`⚡ fast path ${fastPath.name} → ${fastPath.calls.map((c) => c.tool).join(',')}`)
         // For a ticker follow-up we synthesise the router decision (intent
         // followup + the extracted ticker) and skip the LLM router call — it is
         // deterministic and saves a round-trip. Otherwise run the real router.
@@ -1142,6 +1147,8 @@ export async function POST(request: Request) {
               persona_hint: null,
               confidence: 0.9,
             }
+          : fastPath
+          ? fastPath.decision
           : await routeMessage(
               { message, userId, chatHistory: recentTurns },
               {
@@ -1257,7 +1264,7 @@ export async function POST(request: Request) {
                 const SHORT_WRITER_INTENTS = new Set(['followup', 'data_query', 'wallet_lookup', 'personal'])
 
                 const out = await runOrchestrator(
-                  { message, userId, chatHistory: recentTurns, profile, priorIntent, priorTickers },
+                  { message, userId, chatHistory: recentTurns, profile, priorIntent, priorTickers, preplannedCalls: fastPath?.calls },
                   {
                     supabase,
                     model: {

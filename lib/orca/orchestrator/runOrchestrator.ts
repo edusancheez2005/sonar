@@ -40,6 +40,8 @@ export interface RunOrchestratorInput {
    * call shape (`{tool, args}`); reads from this list are ignored.
    */
   confirmedWriteCalls?: ToolCall[]
+  /** Deterministic tool plan (lib/orca/fast-paths.ts) — skips the planner LLM. */
+  preplannedCalls?: ToolCall[]
   /**
    * Prior-turn subject carry-over (Fix #2). Lets a `followup` intent inherit
    * the right tools from the previous assistant turn's intent/tickers.
@@ -110,6 +112,7 @@ export async function runOrchestrator(
         userId: input.userId,
         message: input.message,
         chatHistory: input.chatHistory,
+        preplanned: input.preplannedCalls,
       },
       { supabase: deps.supabase, model: deps.model, now },
       trace
