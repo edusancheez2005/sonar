@@ -54,10 +54,12 @@ export function scrubToolNames(text: string): string {
 
 // The writer sometimes pads inline code with spaces ("` $1.52B `"), which
 // renders as a wide pill with stray spaces. Trim inside single backticks.
-const PADDED_CODE_RE = /`[ \t]+([^`\n]*?)[ \t]*`|`[ \t]*([^`\n]*?)[ \t]+`/g
+// Non-overlapping left-to-right matching pairs the 1st backtick with the 2nd,
+// the 3rd with the 4th, … so neighbouring spans are never merged.
+const CODE_SPAN_RE = /`([^`\n]*)`/g
 export function tidyInlineCode(text: string): string {
   if (typeof text !== 'string' || !text) return text
-  return text.replace(PADDED_CODE_RE, (_m, a, b) => `\`${(a ?? b ?? '').trim()}\``)
+  return text.replace(CODE_SPAN_RE, (_m, inner: string) => `\`${inner.trim()}\``)
 }
 
 export function applyGuardrails(draft: string): GuardrailResult {
