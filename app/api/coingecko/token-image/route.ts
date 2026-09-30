@@ -34,22 +34,36 @@ function isTransient(reason: string): boolean {
 
 type Meta = { id: string; symbol: string; name: string; image_url: string | null; miss?: boolean }
 
-async function readCache(key: string): Promise<Meta | null> {
+/** First usable row among `keys` (in order): a real hit wins over a miss row. */
+async function readCache(keys: string[]): Promise<Meta | null> {
   try {
     const { data } = await supabaseAdmin
       .from('app_cache')
-      .select('value, updated_at')
-      .eq('key', key)
-      .maybeSingle()
-    if (!data?.value) return null
-    const age = Date.now() - Date.parse(data.updated_at || 0)
-    if (!Number.isFinite(age)) return null
-    const v = data.value as Meta
-    if (v.miss) return age <= MISS_TTL_MS ? v : null
-    return v
+      .select('key, value, updated_at')
+      .in('key', keys)
+    if (!data?.length) return null
+    const byKey = new Map(data.map((r: any) => [r.key, r]))
+    let miss: Meta | null = null
+    for (const k of keys) {
+      const row: any = byKey.get(k)
+      if (!row?.value) continue
+      const age = Date.now() - Date.parse(row.updated_at || 0)
+      if (!Number.isFinite(age)) continue
+      const v = row.value as Meta
+      if (v.miss) { if (age <= MISS_TTL_MS && !miss) miss = v; continue }
+      return v
+    }
+    return miss
   } catch {
     return null
   }
+}
+
+// Callers often pass the SYMBOL as the id (the trending route sends
+// id="btc"); a real CoinGecko id is longer or hyphenated ("bitcoin",
+// "wrapped-bitcoin"). Same heuristic as coinRegistry.getById.
+function looksLikeSymbol(id: string): boolean {
+  return id.length <= 6 && !id.includes('-')
 }
 
 async function writeCache(key: string, value: Meta): Promise<void> {
@@ -85,21 +99,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Either symbol or id parameter required' }, { status: 400 })
   }
 
-  const cacheKey = id ? `cg_logo_id:${id.toLowerCase()}` : `cg_logo:${symbol.toUpperCase()}`
-  const cached = await readCache(cacheKey)
+  // Effective symbol: explicit, or an id that is really a symbol.
+  const sym = (symbol || (id && looksLikeSymbol(id) ? id : '')).toUpperCase()
+  const realId = id && !looksLikeSymbol(id) ? id.toLowerCase() : ''
+  const keys: string[] = []
+  if (realId) keys.push(`cg_logo_id:${realId}`)
+  if (sym) keys.push(`cg_logo:${sym}`)
+  if (id && !realId) keys.push(`cg_logo_id:${id.toLowerCase()}`) // ids that equal symbols (near, sui)
+  const cacheKey = sym ? `cg_logo:${sym}` : `cg_logo_id:${realId || id.toLowerCase()}`
+  const cached = await readCache(keys)
   if (cached?.miss) return NextResponse.json({ error: 'Token not found', cached_miss: true }, { status: 404, headers: MISS_HEADERS })
   if (cached) return NextResponse.json(cached, { headers: HIT_HEADERS })
   lastReason = ''
 
   let metadata: Meta | null = null
   try {
-    if (id) {
-      const m = await coinRegistry.getById(id)
+    if (realId) {
+      const m = await coinRegistry.getById(realId)
       if (m) metadata = { id: m.id, symbol: m.symbol, name: m.name, image_url: m.image_url }
-    } else {
-      metadata = await viaSearch(symbol)
+    } else if (sym) {
+      metadata = await viaSearch(sym)
       if (!metadata) {
-        const m = await coinRegistry.resolve(symbol)
+        const m = await coinRegistry.resolve(sym)
         if (m) metadata = { id: m.id, symbol: m.symbol, name: m.name, image_url: m.image_url }
       }
     }
@@ -115,7 +136,7 @@ export async function GET(request: NextRequest) {
     }
     // Genuine miss: remember it for a day so a dashboard full of unknown
     // tickers does not re-hit CoinGecko on every page view.
-    await writeCache(cacheKey, { id: '', symbol: symbol.toUpperCase(), name: '', image_url: null, miss: true })
+    await writeCache(cacheKey, { id: '', symbol: sym, name: '', image_url: null, miss: true })
     return NextResponse.json({ error: 'Token not found', reason: lastReason || undefined }, { status: 404, headers: MISS_HEADERS })
   }
 

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { get24hrTicker } from '@/lib/binance/client'
 import { pairToSymbol } from '@/lib/binance/symbol-map'
+import { getTokenLogos } from '@/lib/logos/getTokenLogos'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -57,6 +58,12 @@ export async function GET(request: NextRequest) {
         }
       })
       .filter(Boolean) as any[]
+
+    // Attach stored logos server-side (one query) so the page renders icons
+    // without a token-image request per card. Seen 2026-09-30: every major
+    // was a letter because the client passed id="btc" and the lookup 429'd.
+    const logos = await getTokenLogos(tracked.map((t) => t.symbol))
+    for (const t of tracked) t.image = logos[String(t.symbol).toUpperCase()] || null
 
     // Trending = highest quote volume (most traded)
     const trending = [...tracked]
