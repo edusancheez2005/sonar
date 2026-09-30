@@ -141,7 +141,16 @@ export async function GET(request: Request) {
       success: true,
       analyzed: totalAnalyzed,
       updated: totalUpdated,
-      errors: errors.length > 0 ? errors.slice(0, 10) : undefined
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
+      // 2026-09-30 diagnostics: prod kept reporting a deterministic
+      // "analyzed: 98" while the null-sentiment backlog sat at 679 and the
+      // newest rows never got scored — surface exactly what this function
+      // sees so DB-target/query drift is visible in the response.
+      diag: {
+        db_host: (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/^https?:\/\//, '').split('.')[0],
+        fetched: newsItems.length,
+        newest: newsItems[0] ? { id: newsItems[0].id, ticker: newsItems[0].ticker } : null,
+      },
     })
 
   } catch (error) {
