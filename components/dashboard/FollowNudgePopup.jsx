@@ -109,8 +109,11 @@ export default function FollowNudgePopup() {
         const { data } = await sb.auth.getSession()
         const token = data?.session?.access_token
         if (!token) return
-        // Per account: only after THIS user dismissed the welcome card.
+        // Per account: only after THIS user has had the one-time welcome —
+        // and never while that dialog is still on screen (it marks itself
+        // "seen" the moment it opens, so check the DOM too).
         if (!hasSeenFirstRun(data?.session?.user?.id)) return
+        if (document.querySelector('[data-testid="first-run-welcome"]')) return
         const res = await fetch('/api/wallet-tracker/follows', {
           headers: { Authorization: `Bearer ${token}` },
         })

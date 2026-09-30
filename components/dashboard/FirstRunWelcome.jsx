@@ -235,7 +235,9 @@ const Seg = styled.button`
   color: #b7c4d1;
   font-family: inherit;
   font-size: 12px;
+  white-space: nowrap;
   cursor: pointer;
+  @media (max-width: 640px) { padding: 5px 8px; font-size: 11.5px; }
   transition: background 0.12s ease, color 0.12s ease;
   &:hover { color: #fff; }
   &:disabled { opacity: 0.55; cursor: default; }
