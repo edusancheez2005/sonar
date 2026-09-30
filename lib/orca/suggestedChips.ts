@@ -58,10 +58,12 @@ export function getSuggestedChips(ctx: ChipContext = {}): Chip[] {
     ]
   }
 
+  // Defaults are written for a first-time visitor with little crypto
+  // background (the activation persona): whales first, no jargon.
   return [
-    { label: 'What changed in macro today?', prompt: 'What changed in crypto macro today?' },
-    { label: 'Top whale moves this week', prompt: 'What are the top whale moves this week?' },
-    { label: 'Hot tokens by social momentum', prompt: 'Which tokens are hot right now by social momentum?' },
+    { label: 'What are whales doing today?', prompt: 'What are the biggest crypto whales doing today? Keep it simple.' },
+    { label: 'Are whales buying or selling Bitcoin?', prompt: 'Are whales buying or selling Bitcoin right now?' },
+    { label: 'Biggest whale moves this week', prompt: 'What are the biggest whale moves this week?' },
   ]
 }
 

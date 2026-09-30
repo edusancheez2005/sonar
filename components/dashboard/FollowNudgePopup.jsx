@@ -11,8 +11,12 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import styled, { keyframes } from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import { hasSeenFirstRun } from '@/lib/onboarding/firstRun'
 
 const DISMISS_KEY = 'sonar-follow-nudge-dismissed'
+// 2026-09-30: never on a first visit (the welcome card owns that), and give
+// the user time to look at the dashboard before anything slides in.
+const SHOW_DELAY_MS = 8000
 
 const slideUp = keyframes`
   from { transform: translateY(14px); opacity: 0; }
@@ -99,6 +103,7 @@ export default function FollowNudgePopup() {
     try {
       if (localStorage.getItem(DISMISS_KEY) === '1') return undefined
     } catch { /* ignore */ }
+    if (!hasSeenFirstRun()) return undefined
 
     const timer = setTimeout(async () => {
       try {
@@ -113,7 +118,7 @@ export default function FollowNudgePopup() {
         const list = await res.json()
         if (!cancelled && Array.isArray(list) && list.length === 0) setShow(true)
       } catch { /* stay hidden on any failure */ }
-    }, 1500)
+    }, SHOW_DELAY_MS)
 
     return () => { cancelled = true; clearTimeout(timer) }
   }, [])

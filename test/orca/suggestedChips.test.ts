@@ -5,9 +5,9 @@ describe('getSuggestedChips', () => {
   it('returns default chips when context is empty', () => {
     const chips = getSuggestedChips()
     expect(chips).toHaveLength(3)
-    expect(chips[0].label).toMatch(/macro/i)
+    expect(chips[0].label).toMatch(/whales/i)
     expect(chips[1].label).toMatch(/whale/i)
-    expect(chips[2].label).toMatch(/social/i)
+    expect(chips[2].label).toMatch(/week/i)
   })
 
   it('returns ticker-specific chips when ticker is supplied', () => {
@@ -25,7 +25,7 @@ describe('getSuggestedChips', () => {
   it('falls back to defaults if ticker is malformed', () => {
     const chips = getSuggestedChips({ ticker: 'NOT A TICKER' })
     expect(chips).toHaveLength(3)
-    expect(chips[0].label).toMatch(/macro/i)
+    expect(chips[0].label).toMatch(/whales/i)
   })
 
   it('returns wallet chips when wallet looks like an EVM address', () => {
@@ -52,6 +52,6 @@ describe('getSuggestedChips', () => {
   it('falls back to defaults when wallet is not a valid address', () => {
     const chips = getSuggestedChips({ wallet: 'not-an-address' })
     expect(chips).toHaveLength(3)
-    expect(chips[0].label).toMatch(/macro/i)
+    expect(chips[0].label).toMatch(/whales/i)
   })
 })

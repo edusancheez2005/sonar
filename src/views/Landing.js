@@ -4,6 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient';
+import { FIRST_QUESTION_URL } from '@/lib/onboarding/firstRun'
 import { isInAppBrowser, escapeInAppBrowser, IN_APP_BROWSER_MESSAGE } from '@/app/lib/inAppBrowser';
 import Globe from '@/src/components/landing/GlobeV2';
 import DashboardPreview from '@/src/components/landing/DashboardPreview';
@@ -997,7 +998,9 @@ const Landing = () => {
       if (loginErr) throw loginErr;
       showToast('Account created. Welcome!', 'success');
       setShowSignupModal(false);
-      navigate('/ai-advisor');
+      // First screen = ORCA already answering "what are whales doing today?"
+      // (2026-09-30 activation redesign — value before any form).
+      navigate(FIRST_QUESTION_URL);
     } catch (err) {
       const raw = (err && typeof err.message === 'string') ? err.message : (typeof err === 'string' ? err : (() => { try { return JSON.stringify(err); } catch { return ''; } })());
       const lower = (raw || '').toLowerCase();
@@ -1129,7 +1132,7 @@ const Landing = () => {
             <span><V2TickerVal>{liveVolume || '$973.4M'}</V2TickerVal> total volume</span>
           </V2Ticker>
           <V2CtaRow>
-            <V2BtnPrimary onClick={() => isLoggedIn ? navigate('/dashboard') : setShowLoginModal(true)}>Login</V2BtnPrimary>
+            <V2BtnPrimary onClick={() => isLoggedIn ? navigate('/dashboard') : setShowSignupModal(true)}>{isLoggedIn ? 'Go to dashboard' : 'Get started free'}</V2BtnPrimary>
             <V2BtnGhost onClick={() => { const el = document.getElementById('dashboard-preview'); el?.scrollIntoView({ behavior: 'smooth' }); }}>See Product</V2BtnGhost>
           </V2CtaRow>
         </V2HeroContent>

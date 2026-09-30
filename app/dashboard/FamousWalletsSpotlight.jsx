@@ -6,8 +6,13 @@
 // the video exists is safe). Dismissal is stored per CONTENT_VERSION so
 // a future bigger launch can re-trigger it by bumping the constant.
 import React, { useEffect, useState } from 'react'
+import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 const STORAGE_KEY = 'sonar_famous_wallets_spotlight_v1'
+// The feature launched 2026-08-01. Accounts created after that already have
+// it in the product — a "NEW ON SONAR" interstitial must never be the first
+// thing a new account sees (2026-09-30 activation redesign).
+const LAUNCH_DATE_MS = Date.parse('2026-08-01T00:00:00Z')
 const VIDEO_SRC = '/videos/famous-wallets.mp4'
 
 const STEPS = [
@@ -30,9 +35,20 @@ export default function FamousWalletsSpotlight() {
   const [videoOk, setVideoOk] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) setOpen(true)
-    } catch { /* private mode — skip */ }
+      if (localStorage.getItem(STORAGE_KEY)) return undefined
+    } catch { return undefined /* private mode — skip */ }
+    ;(async () => {
+      try {
+        const { data } = await supabaseBrowser().auth.getSession()
+        const createdAt = Date.parse(data?.session?.user?.created_at || '')
+        // Unknown creation date → treat as new (never show) rather than risk
+        // stacking a modal on a first visit.
+        if (!cancelled && Number.isFinite(createdAt) && createdAt < LAUNCH_DATE_MS) setOpen(true)
+      } catch { /* stay closed */ }
+    })()
+    return () => { cancelled = true }
   }, [])
 
   const dismiss = () => {

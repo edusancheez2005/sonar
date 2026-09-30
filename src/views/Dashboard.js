@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import OrcaTutorial from '@/components/onboarding/OrcaTutorial'
+import FirstRunWelcome from '@/components/dashboard/FirstRunWelcome'
+import { hasSeenFirstRun } from '@/lib/onboarding/firstRun'
 import SocialPulse from '@/components/SocialPulse'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import {
@@ -733,7 +735,8 @@ const Dashboard = ({ isPremium = false }) => {
   // One-time callout teaching the collapse control
   const [showCollapseHint, setShowCollapseHint] = useState(false)
   useEffect(() => {
-    try { if (localStorage.getItem('sonar-collapse-hint') !== '1') setShowCollapseHint(true) } catch { /* ignore */ }
+    // Never on a first visit — the welcome card is the only first-run surface.
+    try { if (hasSeenFirstRun() && localStorage.getItem('sonar-collapse-hint') !== '1') setShowCollapseHint(true) } catch { /* ignore */ }
   }, [])
   const dismissCollapseHint = () => {
     setShowCollapseHint(false)
@@ -758,13 +761,10 @@ const Dashboard = ({ isPremium = false }) => {
       }
     }
     
-    // Check if tutorial should show
-    const hasSeenTutorial = localStorage.getItem('sonar_tutorial_completed')
-    if (!hasSeenTutorial) {
-      // Small delay to let dashboard render first
-      setTimeout(() => setShowTutorial(true), 1000)
-    }
-    
+    // 2026-09-30: the tutorial no longer auto-fires on first visit (it used to
+    // land on top of the questionnaire + launch spotlight). It is on demand:
+    // the welcome card's "Take the 60-second tour" or the ▶ Tutorial button.
+
     fetchUserInfo()
 
     // Fetch watchlist with enriched price data
@@ -1014,6 +1014,9 @@ const Dashboard = ({ isPremium = false }) => {
 
 
         <DashboardContainer>
+            {/* ─── FIRST-RUN WELCOME (one card, dismissable, never stacks) ── */}
+            <FirstRunWelcome onTakeTour={() => setShowTutorial(true)} />
+
             {/* ─── KEY MACRO FACTORS (top of dashboard) ────────────── */}
             {(macroLoading || macroFactors?.factors) && (() => {
               const sentColor = macroFactors?.overall_sentiment === 'bullish' ? COLORS.green

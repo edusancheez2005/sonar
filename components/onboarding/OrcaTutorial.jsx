@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } fr
 import { createPortal } from 'react-dom'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
+import { FIRST_QUESTION_URL } from '@/lib/onboarding/firstRun'
 
 /* ── Step config ─────────────────────────────────────────────── */
 const STEPS = [
@@ -339,7 +340,7 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
                 Explore Dashboard
               </Secondary>
               <Primary
-                onClick={() => { finish(); window.location.href = '/ai-advisor' }}
+                onClick={() => { finish(); window.location.href = FIRST_QUESTION_URL }}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 style={{ padding: '10px 20px' }}

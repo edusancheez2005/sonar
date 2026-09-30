@@ -32,15 +32,11 @@ const OrcaDrawer = dynamic(() => import('@/components/orca/OrcaDrawer'), {
 // pre-2026-09 profiles as their owners return).
 const GeoStamp = dynamic(() => import('@/components/GeoStamp'), { ssr: false })
 
-// OnboardingGate (Stage E): mounts the personalisation wizard for signed-in
-// users without a complete user_profile row. Already mounted inside
-// DashboardWrapper; we skip remount on /dashboard/* to avoid duplicate
-// modals. Hidden on landing + auth + legal surfaces.
-const OnboardingGate = dynamic(() => import('@/components/onboarding/OnboardingGate'), {
-  ssr: false,
-})
-
-const ONBOARDING_HIDE_PREFIXES = ['/dashboard', '/auth', '/legal', '/privacy', '/terms', '/subscribe']
+// 2026-09-30: the personalisation wizard (components/onboarding/OnboardingGate)
+// is no longer auto-mounted. It used to cover the ORCA hero within ~0.5s of a
+// brand-new account's very first screen. See components/dashboard/
+// FirstRunWelcome.jsx for the replacement; the wizard files stay for a
+// future user-initiated "Personalise ORCA" entry point.
 
 const WALLET_ROUTES = ['/dashboard', '/personalize', '/profile', '/wallet-tracker', '/watchlist', '/whale']
 
@@ -54,11 +50,6 @@ export default function ClientRoot({ children }) {
   const inShell = !isLandingPage && !useLegacyTopNav
   // Boundary-aware match: '/whale' must cover /whale/0x… but NOT /whales/*
   const needsWallet = pathname && WALLET_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
-  const showOnboarding =
-    !isLandingPage &&
-    pathname &&
-    !ONBOARDING_HIDE_PREFIXES.some((p) => pathname.startsWith(p))
-
   const shell = (
     <StyleSheetManager shouldForwardProp={(propName, target) => {
       if (typeof target === 'string') {
@@ -90,11 +81,6 @@ export default function ClientRoot({ children }) {
       <Suspense fallback={null}>
         <OrcaDrawer />
       </Suspense>
-      {showOnboarding && (
-        <Suspense fallback={null}>
-          <OnboardingGate />
-        </Suspense>
-      )}
     </StyleSheetManager>
   )
 

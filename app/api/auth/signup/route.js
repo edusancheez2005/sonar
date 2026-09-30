@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { sendWelcomeEmail } from '@/app/lib/email'
+import { mapSignupExperience } from '@/lib/onboarding/firstRun'
 
 function isValidEmail(email) {
   if (typeof email !== 'string') return false
@@ -64,6 +65,10 @@ export async function POST(req) {
       email,
       password,
       email_confirm: true,
+      // The dashboard greets from user_metadata (full_name || name || email
+      // prefix). Without this an email signup was greeted by their email prefix
+      // even though they typed a display name.
+      ...(displayName ? { user_metadata: { full_name: displayName } } : {}),
     })
 
     if (error) {
@@ -108,6 +113,29 @@ export async function POST(req) {
         // required columns; if this fires, either the migration didn't run on
         // this environment or the trigger hasn't created the row yet.
         console.error('[api/auth/signup] profile update failed for', data.user.id, profileErr.message)
+      }
+    }
+
+    // ORCA calibrates on user_profile.experience_level. The form already asked
+    // "Experience" — map it across so nobody is asked twice (the old post-login
+    // questionnaire is gone). personalization_dismissed=true documents that
+    // this account should never get the wizard.
+    if (data?.user?.id) {
+      const mapped = mapSignupExperience(experienceLevel)
+      try {
+        const { error: upErr } = await supabaseAdmin
+          .from('user_profile')
+          .upsert(
+            {
+              user_id: data.user.id,
+              ...(mapped ? { experience_level: mapped } : {}),
+              personalization_dismissed: true,
+            },
+            { onConflict: 'user_id' }
+          )
+        if (upErr) console.error('[api/auth/signup] user_profile upsert failed for', data.user.id, upErr.message)
+      } catch (e) {
+        console.error('[api/auth/signup] user_profile upsert threw', e?.message || e)
       }
     }
 

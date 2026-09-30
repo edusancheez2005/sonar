@@ -522,6 +522,11 @@ export default function AskOrcaClient({
   const ticker = tickerProp || searchParams?.get('ticker') || null
   const wallet = walletProp || searchParams?.get('wallet') || null
   const initialQ = initialQProp || searchParams?.get('q') || ''
+  // `?send=1` (used by the signup landing + dashboard welcome card) submits
+  // the prefilled question once, so a new account's first screen is ORCA
+  // already answering instead of an empty box.
+  const autoSend = !initialQProp && searchParams?.get('send') === '1'
+  const autoSentRef = useRef(false)
 
   const [session, setSession] = useState(null)
   const [messages, setMessages] = useState([])
@@ -551,6 +556,20 @@ export default function AskOrcaClient({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, loading])
+
+  useEffect(() => {
+    if (!autoSend || autoSentRef.current || !session || !initialQ) return
+    if (messages.length > 0) return
+    autoSentRef.current = true
+    // Drop send=1 from the URL so a reload/back does not re-ask.
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('send')
+      window.history.replaceState(window.history.state, '', url.toString())
+    } catch { /* ignore */ }
+    sendMessage(initialQ)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSend, session, initialQ])
 
   // Keyboard shortcuts: 1/2/3/4 trigger the corresponding chip when empty.
   useEffect(() => {
@@ -830,15 +849,15 @@ export default function AskOrcaClient({
               : 'What do you want to know about crypto?'}
           </Heading>
           <Subhead>
-            Long-form, sourced research answers. Powered by Sonar Tracker
-            on-chain data, news, and social signals.
+            Plain-English answers about what the biggest wallets are doing,
+            backed by Sonar&apos;s live on-chain data, news and social signals.
           </Subhead>
           <InputCard onSubmit={onSubmit}>
             <HeroInput
               autoFocus
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything — e.g. why did BTC move today?"
+              placeholder="Ask anything — e.g. are whales buying Bitcoin right now?"
               disabled={loading}
             />
             <SendBtn type="submit" disabled={loading || !input.trim()}>
