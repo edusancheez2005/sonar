@@ -1015,7 +1015,7 @@ const Dashboard = ({ isPremium = false }) => {
 
 
         <DashboardContainer>
-            {/* ─── FIRST-RUN WELCOME (one card, dismissable, never stacks) ── */}
+            {/* ─── FIRST-RUN WELCOME (one-time dialog per account; portals to body) ── */}
             <FirstRunWelcome onTakeTour={() => setShowTutorial(true)} />
 
             {/* ─── KEY MACRO FACTORS (top of dashboard) ────────────── */}
