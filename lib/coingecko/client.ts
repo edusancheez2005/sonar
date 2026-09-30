@@ -3,11 +3,27 @@
  * Centralized client with caching, rate limiting, and error handling
  */
 
-const BASE_URL = 'https://pro-api.coingecko.com/api/v3'
+const PRO_BASE_URL = 'https://pro-api.coingecko.com/api/v3'
+const FREE_BASE_URL = 'https://api.coingecko.com/api/v3'
 const API_KEY = process.env.COINGECKO_API_KEY
 
 if (!API_KEY) {
   console.warn('⚠️ COINGECKO_API_KEY not set - CoinGecko features will be limited')
+}
+
+// 2026-09-30: fetchWithRetry used to hit the PRO host unconditionally, so
+// with no key (or a dead/demo key) EVERY call 401'd, retried for ~3.7s and
+// threw — token logos were letters site-wide and /api/coingecko/token-image
+// 500'd for months. Once the pro host rejects the key we remember it for the
+// life of the process and use the free tier, exactly like cgRequest() does.
+let proRejected = false
+function useProHost(): boolean {
+  return Boolean(API_KEY) && !proRejected
+}
+/** CoinGecko key errors: 10002 missing, 10011 invalid, 10012 demo key on pro host. */
+function isKeyRejection(status: number, body: string): boolean {
+  if (status === 401 || status === 403) return true
+  return status === 400 && /1001[12]|10002|api key/i.test(body)
 }
 
 interface CacheEntry<T> {
@@ -27,10 +43,10 @@ const cache = new Map<string, CacheEntry<any>>()
  * stays out of logs and cached URLs.
  */
 export function cgRequest(pathAndQuery: string): { url: string; headers: Record<string, string> } {
-  if (API_KEY) {
+  if (useProHost()) {
     return {
       url: `https://pro-api.coingecko.com/api/v3${pathAndQuery}`,
-      headers: { Accept: 'application/json', 'x-cg-pro-api-key': API_KEY },
+      headers: { Accept: 'application/json', 'x-cg-pro-api-key': API_KEY as string },
     }
   }
   return {
@@ -70,16 +86,27 @@ async function fetchWithRetry<T>(
 
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      const pro = useProHost()
+      const response = await fetch(`${pro ? PRO_BASE_URL : FREE_BASE_URL}${endpoint}`, {
         headers: {
           'Accept': 'application/json',
-          ...(API_KEY ? { 'x-cg-pro-api-key': API_KEY } : {}),
+          ...(pro ? { 'x-cg-pro-api-key': API_KEY as string } : {}),
         },
       })
 
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`CoinGecko API error (${response.status}): ${errorText}`)
+        if (pro && isKeyRejection(response.status, errorText)) {
+          // Key missing/expired/demo-tier: switch to the free host at once
+          // (no backoff — this is deterministic, not transient).
+          proRejected = true
+          console.warn(`CoinGecko pro host rejected the key (${response.status}); falling back to the free tier for this process`)
+          continue
+        }
+        const err = new Error(`CoinGecko API error (${response.status}): ${errorText.slice(0, 200)}`)
+        // Only 429 / 5xx are worth retrying; a 404 stays a 404.
+        if (response.status !== 429 && response.status < 500) throw Object.assign(err, { noRetry: true })
+        throw err
       }
 
       const data = await response.json()
@@ -90,6 +117,7 @@ async function fetchWithRetry<T>(
       return data
     } catch (error) {
       lastError = error as Error
+      if ((error as any)?.noRetry) break
       console.error(`CoinGecko API attempt ${attempt + 1}/${retries} failed:`, error)
 
       if (attempt < retries - 1) {

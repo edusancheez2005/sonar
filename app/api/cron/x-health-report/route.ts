@@ -195,6 +195,23 @@ export async function GET(req: Request) {
       issues.push(`Alchemy key failing: ${alchemyError} — wallet holdings panels are down.`)
     }
 
+    // --- CoinGecko canary (token logos + token pages) ------------------------
+    // The logo route 500'd silently for months (pro host called with no key).
+    let coingeckoOk: boolean | null = null
+    let coingeckoError: string | null = null
+    try {
+      const r = await fetch('https://www.sonartracker.io/api/coingecko/token-image?symbol=BTC', {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(15000),
+      })
+      const j: any = await r.json().catch(() => null)
+      coingeckoOk = r.ok && typeof j?.image_url === 'string' && j.image_url.length > 0
+      if (!coingeckoOk) coingeckoError = j?.error ? String(j.error).slice(0, 120) : `HTTP ${r.status}`
+    } catch (e: any) { coingeckoOk = false; coingeckoError = String(e?.message || e).slice(0, 120) }
+    if (coingeckoOk === false) {
+      issues.push(`CoinGecko logo lookup failing: ${coingeckoError} — token icons render as letters site-wide (check COINGECKO_API_KEY / free-tier 429s).`)
+    }
+
     // --- SEO spot checks ---------------------------------------------------
     let sitemapUrls = 0
     let pricingBlocked: boolean | null = null
@@ -218,6 +235,7 @@ export async function GET(req: Request) {
       whaleFeed: { qualifying8h: whaleQualifying || 0 },
       orca: { lastWhisperAgeHours: lastWhisperAgeH },
       alchemy: { ok: alchemyOk, error: alchemyError },
+      coingecko: { ok: coingeckoOk, error: coingeckoError },
       orcaQuality: { answers24h: orcaAnswers24h, deadEnds24h: orcaDeadEnds24h },
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,
