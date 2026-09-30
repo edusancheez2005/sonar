@@ -1,5 +1,5 @@
 /**
- * Cron: refresh-token-logos (daily)
+ * Cron: refresh-token-logos (weekly, Sunday 04:20 UTC)
  * =============================================================================
  * Keeps app_cache `cg_logo:<SYMBOL>` / `cg_logo_id:<id>` rows fresh from
  * CoinGecko's /coins/markets (top 1000 by market cap, 4 pages). The

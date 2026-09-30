@@ -122,7 +122,7 @@
     },
     {
       "path": "/api/cron/refresh-token-logos",
-      "schedule": "20 4 * * *"
+      "schedule": "20 4 * * 0"
     }
   ]
 }

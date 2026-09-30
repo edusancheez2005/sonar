@@ -19,8 +19,9 @@ export const runtime = 'nodejs'
 
 // Logos almost never change; rows are seeded from a laptop by
 // scripts/logos/seed_token_logos.py (free CoinGecko tier 429s from Vercel's
-// egress IPs) and refreshed by the daily refresh-token-logos cron.
-const CACHE_TTL_MS = 180 * 24 * 3600 * 1000
+// egress IPs). Eduardo (2026-09-30): "the logos won't change much… run this
+// again in 6 months". Stored hits therefore NEVER expire — a stale logo beats
+// a letter — and the weekly cron only refreshes when a key is configured.
 const MISS_TTL_MS = 24 * 3600 * 1000
 const HIT_HEADERS = { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800' }
 const MISS_HEADERS = { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60' }
@@ -45,7 +46,7 @@ async function readCache(key: string): Promise<Meta | null> {
     if (!Number.isFinite(age)) return null
     const v = data.value as Meta
     if (v.miss) return age <= MISS_TTL_MS ? v : null
-    return age > CACHE_TTL_MS ? null : v
+    return v
   } catch {
     return null
   }
