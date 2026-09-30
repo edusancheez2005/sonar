@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scrubToolNames, applyGuardrails, tidyInlineCode } from '../../lib/orca/orchestrator/guardrails'
+import { scrubToolNames, applyGuardrails, tidyInlineCode, scrubRecommendations } from '../../lib/orca/orchestrator/guardrails'
 
 describe('scrubToolNames', () => {
   it('drops parenthetical tool mentions', () => {
@@ -30,5 +30,18 @@ describe('tidyInlineCode', () => {
   })
   it('is applied by applyGuardrails', () => {
     expect(applyGuardrails('Whales bought ` $1.5B ` of BTC.').text).toMatch(/^Whales bought `\$1\.5B` of BTC\./)
+  })
+})
+
+describe('scrubRecommendations', () => {
+  it('drops only recommendation/prediction sentences and keeps the rest', () => {
+    const note = 'Whales net bought `$1.5B` of BTC. You should buy BTC now. Volume rose `12%` on the day.'
+    const out = scrubRecommendations(note)
+    expect(out.removed).toBe(1)
+    expect(out.text).toBe('Whales net bought `$1.5B` of BTC. Volume rose `12%` on the day.')
+  })
+  it('leaves a clean note untouched', () => {
+    const note = 'Price held near `$3K`.\nThe 7-day trend is neutral.'
+    expect(scrubRecommendations(note)).toEqual({ text: note, removed: 0 })
   })
 })

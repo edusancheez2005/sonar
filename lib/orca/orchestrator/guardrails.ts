@@ -62,6 +62,31 @@ export function tidyInlineCode(text: string): string {
   return text.replace(CODE_SPAN_RE, (_m, inner: string) => `\`${inner.trim()}\``)
 }
 
+/**
+ * Soft variant for long-form notes: remove sentences that read as a
+ * first-person recommendation with a forbidden verb, or as a prediction, and
+ * keep the rest. Used where a whole-answer decline would throw away a
+ * 2,000-token note the user has already watched stream in.
+ */
+export function scrubRecommendations(text: string): { text: string; removed: number } {
+  if (typeof text !== 'string' || !text) return { text, removed: 0 }
+  let removed = 0
+  const cleaned = text
+    .split('\n')
+    .map((line) => {
+      const sentences = splitSentences(line)
+      if (sentences.length === 0) return line
+      const kept = sentences.filter((s) => {
+        const bad = looksLikeFirstPersonRecommendation(s) && (FORBIDDEN_VERB_RE.test(s) || PREDICTION_RE.test(s))
+        if (bad) removed++
+        return !bad
+      })
+      return kept.length === sentences.length ? line : kept.join(' ')
+    })
+    .join('\n')
+  return { text: tidyInlineCode(scrubToolNames(cleaned)), removed }
+}
+
 export function applyGuardrails(draft: string): GuardrailResult {
   if (typeof draft !== 'string' || draft.trim().length === 0) {
     return {

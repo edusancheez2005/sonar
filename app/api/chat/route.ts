@@ -12,6 +12,8 @@ import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer } from '@/lib
 import { matchFastPath } from '@/lib/orca/fast-paths'
 import { cachedAnswerWindow, readCachedFirstAnswer, chunkText } from '@/lib/orca/first-answer'
 import { noteCacheKey, readCachedNote, writeCachedNote, isCacheableNote } from '@/lib/orca/note-cache'
+import { scrubRecommendations, applyGuardrails } from '@/lib/orca/orchestrator/guardrails'
+import { isExplainerQuestion, EXPLAINER_SYSTEM_PROMPT } from '@/lib/orca/explainer'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
@@ -568,6 +570,58 @@ export async function POST(request: Request) {
         type: 'about_sonar',
         intent: 'about_sonar',
       })
+    }
+
+    // -------------------------------------------------------------------------
+    // Explainer fast path (2026-09-30): definitional crypto questions with no
+    // ticker ("explain what a whale is", "what does net inflow mean?") answer
+    // with one low-effort flagship call (~3-5s) instead of router → planner →
+    // three leaderboards → flagship (19-22s). Guardrails still apply.
+    // Kill switch: ORCA_EXPLAINER_FAST=false.
+    // -------------------------------------------------------------------------
+    if (process.env.ORCA_EXPLAINER_FAST !== 'false' && isExplainerQuestion(message, !!extractTicker(message).ticker)) {
+      console.log('⚡ explainer fast path')
+      try {
+        const { client: ai, model: aiModel, miniModel } = getAIClient()
+        const useEffort = /grok-4\.[5-9]/.test(aiModel)
+        const completion = await ai.chat.completions.create(
+          {
+            model: useEffort ? aiModel : miniModel,
+            messages: [
+              { role: 'system', content: EXPLAINER_SYSTEM_PROMPT },
+              { role: 'user', content: message },
+            ],
+            temperature: 0.4,
+            max_tokens: 380,
+            ...(useEffort ? ({ reasoning_effort: process.env.ORCA_EXPLAINER_EFFORT || 'low' } as any) : {}),
+          },
+          { signal: AbortSignal.timeout(25_000) }
+        )
+        const draft = completion.choices[0]?.message?.content || ''
+        const guarded = applyGuardrails(draft)
+        waitUntil(Promise.all([
+          incrementQuota(userId, supabaseUrl, supabaseKey),
+          supabase.from('chat_history').insert({
+            user_id: userId,
+            session_id: session_id || null,
+            user_message: message,
+            orca_response: guarded.text,
+            tokens_used: Math.round((EXPLAINER_SYSTEM_PROMPT.length + message.length + draft.length) / 4),
+            model: useEffort ? aiModel : miniModel,
+            tickers_mentioned: [],
+            data_sources_used: { intent: 'explainer', fast_path: true, declined: guarded.declined },
+            response_time_ms: Date.now() - startTime,
+          }),
+        ]).catch((logErr) => console.warn('[explainer] post-write log failed', logErr)))
+        return NextResponse.json({
+          response: guarded.text,
+          type: guarded.declined ? 'compliance_decline' : 'explainer',
+          intent: guarded.declined ? 'compliance_decline' : 'explainer',
+          metadata: { response_time_ms: Date.now() - startTime, fast_path: 'explainer' },
+        })
+      } catch (explErr) {
+        console.warn('[explainer] fast path failed, falling through to the router', explErr)
+      }
     }
 
     if (ADVICE_SEEKING_RE.test(message)) {
@@ -1274,10 +1328,13 @@ export async function POST(request: Request) {
                 const shortWriterEffort = /grok-4\.[5-9]/.test(shortWriterModel)
                   ? (process.env.ORCA_SHORT_WRITER_EFFORT || 'low')
                   : undefined
-                // Long syntheses (overview / article / signal) on the flagship: same
-                // story — 17s+ to first token at default effort. ORCA_LONG_WRITER_EFFORT.
+                // Long syntheses (overview / article / signal) on the flagship: 17s+
+                // to first token at default effort; "low" cut it to ~1s but one
+                // explainer draft then tripped the compliance guardrail (prediction +
+                // forbidden verb → declined). "medium" (~4s) keeps the careful
+                // phrasing. ORCA_LONG_WRITER_EFFORT overrides.
                 const longWriterEffort = /grok-4\.[5-9]/.test(aiModel)
-                  ? (process.env.ORCA_LONG_WRITER_EFFORT || 'low')
+                  ? (process.env.ORCA_LONG_WRITER_EFFORT || 'medium')
                   : undefined
 
                 // Precomputed first answer (lib/orca/first-answer.ts): the
@@ -1876,6 +1933,15 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             }
           }
           if (!orcaResponse) orcaResponse = 'I apologize, but I was unable to generate a response.'
+          // 2026-09-30: the note now writes at low reasoning effort (fast first
+          // token); as a safety net, drop any sentence shaped like a first-person
+          // recommendation or a prediction instead of declining the whole note.
+          // The client replaces streamed text with this final version.
+          {
+            const scrubbed = scrubRecommendations(orcaResponse)
+            if (scrubbed.removed > 0) console.warn(`[v1] note scrub removed ${scrubbed.removed} sentence(s) for ${ticker}`)
+            orcaResponse = scrubbed.text
+          }
 
           // Increment quota + log — genuinely non-blocking now (2026-09-21):
           // this used to be awaited BEFORE the 'complete' event, holding the
