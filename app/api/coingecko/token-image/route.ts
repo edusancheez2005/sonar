@@ -23,7 +23,13 @@ export const runtime = 'nodejs'
 const CACHE_TTL_MS = 180 * 24 * 3600 * 1000
 const MISS_TTL_MS = 24 * 3600 * 1000
 const HIT_HEADERS = { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800' }
-const MISS_HEADERS = { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' }
+const MISS_HEADERS = { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60' }
+// A lookup that failed because CoinGecko rate-limited us (or errored) says
+// nothing about the token — never cache that, at the edge or in app_cache.
+const TRANSIENT_HEADERS = { 'Cache-Control': 'no-store' }
+function isTransient(reason: string): boolean {
+  return /\(429\)|\(5\d\d\)|fetch failed|timeout|ECONN|network/i.test(reason)
+}
 
 type Meta = { id: string; symbol: string; name: string; image_url: string | null; miss?: boolean }
 
@@ -102,8 +108,12 @@ export async function GET(request: NextRequest) {
   }
 
   if (!metadata) {
-    // Remember the miss for a day so a dashboard full of unknown tickers does
-    // not re-hit CoinGecko on every page view. `reason` is diagnostic only.
+    if (lastReason && isTransient(lastReason)) {
+      // Rate-limited / upstream down: answer 404 for this request only.
+      return NextResponse.json({ error: 'Token not found', transient: true, reason: lastReason }, { status: 404, headers: TRANSIENT_HEADERS })
+    }
+    // Genuine miss: remember it for a day so a dashboard full of unknown
+    // tickers does not re-hit CoinGecko on every page view.
     await writeCache(cacheKey, { id: '', symbol: symbol.toUpperCase(), name: '', image_url: null, miss: true })
     return NextResponse.json({ error: 'Token not found', reason: lastReason || undefined }, { status: 404, headers: MISS_HEADERS })
   }
