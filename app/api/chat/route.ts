@@ -1264,11 +1264,13 @@ export async function POST(request: Request) {
                 // where the flagship took 5-20s. Long syntheses (overview,
                 // article_explain, signal_explain) keep the flagship.
                 const SHORT_WRITER_INTENTS = new Set(['followup', 'data_query', 'wallet_lookup', 'personal'])
-                // Short answers stay on the mini writer. Measured 2026-09-30: grok-4.5
-                // with reasoning_effort:"low" took 15.5s to first token on a 7d whale
-                // question vs ~9s for grok-4.3. Override with ORCA_SHORT_WRITER_MODEL
-                // (reasoning_effort is only sent to grok-4.5+, which accept it).
-                const shortWriterModel = process.env.ORCA_SHORT_WRITER_MODEL || miniModel
+                // Short answers: grok-4.5 + reasoning_effort:"low". Isolated bench on
+                // the real synthesis prompt (/api/cron/orca-writer-bench, 2026-09-30,
+                // 4 runs each): 4.5-low first token 0.8-2.2s / total 6.8-8.8s;
+                // grok-4.3 first token 4.4-6.0s / total 6.6-9.8s; 4.20-non-reasoning
+                // 1.6-6.5s (erratic); grok-build-0.1 produced nothing in 50s.
+                // Override with ORCA_SHORT_WRITER_MODEL (effort only sent to 4.5+).
+                const shortWriterModel = process.env.ORCA_SHORT_WRITER_MODEL || 'grok-4.5'
                 const shortWriterEffort = /grok-4\.[5-9]/.test(shortWriterModel)
                   ? (process.env.ORCA_SHORT_WRITER_EFFORT || 'low')
                   : undefined
