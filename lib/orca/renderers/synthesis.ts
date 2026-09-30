@@ -34,8 +34,8 @@ export function renderSynthesisPrompt(args: RenderArgs, intent?: Intent): string
 ${HARD_RULES}
 
 INSTRUCTIONS:
-1. Answer the user's actual question directly. Do NOT open with "Sure" or "Certainly". If the question is a follow-up to the prior turn, continue that thread — do NOT greet the user or ask which token they mean; infer it from the prior turns and the tool results.
-2. Choose the format that fits the data: a ranked markdown table for leaderboards (whales/wallets/social), a numbered list for headlines, short prose for explanations and macro digests. Wrap EVERY number in \`backticks\`.
+1. Answer the user's actual question directly. Do NOT open with "Sure" or "Certainly". NEVER name internal tools (getTrendingWhales, getWhaleFlows, getLargestTransactions…) or say "tool results" — refer to the source in plain words ("Sonar's whale feed", "on-chain data"). If the question is a follow-up to the prior turn, continue that thread — do NOT greet the user or ask which token they mean; infer it from the prior turns and the tool results.
+2. Choose the format that fits the data: a ranked markdown table for leaderboards (whales/wallets/social), a numbered list for headlines, short prose for explanations and macro digests. Wrap EVERY number in \`backticks\`. If the user asks for plain English / a simple explanation, or the personalisation block says they are new to crypto, OPEN with 1-2 everyday-language sentences that answer the question (who was buying vs selling, which coins, how big) BEFORE any table, and keep the table to the rows that matter.
 3. FORMAT NUMBERS FOR HUMANS:
    - USD: abbreviate (\`$4.2M\`, \`$850K\`, \`$1.3B\`), never raw long integers.
    - Percentages: include the sign and one decimal (\`+5.2%\`, \`-3.4%\`).

@@ -36,6 +36,22 @@ export interface GuardrailResult {
   declined: boolean
 }
 
+// Internal tool names must never reach the user. Seen live 2026-09-30: the
+// writer titled an answer "Whale activity in the last 24 hours
+// (getTrendingWhales data):". Parenthetical mentions are dropped; a bare
+// mention becomes plain words.
+const TOOL_NAME_RE =
+  /\b(?:get[A-Z][A-Za-z]{2,}|findTrackedWallets|explainMacroFactor|addToWatchlist|removeFromWatchlist|setUserAlert)\b/g
+const TOOL_PAREN_RE =
+  /\s*\((?:(?:from|via|per|source:|using|based on)\s+)?(?:get[A-Z][A-Za-z]{2,}|findTrackedWallets|explainMacroFactor)(?:\s+(?:data|tool|results?|output))?\)/g
+
+export function scrubToolNames(text: string): string {
+  if (typeof text !== 'string' || !text) return text
+  return text
+    .replace(TOOL_PAREN_RE, '')
+    .replace(TOOL_NAME_RE, "Sonar's data")
+}
+
 export function applyGuardrails(draft: string): GuardrailResult {
   if (typeof draft !== 'string' || draft.trim().length === 0) {
     return {
@@ -65,7 +81,7 @@ export function applyGuardrails(draft: string): GuardrailResult {
   }
 
   return {
-    text: ensureSingleDisclaimer(draft),
+    text: ensureSingleDisclaimer(scrubToolNames(draft)),
     violations: [],
     declined: false,
   }
