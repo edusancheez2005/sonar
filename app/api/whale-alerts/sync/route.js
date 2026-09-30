@@ -29,12 +29,20 @@ const LOOKBACK_MS = 75 * 60 * 1000     // 75-min window; hash dedupe absorbs the
 const MAX_BLOCKS_PER_RUN = 8
 
 async function fetchBtcPriceUsd() {
-  const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
-  if (!r.ok) throw new Error(`Binance price fetch failed: ${r.status}`)
-  const d = await r.json()
-  const p = parseFloat(d.price)
-  if (!Number.isFinite(p) || p <= 0) throw new Error('Binance returned no usable BTC price')
-  return p
+  // Binance 451-blocks Vercel's US egress IPs — use blockchain.info's own
+  // ticker (same host as the block scan), Coinbase spot as fallback.
+  try {
+    const r = await fetch('https://blockchain.info/ticker')
+    if (r.ok) {
+      const p = parseFloat((await r.json())?.USD?.last)
+      if (Number.isFinite(p) && p > 0) return p
+    }
+  } catch { /* fall through */ }
+  const r2 = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot')
+  if (!r2.ok) throw new Error(`BTC price fetch failed: blockchain.info + Coinbase ${r2.status}`)
+  const p2 = parseFloat((await r2.json())?.data?.amount)
+  if (!Number.isFinite(p2) || p2 <= 0) throw new Error('No usable BTC price from either source')
+  return p2
 }
 
 /** blockchain.info /blocks/{ms} returns one UTC day's blocks; fetch two days
