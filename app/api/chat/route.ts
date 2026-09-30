@@ -1274,6 +1274,11 @@ export async function POST(request: Request) {
                 const shortWriterEffort = /grok-4\.[5-9]/.test(shortWriterModel)
                   ? (process.env.ORCA_SHORT_WRITER_EFFORT || 'low')
                   : undefined
+                // Long syntheses (overview / article / signal) on the flagship: same
+                // story — 17s+ to first token at default effort. ORCA_LONG_WRITER_EFFORT.
+                const longWriterEffort = /grok-4\.[5-9]/.test(aiModel)
+                  ? (process.env.ORCA_LONG_WRITER_EFFORT || 'low')
+                  : undefined
 
                 // Precomputed first answer (lib/orca/first-answer.ts): the
                 // market-wide 24h whale question is served from app_cache when
@@ -1367,7 +1372,7 @@ export async function POST(request: Request) {
                         }
                         let streamed = ''
                         try {
-                          streamed = await streamOnce(short ? shortWriterModel : aiModel, short ? 900 : 3000, short ? shortWriterEffort : undefined)
+                          streamed = await streamOnce(short ? shortWriterModel : aiModel, short ? 900 : 3000, short ? shortWriterEffort : longWriterEffort)
                         } catch (firstErr: any) {
                           const remaining = 56_000 - (Date.now() - startTime)
                           if (streamed.length > 0 || remaining < 12_000) throw firstErr
@@ -1792,6 +1797,11 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             }
           }
 
+          // 2026-09-30: the note's first token took 17-47s on grok-4.5 at the
+          // default (high) reasoning effort — the fan-out finishes in 3-7s.
+          // /api/cron/orca-writer-bench: 4.5 at "low" starts writing in ~1s.
+          // Override with ORCA_NOTE_EFFORT (only sent to grok-4.5+).
+          const noteEffort = /grok-4\.[5-9]/.test(aiModel) ? (process.env.ORCA_NOTE_EFFORT || 'low') : undefined
           const requestBody: any = {
             model: aiModel,
             messages: [
@@ -1802,7 +1812,8 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             // 6000 was the latency hog: ~2,000 tokens is already a full
             // 1,500-word note, and every extra token eats the ~60s platform
             // budget (2026-07-20: notes started tripping the writer deadline).
-            max_tokens: isFollowUp ? 1500 : 2600
+            max_tokens: isFollowUp ? 1500 : 2600,
+            ...(noteEffort ? { reasoning_effort: noteEffort } : {}),
           }
 
           // NOTE: no live-search here. The old `search:` field was silently
@@ -1859,7 +1870,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
               send({ type: 'status', step: 'ai_thinking', message: 'Trimming the note to fit...' })
               streamedBuffer = ''
               orcaResponse = await streamWriter(
-                { ...requestBody, model: miniModel, max_tokens: 1200 },
+                { ...requestBody, model: miniModel, max_tokens: 1200, reasoning_effort: undefined },
                 remaining
               )
             }
