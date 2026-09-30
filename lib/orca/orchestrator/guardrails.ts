@@ -52,6 +52,14 @@ export function scrubToolNames(text: string): string {
     .replace(TOOL_NAME_RE, "Sonar's data")
 }
 
+// The writer sometimes pads inline code with spaces ("` $1.52B `"), which
+// renders as a wide pill with stray spaces. Trim inside single backticks.
+const PADDED_CODE_RE = /`[ \t]+([^`\n]*?)[ \t]*`|`[ \t]*([^`\n]*?)[ \t]+`/g
+export function tidyInlineCode(text: string): string {
+  if (typeof text !== 'string' || !text) return text
+  return text.replace(PADDED_CODE_RE, (_m, a, b) => `\`${(a ?? b ?? '').trim()}\``)
+}
+
 export function applyGuardrails(draft: string): GuardrailResult {
   if (typeof draft !== 'string' || draft.trim().length === 0) {
     return {
@@ -81,7 +89,7 @@ export function applyGuardrails(draft: string): GuardrailResult {
   }
 
   return {
-    text: ensureSingleDisclaimer(scrubToolNames(draft)),
+    text: ensureSingleDisclaimer(tidyInlineCode(scrubToolNames(draft))),
     violations: [],
     declined: false,
   }

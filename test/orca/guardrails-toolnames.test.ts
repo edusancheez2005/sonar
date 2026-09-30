@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scrubToolNames, applyGuardrails } from '../../lib/orca/orchestrator/guardrails'
+import { scrubToolNames, applyGuardrails, tidyInlineCode } from '../../lib/orca/orchestrator/guardrails'
 
 describe('scrubToolNames', () => {
   it('drops parenthetical tool mentions', () => {
@@ -20,5 +20,15 @@ describe('scrubToolNames', () => {
     expect(out.declined).toBe(false)
     expect(out.text).not.toMatch(/getLargestTransactions/)
     expect(out.text).toMatch(/^Largest moves: QNT buy/)
+  })
+})
+
+describe('tidyInlineCode', () => {
+  it('trims stray spaces inside single backticks', () => {
+    expect(tidyInlineCode('a net ` $1.52B ` inflow and ` -$75.2M ` out')).toBe('a net `$1.52B` inflow and `-$75.2M` out')
+    expect(tidyInlineCode('keep `$4.2M` and `+5.2%`')).toBe('keep `$4.2M` and `+5.2%`')
+  })
+  it('is applied by applyGuardrails', () => {
+    expect(applyGuardrails('Whales bought ` $1.5B ` of BTC.').text).toMatch(/^Whales bought `\$1\.5B` of BTC\./)
   })
 })
