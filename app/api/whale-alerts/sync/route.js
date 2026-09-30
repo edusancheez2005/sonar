@@ -25,8 +25,14 @@ export const revalidate = 0
 export const maxDuration = 120
 
 const MIN_VALUE_USD = 500000
-const LOOKBACK_MS = 75 * 60 * 1000     // 75-min window; hash dedupe absorbs the overlap
-const MAX_BLOCKS_PER_RUN = 8
+// Vercel hard-kills this function at ~60s regardless of maxDuration (plan
+// cap; see 2026-09-30 HTTP 000 at 60.7s). Each rawblock is a 15-30MB JSON
+// fetch+parse (~10-15s), so the whole scan must fit ~3 blocks per run. With
+// the cron every 10 min and blocks every ~10 min avg, a 25-min window keeps
+// each block in-window for 2-3 consecutive runs — the hash dedupe absorbs
+// the overlap, and only a sustained >3-blocks-per-25-min burst can drop one.
+const LOOKBACK_MS = 25 * 60 * 1000
+const MAX_BLOCKS_PER_RUN = 3
 
 async function fetchBtcPriceUsd() {
   // Binance 451-blocks Vercel's US egress IPs — use blockchain.info's own
