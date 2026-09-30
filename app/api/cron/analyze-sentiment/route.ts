@@ -4,9 +4,9 @@
  * Purpose: Run GPT-4o-mini on news headlines to generate sentiment_llm scores
  */
 
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,11 +55,16 @@ export async function GET(request: Request) {
       )
     }
 
-    // Initialize clients
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE!
-    )
+    // 2026-09-30 ROOT CAUSE of the frozen-sentiment incident: this route
+    // built its own supabase-js client, whose PostgREST SELECT is a GET with
+    // a CONSTANT query string — Vercel's Data Cache pinned the response
+    // (~Sep 10) and served the same 98 "null-sentiment" rows forever, so no
+    // item ingested after Sep 10 ever got an LLM score. Writes (PATCH) were
+    // never cached, which made the failure invisible: every run reported
+    // "updated: 98" while re-scoring the same stale snapshot. Same bug class
+    // as the backtest crons (920eef8) — cron reads MUST use the no-store
+    // client.
+    const supabase = supabaseAdminFresh
 
     const openai = getAIClient()
 
@@ -73,7 +78,7 @@ export async function GET(request: Request) {
       .select('id, title, content, ticker')
       .is('sentiment_llm', null)
       .order('published_at', { ascending: false, nullsFirst: false })
-      .limit(400) // Max 400 items per run
+      .limit(160) // 8 batches ≈ 25-40s — must fit Vercel's ~60s kill (was 400, which would exceed it now that reads aren't cache-pinned; backlog drains across the 2-hourly runs)
 
     if (fetchError) {
       throw new Error(`Failed to fetch news items: ${fetchError.message}`)
