@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
 import { cgRequest } from '@/lib/coingecko/client'
+import { getTokenLogos } from '@/lib/logos/getTokenLogos'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -133,10 +134,14 @@ export async function GET(req) {
     const md = cg?.market_data || {}
     const getPct = (v) => (typeof v === 'number' && Number.isFinite(v)) ? v : 0
 
+    // Stored logo (app_cache) when CoinGecko gave us nothing — from Vercel the
+    // free tier usually 429s, which left `image: null` on every token page.
+    const storedLogos = await getTokenLogos([symbol])
+
     const response = {
       symbol,
       name: cg?.name || TOKEN_NAMES[symbol] || symbol,
-      image: cg?.image?.large || cg?.image?.small || null,
+      image: cg?.image?.large || cg?.image?.small || storedLogos[String(symbol).toUpperCase()] || null,
 
       // Prices from Binance (real-time, authoritative)
       price: currentPrice,
