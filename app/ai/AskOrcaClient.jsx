@@ -259,11 +259,27 @@ const ErrorLine = styled.div`
   margin-top: 0.5rem;
 `
 
+const statusPulse = keyframes`
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+`
+
 const Status = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-family: ${FONT_MONO};
   font-size: 0.7rem;
   color: ${colors.textMuted};
   letter-spacing: 0.08em;
+  &::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: ${colors.primary};
+    animation: ${statusPulse} 1.2s ease-in-out infinite;
+  }
 `
 
 const ConfirmCard = styled.div`
@@ -605,7 +621,9 @@ export default function AskOrcaClient({
     setError(null)
     setInput('')
     setLoading(true)
-    setStatusText('')
+    // Show something at once: the first server status/token can take 5-18s
+    // and a blank screen under the question reads as "broken" (seen live).
+    setStatusText('Reading the latest whale transactions…')
 
     const userMsg = {
       id: `u-${Date.now()}`,
@@ -923,9 +941,10 @@ export default function AskOrcaClient({
                 </Body>
               </Bubble>
             ))}
-            {loading && statusText && <Status>{statusText}</Status>}
+            {loading && <Status role="status">{statusText || 'Thinking…'}</Status>}
             {error && <ErrorLine>{error}</ErrorLine>}
-            <div ref={messagesEndRef} />
+            {/* scroll-margin keeps the last line above the sticky composer */}
+            <div ref={messagesEndRef} style={{ scrollMarginBottom: 130 }} />
           </Messages>
           <StickyInputWrap>
             <InputCard onSubmit={onSubmit}>

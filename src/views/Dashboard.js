@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import OrcaTutorial from '@/components/onboarding/OrcaTutorial'
 import FirstRunWelcome from '@/components/dashboard/FirstRunWelcome'
-import { hasSeenFirstRun } from '@/lib/onboarding/firstRun'
 import SocialPulse from '@/components/SocialPulse'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import {
@@ -734,9 +733,11 @@ const Dashboard = ({ isPremium = false }) => {
 
   // One-time callout teaching the collapse control
   const [showCollapseHint, setShowCollapseHint] = useState(false)
+  // 2026-09-30: retired. On the second visit it fired together with the
+  // follow nudge (two callouts at once again). The ▾ Hide button is
+  // self-explanatory; the dismiss key/handler stay so nothing else changes.
   useEffect(() => {
-    // Never on a first visit — the welcome card is the only first-run surface.
-    try { if (hasSeenFirstRun() && localStorage.getItem('sonar-collapse-hint') !== '1') setShowCollapseHint(true) } catch { /* ignore */ }
+    try { if (localStorage.getItem('sonar-collapse-hint') !== '1') localStorage.setItem('sonar-collapse-hint', '1') } catch { /* ignore */ }
   }, [])
   const dismissCollapseHint = () => {
     setShowCollapseHint(false)
