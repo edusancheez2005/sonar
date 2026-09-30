@@ -11,8 +11,8 @@
  * — plus an on-demand tour and a one-click "how much do you know?" chip that
  * calibrates ORCA (writes user_profile.experience_level) without a modal.
  *
- * Shows while `sonar_welcome_v1` is not 'dismissed' AND the legacy tutorial
- * key is absent, so existing users in their usual browser never see it.
+ * Shows until THIS account dismisses it (localStorage key per user id — a
+ * browser-wide key hid it from a second account in the same browser).
  * Nothing here blocks the page: no backdrop, no portal, no z-index games.
  */
 import React, { useEffect, useState } from 'react'
@@ -20,11 +20,7 @@ import Link from 'next/link'
 import styled from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
-import {
-  FIRST_QUESTION_URL,
-  WELCOME_DISMISSED_KEY,
-  TUTORIAL_DONE_KEY,
-} from '@/lib/onboarding/firstRun'
+import { FIRST_QUESTION_URL, welcomeKeyFor } from '@/lib/onboarding/firstRun'
 
 const Card = styled.section`
   position: relative;
@@ -178,20 +174,17 @@ export default function FirstRunWelcome({ onTakeTour }) {
 
   useEffect(() => {
     let cancelled = false
-    try {
-      if (localStorage.getItem(WELCOME_DISMISSED_KEY) === 'dismissed') return undefined
-      if (localStorage.getItem(TUTORIAL_DONE_KEY)) return undefined
-    } catch {
-      return undefined
-    }
-    setShow(true)
     ;(async () => {
       try {
         const sb = supabaseBrowser()
         const { data } = await sb.auth.getSession()
         const uid = data?.session?.user?.id || null
         if (cancelled || !uid) return
+        try {
+          if (localStorage.getItem(welcomeKeyFor(uid)) === 'dismissed') return
+        } catch { return }
         setUserId(uid)
+        setShow(true)
         const { data: row } = await sb
           .from('user_profile')
           .select('experience_level')
@@ -209,7 +202,7 @@ export default function FirstRunWelcome({ onTakeTour }) {
 
   const dismiss = () => {
     setShow(false)
-    try { localStorage.setItem(WELCOME_DISMISSED_KEY, 'dismissed') } catch { /* ignore */ }
+    try { localStorage.setItem(welcomeKeyFor(userId), 'dismissed') } catch { /* ignore */ }
   }
 
   const pickLevel = async (value) => {
@@ -247,7 +240,7 @@ export default function FirstRunWelcome({ onTakeTour }) {
           ★ Follow a famous wallet
         </Secondary>
         {typeof onTakeTour === 'function' && (
-          <Ghost type="button" onClick={onTakeTour}>Take the 60-second tour</Ghost>
+          <Ghost type="button" onClick={onTakeTour}>Take the quick tour</Ghost>
         )}
       </Row>
       {level === null && userId && !picked && (

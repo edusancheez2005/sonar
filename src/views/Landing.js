@@ -4,7 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient';
-import { FIRST_QUESTION_URL } from '@/lib/onboarding/firstRun'
+import { FIRST_QUESTION_URL, armFirstQuestion } from '@/lib/onboarding/firstRun'
 import { isInAppBrowser, escapeInAppBrowser, IN_APP_BROWSER_MESSAGE } from '@/app/lib/inAppBrowser';
 import Globe from '@/src/components/landing/GlobeV2';
 import DashboardPreview from '@/src/components/landing/DashboardPreview';
@@ -1914,7 +1914,7 @@ const Landing = () => {
                 onClick={async () => {
                   if (!formData.acceptedTerms) { setSignupError('Please confirm you are 18+ and accept the Terms before continuing.'); return; }
                   if (isInAppBrowser()) { if (!escapeInAppBrowser()) setSignupError(IN_APP_BROWSER_MESSAGE); return; }
-                  try { const sb = supabaseBrowser(); const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/ai-advisor` } }); if (error) setSignupError('Google sign-up failed.'); } catch { setSignupError('An error occurred.'); }
+                  try { armFirstQuestion(); const sb = supabaseBrowser(); const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/ai-advisor` } }); if (error) setSignupError('Google sign-up failed.'); } catch { setSignupError('An error occurred.'); }
                 }}
                 disabled={!formData.acceptedTerms}
                 style={{ width: '100%', padding: '0.7rem 1rem', marginBottom: '1.25rem', backgroundColor: '#fff', color: '#1f1f1f', border: 'none', borderRadius: '12px', fontSize: '0.95rem', fontWeight: 600, cursor: formData.acceptedTerms ? 'pointer' : 'not-allowed', opacity: formData.acceptedTerms ? 1 : 0.45, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', transition: 'opacity 0.2s ease' }}>

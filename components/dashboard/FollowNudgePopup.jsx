@@ -103,14 +103,14 @@ export default function FollowNudgePopup() {
     try {
       if (localStorage.getItem(DISMISS_KEY) === '1') return undefined
     } catch { /* ignore */ }
-    if (!hasSeenFirstRun()) return undefined
-
     const timer = setTimeout(async () => {
       try {
         const sb = supabaseBrowser()
         const { data } = await sb.auth.getSession()
         const token = data?.session?.access_token
         if (!token) return
+        // Per account: only after THIS user dismissed the welcome card.
+        if (!hasSeenFirstRun(data?.session?.user?.id)) return
         const res = await fetch('/api/wallet-tracker/follows', {
           headers: { Authorization: `Bearer ${token}` },
         })

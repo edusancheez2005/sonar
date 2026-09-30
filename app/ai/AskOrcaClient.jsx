@@ -22,6 +22,7 @@ import { OrcaMarkdown } from '@/components/orca/inline/OrcaMarkdown'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
 import { getSuggestedChips } from '@/lib/orca/suggestedChips'
+import { FIRST_QUESTION, consumeFirstQuestion } from '@/lib/onboarding/firstRun'
 
 const colors = {
   bgDark: '#0a0e17',
@@ -578,8 +579,13 @@ export default function AskOrcaClient({
   }, [messages.length, loading])
 
   useEffect(() => {
-    if (!autoSend || autoSentRef.current || !session || !initialQ) return
-    if (messages.length > 0) return
+    if (autoSentRef.current || !session || embedded || messages.length > 0) return
+    let q = null
+    if (autoSend && initialQ) q = initialQ
+    // Google sign-up cannot carry query params through the OAuth redirect, so
+    // Landing arms a sessionStorage flag instead (lib/onboarding/firstRun.js).
+    else if (!initialQProp && !initialQ && consumeFirstQuestion()) q = FIRST_QUESTION
+    if (!q) return
     autoSentRef.current = true
     // Drop send=1 from the URL so a reload/back does not re-ask.
     try {
@@ -587,9 +593,9 @@ export default function AskOrcaClient({
       url.searchParams.delete('send')
       window.history.replaceState(window.history.state, '', url.toString())
     } catch { /* ignore */ }
-    sendMessage(initialQ)
+    sendMessage(q)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSend, session, initialQ])
+  }, [autoSend, session, initialQ, embedded])
 
   // Keyboard shortcuts: 1/2/3/4 trigger the corresponding chip when empty.
   useEffect(() => {
