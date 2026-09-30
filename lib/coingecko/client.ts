@@ -6,6 +6,9 @@
 const PRO_BASE_URL = 'https://pro-api.coingecko.com/api/v3'
 const FREE_BASE_URL = 'https://api.coingecko.com/api/v3'
 const API_KEY = process.env.COINGECKO_API_KEY
+// Free "Demo" key (coingecko.com/en/developers/dashboard): same free host, but
+// stable rate limits from cloud IPs. Header differs from the pro key.
+const DEMO_KEY = process.env.COINGECKO_DEMO_API_KEY
 
 if (!API_KEY) {
   console.warn('⚠️ COINGECKO_API_KEY not set - CoinGecko features will be limited')
@@ -51,7 +54,7 @@ export function cgRequest(pathAndQuery: string): { url: string; headers: Record<
   }
   return {
     url: `https://api.coingecko.com/api/v3${pathAndQuery}`,
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...(DEMO_KEY ? { 'x-cg-demo-api-key': DEMO_KEY } : {}) },
   }
 }
 
@@ -91,6 +94,7 @@ async function fetchWithRetry<T>(
         headers: {
           'Accept': 'application/json',
           ...(pro ? { 'x-cg-pro-api-key': API_KEY as string } : {}),
+          ...(!pro && DEMO_KEY ? { 'x-cg-demo-api-key': DEMO_KEY } : {}),
         },
       })
 
@@ -260,7 +264,7 @@ export async function getCoinsMarkets(
 /**
  * Search for coins, exchanges, categories
  */
-export async function search(query: string) {
+export async function search(query: string, opts: { retries?: number } = {}) {
   return fetchWithRetry<{
     coins: Array<{
       id: string
@@ -273,7 +277,7 @@ export async function search(query: string) {
     exchanges: any[]
     categories: any[]
     nfts: any[]
-  }>(`/search?query=${encodeURIComponent(query)}`, { cacheTTL: 300 })
+  }>(`/search?query=${encodeURIComponent(query)}`, { cacheTTL: 300, retries: opts.retries ?? 3 })
 }
 
 /**

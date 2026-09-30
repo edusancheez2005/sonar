@@ -17,11 +17,15 @@ import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const CACHE_TTL_MS = 30 * 24 * 3600 * 1000
+// Logos almost never change; rows are seeded from a laptop by
+// scripts/logos/seed_token_logos.py (free CoinGecko tier 429s from Vercel's
+// egress IPs) and refreshed by the daily refresh-token-logos cron.
+const CACHE_TTL_MS = 180 * 24 * 3600 * 1000
+const MISS_TTL_MS = 24 * 3600 * 1000
 const HIT_HEADERS = { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800' }
-const MISS_HEADERS = { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' }
+const MISS_HEADERS = { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' }
 
-type Meta = { id: string; symbol: string; name: string; image_url: string | null }
+type Meta = { id: string; symbol: string; name: string; image_url: string | null; miss?: boolean }
 
 async function readCache(key: string): Promise<Meta | null> {
   try {
@@ -32,8 +36,10 @@ async function readCache(key: string): Promise<Meta | null> {
       .maybeSingle()
     if (!data?.value) return null
     const age = Date.now() - Date.parse(data.updated_at || 0)
-    if (!Number.isFinite(age) || age > CACHE_TTL_MS) return null
-    return data.value as Meta
+    if (!Number.isFinite(age)) return null
+    const v = data.value as Meta
+    if (v.miss) return age <= MISS_TTL_MS ? v : null
+    return age > CACHE_TTL_MS ? null : v
   } catch {
     return null
   }
@@ -47,14 +53,18 @@ async function writeCache(key: string, value: Meta): Promise<void> {
   } catch { /* cache is best-effort */ }
 }
 
+let lastReason = ''
 async function viaSearch(symbol: string): Promise<Meta | null> {
   try {
-    const res = await search(symbol)
+    // One attempt: from Vercel the free tier 429s deterministically, and three
+    // backoff retries turned every miss into a 7s wait.
+    const res = await search(symbol, { retries: 1 })
     const up = symbol.toUpperCase()
     const coin = res.coins.find((c) => c.symbol?.toUpperCase() === up) || null
     if (!coin) return null
     return { id: coin.id, symbol: coin.symbol.toUpperCase(), name: coin.name, image_url: coin.large || coin.thumb || null }
-  } catch {
+  } catch (e) {
+    lastReason = String((e as Error)?.message || e).slice(0, 160)
     return null
   }
 }
@@ -70,7 +80,9 @@ export async function GET(request: NextRequest) {
 
   const cacheKey = id ? `cg_logo_id:${id.toLowerCase()}` : `cg_logo:${symbol.toUpperCase()}`
   const cached = await readCache(cacheKey)
+  if (cached?.miss) return NextResponse.json({ error: 'Token not found', cached_miss: true }, { status: 404, headers: MISS_HEADERS })
   if (cached) return NextResponse.json(cached, { headers: HIT_HEADERS })
+  lastReason = ''
 
   let metadata: Meta | null = null
   try {
@@ -85,11 +97,15 @@ export async function GET(request: NextRequest) {
       }
     }
   } catch (error) {
-    console.error('Token image lookup failed:', (error as Error)?.message || error)
+    lastReason = String((error as Error)?.message || error).slice(0, 160)
+    console.error('Token image lookup failed:', lastReason)
   }
 
   if (!metadata) {
-    return NextResponse.json({ error: 'Token not found' }, { status: 404, headers: MISS_HEADERS })
+    // Remember the miss for a day so a dashboard full of unknown tickers does
+    // not re-hit CoinGecko on every page view. `reason` is diagnostic only.
+    await writeCache(cacheKey, { id: '', symbol: symbol.toUpperCase(), name: '', image_url: null, miss: true })
+    return NextResponse.json({ error: 'Token not found', reason: lastReason || undefined }, { status: 404, headers: MISS_HEADERS })
   }
 
   if (metadata.image_url) await writeCache(cacheKey, metadata)

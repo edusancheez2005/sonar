@@ -119,6 +119,10 @@
     {
       "path": "/api/cron/personal-digest",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-token-logos",
+      "schedule": "20 4 * * *"
     }
   ]
 }
