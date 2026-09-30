@@ -216,6 +216,42 @@ const RSS_FEEDS = [
   { name: 'CryptoSlate', url: 'https://cryptoslate.com/feed/' },
 ]
 
+// Explicit-mention patterns for RSS tagging. Collision-prone symbols (LINK,
+// OP, NEAR, TON, STX, DOT…) only match on their unambiguous full names —
+// under-tagging beats misfiling; untagged crypto articles land in GENERAL.
+const TICKER_MENTION: Record<string, RegExp> = {
+  BTC: /\b(bitcoin|btc)\b/i,
+  ETH: /\b(ethereum|ether|eth)\b/i,
+  SOL: /\b(solana|sol)\b/i,
+  XRP: /\b(xrp|ripple)\b/i,
+  BNB: /\bbnb\b/i,
+  DOGE: /\b(dogecoin|doge)\b/i,
+  ADA: /\bcardano\b/i,
+  TRX: /\btron\b/i,
+  AVAX: /\b(avalanche|avax)\b/i,
+  LINK: /\bchainlink\b/i,
+  DOT: /\bpolkadot\b/i,
+  MATIC: /\b(polygon|matic)\b/i,
+  TON: /\btoncoin\b/i,
+  SHIB: /\b(shiba inu|shib)\b/i,
+  LTC: /\b(litecoin|ltc)\b/i,
+  UNI: /\buniswap\b/i,
+  BCH: /\b(bitcoin cash|bch)\b/i,
+  NEAR: /\bnear protocol\b/i,
+  ICP: /\b(internet computer|icp)\b/i,
+  APT: /\baptos\b/i,
+  ARB: /\barbitrum\b/i,
+  OP: /\b(op mainnet|optimism superchain|op token)\b/i,
+  PEPE: /\bpepe\b/i,
+  AAVE: /\baave\b/i,
+  INJ: /\binjective\b/i,
+  STX: /\bstx\b/i,
+  SUI: /\bsui\b/i,
+  TIA: /\bcelestia\b/i,
+  FIL: /\bfilecoin\b/i,
+  HBAR: /\b(hedera|hbar)\b/i,
+}
+
 function rssField(item: string, tag: string): string | null {
   const m = item.match(new RegExp(`<${tag}[^>]*>(?:\\s*<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>\\s*)?</${tag}>`, 'i'))
   if (!m) return null
@@ -254,7 +290,16 @@ async function fetchRssFeedNews(feed: { name: string; url: string }, supabase: a
       if (!title || !link || !/^https?:\/\//.test(link)) { stats.filtered++; continue }
 
       const text = `${title} ${desc || ''}`
-      let ticker = TOP_TICKERS.find((t) => isCryptoRelevant(text, t)) || null
+      // isCryptoRelevant only DISAMBIGUATES (Honda CR-V vs CRV) — it never
+      // checks that the ticker is mentioned at all, because LunarCrush topic
+      // feeds were already per-ticker. RSS is a general firehose, so gate on
+      // an explicit mention first (first run without this tagged all 105
+      // articles as BTC), then let isCryptoRelevant veto collisions.
+      let ticker: string | null = null
+      for (const t of TOP_TICKERS) {
+        const rx = TICKER_MENTION[t]
+        if (rx && rx.test(text) && isCryptoRelevant(text, t)) { ticker = t; break }
+      }
       if (!ticker) {
         if (!isGeneralCryptoRelevant(text)) { stats.filtered++; continue }
         ticker = 'GENERAL'
