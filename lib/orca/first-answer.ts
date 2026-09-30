@@ -16,7 +16,17 @@ import type { OrchestratorOutput, SupabaseLike } from './orchestrator/types'
 import { matchFastPath, type FastPath } from './fast-paths'
 import { FIRST_QUESTION } from '../onboarding/firstRun'
 
+export type CachedWindow = '24h' | '7d'
+/** One cached answer per window: the signup question (24h) and the "this week" chip (7d). */
+export const CACHED_WINDOWS: CachedWindow[] = ['24h', '7d']
+export const CACHED_QUESTIONS: Record<CachedWindow, string> = {
+  '24h': FIRST_QUESTION,
+  '7d': 'What are the biggest whale moves this week?',
+}
 export const FIRST_ANSWER_CACHE_KEY = 'orca_first_answer_24h'
+export function firstAnswerCacheKey(window: CachedWindow): string {
+  return `orca_first_answer_${window}`
+}
 export const FIRST_ANSWER_MAX_AGE_MS = 20 * 60 * 1000
 /** Synthetic user for the precompute run (no user tools are involved). */
 const SERVICE_USER_ID = '00000000-0000-0000-0000-000000000000'
@@ -29,19 +39,23 @@ export interface CachedFirstAnswer {
   writer_ms: number
 }
 
-/** The cached answer applies to any market-wide 24h whale-activity question. */
-export function isFirstAnswerQuestion(fp: FastPath | null | undefined): boolean {
-  if (!fp || fp.name !== 'whale_summary') return false
+/** Which cached window (if any) answers this market-wide whale question. */
+export function cachedAnswerWindow(fp: FastPath | null | undefined): CachedWindow | null {
+  if (!fp || fp.name !== 'whale_summary') return null
   const args = (fp.calls[0]?.args ?? {}) as { window?: unknown }
-  return args.window === '24h'
+  return args.window === '24h' || args.window === '7d' ? args.window : null
+}
+/** @deprecated use cachedAnswerWindow */
+export function isFirstAnswerQuestion(fp: FastPath | null | undefined): boolean {
+  return cachedAnswerWindow(fp) === '24h'
 }
 
-export async function readCachedFirstAnswer(supabase: any): Promise<CachedFirstAnswer | null> {
+export async function readCachedFirstAnswer(supabase: any, window: CachedWindow = '24h'): Promise<CachedFirstAnswer | null> {
   try {
     const { data } = await supabase
       .from('app_cache')
       .select('value, updated_at')
-      .eq('key', FIRST_ANSWER_CACHE_KEY)
+      .eq('key', firstAnswerCacheKey(window))
       .maybeSingle()
     const v = data?.value as CachedFirstAnswer | undefined
     if (!v?.text || typeof v.text !== 'string') return null
@@ -59,13 +73,16 @@ export async function computeFirstAnswer(deps: {
   ai: OpenAI
   writerModel: string
   reasoningEffort?: string
+  window?: CachedWindow
 }): Promise<CachedFirstAnswer> {
-  const fp = matchFastPath(FIRST_QUESTION, false)
-  if (!fp) throw new Error('FIRST_QUESTION no longer matches the whale_summary fast path')
+  const window: CachedWindow = deps.window ?? '24h'
+  const question = CACHED_QUESTIONS[window]
+  const fp = matchFastPath(question, false)
+  if (!fp || cachedAnswerWindow(fp) !== window) throw new Error(`cached question for ${window} no longer matches the whale_summary fast path`)
   let writerMs = 0
   const out: OrchestratorOutput = await runOrchestrator(
     {
-      message: FIRST_QUESTION,
+      message: question,
       userId: SERVICE_USER_ID,
       chatHistory: [],
       profile: null,

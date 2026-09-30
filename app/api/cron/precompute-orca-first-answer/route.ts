@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
-import { computeFirstAnswer, FIRST_ANSWER_CACHE_KEY } from '@/lib/orca/first-answer'
+import { computeFirstAnswer, firstAnswerCacheKey, CACHED_WINDOWS } from '@/lib/orca/first-answer'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -29,12 +29,21 @@ export async function GET(req: Request) {
     const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
     const writerModel = process.env.ORCA_SHORT_WRITER_MODEL || process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3'
     const reasoningEffort = /grok-4\.[5-9]/.test(writerModel) ? (process.env.ORCA_SHORT_WRITER_EFFORT || 'low') : undefined
-    const answer = await computeFirstAnswer({ supabase: supabaseAdmin as any, ai, writerModel, reasoningEffort })
-    const { error } = await supabaseAdmin
-      .from('app_cache')
-      .upsert({ key: FIRST_ANSWER_CACHE_KEY, value: answer, updated_at: answer.generated_at }, { onConflict: 'key' })
-    if (error) throw new Error(error.message)
-    return NextResponse.json({ ok: true, chars: answer.chars, tools: answer.tools, writer_ms: answer.writer_ms, total_ms: Date.now() - t0, model: writerModel, reasoning_effort: reasoningEffort ?? null, preview: answer.text.slice(0, 160) })
+    const results: Record<string, any> = {}
+    for (const window of CACHED_WINDOWS) {
+      try {
+        const answer = await computeFirstAnswer({ supabase: supabaseAdmin as any, ai, writerModel, reasoningEffort, window })
+        const { error } = await supabaseAdmin
+          .from('app_cache')
+          .upsert({ key: firstAnswerCacheKey(window), value: answer, updated_at: answer.generated_at }, { onConflict: 'key' })
+        if (error) throw new Error(error.message)
+        results[window] = { ok: true, chars: answer.chars, writer_ms: answer.writer_ms, preview: answer.text.slice(0, 120) }
+      } catch (e: any) {
+        results[window] = { ok: false, error: String(e?.message || e).slice(0, 160) }
+      }
+    }
+    const ok = Object.values(results).every((r: any) => r.ok)
+    return NextResponse.json({ ok, windows: results, total_ms: Date.now() - t0, model: writerModel, reasoning_effort: reasoningEffort ?? null }, { status: ok ? 200 : 500 })
   } catch (e: any) {
     console.error('[precompute-orca-first-answer]', e?.message || e)
     return NextResponse.json({ ok: false, error: String(e?.message || e).slice(0, 200), total_ms: Date.now() - t0 }, { status: 500 })
