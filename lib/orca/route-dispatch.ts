@@ -113,13 +113,13 @@ export function isTickerFollowUp(message: string | undefined, hasHistory: boolea
 // Real-world events whose crypto impact the user is asking about. Deliberately
 // noun-driven (never verbs like "affect") so plain ticker overviews ("tell me
 // about BTC") keep the v1 long-form path.
-const MACRO_EVENT_RE =
+export const MACRO_EVENT_RE =
   /\b(fed|fomc|cpi|ppi|inflation|interest rates?|rate (?:cuts?|hikes?)|tariffs?|sanctions?|geopolit\w*|war|strikes?|invasion|conflict|attack|election|shutdown|treasury|regulat\w*|lawsuit|etf (?:in|out)?flows?|hack(?:ed|s)?|exploit|depeg|bankruptcy|collapse|halving|macro)\b/i
 
 // Focused whale/flow questions about a ticker ("what are whales doing with
 // ETH?") — the v1 template buries the answer in a generic research note; the
 // orchestrator's getWhaleFlows path answers them directly.
-const WHALE_FOCUS_RE =
+export const WHALE_FOCUS_RE =
   /\b(whales?|whale (?:flows?|activity|moves?)|big(?:gest)? (?:buyers?|sellers?)|top (?:buyers?|sellers?)|(?:buyers?|sellers?) of|smart money|accumulat\w*|distribut\w*|net (?:buy|sell)\w*|(?:in|out)flows?)\b/i
 
 // 2026-09-22 answer-quality audit (cluster 1 — 20 of 55 failures): this gate
@@ -128,25 +128,31 @@ const WHALE_FOCUS_RE =
 // long-form price note ("what's the social sentiment around BTC?" → a
 // consolidation essay that never mentions sentiment). Each facet below has a
 // working orchestrator tool; the question just never reached it.
-const SOCIAL_FOCUS_RE =
+export const SOCIAL_FOCUS_RE =
   /\b(social|sentiment|hype|buzz|momentum|galaxy score|alt ?rank|community|mood|people (?:saying|talking|think))\b/i
-const NEWS_FOCUS_RE =
+export const NEWS_FOCUS_RE =
   /\b(news|headlines?|articles?|announce\w*|press release|latest (?:on|about|with))\b/i
 // 2026-09-22 battery: "why is SOL rated the way it is by Sonar's signal?"
 // slipped through ("Sonar's" ≠ "sonar signal", "rated the way" ≠ "rated as
 // buy"). Any ticker question that says signal/rating/rated is a signal ask.
-const SIGNAL_FOCUS_RE =
+export const SIGNAL_FOCUS_RE =
   /\b(sonar'?s? signal|signals?\b|rated|rating|(?:flagged|marked) (?:as )?(?:a )?(?:strong )?(?:buy|sell))/i
 // A point price lookup ("what's the price of AVAX") wants a number, not a
 // 56-second research essay — send it to the orchestrator's getPrice path.
-const PRICE_FOCUS_RE =
+export const PRICE_FOCUS_RE =
   /\b(price of|how much is|current price|price right now|trading at)\b/i
 // Leverage / funding / OI questions — getDerivatives exists since 2026-09-23;
 // without this the v1 note answered "is ETH heavily leveraged?" with a
 // price essay (battery n-07).
-const DERIV_FOCUS_RE =
+export const DERIV_FOCUS_RE =
   /\b(leverag\w*|funding(?: rates?)?|open interest|\bOI\b|liquidat\w*|perps?\b|perpetuals?|long[\/ -]?short|shorts? (?:vs|and) longs?|crowded (?:longs?|shorts?))\b/i
-const COMPARE_RE =
+// "Why did BTC move today?" / "why is SOL up?" — a focused question that the
+// v1 note (56s, 8,000 chars of generic price structure) buries. Route it to
+// the orchestrator (price + news + whale flows) — 2026-09-30 latency pass.
+export const MOVE_WHY_RE =
+  /\b(why (?:did|is|has|have|are|was|were)\b[^?]{0,60}\b(?:mov(?:e|ed|ing)|up|down|pump\w*|dump\w*|drop\w*|rall\w*|surg\w*|crash\w*|fall\w*|fell|ris\w*|rose|jump\w*|tank\w*|spik\w*|sell(?:ing)? off|bleed\w*)|what (?:moved|is moving|drove|is driving|caused)\b)/i
+
+export const COMPARE_RE =
   /\b(compare|comparison|vs\.?|versus|against|difference between|which is better|better than)\b/i
 
 /** A ticker-bearing message whose FACET the v1 price note cannot serve. */
@@ -159,6 +165,7 @@ function isFocusedFacet(message: string): boolean {
     SIGNAL_FOCUS_RE.test(message) ||
     PRICE_FOCUS_RE.test(message) ||
     DERIV_FOCUS_RE.test(message) ||
+    MOVE_WHY_RE.test(message) ||
     COMPARE_RE.test(message) ||
     // Two or more distinct tickers ("BTC and ETH") — the v1 note is
     // single-ticker by construction and would silently answer only the first.

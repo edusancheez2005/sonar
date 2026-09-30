@@ -11,6 +11,7 @@ import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
 import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer } from '@/lib/orca/route-dispatch'
 import { matchFastPath } from '@/lib/orca/fast-paths'
 import { cachedAnswerWindow, readCachedFirstAnswer, chunkText } from '@/lib/orca/first-answer'
+import { noteCacheKey, readCachedNote, writeCachedNote, isCacheableNote } from '@/lib/orca/note-cache'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
@@ -1134,7 +1135,7 @@ export async function POST(request: Request) {
         const routerStart = Date.now()
         // Deterministic fast path (2026-09-30): market-wide "what have whales
         // been doing?" skips BOTH the LLM router and the planner LLM hop.
-        const fastPath = !tickerFollowUp && !tickerResult.ticker ? matchFastPath(message, false) : null
+        const fastPath = !tickerFollowUp ? matchFastPath(message, tickerResult.ticker ? [tickerResult.ticker] : []) : null
         if (fastPath) console.log(`⚡ fast path ${fastPath.name} → ${fastPath.calls.map((c) => c.tool).join(',')}`)
         // For a ticker follow-up we synthesise the router decision (intent
         // followup + the extracted ticker) and skip the LLM router call — it is
@@ -1686,6 +1687,47 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
         try {
           send({ type: 'status', step: 'start', message: `Analyzing ${ticker}...` })
 
+          // Per-ticker note cache (2026-09-30): a full note for this ticker
+          // generated < 10 min ago is served as-is — ~1s instead of ~56s.
+          const noteKey = noteCacheKey(ticker)
+          const cachedNote =
+            !isFollowUp && process.env.ORCA_NOTE_CACHE !== 'false' ? await readCachedNote(supabase, noteKey) : null
+          if (cachedNote) {
+            send({ type: 'status', step: 'ai_thinking', message: 'ORCA analyzing all signals...' })
+            for (const piece of chunkText(cachedNote.text)) send({ type: 'token', text: piece })
+            waitUntil(Promise.all([
+              incrementQuota(userId, supabaseUrl, supabaseKey),
+              supabase.from('chat_history').insert({
+                user_id: userId,
+                session_id: session_id || null,
+                user_message: message,
+                orca_response: cachedNote.text,
+                tokens_used: 0,
+                model: 'note-cache',
+                tickers_mentioned: [ticker],
+                data_sources_used: { cached_note: true, generated_at: cachedNote.generated_at },
+                response_time_ms: Date.now() - startTime,
+              }),
+            ]).catch((logErr) => console.warn('[v1] cached-note log failed', logErr)))
+            console.log(`⚡ note cache hit for ${ticker} (generated ${cachedNote.generated_at})`)
+            send({
+              type: 'complete',
+              success: true,
+              response: cachedNote.text,
+              ticker,
+              data: cachedNote.data,
+              quota: {
+                used: quotaStatus.used + 1,
+                limit: quotaStatus.limit,
+                remaining: quotaStatus.remaining - 1,
+                plan: quotaStatus.plan,
+              },
+              metadata: { response_time_ms: Date.now() - startTime, cached: true, generated_at: cachedNote.generated_at },
+            })
+            controller.close()
+            return
+          }
+
           // Latency (2026-09-21): start the 5 personalization queries in
           // parallel with the 15-25s data fan-out instead of serially after
           // it. Awaited at prompt-assembly time below.
@@ -1892,12 +1934,7 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           }
 
           // Send complete response with all data
-          send({
-            type: 'complete',
-            success: true,
-            response: orcaResponse,
-            ticker,
-            data: {
+          const noteData = {
               price: {
                 current: context.price.current,
                 change_24h: context.price.change_24h,
@@ -1940,7 +1977,17 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
                 source: n.source || 'unknown',
                 sentiment: n.sentiment_llm || 0
               }))
-            },
+            
+          }
+          if (!isFollowUp && process.env.ORCA_NOTE_CACHE !== 'false' && isCacheableNote(orcaResponse)) {
+            waitUntil(writeCachedNote(supabase, noteKey, { text: orcaResponse, data: noteData, generated_at: new Date().toISOString() }))
+          }
+          send({
+            type: 'complete',
+            success: true,
+            response: orcaResponse,
+            ticker,
+            data: noteData,
             quota: {
               used: quotaStatus.used + 1,
               limit: quotaStatus.limit,
