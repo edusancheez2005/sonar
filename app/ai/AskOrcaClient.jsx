@@ -554,7 +554,11 @@ export default function AskOrcaClient({
   }, [])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // block:'end' keeps the tail of the answer at the bottom of the viewport.
+    // The default (block:'start') aligned the END marker with the TOP of the
+    // window, so a finished answer scrolled out of view and the user was left
+    // looking at the follow-up box and the footer (seen live 2026-09-30).
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages.length, loading])
 
   useEffect(() => {

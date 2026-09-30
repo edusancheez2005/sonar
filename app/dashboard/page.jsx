@@ -1,7 +1,6 @@
 import React from 'react'
 import AuthGuard from '@/app/components/AuthGuard'
 import DashboardWrapper from './DashboardWrapper'
-import FamousWalletsSpotlight from './FamousWalletsSpotlight'
 
 export const metadata = {
   title: 'Crypto Dashboard — Live Whale Flows & Token Leaders',
@@ -37,7 +36,10 @@ export default async function DashboardPage() {
             }),
           }}
         />
-        <FamousWalletsSpotlight />
+        {/* 2026-09-30: the 2026-08-01 "NEW ON SONAR" launch interstitial
+            (./FamousWalletsSpotlight) is retired from the dashboard — it
+            stacked on top of the first-run welcome card for any account on a
+            fresh browser. The file stays for a future what's-new surface. */}
         <DashboardWrapper />
       </>
     </AuthGuard>
