@@ -31,6 +31,12 @@ describe('matchFastPath', () => {
     expect(tools('What are the biggest transactions today?')).toEqual(['getLargestTransactions'])
   })
 
+  it('market overview → the three leaderboards', () => {
+    expect(names("What's going on in crypto today?")).toBe('market_overview')
+    expect(tools('give me a market update')).toEqual(['getTrendingWhales', 'getTrendingSocial', 'getTrendingNews'])
+    expect(names("what's happening with BTC?", ['BTC'])).toBeNull()
+  })
+
   it('"why did X move" gets price + news + whale flows', () => {
     expect(names('Why did BTC move today?', ['BTC'])).toBe('why_move')
     expect(tools('why is SOL down today?', ['SOL'])).toEqual(['getPrice', 'getNews', 'getWhaleFlows'])

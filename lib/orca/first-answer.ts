@@ -16,12 +16,13 @@ import type { OrchestratorOutput, SupabaseLike } from './orchestrator/types'
 import { matchFastPath, type FastPath } from './fast-paths'
 import { FIRST_QUESTION } from '../onboarding/firstRun'
 
-export type CachedWindow = '24h' | '7d'
-/** One cached answer per window: the signup question (24h) and the "this week" chip (7d). */
-export const CACHED_WINDOWS: CachedWindow[] = ['24h', '7d']
+export type CachedWindow = '24h' | '7d' | 'overview'
+/** Cached answers: the signup question (24h), the "this week" chip (7d) and the market overview. */
+export const CACHED_WINDOWS: CachedWindow[] = ['24h', '7d', 'overview']
 export const CACHED_QUESTIONS: Record<CachedWindow, string> = {
   '24h': FIRST_QUESTION,
   '7d': 'What are the biggest whale moves this week?',
+  overview: "What's going on in crypto today?",
 }
 export const FIRST_ANSWER_CACHE_KEY = 'orca_first_answer_24h'
 export function firstAnswerCacheKey(window: CachedWindow): string {
@@ -41,7 +42,9 @@ export interface CachedFirstAnswer {
 
 /** Which cached window (if any) answers this market-wide whale question. */
 export function cachedAnswerWindow(fp: FastPath | null | undefined): CachedWindow | null {
-  if (!fp || fp.name !== 'whale_summary') return null
+  if (!fp) return null
+  if (fp.name === 'market_overview') return 'overview'
+  if (fp.name !== 'whale_summary') return null
   const args = (fp.calls[0]?.args ?? {}) as { window?: unknown }
   return args.window === '24h' || args.window === '7d' ? args.window : null
 }

@@ -35,6 +35,8 @@ import {
 } from './formatters'
 
 interface OrcaContext {
+  /** Per-source fan-out wall-clock (ms since fan-out start) — 2026-09-30 diagnostics. */
+  timing?: { fanout_ms: number; sources: Record<string, number> }
   ticker: string
   price: PriceData
   whales: WhaleData
@@ -367,7 +369,8 @@ export async function buildOrcaContext(
     news: processNewsData(newsData),
     whaleAlerts: processWhaleAlertsData(whaleAlertsData),
     lunarcrush: processLunarCrushData(lunarcrushData),
-    coingecko: processBinanceChartData(coingeckoData)
+    coingecko: processBinanceChartData(coingeckoData),
+    timing: { fanout_ms: Date.now() - fanoutT0, sources: sourceMs },
   }
 }
 

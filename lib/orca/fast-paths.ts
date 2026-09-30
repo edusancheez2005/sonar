@@ -37,6 +37,7 @@ export type FastPathName =
   | 'deriv_ticker'
   | 'largest_transactions'
   | 'why_move'
+  | 'market_overview'
 
 export interface FastPath {
   name: FastPathName
@@ -51,6 +52,10 @@ const NEEDS_LLM_RE =
   /\b(wallet|address|0x[0-9a-f]{6,}|who (?:is|are|was|were)|which (?:wallet|whale|address)|most (?:profitable|active)|best (?:performing|whale)|top (?:wallet|whale)s?\b|leaderboard|follow|track|alert|watchlist|\bmy\b|portfolio|holdings?|vitalik|binance|coinbase|mrbeast|trump|musk|explain|what (?:is|does|are) (?:a |an |the )?\w+ (?:mean|means)|should i|predict\w*|forecast|target)\b/i
 const CHAIN_RE = /\b(solana|ethereum|polygon|bitcoin network|arbitrum|base chain|tron|bsc|bnb chain|on (?:chain|the) [a-z]+ chain)\b/i
 const LARGEST_TX_RE = /\b(largest|biggest|top)\s+(?:\d+\s+)?(?:whale\s+)?(?:transactions?|transfers?|trades?|txs?)\b/i
+// "What's going on in crypto today?" / "market update" / "what's happening?" —
+// the market-wide overview (whales + social + news leaderboards).
+const MARKET_OVERVIEW_RE =
+  /\b(what'?s? (?:going on|happening|up|new)|market (?:update|recap|overview|summary|today)|crypto (?:today|right now|market)|how (?:is|'s) the market|state of the market|give me (?:a |the )?(?:market )?(?:update|recap|overview|rundown))\b/i
 
 function decision(datapoints: Datapoint[], tickers: string[]): RouterDecision {
   return { intent: 'data_query', tickers, entities: [], datapoints, persona_hint: null, confidence: 0.95 }
@@ -80,6 +85,20 @@ export function matchFastPath(message: string, tickersIn: string[] | boolean = [
     deriv: DERIV_FOCUS_RE.test(m),
     largest: LARGEST_TX_RE.test(m),
     why: MOVE_WHY_RE.test(m),
+  }
+
+  // Market-wide overview with no ticker and no other facet → the three
+  // leaderboards the deterministic planner uses for `overview`.
+  if (!t && MARKET_OVERVIEW_RE.test(m) && !WHALE_FOCUS_RE.test(m) && !NEWS_FOCUS_RE.test(m) && !SOCIAL_FOCUS_RE.test(m) && !PRICE_FOCUS_RE.test(m)) {
+    return {
+      name: 'market_overview',
+      decision: { intent: 'overview', tickers: [], entities: [], datapoints: ['whales', 'social', 'news'], persona_hint: null, confidence: 0.9 },
+      calls: [
+        { tool: 'getTrendingWhales', args: { window: '24h' } },
+        { tool: 'getTrendingSocial', args: {} },
+        { tool: 'getTrendingNews', args: {} },
+      ],
+    }
   }
 
   // "Why did BTC move today?" — price + news + whale flows for the ticker.

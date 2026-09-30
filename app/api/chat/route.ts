@@ -1287,7 +1287,7 @@ export async function POST(request: Request) {
                     for (const piece of chunkText(cached.text)) send({ type: 'token', text: piece })
                     cachedOut = {
                       text: cached.text,
-                      intent: 'data_query',
+                      intent: fastPath?.decision.intent ?? 'data_query',
                       trace: [
                         { stage: 'agentic_plan', payload: { hop: 1, thought: 'first_answer_cache', tools: cached.tools, done: true, generated_at: cached.generated_at }, latency_ms: 0 },
                         ...cached.tools.map((tool) => ({ stage: 'tool' as const, payload: { tool, ok: true, cached: true }, latency_ms: 0 })),
@@ -1999,7 +1999,9 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             metadata: {
               response_time_ms: Date.now() - startTime,
               // Streaming API returns no usage envelope — estimate ~4 chars/token.
-              tokens_used: Math.round((sysPrompt.length + gptContext.length + orcaResponse.length) / 4)
+              tokens_used: Math.round((sysPrompt.length + gptContext.length + orcaResponse.length) / 4),
+              // 2026-09-30: per-source fan-out timings (were Vercel-log only).
+              fanout: context.timing ?? null,
             }
           })
 
