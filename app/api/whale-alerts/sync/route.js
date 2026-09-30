@@ -2,70 +2,119 @@ import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 /**
- * Whale Alert API Integration
- * Syncs real-time whale transactions from Whale Alert API
- * API Key: Set via WHALE_ALERT_API_KEY env var
- * 
- * NOTE: Whale Alert tracks major blockchains and ERC-20 tokens only
- * Supported: Ethereum, Bitcoin, Tron, Ripple, BSC, etc.
+ * Native-chain whale sync — Bitcoin, scanned directly from blocks via
+ * blockchain.info (keyless, free).
+ *
+ * HISTORY: this route used the Whale Alert free API until it was
+ * discontinued — /v1/transactions returns 404 since ~2026-09-09, which froze
+ * this table for three weeks (again; see the 2026-03-25 incident below).
+ * Replaced 2026-09-30 with a direct block scan: 1 blocks-list call + 1
+ * rawblock call per new block (~7 calls/hour at the 10-min cron cadence).
+ *
+ * COVERAGE NOTE: this restores BTC only (which was ~all of the table's
+ * recent rows). XRP/DOGE native transfers stay dark until we either pay for
+ * Whale Alert or add per-chain sources — flagged in the 2026-09-30 report.
+ *
+ * Transfer semantics: for each tx we sum outputs that do NOT return to an
+ * input address (change removal). Pure self-consolidations are skipped.
+ * USD value uses the live Binance BTCUSDT price at scan time.
  */
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const maxDuration = 120
 
-// Use environment variable or fallback
-const WHALE_ALERT_API_KEY = process.env.WHALE_ALERT_API_KEY || ''
-const WHALE_ALERT_BASE_URL = 'https://api.whale-alert.io/v1'
+const MIN_VALUE_USD = 500000
+const LOOKBACK_MS = 75 * 60 * 1000     // 75-min window; hash dedupe absorbs the overlap
+const MAX_BLOCKS_PER_RUN = 8
 
-// Whale Alert Free plan limits (verified 2026-04-30):
-//   - max start lookback: 3600 seconds (1 hour)
-//   - min transaction value: $500,000
-//   - rate limit: ~10 requests / minute
-// Going outside these returns HTTP 400 ("value out of range") or 429
-// ("usage limit reached"). The previous code requested a 6h window with
-// $100k min — that 400'd silently from 2026-03-25 onward, leaving the
-// `whale_alerts` table frozen for over a month and breaking ORCA's
-// multi-chain whale section for BTC / XRP / TRX / SOL / native ETH.
-const MIN_VALUE_USD = 500000   // Free plan minimum
-const LOOKBACK_SECONDS = 3600  // Free plan maximum (1 hour)
+async function fetchBtcPriceUsd() {
+  const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
+  if (!r.ok) throw new Error(`Binance price fetch failed: ${r.status}`)
+  const d = await r.json()
+  const p = parseFloat(d.price)
+  if (!Number.isFinite(p) || p <= 0) throw new Error('Binance returned no usable BTC price')
+  return p
+}
+
+/** blockchain.info /blocks/{ms} returns one UTC day's blocks; fetch two days
+ *  when the lookback window crosses midnight so early-UTC runs miss nothing. */
+async function fetchRecentBlockHeaders() {
+  const now = Date.now()
+  const days = [now]
+  if (new Date(now - LOOKBACK_MS).getUTCDate() !== new Date(now).getUTCDate()) {
+    days.push(now - 24 * 60 * 60 * 1000)
+  }
+  const headers = []
+  for (const day of days) {
+    const r = await fetch(`https://blockchain.info/blocks/${day}?format=json`)
+    if (!r.ok) throw new Error(`blockchain.info blocks list failed: ${r.status}`)
+    const d = await r.json()
+    headers.push(...(Array.isArray(d) ? d : d.blocks || []))
+  }
+  const cutoffSec = (now - LOOKBACK_MS) / 1000
+  return headers
+    .filter((b) => b && b.hash && b.time >= cutoffSec)
+    .sort((a, b) => b.time - a.time)
+    .slice(0, MAX_BLOCKS_PER_RUN)
+}
 
 /**
- * Fetch recent whale transactions from Whale Alert API
+ * Scan recent Bitcoin blocks for large transfers; emit Whale Alert-shaped
+ * objects so the save/enrichment path below is unchanged.
  */
 async function fetchWhaleAlerts() {
-  try {
-    const now = Math.floor(Date.now() / 1000)
-    const start = now - LOOKBACK_SECONDS
+  const price = await fetchBtcPriceUsd()
+  const blocks = await fetchRecentBlockHeaders()
+  console.log(`📡 BTC whale scan: ${blocks.length} block(s) in window, $${(MIN_VALUE_USD / 1000).toFixed(0)}k+ min, BTC=$${price.toFixed(0)}`)
 
-    const url = `${WHALE_ALERT_BASE_URL}/transactions?api_key=${WHALE_ALERT_API_KEY}&start=${start}&min_value=${MIN_VALUE_USD}&limit=100`
-
-    console.log(`📡 Whale Alert sync: $${(MIN_VALUE_USD/1000).toFixed(0)}k+ min, ${LOOKBACK_SECONDS/60}min window`)
-
-    const response = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      // 429 = rate limit (transient, next cron will retry); 400 = bad params
-      // (likely plan limits changed). Surface both clearly.
-      console.error(`Whale Alert API ${response.status}: ${errorText.slice(0, 200)}`)
-      throw new Error(`Whale Alert API error: ${response.status} ${response.statusText}`)
+  const out = []
+  for (const b of blocks) {
+    const r = await fetch(`https://blockchain.info/rawblock/${b.hash}`)
+    if (!r.ok) {
+      console.error(`rawblock ${b.height} failed: ${r.status}`)
+      continue
     }
+    const block = await r.json()
+    for (const tx of block.tx || []) {
+      const inputs = tx.inputs || []
+      if (inputs.length === 0 || !inputs[0].prev_out) continue // coinbase
+      const inAddrs = new Set(inputs.map((i) => i.prev_out?.addr).filter(Boolean))
 
-    const data = await response.json()
+      let movedSats = 0
+      const destTotals = new Map()
+      for (const o of tx.out || []) {
+        if (!o.addr || inAddrs.has(o.addr)) continue // change back to sender
+        movedSats += o.value || 0
+        destTotals.set(o.addr, (destTotals.get(o.addr) || 0) + (o.value || 0))
+      }
+      const btc = movedSats / 1e8
+      const usd = btc * price
+      if (usd < MIN_VALUE_USD) continue
 
-    if (!data.transactions || data.transactions.length === 0) {
-      console.log('ℹ️ No new whale transactions in window')
-      return []
+      const from = [...inputs].sort((a, c) => (c.prev_out?.value || 0) - (a.prev_out?.value || 0))[0]?.prev_out?.addr || null
+      const to = [...destTotals.entries()].sort((a, c) => c[1] - a[1])[0]?.[0] || null
+
+      out.push({
+        hash: tx.hash,
+        blockchain: 'bitcoin',
+        symbol: 'btc',
+        amount: btc,
+        amount_usd: Math.round(usd),
+        from: { address: from, owner: null, owner_type: null },
+        to: { address: to, owner: null, owner_type: null },
+        transaction_type: 'transfer',
+        transaction_count: 1,
+        timestamp: tx.time || b.time,
+        block_height: b.height,
+        source: 'blockchain.info',
+        btc_price_used: price,
+      })
     }
-
-    console.log(`✅ Fetched ${data.transactions.length} whale transactions`)
-    return data.transactions
-  } catch (error) {
-    console.error('❌ Error fetching whale alerts:', error)
-    throw error
   }
+
+  console.log(`✅ BTC scan found ${out.length} transfers ≥ $${MIN_VALUE_USD / 1000}k`)
+  return out
 }
 
 /**

@@ -88,6 +88,7 @@ export async function GET(request: Request) {
     const stats: IngestStats = {
       api_items: 0, empty_responses: 0, filtered: 0,
       duplicates: 0, insert_errors: 0, fetch_errors: 0,
+      per_feed: {},
     }
 
     // 1. CATEGORY-LEVEL NEWS FIRST — this is the highest-quality general crypto
@@ -175,6 +176,11 @@ type IngestStats = {
   fetch_errors: number     // per-ticker fetch threw (swallowed before)
   first_insert_error?: string
   first_fetch_error?: string
+  // 2026-09-30 staleness postmortem: aggregate counters could not tell WHICH
+  // feed went dark or why (ETH/SOL/GENERAL froze for a week while BTC flowed).
+  // One compact line per feed: raw items, article candidates after the
+  // tweet/junk pre-filter, newest candidate publish time, inserted, dupes.
+  per_feed: Record<string, string>
 }
 
 /**
@@ -200,12 +206,23 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any, stat
   stats.api_items += data.data.length
 
   let inserted = 0
-  for (const item of data.data.slice(0, 60)) { // widened from 25 (see per-ticker note)
+  let catDupes = 0
+  // 2026-09-30: pre-filter tweets/junk BEFORE the 60-item window (same bug as
+  // the per-ticker path — see note there), and sort newest-first so fresh
+  // articles can't be crowded out by feed-order noise.
+  const catCandidates = (data.data as any[])
+    .map((item: any) => ({ item, title: item.post_title || item.title, url2: item.post_link || item.url }))
+    .filter(({ title, url2 }) => {
+      const junk = !title || title === 'Untitled' || !url2 || /(?:twitter\.com|x\.com)\//i.test(url2)
+      if (junk) stats.filtered++
+      return !junk
+    })
+    .sort((a: any, b: any) => {
+      const ts = (x: any) => Date.parse(x.item.post_created ? new Date(Number(x.item.post_created) * 1000).toISOString() : x.item.published_at || 0) || 0
+      return ts(b) - ts(a)
+    })
+  for (const { item, title, url2 } of catCandidates.slice(0, 60)) {
     try {
-      const title = item.post_title || item.title
-      const url2 = item.post_link || item.url
-      if (!title || title === 'Untitled' || !url2) { stats.filtered++; continue }
-
       // Crypto outlets syndicate general tech/AI stories (OpenAI lawsuits,
       // Xbox layoffs, image-model reviews) through LunarCrush categories;
       // keep them out of the terminal feed.
@@ -248,6 +265,7 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any, stat
       })
       if (!error) inserted++
       else if (error.message.includes('duplicate key')) {
+        catDupes++
         stats.duplicates++
       } else {
         stats.insert_errors++
@@ -259,6 +277,8 @@ async function fetchLunarCrushCategoryNews(category: string, supabase: any, stat
       console.error(`[ingest-news] Failed to insert category item:`, e)
     }
   }
+  stats.per_feed[`cat:${category}`] =
+    `raw=${data.data.length} art=${catCandidates.length} new=${inserted} dup=${catDupes}`
   console.log(`[ingest-news] category=${category} inserted=${inserted} of ${data.data.length}`)
   return inserted
 }
@@ -303,38 +323,46 @@ async function fetchLunarCrushNews(ticker: string, supabase: any, stats: IngestS
 
     let inserted = 0
     let skipped = 0
+    let dupes = 0
 
     // 2026-09-23: this was slice(0, 10) — but LunarCrush does not return
     // newest-first, so every 4h run re-examined the same 10 already-stored
-    // items and inserted NOTHING for days (ETH: 2 ingest days in 14; ~480 of
-    // 659 fetched items per run were never looked at). Sort by publish time
-    // ourselves and examine a much wider window; the url unique key makes
-    // duplicates cheap.
-    const ordered = [...data.data].sort((a: any, b: any) => {
-      const ta = Date.parse(a.post_created ? new Date(Number(a.post_created) * 1000).toISOString() : a.published_at || a.created_at || 0) || 0
-      const tb = Date.parse(b.post_created ? new Date(Number(b.post_created) * 1000).toISOString() : b.published_at || b.created_at || 0) || 0
-      return tb - ta
-    })
-    for (const item of ordered.slice(0, 40)) {
-      try {
+    // items and inserted NOTHING for days. Sort by publish time ourselves and
+    // examine a wide window; the url unique key makes duplicates cheap.
+    //
+    // 2026-09-30: the window must be taken AFTER the tweet/junk pre-filter,
+    // not before. Topic feeds for some tickers (ETH/SOL) are dominated by
+    // x.com posts; with filter-after-slice, 40 newest raw items were all
+    // tweets, every real article fell outside the window, and those feeds
+    // inserted nothing from 2026-09-23 on while BTC (news-dense feed) kept
+    // working. Pre-filter to article candidates, then sort, then window.
+    const candidates = (data.data as any[])
+      .map((item: any) => ({
+        item,
         // LunarCrush news items use post_* field names (post_title/post_link/
         // post_created/...), NOT title/url. Reading the wrong fields previously
         // stored titleless, urlless "Untitled" junk rows with published_at=now.
-        // Map the correct fields and skip anything that isn't a real article.
-        const title = item.post_title || item.title
-        const url2 = item.post_link || item.url
-        if (!title || title === 'Untitled' || !url2) {
-          skipped++
-          stats.filtered++
-          continue
-        }
+        title: item.post_title || item.title,
+        url2: item.post_link || item.url,
+      }))
+      .filter(({ title, url2 }) => {
         // Pure tweets belong in social_posts, not the news feed.
-        if (/(?:twitter\.com|x\.com)\//i.test(url2)) {
-          skipped++
-          stats.filtered++
-          continue
-        }
+        const junk = !title || title === 'Untitled' || !url2 || /(?:twitter\.com|x\.com)\//i.test(url2)
+        if (junk) { skipped++; stats.filtered++ }
+        return !junk
+      })
+      .sort((a: any, b: any) => {
+        const ts = (x: any) => Date.parse(x.item.post_created ? new Date(Number(x.item.post_created) * 1000).toISOString() : x.item.published_at || x.item.created_at || 0) || 0
+        return ts(b) - ts(a)
+      })
 
+    const newest = candidates[0]?.item
+    const newestIso = newest?.post_created
+      ? new Date(Number(newest.post_created) * 1000).toISOString()
+      : newest?.published_at || null
+
+    for (const { item, title, url2 } of candidates.slice(0, 40)) {
+      try {
         const body = item.post_description || item.post_content || item.content || item.summary || ''
         const articleText = `${title} ${body}`
 
@@ -376,6 +404,7 @@ async function fetchLunarCrushNews(ticker: string, supabase: any, stats: IngestS
         if (!error) {
           inserted++
         } else if (error.message.includes('duplicate key')) {
+          dupes++
           stats.duplicates++
         } else {
           stats.insert_errors++
@@ -388,6 +417,8 @@ async function fetchLunarCrushNews(ticker: string, supabase: any, stats: IngestS
       }
     }
 
+    stats.per_feed[ticker] =
+      `raw=${data.data.length} art=${candidates.length} new=${inserted} dup=${dupes} newest=${newestIso ? newestIso.slice(5, 16) : 'n/a'}`
     if (skipped > 0) console.log(`  ⏭️  Skipped ${skipped} irrelevant articles for ${ticker}`)
     return inserted
 
