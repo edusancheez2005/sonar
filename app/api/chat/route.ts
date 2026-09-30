@@ -10,13 +10,14 @@ import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extra
 import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
 import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer } from '@/lib/orca/route-dispatch'
 import { matchFastPath } from '@/lib/orca/fast-paths'
+import { isFirstAnswerQuestion, readCachedFirstAnswer, chunkText } from '@/lib/orca/first-answer'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
 import { ORCA_SYSTEM_PROMPT } from '@/lib/orca/system-prompt'
 import { runOrchestrator } from '@/lib/orca/orchestrator/runOrchestrator'
 import { routeMessage } from '@/lib/orca/orchestrator/router'
 import { COMPLIANCE_DECLINE_RESPONSE } from '@/lib/orca/orchestrator/guardrails'
-import type { ChatTurn, Datapoint, RouterDecision, ToolCall, UserProfileSnapshot } from '@/lib/orca/orchestrator/types'
+import type { ChatTurn, Datapoint, RouterDecision, ToolCall, UserProfileSnapshot, OrchestratorOutput } from '@/lib/orca/orchestrator/types'
 import { loadRecentHistory, type RecentTurn } from '@/lib/orca/chat/loadRecentHistory'
 import { formatHistoryForPrompt } from '@/lib/orca/chat/formatHistoryForPrompt'
 import { trimTurnsForPrompt } from '@/lib/orca/chat/trimHistory'
@@ -1262,8 +1263,38 @@ export async function POST(request: Request) {
                 // where the flagship took 5-20s. Long syntheses (overview,
                 // article_explain, signal_explain) keep the flagship.
                 const SHORT_WRITER_INTENTS = new Set(['followup', 'data_query', 'wallet_lookup', 'personal'])
+                // Short answers: the mini writer needs 7-10s before its first token
+                // (reasoning). grok-4.5+ accept reasoning_effort:"low" ("still fast,
+                // best for latency-sensitive use" per xAI docs); grok-4.3 does not.
+                // Override with ORCA_SHORT_WRITER_MODEL / ORCA_SHORT_WRITER_EFFORT.
+                const shortWriterModel = process.env.ORCA_SHORT_WRITER_MODEL || aiModel
+                const shortWriterEffort = /grok-4\.[5-9]/.test(shortWriterModel)
+                  ? (process.env.ORCA_SHORT_WRITER_EFFORT || 'low')
+                  : undefined
 
-                const out = await runOrchestrator(
+                // Precomputed first answer (lib/orca/first-answer.ts): the
+                // market-wide 24h whale question is served from app_cache when
+                // a fresh copy (< 20 min) exists — ~1s instead of ~10s.
+                let cachedOut: OrchestratorOutput | null = null
+                if (fastPath && isFirstAnswerQuestion(fastPath) && process.env.ORCA_FIRST_ANSWER_CACHE !== 'false') {
+                  const cached = await readCachedFirstAnswer(supabase)
+                  if (cached) {
+                    send({ type: 'status', step: 'ai_thinking', message: 'ORCA writing response...' })
+                    for (const piece of chunkText(cached.text)) send({ type: 'token', text: piece })
+                    cachedOut = {
+                      text: cached.text,
+                      intent: 'data_query',
+                      trace: [
+                        { stage: 'agentic_plan', payload: { hop: 1, thought: 'first_answer_cache', tools: cached.tools, done: true, generated_at: cached.generated_at }, latency_ms: 0 },
+                        ...cached.tools.map((tool) => ({ stage: 'tool' as const, payload: { tool, ok: true, cached: true }, latency_ms: 0 })),
+                      ],
+                      walletAddresses: [],
+                    }
+                    console.log(`⚡ first-answer cache hit (generated ${cached.generated_at})`)
+                  }
+                }
+
+                const out: OrchestratorOutput = cachedOut ?? await runOrchestrator(
                   { message, userId, chatHistory: recentTurns, profile, priorIntent, priorTickers, preplannedCalls: fastPath?.calls },
                   {
                     supabase,
@@ -1304,7 +1335,7 @@ export async function POST(request: Request) {
                         // multi-day bursts): a single upstream hiccup used to become
                         // "I could not generate a response". Retry once on the mini
                         // model when nothing has streamed yet and budget remains.
-                        const streamOnce = async (model: string, maxTokens: number): Promise<string> => {
+                        const streamOnce = async (model: string, maxTokens: number, effort?: string): Promise<string> => {
                           const budgetMs = Math.max(10_000, 56_000 - (Date.now() - startTime))
                           const streamResp: any = await (ai.chat.completions.create as any)(
                             {
@@ -1316,6 +1347,7 @@ export async function POST(request: Request) {
                               temperature: 0.5,
                               max_tokens: maxTokens,
                               stream: true,
+                              ...(effort ? { reasoning_effort: effort } : {}),
                             },
                             { signal: AbortSignal.timeout(budgetMs) }
                           )
@@ -1331,7 +1363,7 @@ export async function POST(request: Request) {
                         }
                         let streamed = ''
                         try {
-                          streamed = await streamOnce(short ? miniModel : aiModel, short ? 900 : 3000)
+                          streamed = await streamOnce(short ? shortWriterModel : aiModel, short ? 900 : 3000, short ? shortWriterEffort : undefined)
                         } catch (firstErr: any) {
                           const remaining = 56_000 - (Date.now() - startTime)
                           if (streamed.length > 0 || remaining < 12_000) throw firstErr
