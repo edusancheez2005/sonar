@@ -91,9 +91,28 @@ export async function GET(request: Request) {
       per_feed: {},
     }
 
-    // 1. CATEGORY-LEVEL NEWS FIRST — this is the highest-quality general crypto
-    //    news.  Do it first so even if we hit the daily quota mid-run we still
-    //    have great general feed content.
+    // 0. PUBLISHER RSS FEEDS FIRST — keyless and quota-free, so they run even
+    //    when every paid API is down. Added 2026-09-30: LunarCrush topic feeds
+    //    stopped indexing new articles for everything but BTC on ~2026-09-10
+    //    (per_feed diag: ETH/SOL/XRP/LINK newest item = Sep 10), which starved
+    //    per-ticker news and froze sentiment for ETH (135h) / SOL (148h) /
+    //    XRP (19d). RSS + isCryptoRelevant tagging + the analyze-sentiment LLM
+    //    pass keeps the pipeline alive with zero external dependencies.
+    for (const feed of RSS_FEEDS) {
+      try {
+        totalInserted += await fetchRssFeedNews(feed, supabase, stats)
+        await delay(300)
+      } catch (e) {
+        const msg = `RSS ${feed.name}: ${e instanceof Error ? e.message : 'unknown'}`
+        console.error(msg)
+        errors.push(msg)
+        stats.fetch_errors++
+      }
+    }
+
+    // 1. CATEGORY-LEVEL NEWS — highest-quality general crypto news from
+    //    LunarCrush.  Before the per-ticker sweep so even if we hit the daily
+    //    quota mid-run we still have general feed content.
     for (const cat of CATEGORIES) {
       try {
         const inserted = await fetchLunarCrushCategoryNews(cat, supabase, stats)
@@ -188,6 +207,88 @@ type IngestStats = {
  * Categories return general high-quality crypto news (not filtered to a single token).
  * Returns -1 to signal daily quota exhaustion (caller should stop).
  */
+// Publisher RSS feeds — RSS 2.0 only (parsed with a small regex extractor;
+// no XML dependency). All verified reachable from Vercel 2026-09-30.
+const RSS_FEEDS = [
+  { name: 'CoinDesk', url: 'https://www.coindesk.com/arc/outboundfeeds/rss/' },
+  { name: 'Cointelegraph', url: 'https://cointelegraph.com/rss' },
+  { name: 'Decrypt', url: 'https://decrypt.co/feed' },
+  { name: 'CryptoSlate', url: 'https://cryptoslate.com/feed/' },
+]
+
+function rssField(item: string, tag: string): string | null {
+  const m = item.match(new RegExp(`<${tag}[^>]*>(?:\\s*<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>\\s*)?</${tag}>`, 'i'))
+  if (!m) return null
+  return m[1]
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim() || null
+}
+
+/**
+ * Ingest one publisher RSS feed. Articles are tagged to the first
+ * TOP_TICKERS symbol that passes isCryptoRelevant (the news_items url unique
+ * key means one row per article anyway), else 'GENERAL' when generally
+ * crypto-relevant, else dropped.
+ */
+async function fetchRssFeedNews(feed: { name: string; url: string }, supabase: any, stats: IngestStats): Promise<number> {
+  const response = await fetch(feed.url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) SonarTracker/1.0' },
+  })
+  if (!response.ok) throw new Error(`RSS fetch failed: ${response.status}`)
+  const xml = await response.text()
+  const items = xml.match(/<item>[\s\S]*?<\/item>/gi) || []
+  stats.api_items += items.length
+
+  let inserted = 0
+  let dupes = 0
+  for (const raw of items.slice(0, 40)) {
+    try {
+      const title = rssField(raw, 'title')
+      const linkRaw = raw.match(/<link[^>]*>(?:\s*<!\[CDATA\[)?([\s\S]*?)(?:\]\]>\s*)?<\/link>/i)
+      const link = linkRaw ? linkRaw[1].trim() : null
+      const desc = rssField(raw, 'description')
+      const pub = raw.match(/<pubDate>([\s\S]*?)<\/pubDate>/i)?.[1]?.trim()
+      if (!title || !link || !/^https?:\/\//.test(link)) { stats.filtered++; continue }
+
+      const text = `${title} ${desc || ''}`
+      let ticker = TOP_TICKERS.find((t) => isCryptoRelevant(text, t)) || null
+      if (!ticker) {
+        if (!isGeneralCryptoRelevant(text)) { stats.filtered++; continue }
+        ticker = 'GENERAL'
+      }
+
+      const publishedMs = pub ? Date.parse(pub) : NaN
+      const { error } = await supabase.from('news_items').insert({
+        source: feed.name,
+        external_id: link,
+        ticker,
+        title,
+        url: link,
+        published_at: Number.isFinite(publishedMs) ? new Date(publishedMs).toISOString() : new Date().toISOString(),
+        content: desc || null,
+        author: null,
+        sentiment_raw: null, // analyze-sentiment fills sentiment_llm
+        metadata: { source_type: 'rss', feed: feed.name },
+      })
+      if (!error) inserted++
+      else if (error.message.includes('duplicate key')) { dupes++; stats.duplicates++ }
+      else {
+        stats.insert_errors++
+        stats.first_insert_error ||= error.message
+        console.error(`[ingest-news] RSS insert error (${feed.name}):`, error.message)
+      }
+    } catch (e) {
+      stats.insert_errors++
+      console.error(`[ingest-news] RSS item failed (${feed.name}):`, e)
+    }
+  }
+  stats.per_feed[`rss:${feed.name}`] = `raw=${items.length} new=${inserted} dup=${dupes}`
+  return inserted
+}
+
 async function fetchLunarCrushCategoryNews(category: string, supabase: any, stats: IngestStats): Promise<number> {
   const apiKey = process.env.LUNARCRUSH_API_KEY
   if (!apiKey) throw new Error('LUNARCRUSH_API_KEY not configured')
