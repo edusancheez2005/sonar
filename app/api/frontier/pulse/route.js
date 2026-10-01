@@ -19,6 +19,7 @@ import { BRIDGE_ADDRESSES } from '@/app/frontier/bridges'
 import { resolveToken, ENRICHABLE_TICKERS } from '@/app/frontier/splTokens'
 import { isAuthorized } from '@/app/api/frontier/_auth'
 import { fetchSolanaTransfers, getSolanaUniverse } from '@/lib/frontier/solanaTransfers'
+import { fetchSolanaWhaleRows, whaleRowToTransfer } from '@/lib/frontier/whaleFeed'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -104,10 +105,13 @@ export async function GET(req) {
   }
   const addresses = universe.map((r) => r.address).filter(Boolean)
   const SEL = 'id, timestamp, address, direction, token_symbol, amount, amount_usd, counterparty, tx_hash, source, arkham_entity_name, arkham_entity_type, arkham_label'
-  const [winRes, recRes, prices] = await Promise.all([
-    fetchSolanaTransfers({ select: SEL, sinceIso: since24h, perChunk: 1500, limit: 5000, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
-    fetchSolanaTransfers({ select: SEL, sinceIso: new Date(now - 7 * 24 * 3_600_000).toISOString(), perChunk: 60, limit: RAW_LIMIT, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
+  const [winRes, recRes, prices, whaleRows] = await Promise.all([
+    fetchSolanaTransfers({ select: SEL, sinceIso: since24h, perAddress: 300, limit: 5000, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
+    fetchSolanaTransfers({ select: SEL, sinceIso: new Date(now - 7 * 24 * 3_600_000).toISOString(), perAddress: 20, limit: RAW_LIMIT, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
     loadPriceMap(),
+    // Live whale feed (Railway monitor → solana_transactions): the tracked
+    // wallets are mostly dormant, this is what keeps the page live.
+    fetchSolanaWhaleRows({ sinceIso: since24h, limit: 3000 }).catch((e) => { readErrors.push(String(e?.message || e)); return [] }),
   ])
   windowRows = winRes.rows
   recentRows = recRes.rows
@@ -116,6 +120,7 @@ export async function GET(req) {
   const entitiesRes = { data: universe }
   const windowRes = { data: windowRows }
   const recentRes = { data: recentRows }
+  const whaleTransfers = whaleRows.map(whaleRowToTransfer)
   if (readErrors.length) console.warn('[frontier/pulse] partial read errors', readErrors.slice(0, 3))
 
   const distinctEntities = new Set(
@@ -123,7 +128,8 @@ export async function GET(req) {
   )
   const trackedEntities = distinctEntities.size
 
-  const enrichedWindow = (windowRes.data || []).map((r) => enrichRow(r, priceMap))
+  const enrichedWindow = [...(windowRes.data || []).map((r) => enrichRow(r, priceMap)), ...whaleTransfers]
+    .sort((a, b) => new Date(b.time) - new Date(a.time))
   const bridgeSet = new Set(BRIDGE_ADDRESSES)
   const bucketCount = 24
   const sparkTransfers = new Array(bucketCount).fill(0)
@@ -149,7 +155,9 @@ export async function GET(req) {
     }
   }
 
-  const enrichedRecent = (recentRes.data || []).map((r) => enrichRow(r, priceMap))
+  const enrichedRecent = [...(recentRes.data || []).map((r) => enrichRow(r, priceMap)), ...whaleTransfers]
+    .sort((a, b) => new Date(b.time) - new Date(a.time))
+    .slice(0, RAW_LIMIT)
   const filtered = enrichedRecent.filter(passesDustFilter).slice(0, FEED_LIMIT)
   // If the dust filter starved the table (e.g. early ingest, no prices yet)
   // fall back to ranking by raw amount so the page is never empty.
@@ -242,7 +250,11 @@ export async function GET(req) {
       transfers,
       topMovers,
       rotation,
-      status: { dataFresh, lastTransferAt, mode, dustFloorUsd: DUST_USD_FLOOR, readErrors: readErrors.length ? readErrors.slice(0, 2) : undefined },
+      status: {
+        dataFresh, lastTransferAt, mode, dustFloorUsd: DUST_USD_FLOOR,
+        sources: { tracked_24h: (windowRes.data || []).length, whale_feed_24h: whaleTransfers.length },
+        readErrors: readErrors.length ? readErrors.slice(0, 2) : undefined,
+      },
       generatedAt: new Date().toISOString(),
     },
     { headers: { 'Cache-Control': 'private, max-age=10, stale-while-revalidate=30' } },

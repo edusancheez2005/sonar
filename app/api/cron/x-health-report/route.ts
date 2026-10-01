@@ -237,8 +237,20 @@ export async function GET(req: Request) {
         solanaPollErrorSample = errs[0]?.last_error?.slice(0, 80) || null
       }
     } catch (e: any) { solanaPollErrorSample = String(e?.message || e).slice(0, 80) }
-    if (solanaFeedAgeH === null || solanaFeedAgeH > 6) {
-      issues.push(`Solana tracked-wallet feed stale (${solanaFeedAgeH === null ? 'no rows' : solanaFeedAgeH + 'h'}; ${solanaPollErrorPct ?? '?'}% of Solana polls erroring${solanaPollErrorSample ? `: ${solanaPollErrorSample}` : ''}) — Frontier page empty.`)
+    // The Frontier page is now driven by the Railway whale monitor's
+    // solana_transactions (the tracked wallets are mostly dormant); that is the
+    // feed to page on. Tracked-feed age + poll errors stay in the report.
+    let solanaWhaleAgeH: number | null = null
+    try {
+      const { data: w } = await supabaseAdmin.from('solana_transactions').select('timestamp').order('timestamp', { ascending: false }).limit(1)
+      const t = w?.[0]?.timestamp ? Date.parse((w[0] as any).timestamp) : NaN
+      if (Number.isFinite(t)) solanaWhaleAgeH = Math.round((now.getTime() - t) / 3_600_000)
+    } catch { /* reported as unknown */ }
+    if (solanaWhaleAgeH === null || solanaWhaleAgeH > 3) {
+      issues.push(`Solana whale feed (solana_transactions) stale: ${solanaWhaleAgeH === null ? 'no rows' : solanaWhaleAgeH + 'h'} — Frontier page empty; check the Railway whale-transaction-monitor.`)
+    }
+    if ((solanaPollErrorPct ?? 0) > 50) {
+      issues.push(`${solanaPollErrorPct}% of Solana tracked-wallet polls erroring${solanaPollErrorSample ? ` (${solanaPollErrorSample})` : ''} — Helius quota? RPC fallback should be covering.`)
     }
 
     // --- SEO spot checks ---------------------------------------------------
@@ -265,7 +277,7 @@ export async function GET(req: Request) {
       orca: { lastWhisperAgeHours: lastWhisperAgeH },
       alchemy: { ok: alchemyOk, error: alchemyError },
       coingecko: { ok: coingeckoOk, error: coingeckoError },
-      solana_feed: { newest_transfer_age_h: solanaFeedAgeH, poll_error_pct: solanaPollErrorPct, sample_error: solanaPollErrorSample },
+      solana_feed: { whale_feed_age_h: solanaWhaleAgeH, tracked_newest_age_h: solanaFeedAgeH, poll_error_pct: solanaPollErrorPct, sample_error: solanaPollErrorSample },
       orcaQuality: { answers24h: orcaAnswers24h, deadEnds24h: orcaDeadEnds24h },
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,

@@ -26,6 +26,7 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { resolveToken, ENRICHABLE_TICKERS } from '@/app/frontier/splTokens'
 import { isAuthorized } from '@/app/api/frontier/_auth'
 import { fetchSolanaTransfers } from '@/lib/frontier/solanaTransfers'
+import { fetchSolanaWhaleRows, whaleRowToCexLeg } from '@/lib/frontier/whaleFeed'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -161,16 +162,17 @@ export async function GET(req) {
 
   const since = new Date(Date.now() - WINDOW_HOURS * 3600_000).toISOString()
   // 2026-10-01: per-address reads (index-friendly) instead of a chain scan.
-  const [winRes, priceMap] = await Promise.all([
+  const [winRes, priceMap, whaleRows] = await Promise.all([
     fetchSolanaTransfers({
       select: 'timestamp, address, direction, token_symbol, amount, amount_usd, arkham_entity_name, arkham_entity_type',
       sinceIso: since,
-      perChunk: 1500,
+      perAddress: 300,
       limit: 5000,
     }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
     loadPriceMap(),
+    fetchSolanaWhaleRows({ sinceIso: since, limit: 3000 }).catch(() => []),
   ])
-  const enriched = (winRes.rows || []).map((r) => enrichRow(r, priceMap))
+  const enriched = [...(winRes.rows || []).map((r) => enrichRow(r, priceMap)), ...whaleRows.map(whaleRowToCexLeg)]
 
   // Group by token symbol.
   const byToken = new Map()
