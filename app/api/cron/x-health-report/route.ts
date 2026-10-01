@@ -221,7 +221,7 @@ export async function GET(req: Request) {
     let solanaPollErrorSample: string | null = null
     try {
       const { fetchSolanaTransfers } = await import('@/lib/frontier/solanaTransfers')
-      const { rows } = await fetchSolanaTransfers({ select: 'timestamp', perChunk: 1, limit: 1 })
+      const { rows } = await fetchSolanaTransfers({ select: 'timestamp', sinceIso: new Date(now.getTime() - 7 * 24 * 3_600_000).toISOString(), perAddress: 1, limit: 1 })
       const first = (rows as any[])[0] as { timestamp?: string } | undefined
       const t = first?.timestamp ? Date.parse(first.timestamp) : NaN
       if (Number.isFinite(t)) solanaFeedAgeH = Math.round((now.getTime() - t) / 3_600_000)

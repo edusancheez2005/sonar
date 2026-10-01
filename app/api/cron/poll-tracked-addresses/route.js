@@ -118,23 +118,28 @@ async function getLastBlockMap() {
   const out = new Map()
   const { data } = await supabaseAdmin
     .from('tracked_address_poll_state')
-    .select('chain, address, last_block, last_polled')
+    .select('chain, address, last_block, last_polled, last_error')
     .limit(5000)
   for (const row of data || []) {
     out.set(`${row.chain}:${row.address}`, {
       last_block: row.last_block || 0,
       last_polled: row.last_polled || null,
+      last_error: row.last_error || null,
     })
   }
   return out
 }
 
-async function fetchTransfersForRow(row, lastBlock, lastPolled, budget) {
+async function fetchTransfersForRow(row, lastBlock, lastPolled, budget, lastError = null) {
   if (SOLANA_CHAINS.has(row.chain)) {
-    // Re-scan from 15 min before the last successful poll (6h when never
-    // polled) so the RPC fallback only fetches what is new.
+    // Re-scan from 15 min before the last poll — unless that poll errored
+    // (Helius quota outage): last_polled is written even on failure, so a
+    // recovering address must look back a full day or it misses everything
+    // since the outage began. Never polled → the fetcher's 6h default.
     const lastMs = lastPolled ? Date.parse(lastPolled) : NaN
-    const sinceUnix = Number.isFinite(lastMs) ? Math.floor(lastMs / 1000) - 900 : undefined
+    const sinceUnix = lastError
+      ? Math.floor(Date.now() / 1000) - 24 * 3600
+      : Number.isFinite(lastMs) ? Math.floor(lastMs / 1000) - 900 : undefined
     const transfers = await getSolanaTrackedTransfers(row.address, { sinceUnix, budget: budget?.solRpc })
     return { transfers, source: transfers.source || 'helius' }
   }
@@ -221,11 +226,11 @@ async function enrichTransfers(inserts, chain, budget) {
   return enriched
 }
 
-async function pollAddress(row, lastBlock, budget, lastPolled = null) {
+async function pollAddress(row, lastBlock, budget, lastPolled = null, lastError = null) {
   let transfers = []
   let source = 'alchemy'
   try {
-    const r = await fetchTransfersForRow(row, lastBlock, lastPolled, budget)
+    const r = await fetchTransfersForRow(row, lastBlock, lastPolled, budget, lastError)
     transfers = r.transfers || []
     source = r.source
   } catch (err) {
@@ -291,6 +296,9 @@ export async function GET(request) {
   // waiting on the full 200-address run.
   const url = new URL(request.url)
   const limitParam = Math.min(MAX_ADDRESSES, Math.max(1, parseInt(url.searchParams.get('limit') || '', 10) || MAX_ADDRESSES))
+  // ?chain=solana restricts the sweep to one chain (ops: exercise a chain's
+  // fetcher without waiting for its addresses to reach the front of the queue).
+  const chainParam = String(url.searchParams.get('chain') || '').trim().toLowerCase()
   let addresses = []
   try {
     addresses = await fetchPriorityAddresses()
@@ -317,6 +325,7 @@ export async function GET(request) {
     const bp = lastBlocks.get(`${b.chain}:${b.address}`)?.last_polled || ''
     return ap < bp ? -1 : ap > bp ? 1 : 0
   })
+  if (chainParam) addresses = addresses.filter((a) => a.chain === chainParam)
   if (addresses.length > limitParam) addresses = addresses.slice(0, limitParam)
 
   let totalRows = 0
@@ -353,7 +362,7 @@ export async function GET(request) {
     const results = await Promise.all(
       batch.map((row) => {
         const key = `${row.chain}:${row.address}`
-        return pollAddress(row, lastBlocks.get(key)?.last_block || 0, cgBudget, lastBlocks.get(key)?.last_polled || null)
+        return pollAddress(row, lastBlocks.get(key)?.last_block || 0, cgBudget, lastBlocks.get(key)?.last_polled || null, lastBlocks.get(key)?.last_error || null)
       })
     )
     await new Promise((r) => setTimeout(r, BATCH_GAP_MS))
