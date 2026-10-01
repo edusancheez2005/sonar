@@ -38,6 +38,7 @@ export type FastPathName =
   | 'largest_transactions'
   | 'why_move'
   | 'market_overview'
+  | 'whale_convergence'
 
 export interface FastPath {
   name: FastPathName
@@ -52,6 +53,9 @@ const NEEDS_LLM_RE =
   /\b(wallet|address|0x[0-9a-f]{6,}|who (?:is|are|was|were)|which (?:wallet|whale|address)|most (?:profitable|active)|best (?:performing|whale)|top (?:wallet|whale)s?\b|leaderboard|follow|track|alert|watchlist|\bmy\b|portfolio|holdings?|vitalik|binance|coinbase|mrbeast|trump|musk|explain|what (?:is|does|are) (?:a |an |the )?\w+ (?:mean|means)|should i|predict\w*|forecast|target)\b/i
 const CHAIN_RE = /\b(solana|ethereum|polygon|bitcoin network|arbitrum|base chain|tron|bsc|bnb chain|on (?:chain|the) [a-z]+ chain)\b/i
 const LARGEST_TX_RE = /\b(largest|biggest|top)\s+(?:\d+\s+)?(?:whale\s+)?(?:transactions?|transfers?|trades?|txs?)\b/i
+// "which token are 3+ whales buying?", "whales piling into the same coin"
+const CONVERGENCE_RE =
+  /\b((\d+)\s*\+?\s*(?:or more\s+)?(?:different\s+|distinct\s+|tracked\s+|followed\s+)?whales?\b|multiple whales|several whales|same (?:token|coin)|pil(?:e|ing) into|converg\w*|crowded (?:buys?|trades?)|whales? (?:are )?(?:all )?buying (?:the same|together|in common))/i
 // "What's going on in crypto today?" / "market update" / "what's happening?" —
 // the market-wide overview (whales + social + news leaderboards).
 const MARKET_OVERVIEW_RE =
@@ -71,7 +75,8 @@ export function matchFastPath(message: string, tickersIn: string[] | boolean = [
   if (tickersIn === true) return null
   const m = String(message || '').trim()
   if (m.length < 6 || m.length > 240) return null
-  if (COMPARE_RE.test(m) || MACRO_EVENT_RE.test(m) || NEEDS_LLM_RE.test(m)) return null
+  const mForLlmCheck = CONVERGENCE_RE.test(m) ? m.replace(/\b(tracked|followed)\b/gi, '') : m
+  if (COMPARE_RE.test(m) || MACRO_EVENT_RE.test(m) || NEEDS_LLM_RE.test(mForLlmCheck)) return null
   const allTickers = Array.from(new Set([...tickers, ...extractTickers(m)].map((t) => String(t).toUpperCase())))
   if (allTickers.length >= 2) return null
   const t = allTickers[0] ?? null
@@ -85,6 +90,19 @@ export function matchFastPath(message: string, tickersIn: string[] | boolean = [
     deriv: DERIV_FOCUS_RE.test(m),
     largest: LARGEST_TX_RE.test(m),
     why: MOVE_WHY_RE.test(m),
+  }
+
+  // Convergence: several distinct whales buying the same token.
+  if (!t && CONVERGENCE_RE.test(m) && !NEEDS_LLM_RE.test(m.replace(/\b(tracked|followed)\b/gi, ''))) {
+    const n = Number((m.match(/(\d+)\s*\+?\s*(?:or more\s+)?(?:different\s+|distinct\s+|tracked\s+|followed\s+)?whales?/i) || [])[1])
+    const minWhales = Number.isFinite(n) && n >= 2 && n <= 20 ? n : 3
+    const w = detectTimeWindow(m)
+    const window = w === '30d' ? '7d' : w
+    return {
+      name: 'whale_convergence',
+      decision: decision(['whales'], []),
+      calls: [{ tool: 'getWhaleConvergence', args: { window, min_whales: minWhales } }],
+    }
   }
 
   // Market-wide overview with no ticker and no other facet → the three

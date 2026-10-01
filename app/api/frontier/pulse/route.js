@@ -18,6 +18,7 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { BRIDGE_ADDRESSES } from '@/app/frontier/bridges'
 import { resolveToken, ENRICHABLE_TICKERS } from '@/app/frontier/splTokens'
 import { isAuthorized } from '@/app/api/frontier/_auth'
+import { fetchSolanaTransfers, getSolanaUniverse } from '@/lib/frontier/solanaTransfers'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -89,30 +90,33 @@ export async function GET(req) {
   const now = Date.now()
   const since24h = new Date(now - 24 * 60 * 60 * 1000).toISOString()
 
-  const [entitiesRes, windowRes, recentRes, priceMap] = await Promise.all([
-    supabaseAdmin
-      .from('tracked_address_universe')
-      .select('arkham_entity_name')
-      .eq('chain', 'solana'),
-    supabaseAdmin
-      .from('tracked_address_transfers')
-      .select('id, timestamp, address, direction, token_symbol, amount, amount_usd, counterparty, tx_hash, source, arkham_entity_name, arkham_entity_type, arkham_label')
-      .eq('chain', 'solana')
-      .gte('timestamp', since24h)
-      .order('timestamp', { ascending: false })
-      .limit(5000),
-    supabaseAdmin
-      .from('tracked_address_transfers')
-      .select('id, timestamp, address, direction, token_symbol, amount, amount_usd, counterparty, tx_hash, source, arkham_entity_name, arkham_entity_type, arkham_label')
-      .eq('chain', 'solana')
-      .order('timestamp', { ascending: false })
-      .limit(RAW_LIMIT),
+  // 2026-10-01: per-address reads (see lib/frontier/solanaTransfers.js); the
+  // old chain+timestamp filter scanned the whole table and timed out → 500.
+  let universe = []
+  let windowRows = []
+  let recentRows = []
+  const readErrors = []
+  let priceMap = new Map()
+  try {
+    universe = await getSolanaUniverse()
+  } catch (e) {
+    readErrors.push(String(e?.message || e))
+  }
+  const addresses = universe.map((r) => r.address).filter(Boolean)
+  const SEL = 'id, timestamp, address, direction, token_symbol, amount, amount_usd, counterparty, tx_hash, source, arkham_entity_name, arkham_entity_type, arkham_label'
+  const [winRes, recRes, prices] = await Promise.all([
+    fetchSolanaTransfers({ select: SEL, sinceIso: since24h, perChunk: 1500, limit: 5000, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
+    fetchSolanaTransfers({ select: SEL, perChunk: 60, limit: RAW_LIMIT, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
     loadPriceMap(),
   ])
-
-  if (windowRes.error) {
-    return NextResponse.json({ error: windowRes.error.message }, { status: 500 })
-  }
+  windowRows = winRes.rows
+  recentRows = recRes.rows
+  readErrors.push(...(winRes.errors || []), ...(recRes.errors || []))
+  priceMap = prices
+  const entitiesRes = { data: universe }
+  const windowRes = { data: windowRows }
+  const recentRes = { data: recentRows }
+  if (readErrors.length) console.warn('[frontier/pulse] partial read errors', readErrors.slice(0, 3))
 
   const distinctEntities = new Set(
     (entitiesRes.data || []).map((r) => r.arkham_entity_name).filter(Boolean),
@@ -238,7 +242,7 @@ export async function GET(req) {
       transfers,
       topMovers,
       rotation,
-      status: { dataFresh, lastTransferAt, mode, dustFloorUsd: DUST_USD_FLOOR },
+      status: { dataFresh, lastTransferAt, mode, dustFloorUsd: DUST_USD_FLOOR, readErrors: readErrors.length ? readErrors.slice(0, 2) : undefined },
       generatedAt: new Date().toISOString(),
     },
     { headers: { 'Cache-Control': 'private, max-age=10, stale-while-revalidate=30' } },

@@ -212,6 +212,35 @@ export async function GET(req: Request) {
       issues.push(`CoinGecko logo lookup failing: ${coingeckoError} — token icons render as letters site-wide (check COINGECKO_API_KEY / free-tier 429s).`)
     }
 
+    // --- Solana tracked-wallet feed canary (Frontier page) -------------------
+    // 2026-10-01: Helius quota ran out and the Frontier page went blank for a
+    // day with nothing in the email. Age of the newest Solana transfer (index-
+    // friendly per-address read) + share of Solana poll states erroring.
+    let solanaFeedAgeH: number | null = null
+    let solanaPollErrorPct: number | null = null
+    let solanaPollErrorSample: string | null = null
+    try {
+      const { fetchSolanaTransfers } = await import('@/lib/frontier/solanaTransfers')
+      const { rows } = await fetchSolanaTransfers({ select: 'timestamp', perChunk: 1, limit: 1 })
+      const first = (rows as any[])[0] as { timestamp?: string } | undefined
+      const t = first?.timestamp ? Date.parse(first.timestamp) : NaN
+      if (Number.isFinite(t)) solanaFeedAgeH = Math.round((now.getTime() - t) / 3_600_000)
+      const { data: ps } = await supabaseAdmin
+        .from('tracked_address_poll_state')
+        .select('last_error')
+        .eq('chain', 'solana')
+        .limit(1000)
+      const states = (ps || []) as Array<{ last_error: string | null }>
+      if (states.length) {
+        const errs = states.filter((s) => s.last_error)
+        solanaPollErrorPct = Math.round((100 * errs.length) / states.length)
+        solanaPollErrorSample = errs[0]?.last_error?.slice(0, 80) || null
+      }
+    } catch (e: any) { solanaPollErrorSample = String(e?.message || e).slice(0, 80) }
+    if (solanaFeedAgeH === null || solanaFeedAgeH > 6) {
+      issues.push(`Solana tracked-wallet feed stale (${solanaFeedAgeH === null ? 'no rows' : solanaFeedAgeH + 'h'}; ${solanaPollErrorPct ?? '?'}% of Solana polls erroring${solanaPollErrorSample ? `: ${solanaPollErrorSample}` : ''}) — Frontier page empty.`)
+    }
+
     // --- SEO spot checks ---------------------------------------------------
     let sitemapUrls = 0
     let pricingBlocked: boolean | null = null
@@ -236,6 +265,7 @@ export async function GET(req: Request) {
       orca: { lastWhisperAgeHours: lastWhisperAgeH },
       alchemy: { ok: alchemyOk, error: alchemyError },
       coingecko: { ok: coingeckoOk, error: coingeckoError },
+      solana_feed: { newest_transfer_age_h: solanaFeedAgeH, poll_error_pct: solanaPollErrorPct, sample_error: solanaPollErrorSample },
       orcaQuality: { answers24h: orcaAnswers24h, deadEnds24h: orcaDeadEnds24h },
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,

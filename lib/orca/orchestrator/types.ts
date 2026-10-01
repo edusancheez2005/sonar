@@ -68,6 +68,7 @@ export type ToolName =
   | 'getMostActiveWallets'
   | 'getTopPerformingWallets'
   | 'getLargestTransactions'
+  | 'getWhaleConvergence'
   | 'getDerivatives'
   | 'getArticleContext'
   | 'getSignalContext'

@@ -25,6 +25,7 @@ import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { BRIDGE_ADDRESSES, bridgeNameFor } from '@/app/frontier/bridges'
 import { resolveToken, ENRICHABLE_TICKERS } from '@/app/frontier/splTokens'
 import { isAuthorized } from '@/app/api/frontier/_auth'
+import { fetchSolanaTransfers, getSolanaUniverse } from '@/lib/frontier/solanaTransfers'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -106,21 +107,20 @@ export async function GET(req) {
 
   const since = new Date(Date.now() - LOOKBACK_HOURS * 60 * 60 * 1000).toISOString()
 
+  // 2026-10-01: per-address reads (index-friendly) instead of a chain scan.
+  const BRIDGE_SELECT = 'id, timestamp, address, direction, token_symbol, amount, amount_usd, tx_hash, counterparty, arkham_entity_name, arkham_entity_type, arkham_label'
+  const universe = await getSolanaUniverse().catch(() => [])
+  const universeAddresses = universe.map((r) => r.address).filter(Boolean)
   const [rowsRes, trackedRes, priceMap] = await Promise.all([
-    supabaseAdmin
-      .from('tracked_address_transfers')
-      .select('id, timestamp, address, direction, token_symbol, amount, amount_usd, tx_hash, counterparty, arkham_entity_name, arkham_entity_type, arkham_label')
-      .eq('chain', 'solana')
-      .eq('direction', 'in')
-      .gte('timestamp', since)
-      .order('timestamp', { ascending: false })
-      .limit(2000),
-    // Build a set of tracked Solana addresses so we can EXCLUDE intra-
-    // tracked transfers (Coinbase moving to its own hot wallet etc.)
-    supabaseAdmin
-      .from('tracked_address_universe')
-      .select('address')
-      .eq('chain', 'solana'),
+    fetchSolanaTransfers({
+      select: BRIDGE_SELECT,
+      sinceIso: since,
+      direction: 'in',
+      perChunk: 600,
+      limit: 2000,
+      addresses: universeAddresses,
+    }).then((r) => ({ data: r.rows, error: null })).catch((e) => ({ data: [], error: { message: String(e?.message || e) } })),
+    Promise.resolve({ data: universe.map((r) => ({ address: r.address })) }),
     loadPriceMap(),
   ])
 

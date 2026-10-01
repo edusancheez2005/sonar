@@ -19,6 +19,7 @@ import { run as runGetWalletActivity } from './getWalletActivity'
 import { run as runGetMostActiveWallets } from './getMostActiveWallets'
 import { run as runGetTopPerformingWallets } from './getTopPerformingWallets'
 import { run as runGetLargestTransactions } from './getLargestTransactions'
+import { run as runGetWhaleConvergence } from './getWhaleConvergence'
 import { run as runGetDerivatives } from './getDerivatives'
 import { run as runGetArticleContext } from './getArticleContext'
 import { run as runGetSignalContext } from './getSignalContext'
@@ -52,6 +53,7 @@ export const READ_ONLY_TOOLS = new Set<ToolName>([
   'getMostActiveWallets',
   'getTopPerformingWallets',
   'getLargestTransactions',
+  'getWhaleConvergence',
   'getDerivatives',
   'getArticleContext',
   'getSignalContext',
@@ -134,6 +136,8 @@ async function executeToolInner(
       return runGetTopPerformingWallets(call.args as any, supabase, now)
     case 'getLargestTransactions':
       return runGetLargestTransactions(call.args as any, supabase, now)
+    case 'getWhaleConvergence':
+      return runGetWhaleConvergence(call.args as any, supabase, now)
     case 'getDerivatives':
       return runGetDerivatives(call.args as any, supabase, now)
     case 'getArticleContext':

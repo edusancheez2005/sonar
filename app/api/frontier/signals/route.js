@@ -25,6 +25,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { resolveToken, ENRICHABLE_TICKERS } from '@/app/frontier/splTokens'
 import { isAuthorized } from '@/app/api/frontier/_auth'
+import { fetchSolanaTransfers } from '@/lib/frontier/solanaTransfers'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -159,20 +160,17 @@ export async function GET(req) {
   if (!authed) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   const since = new Date(Date.now() - WINDOW_HOURS * 3600_000).toISOString()
+  // 2026-10-01: per-address reads (index-friendly) instead of a chain scan.
   const [winRes, priceMap] = await Promise.all([
-    supabaseAdmin
-      .from('tracked_address_transfers')
-      .select('timestamp, address, direction, token_symbol, amount, amount_usd, arkham_entity_name, arkham_entity_type')
-      .eq('chain', 'solana')
-      .gte('timestamp', since)
-      .order('timestamp', { ascending: false })
-      .limit(5000),
+    fetchSolanaTransfers({
+      select: 'timestamp, address, direction, token_symbol, amount, amount_usd, arkham_entity_name, arkham_entity_type',
+      sinceIso: since,
+      perChunk: 1500,
+      limit: 5000,
+    }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
     loadPriceMap(),
   ])
-  if (winRes.error) {
-    return NextResponse.json({ error: winRes.error.message }, { status: 500 })
-  }
-  const enriched = (winRes.data || []).map((r) => enrichRow(r, priceMap))
+  const enriched = (winRes.rows || []).map((r) => enrichRow(r, priceMap))
 
   // Group by token symbol.
   const byToken = new Map()

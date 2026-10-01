@@ -129,9 +129,14 @@ async function getLastBlockMap() {
   return out
 }
 
-async function fetchTransfersForRow(row, lastBlock) {
+async function fetchTransfersForRow(row, lastBlock, lastPolled, budget) {
   if (SOLANA_CHAINS.has(row.chain)) {
-    return { transfers: await getSolanaTrackedTransfers(row.address), source: 'helius' }
+    // Re-scan from 15 min before the last successful poll (6h when never
+    // polled) so the RPC fallback only fetches what is new.
+    const lastMs = lastPolled ? Date.parse(lastPolled) : NaN
+    const sinceUnix = Number.isFinite(lastMs) ? Math.floor(lastMs / 1000) - 900 : undefined
+    const transfers = await getSolanaTrackedTransfers(row.address, { sinceUnix, budget: budget?.solRpc })
+    return { transfers, source: transfers.source || 'helius' }
   }
   const etherscanChainId = ETHERSCAN_CHAIN_IDS[row.chain]
   if (etherscanChainId) {
@@ -216,11 +221,11 @@ async function enrichTransfers(inserts, chain, budget) {
   return enriched
 }
 
-async function pollAddress(row, lastBlock, budget) {
+async function pollAddress(row, lastBlock, budget, lastPolled = null) {
   let transfers = []
   let source = 'alchemy'
   try {
-    const r = await fetchTransfersForRow(row, lastBlock)
+    const r = await fetchTransfersForRow(row, lastBlock, lastPolled, budget)
     transfers = r.transfers || []
     source = r.source
   } catch (err) {
@@ -326,7 +331,7 @@ export async function GET(request) {
   const stateUpdates = []
   // Shared CoinGecko lookup budget for this run (see enrichTransfers):
   // capped lookups AND a hard deadline well inside maxDuration.
-  const cgBudget = { lookups: 0, max: 10, cache: new Map(), deadline: t0 + 240_000 }
+  const cgBudget = { lookups: 0, max: 10, cache: new Map(), deadline: t0 + 240_000, solRpc: { calls: 0, max: 1500 } }
 
   // Alchemy budget math: ~330 CU/s, getAssetTransfers ≈ 150 CU, and the
   // helper fires in + out per address. CONCURRENCY 3 (6 in-flight calls
@@ -348,7 +353,7 @@ export async function GET(request) {
     const results = await Promise.all(
       batch.map((row) => {
         const key = `${row.chain}:${row.address}`
-        return pollAddress(row, lastBlocks.get(key)?.last_block || 0, cgBudget)
+        return pollAddress(row, lastBlocks.get(key)?.last_block || 0, cgBudget, lastBlocks.get(key)?.last_polled || null)
       })
     )
     await new Promise((r) => setTimeout(r, BATCH_GAP_MS))

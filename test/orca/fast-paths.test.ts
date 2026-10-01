@@ -31,6 +31,14 @@ describe('matchFastPath', () => {
     expect(tools('What are the biggest transactions today?')).toEqual(['getLargestTransactions'])
   })
 
+  it('whale convergence → getWhaleConvergence with the asked count', () => {
+    expect(names('which token are 3+ tracked whales buying?')).toBe('whale_convergence')
+    expect(matchFastPath('which token are 3+ tracked whales buying?', [])?.calls[0]).toEqual({ tool: 'getWhaleConvergence', args: { window: '7d', min_whales: 3 } })
+    expect(matchFastPath('are several whales piling into the same coin today?', [])?.calls[0].args).toEqual({ window: '24h', min_whales: 3 })
+    expect(matchFastPath('show me tokens 5 different whales bought this week', [])?.calls[0].args).toEqual({ window: '7d', min_whales: 5 })
+    expect(names('what are whales doing today?')).toBe('whale_summary')
+  })
+
   it('market overview → the three leaderboards', () => {
     expect(names("What's going on in crypto today?")).toBe('market_overview')
     expect(tools('give me a market update')).toEqual(['getTrendingWhales', 'getTrendingSocial', 'getTrendingNews'])
