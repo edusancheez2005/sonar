@@ -18,9 +18,13 @@
  */
 import type { NotificationCopy } from './types'
 import { NEWS_SENTIMENT_THRESHOLD, RECENT_WINDOW_MS } from './types'
+import { CONVERGENCE_ANY_TICKER } from './types'
+import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
+import { isJunkAddress } from '@/lib/orca/junk-addresses'
 import {
   formatPriceMove,
   formatWhaleFlow,
+  formatWhaleConvergence,
   formatSignalFlip,
   formatNewsImpact,
   formatWalletActivity,
@@ -132,6 +136,57 @@ export async function evaluateWhaleFlow(
     }
     if (!Number.isFinite(thresholdUsd) || Math.abs(net) < thresholdUsd) return null
     return formatWhaleFlow(ticker, net)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * whale_convergence: >= minWhales DISTINCT whale wallets bought the same token
+ * in the trailing 24h (buys >= $25k, junk contracts excluded). ticker '_ALL_'
+ * scans every token and reports the most crowded one; a specific ticker checks
+ * that token only. Mirrors lib/orca/orchestrator/tools/getWhaleConvergence.
+ */
+export async function evaluateWhaleConvergence(
+  ticker: string | null,
+  minWhales: number,
+  supabase: SupabaseLike,
+  now: () => Date = () => new Date()
+): Promise<NotificationCopy | null> {
+  try {
+    const want = ticker && ticker !== CONVERGENCE_ANY_TICKER ? ticker.toUpperCase() : null
+    const min = Number.isFinite(minWhales) && minWhales >= 2 ? Math.min(20, Math.round(minWhales)) : 3
+    const sinceIso = new Date(now().getTime() - 24 * 60 * 60 * 1000).toISOString()
+    const { data } = await supabase
+      .from('all_whale_transactions')
+      .select('token_symbol, usd_value, classification, whale_address')
+      .gte('timestamp', sinceIso)
+      .gte('usd_value', 25_000)
+      .order('usd_value', { ascending: false })
+      .limit(6000)
+    if (!Array.isArray(data) || data.length === 0) return null
+    const buckets = new Map<string, { buyers: Map<string, number>; buyUsd: number }>()
+    for (const r of data as Array<any>) {
+      const c = String(r?.classification || '').toLowerCase()
+      if (!c.startsWith('buy')) continue
+      const sym = canonicalSymbol(String(r?.token_symbol || '').trim()) ?? ''
+      if (!sym || (want && sym !== want)) continue
+      const v = Number(r?.usd_value)
+      if (!Number.isFinite(v) || v <= 0 || v > 150_000_000) continue
+      const addr = String(r?.whale_address || '').trim()
+      if (!addr || isJunkAddress(addr)) continue
+      let b = buckets.get(sym)
+      if (!b) { b = { buyers: new Map(), buyUsd: 0 }; buckets.set(sym, b) }
+      b.buyers.set(addr, (b.buyers.get(addr) || 0) + v)
+      b.buyUsd += v
+    }
+    const best = Array.from(buckets.entries())
+      .filter(([, b]) => b.buyers.size >= min)
+      .sort((a, b) => b[1].buyers.size - a[1].buyers.size || b[1].buyUsd - a[1].buyUsd)[0]
+    if (!best) return null
+    const [sym, b] = best
+    const top = Array.from(b.buyers.entries()).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([a]) => `${a.slice(0, 6)}…${a.slice(-4)}`)
+    return formatWhaleConvergence(sym, b.buyers.size, b.buyUsd, top)
   } catch {
     return null
   }

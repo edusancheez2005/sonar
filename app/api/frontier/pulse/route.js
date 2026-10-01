@@ -106,7 +106,7 @@ export async function GET(req) {
   const SEL = 'id, timestamp, address, direction, token_symbol, amount, amount_usd, counterparty, tx_hash, source, arkham_entity_name, arkham_entity_type, arkham_label'
   const [winRes, recRes, prices] = await Promise.all([
     fetchSolanaTransfers({ select: SEL, sinceIso: since24h, perChunk: 1500, limit: 5000, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
-    fetchSolanaTransfers({ select: SEL, perChunk: 60, limit: RAW_LIMIT, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
+    fetchSolanaTransfers({ select: SEL, sinceIso: new Date(now - 7 * 24 * 3_600_000).toISOString(), perChunk: 60, limit: RAW_LIMIT, addresses }).catch((e) => ({ rows: [], errors: [String(e?.message || e)] })),
     loadPriceMap(),
   ])
   windowRows = winRes.rows

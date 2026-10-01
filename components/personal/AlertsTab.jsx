@@ -43,6 +43,13 @@ const KIND_META = {
     threshold: 'none',
     blurb: 'when the Sonar signal flips',
   },
+  whale_convergence: {
+    label: 'Whale convergence',
+    color: '#7af8ff',
+    target: 'ticker',
+    threshold: 'count',
+    blurb: 'when several whales buy the same token',
+  },
   news_high_impact: {
     label: 'Big news',
     color: '#b794f6',
@@ -662,6 +669,7 @@ export default function AlertsTab({ client, fetchImpl }) {
 
   const thresholdChip = (r) => {
     if (r.kind === 'price_move') return `±${r.threshold_pct}%`
+    if (r.kind === 'whale_convergence') return `${r.threshold_pct || 3}+ whales · 24h`
     if (r.kind === 'whale_flow' || (r.kind === 'wallet_activity' && r.threshold_usd)) {
       const v = Number(r.threshold_usd) || 0
       const usd =

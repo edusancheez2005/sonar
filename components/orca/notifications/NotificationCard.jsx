@@ -11,6 +11,7 @@ const STRIPE_BY_KIND = {
   whale_flow: TILE.green,
   signal_flip: '#a78bfa',
   news_high_impact: '#fbbf24',
+  whale_convergence: '#7af8ff',
 }
 
 function relativeTime(iso) {

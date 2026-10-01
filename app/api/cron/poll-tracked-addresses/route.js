@@ -331,7 +331,7 @@ export async function GET(request) {
   const stateUpdates = []
   // Shared CoinGecko lookup budget for this run (see enrichTransfers):
   // capped lookups AND a hard deadline well inside maxDuration.
-  const cgBudget = { lookups: 0, max: 10, cache: new Map(), deadline: t0 + 240_000, solRpc: { calls: 0, max: 1500 } }
+  const cgBudget = { lookups: 0, max: 10, cache: new Map(), deadline: t0 + 240_000, solRpc: { calls: 0, max: 600 } }
 
   // Alchemy budget math: ~330 CU/s, getAssetTransfers ≈ 150 CU, and the
   // helper fires in + out per address. CONCURRENCY 3 (6 in-flight calls

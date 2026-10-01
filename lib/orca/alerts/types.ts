@@ -12,6 +12,13 @@ export type AlertKind =
   | 'wallet_activity'
   | 'news_any'
   | 'social_post'
+  // 2026-10-01: N distinct whales bought the same token in 24h. threshold_pct
+  // carries the minimum whale count; ticker '_ALL_' means any token.
+  | 'whale_convergence'
+
+/** Ticker value meaning "any token" for whale_convergence rules. */
+export const CONVERGENCE_ANY_TICKER = '_ALL_'
+export const CONVERGENCE_DEFAULT_MIN_WHALES = 3
 
 export const ALERT_KINDS: AlertKind[] = [
   'price_move',
@@ -21,6 +28,7 @@ export const ALERT_KINDS: AlertKind[] = [
   'wallet_activity',
   'news_any',
   'social_post',
+  'whale_convergence',
 ]
 
 /** Kinds that target an on-chain address instead of a ticker. */

@@ -63,6 +63,23 @@ export function formatWhaleFlow(ticker: string, netUsd: number): NotificationCop
   )
 }
 
+export function formatWhaleConvergence(
+  ticker: string,
+  distinctBuyers: number,
+  buyUsd: number,
+  topBuyers: string[]
+): NotificationCopy {
+  const who = topBuyers.length ? ` (${topBuyers.slice(0, 3).join(', ')}${distinctBuyers > 3 ? ', …' : ''})` : ''
+  return copy(
+    'whale_convergence',
+    ticker,
+    `${distinctBuyers} whales bought ${ticker} in the last 24h (${formatUsd(buyUsd).replace(/^\+/, '')})`,
+    `${distinctBuyers} different whale wallets each bought ${ticker} in the last 24 hours${who}; combined ${formatUsd(buyUsd).replace(/^\+/, '')}. Informational only.`,
+    { distinctBuyers, buyUsd, topBuyers },
+    overviewReask(ticker)
+  )
+}
+
 export function formatSignalFlip(
   ticker: string,
   from: string,

@@ -22,6 +22,7 @@ import {
   evaluateWalletActivity,
   evaluateNewsAny,
   evaluateSocialPost,
+  evaluateWhaleConvergence,
   type SupabaseLike,
 } from '@/lib/orca/alerts/evaluators'
 import { dedupHour } from '@/lib/orca/alerts/dedup'
@@ -186,6 +187,9 @@ export async function runCheckUserAlerts(
         break
       case 'social_post':
         pending = evaluateSocialPost(rule.ticker as string, supabase, now)
+        break
+      case 'whale_convergence':
+        pending = evaluateWhaleConvergence(rule.ticker ?? null, Number(rule.threshold_pct) || 3, supabase, now)
         break
       default:
         pending = Promise.resolve(null)

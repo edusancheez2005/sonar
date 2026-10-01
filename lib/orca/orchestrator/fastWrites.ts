@@ -22,6 +22,7 @@
  *    handler injects it from the verified JWT at execution time.
  */
 import { parseThreshold } from '../alerts/parseThreshold'
+import { CONVERGENCE_ANY_TICKER } from '../alerts/types'
 import { detectAddress, type Chain } from './detectAddress'
 import { parseDuration } from './parseDuration'
 import { isValidTicker } from '../ticker-extractor'
@@ -38,7 +39,7 @@ export type WriteTool =
   | 'unmuteTicker'
 
 /** Alert kinds the chat detector can create (mirrors lib/orca/alerts/types). */
-export type FastAlertKind = 'price_move' | 'whale_flow' | 'signal_flip' | 'news_high_impact'
+export type FastAlertKind = 'price_move' | 'whale_flow' | 'signal_flip' | 'news_high_impact' | 'whale_convergence'
 
 /** Canonical chains accepted by the user_wallets table CHECK constraint. */
 export const VALID_CHAINS = new Set<string>([
@@ -238,9 +239,6 @@ function pickTickerAnywhere(text: string): string | null {
   return null
 }
 
-// Alert shapes Sonar cannot express yet (one alert = one token + one kind).
-const MULTI_WHALE_RE =
-  /\b(\d+\s*\+?\s*(?:or more\s+)?(?:tracked\s+|followed\s+)?whales?|multiple whales|several whales|same token|same coin|pile into|converg\w*)\b/i
 
 /**
  * An alert request we recognise but cannot set — no known token, or a
@@ -254,18 +252,20 @@ export function detectUnsupportedAlertAsk(message: string): string | null {
   if (!ALERT_INTENT_RE.test(msg)) return null
   if (!/\b(when|if|once|whenever|every time|as soon as)\b/i.test(msg)) return null
   if (/\btell me (?:about|more)\b/i.test(msg)) return null
-  const convergence = MULTI_WHALE_RE.test(msg)
+  if (MULTI_WHALE_RE.test(msg)) return null // whale_convergence — handled by detectAlertWrite
   const ticker = pickTickerAnywhere(msg)
-  if (ticker && !convergence) return null
+  if (ticker) return null
   const supported =
-    'Alerts work per token right now: a price move (e.g. "alert me when SOL moves 5%"), whale flow over an amount ("notify me about BTC whale flow over $2M"), a Sonar signal change, or high-impact news.'
-  if (convergence) {
-    return `I can't set that one yet — alerts that watch several wallets at once (like 3+ tracked whales buying the same token) aren't available. ${supported} Which token should I watch, and which kind?`
-  }
+    'Alerts work per token: a price move (e.g. "alert me when SOL moves 5%"), whale flow over an amount ("notify me about BTC whale flow over $2M"), a Sonar signal change, high-impact news — or "tell me when 3+ whales buy the same token".'
   return `Which token should I watch? ${supported}`
 }
 
+// "3+ tracked whales buy the same token" — whale_convergence (2026-10-01).
+const MULTI_WHALE_RE =
+  /\b(\d+\s*\+?\s*(?:or more\s+)?(?:different\s+|distinct\s+|tracked\s+|followed\s+)?whales?|multiple whales|several whales|same token|same coin|pile into|piling into|converg\w*)\b/i
+
 function detectAlertKind(msg: string): FastAlertKind | null {
+  if (MULTI_WHALE_RE.test(msg)) return 'whale_convergence'
   if (/\b(news|headline|article|story|press)\b/i.test(msg)) return 'news_high_impact'
   if (/\b(signal|rating|flip|flips|flipped)\b/i.test(msg)) return 'signal_flip'
   if (/\bwhale|flow|inflow|outflow|accumulat|net\s*buy|net\s*sell\b/i.test(msg)) return 'whale_flow'
@@ -281,6 +281,7 @@ function alertKindLabel(kind: FastAlertKind): string {
     case 'whale_flow': return 'whale flow'
     case 'signal_flip': return 'signal change'
     case 'news_high_impact': return 'high-impact news'
+    case 'whale_convergence': return 'whale convergence'
   }
 }
 
@@ -327,17 +328,29 @@ export function detectAlertWrite(
   }
 
   // CREATE.
-  if (!ticker) return null
+  const convergence = MULTI_WHALE_RE.test(msg)
+  if (!ticker && !convergence) return null
   // Guard against plain queries that merely contain a soft verb ("tell me
   // about SOL"). A create requires an explicit alert noun/verb OR a
   // conditional trigger word.
   const hasAlertWord = /\b(alert|notify|ping|warn|remind)\b/i.test(msg)
-  const hasTrigger = /\b(when|if|once|whenever)\b/i.test(msg)
+  const hasTrigger = /\b(when|if|once|whenever|every time|as soon as)\b/i.test(msg)
   if (!hasAlertWord && !hasTrigger) return null
   const kind = detectAlertKind(msg) || 'price_move'
   const parsed = parseThreshold(msg)
   let threshold_pct: number | null = null
   let threshold_usd: number | null = null
+  if (kind === 'whale_convergence') {
+    // "3+ whales", "5 different whales" → minimum distinct whales (default 3).
+    const n = Number((msg.match(/(\d+)\s*\+?\s*(?:or more\s+)?(?:different\s+|distinct\s+|tracked\s+|followed\s+)?whales?/i) || [])[1])
+    threshold_pct = Number.isFinite(n) && n >= 2 && n <= 20 ? n : 3
+    const target = ticker || CONVERGENCE_ANY_TICKER
+    const label = ticker
+      ? `Alert you when ${threshold_pct}+ different whales buy ${ticker} within 24h?`
+      : `Alert you when ${threshold_pct}+ different whales buy the same token within 24h?`
+    return { calls: [{ tool: 'createAlert', args: { ticker: target, kind, threshold_pct } }], label }
+  }
+  if (!ticker) return null
   if (kind === 'price_move') {
     threshold_pct = parsed?.threshold_pct ?? 5
   } else if (kind === 'whale_flow') {
@@ -564,6 +577,9 @@ export function sanitiseConfirmCalls(input: unknown): WriteCall[] | null {
       } else if (kind === 'whale_flow') {
         const usd = Number(argsRaw.threshold_usd)
         if (Number.isFinite(usd) && usd > 0) args.threshold_usd = Math.round(usd)
+      } else if (kind === 'whale_convergence') {
+        const n = Math.round(Number(argsRaw.threshold_pct))
+        args.threshold_pct = Number.isFinite(n) && n >= 2 && n <= 20 ? n : 3
       }
       out.push({ tool, args })
     } else if (tool === 'trackWallet' || tool === 'untrackWallet') {
@@ -599,4 +615,4 @@ export function sanitiseConfirmCalls(input: unknown): WriteCall[] | null {
   return out.length > 0 ? out : null
 }
 
-const ALERT_KIND_SET = new Set<string>(['price_move', 'whale_flow', 'signal_flip', 'news_high_impact'])
+const ALERT_KIND_SET = new Set<string>(['price_move', 'whale_flow', 'signal_flip', 'news_high_impact', 'whale_convergence'])

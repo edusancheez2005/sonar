@@ -10,16 +10,22 @@ describe('alert quick-writes', () => {
   })
 
   it('never mints a ticker out of an English word', () => {
-    expect(detectFastWrite('tell me when 3+ tracked whales buy the same token')).toBeNull()
-    expect(detectFastWrite('no, i meant tell me when 3+ tracked whales buy the same token')).toBeNull()
     expect(detectFastWrite('alert me when the market dumps')).toBeNull()
+    expect(detectFastWrite('tell me when tracked wallets move')).toBeNull()
+  })
+
+  it('sets a whale_convergence alert from natural phrasing', () => {
+    const d = detectFastWrite('tell me when 3+ tracked whales buy the same token')
+    expect(d?.calls[0]).toEqual({ tool: 'createAlert', args: { ticker: '_ALL_', kind: 'whale_convergence', threshold_pct: 3 } })
+    expect(d?.label).toMatch(/3\+ different whales buy the same token/)
+    const d2 = detectFastWrite('no, i meant tell me when 3+ tracked whales buy the same token')
+    expect(d2?.calls[0].args).toMatchObject({ kind: 'whale_convergence', threshold_pct: 3 })
+    const d3 = detectFastWrite('alert me if 5 different whales buy SOL')
+    expect(d3?.calls[0].args).toEqual({ ticker: 'SOL', kind: 'whale_convergence', threshold_pct: 5 })
+    expect(detectUnsupportedAlertAsk('tell me when 3+ tracked whales buy the same token')).toBeNull()
   })
 
   it('answers unsupported alert asks instead of guessing', () => {
-    const t = detectUnsupportedAlertAsk('tell me when 3+ tracked whales buy the same token')
-    expect(t).toMatch(/aren't available/)
-    expect(t).toMatch(/Which token/)
-    expect(detectUnsupportedAlertAsk('no, i meant tell me when 3+ tracked whales buy the same token')).toMatch(/aren't available/)
     expect(detectUnsupportedAlertAsk('alert me when it dumps')).toMatch(/^Which token should I watch/)
     expect(detectUnsupportedAlertAsk('alert me when SOL moves 5%')).toBeNull()
     expect(detectUnsupportedAlertAsk('tell me about SOL whales')).toBeNull()

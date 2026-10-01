@@ -66,6 +66,14 @@ export function resolveThreshold(
     if (!Number.isFinite(usd) || usd < 0) return null
     return { threshold_pct: null, threshold_usd: usd > 0 ? Math.round(usd) : null }
   }
+  if (kind === 'whale_convergence') {
+    // threshold_pct = minimum number of distinct whales (default 3, 2..20).
+    const n = opts.threshold_pct === undefined || opts.threshold_pct === null || opts.threshold_pct === ''
+      ? 3
+      : Math.round(Number(opts.threshold_pct))
+    if (!Number.isFinite(n) || n < 2 || n > 20) return null
+    return { threshold_pct: n, threshold_usd: null }
+  }
   // signal_flip / news_high_impact / news_any / social_post — no threshold.
   return { threshold_pct: null, threshold_usd: null }
 }

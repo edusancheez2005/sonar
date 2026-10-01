@@ -17,6 +17,7 @@
  * `ticker` for back-compat with callers.
  */
 import type { SupabaseLike, ToolResult } from '../types'
+import { CONVERGENCE_ANY_TICKER, CONVERGENCE_DEFAULT_MIN_WHALES, ALERT_KINDS as SHARED_ALERT_KINDS, type AlertKind as SharedAlertKind } from '@/lib/orca/alerts/types'
 
 function cleanTicker(v: unknown): string | null {
   if (typeof v !== 'string') return null
@@ -92,8 +93,8 @@ export async function runRemoveFromWatchlist(
  * The active-rule cap (MAX_ACTIVE_RULES_PER_USER = 50) is enforced here too,
  * since the chat path does not go through the REST handler.
  */
-const ALERT_KINDS = ['price_move', 'whale_flow', 'signal_flip', 'news_high_impact'] as const
-type AlertKind = (typeof ALERT_KINDS)[number]
+const ALERT_KINDS = SHARED_ALERT_KINDS
+type AlertKind = SharedAlertKind
 const MAX_ACTIVE_RULES_PER_USER = 50
 
 function cleanKind(v: unknown): AlertKind | null {
@@ -107,15 +108,19 @@ export async function runCreateAlert(
 ): Promise<ToolResult> {
   const fetched_at = now().toISOString()
   const userId = cleanUserId(args.userId)
-  const ticker = cleanTicker(args.ticker)
   const kind = cleanKind(args.kind)
+  // whale_convergence needs no ticker ('_ALL_' = any token).
+  const ticker = cleanTicker(args.ticker) || (kind === 'whale_convergence' ? CONVERGENCE_ANY_TICKER : null)
   if (!userId || !ticker || !kind) {
     return { ok: false, data: null, source: 'user_alerts', fetched_at, error: 'invalid_args' }
   }
 
   let threshold_pct: number | null = null
   let threshold_usd: number | null = null
-  if (kind === 'price_move') {
+  if (kind === 'whale_convergence') {
+    const n = Math.round(Number(args.threshold_pct))
+    threshold_pct = Number.isFinite(n) && n >= 2 && n <= 20 ? n : CONVERGENCE_DEFAULT_MIN_WHALES
+  } else if (kind === 'price_move') {
     const pct = Number(args.threshold_pct)
     threshold_pct = Number.isFinite(pct) && pct > 0 ? pct : 5
   } else if (kind === 'whale_flow') {

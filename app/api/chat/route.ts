@@ -113,7 +113,12 @@ async function executeConfirmedWrites(
     parts.push(listings.length ? `Your active alerts: ${listings.join('; ')}.` : 'You have no active alerts yet.')
   }
   if (failed.length) {
-    const reason = failed[0].error === 'rule_limit_reached' ? 'you have reached the 50-alert limit' : (failed[0].error || 'error')
+    const rawErr = String(failed[0].error || 'error')
+    const reason = rawErr === 'rule_limit_reached'
+      ? 'you have reached the 50-alert limit'
+      : /user_alerts_kind_check|chk_threshold_shape/.test(rawErr)
+        ? 'this alert type needs a one-time database update first — ask Eduardo to run supabase/migrations/20261001_whale_convergence_alert.sql'
+        : rawErr
     const labels = failed.map((f) => f.ticker).filter(Boolean).join(', ')
     parts.push(`Could not update ${labels || 'one item'} (${reason}).`)
   }
