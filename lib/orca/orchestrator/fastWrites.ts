@@ -24,6 +24,7 @@
 import { parseThreshold } from '../alerts/parseThreshold'
 import { detectAddress, type Chain } from './detectAddress'
 import { parseDuration } from './parseDuration'
+import { isValidTicker } from '../ticker-extractor'
 
 export type WriteTool =
   | 'addToWatchlist'
@@ -228,9 +229,40 @@ function pickTickerAnywhere(text: string): string | null {
     // — "can I add an alert?" minted ticker "I" (2026-07-20); real one-letter
     // symbols must be cashtagged ($X).
     if (!hadDollar && (t.length < 2 || TICKER_STOPWORDS.has(t) || /^\d+$/.test(t))) continue
+    // 2026-10-01: a bare word must also be a symbol Sonar knows. The stopword
+    // list could never be complete — "tell me when 3+ TRACKED whales buy the
+    // same token" minted a TRACKED alert and "NO, i meant …" a NO alert.
+    if (!hadDollar && !isValidTicker(t)) continue
     return t
   }
   return null
+}
+
+// Alert shapes Sonar cannot express yet (one alert = one token + one kind).
+const MULTI_WHALE_RE =
+  /\b(\d+\s*\+?\s*(?:or more\s+)?(?:tracked\s+|followed\s+)?whales?|multiple whales|several whales|same token|same coin|pile into|converg\w*)\b/i
+
+/**
+ * An alert request we recognise but cannot set — no known token, or a
+ * cross-wallet / convergence condition. Returns the clarification text, or
+ * null when the message is not an alert ask. Checked AFTER detectFastWrite.
+ */
+export function detectUnsupportedAlertAsk(message: string): string | null {
+  if (typeof message !== 'string') return null
+  const msg = message.trim()
+  if (!msg || msg.length > 240) return null
+  if (!ALERT_INTENT_RE.test(msg)) return null
+  if (!/\b(when|if|once|whenever|every time|as soon as)\b/i.test(msg)) return null
+  if (/\btell me (?:about|more)\b/i.test(msg)) return null
+  const convergence = MULTI_WHALE_RE.test(msg)
+  const ticker = pickTickerAnywhere(msg)
+  if (ticker && !convergence) return null
+  const supported =
+    'Alerts work per token right now: a price move (e.g. "alert me when SOL moves 5%"), whale flow over an amount ("notify me about BTC whale flow over $2M"), a Sonar signal change, or high-impact news.'
+  if (convergence) {
+    return `I can't set that one yet — alerts that watch several wallets at once (like 3+ tracked whales buying the same token) aren't available. ${supported} Which token should I watch, and which kind?`
+  }
+  return `Which token should I watch? ${supported}`
 }
 
 function detectAlertKind(msg: string): FastAlertKind | null {

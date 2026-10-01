@@ -26,7 +26,7 @@ import { formatHistoryForPrompt } from '@/lib/orca/chat/formatHistoryForPrompt'
 import { trimTurnsForPrompt } from '@/lib/orca/chat/trimHistory'
 import { derivePriorSubject, type LastChatRow } from '@/lib/orca/chat/priorSubject'
 import { getFollowupChips } from '@/lib/orca/suggestedChips'
-import { detectFastWrite, sanitiseConfirmCalls, type WriteCall } from '@/lib/orca/orchestrator/fastWrites'
+import { detectFastWrite, sanitiseConfirmCalls, type WriteCall, detectUnsupportedAlertAsk } from '@/lib/orca/orchestrator/fastWrites'
 import {
   runAddToWatchlist,
   runRemoveFromWatchlist,
@@ -776,6 +776,16 @@ export async function POST(request: Request) {
         }
       }
       const detection = detectFastWrite(message, { contextTicker })
+      if (!detection) {
+        // 2026-10-01: an alert ask we understand but cannot set (no known
+        // token, or a cross-wallet condition) gets a direct answer instead
+        // of a guessed ticker or a generic chat reply.
+        const unsupported = detectUnsupportedAlertAsk(message)
+        if (unsupported) {
+          console.log('ℹ️ Unsupported alert ask → clarify')
+          return NextResponse.json({ response: unsupported, type: 'clarify', intent: 'clarify' })
+        }
+      }
       if (detection) {
         // Read-only detections (listAlerts) execute immediately — asking the
         // user to confirm "Show your active alerts?" is pointless friction
