@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { trackServer } from '@/lib/analytics/trackServer'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
@@ -184,6 +185,13 @@ export async function POST(req) {
       metadata: { supabase_user_id: userId },
     })
     console.log('Checkout session created successfully:', session.id)
+    void trackServer(supabaseAdmin, {
+      userId,
+      event: 'checkout',
+      props: { price_id: priceId, session_id: session.id },
+      path: '/subscribe',
+    })
+
     return NextResponse.json({ id: session.id, url: session.url })
   } catch (err) {
     console.error('Stripe create session error:', err)

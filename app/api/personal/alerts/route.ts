@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
+import { trackServer } from '@/lib/analytics/trackServer'
 import {
   MAX_ACTIVE_RULES_PER_USER,
   DEFAULT_PRICE_MOVE_PCT,
@@ -125,6 +126,13 @@ export async function POST(request: Request) {
       .select('id, ticker, kind, threshold_pct, threshold_usd, address, chain, enabled, created_at, updated_at')
       .single()
     if (error) throw error
+
+    void trackServer(supabaseAdminFresh, {
+      userId: user.id,
+      event: 'alert_set',
+      props: { source: 'settings', kind, ticker: ticker || null },
+      path: '/dashboard/personal',
+    })
 
     return NextResponse.json({ rule: data }, { status: 201 })
   } catch (err) {

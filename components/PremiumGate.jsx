@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import Link from 'next/link'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
+import { track } from '@/lib/analytics/track'
 
 const TEASERS = [
   'See which whales are transacting right now',
@@ -128,6 +129,11 @@ export default function PremiumGate({ isPremium, feature = 'this feature', child
     }, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  // Funnel: a gate shown to a free user is a paywall view (once per mount).
+  useEffect(() => {
+    if (!isPremium) track('paywall_view', { feature: String(feature).slice(0, 60) })
+  }, [isPremium, feature])
 
   if (isPremium) return <>{children}</>
 

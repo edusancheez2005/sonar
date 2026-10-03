@@ -40,6 +40,83 @@ export interface CheckResult {
   triggered: number
   inserted: number
   capped: number
+  /** wallet_alerts rows folded into user_alerts during this run */
+  folded_wallet_alerts: number
+}
+
+/**
+ * Legacy `wallet_alerts` row (written by the "Set alert" button on wallet
+ * pages via /api/alerts) → an evaluable wallet_activity rule. Returns null
+ * for rows that cannot be delivered: no owner, inactive, or no address.
+ */
+export function walletAlertToRule(row: {
+  user_id?: string | null
+  address?: string | null
+  chain?: string | null
+  min_usd_value?: number | string | null
+  is_active?: boolean | null
+}): Omit<AlertRule, 'id'> | null {
+  const address = String(row?.address || '').trim()
+  const userId = row?.user_id ? String(row.user_id) : ''
+  if (!address || !userId) return null
+  if (row.is_active === false) return null
+  const min = Number(row.min_usd_value)
+  return {
+    user_id: userId,
+    ticker: null,
+    kind: 'wallet_activity',
+    threshold_pct: null,
+    threshold_usd: Number.isFinite(min) && min > 0 ? Math.round(min) : null,
+    address,
+    chain: row.chain ? String(row.chain) : null,
+    enabled: true,
+  }
+}
+
+/**
+ * Fold legacy wallet_alerts into user_alerts so ONE job evaluates and delivers
+ * them (2026-10-03: 21 rows existed and nothing had ever evaluated them).
+ * Idempotent: rows whose (user, address) already has a wallet_activity rule are
+ * skipped; new rules are inserted one by one so a single duplicate cannot
+ * abort the batch. Returns the rules created in this run so they are evaluated
+ * immediately rather than five minutes later.
+ */
+async function foldWalletAlerts(
+  supabase: SupabaseLike,
+  existing: AlertRule[],
+  deliverable: Set<string>
+): Promise<AlertRule[]> {
+  const { data } = await supabase
+    .from('wallet_alerts')
+    .select('id, user_id, address, chain, alert_type, min_usd_value, is_active')
+    .eq('is_active', true)
+    .limit(2000)
+  const rows = Array.isArray(data) ? data : []
+  if (rows.length === 0) return []
+  const have = new Set(
+    existing
+      .filter((r) => r.kind === 'wallet_activity' && r.address)
+      .map((r) => `${r.user_id}|${String(r.address).toLowerCase()}`)
+  )
+  const created: AlertRule[] = []
+  for (const row of rows) {
+    const rule = walletAlertToRule(row)
+    if (!rule || !deliverable.has(rule.user_id)) continue
+    const key = `${rule.user_id}|${rule.address!.toLowerCase()}`
+    if (have.has(key)) continue
+    have.add(key)
+    try {
+      const { data: ins } = await supabase
+        .from('user_alerts')
+        .insert(rule)
+        .select('id, user_id, ticker, kind, threshold_pct, threshold_usd, address, chain, enabled')
+      const made = (Array.isArray(ins) ? ins : []) as AlertRule[]
+      created.push(...made)
+    } catch {
+      /* duplicate or constraint — skip this one */
+    }
+  }
+  return created
 }
 
 function startOfUtcDay(at: Date): string {
@@ -105,6 +182,7 @@ export async function runCheckUserAlerts(
     triggered: 0,
     inserted: 0,
     capped: 0,
+    folded_wallet_alerts: 0,
   }
 
   // 1. Owners with in-app notifications enabled, plus their cadence style.
@@ -149,6 +227,17 @@ export async function runCheckUserAlerts(
     )
   } catch {
     return result
+  }
+
+  // 2b. Fold legacy wallet_alerts into user_alerts (one delivery path).
+  try {
+    const synced = await foldWalletAlerts(supabase, rules, new Set(styleByUser.keys()))
+    if (synced.length > 0) {
+      rules.push(...synced)
+      result.folded_wallet_alerts = synced.length
+    }
+  } catch {
+    /* best-effort */
   }
   result.rules_evaluated = rules.length
   if (rules.length === 0) return result
@@ -294,6 +383,7 @@ export async function runCheckUserAlerts(
         triggered: result.triggered,
         inserted: result.inserted,
         capped: result.capped,
+        folded_wallet_alerts: result.folded_wallet_alerts,
         at: now().toISOString(),
       },
     })

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { sendWelcomeEmail } from '@/app/lib/email'
 import { mapSignupExperience } from '@/lib/onboarding/firstRun'
+import { trackServer } from '@/lib/analytics/trackServer'
 
 function isValidEmail(email) {
   if (typeof email !== 'string') return false
@@ -68,7 +69,13 @@ export async function POST(req) {
       // The dashboard greets from user_metadata (full_name || name || email
       // prefix). Without this an email signup was greeted by their email prefix
       // even though they typed a display name.
-      ...(displayName ? { user_metadata: { full_name: displayName } } : {}),
+      // welcome_email_sent_at: this route sends the welcome email itself, so
+      // the shared first-login hook (/api/onboarding/first-login) must skip.
+      user_metadata: {
+        ...(displayName ? { full_name: displayName } : {}),
+        welcome_email_sent_at: new Date().toISOString(),
+        welcome_email_via: 'signup',
+      },
     })
 
     if (error) {
@@ -143,6 +150,14 @@ export async function POST(req) {
     try {
       await sendWelcomeEmail(email, displayName)
     } catch {}
+    if (data?.user?.id) {
+      void trackServer(supabaseAdmin, {
+        userId: data.user.id,
+        event: 'signup',
+        props: { method: 'email', via: 'signup_form' },
+        path: '/',
+      })
+    }
 
     return NextResponse.json({ ok: true, userId: data?.user?.id || null })
   } catch (err) {

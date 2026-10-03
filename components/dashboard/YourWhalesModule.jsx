@@ -166,6 +166,15 @@ function shortAddr(a) { return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '' }
 
 export default function YourWhalesModule() {
   const [state, setState] = useState({ status: 'loading' })
+  const [reloadKey, setReloadKey] = useState(0)
+
+  // The first-run picker (and any follow button) announces follows; refetch
+  // so the module flips from the nudge to the followed wallets at once.
+  useEffect(() => {
+    const bump = () => setReloadKey((k) => k + 1)
+    window.addEventListener('sonar:follows-changed', bump)
+    return () => window.removeEventListener('sonar:follows-changed', bump)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -200,7 +209,7 @@ export default function YourWhalesModule() {
       }
     })()
     return () => { cancelled = true }
-  }, [])
+  }, [reloadKey])
 
   if (state.status === 'loading' || state.status === 'hidden') return null
 

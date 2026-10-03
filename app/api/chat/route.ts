@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { trackServer } from '@/lib/analytics/trackServer'
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
@@ -82,6 +83,14 @@ async function executeConfirmedWrites(
         supabase
       )
       results.push({ ticker, tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed') })
+      if (r.ok) {
+        void trackServer(supabase, {
+          userId,
+          event: 'alert_set',
+          props: { source: 'orca', kind: String(call.args.kind || ''), ticker },
+          path: '/ai-advisor',
+        })
+      }
     } else if (call.tool === 'removeAlert') {
       touchedAlerts = true
       const r = await runRemoveAlert({ userId, ticker, kind: call.args.kind }, supabase)
@@ -470,6 +479,17 @@ export async function POST(request: Request) {
     
     console.log(`✅ Authenticated user: ${user.id}`)
     const userId = user.id
+
+    // Funnel: one orca_question per question POST (confirm trips are the
+    // second leg of a fast write, not a new question).
+    if (!(body as { confirm?: unknown })?.confirm && typeof message === 'string' && message.trim()) {
+      void trackServer(supabase, {
+        userId,
+        event: 'orca_question',
+        props: { chars: message.length },
+        path: '/ai-advisor',
+      })
+    }
     
     // Check rate limit
     const quotaStatus = await checkRateLimit(userId, supabaseUrl, supabaseKey)

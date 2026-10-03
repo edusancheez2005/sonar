@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import { track } from '@/lib/analytics/track'
 import { useRouter } from 'next/navigation'
 
 const PageContainer = styled.div`
@@ -435,6 +436,8 @@ const FAQAnswer = styled(motion.div)`
 `
 
 export default function SubscribePage() {
+  // Funnel: the pricing page itself is the paywall view for direct visits.
+  useEffect(() => { track('paywall_view', { feature: 'subscribe_page' }) }, [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)

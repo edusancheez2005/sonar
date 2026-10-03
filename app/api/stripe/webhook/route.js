@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { trackServer } from '@/lib/analytics/trackServer'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -76,6 +77,12 @@ export async function POST(req) {
             }, { onConflict: 'user_id' })
 
           console.log(`✅ Subscription activated for user ${userId} - plan set to premium`)
+          void trackServer(supabaseAdmin, {
+            userId,
+            event: 'paid',
+            props: { subscription_id: subscriptionId || null, mode: session.mode || null },
+            path: '/subscribe',
+          })
         }
         break
       }

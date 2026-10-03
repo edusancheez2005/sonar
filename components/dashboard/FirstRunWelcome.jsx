@@ -13,6 +13,12 @@
  * v2 (2026-09-30, Eduardo: "looks quite bad… analyse Nansen… cleaner /
  * bespoke") replaces the inline card with this dialog: no emoji, SVG icons,
  * generous spacing, one accent colour.
+ *
+ * v3 (2026-10-03, Week 1 "make the loops fire"): the "Follow a famous wallet"
+ * choice opens an in-dialog picker (six names, one-tap follows, optional
+ * email alerts) instead of sending people to the figures directory; the
+ * dialog also calls the shared post-signup hook (/api/onboarding/first-login,
+ * welcome email for Google/wallet signups) and logs welcome_choice.
  */
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -21,6 +27,8 @@ import styled, { keyframes } from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
 import { FIRST_QUESTION_URL, welcomeKeyFor } from '@/lib/onboarding/firstRun'
+import { FAMOUS_WALLETS } from '@/lib/onboarding/famousWallets'
+import { track } from '@/lib/analytics/track'
 
 const CYAN = '#00e5ff'
 
@@ -259,6 +267,131 @@ const Ghost = styled.button`
   &:hover { color: #e0e6ed; }
 `
 
+/* ---- Follow picker ------------------------------------------------------ */
+const PickerHead = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+`
+
+const TextButton = styled.button`
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  color: ${CYAN};
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  &:hover { text-decoration: underline; }
+  &:disabled { color: #5f7387; cursor: default; text-decoration: none; }
+`
+
+const WalletList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+`
+
+const WalletRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid ${(p) => (p.$on ? 'rgba(0, 229, 255, 0.35)' : 'rgba(255, 255, 255, 0.07)')};
+  background: ${(p) => (p.$on ? 'rgba(0, 229, 255, 0.06)' : 'rgba(255, 255, 255, 0.025)')};
+  transition: border-color 0.15s ease, background 0.15s ease;
+`
+
+const Avatar = styled.span`
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 229, 255, 0.10);
+  color: ${CYAN};
+  font-family: ${FONT_MONO};
+  font-size: 15px;
+  font-weight: 700;
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+`
+
+const WalletText = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+`
+
+const WalletName = styled.span`
+  font-size: 14px;
+  font-weight: 600;
+  color: #eaf0f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
+
+const WalletBlurb = styled.span`
+  font-size: 12px;
+  line-height: 1.35;
+  color: #8fa3b8;
+`
+
+const FollowBtn = styled.button`
+  flex: 0 0 auto;
+  min-width: 84px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid ${(p) => (p.$on ? 'transparent' : 'rgba(0, 229, 255, 0.45)')};
+  background: ${(p) => (p.$on ? 'rgba(0, 229, 255, 0.16)' : 'transparent')};
+  color: ${(p) => (p.$on ? CYAN : '#dff8fc')};
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: ${(p) => (p.$on ? 'default' : 'pointer')};
+  transition: background 0.15s ease, border-color 0.15s ease;
+  &:hover { background: ${(p) => (p.$on ? 'rgba(0, 229, 255, 0.16)' : 'rgba(0, 229, 255, 0.10)')}; }
+  &:disabled { opacity: 0.75; }
+`
+
+const EmailOpt = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: #9fb0c2;
+  cursor: pointer;
+  user-select: none;
+  input { accent-color: ${CYAN}; width: 15px; height: 15px; margin: 0; }
+`
+
+const Primary = styled.button`
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 18px;
+  background: ${CYAN};
+  color: #04202a;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+  &:hover { filter: brightness(1.08); }
+  &:disabled { opacity: 0.45; cursor: default; filter: none; }
+`
+
 /* Line icons (stroke = currentColor) */
 const IconChat = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -303,6 +436,10 @@ export default function FirstRunWelcome({ onTakeTour }) {
   const [level, setLevel] = useState(undefined) // undefined = loading, null = unknown
   const [picked, setPicked] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [panel, setPanel] = useState('choices') // 'choices' | 'follow'
+  const [token, setToken] = useState(null)
+  const [followed, setFollowed] = useState({}) // slug -> 'pending' | 'done' | 'error'
+  const [emailAlerts, setEmailAlerts] = useState(true)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -322,7 +459,21 @@ export default function FirstRunWelcome({ onTakeTour }) {
         } catch { return }
         setUserId(uid)
         setName(firstName(user))
+        setToken(data?.session?.access_token || null)
         setShow(true)
+        // Shared post-signup hook: welcome email for Google / wallet signups
+        // (email signups already got theirs) + the `signup` funnel event.
+        // Idempotent server-side; fire-and-forget here.
+        try {
+          const at = data?.session?.access_token
+          if (at) {
+            fetch('/api/onboarding/first-login', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${at}` },
+              keepalive: true,
+            }).catch(() => {})
+          }
+        } catch { /* ignore */ }
         const { data: row } = await sb
           .from('user_profile')
           .select('experience_level')
@@ -356,9 +507,62 @@ export default function FirstRunWelcome({ onTakeTour }) {
   }
 
   const takeTour = () => {
+    track('welcome_choice', { choice: 'tour' })
     close()
     if (typeof onTakeTour === 'function') setTimeout(onTakeTour, 120)
   }
+
+  const chooseFirstQuestion = () => {
+    track('welcome_choice', { choice: 'first_question' })
+    close()
+  }
+
+  const explore = () => {
+    track('welcome_choice', { choice: 'explore' })
+    close()
+  }
+
+  const openPicker = () => {
+    track('welcome_choice', { choice: 'follow' })
+    setPanel('follow')
+  }
+
+  const followedCount = Object.values(followed).filter((v) => v === 'done').length
+
+  const followSlugs = async (slugs) => {
+    if (!token || slugs.length === 0) return
+    setFollowed((f) => {
+      const next = { ...f }
+      for (const sl of slugs) if (next[sl] !== 'done') next[sl] = 'pending'
+      return next
+    })
+    try {
+      const res = await fetch('/api/onboarding/follow-famous', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slugs, email_alerts: emailAlerts }),
+      })
+      const json = res.ok ? await res.json() : null
+      const okSlugs = new Set((json?.results || []).filter((r) => r.ok).map((r) => r.slug))
+      setFollowed((f) => {
+        const next = { ...f }
+        for (const sl of slugs) next[sl] = okSlugs.has(sl) ? 'done' : 'error'
+        return next
+      })
+      if (okSlugs.size > 0) {
+        try { window.dispatchEvent(new Event('sonar:follows-changed')) } catch { /* ignore */ }
+      }
+    } catch {
+      setFollowed((f) => {
+        const next = { ...f }
+        for (const sl of slugs) if (next[sl] === 'pending') next[sl] = 'error'
+        return next
+      })
+    }
+  }
+
+  const followAll = () => followSlugs(FAMOUS_WALLETS.map((w) => w.slug).filter((sl) => followed[sl] !== 'done'))
+  const anyPending = Object.values(followed).some((v) => v === 'pending')
 
   const pickLevel = async (value) => {
     if (!userId || saving) return
@@ -384,6 +588,72 @@ export default function FirstRunWelcome({ onTakeTour }) {
       <Dialog role="dialog" aria-modal="true" aria-labelledby="sonar-welcome-title" data-testid="first-run-welcome">
         <Close type="button" aria-label="Dismiss welcome" onClick={close}>×</Close>
         <Brand src="/logo2.png" alt="Sonar" />
+        {panel === 'follow' ? (
+          <>
+            <Eyebrow>Follow famous wallets</Eyebrow>
+            <Heading id="sonar-welcome-title">Pick who to watch.</Heading>
+            <Sub>
+              One tap each. When they move you will see it on your dashboard and
+              in your inbox, and by email if you want.
+            </Sub>
+
+            <PickerHead>
+              <span style={{ fontSize: 12.5, color: '#7f92a6' }}>
+                {followedCount === 0
+                  ? 'Most people start with three.'
+                  : `Following ${followedCount} of ${FAMOUS_WALLETS.length}.`}
+              </span>
+              <TextButton type="button" onClick={followAll} disabled={anyPending || followedCount === FAMOUS_WALLETS.length}>
+                Follow all six
+              </TextButton>
+            </PickerHead>
+
+            <WalletList data-testid="famous-wallet-picker">
+              {FAMOUS_WALLETS.map((w) => {
+                const st = followed[w.slug]
+                const on = st === 'done'
+                return (
+                  <WalletRow key={w.slug} $on={on}>
+                    <Avatar aria-hidden>
+                      {w.avatar ? <img src={w.avatar} alt="" loading="lazy" /> : w.name.charAt(0)}
+                    </Avatar>
+                    <WalletText>
+                      <WalletName>{w.name}</WalletName>
+                      <WalletBlurb>{w.blurb}</WalletBlurb>
+                    </WalletText>
+                    <FollowBtn
+                      type="button"
+                      $on={on}
+                      disabled={on || st === 'pending'}
+                      aria-pressed={on}
+                      onClick={() => followSlugs([w.slug])}
+                    >
+                      {on ? 'Following' : st === 'pending' ? '…' : st === 'error' ? 'Retry' : 'Follow'}
+                    </FollowBtn>
+                  </WalletRow>
+                )
+              })}
+            </WalletList>
+
+            <Footer>
+              <EmailOpt>
+                <input
+                  type="checkbox"
+                  checked={emailAlerts}
+                  onChange={(e) => setEmailAlerts(e.target.checked)}
+                />
+                Also email me when they move
+              </EmailOpt>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <Ghost type="button" onClick={() => setPanel('choices')}>Back</Ghost>
+                <Primary type="button" onClick={close} disabled={followedCount === 0 || anyPending}>
+                  {followedCount === 0 ? 'Follow one to continue' : 'Done, show my dashboard'}
+                </Primary>
+              </div>
+            </Footer>
+          </>
+        ) : (
+          <>
         <Eyebrow>First time here</Eyebrow>
         <Heading id="sonar-welcome-title">
           Welcome to Sonar{name ? `, ${name}` : ''}.
@@ -394,7 +664,7 @@ export default function FirstRunWelcome({ onTakeTour }) {
         </Sub>
 
         <Choices>
-          <ChoiceLink href={FIRST_QUESTION_URL} onClick={close}>
+          <ChoiceLink href={FIRST_QUESTION_URL} onClick={chooseFirstQuestion}>
             <IconWrap><IconChat /></IconWrap>
             <ChoiceText>
               <ChoiceTitle>See what whales did today</ChoiceTitle>
@@ -403,14 +673,14 @@ export default function FirstRunWelcome({ onTakeTour }) {
             <ChoiceMeta>Takes 20 seconds</ChoiceMeta>
           </ChoiceLink>
 
-          <ChoiceLink href="/figures" onClick={close}>
+          <ChoiceButton type="button" onClick={openPicker} data-testid="welcome-follow">
             <IconWrap><IconStar /></IconWrap>
             <ChoiceText>
               <ChoiceTitle>Follow a famous wallet</ChoiceTitle>
               <ChoiceDesc>Vitalik, Binance, MrBeast. Get told the moment they move.</ChoiceDesc>
             </ChoiceText>
-            <ChoiceMeta>250+ verified wallets</ChoiceMeta>
-          </ChoiceLink>
+            <ChoiceMeta>One tap each</ChoiceMeta>
+          </ChoiceButton>
 
           <ChoiceButton type="button" onClick={takeTour}>
             <IconWrap><IconCompass /></IconWrap>
@@ -439,8 +709,10 @@ export default function FirstRunWelcome({ onTakeTour }) {
               </>
             ) : null}
           </LevelWrap>
-          <Ghost type="button" onClick={close}>Explore on my own</Ghost>
+          <Ghost type="button" onClick={explore}>Explore on my own</Ghost>
         </Footer>
+          </>
+        )}
       </Dialog>
     </Backdrop>,
     document.body

@@ -12,7 +12,8 @@
  *   whale_flow        -> all_whale_transactions (rolling 24h net buy-sell USD)
  *   signal_flip       -> token_signals (latest 2 rows; column is `signal`)
  *   news_high_impact  -> news_items (published in last 1h, |sentiment| >= 0.6)
- *   wallet_activity   -> all_whale_transactions (address moved in last 1h)
+ *   wallet_activity   -> all_whale_transactions + tracked_address_transfers +
+ *                        solana_transactions (address moved in last 1h, USD-valued)
  *   news_any          -> news_items (any article for ticker in last 1h)
  *   social_post       -> social_posts (any mention of ticker in last 1h)
  */
@@ -260,40 +261,86 @@ export async function evaluateWalletActivity(
   supabase: SupabaseLike,
   now: () => Date = () => new Date()
 ): Promise<NotificationCopy | null> {
+  const addr = String(address || '').trim()
+  if (!addr) return null
+  const sinceIso = new Date(now().getTime() - RECENT_WINDOW_MS).toISOString()
+  const minUsd = Number.isFinite(thresholdUsd as number) && Number(thresholdUsd) > 0 ? Number(thresholdUsd) : 0
+  // EVM addresses are stored mixed-case in some tables and lower-case in
+  // others; match both spellings. Solana (base58) is case-sensitive as-is.
+  const variants = Array.from(new Set([addr, addr.toLowerCase()]))
+
+  const seen = new Set<string>()
+  let txCount = 0
+  let totalUsd = 0
+  let topToken: string | null = null
+  let topTokenUsd = -1
+  const consider = (hash: unknown, usdRaw: unknown, token: unknown) => {
+    const v = Number(usdRaw)
+    // Dust / airdrop spam arrives with no USD value (2026-10-03: "ODYSSEY"
+    // sprayed at every famous wallet). Unknown-value transfers never alert.
+    if (!Number.isFinite(v) || v <= 0 || v < minUsd) return
+    const key = typeof hash === 'string' && hash ? hash.toLowerCase() : `${v}|${String(token ?? '')}`
+    if (seen.has(key)) return
+    seen.add(key)
+    txCount += 1
+    totalUsd += v
+    if (v > topTokenUsd && typeof token === 'string' && token) {
+      topTokenUsd = v
+      topToken = token
+    }
+  }
+  type Row = { transaction_hash?: unknown; tx_hash?: unknown; usd_value?: unknown; amount_usd?: unknown; token_symbol?: unknown }
+
+  // 1. Whale tape (large EVM transfers).
   try {
-    const addr = String(address || '').trim()
-    if (!addr) return null
-    const sinceIso = new Date(now().getTime() - RECENT_WINDOW_MS).toISOString()
-    const orFilter = `whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`
+    const orFilter = variants
+      .map((a) => `whale_address.eq.${a},from_address.eq.${a},to_address.eq.${a}`)
+      .join(',')
     let query = supabase
       .from('all_whale_transactions')
-      .select('usd_value, token_symbol, blockchain, timestamp')
+      .select('transaction_hash, usd_value, token_symbol, blockchain, timestamp')
       .or(orFilter)
       .gte('timestamp', sinceIso)
     if (chain) query = query.eq('blockchain', chain)
     const { data } = await query.order('timestamp', { ascending: false }).limit(100)
-    if (!Array.isArray(data) || data.length === 0) return null
-
-    const minUsd = Number.isFinite(thresholdUsd as number) ? Number(thresholdUsd) : 0
-    let txCount = 0
-    let totalUsd = 0
-    let topToken: string | null = null
-    let topTokenUsd = -1
-    for (const r of data as Array<{ usd_value?: number | string; token_symbol?: string }>) {
-      const v = Number(r.usd_value)
-      if (!Number.isFinite(v) || v < minUsd) continue
-      txCount += 1
-      totalUsd += Math.max(0, v)
-      if (v > topTokenUsd && typeof r.token_symbol === 'string' && r.token_symbol) {
-        topTokenUsd = v
-        topToken = r.token_symbol
-      }
-    }
-    if (txCount === 0) return null
-    return formatWalletActivity(addr, chain, txCount, totalUsd, topToken)
+    for (const r of (Array.isArray(data) ? data : []) as Row[]) consider(r.transaction_hash, r.usd_value, r.token_symbol)
   } catch {
-    return null
+    /* source unavailable — try the others */
   }
+
+  // 2. Tracked-address poller (followed / famous wallets). Per-address and
+  //    time-bounded, which is exactly what its (address, timestamp) index serves.
+  try {
+    let query = supabase
+      .from('tracked_address_transfers')
+      .select('tx_hash, amount_usd, token_symbol, chain, timestamp')
+      .in('address', variants)
+      .gte('timestamp', sinceIso)
+    if (chain) query = query.eq('chain', chain)
+    const { data } = await query.order('timestamp', { ascending: false }).limit(100)
+    for (const r of (Array.isArray(data) ? data : []) as Row[]) consider(r.tx_hash, r.amount_usd, r.token_symbol)
+  } catch {
+    /* ignore */
+  }
+
+  // 3. Solana monitor (Railway) — the whale tape above is EVM-only.
+  if (!chain || chain === 'solana') {
+    try {
+      const { data } = await supabase
+        .from('solana_transactions')
+        .select('transaction_hash, usd_value, token_symbol, timestamp')
+        .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
+        .gte('timestamp', sinceIso)
+        .order('timestamp', { ascending: false })
+        .limit(100)
+      for (const r of (Array.isArray(data) ? data : []) as Row[]) consider(r.transaction_hash, r.usd_value, r.token_symbol)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (txCount === 0) return null
+  return formatWalletActivity(addr, chain, txCount, totalUsd, topToken)
 }
 
 /**

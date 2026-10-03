@@ -29,10 +29,17 @@ export function OrcaBell() {
     refresh()
     const id = setInterval(refresh, POLL_MS)
     const onChanged = () => refresh()
+    // Tab comes back into view → refresh at once, so an alert that fired
+    // while the user was away shows the moment they return (not up to 60s).
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
     window.addEventListener('orca:notifications-changed', onChanged)
+    window.addEventListener('focus', onVisible)
+    document.addEventListener('visibilitychange', onVisible)
     return () => {
       clearInterval(id)
       window.removeEventListener('orca:notifications-changed', onChanged)
+      window.removeEventListener('focus', onVisible)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [mounted, refresh])
 

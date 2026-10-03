@@ -11,6 +11,8 @@ import { NextResponse } from 'next/server'
 import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 import type { SupabaseLike } from '@/lib/orca/alerts/evaluators'
 import { runCheckUserAlerts } from '@/lib/orca/alerts/runCheckUserAlerts'
+import { emailPendingNotifications } from '@/lib/orca/alerts/emailNotifications'
+import { sendAlertEmail } from '@/app/lib/email'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -22,7 +24,22 @@ async function handle(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
   const result = await runCheckUserAlerts(supabaseAdminFresh as unknown as SupabaseLike)
-  return NextResponse.json(result)
+
+  // Email delivery for opted-in users (one email / user / hour). Never fails
+  // the run: an email problem must not hide the in-app result.
+  let email: unknown = null
+  try {
+    email = await emailPendingNotifications(supabaseAdminFresh as unknown as SupabaseLike, {
+      getEmail: async (userId: string) => {
+        const { data } = await supabaseAdminFresh.auth.admin.getUserById(userId)
+        return data?.user?.email || null
+      },
+      sendAlertEmail: (to, items) => sendAlertEmail(to, items),
+    })
+  } catch (e) {
+    email = { error: e instanceof Error ? e.message : String(e) }
+  }
+  return NextResponse.json({ ...result, email })
 }
 
 export async function POST(req: Request): Promise<NextResponse> {

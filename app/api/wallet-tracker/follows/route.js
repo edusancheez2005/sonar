@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { trackServer } from '@/lib/analytics/trackServer'
 
 async function getUserFromRequest(req) {
   const authHeader = req.headers.get('authorization')
@@ -70,6 +71,13 @@ export async function POST(req) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  void trackServer(supabaseAdmin, {
+    userId: user.id,
+    event: 'follow',
+    props: { source: body.source === 'nudge' ? 'nudge' : 'follow_button', address: address.trim() },
+    path: req.headers.get('referer') ? new URL(req.headers.get('referer')).pathname : null,
+  })
 
   return NextResponse.json(data, { status: 201 })
 }

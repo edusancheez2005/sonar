@@ -133,6 +133,51 @@ export async function sendPersonalDigest(email, { moves = [], totalCount = 0 }) 
   })
 }
 
+// Alert email: the user's new ORCA notifications since the last email (at
+// most one email an hour, see lib/orca/alerts/emailNotifications.ts). Each
+// row deep-links to the thing that moved — the wallet page for wallet alerts,
+// the token page otherwise.
+function alertHref(n) {
+  const raw = (n && n.payload && n.payload.raw) || {}
+  if (n.kind === 'wallet_activity' && typeof raw.address === 'string' && raw.address) {
+    return `https://www.sonartracker.io/wallet-tracker/${encodeURIComponent(raw.address)}`
+  }
+  if (typeof raw.url === 'string' && /^https?:\/\//.test(raw.url)) return raw.url
+  const t = String(n.ticker || '').trim()
+  if (t && t !== '_ALL_') return `https://www.sonartracker.io/token/${encodeURIComponent(t.toLowerCase())}`
+  return 'https://www.sonartracker.io/dashboard'
+}
+
+export async function sendAlertEmail(email, items = []) {
+  const list = Array.isArray(items) ? items.filter(Boolean) : []
+  if (list.length === 0) return false
+  const rows = list
+    .map((n) => linkRow(alertHref(n), escapeHtml(n.title || 'Alert'), `${escapeHtml(n.body || '')} <span style="color:#6b7280;">· ${timeAgo(n.created_at)}</span>`))
+    .join('')
+  const count = list.length
+  const bodyHtml = `
+    <p style="margin:0 0 16px;color:#d1d5db;font-size:14px;line-height:1.7;">
+      ${count === 1 ? 'One of your alerts just fired.' : `${count} of your alerts just fired.`}
+      Here is what moved:
+    </p>
+    ${rows}
+    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px 0 8px;">
+      <tr><td style="border-radius:8px;background:#22d3ee;">
+        <a href="https://www.sonartracker.io/dashboard" style="display:inline-block;padding:11px 24px;color:#0a1621;font-weight:700;font-size:14px;text-decoration:none;">Open Sonar →</a>
+      </td></tr>
+    </table>`
+  return sendTransactionalEmail({
+    to: email,
+    subject: count === 1 ? `Sonar alert: ${String(list[0].title || '').slice(0, 80)}` : `Sonar: ${count} alerts fired`,
+    html: renderEmailShell({
+      title: count === 1 ? 'Your alert fired' : `${count} alerts fired`,
+      subtitle: 'Live from the wallets and tokens you asked Sonar to watch',
+      bodyHtml,
+      footerNote: `You're receiving this because email alerts are switched on for your Sonar account. Turn them off any time under Settings → Notifications. Market data is informational only and not investment advice.`,
+    }),
+  })
+}
+
 function timeAgo(ts) {
   const ms = Date.now() - new Date(ts).getTime()
   if (!Number.isFinite(ms) || ms < 0) return 'just now'

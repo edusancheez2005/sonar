@@ -39,10 +39,16 @@ function makeSupabase(config: {
       if (table === 'user_profile') return builder(config.profiles ?? [])
       if (table === 'user_alerts') return builder(config.rules ?? [])
       if (table === 'price_snapshots') {
-        // Resolve to a single row keyed by the ticker the cron is asking about.
-        // The eq() arg is swallowed, so return the only configured ticker.
+        // The evaluator pairs the newest snapshot with the oldest one >= 45 min
+        // back to compute a ~1h move. priceByTicker holds the desired % move;
+        // the eq() arg is swallowed, so return the only configured ticker.
         const vals = Object.values(config.priceByTicker ?? {})
-        return builder(vals.length ? [{ price_change_24h: vals[0] }] : [])
+        if (!vals.length) return builder([])
+        const pct = Number(vals[0])
+        return builder([
+          { price_usd: 100 * (1 + pct / 100), timestamp: '2026-06-03T11:55:00Z' },
+          { price_usd: 100, timestamp: '2026-06-03T11:00:00Z' },
+        ])
       }
       if (table === 'user_notifications') {
         const used = Array.from({ length: config.notificationsUsed ?? 0 }, (_, i) => ({ id: i }))
