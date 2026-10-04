@@ -484,7 +484,8 @@ export async function POST(request: Request) {
     // second leg of a fast write, not a new question).
     if (!(body as { confirm?: unknown })?.confirm && typeof message === 'string' && message.trim()) {
       // source separates real engagement from the scripted first question
-      // (auto_first: Google sign-up; auto_link: the welcome dialog's link).
+      // (auto_first: right after sign-up, email or Google; auto_link: a click
+      // on a send=1 link such as the welcome dialog's).
       const rawSource = (body as { source?: unknown })?.source
       const source = typeof rawSource === 'string' && ['typed', 'chip', 'auto_link', 'auto_first'].includes(rawSource) ? rawSource : 'typed'
       void trackServer(supabase, {

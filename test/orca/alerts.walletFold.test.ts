@@ -10,6 +10,7 @@ import {
   walletAlertToRule,
   mergeWalletAlertRows,
   effectiveWalletThreshold,
+  ruleChainFor,
   LARGE_TX_DEFAULT_USD,
 } from '@/lib/orca/alerts/runCheckUserAlerts'
 import { evaluateWalletActivity, addressVariants, DEFAULT_WALLET_MIN_USD } from '@/lib/orca/alerts/evaluators'
@@ -276,5 +277,44 @@ describe('runCheckUserAlerts — wallet noise guards', () => {
     })
     const res = await runCheckUserAlerts(sb as any, { now: NOW })
     expect(res.inserted).toBe(0)
+  })
+})
+
+describe('ruleChainFor', () => {
+  it('keeps EVM chain-agnostic and names non-EVM chains by shape or hint', () => {
+    expect(ruleChainFor(EVM_LOWER, 'base')).toBeNull()
+    expect(ruleChainFor(SOL)).toBe('solana')
+    expect(ruleChainFor('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')).toBe('bitcoin')
+    expect(ruleChainFor('bc1qazcm763858nkj2dj986etajv6wquslv8uxwczt')).toBe('bitcoin')
+    expect(ruleChainFor('TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR')).toBe('tron')
+    expect(ruleChainFor(SOL, 'solana')).toBe('solana')
+  })
+})
+
+describe('runCheckUserAlerts — dedup across runs and hours', () => {
+  const ruleA = { id: 'rA', user_id: 'u1', ticker: null, kind: 'wallet_activity', threshold_pct: null, threshold_usd: null, address: EVM_LOWER, chain: null, enabled: true }
+  const ruleB = { ...ruleA, id: 'rB', address: '0x1234567890abcdef1234567890abcdef12345678' }
+  it('does not re-notify a transaction on the next run through another rule of the same user', async () => {
+    const sb = makeSupabase({
+      existingRules: [ruleB],
+      tape: [{ transaction_hash: '0xSHARED', usd_value: 3_000_000, token_symbol: 'USDT' }],
+      recentNotifications: [
+        { rule_id: 'rA', kind: 'wallet_activity', title: 't', payload: { raw: { txHashes: ['0xshared'] } }, created_at: '2026-10-03T11:30:00Z' },
+      ],
+    })
+    const res = await runCheckUserAlerts(sb as any, { now: NOW })
+    expect(res.inserted).toBe(0)
+  })
+  it('skips a rule that already notified this hour without spending a cap slot', async () => {
+    const sb = makeSupabase({
+      existingRules: [ruleA],
+      tape: [{ transaction_hash: '0xNEW', usd_value: 3_000_000, token_symbol: 'USDT' }],
+      recentNotifications: [
+        { rule_id: 'rA', kind: 'wallet_activity', title: 't', payload: { raw: { txHashes: ['0xother'] } }, created_at: '2026-10-03T12:00:00Z' },
+      ],
+    })
+    const res = await runCheckUserAlerts(sb as any, { now: () => new Date('2026-10-03T12:20:00Z') })
+    expect(res.inserted).toBe(0)
+    expect(res.capped).toBe(1)
   })
 })

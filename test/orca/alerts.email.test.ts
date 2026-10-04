@@ -50,7 +50,8 @@ describe('emailPendingNotifications', () => {
     })
     const sent: any[] = []
     const res = await emailPendingNotifications(sb as any, deps(sent), { now: NOW })
-    expect(res).toMatchObject({ candidates: 3, users_considered: 2, sent: 1, marked: 2, skipped_opt_out: 1 })
+    // u2 is opted out: its rows are never read, so they do not count as candidates.
+    expect(res).toMatchObject({ candidates: 2, users_considered: 1, sent: 1, marked: 2 })
     expect(sent).toEqual([{ to: 'one@example.com', n: 2, total: 2, unsub: 'https://u' }])
     expect(sb.updates.find((u) => u.table === 'user_notifications')?.ids).toEqual([1, 2])
     expect(sb.updates.find((u) => u.table === 'user_profile')?.userId).toBe('u1')
@@ -125,5 +126,40 @@ describe('emailPendingNotifications', () => {
     }, { now: NOW })
     expect(res.sent).toBe(0)
     expect(sb.updates).toHaveLength(0)
+  })
+})
+
+describe('emailPendingNotifications — failure handling', () => {
+  it('sends nothing when the "sent today" read fails (cannot prove the cap)', async () => {
+    const sb: any = {
+      updates: [] as any[],
+      from(table: string) {
+        let cols = ''
+        const b: any = {
+          select: (c: string) => { cols = c; return b },
+          is: () => b, gte: () => b, order: () => b, in: () => b, eq: () => b,
+          limit: () => {
+            if (table === 'user_profile') return Promise.resolve({ data: [{ user_id: 'u1', notifications_email: true, notifications_last_email_at: null, notification_style: 'frequent' }] })
+            if (cols.trim() === 'user_id, emailed_at') return Promise.resolve({ data: null, error: { message: 'statement timeout' } })
+            return Promise.resolve({ data: [n(1, 'u1')] })
+          },
+          update: () => ({ in: () => Promise.resolve({}), eq: () => Promise.resolve({}) }),
+        }
+        return b
+      },
+    }
+    const sent: any[] = []
+    const res = await emailPendingNotifications(sb, deps(sent), { now: NOW })
+    expect(sent).toHaveLength(0)
+    expect(res.sent).toBe(0)
+  })
+  it('stops between users once the deadline has passed', async () => {
+    const sb = makeSupabase({
+      pending: [n(1, 'u1')],
+      profiles: [{ user_id: 'u1', notifications_email: true, notifications_last_email_at: null, notification_style: 'balanced' }],
+    })
+    const sent: any[] = []
+    await emailPendingNotifications(sb as any, deps(sent), { now: NOW, deadlineMs: Date.now() - 1 })
+    expect(sent).toHaveLength(0)
   })
 })

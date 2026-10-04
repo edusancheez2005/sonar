@@ -25,6 +25,7 @@ async function handle(req: Request): Promise<NextResponse> {
   if (!process.env.CRON_SECRET || auth !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
+  const startedAt = Date.now()
   const result = await runCheckUserAlerts(supabaseAdminFresh as unknown as SupabaseLike)
 
   // Email delivery for opted-in users with a verified address (cadence and
@@ -46,7 +47,7 @@ async function handle(req: Request): Promise<NextResponse> {
         return { email: user.email as string, unsubscribeUrl: unsubscribeUrl(userId) }
       },
       sendAlertEmail: (to, items, opts) => sendAlertEmail(to, items, opts),
-    })
+    }, { deadlineMs: startedAt + 45_000 }) // maxDuration is 60s
   } catch (e) {
     email = { error: e instanceof Error ? e.message : String(e) }
   }

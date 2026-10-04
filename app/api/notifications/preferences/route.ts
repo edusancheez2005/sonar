@@ -15,19 +15,25 @@
 import { NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
-import { emailStateOf, requestAlertEmailConsent, type EmailState } from '@/lib/notifications/emailConsent'
+import {
+  emailStateOf,
+  explicitEmailChoice,
+  recordEmailChoice,
+  requestAlertEmailConsent,
+  type EmailState,
+} from '@/lib/notifications/emailConsent'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const STYLES = new Set(['quiet', 'balanced', 'frequent'])
 
-async function currentEmailState(userId: string): Promise<EmailState> {
+async function currentEmailInfo(userId: string): Promise<{ state: EmailState; choiceMade: boolean }> {
   try {
     const { data } = await supabaseAdminFresh.auth.admin.getUserById(userId)
-    return emailStateOf(data?.user as any)
+    return { state: emailStateOf(data?.user as any), choiceMade: explicitEmailChoice(data?.user as any) !== null }
   } catch {
-    return 'pending'
+    return { state: 'pending', choiceMade: false }
   }
 }
 
@@ -36,13 +42,13 @@ export async function GET(request: Request) {
     const user = await getUserFromRequest(request)
     if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
 
-    const [{ data, error }, email_state] = await Promise.all([
+    const [{ data, error }, info] = await Promise.all([
       supabaseAdminFresh
         .from('user_profile')
         .select('notifications_in_app, notification_style, notifications_email')
         .eq('user_id', user.id)
         .maybeSingle(),
-      currentEmailState(user.id),
+      currentEmailInfo(user.id),
     ])
     if (error) throw error
 
@@ -51,7 +57,8 @@ export async function GET(request: Request) {
         notifications_in_app: data?.notifications_in_app ?? true,
         notification_style: data?.notification_style ?? 'balanced',
         notifications_email: data?.notifications_email ?? false,
-        email_state,
+        email_state: info.state,
+        email_choice_made: info.choiceMade,
       },
       { headers: { 'Cache-Control': 'private, no-store' } }
     )
@@ -91,6 +98,7 @@ export async function PATCH(request: Request) {
         }
       }
       patch.notifications_email = (body as any).notifications_email
+      await recordEmailChoice(supabaseAdminFresh as any, user.id, (body as any).notifications_email ? 'on' : 'off')
     }
 
     const { data, error } = await supabaseAdminFresh
@@ -100,7 +108,7 @@ export async function PATCH(request: Request) {
       .single()
     if (error) throw error
 
-    return NextResponse.json({ preferences: data, email_state: email_state ?? (await currentEmailState(user.id)) })
+    return NextResponse.json({ preferences: data, email_state: email_state ?? (await currentEmailInfo(user.id)).state })
   } catch (err) {
     console.error('[api/notifications/preferences PATCH] failure', err)
     return NextResponse.json({ error: 'internal_error' }, { status: 500 })

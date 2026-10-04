@@ -582,7 +582,12 @@ export default function AskOrcaClient({
     if (autoSentRef.current || !session || embedded || messages.length > 0) return
     let q = null
     let origin = 'auto_link'
-    if (autoSend && initialQ) q = initialQ
+    if (autoSend && initialQ) {
+      q = initialQ
+      // Email sign-up lands here via FIRST_QUESTION_URL with the flag armed:
+      // scripted, not a click on the welcome dialog's link.
+      if (consumeFirstQuestion()) origin = 'auto_first'
+    }
     // Google sign-up cannot carry query params through the OAuth redirect, so
     // Landing arms a sessionStorage flag instead (lib/onboarding/firstRun.js).
     else if (!initialQProp && !initialQ && consumeFirstQuestion()) {

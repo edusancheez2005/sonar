@@ -13,6 +13,7 @@
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { verifyEmailLink } from '@/lib/notifications/emailLinks'
 import { noticePage, htmlResponse } from '@/lib/notifications/noticePage'
+import { recordEmailChoice } from '@/lib/notifications/emailConsent'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -37,7 +38,7 @@ export async function GET(req) {
   if (!verifyEmailLink('unsubscribe', uid, sig)) return invalid()
   return htmlResponse(noticePage({
     title: 'Turn off alert emails?',
-    body: 'You will stop getting Sonar alert emails. Alerts still show in your Sonar inbox, and you can switch emails back on any time.',
+    body: 'You will stop getting Sonar alert emails and the daily "Your whales moved" email. Alerts still show in your Sonar inbox, and you can switch emails back on any time.',
     form: { action: `/api/notifications/unsubscribe?u=${encodeURIComponent(uid)}&s=${encodeURIComponent(sig)}`, label: 'Turn off alert emails' },
   }))
 }
@@ -49,13 +50,15 @@ export async function POST(req) {
     await supabaseAdmin
       .from('user_profile')
       .upsert({ user_id: uid, notifications_email: false, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    // Explicit "off": also stops the daily "Your whales moved" digest.
+    await recordEmailChoice(supabaseAdmin, uid, 'off')
   } catch (e) {
     console.error('[unsubscribe] update failed', e?.message || e)
     return htmlResponse(noticePage({ title: 'Something went wrong', body: 'Please try again, or switch alert emails off in your alert settings.', link: SETTINGS }), 500)
   }
   return htmlResponse(noticePage({
     title: 'Alert emails are off',
-    body: 'You will not get any more Sonar alert emails. Your alerts keep working in the Sonar inbox.',
+    body: 'You will not get any more Sonar alert or daily whale emails. Your alerts keep working in the Sonar inbox.',
     link: SETTINGS,
   }))
 }

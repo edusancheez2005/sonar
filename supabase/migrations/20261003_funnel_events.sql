@@ -41,16 +41,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_funnel_events_stripe_event
   ON public.funnel_events (event, (props->>'stripe_event_id'))
   WHERE props ? 'stripe_event_id';
 
--- Daily funnel for the dashboard / Saif: distinct users per event per day.
+-- Daily funnel for the dashboard / Saif: distinct users per event and stage
+-- per day. stage separates e.g. checkout/session_created from
+-- checkout/trial_started, and paid/first_charge from paid/trial_converted;
+-- it is NULL for events without one.
 CREATE OR REPLACE VIEW public.funnel_daily AS
 SELECT
   date_trunc('day', created_at)::date AS day,
   event,
+  props->>'stage'                  AS stage,
   count(*)                         AS events,
   count(DISTINCT user_id)          AS users
 FROM public.funnel_events
-GROUP BY 1, 2
-ORDER BY 1 DESC, 2;
+GROUP BY 1, 2, 3
+ORDER BY 1 DESC, 2, 3;
 
 -- Views run with their owner's rights, which bypass the table's RLS, and
 -- Supabase grants new public objects to anon/authenticated by default. Without

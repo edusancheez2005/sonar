@@ -111,13 +111,24 @@ async function followOne(user, slug) {
   const picks = await chooseAddresses(entity)
   if (picks.length === 0) return { slug, ok: false, error: 'no_addresses' }
 
-  // 2a. wallet_follows (feeds Your whales + the daily digest). New rows only
-  //     are returned, so a re-follow does not count as a new follow.
-  const followRows = picks.map((a) => ({ user_id: user.id, address: a.address, nickname: entity.display_name }))
-  const { data: newFollows, error: fErr } = await supabaseAdmin
+  // 2a. wallet_follows (feeds Your whales + the daily digest). A wallet already
+  //     followed in any spelling is not followed twice; new rows only are
+  //     returned, so a re-follow does not count as a new follow.
+  const { data: already } = await supabaseAdmin
     .from('wallet_follows')
-    .upsert(followRows, { onConflict: 'user_id,address', ignoreDuplicates: true })
     .select('address')
+    .eq('user_id', user.id)
+    .in('address', picks.flatMap((a) => addressVariants(a.address)))
+  const followed = new Set((already || []).map((r) => canonicalAddress(String(r.address))))
+  const followRows = picks
+    .filter((a) => !followed.has(a.address))
+    .map((a) => ({ user_id: user.id, address: a.address, nickname: entity.display_name }))
+  const { data: newFollows, error: fErr } = followRows.length
+    ? await supabaseAdmin
+        .from('wallet_follows')
+        .upsert(followRows, { onConflict: 'user_id,address', ignoreDuplicates: true })
+        .select('address')
+    : { data: [], error: null }
   if (fErr) return { slug, ok: false, error: fErr.message }
 
   // 2b. entity_watchlist (figures directory "Following" dot)

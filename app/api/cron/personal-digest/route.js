@@ -16,6 +16,8 @@
 
 import { NextResponse } from 'next/server'
 import { canonicalAddress } from '@/lib/wallet/addressVariants'
+import { explicitEmailChoice } from '@/lib/notifications/emailConsent'
+import { unsubscribeUrl } from '@/lib/notifications/emailLinks'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { sendPersonalDigest, isDeliverableEmail } from '@/app/lib/email'
 
@@ -49,7 +51,10 @@ export async function GET(request) {
   const allAddresses = new Set()
   for (const f of follows) {
     if (!followsByUser.has(f.user_id)) followsByUser.set(f.user_id, new Map())
-    followsByUser.get(f.user_id).set(f.address, f.nickname || null)
+    // Keyed canonically so one wallet followed in two spellings counts once.
+    const key = canonicalAddress(f.address)
+    const inner = followsByUser.get(f.user_id)
+    if (!inner.has(key) || (!inner.get(key) && f.nickname)) inner.set(key, f.nickname || null)
     // whale_address is lower-case for EVM; follows may be checksummed.
     allAddresses.add(canonicalAddress(f.address))
   }
@@ -124,12 +129,12 @@ export async function GET(request) {
     // Collect this user's followed-wallet moves
     const moves = []
     for (const addr of addrMap.keys()) {
-      const list = txByAddress.get(canonicalAddress(addr))
+      const list = txByAddress.get(addr)
       if (!list) continue
       for (const t of list) {
         moves.push({
           address: addr,
-          display_name: addrMap.get(addr) || nameByAddress.get(addr) || shortAddr(addr),
+          display_name: addrMap.get(addr) || nameByAddress.get(addr) || shortAddr(addr), // addr is canonical
           classification: t.classification,
           token: t.token_symbol,
           usd_value: t.usd_value,
@@ -145,14 +150,19 @@ export async function GET(request) {
 
     // Resolve email from auth.users
     let email = null
+    let authUser = null
     try {
       const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId)
-      email = u?.user?.email || null
+      authUser = u?.user || null
+      email = authUser?.email || null
     } catch { /* skip on lookup failure */ }
     // Wallet sign-ins have a placeholder <0x…>@wallet.sonartracker.io address.
     if (!isDeliverableEmail(email)) continue
+    // An explicit "off" (Email toggle, welcome-dialog box, unsubscribe link)
+    // stops this email too; users who never chose keep the July behaviour.
+    if (explicitEmailChoice(authUser) === 'off') { skippedQuiet++; continue }
 
-    const ok = await sendPersonalDigest(email, { moves, totalCount: moves.length })
+    const ok = await sendPersonalDigest(email, { moves, totalCount: moves.length }, { unsubscribeUrl: unsubscribeUrl(userId) })
     if (ok) {
       sent++
       await supabaseAdmin

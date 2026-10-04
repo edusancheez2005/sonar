@@ -5,7 +5,7 @@ vi.mock('@/app/lib/email', async () => {
   return { ...actual, sendAlertEmailConfirmation: vi.fn(async () => true) }
 })
 
-import { signEmailLink, verifyEmailLink, unsubscribeUrl, confirmUrl, CONFIRM_TTL_MS } from '@/lib/notifications/emailLinks'
+import { signEmailLink, verifyEmailLink, unsubscribeUrl, confirmUrl, emailBinding, CONFIRM_TTL_MS } from '@/lib/notifications/emailLinks'
 import { emailStateOf, isProviderVerified, requestAlertEmailConsent } from '@/lib/notifications/emailConsent'
 import { isDeliverableEmail, sendAlertEmailConfirmation } from '@/app/lib/email'
 
@@ -25,15 +25,17 @@ describe('signed email links', () => {
     expect(verifyEmailLink('unsubscribe', UID, sig.slice(0, -1) + (sig.endsWith('A') ? 'B' : 'A'))).toBe(false)
     expect(verifyEmailLink('unsubscribe', 'not-a-uuid', sig)).toBe(false)
   })
-  it('expires confirmation links', () => {
+  it('expires confirmation links and binds them to the address they were sent to', () => {
     const now = Date.parse('2026-10-04T12:00:00Z')
-    const url = new URL(confirmUrl(UID, now)!)
+    const url = new URL(confirmUrl(UID, 'a@corp.com', now)!)
     const exp = Number(url.searchParams.get('e'))
     const s = url.searchParams.get('s')
+    const bind = emailBinding('A@corp.com ') // case/space-insensitive
     expect(exp).toBe(now + CONFIRM_TTL_MS)
-    expect(verifyEmailLink('confirm', UID, s, exp, now + 1000)).toBe(true)
-    expect(verifyEmailLink('confirm', UID, s, exp, exp + 1)).toBe(false)
-    expect(verifyEmailLink('confirm', UID, s, exp + 1, now)).toBe(false) // expiry is signed
+    expect(verifyEmailLink('confirm', UID, s, exp, now + 1000, bind)).toBe(true)
+    expect(verifyEmailLink('confirm', UID, s, exp, exp + 1, bind)).toBe(false)
+    expect(verifyEmailLink('confirm', UID, s, exp + 1, now, bind)).toBe(false) // expiry is signed
+    expect(verifyEmailLink('confirm', UID, s, exp, now + 1000, emailBinding('new@corp.com'))).toBe(false) // email changed
   })
   it('builds absolute links on the production host', () => {
     expect(unsubscribeUrl(UID)).toMatch(/^https:\/\/www\.sonartracker\.io\/api\/notifications\/unsubscribe\?u=/)
@@ -61,7 +63,10 @@ describe('deliverable addresses and consent state', () => {
     expect(isProviderVerified(google)).toBe(true)
     expect(emailStateOf(google)).toBe('verified')
     expect(emailStateOf(plain)).toBe('pending')
-    expect(emailStateOf({ ...plain, app_metadata: { alert_email_verified_at: '2026-10-04T00:00:00Z' } })).toBe('verified')
+    const confirmed = { ...plain, app_metadata: { alert_email_verified_at: '2026-10-04T00:00:00Z', alert_email_verified_for: emailBinding('a@corp.com') } }
+    expect(emailStateOf(confirmed)).toBe('verified')
+    // a confirmation for an old address does not carry over to a new one
+    expect(emailStateOf({ ...confirmed, email: 'new@corp.com' })).toBe('pending')
     expect(emailStateOf({ id: UID, email: '0xabc@wallet.sonartracker.io' })).toBe('undeliverable')
   })
 })
@@ -71,13 +76,13 @@ describe('requestAlertEmailConsent', () => {
   beforeEach(() => { process.env.EMAIL_LINK_SECRET = 'test-secret'; vi.mocked(sendAlertEmailConfirmation).mockClear() })
   afterEach(() => { process.env.EMAIL_LINK_SECRET = prev })
 
-  function admin(user: any) {
+  function admin(user: any, updateError: any = null) {
     const updates: any[] = []
     return {
       updates,
       auth: { admin: {
         getUserById: async () => ({ data: { user } }),
-        updateUserById: async (_id: string, attrs: any) => { updates.push(attrs); return {} },
+        updateUserById: async (_id: string, attrs: any) => { updates.push(attrs); return { error: updateError } },
       } },
     }
   }
@@ -99,9 +104,9 @@ describe('requestAlertEmailConsent', () => {
   it('does not resend within a day, and never from the cron once sent', async () => {
     const now = Date.parse('2026-10-04T12:00:00Z')
     const sentAt = new Date(now - 3 * 3600 * 1000).toISOString()
-    const a = admin({ id: UID, email: 'a@corp.com', app_metadata: { alert_email_confirm_sent_at: sentAt }, identities: [] })
+    const a = admin({ id: UID, email: 'a@corp.com', app_metadata: { alert_email_confirm_sent_at: sentAt, alert_email_confirm_sent_for: emailBinding('a@corp.com') }, identities: [] })
     expect(await requestAlertEmailConsent(a as any, UID, { nowMs: now })).toBe('pending')
-    const old = admin({ id: UID, email: 'a@corp.com', app_metadata: { alert_email_confirm_sent_at: new Date(now - 3 * 86400000).toISOString() }, identities: [] })
+    const old = admin({ id: UID, email: 'a@corp.com', app_metadata: { alert_email_confirm_sent_at: new Date(now - 3 * 86400000).toISOString(), alert_email_confirm_sent_for: emailBinding('a@corp.com') }, identities: [] })
     expect(await requestAlertEmailConsent(old as any, UID, { nowMs: now, onlyIfNeverSent: true })).toBe('pending')
     expect(sendAlertEmailConfirmation).not.toHaveBeenCalled()
   })
@@ -109,5 +114,35 @@ describe('requestAlertEmailConsent', () => {
     const a = admin({ id: UID, email: '0xabc@wallet.sonartracker.io', identities: [] })
     expect(await requestAlertEmailConsent(a as any, UID)).toBe('undeliverable')
     expect(sendAlertEmailConfirmation).not.toHaveBeenCalled()
+  })
+})
+
+describe('requestAlertEmailConsent — claim before send', () => {
+  const prev = process.env.EMAIL_LINK_SECRET
+  beforeEach(() => { process.env.EMAIL_LINK_SECRET = 'test-secret'; vi.mocked(sendAlertEmailConfirmation).mockClear() })
+  afterEach(() => { process.env.EMAIL_LINK_SECRET = prev })
+  it('does not send when the claim cannot be written (no 5-minute resend loop)', async () => {
+    const a = {
+      auth: { admin: {
+        getUserById: async () => ({ data: { user: { id: UID, email: 'a@corp.com', app_metadata: {}, identities: [] } } }),
+        updateUserById: async () => ({ error: { message: 'rate limited' } }),
+      } },
+    }
+    expect(await requestAlertEmailConsent(a as any, UID)).toBe('pending')
+    expect(sendAlertEmailConfirmation).not.toHaveBeenCalled()
+  })
+  it('sends again after the address changes', async () => {
+    const now = Date.parse('2026-10-04T12:00:00Z')
+    const updates: any[] = []
+    const a = {
+      auth: { admin: {
+        getUserById: async () => ({ data: { user: { id: UID, email: 'new@corp.com', identities: [],
+          app_metadata: { alert_email_confirm_sent_at: new Date(now - 3600000).toISOString(), alert_email_confirm_sent_for: emailBinding('old@corp.com') } } } }),
+        updateUserById: async (_id: string, attrs: any) => { updates.push(attrs); return { error: null } },
+      } },
+    }
+    expect(await requestAlertEmailConsent(a as any, UID, { nowMs: now })).toBe('pending')
+    expect(sendAlertEmailConfirmation).toHaveBeenCalledTimes(1)
+    expect(updates[0].app_metadata.alert_email_confirm_sent_for).toBe(emailBinding('new@corp.com'))
   })
 })

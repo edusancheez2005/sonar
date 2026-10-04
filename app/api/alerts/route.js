@@ -4,6 +4,7 @@ import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { trackServer } from '@/lib/analytics/trackServer'
 import { syncFoldedWalletRule } from '@/lib/orca/alerts/walletAlertSync'
 import { normaliseAddress } from '@/lib/orca/alerts/validate'
+import { canonicalAddress } from '@/lib/wallet/addressVariants'
 
 function envMissing() {
   return !(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) ||
@@ -76,7 +77,7 @@ export async function POST(req) {
     .from('wallet_alerts')
     .insert({
       user_id: user.id,
-      address: address.trim(),
+      address: canonicalAddress(address),
       chain: chain || null,
       alert_type,
       min_usd_value: min_usd_value != null ? Number(min_usd_value) : null,

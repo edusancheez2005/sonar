@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { trackServer } from '@/lib/analytics/trackServer'
-import { addressVariants } from '@/lib/wallet/addressVariants'
+import { addressVariants, canonicalAddress } from '@/lib/wallet/addressVariants'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,24 +89,50 @@ export async function DELETE(req) {
     try {
       const { data: ent } = await supabaseAdmin
         .from('curated_entities')
-        .select('display_name')
+        .select('display_name, addresses')
         .eq('slug', entity_ref.trim())
         .maybeSingle()
       if (ent?.display_name) {
-        const { data: removed } = await supabaseAdmin
+        // The picker chose among the entity's first 12 addresses; follows it
+        // made carry the figure's name, even if later renamed or re-cased.
+        const declared = (Array.isArray(ent.addresses) ? ent.addresses : [])
+          .map((a) => (a && typeof a.address === 'string' ? canonicalAddress(a.address) : ''))
+          .filter(Boolean)
+        const entityVariants = Array.from(new Set(declared.slice(0, 12).flatMap((a) => addressVariants(a))))
+        const { data: byName } = await supabaseAdmin
           .from('wallet_follows')
           .delete()
           .eq('user_id', user.id)
           .eq('nickname', ent.display_name)
           .select('address')
-        const addrs = (removed || []).map((r) => r.address).filter(Boolean)
-        if (addrs.length > 0) {
-          await supabaseAdmin
-            .from('user_alerts')
-            .delete()
+        const { data: byAddr } = entityVariants.length
+          ? await supabaseAdmin
+              .from('wallet_follows')
+              .delete()
+              .eq('user_id', user.id)
+              .in('address', entityVariants)
+              .select('address')
+          : { data: [] }
+        const addrs = Array.from(new Set([...(byName || []), ...(byAddr || [])].map((r) => r.address).concat(declared.slice(0, 12))))
+        const ruleVariants = Array.from(new Set(addrs.flatMap((a) => addressVariants(a))))
+        if (ruleVariants.length > 0) {
+          // Keep alerts the user set themselves on a wallet page.
+          const { data: own } = await supabaseAdmin
+            .from('wallet_alerts')
+            .select('address')
             .eq('user_id', user.id)
-            .eq('kind', 'wallet_activity')
-            .in('address', Array.from(new Set(addrs.flatMap((a) => addressVariants(a)))))
+            .eq('is_active', true)
+            .in('address', ruleVariants)
+          const keep = new Set((own || []).flatMap((r) => addressVariants(r.address)))
+          const drop = ruleVariants.filter((a) => !keep.has(a))
+          if (drop.length > 0) {
+            await supabaseAdmin
+              .from('user_alerts')
+              .delete()
+              .eq('user_id', user.id)
+              .eq('kind', 'wallet_activity')
+              .in('address', drop)
+          }
         }
       }
     } catch { /* the figure unfollow itself succeeded */ }

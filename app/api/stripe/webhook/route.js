@@ -11,6 +11,39 @@ export const dynamic = 'force-dynamic'
 // failed card so a hiccup doesn't instantly lock a paying user out.
 const PREMIUM_STATUSES = new Set(['trialing', 'active', 'past_due'])
 
+function idOf(v) {
+  return typeof v === 'string' ? v : v && typeof v === 'object' && typeof v.id === 'string' ? v.id : null
+}
+
+/**
+ * Funnel `paid` = the FIRST money actually collected on a subscription, once.
+ * Written from checkout.session.completed (immediate charge) or invoice.paid
+ * (trial conversion, delayed payment methods), whichever arrives first.
+ * Never throws: a funnel problem must not fail the webhook and trigger retries.
+ */
+async function trackPaidOnce({ userId, subscriptionId, stage, amount, stripeEventId }) {
+  try {
+    if (!userId) return
+    if (subscriptionId) {
+      const { data, error } = await supabaseAdmin
+        .from('funnel_events')
+        .select('id')
+        .eq('event', 'paid')
+        .eq('props->>subscription_id', subscriptionId)
+        .limit(1)
+      if (error || (Array.isArray(data) && data.length > 0)) return
+    }
+    await trackServer(supabaseAdmin, {
+      userId,
+      event: 'paid',
+      props: { stage, subscription_id: subscriptionId || null, amount: Number(amount || 0), stripe_event_id: stripeEventId || null },
+      path: '/subscribe',
+    })
+  } catch {
+    /* ignore */
+  }
+}
+
 async function resolveUserId(stripe, subscription) {
   if (subscription.metadata?.supabase_user_id) return subscription.metadata.supabase_user_id
   try {
@@ -77,24 +110,34 @@ export async function POST(req) {
             }, { onConflict: 'user_id' })
 
           console.log(`✅ Subscription activated for user ${userId} - plan set to premium`)
-          // A 7-day trial completes checkout with nothing charged
-          // (payment_status 'no_payment_required'): that is a checkout stage,
-          // not revenue. `paid` is a real first charge here, or the trial
-          // converting (customer.subscription.updated, trialing → active).
-          // stripe_event_id is unique per event in funnel_events, so a
-          // redelivered webhook cannot add a second row.
+          // Funnel. Money taken now → `paid` (first charge). Otherwise this is
+          // a checkout stage: a free trial, a delayed payment method (SEPA,
+          // Bacs, ACH) or a 100%-off code. The first real charge arrives later
+          // as invoice.paid. stripe_event_id is unique per event in
+          // funnel_events, so a redelivered webhook cannot add a second row.
+          const subId = idOf(subscriptionId)
           const chargedNow = session.payment_status === 'paid' && Number(session.amount_total || 0) > 0
-          await trackServer(supabaseAdmin, {
-            userId,
-            event: chargedNow ? 'paid' : 'checkout',
-            props: {
-              stage: chargedNow ? 'first_charge' : 'trial_started',
-              subscription_id: subscriptionId || null,
-              amount_total: Number(session.amount_total || 0),
-              stripe_event_id: event.id || null,
-            },
-            path: '/subscribe',
-          })
+          if (chargedNow) {
+            await trackPaidOnce({ userId, subscriptionId: subId, stage: 'first_charge', amount: session.amount_total, stripeEventId: event.id })
+          } else {
+            let trialing = false
+            try {
+              if (subId) {
+                const sub = await stripe.subscriptions.retrieve(subId)
+                trialing = sub?.status === 'trialing' || !!sub?.trial_end
+              }
+            } catch { /* label falls back below */ }
+            await trackServer(supabaseAdmin, {
+              userId,
+              event: 'checkout',
+              props: {
+                stage: trialing ? 'trial_started' : session.payment_status === 'unpaid' ? 'pending_payment' : 'no_charge',
+                subscription_id: subId,
+                stripe_event_id: event.id || null,
+              },
+              path: '/subscribe',
+            })
+          }
         }
         break
       }
@@ -141,16 +184,27 @@ export async function POST(req) {
 
         console.log(`✅ Subscription ${status} for user ${userId} - plan set to ${plan}`)
 
-        // Trial converted: the first real charge after the free trial.
-        const prevStatus = event.data?.previous_attributes?.status
-        if (event.type === 'customer.subscription.updated' && prevStatus === 'trialing' && subscription.status === 'active') {
-          await trackServer(supabaseAdmin, {
-            userId,
-            event: 'paid',
-            props: { stage: 'trial_converted', subscription_id: subscription.id, stripe_event_id: event.id || null },
-            path: '/subscribe',
-          })
-        }
+        // (trialing → active happens when the trial ENDS, about an hour before
+        //  Stripe charges the card and even if the charge then fails, so it
+        //  is not a revenue signal; invoice.paid below is.)
+        break
+      }
+      case 'invoice.paid': {
+        // The first real charge on a subscription: after a free trial, a
+        // delayed payment method, or the first period of a no-trial plan.
+        // Needs `invoice.paid` enabled on this webhook endpoint in Stripe.
+        const inv = event.data.object
+        const subId = idOf(inv.subscription) || idOf(inv.parent?.subscription_details?.subscription)
+        if (!subId || !(Number(inv.amount_paid) > 0)) break
+        const meta = inv.subscription_details?.metadata || inv.parent?.subscription_details?.metadata || {}
+        const userId = meta.supabase_user_id || (await resolveUserId(stripe, { customer: inv.customer, metadata: meta }))
+        await trackPaidOnce({
+          userId,
+          subscriptionId: subId,
+          stage: inv.billing_reason === 'subscription_create' ? 'first_charge' : 'trial_converted',
+          amount: inv.amount_paid,
+          stripeEventId: event.id,
+        })
         break
       }
       default:

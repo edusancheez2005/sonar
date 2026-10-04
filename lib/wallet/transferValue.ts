@@ -41,12 +41,24 @@ export type NativePrices = Record<string, number>
 
 type SupabaseLike = { from: (table: string) => any }
 
-const PRICE_TTL_MS = 5 * 60 * 1000
-let priceCache: { at: number; prices: NativePrices } | null = null
+const PRICE_TTL_MS = 6 * 60 * 1000 // just over the 5-minute cron
+// The in-flight promise is cached, so the dozens of wallet evaluations a cron
+// run fires at once share ONE set of price queries.
+let priceCache: { at: number; promise: Promise<NativePrices> } | null = null
 
-/** Latest USD price per native ticker (ETH, POL, SOL, BNB); cached 5 min per instance. */
-export async function loadNativePrices(supabase: SupabaseLike, nowMs: number = Date.now()): Promise<NativePrices> {
-  if (priceCache && nowMs - priceCache.at < PRICE_TTL_MS) return priceCache.prices
+/** Latest USD price per native ticker (ETH, POL, SOL, BNB); cached per instance. */
+export function loadNativePrices(supabase: SupabaseLike, nowMs: number = Date.now()): Promise<NativePrices> {
+  if (priceCache && nowMs - priceCache.at < PRICE_TTL_MS) return priceCache.promise
+  const promise = fetchNativePrices(supabase)
+  priceCache = { at: nowMs, promise }
+  promise.then(
+    (p) => { if (Object.keys(p).length === 0 && priceCache?.promise === promise) priceCache = null },
+    () => { if (priceCache?.promise === promise) priceCache = null }
+  )
+  return promise
+}
+
+async function fetchNativePrices(supabase: SupabaseLike): Promise<NativePrices> {
   const tickers = Array.from(new Set(Object.values(NATIVE_TICKER_BY_CHAIN)))
   const prices: NativePrices = {}
   await Promise.all(
@@ -65,7 +77,6 @@ export async function loadNativePrices(supabase: SupabaseLike, nowMs: number = D
       }
     })
   )
-  priceCache = { at: nowMs, prices }
   return prices
 }
 

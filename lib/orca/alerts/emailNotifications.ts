@@ -76,10 +76,12 @@ function startOfUtcDay(ms: number): string {
   return d.toISOString()
 }
 
+const ID_CHUNK = 150
+
 export async function emailPendingNotifications(
   supabase: SupabaseLike,
   deps: EmailDeps,
-  opts: { now?: () => Date } = {}
+  opts: { now?: () => Date; deadlineMs?: number } = {}
 ): Promise<EmailResult> {
   const now = opts.now ?? (() => new Date())
   const result: EmailResult = {
@@ -94,87 +96,90 @@ export async function emailPendingNotifications(
   }
   const nowMs = now().getTime()
   const sinceIso = new Date(nowMs - EMAIL_LOOKBACK_MS).toISOString()
+  // supabase-js reports failures as { error } rather than throwing, so every
+  // read checks it: when we cannot see the state we send nothing this run.
 
-  // 1. Recent, un-emailed notifications (served by idx_user_notif_email_pending).
-  let pending: PendingNotification[] = []
-  try {
-    const { data } = await supabase
-      .from('user_notifications')
-      .select('id, user_id, kind, ticker, title, body, payload, created_at')
-      .is('emailed_at', null)
-      .gte('created_at', sinceIso)
-      .order('created_at', { ascending: false })
-      .limit(1000)
-    pending = (Array.isArray(data) ? data : []) as PendingNotification[]
-  } catch {
-    return result
-  }
-  result.candidates = pending.length
-  if (pending.length === 0) return result
-
-  const byUser = new Map<string, PendingNotification[]>()
-  for (const n of pending) {
-    if (!n?.user_id) continue
-    const list = byUser.get(n.user_id) ?? []
-    list.push(n)
-    byUser.set(n.user_id, list)
-  }
-  result.users_considered = byUser.size
-  if (byUser.size === 0) return result
-  const userIds = Array.from(byUser.keys())
-
-  // 2. Opt-in, cadence style, last email.
+  // 1. Users who switched alert emails on (read first, so the pending window
+  //    below is not filled with everyone else's in-app rows).
   const prefs = new Map<string, { last: number | null; style: NotificationStyle }>()
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_profile')
       .select('user_id, notifications_email, notifications_last_email_at, notification_style')
-      .in('user_id', userIds)
-      .limit(1000)
-    for (const row of (Array.isArray(data) ? data : []) as Array<{
+      .eq('notifications_email', true)
+      .limit(5000)
+    if (error || !Array.isArray(data)) return result
+    for (const row of data as Array<{
       user_id: string
       notifications_email?: boolean | null
       notifications_last_email_at?: string | null
       notification_style?: unknown
     }>) {
-      if (row?.user_id && row.notifications_email === true) {
-        const last = row.notifications_last_email_at ? Date.parse(row.notifications_last_email_at) : NaN
-        prefs.set(row.user_id, { last: Number.isFinite(last) ? last : null, style: styleOf(row.notification_style) })
-      }
+      if (!row?.user_id || row.notifications_email !== true) continue
+      const last = row.notifications_last_email_at ? Date.parse(row.notifications_last_email_at) : NaN
+      prefs.set(row.user_id, { last: Number.isFinite(last) ? last : null, style: styleOf(row.notification_style) })
     }
   } catch {
     return result
   }
+  const optedIn = Array.from(prefs.keys())
+  if (optedIn.length === 0) return result
+
+  // 2. Their recent, un-emailed notifications.
+  const byUser = new Map<string, PendingNotification[]>()
+  for (let i = 0; i < optedIn.length; i += ID_CHUNK) {
+    try {
+      const { data, error } = await supabase
+        .from('user_notifications')
+        .select('id, user_id, kind, ticker, title, body, payload, created_at')
+        .in('user_id', optedIn.slice(i, i + ID_CHUNK))
+        .is('emailed_at', null)
+        .gte('created_at', sinceIso)
+        .order('created_at', { ascending: false })
+        .limit(1000)
+      if (error || !Array.isArray(data)) return result
+      for (const n of data as PendingNotification[]) {
+        if (!n?.user_id || !prefs.has(n.user_id)) continue
+        result.candidates += 1
+        const list = byUser.get(n.user_id) ?? []
+        list.push(n)
+        byUser.set(n.user_id, list)
+      }
+    } catch {
+      return result
+    }
+  }
+  result.users_considered = byUser.size
+  if (byUser.size === 0) return result
+  const withPending = Array.from(byUser.keys())
 
   // 3. Emails already sent today: one distinct emailed_at per email.
   const sentToday = new Map<string, Set<string>>()
-  const optedIn = userIds.filter((u) => prefs.has(u))
-  if (optedIn.length > 0) {
+  for (let i = 0; i < withPending.length; i += ID_CHUNK) {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('user_notifications')
         .select('user_id, emailed_at')
-        .in('user_id', optedIn)
+        .in('user_id', withPending.slice(i, i + ID_CHUNK))
         .gte('emailed_at', startOfUtcDay(nowMs))
         .limit(5000)
-      for (const r of (Array.isArray(data) ? data : []) as Array<{ user_id: string; emailed_at: string | null }>) {
+      if (error || !Array.isArray(data)) return result // cannot prove we are under the cap
+      for (const r of data as Array<{ user_id: string; emailed_at: string | null }>) {
         if (!r?.user_id || !r.emailed_at) continue
         const set = sentToday.get(r.user_id) ?? new Set<string>()
         set.add(r.emailed_at)
         sentToday.set(r.user_id, set)
       }
     } catch {
-      return result // cannot prove we are under the cap → send nothing this run
+      return result
     }
   }
 
-  // 4. One email per eligible user.
+  // 4. One email per eligible user, until the deadline (stop between users,
+  //    never between a send and its stamps).
   for (const [userId, all] of byUser) {
-    const pref = prefs.get(userId)
-    if (!pref) {
-      result.skipped_opt_out += 1
-      continue
-    }
+    if (opts.deadlineMs && Date.now() > opts.deadlineMs) break
+    const pref = prefs.get(userId)!
     const cap = Math.min(EMAIL_CAP_BY_STYLE[pref.style], MAX_EMAIL_DIGESTS_PER_DAY)
     if ((sentToday.get(userId)?.size ?? 0) >= cap) {
       result.skipped_daily_cap += 1
@@ -212,13 +217,13 @@ export async function emailPendingNotifications(
 
     const stamp = now().toISOString()
     try {
-      await supabase
+      const { error } = await supabase
         .from('user_notifications')
         .update({ emailed_at: stamp })
         .in('id', items.map((n) => n.id))
-      result.marked += items.length
+      if (!error) result.marked += items.length
     } catch {
-      /* the next run would re-send; acceptable vs. losing the alert */
+      /* the gap below still stops an immediate re-send */
     }
     try {
       await supabase

@@ -93,7 +93,7 @@ export async function sendWaitlistConfirmation(email) {
 // Personal daily digest: the user's FOLLOWED wallets' trades in the last 24h.
 // Only called when there is at least one move (no empty digests).
 // moves: [{ address, display_name, classification, token, usd_value, timestamp }]
-export async function sendPersonalDigest(email, { moves = [], totalCount = 0 }) {
+export async function sendPersonalDigest(email, { moves = [], totalCount = 0 }, { unsubscribeUrl } = {}) {
   const top = moves.slice(0, 5)
   const rows = top.map((m) => {
     const verb = String(m.classification || '').toUpperCase() === 'BUY' ? 'bought' : 'sold'
@@ -122,6 +122,7 @@ export async function sendPersonalDigest(email, { moves = [], totalCount = 0 }) 
       </td></tr>
     </table>`
 
+  const unsub = typeof unsubscribeUrl === 'string' && unsubscribeUrl ? unsubscribeUrl : null
   return sendTransactionalEmail({
     to: email,
     subject: `Your whales moved — ${totalCount} trade${totalCount === 1 ? '' : 's'} in the last 24h`,
@@ -129,8 +130,11 @@ export async function sendPersonalDigest(email, { moves = [], totalCount = 0 }) 
       title: 'Your whales moved',
       subtitle: 'Daily briefing on the wallets you follow',
       bodyHtml,
-      footerNote: `You're receiving this because you follow these wallets on Sonar Tracker. To stop daily briefings, set your notification style to Quiet at <a href="https://www.sonartracker.io/personalize" style="color:#22d3ee;">sonartracker.io/personalize</a>. Market data is informational only — not investment advice.`,
+      footerNote: `You're receiving this because you follow these wallets on Sonar. `
+        + (unsub ? `<a href="${escapeHtml(unsub)}" style="color:#9ca3af;">Turn off Sonar emails</a> with one click, or ` : '')
+        + `set your notification style to Quiet under <a href="${ALERTS_SETTINGS_URL}" style="color:#9ca3af;">Dashboard → Personal → Alerts</a>. Market data is informational only and not investment advice.`,
     }),
+    headers: unsub ? { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : null,
   })
 }
 

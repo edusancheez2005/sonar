@@ -9,7 +9,7 @@
  */
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { isDeliverableEmail } from '@/app/lib/email'
-import { verifyEmailLink } from '@/lib/notifications/emailLinks'
+import { verifyEmailLink, emailBinding } from '@/lib/notifications/emailLinks'
 import { noticePage, htmlResponse } from '@/lib/notifications/noticePage'
 
 export const dynamic = 'force-dynamic'
@@ -31,9 +31,22 @@ function invalid() {
   }), 400)
 }
 
+/** The link is bound to the address it was mailed to; check it against the account's current one. */
+async function loadIfValid(uid, sig, exp) {
+  if (!uid || !sig) return null
+  try {
+    const { data } = await supabaseAdmin.auth.admin.getUserById(uid)
+    const user = data?.user
+    if (!user || !isDeliverableEmail(user.email)) return null
+    return verifyEmailLink('confirm', uid, sig, exp, Date.now(), emailBinding(user.email)) ? user : null
+  } catch {
+    return null
+  }
+}
+
 export async function GET(req) {
   const { uid, sig, exp } = linkParams(req)
-  if (!verifyEmailLink('confirm', uid, sig, exp)) return invalid()
+  if (!(await loadIfValid(uid, sig, exp))) return invalid()
   return htmlResponse(noticePage({
     title: 'Confirm alert emails',
     body: 'Sonar will email this address when the wallets and tokens you follow move. At most 3 alert emails a day, and every email has a one-click off switch.',
@@ -43,13 +56,19 @@ export async function GET(req) {
 
 export async function POST(req) {
   const { uid, sig, exp } = linkParams(req)
-  if (!verifyEmailLink('confirm', uid, sig, exp)) return invalid()
+  const user = await loadIfValid(uid, sig, exp)
+  if (!user) return invalid()
   try {
-    const { data } = await supabaseAdmin.auth.admin.getUserById(uid)
-    const user = data?.user
-    if (!user || !isDeliverableEmail(user.email)) return invalid()
+    const nowIso = new Date().toISOString()
     await supabaseAdmin.auth.admin.updateUserById(uid, {
-      app_metadata: { ...(user.app_metadata || {}), alert_email_verified_at: new Date().toISOString(), alert_email_verified_via: 'link' },
+      app_metadata: {
+        ...(user.app_metadata || {}),
+        alert_email_verified_at: nowIso,
+        alert_email_verified_via: 'link',
+        alert_email_verified_for: emailBinding(user.email),
+        email_pref: 'on',
+        email_pref_at: nowIso,
+      },
     })
     await supabaseAdmin
       .from('user_profile')

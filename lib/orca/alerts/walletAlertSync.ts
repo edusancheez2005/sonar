@@ -13,8 +13,17 @@
  *     tab: deactivate the legacy rows so the fold does not recreate it.
  */
 import { normaliseAddress } from '@/lib/orca/alerts/validate'
-import { addressVariants } from '@/lib/orca/alerts/evaluators'
+import { addressVariants, EVM_ADDRESS_RE } from '@/lib/wallet/addressVariants'
 import { mergeWalletAlertRows, type WalletAlertRow } from '@/lib/orca/alerts/runCheckUserAlerts'
+
+/**
+ * Match an address column in any stored spelling. EVM hex is matched with a
+ * case-insensitive equality (ilike without wildcards — hex has no % or _);
+ * base58 addresses are case-sensitive and matched exactly.
+ */
+function whereAddress(query: any, address: string): any {
+  return EVM_ADDRESS_RE.test(address) ? query.ilike('address', address) : query.in('address', addressVariants(address))
+}
 
 type SupabaseLike = { from: (table: string) => any }
 
@@ -25,20 +34,23 @@ export async function syncFoldedWalletRule(
 ): Promise<'updated' | 'created' | 'deleted' | 'noop'> {
   const address = normaliseAddress(rawAddress)
   if (!address || !userId) return 'noop'
-  const variants = addressVariants(address)
   try {
-    const { data: rows } = await supabase
-      .from('wallet_alerts')
-      .select('id, user_id, address, chain, alert_type, min_usd_value, is_active, created_at')
-      .eq('user_id', userId)
-      .in('address', variants)
-      .eq('is_active', true)
-    const { data: rules } = await supabase
-      .from('user_alerts')
-      .select('id, address')
-      .eq('user_id', userId)
-      .eq('kind', 'wallet_activity')
-      .in('address', variants)
+    const { data: rows } = await whereAddress(
+      supabase
+        .from('wallet_alerts')
+        .select('id, user_id, address, chain, alert_type, min_usd_value, is_active, created_at')
+        .eq('user_id', userId)
+        .eq('is_active', true),
+      address
+    )
+    const { data: rules } = await whereAddress(
+      supabase
+        .from('user_alerts')
+        .select('id, address')
+        .eq('user_id', userId)
+        .eq('kind', 'wallet_activity'),
+      address
+    )
     const existing = (Array.isArray(rules) ? rules : []) as Array<{ id: string; address: string }>
     const merged = mergeWalletAlertRows((Array.isArray(rows) ? rows : []) as WalletAlertRow[])[0]
 
@@ -50,7 +62,9 @@ export async function syncFoldedWalletRule(
     if (existing.length > 0) {
       await supabase
         .from('user_alerts')
-        .update({ threshold_usd: merged.threshold_usd, threshold_pct: null, chain: merged.chain, enabled: true, updated_at: new Date().toISOString() })
+        // The newest explicit wallet-page setting decides the floor; a rule the
+        // user switched off in the Alerts tab stays off.
+        .update({ threshold_usd: merged.threshold_usd, threshold_pct: null, chain: merged.chain, updated_at: new Date().toISOString() })
         .eq('user_id', userId)
         .in('id', existing.map((r) => r.id))
       return 'updated'
@@ -66,11 +80,10 @@ export async function retireWalletAlertsFor(supabase: SupabaseLike, userId: stri
   const address = normaliseAddress(rawAddress)
   if (!address || !userId) return
   try {
-    await supabase
-      .from('wallet_alerts')
-      .update({ is_active: false })
-      .eq('user_id', userId)
-      .in('address', addressVariants(address))
+    await whereAddress(
+      supabase.from('wallet_alerts').update({ is_active: false }).eq('user_id', userId),
+      address
+    )
   } catch {
     /* best-effort */
   }

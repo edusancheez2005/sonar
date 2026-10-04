@@ -73,7 +73,7 @@ export async function DELETE(req, { params }) {
 
   const { data: row } = await supabaseAdmin
     .from('wallet_alerts')
-    .select('address')
+    .select('address, is_active')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle()
@@ -88,7 +88,9 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Remove (or re-floor) the folded rule so the alert actually stops.
-  if (row?.address) await syncFoldedWalletRule(supabaseAdmin, user.id, row.address)
+  // Remove (or re-floor) the folded rule so the alert actually stops. A row
+  // that was already retired (its rule deleted in the Alerts tab) must not
+  // touch a rule the user created again since.
+  if (row?.address && row.is_active !== false) await syncFoldedWalletRule(supabaseAdmin, user.id, row.address)
   return NextResponse.json({ success: true })
 }

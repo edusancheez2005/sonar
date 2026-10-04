@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { trackServer } from '@/lib/analytics/trackServer'
+import { addressVariants, canonicalAddress } from '@/lib/wallet/addressVariants'
 
 async function getUserFromRequest(req) {
   const authHeader = req.headers.get('authorization')
@@ -62,9 +63,21 @@ export async function POST(req) {
     return NextResponse.json({ error: 'address is required' }, { status: 400 })
   }
 
+  // One wallet, one follow: an existing follow in another spelling (checksummed
+  // vs lower-case) is the same follow, and new follows are stored canonically.
+  const { data: existing } = await supabaseAdmin
+    .from('wallet_follows')
+    .select('address, followed_at, nickname')
+    .eq('user_id', user.id)
+    .in('address', addressVariants(address.trim()))
+    .limit(1)
+  if (Array.isArray(existing) && existing.length > 0) {
+    return NextResponse.json(existing[0], { status: 200 })
+  }
+
   const { data, error } = await supabaseAdmin
     .from('wallet_follows')
-    .upsert({ user_id: user.id, address: address.trim(), nickname: body.nickname || null }, { onConflict: 'user_id,address' })
+    .upsert({ user_id: user.id, address: canonicalAddress(address), nickname: body.nickname || null }, { onConflict: 'user_id,address' })
     .select('address, followed_at, nickname')
     .single()
 

@@ -54,6 +54,9 @@ export interface CheckResult {
 export const LARGE_TX_DEFAULT_USD = 100_000
 
 const SOLANA_LIKE_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+const BITCOIN_RE = /^(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[02-9ac-hj-np-z]{11,71})$/
+const TRON_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/
+const NON_EVM_CHAINS = new Set(['solana', 'bitcoin', 'tron'])
 
 export interface WalletAlertRow {
   id?: string
@@ -79,9 +82,20 @@ export function effectiveWalletThreshold(row: WalletAlertRow): number | null {
   return null
 }
 
-/** Chain stored on a wallet rule: only Solana narrows anything (EVM addresses are chain-agnostic). */
-export function ruleChainFor(address: string): string | null {
-  return SOLANA_LIKE_RE.test(address) && !address.startsWith('0x') ? 'solana' : null
+/**
+ * Chain stored on a wallet rule. EVM addresses are chain-agnostic (null): the
+ * same address is the same owner on every EVM chain. Non-EVM addresses keep
+ * their real chain — from the legacy row when it names one, else by shape
+ * (Bitcoin and Tron base58 must not be mistaken for Solana).
+ */
+export function ruleChainFor(address: string, hint?: string | null): string | null {
+  const a = String(address || '').trim()
+  if (!a || a.startsWith('0x')) return null
+  const h = String(hint || '').trim().toLowerCase()
+  if (NON_EVM_CHAINS.has(h)) return h
+  if (BITCOIN_RE.test(a)) return 'bitcoin'
+  if (TRON_RE.test(a)) return 'tron'
+  return SOLANA_LIKE_RE.test(a) ? 'solana' : null
 }
 
 /**
@@ -102,7 +116,7 @@ export function walletAlertToRule(row: WalletAlertRow): Omit<AlertRule, 'id'> | 
     threshold_pct: null,
     threshold_usd: effectiveWalletThreshold(row),
     address,
-    chain: ruleChainFor(address),
+    chain: ruleChainFor(address, row.chain),
     enabled: true,
   }
 }
@@ -437,6 +451,7 @@ export async function runCheckUserAlerts(
   const dayStartMs = Date.parse(dayStartIso)
   const recentCutoff = nowMs - RECENT_DUP_WINDOW_MS
   const lookbackIso = new Date(Math.min(dayStartMs, nowMs - WALLET_DEDUP_LOOKBACK_MS)).toISOString()
+  const hourStartMs = Date.parse(hour)
   for (const [userId, rawCandidates] of candidatesByUser) {
     const style = styleByUser.get(userId) ?? 'balanced'
     const cap = Math.min(DAILY_CAP_BY_STYLE[style], MAX_INAPP_PER_DAY)
@@ -446,8 +461,11 @@ export async function runCheckUserAlerts(
 
     let usedToday = 0
     const recentDupKeys = new Set<string>()
-    const notifiedTx = new Map<string, Set<string>>()
+    // Every tx hash any of this user's wallet alerts already notified: one
+    // on-chain move seen by two followed addresses notifies once, ever.
+    const notifiedTxUser = new Set<string>()
     const perRuleToday = new Map<string, number>()
+    const firedThisHour = new Set<string>()
     try {
       const { data } = await supabase
         .from('user_notifications')
@@ -468,13 +486,10 @@ export async function runCheckUserAlerts(
           usedToday += 1
           if (r.rule_id) perRuleToday.set(r.rule_id, (perRuleToday.get(r.rule_id) ?? 0) + 1)
         }
-        if (r.kind === 'wallet_activity' && r.rule_id) {
+        if (r.rule_id && Number.isFinite(ts) && ts >= hourStartMs) firedThisHour.add(r.rule_id)
+        if (r.kind === 'wallet_activity') {
           const hashes = r.payload?.raw?.txHashes
-          if (Array.isArray(hashes)) {
-            const set = notifiedTx.get(r.rule_id) ?? new Set<string>()
-            for (const h of hashes) if (typeof h === 'string') set.add(h)
-            notifiedTx.set(r.rule_id, set)
-          }
+          if (Array.isArray(hashes)) for (const h of hashes) if (typeof h === 'string') notifiedTxUser.add(h)
         } else if (Number.isFinite(ts) && ts >= recentCutoff && r.rule_id && r.title) {
           recentDupKeys.add(`${r.rule_id}|${r.title}`)
         }
@@ -490,6 +505,12 @@ export async function runCheckUserAlerts(
     const deduped: Candidate[] = []
     const claimed = new Set<string>() // one tx notifies once even if two followed addresses saw it
     for (const c of candidates) {
+      // The hourly unique key would drop it anyway; skip before it takes a cap
+      // slot or claims tx hashes the next hour should still pick up.
+      if (firedThisHour.has(c.rule.id)) {
+        result.capped += 1
+        continue
+      }
       if (c.rule.kind === 'wallet_activity') {
         if ((perRuleToday.get(c.rule.id) ?? 0) >= WALLET_RULE_DAILY_CAP) {
           result.capped += 1
@@ -497,8 +518,7 @@ export async function runCheckUserAlerts(
         }
         const raw = (c.copy.payload?.raw ?? {}) as { txs?: WalletTx[] }
         const txs = Array.isArray(raw.txs) ? raw.txs : []
-        const seen = notifiedTx.get(c.rule.id)
-        const fresh = txs.filter((t) => !(seen && seen.has(t.h)) && !claimed.has(t.h))
+        const fresh = txs.filter((t) => !notifiedTxUser.has(t.h) && !claimed.has(t.h))
         if (fresh.length === 0) {
           result.capped += 1
           continue

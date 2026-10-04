@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { addressVariants } from '@/lib/wallet/addressVariants'
+import { FAMOUS_WALLETS } from '@/lib/onboarding/famousWallets'
+
+const PICKER_NAMES = new Set(FAMOUS_WALLETS.map((w) => w.name))
 
 async function getUserFromRequest(req) {
   const authHeader = req.headers.get('authorization')
@@ -28,11 +31,36 @@ export async function DELETE(req, { params }) {
 
   // Any stored spelling (lower-case from the welcome picker, checksummed from
   // a wallet page URL) is the same follow.
-  const { error } = await supabaseAdmin
+  const variants = addressVariants(decodeURIComponent(String(address || '')))
+  const { data: removed, error } = await supabaseAdmin
     .from('wallet_follows')
     .delete()
     .eq('user_id', user.id)
-    .in('address', addressVariants(decodeURIComponent(String(address || ''))))
+    .in('address', variants)
+    .select('nickname')
+
+  // The welcome picker created an alert with this follow (nickname = the
+  // figure's name). Unfollowing the wallet stops it, unless the user also set
+  // their own alert on the wallet page.
+  if (!error && (removed || []).some((r) => PICKER_NAMES.has(r.nickname))) {
+    try {
+      const { data: ownAlerts } = await supabaseAdmin
+        .from('wallet_alerts')
+        .select('id')
+        .eq('user_id', user.id)
+        .in('address', variants)
+        .eq('is_active', true)
+        .limit(1)
+      if (!ownAlerts || ownAlerts.length === 0) {
+        await supabaseAdmin
+          .from('user_alerts')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('kind', 'wallet_activity')
+          .in('address', variants)
+      }
+    } catch { /* the unfollow itself succeeded */ }
+  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

@@ -31,6 +31,7 @@ import { FAMOUS_WALLETS } from '@/lib/onboarding/famousWallets'
 import { track } from '@/lib/analytics/track'
 
 const CYAN = '#00e5ff'
+const WELCOME_MAX_ACCOUNT_AGE_MS = 14 * 24 * 3600 * 1000
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -450,6 +451,11 @@ export default function FirstRunWelcome({ onTakeTour }) {
   const [token, setToken] = useState(null)
   const [followed, setFollowed] = useState({}) // slug -> 'pending' | 'done' | 'error'
   const [emailAlerts, setEmailAlerts] = useState(true)
+  // Email choice bookkeeping, read from async paths (Escape, in-flight follows):
+  // touched = the user changed the box; choiceMade = they chose before (then an
+  // untouched box must not overwrite it); applied/closed guard the one PATCH.
+  const emailRef = useRef({ alerts: true, touched: false, choiceMade: false, applied: false, closed: false })
+  emailRef.current.alerts = emailAlerts
   // Wallet sign-ins carry a placeholder address; never offer them email.
   const [canEmail, setCanEmail] = useState(true)
 
@@ -465,10 +471,22 @@ export default function FirstRunWelcome({ onTakeTour }) {
         const uid = user?.id || null
         if (cancelled || !uid) return
         const key = welcomeKeyFor(uid)
+        // Once per ACCOUNT: the localStorage key covers this browser, the
+        // user_metadata flag covers other devices, and accounts older than two
+        // weeks never see a "first time here" dialog.
+        const created = Date.parse(user?.created_at || '')
+        const isNewAccount = Number.isFinite(created) && Date.now() - created < WELCOME_MAX_ACCOUNT_AGE_MS
         try {
-          if (localStorage.getItem(key)) return // one time only, per account
+          if (localStorage.getItem(key)) return
+          if (user?.user_metadata?.welcome_seen_at || !isNewAccount) {
+            localStorage.setItem(key, 'seen')
+            return
+          }
           localStorage.setItem(key, 'seen')
         } catch { return }
+        try {
+          sb.auth.updateUser({ data: { welcome_seen_at: new Date().toISOString() } }).catch(() => {})
+        } catch { /* the local key still applies */ }
         setUserId(uid)
         setName(firstName(user))
         setToken(data?.session?.access_token || null)
@@ -501,24 +519,31 @@ export default function FirstRunWelcome({ onTakeTour }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show])
 
+  // Alert-email choice is applied once, as an explicit true/false, when the
+  // dialog closes after at least one follow (or when a follow still in flight
+  // at close lands) — so unticking before "Done" really means no emails.
+  // A stored choice is only overwritten if the user touched the box. Turning
+  // it on starts the double opt-in for addresses Google has not verified.
+  const applyEmailChoice = () => {
+    const st = emailRef.current
+    if (st.applied || !canEmail || !token) return
+    st.applied = true
+    if (!st.touched && st.choiceMade) return
+    try {
+      fetch('/api/notifications/preferences', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notifications_email: !!st.alerts }),
+        keepalive: true,
+      }).catch(() => {})
+    } catch { /* ignore */ }
+  }
+
   const close = () => {
     setShow(false)
     try { localStorage.setItem(welcomeKeyFor(userId), 'dismissed') } catch { /* ignore */ }
-    // Alert-email choice is applied once, as an explicit true/false, when the
-    // dialog closes after at least one follow — so unticking before "Done"
-    // really means no emails. Turning it on starts the double opt-in for
-    // addresses Google has not verified.
-    const followedAny = Object.values(followed).some((v) => v === 'done')
-    if (followedAny && canEmail && token) {
-      try {
-        fetch('/api/notifications/preferences', {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notifications_email: !!emailAlerts }),
-          keepalive: true,
-        }).catch(() => {})
-      } catch { /* ignore */ }
-    }
+    emailRef.current.closed = true
+    if (Object.values(followed).some((v) => v === 'done')) applyEmailChoice()
   }
   // The Escape listener is registered once per open; read the latest close.
   const closeRef = useRef(close)
@@ -543,6 +568,19 @@ export default function FirstRunWelcome({ onTakeTour }) {
   const openPicker = () => {
     track('welcome_choice', { choice: 'follow' })
     setPanel('follow')
+    // Show the stored email choice instead of a pre-ticked box when there is one.
+    if (!token) return
+    fetch('/api/notifications/preferences', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!json) return
+        if (json.email_state === 'undeliverable') setCanEmail(false)
+        if (json.email_choice_made) {
+          emailRef.current.choiceMade = true
+          if (!emailRef.current.touched) setEmailAlerts(!!json.notifications_email)
+        }
+      })
+      .catch(() => {})
   }
 
   const followedCount = Object.values(followed).filter((v) => v === 'done').length
@@ -569,6 +607,8 @@ export default function FirstRunWelcome({ onTakeTour }) {
       })
       if (okSlugs.size > 0) {
         try { window.dispatchEvent(new Event('sonar:follows-changed')) } catch { /* ignore */ }
+        // Closed while this follow was in flight: apply the email choice now.
+        if (emailRef.current.closed) applyEmailChoice()
       }
     } catch {
       setFollowed((f) => {
@@ -659,7 +699,10 @@ export default function FirstRunWelcome({ onTakeTour }) {
                   <input
                     type="checkbox"
                     checked={emailAlerts}
-                    onChange={(e) => setEmailAlerts(e.target.checked)}
+                    onChange={(e) => {
+                      emailRef.current.touched = true
+                      setEmailAlerts(e.target.checked)
+                    }}
                   />
                   Also email me when they move
                 </EmailOpt>

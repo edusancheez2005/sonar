@@ -1000,6 +1000,7 @@ const Landing = () => {
       setShowSignupModal(false);
       // First screen = ORCA already answering "what are whales doing today?"
       // (2026-09-30 activation redesign — value before any form).
+      armFirstQuestion(); // tags the scripted first question as auto_first in the funnel
       navigate(FIRST_QUESTION_URL);
     } catch (err) {
       const raw = (err && typeof err.message === 'string') ? err.message : (typeof err === 'string' ? err : (() => { try { return JSON.stringify(err); } catch { return ''; } })());

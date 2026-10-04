@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { addressVariants, canonicalAddress } from '@/lib/wallet/addressVariants'
 import { loadNativePrices, transferUsd } from '@/lib/wallet/transferValue'
+import { FAMOUS_WALLETS } from '@/lib/onboarding/famousWallets'
 
 // ?include=transfers adds USD-valued transfers from the tracked-address poller
 // (tracked_address_transfers). Famous wallets — exchanges, market makers,
@@ -9,6 +10,10 @@ import { loadNativePrices, transferUsd } from '@/lib/wallet/transferValue'
 // "Your whales" stayed "All quiet" for them while their alerts fired.
 const TRANSFER_MIN_USD = 1_000
 const TRANSFER_ADDR_CAP = 25
+const TRANSFER_PER_WALLET = 5
+// Picker follows carry the figure's name; use its alert floor so an exchange
+// hot wallet's $1K shuffles do not bury a founder's rare move.
+const FLOOR_BY_NAME = new Map(FAMOUS_WALLETS.map((w) => [w.name, w.minUsd]))
 
 async function recentTrackedMoves(follows, sinceIso) {
   const out = []
@@ -23,10 +28,14 @@ async function recentTrackedMoves(follows, sinceIso) {
         .in('address', addressVariants(f.address))
         .gte('timestamp', sinceIso)
         .order('timestamp', { ascending: false })
-        .limit(20)
+        .limit(50)
+      const floor = FLOOR_BY_NAME.get(f.nickname) ?? TRANSFER_MIN_USD
+      let kept = 0
       for (const r of data || []) {
+        if (kept >= TRANSFER_PER_WALLET) break
         const usd = transferUsd(r, prices)
-        if (usd === null || usd < TRANSFER_MIN_USD) continue
+        if (usd === null || usd < floor) continue
+        kept += 1
         out.push({
           whale_address: f.address,
           token_symbol: r.token_symbol || null,
@@ -75,10 +84,18 @@ export async function GET(req) {
     return NextResponse.json({ data: [], wallets: [] })
   }
 
-  const addresses = follows.map(f => f.address)
-  const nicknameMap = new Map(follows.map(f => [f.address, f.nickname]))
+  // One entry per wallet: the same wallet may be followed in two spellings
+  // (checksummed from a wallet page, lower-case from the welcome picker).
+  const followByCanon = new Map()
+  for (const f of follows) {
+    const k = canonicalAddress(f.address)
+    const prev = followByCanon.get(k)
+    if (!prev || (!prev.nickname && f.nickname)) followByCanon.set(k, f)
+  }
+  const uniqueFollows = Array.from(followByCanon.values())
+  const addresses = uniqueFollows.map(f => f.address)
+  const nicknameMap = new Map(uniqueFollows.map(f => [f.address, f.nickname]))
   // The whale tape stores EVM addresses lower-case; follows may be checksummed.
-  const followByCanon = new Map(follows.map(f => [canonicalAddress(f.address), f]))
   const tapeKeys = Array.from(followByCanon.keys())
 
   // Get wallet profiles for cards
@@ -151,10 +168,12 @@ export async function GET(req) {
   const include = String(searchParams.get('include') || '').split(',')
   if (include.includes('transfers')) {
     const dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
-    const moves = await recentTrackedMoves(follows, dayAgo)
+    const moves = await recentTrackedMoves(uniqueFollows, dayAgo)
     const seenHashes = new Set(feed.map(t => String(t.transaction_hash || '').toLowerCase()))
     for (const m of moves) {
-      if (seenHashes.has(String(m.transaction_hash || '').toLowerCase())) continue
+      const h = String(m.transaction_hash || '').toLowerCase()
+      if (seenHashes.has(h)) continue
+      seenHashes.add(h)
       feed.push({ ...m, entity_name: profileMap.get(m.whale_address)?.entity_name || null, smart_money_score: null })
     }
     feed = feed

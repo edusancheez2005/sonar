@@ -340,7 +340,7 @@ export async function evaluateWalletActivity(
   }
 
   // 3. Solana monitor — the whale tape above is EVM-first.
-  if (!isEvm) {
+  if (!isEvm && (chain === null || chain === 'solana')) {
     try {
       const { data } = await supabase
         .from('solana_transactions')

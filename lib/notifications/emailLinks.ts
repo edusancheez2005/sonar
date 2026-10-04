@@ -3,11 +3,12 @@
  * =============================================================================
  * unsubscribe — one-click opt-out from alert emails; never expires (RFC 8058
  *               List-Unsubscribe-Post points at the same URL).
- * confirm     — double opt-in for alert emails; expires after 7 days.
+ * confirm     — double opt-in for alert emails; expires after 7 days and is
+ *               bound to the address it was mailed to (an email change voids it).
  * HMAC-SHA256 over "purpose:userId:exp" with EMAIL_LINK_SECRET (falls back to
  * CRON_SECRET). No secret configured → no links (callers skip the feature).
  */
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
 export type EmailLinkPurpose = 'unsubscribe' | 'confirm'
 
@@ -19,11 +20,21 @@ function secret(): string | null {
   return process.env.EMAIL_LINK_SECRET || process.env.CRON_SECRET || null
 }
 
-export function signEmailLink(purpose: EmailLinkPurpose, userId: string, exp: number | null = null): string | null {
+/** Short digest of an email address, so a confirm link only works for the address it was sent to. */
+export function emailBinding(email: string | null | undefined): string {
+  return createHash('sha256').update(String(email || '').trim().toLowerCase()).digest('hex').slice(0, 16)
+}
+
+export function signEmailLink(
+  purpose: EmailLinkPurpose,
+  userId: string,
+  exp: number | null = null,
+  bind: string | null = null
+): string | null {
   const key = secret()
   if (!key || !UUID_RE.test(userId)) return null
   return createHmac('sha256', key)
-    .update(`${purpose}:${userId}:${exp ?? ''}`)
+    .update(`${purpose}:${userId}:${exp ?? ''}:${bind ?? ''}`)
     .digest('base64url')
     .slice(0, 32)
 }
@@ -33,11 +44,12 @@ export function verifyEmailLink(
   userId: string | null,
   sig: string | null,
   exp: number | null = null,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  bind: string | null = null
 ): boolean {
   if (!userId || !sig || !UUID_RE.test(userId)) return false
   if (exp !== null && (!Number.isFinite(exp) || exp < nowMs)) return false
-  const expected = signEmailLink(purpose, userId, exp)
+  const expected = signEmailLink(purpose, userId, exp, bind)
   if (!expected || expected.length !== sig.length) return false
   try {
     return timingSafeEqual(Buffer.from(expected), Buffer.from(sig))
@@ -51,8 +63,8 @@ export function unsubscribeUrl(userId: string): string | null {
   return s ? `${SITE_URL}/api/notifications/unsubscribe?u=${userId}&s=${s}` : null
 }
 
-export function confirmUrl(userId: string, nowMs: number = Date.now()): string | null {
+export function confirmUrl(userId: string, email: string, nowMs: number = Date.now()): string | null {
   const exp = nowMs + CONFIRM_TTL_MS
-  const s = signEmailLink('confirm', userId, exp)
+  const s = signEmailLink('confirm', userId, exp, emailBinding(email))
   return s ? `${SITE_URL}/api/notifications/email-consent?u=${userId}&e=${exp}&s=${s}` : null
 }
