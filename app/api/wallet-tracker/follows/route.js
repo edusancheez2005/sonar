@@ -72,11 +72,16 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  void trackServer(supabaseAdmin, {
+  let fromPath = null
+  try {
+    const ref = req.headers.get('referer')
+    if (ref) fromPath = new URL(ref).pathname
+  } catch { /* malformed referer — the follow still succeeded */ }
+  await trackServer(supabaseAdmin, {
     userId: user.id,
     event: 'follow',
     props: { source: body.source === 'nudge' ? 'nudge' : 'follow_button', address: address.trim() },
-    path: req.headers.get('referer') ? new URL(req.headers.get('referer')).pathname : null,
+    path: fromPath,
   })
 
   return NextResponse.json(data, { status: 201 })

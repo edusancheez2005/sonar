@@ -1,6 +1,6 @@
 'use client'
-// Cyan bell in the global nav. Shows an unread dot when the user has
-// unread ORCA notifications. Polls the inbox every 60s and also refreshes
+// Cyan bell in the global nav. Shows a numeric unread badge (9+ cap) when the
+// user has unread ORCA notifications. Polls the inbox every 60s and also refreshes
 // on the 'orca:notifications-changed' event so the dot clears instantly
 // after marking read. Clicking opens the OrcaInbox drawer.
 import React, { useCallback, useEffect, useState } from 'react'
@@ -81,17 +81,29 @@ export function OrcaBell() {
         {hasUnread && (
           <span
             data-testid="orca-bell-dot"
+            aria-hidden="true"
             style={{
               position: 'absolute',
-              top: 6,
-              right: 6,
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
+              top: -6,
+              right: -6,
+              minWidth: 18,
+              height: 18,
+              padding: '0 5px',
+              boxSizing: 'border-box',
+              borderRadius: 9,
               background: TILE.cyan,
-              boxShadow: '0 0 6px rgba(0,229,255,0.8)',
+              color: '#04202a',
+              fontSize: 10.5,
+              fontWeight: 700,
+              lineHeight: '18px',
+              textAlign: 'center',
+              fontVariantNumeric: 'tabular-nums',
+              boxShadow: '0 0 0 2px #0b1118, 0 0 8px rgba(0,229,255,0.55)',
+              pointerEvents: 'none',
             }}
-          />
+          >
+            {unread > 9 ? '9+' : unread}
+          </span>
         )}
       </button>
       <OrcaInbox open={open} onClose={() => setOpen(false)} />

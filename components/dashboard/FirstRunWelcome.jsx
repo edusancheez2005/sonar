@@ -16,9 +16,9 @@
  *
  * v3 (2026-10-03, Week 1 "make the loops fire"): the "Follow a famous wallet"
  * choice opens an in-dialog picker (six names, one-tap follows, optional
- * email alerts) instead of sending people to the figures directory; the
- * dialog also calls the shared post-signup hook (/api/onboarding/first-login,
- * welcome email for Google/wallet signups) and logs welcome_choice.
+ * email alerts) instead of sending people to the figures directory, and every
+ * choice logs welcome_choice. The post-signup hook lives in
+ * components/onboarding/PostSignupHook (global, any landing page).
  */
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -461,19 +461,6 @@ export default function FirstRunWelcome({ onTakeTour }) {
         setName(firstName(user))
         setToken(data?.session?.access_token || null)
         setShow(true)
-        // Shared post-signup hook: welcome email for Google / wallet signups
-        // (email signups already got theirs) + the `signup` funnel event.
-        // Idempotent server-side; fire-and-forget here.
-        try {
-          const at = data?.session?.access_token
-          if (at) {
-            fetch('/api/onboarding/first-login', {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${at}` },
-              keepalive: true,
-            }).catch(() => {})
-          }
-        } catch { /* ignore */ }
         const { data: row } = await sb
           .from('user_profile')
           .select('experience_level')

@@ -75,6 +75,7 @@ export async function POST(req) {
         ...(displayName ? { full_name: displayName } : {}),
         welcome_email_sent_at: new Date().toISOString(),
         welcome_email_via: 'signup',
+        signup_tracked_at: new Date().toISOString(),
       },
     })
 
@@ -151,7 +152,7 @@ export async function POST(req) {
       await sendWelcomeEmail(email, displayName)
     } catch {}
     if (data?.user?.id) {
-      void trackServer(supabaseAdmin, {
+      await trackServer(supabaseAdmin, {
         userId: data.user.id,
         event: 'signup',
         props: { method: 'email', via: 'signup_form' },

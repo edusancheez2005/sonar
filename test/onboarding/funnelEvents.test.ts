@@ -50,3 +50,14 @@ describe('famous wallets picker list', () => {
     expect(MAX_ADDRESSES_PER_ENTITY).toBe(3)
   })
 })
+
+describe('client event allowlist', () => {
+  it('lets the browser send only welcome_choice and paywall_view', async () => {
+    const { CLIENT_EVENTS, isClientEvent } = await import('@/lib/analytics/events')
+    expect([...CLIENT_EVENTS]).toEqual(['welcome_choice', 'paywall_view'])
+    for (const e of ['signup', 'follow', 'alert_set', 'orca_question', 'checkout', 'paid']) {
+      expect(isClientEvent(e)).toBe(false)
+    }
+    expect(isClientEvent('paywall_view')).toBe(true)
+  })
+})

@@ -32,6 +32,11 @@ const OrcaDrawer = dynamic(() => import('@/components/orca/OrcaDrawer'), {
 // pre-2026-09 profiles as their owners return).
 const GeoStamp = dynamic(() => import('@/components/GeoStamp'), { ssr: false })
 
+// PostSignupHook: invisible, once per new account per device, calls the
+// shared post-signup hook (/api/onboarding/first-login) on whatever page the
+// user lands on — Google sign-ups land on /ai-advisor, not the dashboard.
+const PostSignupHook = dynamic(() => import('@/components/onboarding/PostSignupHook'), { ssr: false })
+
 // 2026-09-30: the personalisation wizard (components/onboarding/OnboardingGate)
 // is no longer auto-mounted. It used to cover the ORCA hero within ~0.5s of a
 // brand-new account's very first screen. See components/dashboard/
@@ -80,6 +85,9 @@ export default function ClientRoot({ children }) {
           the root and de-SSR-ing the whole page. */}
       <Suspense fallback={null}>
         <OrcaDrawer />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PostSignupHook />
       </Suspense>
     </StyleSheetManager>
   )

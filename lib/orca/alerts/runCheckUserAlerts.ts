@@ -1,10 +1,14 @@
 /**
  * ORCA Proactive Alerts — evaluation core (every ~5 minutes)
  * =============================================================================
- * For every enabled user_alerts rule whose owner has in-app notifications on,
- * evaluate the rule against canonical public tables and, when it fires, insert
- * a deduplicated row into user_notifications. Per-user daily caps are enforced
- * by notification_style (HARD RULE §0.5).
+ * For every enabled user_alerts rule whose owner has not switched in-app
+ * notifications off, evaluate the rule against canonical public tables and,
+ * when it fires, insert a deduplicated row into user_notifications. Per-user
+ * daily caps are enforced by notification_style (HARD RULE §0.5).
+ *
+ * Owners with NO user_profile row are deliverable at the default cadence
+ * (notifications_in_app defaults to true; most Google sign-ups never got a
+ * row, and before 2026-10-04 their alerts were silently skipped).
  *
  *   - No new data endpoints: evaluators read public tables directly.
  *   - Dedup: UNIQUE (user_id, rule_id, dedup_hour) + ON CONFLICT DO NOTHING.
@@ -83,8 +87,7 @@ export function walletAlertToRule(row: {
  */
 async function foldWalletAlerts(
   supabase: SupabaseLike,
-  existing: AlertRule[],
-  deliverable: Set<string>
+  existing: AlertRule[]
 ): Promise<AlertRule[]> {
   const { data } = await supabase
     .from('wallet_alerts')
@@ -101,7 +104,7 @@ async function foldWalletAlerts(
   const created: AlertRule[] = []
   for (const row of rows) {
     const rule = walletAlertToRule(row)
-    if (!rule || !deliverable.has(rule.user_id)) continue
+    if (!rule) continue
     const key = `${rule.user_id}|${rule.address!.toLowerCase()}`
     if (have.has(key)) continue
     have.add(key)
@@ -167,6 +170,55 @@ function dropDuplicateNews(
 }
 
 
+const PROFILE_CHUNK = 150
+
+/**
+ * Notification settings for the given rule owners. Returns the cadence per
+ * deliverable owner. An owner without a profile row gets the default
+ * ('balanced'); an owner with notifications_in_app=false is left out; owners
+ * whose chunk could not be read are left out too (fail closed — never notify
+ * someone who may have opted out).
+ */
+async function loadOwnerStyles(
+  supabase: SupabaseLike,
+  owners: string[]
+): Promise<Map<string, NotificationStyle>> {
+  const styles = new Map<string, NotificationStyle>()
+  for (let i = 0; i < owners.length; i += PROFILE_CHUNK) {
+    const chunk = owners.slice(i, i + PROFILE_CHUNK)
+    let rows: Array<{ user_id: string; notifications_in_app?: boolean | null; notification_style?: unknown }> | null = null
+    try {
+      const { data, error } = await supabase
+        .from('user_profile')
+        .select('user_id, notifications_in_app, notification_style')
+        .in('user_id', chunk)
+      if (!error && Array.isArray(data)) rows = data
+    } catch {
+      rows = null
+    }
+    if (rows === null) {
+      // notification_style may be missing in an older schema; retry minimal.
+      try {
+        const { data, error } = await supabase
+          .from('user_profile')
+          .select('user_id, notifications_in_app')
+          .in('user_id', chunk)
+        if (!error && Array.isArray(data)) rows = data
+      } catch {
+        rows = null
+      }
+    }
+    if (rows === null) continue // fail closed for this chunk
+    const byId = new Map(rows.filter((r) => r?.user_id).map((r) => [r.user_id, r]))
+    for (const uid of chunk) {
+      const row = byId.get(uid)
+      if (row && row.notifications_in_app === false) continue
+      styles.set(uid, normaliseStyle(row?.notification_style))
+    }
+  }
+  return styles
+}
+
 /**
  * Pure-ish core so tests can drive it with a mocked Supabase client.
  * Returns counts; never throws (every read is defensively wrapped).
@@ -185,36 +237,7 @@ export async function runCheckUserAlerts(
     folded_wallet_alerts: 0,
   }
 
-  // 1. Owners with in-app notifications enabled, plus their cadence style.
-  const styleByUser = new Map<string, NotificationStyle>()
-  try {
-    const { data } = await supabase
-      .from('user_profile')
-      .select('user_id, notifications_in_app, notification_style')
-      .eq('notifications_in_app', true)
-      .limit(5000)
-    if (Array.isArray(data)) {
-      for (const row of data as Array<{ user_id: string; notification_style?: unknown }>) {
-        if (row?.user_id) styleByUser.set(row.user_id, normaliseStyle(row.notification_style))
-      }
-    } else {
-      // Fallback: the notification_style column may not exist yet. Re-query the
-      // minimal shape so notifications still flow (default cadence = balanced).
-      const { data: basic } = await supabase
-        .from('user_profile')
-        .select('user_id, notifications_in_app')
-        .eq('notifications_in_app', true)
-        .limit(5000)
-      for (const row of (Array.isArray(basic) ? basic : []) as Array<{ user_id: string }>) {
-        if (row?.user_id) styleByUser.set(row.user_id, 'balanced')
-      }
-    }
-  } catch {
-    return result
-  }
-  if (styleByUser.size === 0) return result
-
-  // 2. Enabled rules belonging to those owners.
+  // 1. Every enabled rule.
   let rules: AlertRule[] = []
   try {
     const { data } = await supabase
@@ -222,16 +245,14 @@ export async function runCheckUserAlerts(
       .select('id, user_id, ticker, kind, threshold_pct, threshold_usd, address, chain, enabled')
       .eq('enabled', true)
       .limit(10000)
-    rules = ((Array.isArray(data) ? data : []) as AlertRule[]).filter((r) =>
-      styleByUser.has(r.user_id)
-    )
+    rules = (Array.isArray(data) ? data : []) as AlertRule[]
   } catch {
     return result
   }
 
-  // 2b. Fold legacy wallet_alerts into user_alerts (one delivery path).
+  // 2. Fold legacy wallet_alerts into user_alerts (one delivery path).
   try {
-    const synced = await foldWalletAlerts(supabase, rules, new Set(styleByUser.keys()))
+    const synced = await foldWalletAlerts(supabase, rules)
     if (synced.length > 0) {
       rules.push(...synced)
       result.folded_wallet_alerts = synced.length
@@ -239,10 +260,15 @@ export async function runCheckUserAlerts(
   } catch {
     /* best-effort */
   }
+
+  // 3. Owners' cadence; drop rules whose owner switched in-app off.
+  const owners = Array.from(new Set(rules.map((r) => r.user_id).filter(Boolean)))
+  const styleByUser = owners.length > 0 ? await loadOwnerStyles(supabase, owners) : new Map<string, NotificationStyle>()
+  rules = rules.filter((r) => styleByUser.has(r.user_id))
   result.rules_evaluated = rules.length
   if (rules.length === 0) return result
 
-  // 3. Evaluate each rule, memoising shared reads by (kind, ticker, threshold).
+  // 4. Evaluate each rule, memoising shared reads by (kind, ticker, threshold).
   const memo = new Map<string, Promise<NotificationCopy | null>>()
   const evaluate = (rule: AlertRule): Promise<NotificationCopy | null> => {
     const key = `${rule.kind}|${rule.ticker ?? rule.address ?? ''}|${rule.threshold_pct ?? ''}|${rule.threshold_usd ?? ''}|${rule.chain ?? ''}`
@@ -303,7 +329,7 @@ export async function runCheckUserAlerts(
   }
   if (candidatesByUser.size === 0) return result
 
-  // 4. Per-user daily cap, then deduplicated insert.
+  // 5. Per-user daily cap, then deduplicated insert.
   const dayStart = startOfUtcDay(now())
   const recentCutoff = now().getTime() - RECENT_DUP_WINDOW_MS
   for (const [userId, rawCandidates] of candidatesByUser) {
@@ -373,7 +399,7 @@ export async function runCheckUserAlerts(
     }
   }
 
-  // 5. Telemetry (best-effort).
+  // 6. Telemetry (best-effort).
   try {
     await supabase.from('orca_traces').insert({
       stage: 'alerts',

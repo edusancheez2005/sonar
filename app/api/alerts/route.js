@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
+import { trackServer } from '@/lib/analytics/trackServer'
 
 function envMissing() {
   return !(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) ||
@@ -90,6 +91,13 @@ export async function POST(req) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await trackServer(supabaseAdmin, {
+    userId: user.id,
+    event: 'alert_set',
+    props: { source: 'wallet_page', kind: 'wallet_activity', alert_type: String(alert_type).slice(0, 40), chain: chain || null },
+    path: '/wallet-tracker',
+  })
 
   return NextResponse.json({ data }, { status: 201 })
 }

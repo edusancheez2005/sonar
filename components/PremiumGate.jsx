@@ -130,9 +130,13 @@ export default function PremiumGate({ isPremium, feature = 'this feature', child
     return () => clearInterval(interval)
   }, [])
 
-  // Funnel: a gate shown to a free user is a paywall view (once per mount).
+  // Funnel: a gate that stays up for a free user is a paywall view. Callers
+  // often start with isPremium=false while their premium check loads, so
+  // only count it if the gate is still showing 1.5s later.
   useEffect(() => {
-    if (!isPremium) track('paywall_view', { feature: String(feature).slice(0, 60) })
+    if (isPremium) return undefined
+    const t = setTimeout(() => track('paywall_view', { feature: String(feature).slice(0, 60) }), 1500)
+    return () => clearTimeout(t)
   }, [isPremium, feature])
 
   if (isPremium) return <>{children}</>

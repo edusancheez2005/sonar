@@ -185,7 +185,7 @@ export async function POST(req) {
       metadata: { supabase_user_id: userId },
     })
     console.log('Checkout session created successfully:', session.id)
-    void trackServer(supabaseAdmin, {
+    await trackServer(supabaseAdmin, {
       userId,
       event: 'checkout',
       props: { price_id: priceId, session_id: session.id },

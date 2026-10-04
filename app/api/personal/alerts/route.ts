@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       .single()
     if (error) throw error
 
-    void trackServer(supabaseAdminFresh, {
+    await trackServer(supabaseAdminFresh, {
       userId: user.id,
       event: 'alert_set',
       props: { source: 'settings', kind, ticker: ticker || null },

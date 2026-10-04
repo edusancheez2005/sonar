@@ -25,6 +25,7 @@ function makeSupabase(config: {
     const b: any = {
       select: () => b,
       eq: () => b,
+      in: () => b,
       gte: () => b,
       order: () => b,
       limit: () => Promise.resolve({ data: rows }),
@@ -104,11 +105,37 @@ describe('runCheckUserAlerts', () => {
     expect(res.inserted).toBe(0)
   })
 
-  it('returns early when no profiles have in-app enabled', async () => {
+  it('returns early when there are no enabled rules', async () => {
     const sb = makeSupabase({ profiles: [] })
     const res = await runCheckUserAlerts(sb as any, { now: NOW })
     expect(res.rules_evaluated).toBe(0)
     expect(res.inserted).toBe(0)
+  })
+
+  it('delivers to an owner with no user_profile row at the default cadence', async () => {
+    // Most Google sign-ups never got a profile row; notifications_in_app
+    // defaults to true, so their alerts must still fire.
+    const sb = makeSupabase({
+      profiles: [],
+      rules: [{ id: 'r1', user_id: 'u-noprofile', ticker: 'SOL', kind: 'price_move', threshold_pct: 5, threshold_usd: null, enabled: true }],
+      priceByTicker: { SOL: 9.1 },
+    })
+    const res = await runCheckUserAlerts(sb as any, { now: NOW })
+    expect(res.rules_evaluated).toBe(1)
+    expect(res.inserted).toBe(1)
+    expect(sb.inserted[0]).toMatchObject({ user_id: 'u-noprofile', rule_id: 'r1' })
+  })
+
+  it('skips an owner who switched in-app notifications off', async () => {
+    const sb = makeSupabase({
+      profiles: [{ user_id: 'u1', notifications_in_app: false, notification_style: 'balanced' }],
+      rules: [{ id: 'r1', user_id: 'u1', ticker: 'SOL', kind: 'price_move', threshold_pct: 5, threshold_usd: null, enabled: true }],
+      priceByTicker: { SOL: 9.1 },
+    })
+    const res = await runCheckUserAlerts(sb as any, { now: NOW })
+    expect(res.rules_evaluated).toBe(0)
+    expect(res.inserted).toBe(0)
+    expect(sb.inserted).toHaveLength(0)
   })
 
   it('caps when the user is already at their daily limit', async () => {

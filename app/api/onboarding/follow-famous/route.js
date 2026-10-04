@@ -13,7 +13,8 @@
  *   3. creates ONE wallet_activity alert rule on the best address, so the
  *      bell/email fire when they move (respects the per-user rule cap);
  *   4. optionally switches email alerts on (explicit opt-in from the picker);
- *   5. logs funnel events: follow (+ alert_set when a rule was created).
+ *   5. logs funnel events: follow (+ alert_set when a rule exists).
+ * Several slugs run in parallel; steps 4–5 run once per request.
  *
  * Auth: Supabase user JWT. Idempotent — re-following is a no-op.
  */
@@ -94,7 +95,7 @@ async function chooseAddresses(entity) {
   return scored.slice(0, MAX_ADDRESSES_PER_ENTITY)
 }
 
-async function followOne(user, slug, wantEmail) {
+async function followOne(user, slug) {
   const { data: entity, error } = await supabaseAdmin
     .from('curated_entities')
     .select('slug, display_name, category, addresses')
@@ -148,31 +149,6 @@ async function followOne(user, slug, wantEmail) {
     }
   } catch { /* follows still stand */ }
 
-  // 4. Explicit email opt-in from the picker checkbox (never switches it off)
-  if (wantEmail === true) {
-    try {
-      await supabaseAdmin
-        .from('user_profile')
-        .upsert({ user_id: user.id, notifications_email: true }, { onConflict: 'user_id' })
-    } catch { /* ignore */ }
-  }
-
-  // 5. Funnel
-  void trackServer(supabaseAdmin, {
-    userId: user.id,
-    event: 'follow',
-    props: { source: 'welcome', slug, addresses: picks.length },
-    path: '/dashboard',
-  })
-  if (alert) {
-    void trackServer(supabaseAdmin, {
-      userId: user.id,
-      event: 'alert_set',
-      props: { source: 'welcome', kind: 'wallet_activity', slug },
-      path: '/dashboard',
-    })
-  }
-
   return { slug, ok: true, name: entity.display_name, addresses: picks.map((a) => a.address), alert }
 }
 
@@ -193,8 +169,41 @@ export async function POST(req) {
   }
   const wantEmail = body?.email_alerts === true
 
-  const results = []
-  for (const slug of wanted) results.push(await followOne(user, slug, wantEmail))
+  // Entities are independent; "Follow all six" runs them side by side.
+  const settled = await Promise.allSettled(wanted.map((slug) => followOne(user, slug)))
+  const results = settled.map((r, i) =>
+    r.status === 'fulfilled' ? r.value : { slug: wanted[i], ok: false, error: 'internal_error' }
+  )
   const ok = results.some((r) => r.ok)
+
+  const writes = []
+  // 4. Explicit email opt-in from the picker checkbox (never switches it off)
+  if (ok && wantEmail) {
+    writes.push(
+      supabaseAdmin
+        .from('user_profile')
+        .upsert({ user_id: user.id, notifications_email: true }, { onConflict: 'user_id' })
+    )
+  }
+  // 5. Funnel — awaited so the rows are written before the function returns
+  for (const r of results) {
+    if (!r.ok) continue
+    writes.push(trackServer(supabaseAdmin, {
+      userId: user.id,
+      event: 'follow',
+      props: { source: 'welcome', slug: r.slug, addresses: r.addresses.length },
+      path: '/dashboard',
+    }))
+    if (r.alert) {
+      writes.push(trackServer(supabaseAdmin, {
+        userId: user.id,
+        event: 'alert_set',
+        props: { source: 'welcome', kind: 'wallet_activity', slug: r.slug },
+        path: '/dashboard',
+      }))
+    }
+  }
+  await Promise.allSettled(writes)
+
   return NextResponse.json({ ok, results }, { status: ok ? 200 : 500, headers: NO_STORE })
 }

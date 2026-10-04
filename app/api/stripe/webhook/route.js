@@ -77,10 +77,11 @@ export async function POST(req) {
             }, { onConflict: 'user_id' })
 
           console.log(`✅ Subscription activated for user ${userId} - plan set to premium`)
-          void trackServer(supabaseAdmin, {
+          await trackServer(supabaseAdmin, {
             userId,
             event: 'paid',
-            props: { subscription_id: subscriptionId || null, mode: session.mode || null },
+            // stripe_event_id lets the funnel view count a retried delivery once
+            props: { subscription_id: subscriptionId || null, mode: session.mode || null, stripe_event_id: event.id || null },
             path: '/subscribe',
           })
         }

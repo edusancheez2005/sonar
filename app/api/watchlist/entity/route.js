@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { trackServer } from '@/lib/analytics/trackServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +49,12 @@ export async function POST(req) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await trackServer(supabaseAdmin, {
+    userId: user.id,
+    event: 'follow',
+    props: { source: 'figures', entity_type, slug: entity_ref.trim().slice(0, 80) },
+    path: '/figures',
+  })
   return NextResponse.json(data, { status: 201 })
 }
 

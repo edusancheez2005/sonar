@@ -1,12 +1,15 @@
 /**
  * POST /api/track — funnel event sink for the browser.
- * Body: { event, props?, path? }. Optional Bearer JWT attributes the row to a
- * user; without one the row is anonymous (paywall views on public pages).
- * Event names are allowlisted (lib/analytics/events.js); unknown → 400.
+ * Body: { event, props?, path? } with a Supabase user JWT.
+ *
+ * Only the two browser-side events are accepted (welcome_choice,
+ * paywall_view — see CLIENT_EVENTS); every other funnel event is written
+ * server-side where the action happens. Anonymous requests are a no-op so the
+ * endpoint cannot be used to flood the table.
  */
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
-import { isFunnelEvent } from '@/lib/analytics/events'
+import { isClientEvent } from '@/lib/analytics/events'
 import { trackServer } from '@/lib/analytics/trackServer'
 
 export const dynamic = 'force-dynamic'
@@ -34,19 +37,14 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400, headers: NO_STORE })
   }
   const event = body?.event
-  if (!isFunnelEvent(event)) {
-    return NextResponse.json({ ok: false, error: 'unknown_event' }, { status: 400, headers: NO_STORE })
-  }
-  // Server-only events must not be spoofable from the browser.
-  if (event === 'paid' || event === 'checkout' || event === 'signup') {
-    return NextResponse.json({ ok: false, error: 'server_only_event' }, { status: 400, headers: NO_STORE })
+  if (!isClientEvent(event)) {
+    return NextResponse.json({ ok: false, error: 'not_a_client_event' }, { status: 400, headers: NO_STORE })
   }
   const userId = await userIdFromRequest(req)
-  const ok = await trackServer(supabaseAdmin, {
-    userId,
-    event,
-    props: body?.props,
-    path: typeof body?.path === 'string' ? body.path : null,
-  })
+  if (!userId) {
+    return NextResponse.json({ ok: false, error: 'signed_out' }, { status: 200, headers: NO_STORE })
+  }
+  const path = typeof body?.path === 'string' ? body.path.split('?')[0].split('#')[0] : null
+  const ok = await trackServer(supabaseAdmin, { userId, event, props: body?.props, path })
   return NextResponse.json({ ok }, { status: ok ? 202 : 200, headers: NO_STORE })
 }
