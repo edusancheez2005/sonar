@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
+import { syncFoldedWalletRule } from '@/lib/orca/alerts/walletAlertSync'
 
 function envMissing() {
   return !(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) ||
@@ -53,6 +54,7 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
+  await syncFoldedWalletRule(supabaseAdmin, user.id, data.address)
   return NextResponse.json({ data })
 }
 
@@ -69,6 +71,13 @@ export async function DELETE(req, { params }) {
 
   const { id } = await params
 
+  const { data: row } = await supabaseAdmin
+    .from('wallet_alerts')
+    .select('address')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
   const { error } = await supabaseAdmin
     .from('wallet_alerts')
     .delete()
@@ -79,5 +88,7 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  // Remove (or re-floor) the folded rule so the alert actually stops.
+  if (row?.address) await syncFoldedWalletRule(supabaseAdmin, user.id, row.address)
   return NextResponse.json({ success: true })
 }

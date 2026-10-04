@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { addressVariants } from '@/lib/wallet/addressVariants'
 
 async function getUserFromRequest(req) {
   const authHeader = req.headers.get('authorization')
@@ -25,11 +26,13 @@ export async function DELETE(req, { params }) {
 
   const { address } = await params
 
+  // Any stored spelling (lower-case from the welcome picker, checksummed from
+  // a wallet page URL) is the same follow.
   const { error } = await supabaseAdmin
     .from('wallet_follows')
     .delete()
     .eq('user_id', user.id)
-    .eq('address', address)
+    .in('address', addressVariants(decodeURIComponent(String(address || ''))))
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

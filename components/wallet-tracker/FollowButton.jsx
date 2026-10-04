@@ -58,7 +58,10 @@ export default function FollowButton({ address, onToggle }) {
       const res = await fetch('/api/wallet-tracker/follows', { headers })
       if (!res.ok) return
       const list = await res.json()
-      setFollowed(list.some(f => f.address === address))
+      // Follows may be stored lower-case (welcome picker) while URLs carry the
+      // checksummed form, so compare EVM addresses case-insensitively.
+      const norm = (a) => (/^0x[0-9a-fA-F]{40}$/.test(String(a || '')) ? String(a).toLowerCase() : String(a || ''))
+      setFollowed(list.some(f => norm(f.address) === norm(address)))
     } catch {
       // silent
     }
@@ -83,6 +86,7 @@ export default function FollowButton({ address, onToggle }) {
           headers,
         })
         setFollowed(false)
+        try { window.dispatchEvent(new Event('sonar:follows-changed')) } catch { /* ignore */ }
         if (onToggle) onToggle()
       } else {
         await fetch('/api/wallet-tracker/follows', {
@@ -91,6 +95,7 @@ export default function FollowButton({ address, onToggle }) {
           body: JSON.stringify({ address }),
         })
         setFollowed(true)
+        try { window.dispatchEvent(new Event('sonar:follows-changed')) } catch { /* ignore */ }
         if (onToggle) onToggle()
       }
     } catch {

@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
+import { retireWalletAlertsFor } from '@/lib/orca/alerts/walletAlertSync'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -73,12 +74,25 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const id = params?.id
     if (!id || !UUID_RE.test(id)) return NextResponse.json({ error: 'invalid_id' }, { status: 400 })
 
+    const { data: rule } = await supabaseAdminFresh
+      .from('user_alerts')
+      .select('kind, address')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
     const { error } = await supabaseAdminFresh
       .from('user_alerts')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id)
     if (error) throw error
+
+    // A wallet rule may have been folded from wallet-page alerts; retire those
+    // rows too, or the 5-minute fold would recreate the rule.
+    if (rule?.kind === 'wallet_activity' && rule.address) {
+      await retireWalletAlertsFor(supabaseAdminFresh, user.id, rule.address)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err) {

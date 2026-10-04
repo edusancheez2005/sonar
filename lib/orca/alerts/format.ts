@@ -128,30 +128,57 @@ export function shortAddress(addr: string): string {
   return `${a.slice(0, 6)}…${a.slice(-4)}`
 }
 
+export interface WalletTx {
+  /** tx hash (lower-case for EVM) — the dedup key across runs */
+  h: string
+  usd: number
+  token: string | null
+}
+
 export function formatWalletActivity(
   address: string,
   chain: string | null,
   txCount: number,
   totalUsd: number,
-  topToken: string | null
+  topToken: string | null,
+  extras: { label?: string | null; txs?: WalletTx[] } = {}
 ): NotificationCopy {
-  const label = shortAddress(address)
+  const short = shortAddress(address)
+  const label = typeof extras.label === 'string' && extras.label.trim() ? extras.label.trim().slice(0, 40) : null
+  const who = label || `Wallet ${short}`
   const chainPart = chain ? ` on ${chain}` : ''
-  const tokenPart = topToken ? ` (${topToken})` : ''
   const txWord = txCount === 1 ? 'transaction' : 'transactions'
   const usd = formatUsd(totalUsd).replace(/^\+/, '')
+  const tokenPart = topToken ? ` (${topToken})` : ''
+  const txs = Array.isArray(extras.txs) ? extras.txs.slice(0, 25) : []
   const reask: ReaskHint = {
     intent: 'wallet_explain',
-    prompt: `what did wallet ${address} just do`,
+    prompt: `what did ${label ? `${label} (wallet ${address})` : `wallet ${address}`} just do`,
   }
   return copy(
     'wallet_activity',
-    label,
-    `Wallet ${label} active${chainPart}`,
-    `${txCount} ${txWord}${tokenPart} totalling ${usd} in the last hour.`,
-    { address, chain, txCount, totalUsd, topToken },
+    short,
+    `${who} moved ${usd}${tokenPart}`,
+    `${txCount} ${txWord}${chainPart} totalling ${usd}${label ? ` from ${short}` : ''}.`,
+    { address, chain, txCount, totalUsd, topToken, label, txs, txHashes: txs.map((t) => t.h) },
     reask
   )
+}
+
+/** Re-format a wallet alert from the subset of transactions not yet notified. */
+export function formatWalletActivityFromTxs(
+  address: string,
+  chain: string | null,
+  txs: WalletTx[],
+  label: string | null = null
+): NotificationCopy {
+  let total = 0
+  let top: WalletTx | null = null
+  for (const t of txs) {
+    total += t.usd
+    if (!top || t.usd > top.usd) top = t
+  }
+  return formatWalletActivity(address, chain, txs.length, total, top?.token ?? null, { label, txs })
 }
 
 export function formatNewsAny(

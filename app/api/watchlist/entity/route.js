@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { trackServer } from '@/lib/analytics/trackServer'
+import { addressVariants } from '@/lib/wallet/addressVariants'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,5 +81,35 @@ export async function DELETE(req) {
     .eq('entity_ref', entity_ref.trim())
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Unfollowing a figure also removes what the welcome picker created for it:
+  // its wallet follows (tagged with the figure's name as nickname) and the
+  // wallet alerts on those addresses — otherwise the alerts kept coming.
+  if (entity_type === 'curated') {
+    try {
+      const { data: ent } = await supabaseAdmin
+        .from('curated_entities')
+        .select('display_name')
+        .eq('slug', entity_ref.trim())
+        .maybeSingle()
+      if (ent?.display_name) {
+        const { data: removed } = await supabaseAdmin
+          .from('wallet_follows')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('nickname', ent.display_name)
+          .select('address')
+        const addrs = (removed || []).map((r) => r.address).filter(Boolean)
+        if (addrs.length > 0) {
+          await supabaseAdmin
+            .from('user_alerts')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('kind', 'wallet_activity')
+            .in('address', Array.from(new Set(addrs.flatMap((a) => addressVariants(a)))))
+        }
+      }
+    } catch { /* the figure unfollow itself succeeded */ }
+  }
   return NextResponse.json({ success: true })
 }

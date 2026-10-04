@@ -581,10 +581,14 @@ export default function AskOrcaClient({
   useEffect(() => {
     if (autoSentRef.current || !session || embedded || messages.length > 0) return
     let q = null
+    let origin = 'auto_link'
     if (autoSend && initialQ) q = initialQ
     // Google sign-up cannot carry query params through the OAuth redirect, so
     // Landing arms a sessionStorage flag instead (lib/onboarding/firstRun.js).
-    else if (!initialQProp && !initialQ && consumeFirstQuestion()) q = FIRST_QUESTION
+    else if (!initialQProp && !initialQ && consumeFirstQuestion()) {
+      q = FIRST_QUESTION
+      origin = 'auto_first'
+    }
     if (!q) return
     autoSentRef.current = true
     // Drop send=1 from the URL so a reload/back does not re-ask.
@@ -593,7 +597,7 @@ export default function AskOrcaClient({
       url.searchParams.delete('send')
       window.history.replaceState(window.history.state, '', url.toString())
     } catch { /* ignore */ }
-    sendMessage(q)
+    sendMessage(q, origin)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoSend, session, initialQ, embedded])
 
@@ -605,14 +609,15 @@ export default function AskOrcaClient({
       const n = parseInt(e.key, 10)
       if (Number.isFinite(n) && n >= 1 && n <= chips.length) {
         e.preventDefault()
-        sendMessage(chips[n - 1].prompt)
+        sendMessage(chips[n - 1].prompt, 'chip')
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [chips, messages.length])
 
-  async function sendMessage(rawQuestion) {
+  // origin feeds the orca_question funnel event: typed | chip | auto_link | auto_first
+  async function sendMessage(rawQuestion, origin = 'typed') {
     const question = (rawQuestion || '').trim()
     if (!question) return
     if (!session) {
@@ -646,7 +651,7 @@ export default function AskOrcaClient({
           Accept: 'text/event-stream',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ message: question, session_id: sessionIdRef.current }),
+        body: JSON.stringify({ message: question, session_id: sessionIdRef.current, source: origin }),
       })
       const contentType = res.headers.get('content-type') || ''
       if (contentType.includes('text/event-stream')) {
@@ -898,7 +903,7 @@ export default function AskOrcaClient({
               <Chip
                 key={chip.label}
                 type="button"
-                onClick={() => sendMessage(chip.prompt)}
+                onClick={() => sendMessage(chip.prompt, 'chip')}
                 disabled={loading}
               >
                 <KeyHint>{idx + 1}</KeyHint>

@@ -483,10 +483,14 @@ export async function POST(request: Request) {
     // Funnel: one orca_question per question POST (confirm trips are the
     // second leg of a fast write, not a new question).
     if (!(body as { confirm?: unknown })?.confirm && typeof message === 'string' && message.trim()) {
+      // source separates real engagement from the scripted first question
+      // (auto_first: Google sign-up; auto_link: the welcome dialog's link).
+      const rawSource = (body as { source?: unknown })?.source
+      const source = typeof rawSource === 'string' && ['typed', 'chip', 'auto_link', 'auto_first'].includes(rawSource) ? rawSource : 'typed'
       void trackServer(supabase, {
         userId,
         event: 'orca_question',
-        props: { chars: message.length },
+        props: { chars: message.length, source },
         path: '/ai-advisor',
       })
     }

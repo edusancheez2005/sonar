@@ -478,7 +478,7 @@ function formatMuteUntil(iso) {
 export default function AlertsTab({ client, fetchImpl }) {
   const [rules, setRules] = useState([])
   const [status, setStatus] = useState('loading')
-  const [prefs, setPrefs] = useState({ notifications_in_app: true, notification_style: 'balanced' })
+  const [prefs, setPrefs] = useState({ notifications_in_app: true, notification_style: 'balanced', notifications_email: false, email_state: null })
   const [form, setForm] = useState({ kind: 'price_move', ticker: '', address: '', chain: '', threshold: '5' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -659,11 +659,18 @@ export default function AlertsTab({ client, fetchImpl }) {
     const doFetch = fetchImpl ?? fetch
     const t = await token()
     try {
-      await doFetch('/api/notifications/preferences', {
+      const res = await doFetch('/api/notifications/preferences', {
         method: 'PATCH',
         headers: { authorization: `Bearer ${t}`, 'content-type': 'application/json' },
         body: JSON.stringify(patch),
       })
+      const body = res && typeof res.json === 'function' ? await res.json().catch(() => null) : null
+      if (res && res.status === 409) {
+        // No deliverable address (wallet sign-in): email cannot be switched on.
+        setPrefs((p) => ({ ...p, notifications_email: false, email_state: body?.email_state || 'undeliverable' }))
+      } else if (body?.email_state) {
+        setPrefs((p) => ({ ...p, email_state: body.email_state }))
+      }
     } catch {}
   }
 
@@ -871,6 +878,15 @@ export default function AlertsTab({ client, fetchImpl }) {
             In-app inbox
           </Check>
           <Check>
+            <input
+              type="checkbox"
+              checked={!!prefs.notifications_email}
+              disabled={prefs.email_state === 'undeliverable'}
+              onChange={(e) => updatePref({ notifications_email: e.target.checked })}
+            />
+            Email
+          </Check>
+          <Check>
             Cadence
             <Select
               value={prefs.notification_style || 'balanced'}
@@ -885,7 +901,13 @@ export default function AlertsTab({ client, fetchImpl }) {
         </Channels>
         <Note>
           Alerts are informational only and never financial advice. They are delivered to your in-app
-          inbox.
+          inbox{prefs.notifications_email ? ', and by email (at most 3 a day)' : ''}.
+          {prefs.notifications_email && prefs.email_state === 'pending'
+            ? ' Check your inbox and confirm your address to start receiving alert emails.'
+            : ''}
+          {prefs.email_state === 'undeliverable'
+            ? ' Email alerts need an email address on your account; wallet sign-ins do not have one.'
+            : ''}
         </Note>
       </Panel>
     </Wrap>

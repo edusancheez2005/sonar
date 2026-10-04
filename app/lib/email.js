@@ -7,7 +7,7 @@
 // template (see app/api/cron/weekly-top-wallets/route.ts) — dark card,
 // cyan accents, no emojis, compact compliance footer.
 
-async function sendTransactionalEmail({ to, subject, html }) {
+async function sendTransactionalEmail({ to, subject, html, headers = null }) {
   const brevoKey = process.env.BREVO_API_KEY
   if (!brevoKey) {
     console.log(`📧 [email disabled — no BREVO_API_KEY] Would send "${subject}" to: ${to}`)
@@ -25,6 +25,7 @@ async function sendTransactionalEmail({ to, subject, html }) {
         to: [{ email: to }],
         subject,
         htmlContent: html,
+        ...(headers && typeof headers === 'object' ? { headers } : {}),
       }),
     })
     if (!res.ok) {
@@ -133,39 +134,60 @@ export async function sendPersonalDigest(email, { moves = [], totalCount = 0 }) 
   })
 }
 
-// Alert email: the user's new ORCA notifications since the last email (at
-// most one email an hour, see lib/orca/alerts/emailNotifications.ts). Each
-// row deep-links to the thing that moved — the wallet page for wallet alerts,
-// the token page otherwise.
+// Wallet sign-ins get a placeholder address (<0x…>@wallet.sonartracker.io)
+// that no mailbox receives; never send to it.
+export function isDeliverableEmail(e) {
+  return typeof e === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()) && !/@wallet\.sonartracker\.io$/i.test(e.trim())
+}
+
+// Alert email: the user's ORCA notifications since their last alert email
+// (cadence and daily cap live in lib/orca/alerts/emailNotifications.ts). Each
+// row deep-links to what moved — the wallet page for wallet alerts, the
+// article for news, the token page otherwise.
 function alertHref(n) {
   const raw = (n && n.payload && n.payload.raw) || {}
   if (n.kind === 'wallet_activity' && typeof raw.address === 'string' && raw.address) {
     return `https://www.sonartracker.io/wallet-tracker/${encodeURIComponent(raw.address)}`
   }
-  if (typeof raw.url === 'string' && /^https?:\/\//.test(raw.url)) return raw.url
+  if (typeof raw.url === 'string') {
+    try {
+      const u = new URL(raw.url)
+      if (u.protocol === 'https:' || u.protocol === 'http:') return u.href // normalised: quotes/brackets percent-encoded
+    } catch { /* fall through */ }
+  }
   const t = String(n.ticker || '').trim()
-  if (t && t !== '_ALL_') return `https://www.sonartracker.io/token/${encodeURIComponent(t.toLowerCase())}`
+  if (t && t !== '_ALL_' && /^[A-Za-z0-9]{1,15}$/.test(t)) return `https://www.sonartracker.io/token/${encodeURIComponent(t.toLowerCase())}`
   return 'https://www.sonartracker.io/dashboard'
 }
 
-export async function sendAlertEmail(email, items = []) {
+const ALERTS_SETTINGS_URL = 'https://www.sonartracker.io/dashboard/personal?tab=alerts'
+
+export async function sendAlertEmail(email, items = [], { total, unsubscribeUrl } = {}) {
   const list = Array.isArray(items) ? items.filter(Boolean) : []
-  if (list.length === 0) return false
+  if (list.length === 0 || !isDeliverableEmail(email)) return false
+  const count = Math.max(Number(total) || 0, list.length)
   const rows = list
     .map((n) => linkRow(alertHref(n), escapeHtml(n.title || 'Alert'), `${escapeHtml(n.body || '')} <span style="color:#6b7280;">· ${timeAgo(n.created_at)}</span>`))
     .join('')
-  const count = list.length
+  const more = count > list.length
+    ? linkRow('https://www.sonartracker.io/dashboard', `+${count - list.length} more`, 'Open your ORCA inbox to see the rest')
+    : ''
   const bodyHtml = `
     <p style="margin:0 0 16px;color:#d1d5db;font-size:14px;line-height:1.7;">
-      ${count === 1 ? 'One of your alerts just fired.' : `${count} of your alerts just fired.`}
+      ${count === 1 ? 'One of your alerts fired.' : `${count} of your alerts fired since your last alert email.`}
       Here is what moved:
     </p>
     ${rows}
+    ${more}
     <table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px 0 8px;">
       <tr><td style="border-radius:8px;background:#22d3ee;">
         <a href="https://www.sonartracker.io/dashboard" style="display:inline-block;padding:11px 24px;color:#0a1621;font-weight:700;font-size:14px;text-decoration:none;">Open Sonar →</a>
       </td></tr>
     </table>`
+  const unsub = typeof unsubscribeUrl === 'string' && unsubscribeUrl ? unsubscribeUrl : null
+  const footerNote = `You're receiving this because you switched on alert emails for your Sonar account. `
+    + (unsub ? `<a href="${escapeHtml(unsub)}" style="color:#9ca3af;">Turn off alert emails</a> with one click, or ` : 'Turn them off ')
+    + `under <a href="${ALERTS_SETTINGS_URL}" style="color:#9ca3af;">Dashboard → Personal → Alerts</a>. Market data is informational only and not investment advice.`
   return sendTransactionalEmail({
     to: email,
     subject: count === 1 ? `Sonar alert: ${String(list[0].title || '').slice(0, 80)}` : `Sonar: ${count} alerts fired`,
@@ -173,7 +195,38 @@ export async function sendAlertEmail(email, items = []) {
       title: count === 1 ? 'Your alert fired' : `${count} alerts fired`,
       subtitle: 'Live from the wallets and tokens you asked Sonar to watch',
       bodyHtml,
-      footerNote: `You're receiving this because email alerts are switched on for your Sonar account. Turn them off any time under Settings → Notifications. Market data is informational only and not investment advice.`,
+      footerNote,
+    }),
+    headers: unsub ? { 'List-Unsubscribe': `<${unsub}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : null,
+  })
+}
+
+// Double opt-in for alert emails (lib/notifications/emailConsent.ts): sent
+// once when someone whose address is not provider-verified switches alert
+// emails on. Nothing else is emailed until they confirm.
+export async function sendAlertEmailConfirmation(email, confirmUrl) {
+  if (!isDeliverableEmail(email) || typeof confirmUrl !== 'string' || !confirmUrl) return false
+  const bodyHtml = `
+    <p style="margin:0 0 16px;color:#d1d5db;font-size:14px;line-height:1.7;">
+      Someone (hopefully you) asked Sonar to email this address when the wallets and
+      tokens they follow move. Confirm and we will start sending alert emails.
+    </p>
+    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:18px 0 8px;">
+      <tr><td style="border-radius:8px;background:#22d3ee;">
+        <a href="${escapeHtml(confirmUrl)}" style="display:inline-block;padding:11px 24px;color:#0a1621;font-weight:700;font-size:14px;text-decoration:none;">Confirm alert emails</a>
+      </td></tr>
+    </table>
+    <p style="margin:14px 0 0;color:#9ca3af;font-size:13px;line-height:1.6;">
+      Didn't ask for this? Ignore this email and nothing else will be sent. The link expires in 7 days.
+    </p>`
+  return sendTransactionalEmail({
+    to: email,
+    subject: 'Confirm your Sonar alert emails',
+    html: renderEmailShell({
+      title: 'Confirm alert emails',
+      subtitle: 'One click and Sonar will email you when your wallets move',
+      bodyHtml,
+      footerNote: `This is a one-time confirmation for ${escapeHtml(email)}. Alerts always show in your Sonar inbox either way.`,
     }),
   })
 }
@@ -218,7 +271,7 @@ function linkRow(href, label, description) {
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
       <tr>
         <td style="padding:12px 0;border-bottom:1px solid #1f2937;">
-          <a href="${href}" style="color:#22d3ee;text-decoration:none;font-weight:600;font-size:15px;">${label}</a>
+          <a href="${escapeHtml(href)}" style="color:#22d3ee;text-decoration:none;font-weight:600;font-size:15px;">${label}</a>
           <div style="color:#9ca3af;font-size:13px;margin-top:2px;">${description}</div>
         </td>
       </tr>

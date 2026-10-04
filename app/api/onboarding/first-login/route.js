@@ -25,7 +25,7 @@
 import { NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
-import { sendWelcomeEmail } from '@/app/lib/email'
+import { sendWelcomeEmail, isDeliverableEmail } from '@/app/lib/email'
 import { trackServer } from '@/lib/analytics/trackServer'
 
 export const dynamic = 'force-dynamic'
@@ -33,7 +33,6 @@ export const runtime = 'nodejs'
 
 const NO_STORE = { 'Cache-Control': 'no-store' }
 const NEW_ACCOUNT_WINDOW_MS = 7 * 24 * 3600 * 1000
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function displayNameOf(u) {
   const m = u?.user_metadata || {}
@@ -78,7 +77,9 @@ export async function POST(req) {
     return reply({ sent: false, reason: claimErr.code === '23505' ? 'already' : 'claim_failed' })
   }
 
-  const provider = u.app_metadata?.provider || 'email'
+  // Wallet sign-ins are created with admin.createUser (provider 'email') and
+  // tagged user_metadata.signup_method = 'wallet'.
+  const provider = meta.signup_method === 'wallet' ? 'wallet' : (u.app_metadata?.provider || 'email')
 
   // 2 + 3. Profile row and signup event, in parallel.
   await Promise.allSettled([
@@ -98,7 +99,7 @@ export async function POST(req) {
   // 4. Optional welcome email (see header).
   let sent = false
   const emailOn = process.env.WELCOME_EMAIL_ON_FIRST_LOGIN === 'true'
-  if (emailOn && !meta.welcome_email_sent_at && u.email && EMAIL_RE.test(u.email)) {
+  if (emailOn && !meta.welcome_email_sent_at && isDeliverableEmail(u.email)) {
     try {
       sent = !!(await sendWelcomeEmail(u.email, displayNameOf(u)))
     } catch {

@@ -149,28 +149,34 @@ describe('evaluateNewsImpact', () => {
 })
 
 describe('evaluateWalletActivity', () => {
+  const ADDR = '0x1234567890abcdef1234567890abcdef12345678'
   it('fires on recent movement and aggregates transactions', async () => {
     const sb = makeSupabase({
       all_whale_transactions: [
-        { usd_value: 2_000_000, token_symbol: 'PEPE', blockchain: 'ethereum' },
-        { usd_value: 500_000, token_symbol: 'USDC', blockchain: 'ethereum' },
+        { transaction_hash: '0xaa', usd_value: 2_000_000, token_symbol: 'PEPE', blockchain: 'ethereum' },
+        { transaction_hash: '0xbb', usd_value: 500_000, token_symbol: 'USDC', blockchain: 'ethereum' },
       ],
     })
-    const c = await evaluateWalletActivity('0xabc', null, null, sb, NOW)
+    const c = await evaluateWalletActivity(ADDR, null, null, sb, NOW)
     expect(c).not.toBeNull()
     expect(c!.payload.kind).toBe('wallet_activity')
     expect((c!.payload.raw as any).txCount).toBe(2)
     expect((c!.payload.raw as any).totalUsd).toBe(2_500_000)
+    expect((c!.payload.raw as any).txHashes).toEqual(['0xaa', '0xbb'])
   })
   it('respects the minimum-size threshold', async () => {
     const sb = makeSupabase({
-      all_whale_transactions: [{ usd_value: 100, token_symbol: 'X', blockchain: 'ethereum' }],
+      all_whale_transactions: [{ transaction_hash: '0xaa', usd_value: 100, token_symbol: 'X', blockchain: 'ethereum' }],
     })
-    expect(await evaluateWalletActivity('0xabc', 1_000_000, null, sb, NOW)).toBeNull()
+    expect(await evaluateWalletActivity(ADDR, 1_000_000, null, sb, NOW)).toBeNull()
   })
   it('returns null with no movement', async () => {
     const sb = makeSupabase({ all_whale_transactions: [] })
-    expect(await evaluateWalletActivity('0xabc', null, null, sb, NOW)).toBeNull()
+    expect(await evaluateWalletActivity(ADDR, null, null, sb, NOW)).toBeNull()
+  })
+  it('rejects malformed addresses before they reach a filter', async () => {
+    const sb = makeSupabase({ all_whale_transactions: [{ transaction_hash: '0xaa', usd_value: 5_000_000 }] })
+    expect(await evaluateWalletActivity('x,usd_value.gt.0', null, null, sb, NOW)).toBeNull()
   })
 })
 

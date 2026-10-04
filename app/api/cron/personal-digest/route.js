@@ -15,8 +15,9 @@
  */
 
 import { NextResponse } from 'next/server'
+import { canonicalAddress } from '@/lib/wallet/addressVariants'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
-import { sendPersonalDigest } from '@/app/lib/email'
+import { sendPersonalDigest, isDeliverableEmail } from '@/app/lib/email'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -49,7 +50,8 @@ export async function GET(request) {
   for (const f of follows) {
     if (!followsByUser.has(f.user_id)) followsByUser.set(f.user_id, new Map())
     followsByUser.get(f.user_id).set(f.address, f.nickname || null)
-    allAddresses.add(f.address)
+    // whale_address is lower-case for EVM; follows may be checksummed.
+    allAddresses.add(canonicalAddress(f.address))
   }
 
   // 2. Last 24h of BUY/SELL trades for every followed address (one query)
@@ -122,7 +124,7 @@ export async function GET(request) {
     // Collect this user's followed-wallet moves
     const moves = []
     for (const addr of addrMap.keys()) {
-      const list = txByAddress.get(addr)
+      const list = txByAddress.get(canonicalAddress(addr))
       if (!list) continue
       for (const t of list) {
         moves.push({
@@ -147,7 +149,8 @@ export async function GET(request) {
       const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId)
       email = u?.user?.email || null
     } catch { /* skip on lookup failure */ }
-    if (!email) continue
+    // Wallet sign-ins have a placeholder <0x…>@wallet.sonartracker.io address.
+    if (!isDeliverableEmail(email)) continue
 
     const ok = await sendPersonalDigest(email, { moves, totalCount: moves.length })
     if (ok) {

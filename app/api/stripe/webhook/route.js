@@ -77,11 +77,22 @@ export async function POST(req) {
             }, { onConflict: 'user_id' })
 
           console.log(`✅ Subscription activated for user ${userId} - plan set to premium`)
+          // A 7-day trial completes checkout with nothing charged
+          // (payment_status 'no_payment_required'): that is a checkout stage,
+          // not revenue. `paid` is a real first charge here, or the trial
+          // converting (customer.subscription.updated, trialing → active).
+          // stripe_event_id is unique per event in funnel_events, so a
+          // redelivered webhook cannot add a second row.
+          const chargedNow = session.payment_status === 'paid' && Number(session.amount_total || 0) > 0
           await trackServer(supabaseAdmin, {
             userId,
-            event: 'paid',
-            // stripe_event_id lets the funnel view count a retried delivery once
-            props: { subscription_id: subscriptionId || null, mode: session.mode || null, stripe_event_id: event.id || null },
+            event: chargedNow ? 'paid' : 'checkout',
+            props: {
+              stage: chargedNow ? 'first_charge' : 'trial_started',
+              subscription_id: subscriptionId || null,
+              amount_total: Number(session.amount_total || 0),
+              stripe_event_id: event.id || null,
+            },
             path: '/subscribe',
           })
         }
@@ -129,6 +140,17 @@ export async function POST(req) {
           .eq('id', userId)
 
         console.log(`✅ Subscription ${status} for user ${userId} - plan set to ${plan}`)
+
+        // Trial converted: the first real charge after the free trial.
+        const prevStatus = event.data?.previous_attributes?.status
+        if (event.type === 'customer.subscription.updated' && prevStatus === 'trialing' && subscription.status === 'active') {
+          await trackServer(supabaseAdmin, {
+            userId,
+            event: 'paid',
+            props: { stage: 'trial_converted', subscription_id: subscription.id, stripe_event_id: event.id || null },
+            path: '/subscribe',
+          })
+        }
         break
       }
       default:

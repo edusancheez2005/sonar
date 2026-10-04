@@ -173,6 +173,14 @@ function PersonalShell() {
   const [profile, setProfile] = useState({ status: 'loading', data: null })
   const [tickers, setTickers] = useState([])
   const [activeTab, setActiveTab] = useState('watchlist')
+
+  // Deep links such as alert emails' "/dashboard/personal?tab=alerts".
+  useEffect(() => {
+    try {
+      const want = new URLSearchParams(window.location.search).get('tab')
+      if (want && TABS.some((t) => t.key === want)) setActiveTab(want)
+    } catch { /* ignore */ }
+  }, [])
   const [focus, setFocus] = useState(null) // { type: 'ticker'|'wallet', value, label }
   const [trayOpen, setTrayOpen] = useState(null)
 

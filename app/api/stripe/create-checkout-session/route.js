@@ -188,7 +188,7 @@ export async function POST(req) {
     await trackServer(supabaseAdmin, {
       userId,
       event: 'checkout',
-      props: { price_id: priceId, session_id: session.id },
+      props: { stage: 'session_created', price_id: priceId, session_id: session.id },
       path: '/subscribe',
     })
 

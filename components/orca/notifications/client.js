@@ -119,7 +119,8 @@ export function orcaPromptForNotification(notification) {
   if (reask && typeof reask.prompt === 'string' && reask.prompt.trim()) {
     return reask.prompt.trim()
   }
-  const subject = ticker || (payload && payload.address) || 'this alert'
+  const walletAddr = (payload && payload.raw && payload.raw.address) || (payload && payload.address) || null
+  const subject = kind === 'wallet_activity' && walletAddr ? walletAddr : ticker || walletAddr || 'this alert'
   switch (kind) {
     case 'price_move':
       return `What's driving the recent price move in ${subject}? ${title || ''}`.trim()
@@ -145,8 +146,12 @@ export function openNotificationInOrca(notification) {
     const q = orcaPromptForNotification(notification)
     const params = new URLSearchParams()
     params.set('q', q)
-    if (notification?.ticker) params.set('ticker', notification.ticker)
-    else if (notification?.payload?.address) params.set('wallet', notification.payload.address)
+    const addr = notification?.payload?.raw?.address || notification?.payload?.address || null
+    // A wallet alert's ticker column holds the short address label; passing it
+    // as ?ticker= framed ORCA around a fake token ("$0XD8DA…6045").
+    if (notification?.kind === 'wallet_activity' && addr) params.set('wallet', addr)
+    else if (notification?.ticker && notification.ticker !== '_ALL_') params.set('ticker', notification.ticker)
+    else if (addr) params.set('wallet', addr)
     window.location.assign(`/ai?${params.toString()}`)
     return true
   } catch {

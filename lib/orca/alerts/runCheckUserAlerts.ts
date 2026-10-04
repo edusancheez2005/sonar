@@ -30,6 +30,8 @@ import {
   type SupabaseLike,
 } from '@/lib/orca/alerts/evaluators'
 import { dedupHour } from '@/lib/orca/alerts/dedup'
+import { normaliseAddress } from '@/lib/orca/alerts/validate'
+import { formatWalletActivityFromTxs, type WalletTx } from '@/lib/orca/alerts/format'
 import {
   DAILY_CAP_BY_STYLE,
   MAX_INAPP_PER_DAY,
@@ -48,64 +50,128 @@ export interface CheckResult {
   folded_wallet_alerts: number
 }
 
-/**
- * Legacy `wallet_alerts` row (written by the "Set alert" button on wallet
- * pages via /api/alerts) → an evaluable wallet_activity rule. Returns null
- * for rows that cannot be delivered: no owner, inactive, or no address.
- */
-export function walletAlertToRule(row: {
+/** Default floor for a legacy "Large transaction" alert saved without a minimum. */
+export const LARGE_TX_DEFAULT_USD = 100_000
+
+const SOLANA_LIKE_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+
+export interface WalletAlertRow {
+  id?: string
   user_id?: string | null
   address?: string | null
   chain?: string | null
+  alert_type?: string | null
   min_usd_value?: number | string | null
   is_active?: boolean | null
-}): Omit<AlertRule, 'id'> | null {
-  const address = String(row?.address || '').trim()
+  created_at?: string | null
+}
+
+/**
+ * The USD floor a legacy wallet_alerts row asked for: its min_usd_value when
+ * set; $100K for "large_transaction" saved without one (the modal's
+ * placeholder); otherwise null = any valued move. token_transfer / new_token
+ * have no dedicated evaluator yet and fold as any valued move.
+ */
+export function effectiveWalletThreshold(row: WalletAlertRow): number | null {
+  const min = Number(row?.min_usd_value)
+  if (Number.isFinite(min) && min > 0) return Math.round(min)
+  if (String(row?.alert_type || '') === 'large_transaction') return LARGE_TX_DEFAULT_USD
+  return null
+}
+
+/** Chain stored on a wallet rule: only Solana narrows anything (EVM addresses are chain-agnostic). */
+export function ruleChainFor(address: string): string | null {
+  return SOLANA_LIKE_RE.test(address) && !address.startsWith('0x') ? 'solana' : null
+}
+
+/**
+ * Legacy `wallet_alerts` row (written by the "Set alert" button on wallet
+ * pages via /api/alerts) → an evaluable wallet_activity rule. Returns null
+ * for rows that cannot be delivered: no owner, inactive, or an address that
+ * fails validation (it would otherwise reach a PostgREST .or() filter).
+ */
+export function walletAlertToRule(row: WalletAlertRow): Omit<AlertRule, 'id'> | null {
+  const address = normaliseAddress(row?.address)
   const userId = row?.user_id ? String(row.user_id) : ''
   if (!address || !userId) return null
   if (row.is_active === false) return null
-  const min = Number(row.min_usd_value)
   return {
     user_id: userId,
     ticker: null,
     kind: 'wallet_activity',
     threshold_pct: null,
-    threshold_usd: Number.isFinite(min) && min > 0 ? Math.round(min) : null,
+    threshold_usd: effectiveWalletThreshold(row),
     address,
-    chain: row.chain ? String(row.chain) : null,
+    chain: ruleChainFor(address),
     enabled: true,
   }
 }
 
 /**
- * Fold legacy wallet_alerts into user_alerts so ONE job evaluates and delivers
- * them (2026-10-03: 21 rows existed and nothing had ever evaluated them).
- * Idempotent: rows whose (user, address) already has a wallet_activity rule are
- * skipped; new rules are inserted one by one so a single duplicate cannot
- * abort the batch. Returns the rules created in this run so they are evaluated
- * immediately rather than five minutes later.
+ * Several legacy rows for the same (user, address) become ONE rule with the
+ * most permissive floor: any row without a floor wins; otherwise the lowest.
  */
-async function foldWalletAlerts(
-  supabase: SupabaseLike,
-  existing: AlertRule[]
-): Promise<AlertRule[]> {
-  const { data } = await supabase
-    .from('wallet_alerts')
-    .select('id, user_id, address, chain, alert_type, min_usd_value, is_active')
-    .eq('is_active', true)
-    .limit(2000)
-  const rows = Array.isArray(data) ? data : []
-  if (rows.length === 0) return []
-  const have = new Set(
-    existing
-      .filter((r) => r.kind === 'wallet_activity' && r.address)
-      .map((r) => `${r.user_id}|${String(r.address).toLowerCase()}`)
-  )
-  const created: AlertRule[] = []
+export function mergeWalletAlertRows(rows: WalletAlertRow[]): Array<Omit<AlertRule, 'id'>> {
+  const merged = new Map<string, Omit<AlertRule, 'id'>>()
   for (const row of rows) {
     const rule = walletAlertToRule(row)
     if (!rule) continue
-    const key = `${rule.user_id}|${rule.address!.toLowerCase()}`
+    const key = `${rule.user_id}|${rule.address}`
+    const prev = merged.get(key)
+    if (!prev) {
+      merged.set(key, rule)
+      continue
+    }
+    const a = prev.threshold_usd
+    const b = rule.threshold_usd
+    prev.threshold_usd = a === null || b === null ? null : Math.min(a, b)
+  }
+  return Array.from(merged.values())
+}
+
+function walletKey(userId: string, address: string | null | undefined): string {
+  const a = String(address || '').trim()
+  return `${userId}|${a.startsWith('0x') ? a.toLowerCase() : a}`
+}
+
+/**
+ * Fold legacy wallet_alerts into user_alerts so ONE job evaluates and delivers
+ * them (2026-10-03: 21 rows existed and nothing had ever evaluated them).
+ * Idempotent: (user, address) pairs that already have a wallet_activity rule —
+ * enabled or not — are skipped, and the partial unique index catches races.
+ * Deleting the folded rule in the Alerts tab retires the legacy rows
+ * (lib/orca/alerts/walletAlertSync), so a deleted rule does not come back.
+ * Returns the rules created in this run so they are evaluated immediately.
+ */
+async function foldWalletAlerts(supabase: SupabaseLike): Promise<AlertRule[]> {
+  const { data } = await supabase
+    .from('wallet_alerts')
+    .select('id, user_id, address, chain, alert_type, min_usd_value, is_active, created_at')
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .limit(2000)
+  const rows = (Array.isArray(data) ? data : []) as WalletAlertRow[]
+  if (rows.length === 0) return []
+  const wanted = mergeWalletAlertRows(rows)
+  if (wanted.length === 0) return []
+
+  // Existing wallet rules for these owners, including disabled ones.
+  const owners = Array.from(new Set(wanted.map((r) => r.user_id)))
+  const have = new Set<string>()
+  for (let i = 0; i < owners.length; i += 150) {
+    const { data: existing, error } = await supabase
+      .from('user_alerts')
+      .select('user_id, address')
+      .eq('kind', 'wallet_activity')
+      .in('user_id', owners.slice(i, i + 150))
+      .limit(5000)
+    if (error || !Array.isArray(existing)) return [] // cannot prove absence → fold nothing this run
+    for (const r of existing as Array<{ user_id: string; address: string | null }>) have.add(walletKey(r.user_id, r.address))
+  }
+
+  const created: AlertRule[] = []
+  for (const rule of wanted) {
+    const key = walletKey(rule.user_id, rule.address)
     if (have.has(key)) continue
     have.add(key)
     try {
@@ -113,13 +179,40 @@ async function foldWalletAlerts(
         .from('user_alerts')
         .insert(rule)
         .select('id, user_id, ticker, kind, threshold_pct, threshold_usd, address, chain, enabled')
-      const made = (Array.isArray(ins) ? ins : []) as AlertRule[]
-      created.push(...made)
+      created.push(...((Array.isArray(ins) ? ins : []) as AlertRule[]))
     } catch {
       /* duplicate or constraint — skip this one */
     }
   }
   return created
+}
+
+/**
+ * Display names for wallet rules: curated entities (Binance, Vitalik…) keyed
+ * by lower-cased EVM address / exact Solana address. ~250 small rows.
+ */
+async function loadCuratedLabels(supabase: SupabaseLike): Promise<Map<string, string>> {
+  const labels = new Map<string, string>()
+  try {
+    const { data } = await supabase
+      .from('curated_entities')
+      .select('display_name, addresses')
+      .eq('submission_status', 'approved')
+      .limit(2000)
+    for (const e of (Array.isArray(data) ? data : []) as Array<{ display_name?: string; addresses?: unknown }>) {
+      const name = typeof e?.display_name === 'string' ? e.display_name.trim() : ''
+      if (!name || !Array.isArray(e.addresses)) continue
+      for (const a of e.addresses as Array<{ address?: string }>) {
+        const addr = typeof a?.address === 'string' ? a.address.trim() : ''
+        if (!addr) continue
+        const k = addr.startsWith('0x') ? addr.toLowerCase() : addr
+        if (!labels.has(k)) labels.set(k, name)
+      }
+    }
+  } catch {
+    /* unnamed titles are fine */
+  }
+  return labels
 }
 
 function startOfUtcDay(at: Date): string {
@@ -137,6 +230,11 @@ function normaliseStyle(value: unknown): NotificationStyle {
 // only stops collisions *inside* one hour; a sustained price move or a
 // re-surfaced headline would otherwise re-fire near-identically every hour.
 const RECENT_DUP_WINDOW_MS = 6 * 60 * 60 * 1000
+// Wallet alerts remember which tx hashes they already notified for this long.
+const WALLET_DEDUP_LOOKBACK_MS = 24 * 60 * 60 * 1000
+// A busy wallet (an exchange hot wallet) may notify at most this often per day,
+// so it cannot crowd the user's other alerts out of the daily cap.
+export const WALLET_RULE_DAILY_CAP = 3
 
 function rawUrl(copy: NotificationCopy): string {
   const raw = copy.payload?.raw as Record<string, unknown> | undefined
@@ -252,7 +350,7 @@ export async function runCheckUserAlerts(
 
   // 2. Fold legacy wallet_alerts into user_alerts (one delivery path).
   try {
-    const synced = await foldWalletAlerts(supabase, rules)
+    const synced = await foldWalletAlerts(supabase)
     if (synced.length > 0) {
       rules.push(...synced)
       result.folded_wallet_alerts = synced.length
@@ -329,9 +427,16 @@ export async function runCheckUserAlerts(
   }
   if (candidatesByUser.size === 0) return result
 
-  // 5. Per-user daily cap, then deduplicated insert.
-  const dayStart = startOfUtcDay(now())
-  const recentCutoff = now().getTime() - RECENT_DUP_WINDOW_MS
+  // Names for wallet titles ("Binance moved $42M"), only when one fired.
+  const walletFired = evaluated.some(({ rule, copy }) => !!copy && rule.kind === 'wallet_activity')
+  const labels = walletFired ? await loadCuratedLabels(supabase) : new Map<string, string>()
+
+  // 5. Per-user dedup and daily cap, then insert.
+  const nowMs = now().getTime()
+  const dayStartIso = startOfUtcDay(now())
+  const dayStartMs = Date.parse(dayStartIso)
+  const recentCutoff = nowMs - RECENT_DUP_WINDOW_MS
+  const lookbackIso = new Date(Math.min(dayStartMs, nowMs - WALLET_DEDUP_LOOKBACK_MS)).toISOString()
   for (const [userId, rawCandidates] of candidatesByUser) {
     const style = styleByUser.get(userId) ?? 'balanced'
     const cap = Math.min(DAILY_CAP_BY_STYLE[style], MAX_INAPP_PER_DAY)
@@ -341,22 +446,36 @@ export async function runCheckUserAlerts(
 
     let usedToday = 0
     const recentDupKeys = new Set<string>()
+    const notifiedTx = new Map<string, Set<string>>()
+    const perRuleToday = new Map<string, number>()
     try {
       const { data } = await supabase
         .from('user_notifications')
-        .select('id, rule_id, title, created_at')
+        .select('id, rule_id, kind, title, payload, created_at')
         .eq('user_id', userId)
-        .gte('created_at', dayStart)
-        .limit(MAX_INAPP_PER_DAY + 1)
+        .gte('created_at', lookbackIso)
+        .limit(300)
       const rows = (Array.isArray(data) ? data : []) as Array<{
         rule_id?: string
+        kind?: string
         title?: string
+        payload?: { raw?: { txHashes?: unknown } } | null
         created_at?: string
       }>
-      usedToday = rows.length
       for (const r of rows) {
         const ts = r.created_at ? Date.parse(r.created_at) : NaN
-        if (Number.isFinite(ts) && ts >= recentCutoff && r.rule_id && r.title) {
+        if (!Number.isFinite(ts) || ts >= dayStartMs) {
+          usedToday += 1
+          if (r.rule_id) perRuleToday.set(r.rule_id, (perRuleToday.get(r.rule_id) ?? 0) + 1)
+        }
+        if (r.kind === 'wallet_activity' && r.rule_id) {
+          const hashes = r.payload?.raw?.txHashes
+          if (Array.isArray(hashes)) {
+            const set = notifiedTx.get(r.rule_id) ?? new Set<string>()
+            for (const h of hashes) if (typeof h === 'string') set.add(h)
+            notifiedTx.set(r.rule_id, set)
+          }
+        } else if (Number.isFinite(ts) && ts >= recentCutoff && r.rule_id && r.title) {
           recentDupKeys.add(`${r.rule_id}|${r.title}`)
         }
       }
@@ -364,11 +483,36 @@ export async function runCheckUserAlerts(
       usedToday = 0
     }
 
-    // Skip candidates whose (rule, title) already fired in the recent window.
-    const deduped = candidates.filter(
-      ({ rule, copy }) => !recentDupKeys.has(`${rule.id}|${copy.title}`)
-    )
-    result.capped += candidates.length - deduped.length
+    // Wallet alerts dedup by transaction: only moves not already notified for
+    // this rule go out, so a new $80M transfer is not hidden behind an earlier
+    // $1M one (the title used to be identical every time). Other kinds keep
+    // the (rule, title) window for re-surfaced price moves and headlines.
+    const deduped: Candidate[] = []
+    const claimed = new Set<string>() // one tx notifies once even if two followed addresses saw it
+    for (const c of candidates) {
+      if (c.rule.kind === 'wallet_activity') {
+        if ((perRuleToday.get(c.rule.id) ?? 0) >= WALLET_RULE_DAILY_CAP) {
+          result.capped += 1
+          continue
+        }
+        const raw = (c.copy.payload?.raw ?? {}) as { txs?: WalletTx[] }
+        const txs = Array.isArray(raw.txs) ? raw.txs : []
+        const seen = notifiedTx.get(c.rule.id)
+        const fresh = txs.filter((t) => !(seen && seen.has(t.h)) && !claimed.has(t.h))
+        if (fresh.length === 0) {
+          result.capped += 1
+          continue
+        }
+        for (const t of fresh) claimed.add(t.h)
+        const addr = String(c.rule.address || '')
+        const label = labels.get(addr.startsWith('0x') ? addr.toLowerCase() : addr) ?? null
+        deduped.push({ rule: c.rule, copy: formatWalletActivityFromTxs(addr, c.rule.chain ?? null, fresh, label) })
+      } else if (recentDupKeys.has(`${c.rule.id}|${c.copy.title}`)) {
+        result.capped += 1
+      } else {
+        deduped.push(c)
+      }
+    }
 
     const remaining = Math.max(0, cap - usedToday)
     if (remaining <= 0) {

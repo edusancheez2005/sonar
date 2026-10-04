@@ -34,6 +34,12 @@ CREATE INDEX IF NOT EXISTS idx_funnel_events_user_time
 
 ALTER TABLE public.funnel_events ENABLE ROW LEVEL SECURITY;
 -- No policies on purpose: service-role only.
+REVOKE ALL ON public.funnel_events FROM anon, authenticated;
+
+-- A redelivered Stripe webhook must not add a second checkout/paid row.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_funnel_events_stripe_event
+  ON public.funnel_events (event, (props->>'stripe_event_id'))
+  WHERE props ? 'stripe_event_id';
 
 -- Daily funnel for the dashboard / Saif: distinct users per event per day.
 CREATE OR REPLACE VIEW public.funnel_daily AS
@@ -45,6 +51,12 @@ SELECT
 FROM public.funnel_events
 GROUP BY 1, 2
 ORDER BY 1 DESC, 2;
+
+-- Views run with their owner's rights, which bypass the table's RLS, and
+-- Supabase grants new public objects to anon/authenticated by default. Without
+-- this REVOKE anyone holding the public anon key could read daily signups and
+-- payments from /rest/v1/funnel_daily.
+REVOKE ALL ON public.funnel_daily FROM anon, authenticated;
 
 COMMENT ON TABLE public.funnel_events IS
   'Activation funnel events (signup, welcome_choice, follow, alert_set, orca_question, paywall_view, checkout, paid). Service-role writes only.';

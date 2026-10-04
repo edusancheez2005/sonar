@@ -101,7 +101,7 @@ const Amount = styled.div`
   text-align: right;
   font-family: var(--font-mono, monospace);
   white-space: nowrap;
-  .action { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: ${(p) => (p.$buy ? C.green : C.red)}; }
+  .action { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: ${(p) => (p.$neutral ? C.muted : p.$buy ? C.green : C.red)}; }
   .usd { color: ${C.text}; font-weight: 700; font-size: 0.92rem; margin-top: 0.1rem; }
 `
 
@@ -185,7 +185,9 @@ export default function YourWhalesModule() {
         const token = data?.session?.access_token
         if (!token) { if (!cancelled) setState({ status: 'hidden' }); return }
 
-        const res = await fetch('/api/wallet-tracker/follows/feed?limit=30', {
+        // include=transfers: famous wallets mostly show up as valued transfers
+        // from the tracked-address poller, not as BUY/SELL whales on the tape.
+        const res = await fetch('/api/wallet-tracker/follows/feed?limit=30&include=transfers', {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) { if (!cancelled) setState({ status: 'hidden' }); return }
@@ -242,7 +244,7 @@ export default function YourWhalesModule() {
         </Head>
         <Body>
           All quiet — the {state.wallets.length} wallet{state.wallets.length === 1 ? '' : 's'} you follow
-          haven&rsquo;t traded in the last 24 hours. We&rsquo;ll surface it here the second they do.
+          haven&rsquo;t moved in the last 24 hours. We&rsquo;ll surface it here the second they do.
         </Body>
         <WalletChips>
           {state.wallets.slice(0, 8).map((w) => (
@@ -261,21 +263,25 @@ export default function YourWhalesModule() {
     <Panel>
       <Head>
         <Kicker>Your Whales Moved</Kicker>
-        <CountPill>{moves.length} TRADE{moves.length === 1 ? '' : 'S'} · 24H</CountPill>
+        <CountPill>{moves.length} MOVE{moves.length === 1 ? '' : 'S'} · 24H</CountPill>
         <ViewAll href="/dashboard/personal">View all →</ViewAll>
       </Head>
       <div>
         {moves.slice(0, 5).map((m, i) => {
-          const buy = String(m.classification || '').toUpperCase() === 'BUY'
-          const name = m.entity_name || shortAddr(m.whale_address)
+          const kind = String(m.classification || '').toUpperCase()
+          const buy = kind === 'BUY'
+          const transfer = kind === 'RECEIVE' || kind === 'SEND'
+          const verb = transfer ? (kind === 'RECEIVE' ? 'received' : 'sent') : buy ? 'bought' : 'sold'
+          const action = transfer ? (kind === 'RECEIVE' ? 'IN' : 'OUT') : buy ? 'BUY' : 'SELL'
+          const name = m.nickname || m.entity_name || shortAddr(m.whale_address)
           return (
             <MoveRow key={`${m.whale_address}-${m.timestamp}-${i}`} href={`/wallet-tracker/${m.whale_address}`}>
               <Who>
                 <div className="name">{name}</div>
-                <div className="sub">{buy ? 'bought' : 'sold'} {m.token_symbol || '?'} · {ago(m.timestamp)}</div>
+                <div className="sub">{verb} {m.token_symbol || '?'} · {ago(m.timestamp)}</div>
               </Who>
-              <Amount $buy={buy}>
-                <div className="action">{buy ? 'BUY' : 'SELL'}</div>
+              <Amount $buy={buy} $neutral={transfer}>
+                <div className="action">{action}</div>
                 <div className="usd">{fmtUsd(m.usd_value)}</div>
               </Amount>
             </MoveRow>

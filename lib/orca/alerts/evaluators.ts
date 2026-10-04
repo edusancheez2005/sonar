@@ -12,8 +12,9 @@
  *   whale_flow        -> all_whale_transactions (rolling 24h net buy-sell USD)
  *   signal_flip       -> token_signals (latest 2 rows; column is `signal`)
  *   news_high_impact  -> news_items (published in last 1h, |sentiment| >= 0.6)
- *   wallet_activity   -> all_whale_transactions + tracked_address_transfers +
- *                        solana_transactions (address moved in last 1h, USD-valued)
+ *   wallet_activity   -> all_whale_transactions + tracked_address_transfers (by
+ *                        insert time) + solana_transactions; USD-valued moves in
+ *                        the last 2h, deduped by tx hash in the runner
  *   news_any          -> news_items (any article for ticker in last 1h)
  *   social_post       -> social_posts (any mention of ticker in last 1h)
  */
@@ -22,13 +23,17 @@ import { NEWS_SENTIMENT_THRESHOLD, RECENT_WINDOW_MS } from './types'
 import { CONVERGENCE_ANY_TICKER } from './types'
 import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
 import { isJunkAddress } from '@/lib/orca/junk-addresses'
+import { addressVariants, EVM_ADDRESS_RE } from '@/lib/wallet/addressVariants'
+export { addressVariants }
+import { loadNativePrices, transferUsd } from '@/lib/wallet/transferValue'
+import type { WalletTx } from './format'
 import {
+  formatWalletActivityFromTxs,
   formatPriceMove,
   formatWhaleFlow,
   formatWhaleConvergence,
   formatSignalFlip,
   formatNewsImpact,
-  formatWalletActivity,
   formatNewsAny,
   formatSocialPost,
 } from './format'
@@ -254,6 +259,23 @@ export async function evaluateNewsImpact(
  * to_address (the address can sit on either side of a transfer). Optional
  * thresholdUsd filters out dust by minimum per-transaction USD value.
  */
+const WALLET_WINDOW_MS = 2 * 60 * 60 * 1000 // tape + insert recency; tx-hash dedup prevents repeats
+const TRACKED_TS_BOUND_MS = 24 * 60 * 60 * 1000 // index-served bound on on-chain time
+/** Floor when the rule has no minimum: drops zero-value / poisoning dust. */
+export const DEFAULT_WALLET_MIN_USD = 10
+const SAFE_ADDRESS_RE = /^[A-Za-z0-9]{20,90}$/
+
+/**
+ * wallet_activity — the address moved (USD-valued) recently. Sources:
+ *   1. the whale tape (all_whale_transactions), any chain;
+ *   2. tracked_address_transfers (the followed/famous-wallet poller), by INSERT
+ *      time: the poller visits each address every few hours and stamps on-chain
+ *      time, so an on-chain-time window would miss nearly every row. Native
+ *      coins and known stablecoins are priced here (lib/wallet/transferValue);
+ *   3. solana_transactions for Solana addresses.
+ * Returns the valued transactions in payload.raw.txs so the runner can drop
+ * the ones it already notified (dedup by tx hash, not by title).
+ */
 export async function evaluateWalletActivity(
   address: string,
   thresholdUsd: number | null,
@@ -262,85 +284,82 @@ export async function evaluateWalletActivity(
   now: () => Date = () => new Date()
 ): Promise<NotificationCopy | null> {
   const addr = String(address || '').trim()
-  if (!addr) return null
-  const sinceIso = new Date(now().getTime() - RECENT_WINDOW_MS).toISOString()
-  const minUsd = Number.isFinite(thresholdUsd as number) && Number(thresholdUsd) > 0 ? Number(thresholdUsd) : 0
-  // EVM addresses are stored mixed-case in some tables and lower-case in
-  // others; match both spellings. Solana (base58) is case-sensitive as-is.
-  const variants = Array.from(new Set([addr, addr.toLowerCase()]))
+  if (!SAFE_ADDRESS_RE.test(addr)) return null // also keeps it out of .or() filters
+  const isEvm = EVM_ADDRESS_RE.test(addr)
+  const variants = addressVariants(addr)
+  const nowMs = now().getTime()
+  const windowIso = new Date(nowMs - WALLET_WINDOW_MS).toISOString()
+  const tsBoundIso = new Date(nowMs - TRACKED_TS_BOUND_MS).toISOString()
+  const minUsd = Number.isFinite(thresholdUsd as number) && Number(thresholdUsd) > 0 ? Number(thresholdUsd) : DEFAULT_WALLET_MIN_USD
 
-  const seen = new Set<string>()
-  let txCount = 0
-  let totalUsd = 0
-  let topToken: string | null = null
-  let topTokenUsd = -1
-  const consider = (hash: unknown, usdRaw: unknown, token: unknown) => {
-    const v = Number(usdRaw)
-    // Dust / airdrop spam arrives with no USD value (2026-10-03: "ODYSSEY"
-    // sprayed at every famous wallet). Unknown-value transfers never alert.
-    if (!Number.isFinite(v) || v <= 0 || v < minUsd) return
-    const key = typeof hash === 'string' && hash ? hash.toLowerCase() : `${v}|${String(token ?? '')}`
-    if (seen.has(key)) return
-    seen.add(key)
-    txCount += 1
-    totalUsd += v
-    if (v > topTokenUsd && typeof token === 'string' && token) {
-      topTokenUsd = v
-      topToken = token
-    }
+  const txs = new Map<string, WalletTx>()
+  const consider = (hash: unknown, usd: number | null, token: unknown) => {
+    if (usd === null || !Number.isFinite(usd) || usd < minUsd) return
+    const h = typeof hash === 'string' && hash ? (hash.startsWith('0x') ? hash.toLowerCase() : hash) : ''
+    if (!h || txs.has(h)) return
+    txs.set(h, { h, usd, token: typeof token === 'string' && token ? token : null })
   }
-  type Row = { transaction_hash?: unknown; tx_hash?: unknown; usd_value?: unknown; amount_usd?: unknown; token_symbol?: unknown }
 
-  // 1. Whale tape (large EVM transfers).
+  // 1. Whale tape — an address is the same owner on every EVM chain, so no
+  //    chain filter (a rule pinned to 'base' used to miss its ethereum moves).
   try {
     const orFilter = variants
       .map((a) => `whale_address.eq.${a},from_address.eq.${a},to_address.eq.${a}`)
       .join(',')
-    let query = supabase
+    const { data } = await supabase
       .from('all_whale_transactions')
-      .select('transaction_hash, usd_value, token_symbol, blockchain, timestamp')
+      .select('transaction_hash, usd_value, token_symbol, timestamp')
       .or(orFilter)
-      .gte('timestamp', sinceIso)
-    if (chain) query = query.eq('blockchain', chain)
-    const { data } = await query.order('timestamp', { ascending: false }).limit(100)
-    for (const r of (Array.isArray(data) ? data : []) as Row[]) consider(r.transaction_hash, r.usd_value, r.token_symbol)
+      .gte('timestamp', windowIso)
+      .order('timestamp', { ascending: false })
+      .limit(100)
+    for (const r of (Array.isArray(data) ? data : []) as Array<Record<string, unknown>>) {
+      consider(r.transaction_hash, Number(r.usd_value), r.token_symbol)
+    }
   } catch {
     /* source unavailable — try the others */
   }
 
-  // 2. Tracked-address poller (followed / famous wallets). Per-address and
-  //    time-bounded, which is exactly what its (address, timestamp) index serves.
+  // 2. Tracked-address poller.
   try {
-    let query = supabase
+    const { data } = await supabase
       .from('tracked_address_transfers')
-      .select('tx_hash, amount_usd, token_symbol, chain, timestamp')
+      .select('tx_hash, chain, contract, amount, amount_usd, token_symbol, timestamp, created_at')
       .in('address', variants)
-      .gte('timestamp', sinceIso)
-    if (chain) query = query.eq('chain', chain)
-    const { data } = await query.order('timestamp', { ascending: false }).limit(100)
-    for (const r of (Array.isArray(data) ? data : []) as Row[]) consider(r.tx_hash, r.amount_usd, r.token_symbol)
+      .gte('timestamp', tsBoundIso)
+      .gte('created_at', windowIso)
+      .order('timestamp', { ascending: false })
+      .limit(100)
+    const rows = (Array.isArray(data) ? data : []) as Array<Record<string, any>>
+    if (rows.length > 0) {
+      const prices = await loadNativePrices(supabase, nowMs)
+      for (const r of rows) consider(r.tx_hash, transferUsd(r, prices), r.token_symbol)
+    }
   } catch {
     /* ignore */
   }
 
-  // 3. Solana monitor (Railway) — the whale tape above is EVM-only.
-  if (!chain || chain === 'solana') {
+  // 3. Solana monitor — the whale tape above is EVM-first.
+  if (!isEvm) {
     try {
       const { data } = await supabase
         .from('solana_transactions')
         .select('transaction_hash, usd_value, token_symbol, timestamp')
         .or(`whale_address.eq.${addr},from_address.eq.${addr},to_address.eq.${addr}`)
-        .gte('timestamp', sinceIso)
+        .gte('timestamp', windowIso)
         .order('timestamp', { ascending: false })
         .limit(100)
-      for (const r of (Array.isArray(data) ? data : []) as Row[]) consider(r.transaction_hash, r.usd_value, r.token_symbol)
+      for (const r of (Array.isArray(data) ? data : []) as Array<Record<string, unknown>>) {
+        consider(r.transaction_hash, Number(r.usd_value), r.token_symbol)
+      }
     } catch {
       /* ignore */
     }
   }
 
-  if (txCount === 0) return null
-  return formatWalletActivity(addr, chain, txCount, totalUsd, topToken)
+  if (txs.size === 0) return null
+  const list = Array.from(txs.values()).sort((a, b) => b.usd - a.usd)
+  return formatWalletActivityFromTxs(addr, chain, list)
 }
 
 /**

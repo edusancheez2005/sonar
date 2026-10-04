@@ -45,6 +45,11 @@ describe('famous wallets picker list', () => {
       expect(w.blurb.length).toBeLessThan(70)
       if (w.avatar) expect(w.avatar.startsWith('/')).toBe(true)
     }
+    for (const w of FAMOUS_WALLETS) {
+      expect(w.minUsd).toBeGreaterThan(0)
+      expect([1, 3]).toContain(w.alertAddresses)
+    }
+    expect(FAMOUS_WALLETS.find((w) => w.slug === 'binance')!.alertAddresses).toBe(1) // exchanges: busiest address only
     expect(isFamousSlug('binance')).toBe(true)
     expect(isFamousSlug('satoshi')).toBe(false)
     expect(MAX_ADDRESSES_PER_ENTITY).toBe(3)

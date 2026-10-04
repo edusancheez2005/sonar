@@ -81,6 +81,7 @@ export default function FollowButton({
         }),
       })
       if (!res.ok) throw new Error('request failed')
+      try { window.dispatchEvent(new Event('sonar:follows-changed')) } catch { /* ignore */ }
       if (onToggle) onToggle(nowFollowed)
     } catch {
       // revert

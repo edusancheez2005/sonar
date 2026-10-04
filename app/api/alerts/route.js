@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { trackServer } from '@/lib/analytics/trackServer'
+import { syncFoldedWalletRule } from '@/lib/orca/alerts/walletAlertSync'
+import { normaliseAddress } from '@/lib/orca/alerts/validate'
 
 function envMissing() {
   return !(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) ||
@@ -63,6 +65,9 @@ export async function POST(req) {
   if (!address || typeof address !== 'string') {
     return NextResponse.json({ error: 'address is required' }, { status: 400 })
   }
+  if (!normaliseAddress(address)) {
+    return NextResponse.json({ error: 'invalid address' }, { status: 400 })
+  }
   if (!alert_type || typeof alert_type !== 'string') {
     return NextResponse.json({ error: 'alert_type is required' }, { status: 400 })
   }
@@ -92,6 +97,8 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  // Live within seconds, not at the next 5-minute fold.
+  await syncFoldedWalletRule(supabaseAdmin, user.id, address)
   await trackServer(supabaseAdmin, {
     userId: user.id,
     event: 'alert_set',

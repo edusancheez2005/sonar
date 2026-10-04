@@ -20,7 +20,7 @@
  * choice logs welcome_choice. The post-signup hook lives in
  * components/onboarding/PostSignupHook (global, any landing page).
  */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import styled, { keyframes } from 'styled-components'
@@ -56,8 +56,12 @@ const Backdrop = styled.div`
 
 const Dialog = styled.div`
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(700px, 100%);
-  max-height: calc(100vh - 32px);
+  /* 100% of the fixed backdrop = the visible viewport minus its padding. 100vh
+     is the toolbar-less height on iOS/Android and pushed "Done" off-screen. */
+  max-height: 100%;
   overflow-y: auto;
   border-radius: 18px;
   border: 1px solid rgba(0, 229, 255, 0.14);
@@ -89,6 +93,7 @@ const Close = styled.button`
 `
 
 const Brand = styled.img`
+  align-self: flex-start;
   height: 20px;
   width: auto;
   opacity: 0.92;
@@ -294,6 +299,11 @@ const WalletList = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  /* The list scrolls; heading and the Done button stay on screen. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   @media (max-width: 640px) { grid-template-columns: 1fr; }
 `
 
@@ -440,6 +450,8 @@ export default function FirstRunWelcome({ onTakeTour }) {
   const [token, setToken] = useState(null)
   const [followed, setFollowed] = useState({}) // slug -> 'pending' | 'done' | 'error'
   const [emailAlerts, setEmailAlerts] = useState(true)
+  // Wallet sign-ins carry a placeholder address; never offer them email.
+  const [canEmail, setCanEmail] = useState(true)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -460,6 +472,7 @@ export default function FirstRunWelcome({ onTakeTour }) {
         setUserId(uid)
         setName(firstName(user))
         setToken(data?.session?.access_token || null)
+        setCanEmail(!!user?.email && !/@wallet\.sonartracker\.io$/i.test(user.email))
         setShow(true)
         const { data: row } = await sb
           .from('user_profile')
@@ -479,7 +492,7 @@ export default function FirstRunWelcome({ onTakeTour }) {
     if (!show) return undefined
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    const onKey = (e) => { if (e.key === 'Escape') close() }
+    const onKey = (e) => { if (e.key === 'Escape') closeRef.current() }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = prev
@@ -491,7 +504,25 @@ export default function FirstRunWelcome({ onTakeTour }) {
   const close = () => {
     setShow(false)
     try { localStorage.setItem(welcomeKeyFor(userId), 'dismissed') } catch { /* ignore */ }
+    // Alert-email choice is applied once, as an explicit true/false, when the
+    // dialog closes after at least one follow — so unticking before "Done"
+    // really means no emails. Turning it on starts the double opt-in for
+    // addresses Google has not verified.
+    const followedAny = Object.values(followed).some((v) => v === 'done')
+    if (followedAny && canEmail && token) {
+      try {
+        fetch('/api/notifications/preferences', {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notifications_email: !!emailAlerts }),
+          keepalive: true,
+        }).catch(() => {})
+      } catch { /* ignore */ }
+    }
   }
+  // The Escape listener is registered once per open; read the latest close.
+  const closeRef = useRef(close)
+  closeRef.current = close
 
   const takeTour = () => {
     track('welcome_choice', { choice: 'tour' })
@@ -527,7 +558,7 @@ export default function FirstRunWelcome({ onTakeTour }) {
       const res = await fetch('/api/onboarding/follow-famous', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slugs, email_alerts: emailAlerts }),
+        body: JSON.stringify({ slugs }),
       })
       const json = res.ok ? await res.json() : null
       const okSlugs = new Set((json?.results || []).filter((r) => r.ok).map((r) => r.slug))
@@ -623,14 +654,18 @@ export default function FirstRunWelcome({ onTakeTour }) {
             </WalletList>
 
             <Footer>
-              <EmailOpt>
-                <input
-                  type="checkbox"
-                  checked={emailAlerts}
-                  onChange={(e) => setEmailAlerts(e.target.checked)}
-                />
-                Also email me when they move
-              </EmailOpt>
+              {canEmail ? (
+                <EmailOpt>
+                  <input
+                    type="checkbox"
+                    checked={emailAlerts}
+                    onChange={(e) => setEmailAlerts(e.target.checked)}
+                  />
+                  Also email me when they move
+                </EmailOpt>
+              ) : (
+                <span />
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <Ghost type="button" onClick={() => setPanel('choices')}>Back</Ghost>
                 <Primary type="button" onClick={close} disabled={followedCount === 0 || anyPending}>
