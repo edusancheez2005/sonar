@@ -46,15 +46,19 @@ export async function GET(req) {
 export async function POST(req) {
   const { uid, sig } = linkParams(req)
   if (!verifyEmailLink('unsubscribe', uid, sig)) return invalid()
+  let saved = false
   try {
-    await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('user_profile')
       .upsert({ user_id: uid, notifications_email: false, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
     // Explicit "off": also stops the daily "Your whales moved" digest.
-    await recordEmailChoice(supabaseAdmin, uid, 'off')
+    const prefSaved = await recordEmailChoice(supabaseAdmin, uid, 'off')
+    saved = !error && prefSaved
   } catch (e) {
     console.error('[unsubscribe] update failed', e?.message || e)
-    return htmlResponse(noticePage({ title: 'Something went wrong', body: 'Please try again, or switch alert emails off in your alert settings.', link: SETTINGS }), 500)
+  }
+  if (!saved) {
+    return htmlResponse(noticePage({ title: 'Something went wrong', body: 'Your change was not saved. Please try the button again in a minute, or switch emails off in your alert settings.', link: SETTINGS }), 500)
   }
   return htmlResponse(noticePage({
     title: 'Alert emails are off',

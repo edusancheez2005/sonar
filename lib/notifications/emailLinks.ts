@@ -33,10 +33,10 @@ export function signEmailLink(
 ): string | null {
   const key = secret()
   if (!key || !UUID_RE.test(userId)) return null
-  return createHmac('sha256', key)
-    .update(`${purpose}:${userId}:${exp ?? ''}:${bind ?? ''}`)
-    .digest('base64url')
-    .slice(0, 32)
+  // Unbound links (unsubscribe) keep the original "purpose:user:exp" input so
+  // links already mailed keep working; bound links append the address digest.
+  const input = bind ? `${purpose}:${userId}:${exp ?? ''}:${bind}` : `${purpose}:${userId}:${exp ?? ''}`
+  return createHmac('sha256', key).update(input).digest('base64url').slice(0, 32)
 }
 
 export function verifyEmailLink(

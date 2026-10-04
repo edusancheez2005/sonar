@@ -62,7 +62,6 @@ export async function POST(req) {
     const nowIso = new Date().toISOString()
     await supabaseAdmin.auth.admin.updateUserById(uid, {
       app_metadata: {
-        ...(user.app_metadata || {}),
         alert_email_verified_at: nowIso,
         alert_email_verified_via: 'link',
         alert_email_verified_for: emailBinding(user.email),

@@ -99,7 +99,7 @@ export async function POST(req) {
   }
 
   // Live within seconds, not at the next 5-minute fold.
-  await syncFoldedWalletRule(supabaseAdmin, user.id, address)
+  await syncFoldedWalletRule(supabaseAdmin, user.id, address, { enable: true })
   await trackServer(supabaseAdmin, {
     userId: user.id,
     event: 'alert_set',

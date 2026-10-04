@@ -22,14 +22,17 @@ async function recentTrackedMoves(follows, sinceIso) {
   const prices = await loadNativePrices(supabaseAdmin)
   await Promise.all(list.map(async (f) => {
     try {
-      const { data } = await supabaseAdmin
+      const floor = FLOOR_BY_NAME.get(f.nickname) ?? TRANSFER_MIN_USD
+      let q = supabaseAdmin
         .from('tracked_address_transfers')
         .select('tx_hash, chain, contract, direction, amount, amount_usd, token_symbol, timestamp')
         .in('address', addressVariants(f.address))
         .gte('timestamp', sinceIso)
-        .order('timestamp', { ascending: false })
-        .limit(50)
-      const floor = FLOOR_BY_NAME.get(f.nickname) ?? TRANSFER_MIN_USD
+      // A busy wallet's 50 newest rows are mostly small; for a high floor ask
+      // for rows that can clear it: valued ones, native coins (priced here)
+      // and token amounts big enough to be allowlisted stablecoins.
+      if (floor > TRANSFER_MIN_USD) q = q.or(`amount_usd.gte.${floor},contract.eq."",amount.gte.${floor}`)
+      const { data } = await q.order('timestamp', { ascending: false }).limit(50)
       let kept = 0
       for (const r of data || []) {
         if (kept >= TRANSFER_PER_WALLET) break
@@ -97,32 +100,57 @@ export async function GET(req) {
   const nicknameMap = new Map(uniqueFollows.map(f => [f.address, f.nickname]))
   // The whale tape stores EVM addresses lower-case; follows may be checksummed.
   const tapeKeys = Array.from(followByCanon.keys())
+  const lookupKeys = Array.from(new Set([...tapeKeys, ...addresses]))
+  const toFollowed = (addr) => followByCanon.get(canonicalAddress(addr))?.address || addr
 
-  // Get wallet profiles for cards
-  const { data: profiles } = await supabaseAdmin
-    .from('wallet_profiles')
-    .select('address, entity_name, smart_money_score, tags, total_volume_usd_30d, last_active, chain')
-    .in('address', addresses)
+  const { searchParams } = new URL(req.url)
+  const limit = Math.min(parseInt(searchParams.get('limit') || '30', 10), 100)
+  const include = String(searchParams.get('include') || '').split(',')
+  const now = Date.now()
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const dayAgo = new Date(now - 24 * 3600 * 1000).toISOString()
 
-  // Enrich with entity labels
-  const unlabeled = (profiles || []).filter(p => !p.entity_name).map(p => p.address)
-  const labelMap = new Map()
-  if (unlabeled.length > 0) {
-    const { data: labels } = await supabaseAdmin
+  // Every read is independent: run them side by side (they used to run one
+  // after another — ~9s for a user following exchange wallets). The tape read
+  // is bounded to 7 days so the planner can use the timestamp index.
+  const [profilesRes, labelsRes, tapeRes, sparkRes, moves] = await Promise.all([
+    supabaseAdmin
+      .from('wallet_profiles')
+      .select('address, entity_name, smart_money_score, tags, total_volume_usd_30d, last_active, chain')
+      .in('address', lookupKeys),
+    supabaseAdmin
       .from('addresses')
       .select('address, entity_name')
-      .in('address', unlabeled)
+      .in('address', lookupKeys)
       .not('entity_name', 'is', null)
       .not('entity_name', 'eq', '')
-    for (const l of labels || []) {
-      if (!labelMap.has(l.address)) labelMap.set(l.address, l.entity_name)
-    }
-  }
+      .limit(500),
+    supabaseAdmin
+      .from('all_whale_transactions')
+      .select('whale_address, token_symbol, classification, usd_value, blockchain, timestamp, transaction_hash')
+      .in('whale_address', tapeKeys)
+      .in('classification', ['BUY', 'SELL'])
+      .gte('timestamp', sevenDaysAgo)
+      .order('timestamp', { ascending: false })
+      .limit(limit),
+    supabaseAdmin
+      .from('all_whale_transactions')
+      .select('whale_address, timestamp, usd_value')
+      .in('whale_address', tapeKeys)
+      .gte('timestamp', sevenDaysAgo),
+    include.includes('transfers') ? recentTrackedMoves(uniqueFollows, dayAgo) : Promise.resolve([]),
+  ])
 
+  // Profiles and labels keyed by the address as the user follows it.
   const profileMap = new Map()
-  for (const p of profiles || []) {
-    if (!p.entity_name && labelMap.has(p.address)) p.entity_name = labelMap.get(p.address)
-    profileMap.set(p.address, p)
+  for (const p of profilesRes?.data || []) {
+    const key = toFollowed(p.address)
+    if (!profileMap.has(key) || (!profileMap.get(key).entity_name && p.entity_name)) profileMap.set(key, p)
+  }
+  const labelMap = new Map()
+  for (const l of labelsRes?.data || []) {
+    const key = toFollowed(l.address)
+    if (!labelMap.has(key)) labelMap.set(key, l.entity_name)
   }
 
   // Build wallet cards (include addresses without profiles too)
@@ -140,24 +168,9 @@ export async function GET(req) {
     }
   })
 
-  // Get recent transactions for followed wallets
-  const { searchParams } = new URL(req.url)
-  const limit = Math.min(parseInt(searchParams.get('limit') || '30', 10), 100)
-
-  const { data: tapeTxs } = await supabaseAdmin
-    .from('all_whale_transactions')
-    .select('whale_address, token_symbol, classification, usd_value, blockchain, timestamp, transaction_hash')
-    .in('whale_address', tapeKeys)
-    .in('classification', ['BUY', 'SELL'])
-    .order('timestamp', { ascending: false })
-    .limit(limit)
   // Key tape rows back to the address as the user follows it.
-  const txs = (tapeTxs || []).map(tx => {
-    const f = followByCanon.get(canonicalAddress(tx.whale_address))
-    return f ? { ...tx, whale_address: f.address } : tx
-  })
+  const txs = (tapeRes?.data || []).map(tx => ({ ...tx, whale_address: toFollowed(tx.whale_address) }))
 
-  // Enrich transactions with wallet info
   let feed = txs.map(tx => ({
     ...tx,
     nickname: nicknameMap.get(tx.whale_address) || null,
@@ -165,47 +178,31 @@ export async function GET(req) {
     smart_money_score: profileMap.get(tx.whale_address)?.smart_money_score || null,
   }))
 
-  const include = String(searchParams.get('include') || '').split(',')
-  if (include.includes('transfers')) {
-    const dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
-    const moves = await recentTrackedMoves(uniqueFollows, dayAgo)
+  if (moves.length > 0) {
     const seenHashes = new Set(feed.map(t => String(t.transaction_hash || '').toLowerCase()))
     for (const m of moves) {
       const h = String(m.transaction_hash || '').toLowerCase()
       if (seenHashes.has(h)) continue
       seenHashes.add(h)
-      feed.push({ ...m, entity_name: profileMap.get(m.whale_address)?.entity_name || null, smart_money_score: null })
+      feed.push({ ...m, entity_name: profileMap.get(m.whale_address)?.entity_name || labelMap.get(m.whale_address) || null, smart_money_score: null })
     }
     feed = feed
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit)
   }
 
-  // Get sparkline data for each wallet (last 7 days)
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { data: sparkRaw } = await supabaseAdmin
-    .from('all_whale_transactions')
-    .select('whale_address, timestamp, usd_value')
-    .in('whale_address', tapeKeys)
-    .gte('timestamp', sevenDaysAgo)
-  const sparkTxs = (sparkRaw || []).map(tx => {
-    const f = followByCanon.get(canonicalAddress(tx.whale_address))
-    return f ? { ...tx, whale_address: f.address } : tx
-  })
-
+  // Sparkline per wallet (last 7 days)
   const sparklines = {}
-  const now = Date.now()
-  for (const addr of addresses) {
-    sparklines[addr] = [0, 0, 0, 0, 0, 0, 0]
-  }
-  for (const tx of sparkTxs || []) {
-    if (!sparklines[tx.whale_address]) continue
-    const daysAgo = Math.floor((now - new Date(tx.timestamp).getTime()) / (24 * 60 * 60 * 1000))
+  for (const addr of addresses) sparklines[addr] = [0, 0, 0, 0, 0, 0, 0]
+  for (const raw of sparkRes?.data || []) {
+    const addr = toFollowed(raw.whale_address)
+    if (!sparklines[addr]) continue
+    const daysAgo = Math.floor((now - new Date(raw.timestamp).getTime()) / (24 * 60 * 60 * 1000))
     const idx = 6 - Math.min(daysAgo, 6)
-    sparklines[tx.whale_address][idx] += Math.abs(Number(tx.usd_value) || 0)
+    sparklines[addr][idx] += Math.abs(Number(raw.usd_value) || 0)
   }
 
-  // Get last trade per wallet
+  // Last trade per wallet
   const lastTrades = {}
   for (const tx of txs) {
     if (!lastTrades[tx.whale_address]) {

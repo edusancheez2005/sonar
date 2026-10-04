@@ -75,16 +75,19 @@ export function explicitEmailChoice(user: AuthUserLike | null | undefined): 'on'
   return v === 'on' || v === 'off' ? v : null
 }
 
-export async function recordEmailChoice(admin: AdminClient, userId: string, choice: 'on' | 'off'): Promise<void> {
+/**
+ * Record the explicit choice. Returns false when it could not be saved.
+ * Writes only the keys it changes: GoTrue merges top-level app_metadata keys,
+ * and spreading a stale snapshot could revert a concurrent change.
+ */
+export async function recordEmailChoice(admin: AdminClient, userId: string, choice: 'on' | 'off'): Promise<boolean> {
   try {
-    const { data } = await admin.auth.admin.getUserById(userId)
-    const user = data?.user
-    if (!user) return
-    await admin.auth.admin.updateUserById(userId, {
-      app_metadata: { ...(user.app_metadata || {}), email_pref: choice, email_pref_at: new Date().toISOString() },
+    const res: any = await admin.auth.admin.updateUserById(userId, {
+      app_metadata: { email_pref: choice, email_pref_at: new Date().toISOString() },
     })
+    return !res?.error
   } catch {
-    /* best-effort */
+    return false
   }
 }
 
@@ -107,7 +110,7 @@ export async function requestAlertEmailConsent(
     user = null
   }
   if (!user || !isDeliverableEmail(user.email)) return 'undeliverable'
-  const appMeta = { ...(user.app_metadata || {}) }
+  const appMeta = user.app_metadata || {}
   const binding = emailBinding(user.email)
   if (confirmedForCurrentEmail(user)) return 'verified'
 
@@ -115,7 +118,6 @@ export async function requestAlertEmailConsent(
     try {
       await admin.auth.admin.updateUserById(user.id, {
         app_metadata: {
-          ...appMeta,
           alert_email_verified_at: new Date(nowMs).toISOString(),
           alert_email_verified_via: 'google',
           alert_email_verified_for: binding,
@@ -135,7 +137,7 @@ export async function requestAlertEmailConsent(
 
   // Claim first: if the claim cannot be written, do not send — otherwise every
   // 5-minute cron run would send another confirmation.
-  const claim = { ...appMeta, alert_email_confirm_sent_at: new Date(nowMs).toISOString(), alert_email_confirm_sent_for: binding }
+  const claim = { alert_email_confirm_sent_at: new Date(nowMs).toISOString(), alert_email_confirm_sent_for: binding }
   let claimed = false
   try {
     const res: any = await admin.auth.admin.updateUserById(user.id, { app_metadata: claim })
@@ -155,7 +157,7 @@ export async function requestAlertEmailConsent(
     // Release the claim so a later attempt can try again.
     try {
       await admin.auth.admin.updateUserById(user.id, {
-        app_metadata: { ...appMeta, alert_email_confirm_sent_at: null, alert_email_confirm_sent_for: null },
+        app_metadata: { alert_email_confirm_sent_at: null, alert_email_confirm_sent_for: null }, // null deletes the key
       })
     } catch { /* next day at the latest */ }
   }

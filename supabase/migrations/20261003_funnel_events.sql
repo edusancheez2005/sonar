@@ -41,6 +41,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_funnel_events_stripe_event
   ON public.funnel_events (event, (props->>'stripe_event_id'))
   WHERE props ? 'stripe_event_id';
 
+-- `paid` = first money collected, once per subscription, even when
+-- checkout.session.completed and invoice.paid arrive at the same moment.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_funnel_events_paid_subscription
+  ON public.funnel_events ((props->>'subscription_id'))
+  WHERE event = 'paid' AND props->>'subscription_id' IS NOT NULL;
+
 -- Daily funnel for the dashboard / Saif: distinct users per event and stage
 -- per day. stage separates e.g. checkout/session_created from
 -- checkout/trial_started, and paid/first_charge from paid/trial_converted;

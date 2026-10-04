@@ -110,8 +110,7 @@ export async function POST(req) {
   // Durable marker on the account itself.
   try {
     await supabaseAdmin.auth.admin.updateUserById(u.id, {
-      user_metadata: {
-        ...meta,
+      user_metadata: { // GoTrue merges keys; no stale snapshot
         first_login_at: nowIso,
         ...(meta.signup_tracked_at ? {} : { signup_tracked_at: nowIso }),
         ...(sent ? { welcome_email_sent_at: nowIso, welcome_email_via: 'first_login' } : {}),

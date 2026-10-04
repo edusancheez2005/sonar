@@ -28,12 +28,13 @@ export const dynamic = 'force-dynamic'
 
 const STYLES = new Set(['quiet', 'balanced', 'frequent'])
 
-async function currentEmailInfo(userId: string): Promise<{ state: EmailState; choiceMade: boolean }> {
+async function currentEmailInfo(userId: string): Promise<{ state: EmailState; choiceMade: boolean | null }> {
   try {
-    const { data } = await supabaseAdminFresh.auth.admin.getUserById(userId)
-    return { state: emailStateOf(data?.user as any), choiceMade: explicitEmailChoice(data?.user as any) !== null }
+    const { data, error } = await supabaseAdminFresh.auth.admin.getUserById(userId)
+    if (error || !data?.user) return { state: 'pending', choiceMade: null } // unknown
+    return { state: emailStateOf(data.user as any), choiceMade: explicitEmailChoice(data.user as any) !== null }
   } catch {
-    return { state: 'pending', choiceMade: false }
+    return { state: 'pending', choiceMade: null }
   }
 }
 

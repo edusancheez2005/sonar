@@ -99,7 +99,8 @@ describe('requestAlertEmailConsent', () => {
     expect(await requestAlertEmailConsent(a as any, UID, { nowMs: now })).toBe('pending')
     expect(sendAlertEmailConfirmation).toHaveBeenCalledTimes(1)
     expect(a.updates[0].app_metadata.alert_email_confirm_sent_at).toBe(new Date(now).toISOString())
-    expect(a.updates[0].app_metadata.provider).toBe('email') // existing app_metadata kept
+    // only the keys it changes (GoTrue merges); no stale snapshot written back
+    expect(Object.keys(a.updates[0].app_metadata).sort()).toEqual(['alert_email_confirm_sent_at', 'alert_email_confirm_sent_for'])
   })
   it('does not resend within a day, and never from the cron once sent', async () => {
     const now = Date.parse('2026-10-04T12:00:00Z')
@@ -144,5 +145,26 @@ describe('requestAlertEmailConsent — claim before send', () => {
     expect(await requestAlertEmailConsent(a as any, UID, { nowMs: now })).toBe('pending')
     expect(sendAlertEmailConfirmation).toHaveBeenCalledTimes(1)
     expect(updates[0].app_metadata.alert_email_confirm_sent_for).toBe(emailBinding('new@corp.com'))
+  })
+})
+
+describe('unsubscribe link format', () => {
+  const prev = process.env.EMAIL_LINK_SECRET
+  beforeEach(() => { process.env.EMAIL_LINK_SECRET = 'test-secret' })
+  afterEach(() => { process.env.EMAIL_LINK_SECRET = prev })
+  it('keeps the original signed input so links in already-sent emails keep working', () => {
+    expect(signEmailLink('unsubscribe', UID)).toBe('-Z3vkJkJ_dcFrWuPBYJxPrnWaA3ouM_C')
+  })
+})
+
+describe('recordEmailChoice', () => {
+  it('reports whether the choice was saved and writes only its own keys', async () => {
+    const { recordEmailChoice } = await import('@/lib/notifications/emailConsent')
+    const writes: any[] = []
+    const ok = { auth: { admin: { getUserById: async () => ({ data: { user: null } }), updateUserById: async (_id: string, a: any) => { writes.push(a); return { error: null } } } } }
+    expect(await recordEmailChoice(ok as any, UID, 'off')).toBe(true)
+    expect(Object.keys(writes[0].app_metadata).sort()).toEqual(['email_pref', 'email_pref_at'])
+    const bad = { auth: { admin: { getUserById: async () => ({ data: { user: null } }), updateUserById: async () => ({ error: { message: 'x' } }) } } }
+    expect(await recordEmailChoice(bad as any, UID, 'off')).toBe(false)
   })
 })

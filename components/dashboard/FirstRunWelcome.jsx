@@ -454,7 +454,7 @@ export default function FirstRunWelcome({ onTakeTour }) {
   // Email choice bookkeeping, read from async paths (Escape, in-flight follows):
   // touched = the user changed the box; choiceMade = they chose before (then an
   // untouched box must not overwrite it); applied/closed guard the one PATCH.
-  const emailRef = useRef({ alerts: true, touched: false, choiceMade: false, applied: false, closed: false })
+  const emailRef = useRef({ alerts: true, touched: false, choiceMade: false, known: false, applied: false, closed: false })
   emailRef.current.alerts = emailAlerts
   // Wallet sign-ins carry a placeholder address; never offer them email.
   const [canEmail, setCanEmail] = useState(true)
@@ -528,7 +528,9 @@ export default function FirstRunWelcome({ onTakeTour }) {
     const st = emailRef.current
     if (st.applied || !canEmail || !token) return
     st.applied = true
-    if (!st.touched && st.choiceMade) return
+    // Untouched box: write the default only once the server has confirmed the
+    // user never chose (a failed or slow lookup must not overwrite an "off").
+    if (!st.touched && (st.choiceMade || !st.known)) return
     try {
       fetch('/api/notifications/preferences', {
         method: 'PATCH',
@@ -575,6 +577,8 @@ export default function FirstRunWelcome({ onTakeTour }) {
       .then((json) => {
         if (!json) return
         if (json.email_state === 'undeliverable') setCanEmail(false)
+        if (json.email_choice_made === null || json.email_choice_made === undefined) return // unknown
+        emailRef.current.known = true
         if (json.email_choice_made) {
           emailRef.current.choiceMade = true
           if (!emailRef.current.touched) setEmailAlerts(!!json.notifications_email)

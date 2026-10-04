@@ -30,7 +30,8 @@ type SupabaseLike = { from: (table: string) => any }
 export async function syncFoldedWalletRule(
   supabase: SupabaseLike,
   userId: string,
-  rawAddress: unknown
+  rawAddress: unknown,
+  opts: { enable?: boolean } = {}
 ): Promise<'updated' | 'created' | 'deleted' | 'noop'> {
   const address = normaliseAddress(rawAddress)
   if (!address || !userId) return 'noop'
@@ -64,7 +65,13 @@ export async function syncFoldedWalletRule(
         .from('user_alerts')
         // The newest explicit wallet-page setting decides the floor; a rule the
         // user switched off in the Alerts tab stays off.
-        .update({ threshold_usd: merged.threshold_usd, threshold_pct: null, chain: merged.chain, updated_at: new Date().toISOString() })
+        .update({
+          threshold_usd: merged.threshold_usd,
+          threshold_pct: null,
+          chain: merged.chain,
+          updated_at: new Date().toISOString(),
+          ...(opts.enable ? { enabled: true } : {}), // only for a newly created wallet-page alert
+        })
         .eq('user_id', userId)
         .in('id', existing.map((r) => r.id))
       return 'updated'

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { trackServer } from '@/lib/analytics/trackServer'
-import { addressVariants, canonicalAddress } from '@/lib/wallet/addressVariants'
+import { addressVariants } from '@/lib/wallet/addressVariants'
+import { isFamousSlug } from '@/lib/onboarding/famousWallets'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,35 +86,24 @@ export async function DELETE(req) {
   // Unfollowing a figure also removes what the welcome picker created for it:
   // its wallet follows (tagged with the figure's name as nickname) and the
   // wallet alerts on those addresses — otherwise the alerts kept coming.
-  if (entity_type === 'curated') {
+  // Only the six welcome-picker figures have picker-made follows and alerts.
+  if (entity_type === 'curated' && isFamousSlug(entity_ref.trim())) {
     try {
       const { data: ent } = await supabaseAdmin
         .from('curated_entities')
-        .select('display_name, addresses')
+        .select('display_name')
         .eq('slug', entity_ref.trim())
         .maybeSingle()
       if (ent?.display_name) {
-        // The picker chose among the entity's first 12 addresses; follows it
-        // made carry the figure's name, even if later renamed or re-cased.
-        const declared = (Array.isArray(ent.addresses) ? ent.addresses : [])
-          .map((a) => (a && typeof a.address === 'string' ? canonicalAddress(a.address) : ''))
-          .filter(Boolean)
-        const entityVariants = Array.from(new Set(declared.slice(0, 12).flatMap((a) => addressVariants(a))))
-        const { data: byName } = await supabaseAdmin
+        // Picker follows carry the figure's name (matched case-insensitively);
+        // follows the user made themselves on a wallet page are left alone.
+        const { data: removed } = await supabaseAdmin
           .from('wallet_follows')
           .delete()
           .eq('user_id', user.id)
-          .eq('nickname', ent.display_name)
+          .ilike('nickname', ent.display_name)
           .select('address')
-        const { data: byAddr } = entityVariants.length
-          ? await supabaseAdmin
-              .from('wallet_follows')
-              .delete()
-              .eq('user_id', user.id)
-              .in('address', entityVariants)
-              .select('address')
-          : { data: [] }
-        const addrs = Array.from(new Set([...(byName || []), ...(byAddr || [])].map((r) => r.address).concat(declared.slice(0, 12))))
+        const addrs = Array.from(new Set((removed || []).map((r) => r.address)))
         const ruleVariants = Array.from(new Set(addrs.flatMap((a) => addressVariants(a))))
         if (ruleVariants.length > 0) {
           // Keep alerts the user set themselves on a wallet page.

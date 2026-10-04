@@ -196,15 +196,23 @@ export async function POST(req) {
         const inv = event.data.object
         const subId = idOf(inv.subscription) || idOf(inv.parent?.subscription_details?.subscription)
         if (!subId || !(Number(inv.amount_paid) > 0)) break
+        let stage = null
+        if (inv.billing_reason === 'subscription_create') {
+          stage = 'first_charge'
+        } else if (inv.billing_reason === 'subscription_cycle') {
+          // Only the invoice that ends a free trial is a first payment; every
+          // other cycle invoice is a renewal (including subscriptions that
+          // existed before funnel_events did).
+          try {
+            const sub = await stripe.subscriptions.retrieve(subId)
+            const lineStart = inv.lines?.data?.[0]?.period?.start
+            if (sub?.trial_end && lineStart && Math.abs(Number(lineStart) - Number(sub.trial_end)) < 3600) stage = 'trial_converted'
+          } catch { /* not provable → not counted */ }
+        }
+        if (!stage) break
         const meta = inv.subscription_details?.metadata || inv.parent?.subscription_details?.metadata || {}
         const userId = meta.supabase_user_id || (await resolveUserId(stripe, { customer: inv.customer, metadata: meta }))
-        await trackPaidOnce({
-          userId,
-          subscriptionId: subId,
-          stage: inv.billing_reason === 'subscription_create' ? 'first_charge' : 'trial_converted',
-          amount: inv.amount_paid,
-          stripeEventId: event.id,
-        })
+        await trackPaidOnce({ userId, subscriptionId: subId, stage, amount: inv.amount_paid, stripeEventId: event.id })
         break
       }
       default:
