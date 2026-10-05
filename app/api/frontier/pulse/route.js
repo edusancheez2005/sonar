@@ -19,7 +19,7 @@ import { BRIDGE_ADDRESSES } from '@/app/frontier/bridges'
 import { resolveToken, ENRICHABLE_TICKERS } from '@/app/frontier/splTokens'
 import { isAuthorized } from '@/app/api/frontier/_auth'
 import { fetchSolanaTransfers, getSolanaUniverse } from '@/lib/frontier/solanaTransfers'
-import { fetchSolanaWhaleRows, whaleRowToTransfer } from '@/lib/frontier/whaleFeed'
+import { fetchSolanaWhaleRows, fetchSolanaWhaleNewestAt, whaleRowToTransfer } from '@/lib/frontier/whaleFeed'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -98,6 +98,7 @@ export async function GET(req) {
   let recentRows = []
   const readErrors = []
   let priceMap = new Map()
+  let whaleReadFailed = false
   try {
     universe = await getSolanaUniverse()
   } catch (e) {
@@ -111,7 +112,7 @@ export async function GET(req) {
     loadPriceMap(),
     // Live whale feed (Railway monitor → solana_transactions): the tracked
     // wallets are mostly dormant, this is what keeps the page live.
-    fetchSolanaWhaleRows({ sinceIso: since24h, limit: 3000 }).catch((e) => { readErrors.push(String(e?.message || e)); return [] }),
+    fetchSolanaWhaleRows({ sinceIso: since24h, limit: 3000 }).catch((e) => { whaleReadFailed = true; readErrors.push(String(e?.message || e)); return [] }),
   ])
   windowRows = winRes.rows
   recentRows = recRes.rows
@@ -230,7 +231,23 @@ export async function GET(req) {
     .slice(0, 12)
 
   const lastTransferAt = enrichedRecent[0]?.time || null
-  const mode = enrichedRecent.length > 0 ? 'live' : 'ingesting'
+  // When did the whale feed last deliver? The 24h read answers it when it has
+  // rows; otherwise one newest-row lookup. Stalled = nothing for 3h, the same
+  // threshold as the health-email canary. An unreadable feed is not called
+  // stalled (readErrors already says what failed).
+  const FEED_STALL_MS = 3 * 3_600_000
+  let feedLastAt = whaleRows[0]?.timestamp || null
+  let feedKnown = !whaleReadFailed
+  if (!feedLastAt && feedKnown) {
+    try {
+      feedLastAt = await fetchSolanaWhaleNewestAt()
+    } catch (e) {
+      feedKnown = false
+      readErrors.push(String(e?.message || e))
+    }
+  }
+  const feedStalled = feedKnown && (!feedLastAt || now - new Date(feedLastAt).getTime() > FEED_STALL_MS)
+  const mode = feedStalled ? 'stalled' : enrichedRecent.length > 0 ? 'live' : 'ingesting'
   const dataFresh =
     lastTransferAt != null &&
     Date.now() - new Date(lastTransferAt).getTime() < 4 * 3_600_000
@@ -251,7 +268,7 @@ export async function GET(req) {
       topMovers,
       rotation,
       status: {
-        dataFresh, lastTransferAt, mode, dustFloorUsd: DUST_USD_FLOOR,
+        dataFresh, lastTransferAt, feedLastAt, mode, dustFloorUsd: DUST_USD_FLOOR,
         sources: { tracked_24h: (windowRes.data || []).length, whale_feed_24h: whaleTransfers.length },
         readErrors: readErrors.length ? readErrors.slice(0, 2) : undefined,
       },

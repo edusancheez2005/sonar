@@ -89,6 +89,18 @@ const LiveDot = styled.span`
   animation: ${pulseDot} 2s ease-in-out infinite;
 `
 
+const PausedDot = styled.span`
+  width: 8px; height: 8px; border-radius: 50%;
+  background: ${COLORS.amber}; display: inline-block;
+`
+
+const PausedNote = styled.div`
+  font-family: ${FONT_MONO}; font-size: 0.78rem; line-height: 1.6;
+  color: ${COLORS.textPrimary}; letter-spacing: 0.3px;
+  border: 1px solid rgba(255, 171, 0, 0.35); background: rgba(255, 171, 0, 0.07);
+  border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;
+`
+
 const BackLink = styled(Link)`
   color: ${COLORS.textMuted}; font-family: ${FONT_MONO}; font-size: 0.7rem;
   letter-spacing: 1px; text-decoration: none; text-transform: uppercase;
@@ -528,6 +540,12 @@ export default function FrontierClient() {
   const tiles = pulse?.tiles
   const transfers = pulse?.transfers || []
   const mode = pulse?.status?.mode || 'ingesting'
+  // 'stalled' = the Railway whale feed has delivered nothing for 3h+.
+  const paused = mode === 'stalled'
+  const feedLastAt = pulse?.status?.feedLastAt || null
+  const feedLastLabel = feedLastAt
+    ? `${new Date(feedLastAt).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC`
+    : null
 
   const filtered = useMemo(() => {
     const chip = TYPE_CHIPS.find((c) => c.key === filter) || TYPE_CHIPS[0]
@@ -543,10 +561,13 @@ export default function FrontierClient() {
         <HeaderBar>
           <div>
             <Title>
-              Frontier <small>SOLANA INTELLIGENCE · LIVE</small>
+              Frontier <small>SOLANA INTELLIGENCE · {paused ? 'PAUSED' : 'LIVE'}</small>
             </Title>
             <Subtle style={{ marginTop: '0.4rem' }}>
-              <LiveDot /> {mode === 'live' ? 'Polling Solana mainnet' : 'Solana ingestion warming up'}
+              {paused ? <PausedDot /> : <LiveDot />}{' '}
+              {paused
+                ? `Solana whale feed paused${feedLastLabel ? ` · last transfer ${feedLastLabel} (${relTime(feedLastAt)})` : ''}`
+                : mode === 'live' ? 'Polling Solana mainnet' : 'Waiting for Solana transfers'}
               <span style={{ color: COLORS.textMuted }}>
                 · last update {lastUpd ? lastUpd.toUTCString().split(' ')[4] : '—'} UTC
               </span>
@@ -557,6 +578,13 @@ export default function FrontierClient() {
           </div>
           <BackLink href="/dashboard">← BACK TO DASHBOARD</BackLink>
         </HeaderBar>
+
+        {paused && (
+          <PausedNote role="status">
+            The Solana whale feed has been paused since {feedLastLabel || 'its last update'}. Figures below only include
+            transfers received before then, and the page refreshes on its own once the feed resumes.
+          </PausedNote>
+        )}
 
         {/* 0. Live Signals — turns flow into BUY/SELL calls */}
         <Panel>
@@ -569,8 +597,9 @@ export default function FrontierClient() {
           <PanelBody>
             {(signals?.signals || []).length === 0 ? (
               <EmptyState>
-                No actionable signal yet — net CEX flow this window is below the
-                ${(signals?.minSignalUsd || 75000).toLocaleString()} threshold. Watching.
+                {paused
+                  ? 'No signals while the Solana feed is paused.'
+                  : `No actionable signal yet — net CEX flow this window is below the $${(signals?.minSignalUsd || 75000).toLocaleString()} threshold. Watching.`}
               </EmptyState>
             ) : (
               <SignalGrid>
@@ -657,7 +686,9 @@ export default function FrontierClient() {
           <PanelBody>
             {(pulse?.topMovers || []).length === 0 ? (
               <EmptyState>
-                Not enough priced flow yet — most entities are moving small or unpriced tokens this hour.
+                {paused
+                  ? 'No flow to rank while the Solana feed is paused.'
+                  : 'Not enough priced flow yet — most entities are moving small or unpriced tokens this hour.'}
               </EmptyState>
             ) : (
               <MoverGrid>
@@ -712,7 +743,7 @@ export default function FrontierClient() {
           </PanelHead>
           <PanelBody style={{ padding: 0 }}>
             {(pulse?.rotation || []).length === 0 ? (
-              <EmptyState>No priced token flow yet this window.</EmptyState>
+              <EmptyState>{paused ? 'No token flow while the Solana feed is paused.' : 'No priced token flow yet this window.'}</EmptyState>
             ) : (
               <RotTable>
                 <thead>
@@ -768,8 +799,10 @@ export default function FrontierClient() {
             </Chips>
             {filtered.length === 0 ? (
               <EmptyState>
-                {mode === 'ingesting'
-                  ? 'Solana ingestion pipeline live — first transfers landing within the hour.'
+                {paused
+                  ? 'No transfers while the Solana feed is paused.'
+                  : mode === 'ingesting'
+                  ? 'Waiting for the first Solana transfers.'
                   : 'No transfers match this filter.'}
               </EmptyState>
             ) : (
