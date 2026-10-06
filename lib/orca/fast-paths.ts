@@ -22,11 +22,16 @@ import {
   MOVE_WHY_RE,
   NEWS_FOCUS_RE,
   PRICE_FOCUS_RE,
+  SIGNAL_FOCUS_RE,
   SOCIAL_FOCUS_RE,
   WHALE_FOCUS_RE,
+  isBareTickerAsk,
+  isOutlookAsk,
 } from './route-dispatch'
 
 export type FastPathName =
+  | 'ticker_snapshot'
+  | 'outlook'
   | 'whale_summary'
   | 'whale_ticker'
   | 'news_ticker'
@@ -74,6 +79,21 @@ export function matchFastPath(message: string, tickersIn: string[] | boolean = [
   const tickers = Array.isArray(tickersIn) ? tickersIn : []
   if (tickersIn === true) return null
   const m = String(message || '').trim()
+  // A bare ticker or pair ("Doge", "fet utsd") → compact snapshot. Checked
+  // before the length floor, which would drop a 4-letter ticker.
+  const routeTicker = tickers.length === 1 ? String(tickers[0]).toUpperCase() : null
+  if (routeTicker && isBareTickerAsk(m, routeTicker)) {
+    return {
+      name: 'ticker_snapshot',
+      decision: decision(['price', 'whales', 'news'], [routeTicker]),
+      calls: [
+        { tool: 'getPrice', args: { ticker: routeTicker } },
+        { tool: 'getSignalContext', args: { ticker: routeTicker } },
+        { tool: 'getWhaleFlows', args: { ticker: routeTicker, window: '24h' } },
+        { tool: 'getNews', args: { ticker: routeTicker, limit: 3 } },
+      ],
+    }
+  }
   if (m.length < 6 || m.length > 240) return null
   const mForLlmCheck = CONVERGENCE_RE.test(m) ? m.replace(/\b(tracked|followed)\b/gi, '') : m
   if (COMPARE_RE.test(m) || MACRO_EVENT_RE.test(m) || NEEDS_LLM_RE.test(mForLlmCheck)) return null
@@ -120,7 +140,9 @@ export function matchFastPath(message: string, tickersIn: string[] | boolean = [
   }
 
   // "Why did BTC move today?" — price + news + whale flows for the ticker.
-  if (facets.why && t) {
+  // "Why is SOL's signal down?" needs the signal, which this plan never
+  // loads, so it goes to the planner instead (review 2026-10-06).
+  if (facets.why && t && !SIGNAL_FOCUS_RE.test(m)) {
     return {
       name: 'why_move',
       decision: decision(['price', 'news', 'whales'], [t]),
@@ -134,6 +156,23 @@ export function matchFastPath(message: string, tickersIn: string[] | boolean = [
 
   // Single facet only — two facets in one sentence go to the LLM planner.
   const active = (['whale', 'news', 'price', 'social', 'deriv', 'largest'] as const).filter((k) => facets[k])
+
+  // "Btc next move" / "solana trend this october" with no other facet: the
+  // current picture plus what to watch, never a forecast (audit 2026-10-06).
+  // "Bitcoin sentiment for october" keeps its social facet below.
+  if (t && active.length === 0 && isOutlookAsk(m)) {
+    return {
+      name: 'outlook',
+      decision: decision(['price', 'whales', 'news'], [t]),
+      calls: [
+        { tool: 'getPrice', args: { ticker: t } },
+        { tool: 'getSignalContext', args: { ticker: t } },
+        { tool: 'getWhaleFlows', args: { ticker: t, window: '7d' } },
+        { tool: 'getDerivatives', args: { ticker: t } },
+        { tool: 'getNews', args: { ticker: t, limit: 5 } },
+      ],
+    }
+  }
   // "largest transactions" also matches the whale regex; treat as one facet.
   const facetSet = new Set(active)
   if (facetSet.has('largest')) facetSet.delete('whale')

@@ -9,11 +9,12 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
 import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
-import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer } from '@/lib/orca/route-dispatch'
+import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer, isBareTickerAsk } from '@/lib/orca/route-dispatch'
 import { matchFastPath } from '@/lib/orca/fast-paths'
 import { cachedAnswerWindow, readCachedFirstAnswer, chunkText } from '@/lib/orca/first-answer'
 import { noteCacheKey, readCachedNote, writeCachedNote, isCacheableNote } from '@/lib/orca/note-cache'
-import { scrubRecommendations, applyGuardrails } from '@/lib/orca/orchestrator/guardrails'
+import { scrubRecommendations, applyGuardrails, ensureSingleDisclaimer } from '@/lib/orca/orchestrator/guardrails'
+import { MANDATORY_DISCLAIMER } from '@/lib/orca/shared-rules'
 import { isExplainerQuestion, EXPLAINER_SYSTEM_PROMPT } from '@/lib/orca/explainer'
 import { checkRateLimit, incrementQuota } from '@/lib/orca/rate-limiter'
 import { buildOrcaContext, buildGPTContext } from '@/lib/orca/context-builder'
@@ -1216,8 +1217,12 @@ export async function POST(request: Request) {
     // recites price structure and never answers the actual question
     // (2026-07-20 audit). pickStageARoute then routes them to the
     // orchestrator's data_query plan.
+    // A bare ticker or pair ("Doge", "fet utsd") gets the compact snapshot
+    // fast path, not the 8k-character note (audit 2026-10-06).
     const focusedDataQuestion =
-      !!tickerResult.ticker && !tickerFollowUp && wantsFocusedDataAnswer(message)
+      !!tickerResult.ticker &&
+      !tickerFollowUp &&
+      (wantsFocusedDataAnswer(message) || isBareTickerAsk(message, tickerResult.ticker))
     if ((!tickerResult.ticker || tickerFollowUp || focusedDataQuestion) && intentRoutingEnabled) {
       console.log(
         tickerFollowUp
@@ -1229,12 +1234,18 @@ export async function POST(request: Request) {
         const routerStart = Date.now()
         // Deterministic fast path (2026-09-30): market-wide "what have whales
         // been doing?" skips BOTH the LLM router and the planner LLM hop.
-        const fastPath = !tickerFollowUp ? matchFastPath(message, tickerResult.ticker ? [tickerResult.ticker] : []) : null
+        // A bare ticker or pair is a fresh snapshot even mid-chat: "fet utsd"
+        // after a BTC note got BTC derivatives from the planner (replay
+        // 2026-10-06), so it skips the follow-up planner.
+        const bareFollowUp = tickerFollowUp && isBareTickerAsk(message, tickerResult.ticker)
+        const fastPath = !tickerFollowUp || bareFollowUp ? matchFastPath(message, tickerResult.ticker ? [tickerResult.ticker] : []) : null
         if (fastPath) console.log(`⚡ fast path ${fastPath.name} → ${fastPath.calls.map((c) => c.tool).join(',')}`)
         // For a ticker follow-up we synthesise the router decision (intent
         // followup + the extracted ticker) and skip the LLM router call — it is
         // deterministic and saves a round-trip. Otherwise run the real router.
-        let decision: RouterDecision = tickerFollowUp
+        let decision: RouterDecision = fastPath
+          ? fastPath.decision
+          : tickerFollowUp
           ? {
               intent: 'followup',
               tickers: [tickerResult.ticker as string],
@@ -1243,8 +1254,6 @@ export async function POST(request: Request) {
               persona_hint: null,
               confidence: 0.9,
             }
-          : fastPath
-          ? fastPath.decision
           : await routeMessage(
               { message, userId, chatHistory: recentTurns },
               {
@@ -1934,12 +1943,22 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
           // timeout, a partially streamed note is salvaged as-is (the user
           // already saw it) instead of restarting on the mini.
           let streamedBuffer = ''
+          // Audit 2026-10-06 (p01): a note that hit max_tokens ended
+          // mid-sentence with no Bottom Line or disclaimer, and nothing
+          // noticed. A note cut by the time budget looked complete too: the
+          // openai SDK ends an aborted stream silently (no throw, no
+          // finish_reason), so the salvage below only ever ran when the
+          // request failed before streaming. Track both so a cut note is
+          // closed and kept out of the note cache.
+          let noteCut: 'length' | 'time' | null = null
           const streamWriter = async (body: any, budgetMs: number): Promise<string> => {
+            const t0 = Date.now()
             const streamResp: any = await (ai.chat.completions.create as any)(
               { ...body, stream: true },
               { signal: AbortSignal.timeout(budgetMs) }
             )
             let text = ''
+            let finishReason: string | null = null
             for await (const chunk of streamResp) {
               const delta = chunk?.choices?.[0]?.delta?.content
               if (delta) {
@@ -1947,7 +1966,15 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
                 streamedBuffer += delta
                 send({ type: 'token', text: delta })
               }
+              const fr = chunk?.choices?.[0]?.finish_reason
+              if (fr) finishReason = String(fr)
             }
+            noteCut =
+              finishReason === 'length'
+                ? 'length'
+                : finishReason === null && Date.now() - t0 >= budgetMs - 1000
+                ? 'time'
+                : null
             return text
           }
           const writerBudgetMs = Math.max(15_000, 56_000 - (Date.now() - startTime))
@@ -1973,6 +2000,13 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             }
           }
           if (!orcaResponse) orcaResponse = 'I apologize, but I was unable to generate a response.'
+          // "Note trimmed to fit" keeps the cut note out of the note cache
+          // (isCacheableNote rejects that phrase).
+          if (noteCut && !/Note trimmed to fit/i.test(orcaResponse)) {
+            console.warn(`[v1] note for ${ticker} was cut (${noteCut})`)
+            const limit = noteCut === 'length' ? 'the length limit' : 'the time budget'
+            orcaResponse = `${orcaResponse.trimEnd()}…\n\n*(Note trimmed to fit ${limit} — ask a follow-up for more.)*`
+          }
           // 2026-09-30: the note now writes at low reasoning effort (fast first
           // token); as a safety net, drop any sentence shaped like a first-person
           // recommendation or a prediction instead of declining the whole note.
@@ -1982,6 +2016,11 @@ Available coins: BTC, ETH, SOL, DOGE, SHIB, PEPE, STRK, LINK, UNI, AAVE, ARB, OP
             if (scrubbed.removed > 0) console.warn(`[v1] note scrub removed ${scrubbed.removed} sentence(s) for ${ticker}`)
             orcaResponse = scrubbed.text
           }
+          // Every v1 note ends with exactly one mandatory disclaimer, added
+          // here rather than trusted to the model (a cut note lost it).
+          orcaResponse = /this output is an automated summary/i.test(orcaResponse)
+            ? ensureSingleDisclaimer(orcaResponse)
+            : `${orcaResponse.trimEnd()}\n\n${MANDATORY_DISCLAIMER}`
 
           // Increment quota + log — genuinely non-blocking now (2026-09-21):
           // this used to be awaited BEFORE the 'complete' event, holding the

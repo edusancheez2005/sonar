@@ -21,6 +21,7 @@ import type { BinanceKline, Binance24hrTicker } from '@/lib/binance/client'
 import { symbolToPair, daysToInterval } from '@/lib/binance/symbol-map'
 import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 import { symbolVariants } from '@/lib/wallet/symbol-aliases'
+import { isNoiseRow } from '@/lib/orca/junk-addresses'
 import { 
   formatWhaleMovesDetailed,
   formatThemes,
@@ -411,6 +412,7 @@ async function fetchWhaleActivity(ticker: string, supabase: any): Promise<any[]>
         usd_value,
         whale_score,
         blockchain,
+        whale_address,
         from_address,
         to_address,
         from_label,
@@ -431,8 +433,10 @@ async function fetchWhaleActivity(ticker: string, supabase: any): Promise<any[]>
       console.error('Error fetching whale data:', error)
       return []
     }
-    
-    return data || []
+
+    // Audit 2026-10-06: Morpho flash-loan legs were 98% of the "+$707M strong
+    // accumulation" in the BTC notes. Junk on any side is not whale activity.
+    return (data || []).filter((row: any) => !isNoiseRow(row))
   } catch (error) {
     console.error('Error in fetchWhaleActivity:', error)
     return []

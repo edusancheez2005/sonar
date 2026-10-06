@@ -34,14 +34,24 @@ export async function run(
     if (!row || typeof row.price_usd !== 'number') {
       return { ok: false, data: null, source: 'price_snapshots', fetched_at, error: 'no_data' }
     }
+    // price_snapshots stores changes in PERCENT (-0.261 = -0.26%). An
+    // unlabelled change_24h was read by the writer as a fraction, so FET's
+    // -0.26% went out as "-26.1%" (audit 2026-10-06). Name the unit and hand
+    // the writer the display string.
+    const ch1h = numericOrNull(row.price_change_1h)
+    const ch24h = numericOrNull(row.price_change_24h)
+    const ch7d = numericOrNull(row.price_change_7d)
     return {
       ok: true,
       data: {
         ticker,
         price_usd: row.price_usd,
-        change_1h: numericOrNull(row.price_change_1h),
-        change_24h: numericOrNull(row.price_change_24h),
-        change_7d: numericOrNull(row.price_change_7d),
+        change_1h_pct: ch1h,
+        change_24h_pct: ch24h,
+        change_7d_pct: ch7d,
+        change_1h_display: formatPct(ch1h),
+        change_24h_display: formatPct(ch24h),
+        change_7d_display: formatPct(ch7d),
         volume_24h: numericOrNull(row.volume_24h),
         market_cap: numericOrNull(row.market_cap),
         as_of: row.timestamp ?? null,
@@ -58,6 +68,13 @@ export async function run(
       error: err?.message ? `query_failed: ${err.message}` : 'query_failed',
     }
   }
+}
+
+/** A percent value as the user should read it: "-0.26%", "+5.2%". */
+export function formatPct(v: number | null): string | null {
+  if (v === null) return null
+  const digits = Math.abs(v) < 1 ? 2 : 1
+  return `${v >= 0 ? '+' : ''}${v.toFixed(digits)}%`
 }
 
 function normaliseTicker(raw: unknown): string | null {

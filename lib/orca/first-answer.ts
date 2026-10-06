@@ -82,6 +82,7 @@ export async function computeFirstAnswer(deps: {
   const question = CACHED_QUESTIONS[window]
   const fp = matchFastPath(question, false)
   if (!fp || cachedAnswerWindow(fp) !== window) throw new Error(`cached question for ${window} no longer matches the whale_summary fast path`)
+  const dataAt = new Date()
   let writerMs = 0
   const out: OrchestratorOutput = await runOrchestrator(
     {
@@ -115,13 +116,32 @@ export async function computeFirstAnswer(deps: {
     }
   )
   if (!out.text || out.intent === 'compliance_decline') throw new Error('precompute produced no usable text')
+  const text = withAsOf(out.text, dataAt)
   return {
-    text: out.text,
+    text,
     tools: out.trace.filter((e) => e.stage === 'tool').map((e) => String((e.payload as any)?.tool ?? '')),
     generated_at: new Date().toISOString(),
-    chars: out.text.length,
+    chars: text.length,
     writer_ms: writerMs,
   }
+}
+
+/**
+ * Put an "As of HH:MM UTC" line before the disclaimer unless the writer already
+ * wrote one. The header above promised it, but the tool block carries no
+ * timestamp, so the cached answer never had one (audit 2026-10-06).
+ */
+export function withAsOf(text: string, at: Date): string {
+  if (/\bas of\s+`?\d{1,2}:\d{2}/i.test(text)) return text
+  const hh = String(at.getUTCHours()).padStart(2, '0')
+  const mm = String(at.getUTCMinutes()).padStart(2, '0')
+  const line = `As of \`${hh}:${mm} UTC\`.`
+  // Before the long disclaimer or the short fallback one ("Not financial
+  // advice. This is research-grade analysis only."), so the answer still ends
+  // with its disclaimer.
+  const idx = text.search(/this output is an automated summary|^[ \t]*[*_]*not financial advice/im)
+  if (idx === -1) return `${text.trimEnd()}\n\n${line}`
+  return `${text.slice(0, idx).trimEnd()}\n\n${line}\n\n${text.slice(idx)}`
 }
 
 /** Split text into token-sized pieces so the client's streaming path behaves as usual. */

@@ -9,7 +9,8 @@
  */
 import type { SupabaseLike, ToolResult } from '../types'
 import { applyLabel, fetchEntityLabels } from './entityLabels'
-import { isJunkAddress } from '../../junk-addresses'
+import { JUNK_ADDRESSES, isNoiseRow } from '../../junk-addresses'
+import { readAllRows } from './pagedRead'
 import { symbolVariants } from '@/lib/wallet/symbol-aliases'
 
 const WHALE_FLAT_THRESHOLD_USD = 100_000
@@ -78,7 +79,7 @@ export async function run(
   try {
     const base = supabase
       .from('all_whale_transactions')
-      .select('usd_value, classification, whale_address, timestamp')
+      .select('usd_value, classification, whale_address, from_address, to_address, timestamp')
     // (.in falls back to .eq when unavailable, e.g. in test stubs.)
     const filtered =
       typeof base.in === 'function' && symbols.length > 1
@@ -111,6 +112,12 @@ export async function run(
     for (const row of data as Array<any>) {
       const v = Number(row?.usd_value)
       if (!Number.isFinite(v) || v <= 0) continue
+      // 2026-09-22 battery: the junk contract filled every "biggest buyer"
+      // slot; 2026-10-06 audit: Balancer Vault flash-loan repayments read as
+      // ETH selling. Junk on any side is excluded from the totals and lists,
+      // and is checked BEFORE the size cap: Morpho legs over $150M otherwise
+      // counted as "outliers" and switched off the exact totals below.
+      if (isNoiseRow(row)) continue
       if (v > MAX_SANE_TX_USD) {
         excludedOutliers += 1
         excludedOutlierUsd += v
@@ -118,12 +125,9 @@ export async function run(
       }
       const c = String(row?.classification ?? '').toLowerCase()
       const addr = row?.whale_address ? String(row.whale_address) : null
-      // 2026-09-22 battery: the junk vanity contract filled every "biggest
-      // buyer" slot; it is excluded from BOTH the totals and the top lists.
-      if (isJunkAddress(addr)) continue
-      if (addr) whales.add(addr)
       const isBuy = c.startsWith('buy') || c.startsWith('accum')
       const isSell = c.startsWith('sell') || c.startsWith('distrib')
+      if (addr) whales.add(addr)
       // One entry per wallet in the "biggest buyers/sellers" lists — the rows
       // arrive ordered by value, so the first hit per address is its largest.
       const seenBuy = new Set(topBuys.map((t) => t.address))
@@ -171,11 +175,19 @@ export async function run(
           }
         }
         if (rpcHit) {
-          buyUsd = rBuyUsd
-          sellUsd = rSellUsd
-          buys = rBuys
-          sells = rSells
-          uniqueWhales = rWhales
+          // The SQL function has no junk filter (audit 2026-10-06: it put
+          // Morpho's $700M of WBTC "buys" back into the BTC totals). Read
+          // every junk row for these symbols and take them back out. A failed
+          // read keeps the scan's own (capped, junk-free) sums instead.
+          const noise = await sumNoiseRows(supabase, symbols, sinceIso)
+          if (noise) {
+            buyUsd = Math.max(0, rBuyUsd - noise.buyUsd)
+            sellUsd = Math.max(0, rSellUsd - noise.sellUsd)
+            buys = Math.max(0, rBuys - noise.buys)
+            sells = Math.max(0, rSells - noise.sells)
+            const noiseOnlyWhales = Array.from(noise.whales).filter((a) => !whales.has(a)).length
+            uniqueWhales = Math.max(whales.size, rWhales - noiseOnlyWhales)
+          }
         }
       } catch {
         // keep the JS-computed (capped) sums
@@ -264,6 +276,58 @@ function emptyFlow(ticker: string) {
     buy_count: 0,
     sell_count: 0,
     unique_whales: 0,
+  }
+}
+
+interface NoiseTotals {
+  buyUsd: number
+  sellUsd: number
+  buys: number
+  sells: number
+  whales: Set<string>
+}
+
+/**
+ * Totals of every junk/flash-loan row for these symbols in the window, read
+ * directly rather than from the 1,000-row scan: small Balancer legs sit far
+ * below it (ETH 30d: 1,449 of 2,056 junk rows), so subtracting only what the
+ * scan saw left them in ticker_flow_agg's sums. null when the read fails or
+ * is cut short, so the caller keeps the scan's junk-free sums.
+ */
+async function sumNoiseRows(supabase: SupabaseLike, symbols: string[], sinceIso: string): Promise<NoiseTotals | null> {
+  try {
+    const junk = `(${Array.from(JUNK_ADDRESSES).join(',')})`
+    const query = () => {
+      let q: any = (supabase as any)
+        .from('all_whale_transactions')
+        .select('id, transaction_hash, usd_value, classification, whale_address, from_address, to_address')
+      q = typeof q.in === 'function' && symbols.length > 1 ? q.in('token_symbol', symbols) : q.eq('token_symbol', symbols[0])
+      q = q.gte('timestamp', sinceIso)
+      if (typeof q.or === 'function') q = q.or(`whale_address.in.${junk},from_address.in.${junk},to_address.in.${junk}`)
+      return q.order('usd_value', { ascending: false }).order('id', { ascending: true })
+    }
+    const { data, error, complete } = await readAllRows(query, { maxRows: 20_000 })
+    if (error || !complete || !Array.isArray(data)) return null
+    const t: NoiseTotals = { buyUsd: 0, sellUsd: 0, buys: 0, sells: 0, whales: new Set() }
+    for (const row of data) {
+      // The server filter does the selection; this keeps stubs and any
+      // case mismatch honest.
+      if (!isNoiseRow(row)) continue
+      const v = Number(row?.usd_value)
+      if (!Number.isFinite(v) || v <= 0) continue
+      const c = String(row?.classification ?? '').toLowerCase()
+      if (c.startsWith('buy') || c.startsWith('accum')) {
+        t.buyUsd += v
+        t.buys += 1
+      } else if (c.startsWith('sell') || c.startsWith('distrib')) {
+        t.sellUsd += v
+        t.sells += 1
+      }
+      if (row?.whale_address) t.whales.add(String(row.whale_address))
+    }
+    return t
+  } catch {
+    return null
   }
 }
 

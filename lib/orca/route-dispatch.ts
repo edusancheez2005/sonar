@@ -10,7 +10,7 @@
  * to the v1 long-form ticker note instead of the article_explain renderer.
  */
 
-import { extractTickers } from './ticker-extractor'
+import { extractTicker, extractTickers } from './ticker-extractor'
 
 export type StageADecision = {
   intent: string
@@ -149,8 +149,30 @@ export const DERIV_FOCUS_RE =
 // "Why did BTC move today?" / "why is SOL up?" — a focused question that the
 // v1 note (56s, 8,000 chars of generic price structure) buries. Route it to
 // the orchestrator (price + news + whale flows) — 2026-09-30 latency pass.
+// The auxiliary verb is optional: "why btc falling" missed this and got the
+// 40s v1 note, which never explained the drop (audit 2026-10-06).
 export const MOVE_WHY_RE =
-  /\b(why (?:did|is|has|have|are|was|were)\b[^?]{0,60}\b(?:mov(?:e|ed|ing)|up|down|pump\w*|dump\w*|drop\w*|rall\w*|surg\w*|crash\w*|fall\w*|fell|ris\w*|rose|jump\w*|tank\w*|spik\w*|sell(?:ing)? off|bleed\w*)|what (?:moved|is moving|drove|is driving|caused)\b)/i
+  /\b(why\b(?:\s+(?:did|does|do|is|has|have|are|was|were)\b)?[^?]{0,60}\b(?:mov(?:e|ed|ing)|up|down|pump\w*|dump\w*|drop\w*|rall\w*|surg\w*|crash\w*|fall\w*|fell|ris\w*|rose|jump\w*|tank\w*|spik\w*|sell(?:ing)? off|bleed\w*)|what (?:moved|is moving|drove|is driving|caused)\b)/i
+
+// Forward-looking asks ("Btc next move", "solana major trend this october").
+// The v1 note answered them with a canned decline plus 8-10k characters
+// (audit 2026-10-06); the orchestrator gives the current picture and what to
+// watch. Deliberately narrow (review 2026-10-06): month names and "this week"
+// also start past-tense questions, "trending" means popularity, and support /
+// resistance questions want price levels this plan doesn't load.
+export const OUTLOOK_RE =
+  /\b(next (?:move|leg|direction)|outlook|head(?:ed|ing)|trends?|where (?:will|could|might|is|does)\b[^?]{0,30}\bgo(?:ing)?)\b/i
+// A literal "will X go up / hit Y?" keeps HARD RULE 3's decline.
+const LITERAL_PREDICTION_RE =
+  /\bwill\b[^?]{0,40}\b(?:go(?:es|ing)? (?:up|down)|rise|fall|drop|pump|dump|moon|crash|hit|reach|break)\b/i
+const URL_RE = /https?:\/\//i
+
+/** An outlook / trend / next-move question the outlook plan can answer. */
+export function isOutlookAsk(message: string | undefined): boolean {
+  const m = (message ?? '').trim()
+  if (!m || URL_RE.test(m)) return false
+  return OUTLOOK_RE.test(m) && !DEEP_ANALYSIS_RE.test(m) && !LITERAL_PREDICTION_RE.test(m)
+}
 
 export const COMPARE_RE =
   /\b(compare|comparison|vs\.?|versus|against|difference between|which is better|better than)\b/i
@@ -166,11 +188,57 @@ function isFocusedFacet(message: string): boolean {
     PRICE_FOCUS_RE.test(message) ||
     DERIV_FOCUS_RE.test(message) ||
     MOVE_WHY_RE.test(message) ||
+    // An explicit "tell me about / deep dive" still wants the full note.
+    isOutlookAsk(message) ||
     COMPARE_RE.test(message) ||
     // Two or more distinct tickers ("BTC and ETH") — the v1 note is
     // single-ticker by construction and would silently answer only the first.
     extractTickers(message).length >= 2
   )
+}
+
+// Words that can sit next to a ticker without changing the ask ("DOGE price",
+// "eth now", "FET/USDT"). Not "perp(s)" (derivatives path) or "chart".
+const BARE_FILLER_RE = /^(?:usdt|usdc|usd|busd|fdusd|price|coin|token|now|today|update|status|info|pls|please)$/
+/** Quote-currency typos like "utsd" or "uds": 3-5 letters from u/s/d/t/c with u, s and d present. */
+function isQuoteTypo(w: string): boolean {
+  return /^[usdtc]{3,5}$/.test(w) && w.includes('u') && w.includes('s') && w.includes('d')
+}
+
+/**
+ * True when the message is just a ticker or trading pair ("Doge", "PEPE",
+ * "fet utsd", "solusdt"). In a fresh chat these fell into the v1 research note:
+ * about 40s and 8k characters for a one-word ask (audit 2026-10-06). They get
+ * a compact snapshot instead; "deep dive DOGE" still gets the full note.
+ */
+export function isBareTickerAsk(message: string | undefined, ticker: string | null | undefined): boolean {
+  const t = String(ticker ?? '').trim().toLowerCase()
+  if (!t) return false
+  // Non-Latin script ("帮我分析一下 BTC") or a link is more than a ticker.
+  if (/[^\x00-\x7F]/.test(String(message ?? '')) || URL_RE.test(String(message ?? ''))) return false
+  const words = String(message ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9$\s/-]/g, ' ')
+    .split(/[\s/-]+/)
+    .map((w) => w.replace(/^\$/, ''))
+    .filter(Boolean)
+  if (words.length === 0 || words.length > 3) return false
+  let sawTicker = false
+  for (const w of words) {
+    const glued = w.startsWith(t) && w.length > t.length ? w.slice(t.length) : null
+    if (w === t || (glued && (BARE_FILLER_RE.test(glued) || isQuoteTypo(glued)))) {
+      sawTicker = true
+      continue
+    }
+    if (BARE_FILLER_RE.test(w) || isQuoteTypo(w)) continue
+    // A name for the same coin ("bitcoin" for BTC).
+    if (String(extractTicker(w).ticker ?? '').toLowerCase() === t) {
+      sawTicker = true
+      continue
+    }
+    return false
+  }
+  return sawTicker
 }
 
 /**

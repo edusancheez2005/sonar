@@ -12,6 +12,8 @@
  */
 import type { SupabaseLike, ToolResult } from '../types'
 import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
+import { isNoiseRow } from '@/lib/orca/junk-addresses'
+import { readAllRows } from './pagedRead'
 
 // Same protocol-scale sanity cap as getWhaleFlows (see comment there).
 const MAX_SANE_TX_USD = 150_000_000
@@ -29,7 +31,11 @@ type WindowKey = keyof typeof WINDOWS
 const DEFAULT_WINDOW: WindowKey = '7d'
 const DEFAULT_LIMIT = 10
 const MAX_LIMIT = 25
-const ROW_LIMIT = 4000
+// PostgREST returns at most 1,000 rows per request: .limit(4000) silently got
+// 1,000 of 4,584 rows, so the whale counts were wrong (audit 2026-10-06).
+// The whole window is read in pages; 40,000 covers a busy 7 days (~33,000).
+// Longer windows are cut at the biggest 40,000 rows and say so.
+const ROW_LIMIT = 40_000
 const MIN_NET_USD = 50_000
 
 export interface GetTrendingWhalesArgs {
@@ -65,14 +71,17 @@ export async function run(
     }
     const chainArg = typeof args.chain === 'string' ? args.chain.trim().toLowerCase() : ''
     const chainKey = Object.keys(chainForms).find((k) => k === chainArg || chainForms[k].includes(chainArg)) ?? null
-    let q: any = supabase
-      .from('all_whale_transactions')
-      .select('token_symbol, usd_value, classification, whale_address, timestamp')
-      .gte('timestamp', sinceIso)
-      .order('usd_value', { ascending: false })
-      .limit(ROW_LIMIT)
-    if (chainKey && typeof q.in === 'function') q = q.in('blockchain', chainForms[chainKey])
-    const { data, error } = await q
+    const query = () => {
+      let q: any = supabase
+        .from('all_whale_transactions')
+        .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address, timestamp')
+        .gte('timestamp', sinceIso)
+        .order('usd_value', { ascending: false })
+        .order('id', { ascending: true })
+      if (chainKey && typeof q.in === 'function') q = q.in('blockchain', chainForms[chainKey])
+      return q
+    }
+    const { data, error, complete } = await readAllRows(query, { maxRows: ROW_LIMIT })
 
     if (error) {
       return {
@@ -103,6 +112,8 @@ export async function run(
       const v = Number(row?.usd_value)
       if (!Number.isFinite(v) || v <= 0) continue
       if (v > MAX_SANE_TX_USD) continue
+      // Flash-loan legs (Morpho Blue, Balancer Vault) are not whale trades.
+      if (isNoiseRow(row)) continue
       const c = String(row?.classification ?? '').toLowerCase()
       let b = buckets.get(ticker)
       if (!b) {
@@ -154,6 +165,10 @@ export async function run(
         window,
         count: tokens.length,
         tokens,
+        rows_scanned: data.length,
+        // false: only the biggest ROW_LIMIT transfers were read, so counts
+        // and totals cover those, not the whole window.
+        complete,
       },
       source: 'all_whale_transactions',
       fetched_at,

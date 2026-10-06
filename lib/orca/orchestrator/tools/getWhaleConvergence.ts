@@ -13,7 +13,8 @@
  */
 import type { SupabaseLike, ToolResult } from '../types'
 import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
-import { isJunkAddress } from '@/lib/orca/junk-addresses'
+import { isNoiseRow } from '@/lib/orca/junk-addresses'
+import { readAllRows } from './pagedRead'
 import { applyLabel, fetchEntityLabels } from './entityLabels'
 
 const WINDOWS = {
@@ -24,7 +25,10 @@ const WINDOWS = {
 } as const
 type WindowKey = keyof typeof WINDOWS
 const MAX_SANE_TX_USD = 150_000_000
-const ROW_LIMIT = 6000
+// .limit(6000) silently returned 1,000 rows (PostgREST cap), so distinct
+// buyer counts came from the top 1,000 transfers (audit review 2026-10-06:
+// SOL had 299 buyers over 7d, the tool saw 18). Read the whole window.
+const ROW_LIMIT = 40_000
 const MIN_TX_USD = 25_000
 
 export interface GetWhaleConvergenceArgs {
@@ -61,13 +65,17 @@ export async function run(
   const sinceIso = new Date(now().getTime() - WINDOWS[window]).toISOString()
 
   try {
-    const { data, error } = await (supabase as any)
-      .from('all_whale_transactions')
-      .select('token_symbol, usd_value, classification, whale_address, timestamp')
-      .gte('timestamp', sinceIso)
-      .gte('usd_value', MIN_TX_USD)
-      .order('usd_value', { ascending: false })
-      .limit(ROW_LIMIT)
+    const { data, error } = await readAllRows(
+      () =>
+        (supabase as any)
+          .from('all_whale_transactions')
+          .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address, timestamp')
+          .gte('timestamp', sinceIso)
+          .gte('usd_value', MIN_TX_USD)
+          .order('usd_value', { ascending: false })
+          .order('id', { ascending: true }),
+      { maxRows: ROW_LIMIT }
+    )
     if (error) {
       return { ok: false, data: null, source: 'all_whale_transactions', fetched_at, error: `query_failed: ${error.message || 'unknown'}` }
     }
@@ -82,7 +90,8 @@ export async function run(
       const v = Number(row?.usd_value)
       if (!Number.isFinite(v) || v <= 0 || v > MAX_SANE_TX_USD) continue
       const addr = String(row?.whale_address || '').trim()
-      if (!addr || isJunkAddress(addr)) continue
+      // Junk on any side (the Balancer Vault is the counterparty, not the whale).
+      if (!addr || isNoiseRow(row)) continue
       const c = String(row?.classification ?? '').toLowerCase()
       let b = buckets.get(ticker)
       if (!b) {

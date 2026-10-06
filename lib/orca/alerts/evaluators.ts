@@ -22,7 +22,8 @@ import type { NotificationCopy } from './types'
 import { NEWS_SENTIMENT_THRESHOLD, RECENT_WINDOW_MS } from './types'
 import { CONVERGENCE_ANY_TICKER } from './types'
 import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
-import { isJunkAddress } from '@/lib/orca/junk-addresses'
+import { isNoiseRow } from '@/lib/orca/junk-addresses'
+import { readAllRows } from '@/lib/orca/orchestrator/tools/pagedRead'
 import { addressVariants, EVM_ADDRESS_RE } from '@/lib/wallet/addressVariants'
 export { addressVariants }
 import { loadNativePrices, transferUsd } from '@/lib/wallet/transferValue'
@@ -163,13 +164,18 @@ export async function evaluateWhaleConvergence(
     const want = ticker && ticker !== CONVERGENCE_ANY_TICKER ? ticker.toUpperCase() : null
     const min = Number.isFinite(minWhales) && minWhales >= 2 ? Math.min(20, Math.round(minWhales)) : 3
     const sinceIso = new Date(now().getTime() - 24 * 60 * 60 * 1000).toISOString()
-    const { data } = await supabase
-      .from('all_whale_transactions')
-      .select('token_symbol, usd_value, classification, whale_address')
-      .gte('timestamp', sinceIso)
-      .gte('usd_value', 25_000)
-      .order('usd_value', { ascending: false })
-      .limit(6000)
+    // Every row in the 24h window, not the 1,000 a single request returns.
+    const { data } = await readAllRows(
+      () =>
+        supabase
+          .from('all_whale_transactions')
+          .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address')
+          .gte('timestamp', sinceIso)
+          .gte('usd_value', 25_000)
+          .order('usd_value', { ascending: false })
+          .order('id', { ascending: true }),
+      { maxRows: 20_000 }
+    )
     if (!Array.isArray(data) || data.length === 0) return null
     const buckets = new Map<string, { buyers: Map<string, number>; buyUsd: number }>()
     for (const r of data as Array<any>) {
@@ -180,7 +186,7 @@ export async function evaluateWhaleConvergence(
       const v = Number(r?.usd_value)
       if (!Number.isFinite(v) || v <= 0 || v > 150_000_000) continue
       const addr = String(r?.whale_address || '').trim()
-      if (!addr || isJunkAddress(addr)) continue
+      if (!addr || isNoiseRow(r)) continue
       let b = buckets.get(sym)
       if (!b) { b = { buyers: new Map(), buyUsd: 0 }; buckets.set(sym, b) }
       b.buyers.set(addr, (b.buyers.get(addr) || 0) + v)
