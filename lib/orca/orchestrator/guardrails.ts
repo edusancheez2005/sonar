@@ -84,10 +84,20 @@ export function scrubRecommendations(text: string): { text: string; removed: num
       return kept.length === sentences.length ? line : kept.join(' ')
     })
     .join('\n')
-  return { text: tidyInlineCode(scrubToolNames(cleaned)), removed }
+  return { text: tidyInlineCode(scrubToolNames(stripModelTokens(cleaned))), removed }
 }
 
-export function applyGuardrails(draft: string): GuardrailResult {
+/**
+ * Remove chat-template control tokens a model sometimes writes as text: the
+ * 2026-10-06 re-judge found a visible "<|eos|>" at the end of 2 of 4
+ * snapshot answers.
+ */
+export function stripModelTokens(text: string): string {
+  return text.replace(/<\|(?:eos|eot_id|eom_id|end_of_text|endoftext|im_end|im_start|end)\|>/gi, '')
+}
+
+export function applyGuardrails(draftIn: string): GuardrailResult {
+  const draft = typeof draftIn === 'string' ? stripModelTokens(draftIn) : draftIn
   if (typeof draft !== 'string' || draft.trim().length === 0) {
     return {
       text:

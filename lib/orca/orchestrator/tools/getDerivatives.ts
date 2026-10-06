@@ -29,6 +29,12 @@ export async function run(
     if (!d || !d.available) {
       return { ok: false, data: null, source: 'derivatives', fetched_at, error: 'derivatives_unavailable' }
     }
+    // OKX fallback (Binance futures 451s from Vercel): the module hard-codes
+    // the global long ratio at 0.5 and zeroes taker data, and its "top trader"
+    // figure is OKX's all-accounts long/short ratio. Report what OKX measured;
+    // outlook answers had said "~50% long" from the placeholder (2026-10-06).
+    const okx = d.source === 'okx'
+    const pct = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) && x > 0 ? Math.round(x * 1000) / 10 : null)
     return {
       ok: true,
       data: {
@@ -41,9 +47,10 @@ export async function run(
         funding_rate_annualized_pct: Number.isFinite(d.fundingRateAnnualized) ? Math.round(d.fundingRateAnnualized * 100) / 100 : null,
         open_interest_tokens: d.openInterest ?? null,
         open_interest_usd: d.openInterestUsd ?? null,
-        long_ratio_pct: Number.isFinite(d.longRatio) ? Math.round(d.longRatio * 1000) / 10 : null,
-        top_trader_long_pct: Number.isFinite(d.topTraderLongRatio) && d.topTraderLongRatio > 0 ? Math.round(d.topTraderLongRatio * 1000) / 10 : null,
-        taker_buy_sell_ratio: Number.isFinite(d.takerBuySellRatio) ? d.takerBuySellRatio : null,
+        long_ratio_pct: okx ? pct(d.topTraderLongRatio) : pct(d.longRatio),
+        long_ratio_scope: okx ? 'all OKX accounts' : 'all Binance accounts',
+        top_trader_long_pct: okx ? null : pct(d.topTraderLongRatio),
+        taker_buy_sell_ratio: !okx && Number.isFinite(d.takerBuySellRatio) ? d.takerBuySellRatio : null,
         note: 'Describe positioning factually (crowded longs/shorts, funding sign); never forecast.',
       },
       source: 'derivatives',

@@ -292,3 +292,44 @@ describe('routing, review round', () => {
     expect(matchFastPath("why is SOL's signal down", ['SOL'])?.name).not.toBe('why_move')
   })
 })
+
+// ── Re-judge round (2026-10-06): defects found in the new short answers ──
+import { vi } from 'vitest'
+import { applyGuardrails, stripModelTokens } from '@/lib/orca/orchestrator/guardrails'
+import { run as runDerivatives } from '@/lib/orca/orchestrator/tools/getDerivatives'
+
+vi.mock('@/app/lib/derivativesData', () => ({
+  fetchDerivativesData: async (t: string) => ({
+    available: true, source: t === 'OKXT' ? 'okx' : 'binance',
+    fundingRate: 0.000066, fundingRateAnnualized: 7.2, openInterest: 1000, openInterestUsd: 2_550_000_000,
+    longRatio: t === 'OKXT' ? 0.5 : 0.62, topTraderLongRatio: 0.535, takerBuySellRatio: t === 'OKXT' ? 1 : 1.1,
+  }),
+}))
+
+describe('re-judge fixes', () => {
+  it('strips a leaked <|eos|> token from final answers', () => {
+    expect(stripModelTokens('PEPE is flat.<|eos|>')).toBe('PEPE is flat.')
+    expect(applyGuardrails('PEPE is flat today.<|eos|>').text).not.toContain('<|eos|>')
+  })
+
+  it("on the OKX fallback, reports OKX's all-accounts ratio instead of the 50/50 placeholder", async () => {
+    const okx: any = (await runDerivatives({ ticker: 'OKXT' }, {} as any)).data
+    expect(okx.long_ratio_pct).toBe(53.5)
+    expect(okx.long_ratio_scope).toBe('all OKX accounts')
+    expect(okx.top_trader_long_pct).toBeNull()
+    expect(okx.taker_buy_sell_ratio).toBeNull()
+    const bn: any = (await runDerivatives({ ticker: 'BTC' }, {} as any)).data
+    expect(bn.long_ratio_pct).toBe(62)
+    expect(bn.top_trader_long_pct).toBe(53.5)
+  })
+
+  it('getWhaleFlows reports when its newest row was seen, so a stalled feed is not shown as current', async () => {
+    const rows = [
+      { usd_value: 2_000_000, classification: 'BUY', whale_address: '0xa', from_address: '0xm', to_address: '0xa', timestamp: '2026-10-03T01:21:57.466+00:00' },
+      { usd_value: 1_000_000, classification: 'SELL', whale_address: '0xb', from_address: '0xb', to_address: '0xn', timestamp: '2026-10-01T09:00:00+00:00' },
+      { usd_value: 90_000_000, classification: 'BUY', whale_address: MORPHO, from_address: '0xbot', to_address: MORPHO, timestamp: '2026-10-05T11:00:00+00:00' },
+    ]
+    const r = await runWhaleFlows({ ticker: 'LINK', window: '7d' }, stub({ all_whale_transactions: rows }), now)
+    expect((r.data as any).latest_at).toBe('2026-10-03T01:21:57.466Z')
+  })
+})

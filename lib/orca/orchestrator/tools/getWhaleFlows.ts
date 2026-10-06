@@ -109,6 +109,9 @@ export async function run(
     const topSells: Array<{ usd_value: number; address: string | null; timestamp: string | null }> = []
     let excludedOutliers = 0
     let excludedOutlierUsd = 0
+    // Newest whale row seen. The Solana feed stopped on 3 Oct and a 7d SOL
+    // answer still read as current (re-judge 2026-10-06); the writer flags it.
+    let latestMs = -Infinity
     for (const row of data as Array<any>) {
       const v = Number(row?.usd_value)
       if (!Number.isFinite(v) || v <= 0) continue
@@ -128,6 +131,8 @@ export async function run(
       const isBuy = c.startsWith('buy') || c.startsWith('accum')
       const isSell = c.startsWith('sell') || c.startsWith('distrib')
       if (addr) whales.add(addr)
+      const ts = Date.parse(String(row?.timestamp ?? ''))
+      if (Number.isFinite(ts) && ts > latestMs) latestMs = ts
       // One entry per wallet in the "biggest buyers/sellers" lists — the rows
       // arrive ordered by value, so the first hit per address is its largest.
       const seenBuy = new Set(topBuys.map((t) => t.address))
@@ -236,6 +241,7 @@ export async function run(
         buy_count: buys,
         sell_count: sells,
         unique_whales: uniqueWhales,
+        latest_at: Number.isFinite(latestMs) ? new Date(latestMs).toISOString() : null,
         top_buys: topBuys.map(decorate),
         top_sells: topSells.map(decorate),
         ...(excludedOutliers > 0
