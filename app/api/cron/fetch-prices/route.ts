@@ -98,7 +98,7 @@ const TICKER_MAP = [
   { symbol: 'LPT', id: 'livepeer' },
   { symbol: 'GNO', id: 'gnosis' },
   // AI / Data
-  { symbol: 'FET', id: 'artificial-superintelligence-alliance' },
+  { symbol: 'FET', id: 'fetch-ai' }, // CoinGecko never answered the ASI id: FET had no market cap or market volume (2026-10-07)
   { symbol: 'RENDER', id: 'render-token' },
   { symbol: 'TAO', id: 'bittensor' },
   { symbol: 'NMR', id: 'numeraire' },
