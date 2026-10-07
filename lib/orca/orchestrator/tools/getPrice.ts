@@ -6,16 +6,48 @@
  * separate so this tool can evolve (e.g. multi-window, change %) without
  * touching the personal-dashboard data layer.
  */
+import { readMarketVolume } from '@/lib/orca/marketVolume'
 import type { SupabaseLike, ToolResult } from '../types'
 
 export interface GetPriceArgs {
   ticker?: unknown
 }
 
+export interface LiveTicker {
+  price: number
+  changePct: number | null
+  quoteVolume: number | null
+}
+
+/**
+ * Live 24h ticker for a coin Sonar doesn't store. The price cron fetches every
+ * Binance USDT pair but keeps only the tracked list, so "movrusdt" got "No
+ * live price data right now" while MOVR traded normally (audit 2026-10-06).
+ * One request, 4s cap; null on any failure.
+ */
+export async function binanceLiveTicker(symbol: string): Promise<LiveTicker | null> {
+  try {
+    const r = await fetch(
+      `https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}USDT`,
+      { signal: AbortSignal.timeout(4000), cache: 'no-store' } as RequestInit
+    )
+    if (!r.ok) return null
+    const t: any = await r.json()
+    const price = Number(t?.lastPrice)
+    if (!Number.isFinite(price) || price <= 0) return null
+    const ch = Number(t?.priceChangePercent)
+    const qv = Number(t?.quoteVolume)
+    return { price, changePct: Number.isFinite(ch) ? ch : null, quoteVolume: Number.isFinite(qv) ? qv : null }
+  } catch {
+    return null
+  }
+}
+
 export async function run(
   args: GetPriceArgs,
   supabase: SupabaseLike,
-  now: () => Date = () => new Date()
+  now: () => Date = () => new Date(),
+  liveTicker: (symbol: string) => Promise<LiveTicker | null> = binanceLiveTicker
 ): Promise<ToolResult> {
   const fetched_at = now().toISOString()
   const ticker = normaliseTicker(args.ticker)
@@ -32,8 +64,32 @@ export async function run(
       .limit(1)
     const row = Array.isArray(data) ? data[0] : null
     if (!row || typeof row.price_usd !== 'number') {
-      return { ok: false, data: null, source: 'price_snapshots', fetched_at, error: 'no_data' }
+      const live = await liveTicker(ticker)
+      if (!live) return { ok: false, data: null, source: 'price_snapshots', fetched_at, error: 'no_data' }
+      return {
+        ok: true,
+        data: {
+          ticker,
+          tracked: false,
+          price_usd: live.price,
+          change_1h_pct: null,
+          change_24h_pct: live.changePct,
+          change_7d_pct: null,
+          change_1h_display: null,
+          change_24h_display: formatPct(live.changePct),
+          change_7d_display: null,
+          volume_24h: live.quoteVolume,
+          volume_scope: 'Binance spot pair only',
+          market_cap: null,
+          as_of: fetched_at,
+        },
+        source: 'binance_live',
+        fetched_at,
+      }
     }
+    // Market-wide 24h volume when the cron has it; the snapshot's figure is
+    // one Binance pair (audit 2026-10-06), so it is labelled when used.
+    const market = await readMarketVolume(supabase, ticker)
     // price_snapshots stores changes in PERCENT (-0.261 = -0.26%). An
     // unlabelled change_24h was read by the writer as a fraction, so FET's
     // -0.26% went out as "-26.1%" (audit 2026-10-06). Name the unit and hand
@@ -45,6 +101,7 @@ export async function run(
       ok: true,
       data: {
         ticker,
+        tracked: true,
         price_usd: row.price_usd,
         change_1h_pct: ch1h,
         change_24h_pct: ch24h,
@@ -52,7 +109,8 @@ export async function run(
         change_1h_display: formatPct(ch1h),
         change_24h_display: formatPct(ch24h),
         change_7d_display: formatPct(ch7d),
-        volume_24h: numericOrNull(row.volume_24h),
+        volume_24h: market ? market.volume : numericOrNull(row.volume_24h),
+        volume_scope: market ? 'all exchanges (CoinGecko)' : 'Binance spot pair only',
         market_cap: numericOrNull(row.market_cap),
         as_of: row.timestamp ?? null,
       },

@@ -333,3 +333,84 @@ describe('re-judge fixes', () => {
     expect((r.data as any).latest_at).toBe('2026-10-03T01:21:57.466Z')
   })
 })
+
+// ── Round 3 (2026-10-07): volume, exchange-internal moves, FET news, untracked coins ──
+import { isExchangeInternalRow } from '@/lib/orca/junk-addresses'
+import { tickerFromPair } from '@/lib/orca/route-dispatch'
+import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
+
+describe('round 3', () => {
+  it('treats exchange-to-exchange moves as internal, and keeps withdrawals and deposits', () => {
+    expect(isExchangeInternalRow({ from_label: 'Hot Wallet', to_label: 'Hot Wallet' })).toBe(true)
+    expect(isExchangeInternalRow({ from_label: 'Binance Deposit', to_label: 'Hot Wallet' })).toBe(true)
+    expect(isExchangeInternalRow({ from_label: 'Hot Wallet', to_label: 'Top UNI holder' })).toBe(false)
+    expect(isExchangeInternalRow({ from_label: 'Hot Wallet', to_label: '' })).toBe(false)
+    expect(isExchangeInternalRow({ from_label: 'Verified Whale', to_label: 'Hot Wallet' })).toBe(false)
+  })
+
+  it('first-answer totals leave out exchange-internal moves', async () => {
+    const row = (usd: number, cls: string, w: string, fl: string, tl: string) =>
+      ({ token_symbol: 'UNI', usd_value: usd, classification: cls, whale_address: w, from_address: '0xf', to_address: '0xt', from_label: fl, to_label: tl })
+    const rows = [
+      row(4_700_000, 'BUY', '0xhot2', 'Hot Wallet', 'Hot Wallet'),
+      row(2_100_000, 'BUY', '0xhot3', 'Binance Deposit', 'Hot Wallet'),
+      row(900_000, 'BUY', '0xuser', 'Hot Wallet', 'Top UNI holder'),
+      row(300_000, 'SELL', '0xuser2', 'Top UNI holder', 'Hot Wallet'),
+    ]
+    const r = await runTrending({ window: '24h' }, stub({ all_whale_transactions: rows }), now)
+    const uni = (r.data as any).tokens.find((t: any) => t.ticker === 'UNI')
+    expect(uni.buy_usd).toBe(900_000)
+    expect(uni.net_usd).toBe(600_000)
+    expect(uni.unique_whales).toBe(2)
+  })
+
+  it('getWhaleFlows totals the whole window itself and reports exchange-internal moves it left out', async () => {
+    const rows = [
+      { usd_value: 4_700_000, classification: 'BUY', whale_address: '0xh', from_address: '0xa', to_address: '0xh', from_label: 'Hot Wallet', to_label: 'Hot Wallet' },
+      { usd_value: 900_000, classification: 'BUY', whale_address: '0xu', from_address: '0xb', to_address: '0xu', from_label: 'Hot Wallet', to_label: '' },
+    ]
+    const r = await runWhaleFlows({ ticker: 'UNI', window: '24h' }, stub({ all_whale_transactions: rows }), now)
+    const d = r.data as any
+    expect(d.buy_usd).toBe(900_000)
+    expect(d.excluded_exchange_internal).toEqual({ count: 1, total_usd: 4_700_000 })
+    expect(d.complete).toBe(true)
+  })
+
+  it('reads a single-word stablecoin pair as its base ticker', () => {
+    expect(tickerFromPair('movrusdt')).toBe('MOVR')
+    expect(tickerFromPair('MOVR/USDT')).toBe('MOVR')
+    expect(tickerFromPair('$movr usdt')).toBe('MOVR')
+    expect(tickerFromPair('eth price')).toBeNull()
+    expect(tickerFromPair('what is movrusdt doing')).toBeNull()
+    expect(isBareTickerAsk('movrusdt', 'MOVR')).toBe(true)
+  })
+
+  it('gives an untracked coin its live exchange price instead of a dead end', async () => {
+    const live = async (s: string) => (s === 'MOVR' ? { price: 1.919, changePct: 3.8, quoteVolume: 2_100_000 } : null)
+    const r = await runPrice({ ticker: 'MOVR' }, stub({ price_snapshots: [] }), now, live)
+    expect(r.ok).toBe(true)
+    expect(r.source).toBe('binance_live')
+    expect((r.data as any).tracked).toBe(false)
+    expect((r.data as any).change_24h_display).toBe('+3.8%')
+    expect((r.data as any).volume_scope).toBe('Binance spot pair only')
+    const none = await runPrice({ ticker: 'NOPE' }, stub({ price_snapshots: [] }), now, async () => null)
+    expect(none.error).toBe('no_data')
+  })
+
+  it('quotes market-wide volume when the price job has cached it, and labels the pair figure otherwise', async () => {
+    const snap = [{ price_usd: 83858, price_change_24h: -0.5, volume_24h: 1_620_049_713, market_cap: 1.68e12, timestamp: '2026-10-07T10:15:13Z' }]
+    const fresh = { value: { updated_at: new Date().toISOString(), volumes: { BTC: 27_000_000_000 } } }
+    const withMarket = await runPrice({ ticker: 'BTC' }, stub({ price_snapshots: snap, app_cache: fresh as any }), now, async () => null)
+    expect((withMarket.data as any).volume_24h).toBe(27_000_000_000)
+    expect((withMarket.data as any).volume_scope).toBe('all exchanges (CoinGecko)')
+    const stale = { value: { updated_at: '2026-10-01T00:00:00Z', volumes: { BTC: 27_000_000_000 } } }
+    const withoutMarket = await runPrice({ ticker: 'BTC' }, stub({ price_snapshots: snap, app_cache: stale as any }), now, async () => null)
+    expect((withoutMarket.data as any).volume_24h).toBe(1_620_049_713)
+    expect((withoutMarket.data as any).volume_scope).toBe('Binance spot pair only')
+  })
+
+  it('keeps Further Education and Training articles out of FET news', () => {
+    expect(isCryptoRelevant('Further education and training: new FET courses open in Cork', 'FET')).toBe(false)
+    expect(isCryptoRelevant('Fetch.ai (FET) jumps as ASI Alliance token migration completes', 'FET')).toBe(true)
+  })
+})

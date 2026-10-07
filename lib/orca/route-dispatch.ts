@@ -206,6 +206,17 @@ function isQuoteTypo(w: string): boolean {
 }
 
 /**
+ * "movrusdt", "MOVR/USDT", "$movr usdt" → "MOVR": the base of a message that
+ * is only a USD-stablecoin pair. The extractor only knows tracked coins, so a
+ * pair for anything else dead-ended (audit 2026-10-06).
+ */
+export function tickerFromPair(message: string | undefined): string | null {
+  const m = String(message ?? '').trim().toLowerCase().replace(/^\$/, '').replace(/[\s/-]+/g, '')
+  const hit = /^([a-z0-9]{2,10}?)(usdt|usdc|busd|fdusd)$/.exec(m)
+  return hit ? hit[1].toUpperCase() : null
+}
+
+/**
  * True when the message is just a ticker or trading pair ("Doge", "PEPE",
  * "fet utsd", "solusdt"). In a fresh chat these fell into the v1 research note:
  * about 40s and 8k characters for a one-word ask (audit 2026-10-06). They get

@@ -319,6 +319,24 @@ export async function GET(request: Request) {
             }
           }
           providersTried['coingecko-pro'] = 'ok'
+          // Market-wide 24h volume (all exchanges) for ORCA's answers. The
+          // snapshots keep Binance's single USDT-pair volume on purpose: the
+          // signal engine compares it with recent snapshots, and switching its
+          // scale (6-23x) would read as a volume spike. ORCA had been quoting
+          // the pair figure as "24h volume" (audit 2026-10-06), so it reads
+          // these instead.
+          const volumes: Record<string, number> = {}
+          for (const t of targetTokens) {
+            const vol = Number(data[t.id]?.usd_24h_vol)
+            if (Number.isFinite(vol) && vol > 0) volumes[t.symbol] = Math.round(vol)
+          }
+          if (Object.keys(volumes).length > 0) {
+            const at = new Date().toISOString()
+            const { error: volErr } = await supabase
+              .from('app_cache')
+              .upsert({ key: 'market_volume_24h', value: { updated_at: at, source: 'coingecko', volumes }, updated_at: at }, { onConflict: 'key' })
+            if (volErr) errors.push(`market_volume_24h cache: ${volErr.message}`)
+          }
         } catch (cgErr) {
           providersTried['coingecko-pro'] = 'failed'
           errors.push(`coingecko-pro: ${cgErr instanceof Error ? cgErr.message : cgErr}`)

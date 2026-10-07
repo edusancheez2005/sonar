@@ -21,7 +21,8 @@ import type { BinanceKline, Binance24hrTicker } from '@/lib/binance/client'
 import { symbolToPair, daysToInterval } from '@/lib/binance/symbol-map'
 import { isCryptoRelevant } from '@/lib/crypto-relevance-filter'
 import { symbolVariants } from '@/lib/wallet/symbol-aliases'
-import { isNoiseRow } from '@/lib/orca/junk-addresses'
+import { isNonTradeRow } from '@/lib/orca/junk-addresses'
+import { readMarketVolume } from '@/lib/orca/marketVolume'
 import { 
   formatWhaleMovesDetailed,
   formatThemes,
@@ -221,7 +222,10 @@ function processBinanceChartData(data: any): CoinGeckoChartData | undefined {
       return 'neutral'
     }
 
-    // Calculate volatility (standard deviation of daily changes)
+    // Volatility as a DAILY-equivalent standard deviation of returns. The 7d
+    // series is hourly candles: the SD of hourly returns was labelled with
+    // daily thresholds, so every coin read "LOW VOLATILITY" (audit
+    // 2026-10-06: BTC 0.35%, really ~1.7% a day). Scale by sqrt(steps/day).
     const calculateVolatility = (prices: [number, number][]) => {
       if (prices.length < 2) return 0
       const changes: number[] = []
@@ -231,7 +235,9 @@ function processBinanceChartData(data: any): CoinGeckoChartData | undefined {
       }
       const mean = changes.reduce((sum, val) => sum + val, 0) / changes.length
       const variance = changes.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / changes.length
-      return Math.sqrt(variance)
+      const stepMs = (prices[prices.length - 1][0] - prices[0][0]) / (prices.length - 1)
+      const stepsPerDay = stepMs > 0 ? 86_400_000 / stepMs : 1
+      return Math.sqrt(variance) * Math.sqrt(Math.max(1, stepsPerDay))
     }
 
     // Get price swing
@@ -245,12 +251,22 @@ function processBinanceChartData(data: any): CoinGeckoChartData | undefined {
     }
 
     // Volume trend
+    // Last 24h of volume vs the average day before it. It used to compare the
+    // last 3 candles with the first 3 (a 3h-vs-3h test that called a +28%
+    // week "DECREASING", audit 2026-10-06). The newest candle is still open,
+    // so it is dropped.
     const getVolumeTrend = (volumes: [number, number][]) => {
-      if (volumes.length < 4) return 'stable'
-      const recent = volumes.slice(-3).reduce((sum, v) => sum + v[1], 0) / 3
-      const earlier = volumes.slice(0, 3).reduce((sum, v) => sum + v[1], 0) / 3
-      if (recent > earlier * 1.5) return 'increasing'
-      if (recent < earlier * 0.5) return 'decreasing'
+      const closed = volumes.slice(0, -1)
+      if (closed.length < 4) return 'stable'
+      const stepMs = (closed[closed.length - 1][0] - closed[0][0]) / (closed.length - 1)
+      const perDay = stepMs > 0 ? Math.round(86_400_000 / stepMs) : 0
+      if (perDay < 1 || closed.length < perDay * 2) return 'stable'
+      const recent = closed.slice(-perDay).reduce((sum, v) => sum + v[1], 0)
+      const earlierRows = closed.slice(0, -perDay)
+      const earlierPerDay = (earlierRows.reduce((sum, v) => sum + v[1], 0) / earlierRows.length) * perDay
+      if (!(earlierPerDay > 0)) return 'stable'
+      if (recent > earlierPerDay * 1.3) return 'increasing'
+      if (recent < earlierPerDay * 0.7) return 'decreasing'
       return 'stable'
     }
 
@@ -435,8 +451,9 @@ async function fetchWhaleActivity(ticker: string, supabase: any): Promise<any[]>
     }
 
     // Audit 2026-10-06: Morpho flash-loan legs were 98% of the "+$707M strong
-    // accumulation" in the BTC notes. Junk on any side is not whale activity.
-    return (data || []).filter((row: any) => !isNoiseRow(row))
+    // accumulation" in the BTC notes, and exchange-internal moves read as
+    // whale buys. Neither is whale activity.
+    return (data || []).filter((row: any) => !isNonTradeRow(row))
   } catch (error) {
     console.error('Error in fetchWhaleActivity:', error)
     return []
@@ -836,6 +853,13 @@ async function fetchPriceData(ticker: string, supabase: any): Promise<any> {
         volume_24h: livePrice.volume_24h ?? finalSnapshots[0].volume_24h,
         timestamp: livePrice.timestamp,
       }
+    }
+
+    // Market-wide 24h volume (CoinGecko, via the fetch-prices cron) instead of
+    // one Binance pair, 6-23x lower (audit 2026-10-06).
+    const market = await readMarketVolume(supabase, ticker)
+    if (market && finalSnapshots.length > 0) {
+      finalSnapshots[0] = { ...finalSnapshots[0], volume_24h: market.volume }
     }
 
     console.log(`📈 Price data for ${ticker}: ${finalSnapshots.length} snapshots, current: $${finalSnapshots[0]?.price_usd || 0}`)
@@ -1251,7 +1275,7 @@ WHALE FLOW vs PRICE DIVERGENCE CHECK:
 Price 24h change: ${context.price.change_24h > 0 ? '+' : ''}${context.price.change_24h?.toFixed(2)}%
 Whale net flow: ${context.whales.net_flow_24h > 0 ? 'POSITIVE' : 'NEGATIVE'} (${formatCurrency(Math.abs(context.whales.net_flow_24h))})
 ${(context.whales.net_flow_24h > 0 && context.price.change_24h < 0) ? '[DIVERGENCE OBSERVED] Whale wallets show net inflow while spot price moved down over the same window. Describe this as a descriptive observation only. Do NOT advise the user to act on it. Do NOT use phrases like "smart money", "accumulation signal", "load up", "buy the dip", or any forward-looking price prediction. Remind the user this is informational only and not a recommendation.' : ''}${(context.whales.net_flow_24h < 0 && context.price.change_24h > 0) ? '[DIVERGENCE OBSERVED] Whale wallets show net outflow while spot price moved up over the same window. Describe this as a descriptive observation only. Do NOT advise the user to act on it. Do NOT use phrases like "smart money exit", "distribution into strength", "warn", or any forward-looking price prediction. Remind the user this is informational only and not a recommendation.' : ''}${((context.whales.net_flow_24h > 0 && context.price.change_24h > 0) || (context.whales.net_flow_24h < 0 && context.price.change_24h < 0)) ? '[ALIGNED] Whale flow direction and 24h price direction agree. Describe this as a descriptive observation only \u2014 it is not a recommendation and not predictive of future price.' : ''}
-Whale volume vs Binance spot pair volume: ${context.price.volume_24h ? (context.whales.total_volume_usd / context.price.volume_24h * 100).toFixed(1) + '%' : 'N/A'} — CAUTION: the denominator is ONE Binance spot pair, while whale flow spans all venues and chains, so this ratio can legitimately exceed 100%. NEVER present it as "% of total market volume"; if it is large, describe whale flow as "large relative to Binance spot volume" and note the different coverage.` : ''}
+Whale volume vs 24h trading volume: ${context.price.volume_24h ? (context.whales.total_volume_usd / context.price.volume_24h * 100).toFixed(1) + '%' : 'N/A'} — CAUTION: whale flow counts on-chain transfers as well as trades, so this ratio can exceed 100%. NEVER present it as "% of total market volume".` : ''}
 
 Top Whale Moves:
 ${formatWhaleMovesDetailed(context.whales.top_moves)}
@@ -1273,7 +1297,7 @@ Total 24h Volume Tracked: $${formatLargeNumber(context.whaleAlerts.total_volume_
 Accumulation Signals: ${context.whaleAlerts.accumulation_signals} (exchange → wallet movements)
 Distribution Signals: ${context.whaleAlerts.distribution_signals} (wallet → exchange movements)
 Net On-Chain Bias (24h): ${context.whaleAlerts.accumulation_signals > context.whaleAlerts.distribution_signals ? `NET ACCUMULATION (${context.whaleAlerts.accumulation_signals - context.whaleAlerts.distribution_signals} more inflow tx than outflow)` : context.whaleAlerts.distribution_signals > context.whaleAlerts.accumulation_signals ? `NET DISTRIBUTION (${context.whaleAlerts.distribution_signals - context.whaleAlerts.accumulation_signals} more outflow tx than inflow)` : 'BALANCED'}
-${context.price?.volume_24h ? `Tracked whale volume vs Binance spot pair volume: ${(context.whaleAlerts.total_volume_usd / context.price.volume_24h * 100).toFixed(1)}% — CAUTION: denominator is ONE Binance spot pair; whale flow spans all venues/chains, so >100% is possible. Never call it a share of total market volume.` : ''}
+${context.price?.volume_24h ? `Tracked whale volume vs 24h trading volume: ${(context.whaleAlerts.total_volume_usd / context.price.volume_24h * 100).toFixed(1)}% — CAUTION: whale flow counts on-chain transfers as well as trades, so >100% is possible. Never call it a share of total market volume.` : ''}
 Notable Movements (>$10M):
 ${context.whaleAlerts.notable_movements.map(s => s.replace(/[\u{1F7E2}\u{1F534}\u{1F535}\u{1F7E1}\u{1F7E0}]/gu, '').trim()).join('\n') || 'No single tx above $10M in window'}
 Recent Largest Transactions:
@@ -1287,7 +1311,7 @@ ${context.whaleAlerts.recent_alerts.slice(0, 5).map((a: any) =>
 CONTEXT FOR ${context.ticker}
 ${'='.repeat(50)}
 
-PRICE DATA (Binance):
+PRICE DATA:
 Current Price: ${formatCurrency(context.price.current)}
 24h Change: ${formatPercentage(context.price.change_24h)}
 Market Cap: ${formatCurrency(context.price.market_cap)}
@@ -1301,7 +1325,7 @@ ${context.coingecko ? `CHART & TREND ANALYSIS (Binance):
 7-Day Trend: ${context.coingecko.trend_7d.toUpperCase()} ${context.coingecko.trend_7d === 'bullish' ? '[UPTREND]' : context.coingecko.trend_7d === 'bearish' ? '[DOWNTREND]' : '[SIDEWAYS]'}
 30-Day Trend: ${context.coingecko.trend_30d.toUpperCase()}
 7-Day Price Range: ${formatCurrency(context.coingecko.price_swing_7d.low)} - ${formatCurrency(context.coingecko.price_swing_7d.high)}
-Volatility (7d): ${context.coingecko.volatility_7d.toFixed(2)}% ${context.coingecko.volatility_7d > 10 ? '[HIGH VOLATILITY]' : context.coingecko.volatility_7d < 5 ? '[LOW VOLATILITY]' : '[MODERATE]'}
+Volatility (7d, daily-equivalent): ${context.coingecko.volatility_7d.toFixed(2)}% ${context.coingecko.volatility_7d > 5 ? '[HIGH VOLATILITY]' : context.coingecko.volatility_7d < 2 ? '[LOW VOLATILITY]' : '[MODERATE]'}
 Volume Trend: ${context.coingecko.volume_trend.toUpperCase()} ${context.coingecko.volume_trend === 'increasing' ? '[RISING INTEREST]' : context.coingecko.volume_trend === 'decreasing' ? '[DECLINING INTEREST]' : ''}
 ${(context.coingecko as any).sentiment_votes_up_pct != null ? `Community Sentiment: ${(context.coingecko as any).sentiment_votes_up_pct.toFixed(1)}% bullish votes` : ''}
 ${(context.coingecko as any).watchlist_users ? `Watchlist Users: ${formatLargeNumber((context.coingecko as any).watchlist_users)} (popularity indicator)` : ''}
@@ -1312,9 +1336,9 @@ MULTI-TIMEFRAME PRICE CHANGES:
 7d: ${(context.coingecko as any).market_data_enriched.price_change_7d != null ? formatPercentage((context.coingecko as any).market_data_enriched.price_change_7d) : 'N/A'}
 14d: ${(context.coingecko as any).market_data_enriched.price_change_14d != null ? formatPercentage((context.coingecko as any).market_data_enriched.price_change_14d) : 'N/A'}
 30d: ${(context.coingecko as any).market_data_enriched.price_change_30d != null ? formatPercentage((context.coingecko as any).market_data_enriched.price_change_30d) : 'N/A'}
-Volume/MCap Ratio: ${(context.coingecko as any).market_data_enriched.volume_to_mcap != null ? (context.coingecko as any).market_data_enriched.volume_to_mcap.toFixed(4) : 'N/A'} ${(context.coingecko as any).market_data_enriched.volume_to_mcap > 0.1 ? '[VERY ACTIVE TRADING]' : (context.coingecko as any).market_data_enriched.volume_to_mcap > 0.05 ? '[HEALTHY ACTIVITY]' : '[LOW ACTIVITY]'}
+${context.price.volume_24h > 0 && context.price.market_cap > 0 ? `24h Volume / Market Cap: ${(context.price.volume_24h / context.price.market_cap * 100).toFixed(2)}%` : ''}
 FDV/MCap Ratio: ${(context.coingecko as any).market_data_enriched.mcap_fdv_ratio != null ? (context.coingecko as any).market_data_enriched.mcap_fdv_ratio.toFixed(2) : 'N/A'} ${(context.coingecko as any).market_data_enriched.mcap_fdv_ratio > 0.9 ? '[LOW INFLATION RISK]' : (context.coingecko as any).market_data_enriched.mcap_fdv_ratio < 0.5 ? '[HIGH FUTURE DILUTION]' : ''}
-Supply: ${(context.coingecko as any).market_data_enriched.circulating_supply ? formatLargeNumber((context.coingecko as any).market_data_enriched.circulating_supply) : '?'} circulating${(context.coingecko as any).market_data_enriched.max_supply ? ` / ${formatLargeNumber((context.coingecko as any).market_data_enriched.max_supply)} max` : ' (unlimited supply)'}` : ''}
+${(context.coingecko as any).market_data_enriched.circulating_supply ? `Supply: ${formatLargeNumber((context.coingecko as any).market_data_enriched.circulating_supply)} circulating${(context.coingecko as any).market_data_enriched.max_supply ? ` / ${formatLargeNumber((context.coingecko as any).market_data_enriched.max_supply)} max` : ''}` : ''}` : ''}
 ${(context.coingecko as any).developer_data?.commit_count_4_weeks ? `
 DEVELOPER ACTIVITY (GitHub):
 Commits (4 weeks): ${(context.coingecko as any).developer_data.commit_count_4_weeks}

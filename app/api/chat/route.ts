@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { extractTicker, getTickerNotFoundMessage } from '@/lib/orca/ticker-extractor'
 import { hasNonTickerSurface } from '@/lib/orca/non-ticker-surface'
-import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer, isBareTickerAsk } from '@/lib/orca/route-dispatch'
+import { pickStageARoute, isTickerFollowUp, wantsFocusedDataAnswer, isBareTickerAsk, tickerFromPair } from '@/lib/orca/route-dispatch'
 import { matchFastPath } from '@/lib/orca/fast-paths'
 import { cachedAnswerWindow, readCachedFirstAnswer, chunkText } from '@/lib/orca/first-answer'
 import { noteCacheKey, readCachedNote, writeCachedNote, isCacheableNote } from '@/lib/orca/note-cache'
@@ -925,6 +925,14 @@ export async function POST(request: Request) {
         normalized: null,
         originalMatch: null,
       } as typeof tickerResult
+    }
+    // "movrusdt": a pair for a coin the extractor doesn't know. Use its base so
+    // the snapshot path answers with a live exchange price (audit 2026-10-06).
+    if (!tickerResult.ticker) {
+      const base = tickerFromPair(message)
+      if (base) {
+        tickerResult = { ticker: base, confidence: 0.6, normalized: base, originalMatch: message.trim() } as typeof tickerResult
+      }
     }
 
     // -------------------------------------------------------------------------

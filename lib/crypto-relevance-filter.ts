@@ -15,6 +15,9 @@ const AMBIGUOUS_TICKERS: Record<string, string[]> = {
   // surfaced an IBM/Lockheed quantum-hub story in Ethereum headlines.
   'ETH': ['eth zurich', 'eth zürich', 'ethz', 'zurich', 'zürich', 'eidgenössische', 'swiss federal institute'],
   'ADA': ['ada lovelace', 'americans with disabilities', 'ada compliance', 'ada county'],
+  // FET collides with Further Education and Training (Ireland/UK): the
+  // 2026-10-06 audit found two Irish Times FET-course articles in a FET answer.
+  'FET': ['further education', 'education and training', 'fet course', 'fet college', 'fet sector', 'solas', 'education and training board', 'post leaving cert', 'plc course'],
   'TON': ['ton of', 'tons of', 'metric ton', 'tonne', 'per ton'],
   'SUI': ['sui generis', 'sui dynasty', 'monsieur', 'ennui'],
   'TIA': ['tia portal', 'auntie', 'tia maria'],
@@ -186,6 +189,7 @@ export function isCryptoRelevant(text: string, ticker: string): boolean {
       'CRV': ['curve'],
       'SOL': ['solana'],
       'ADA': ['cardano'],
+      'FET': ['fetch.ai', 'fetch ai', 'artificial superintelligence', 'asi alliance'],
       'TON': ['toncoin', 'the open network'],
       'SUI': ['sui network', 'sui blockchain', 'mysten'],
       'TIA': ['celestia'],

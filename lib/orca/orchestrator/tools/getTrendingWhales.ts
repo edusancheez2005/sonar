@@ -12,7 +12,7 @@
  */
 import type { SupabaseLike, ToolResult } from '../types'
 import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
-import { isNoiseRow } from '@/lib/orca/junk-addresses'
+import { isNonTradeRow } from '@/lib/orca/junk-addresses'
 import { readAllRows } from './pagedRead'
 
 // Same protocol-scale sanity cap as getWhaleFlows (see comment there).
@@ -74,7 +74,7 @@ export async function run(
     const query = () => {
       let q: any = supabase
         .from('all_whale_transactions')
-        .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address, timestamp')
+        .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address, from_label, to_label, timestamp')
         .gte('timestamp', sinceIso)
         .order('usd_value', { ascending: false })
         .order('id', { ascending: true })
@@ -112,8 +112,9 @@ export async function run(
       const v = Number(row?.usd_value)
       if (!Number.isFinite(v) || v <= 0) continue
       if (v > MAX_SANE_TX_USD) continue
-      // Flash-loan legs (Morpho Blue, Balancer Vault) are not whale trades.
-      if (isNoiseRow(row)) continue
+      // Flash-loan legs (Morpho Blue, Balancer Vault) and an exchange moving
+      // coins between its own wallets are not whale trades.
+      if (isNonTradeRow(row)) continue
       const c = String(row?.classification ?? '').toLowerCase()
       let b = buckets.get(ticker)
       if (!b) {

@@ -13,7 +13,7 @@
  */
 import type { SupabaseLike, ToolResult } from '../types'
 import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
-import { isNoiseRow } from '@/lib/orca/junk-addresses'
+import { isNonTradeRow } from '@/lib/orca/junk-addresses'
 import { readAllRows } from './pagedRead'
 import { applyLabel, fetchEntityLabels } from './entityLabels'
 
@@ -69,7 +69,7 @@ export async function run(
       () =>
         (supabase as any)
           .from('all_whale_transactions')
-          .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address, timestamp')
+          .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address, from_label, to_label, timestamp')
           .gte('timestamp', sinceIso)
           .gte('usd_value', MIN_TX_USD)
           .order('usd_value', { ascending: false })
@@ -90,8 +90,9 @@ export async function run(
       const v = Number(row?.usd_value)
       if (!Number.isFinite(v) || v <= 0 || v > MAX_SANE_TX_USD) continue
       const addr = String(row?.whale_address || '').trim()
-      // Junk on any side (the Balancer Vault is the counterparty, not the whale).
-      if (!addr || isNoiseRow(row)) continue
+      // Junk on any side (the Balancer Vault is the counterparty, not the
+      // whale) or an exchange moving coins between its own wallets.
+      if (!addr || isNonTradeRow(row)) continue
       const c = String(row?.classification ?? '').toLowerCase()
       let b = buckets.get(ticker)
       if (!b) {

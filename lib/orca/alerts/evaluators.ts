@@ -22,7 +22,7 @@ import type { NotificationCopy } from './types'
 import { NEWS_SENTIMENT_THRESHOLD, RECENT_WINDOW_MS } from './types'
 import { CONVERGENCE_ANY_TICKER } from './types'
 import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
-import { isNoiseRow } from '@/lib/orca/junk-addresses'
+import { isNonTradeRow } from '@/lib/orca/junk-addresses'
 import { readAllRows } from '@/lib/orca/orchestrator/tools/pagedRead'
 import { addressVariants, EVM_ADDRESS_RE } from '@/lib/wallet/addressVariants'
 export { addressVariants }
@@ -169,7 +169,7 @@ export async function evaluateWhaleConvergence(
       () =>
         supabase
           .from('all_whale_transactions')
-          .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address')
+          .select('id, transaction_hash, token_symbol, usd_value, classification, whale_address, from_address, to_address, from_label, to_label')
           .gte('timestamp', sinceIso)
           .gte('usd_value', 25_000)
           .order('usd_value', { ascending: false })
@@ -186,7 +186,7 @@ export async function evaluateWhaleConvergence(
       const v = Number(r?.usd_value)
       if (!Number.isFinite(v) || v <= 0 || v > 150_000_000) continue
       const addr = String(r?.whale_address || '').trim()
-      if (!addr || isNoiseRow(r)) continue
+      if (!addr || isNonTradeRow(r)) continue
       let b = buckets.get(sym)
       if (!b) { b = { buyers: new Map(), buyUsd: 0 }; buckets.set(sym, b) }
       b.buyers.set(addr, (b.buyers.get(addr) || 0) + v)
