@@ -21,7 +21,7 @@ export const fetchCache = 'force-no-store'
 export const maxDuration = 60
 
 const BASE = 'https://www.sonartracker.io'
-const REPORT_RECIPIENTS = ['eduardosanchez4848@gmail.com', 'eduardo@sonartracker.io']
+const REPORT_RECIPIENTS = ['eduardosanchez4848@gmail.com', 'eduardo@sonartracker.io', 'saif@aldhaheri.org']
 const FAMOUS_CATEGORIES = new Set(['person', 'celebrity', 'government'])
 
 async function cacheValue(key: string): Promise<any> {
