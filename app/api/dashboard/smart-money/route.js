@@ -73,10 +73,14 @@ export async function GET() {
     const bearishCount = tokens.filter(t => t.signal === 'bearish_divergence').length
     const neutralCount = tokens.filter(t => t.signal === 'aligned').length
 
+    // When the cron last refreshed the cache (shown as "as of" on the panel).
+    const asOf = cached.reduce((m, r) => (r.updated_at && r.updated_at > m ? r.updated_at : m), '') || null
+
     return NextResponse.json({
       tokens,
       summary: { bullishCount, bearishCount, neutralCount, strongestDivergence: tokens[0] || null },
       timestamp: new Date().toISOString(),
+      as_of: asOf,
     })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })

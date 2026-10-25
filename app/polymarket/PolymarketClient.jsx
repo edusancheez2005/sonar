@@ -1047,7 +1047,7 @@ export default function PolymarketClient() {
   return (
     <WhaleTerminalShell
       title="WHALE_TERMINAL // POLYMARKET"
-      live
+      statusSource="none"
       whaleAlert={false}
       statusSegments={[
         { k: 'MARKETS', v: markets.length.toLocaleString() },

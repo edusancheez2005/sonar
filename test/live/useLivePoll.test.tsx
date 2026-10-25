@@ -38,8 +38,8 @@ describe('useLivePoll', () => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => false })
   })
 
-  it('defaults to a 60 s interval', () => {
-    expect(LIVE_POLL_MS).toBe(60_000)
+  it('defaults to a 15 s interval', () => {
+    expect(LIVE_POLL_MS).toBe(15_000)
   })
 
   it('fetches on mount and again after the interval', async () => {

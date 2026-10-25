@@ -5,10 +5,10 @@ const now = Date.parse('2026-10-25T12:00:00Z')
 const ago = (ms: number) => new Date(now - ms).toISOString()
 
 describe('healthOf', () => {
-  it('is LIVE when the newest row is under 5 min old and the last poll succeeded', () => {
+  it('is LIVE when the newest row is under 8 min old and the last poll succeeded', () => {
     expect(healthOf({ newestAt: ago(60_000), now, lastPollOkAt: now - 30_000, intervalMs: 60_000 })).toBe('live')
   })
-  it('is DELAYED between 5 and 30 min, STALE after', () => {
+  it('is DELAYED between 8 and 30 min, STALE after', () => {
     expect(healthOf({ newestAt: ago(10 * 60_000), now })).toBe('delayed')
     expect(healthOf({ newestAt: ago(31 * 60_000), now })).toBe('stale')
   })
@@ -26,6 +26,7 @@ describe('healthOf', () => {
     expect(healthOf({ newestAt: ago(7 * 3_600_000), now, thresholds: th })).toBe('stale')
   })
   it('exports the default thresholds', () => {
-    expect(LIVE_THRESHOLDS).toEqual({ liveMs: 5 * 60_000, delayedMs: 30 * 60_000 })
+    // LIVE = 2 × the p99 gap between Ethereum rows (243 s on 2026-10-25), rounded up.
+    expect(LIVE_THRESHOLDS).toEqual({ liveMs: 8 * 60_000, delayedMs: 30 * 60_000 })
   })
 })

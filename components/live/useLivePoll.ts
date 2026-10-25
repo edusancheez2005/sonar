@@ -14,7 +14,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export const LIVE_POLL_MS = 60_000
+export const LIVE_POLL_MS = 15_000
 
 export interface LivePollOptions<T> {
   intervalMs?: number

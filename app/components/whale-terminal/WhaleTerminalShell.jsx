@@ -5,7 +5,7 @@
 // price ticker tape, content column and a bottom status line. Square
 // corners, hairline borders, mono uppercase labels, scanline texture.
 // Auth + watchlist-count logic mirrors the previous shell.
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import NextLink from 'next/link'
 import { usePathname } from 'next/navigation'
 import styled from 'styled-components'
@@ -13,6 +13,8 @@ import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { C, FONT_MONO } from '@/app/lib/terminalTheme'
 import { pulseGlow } from './primitives'
 import AlertBanner from '@/components/wallet-tracker/AlertBanner'
+import { useLivePoll } from '@/components/live/useLivePoll'
+import { HealthChip, healthOf } from '@/components/live/HealthChip'
 
 const TABS = [
   { id: 'research', label: 'Research', href: '/wallet-tracker' },
@@ -224,36 +226,27 @@ const SrTitle = styled.h1`
   border: 0;
 `
 
-// ── feed status poll ─────────────────────────────────────────────────
-// The price ticker tape was dropped (the dashboard already has one), but
-// the status line still needs a heartbeat for CONNECTED / LAST SYNC.
-function useFeedStatus(onStatus) {
-  const onStatusRef = useRef(onStatus)
-  onStatusRef.current = onStatus
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const res = await fetch('/api/ticker', { cache: 'no-store' })
-        if (!res.ok) throw new Error('feed failed')
-        if (!cancelled) onStatusRef.current?.({ ok: true, at: Date.now() })
-      } catch {
-        if (!cancelled) onStatusRef.current?.({ ok: false, at: Date.now() })
-      }
-    }
-    load()
-    const id = setInterval(load, 30000)
-    return () => {
-      cancelled = true
-      clearInterval(id)
-    }
-  }, [])
+// ── feed status ──────────────────────────────────────────────────────
+// Freshness of the Ethereum whale feed from /api/health/algorithm, once a
+// minute and never while the tab is hidden. (It used to poll /api/ticker and
+// said CONNECTED even when that returned nothing.)
+function useWhaleFeedHealth(enabled) {
+  const poll = useLivePoll((signal) => fetch('/api/health/algorithm', { cache: 'no-store', signal }), { intervalMs: 60_000, enabled })
+  const lastTs = poll.data?.lastTs ?? null
+  const health = healthOf({
+    newestAt: lastTs,
+    now: Date.now() + (poll.offsetMs || 0),
+    lastPollOkAt: poll.lastFetchedAt,
+    intervalMs: 60_000,
+    consecutiveFailures: poll.consecutiveFailures,
+  })
+  return { health, lastTs, polled: poll.pollsOk > 0 || poll.consecutiveFailures > 0 }
 }
 
 export default function WhaleTerminalShell({
   title = 'WHALE_TERMINAL',
-  live = false,
+  live = false, // eslint-disable-line no-unused-vars -- kept for callers; the chip below replaced the static LIVE label
+  statusSource = 'whale-feed', // 'whale-feed' | 'none' (Polymarket has its own refresh)
   statusSegments = [],
   whaleAlert = true, // scrolling whale-alert banner; Polymarket opts out
   children,
@@ -262,8 +255,7 @@ export default function WhaleTerminalShell({
   const clock = useUtcClock()
   const [isAuthed, setIsAuthed] = useState(null)
   const [count, setCount] = useState(0)
-  const [feed, setFeed] = useState(null) // { ok, at } from the heartbeat poll
-  useFeedStatus(setFeed)
+  const feed = useWhaleFeedHealth(statusSource === 'whale-feed')
 
   useEffect(() => {
     let cancelled = false
@@ -322,9 +314,8 @@ export default function WhaleTerminalShell({
   const activeTab = TABS.find((t) => t.id === active)
   const visibleTabs = TABS.filter((t) => !t.requiresAuth || isAuthed === true)
 
-  const connected = feed == null ? null : feed.ok
-  const connColor = connected == null ? C.amber : connected ? C.green : C.red
-  const connLabel = connected == null ? 'SYNCING' : connected ? 'CONNECTED' : 'FEED OFFLINE'
+  const connColor = !feed.polled ? C.amber : feed.health === 'live' ? C.green : feed.health === 'delayed' ? C.amber : C.red
+  const connLabel = !feed.polled ? 'SYNCING' : `ETH WHALE FEED ${feed.health.toUpperCase()}`
 
   return (
     <Wrapper>
@@ -352,7 +343,14 @@ export default function WhaleTerminalShell({
           ))}
         </TabNav>
         <HeaderRight>
-          {live ? <span className="live">LIVE</span> : null}
+          {statusSource === 'whale-feed' && feed.polled ? (
+            <HealthChip
+              health={feed.health}
+              prefix="ETH whale feed"
+              testId="whale-feed-health"
+              title={feed.lastTs ? `Newest Ethereum whale trade ${new Date(feed.lastTs).toISOString().slice(11, 16)} UTC` : 'No Ethereum whale trades in the last 3 hours'}
+            />
+          ) : null}
           <span className="clock">{clock}</span>
         </HeaderRight>
       </TermHeader>
@@ -363,10 +361,12 @@ export default function WhaleTerminalShell({
       </Content>
 
       <StatusLine aria-hidden>
-        <span className="seg conn" style={{ color: connColor }}>
-          <span className="dot" style={{ background: connColor }} />
-          {connLabel}
-        </span>
+        {statusSource === 'whale-feed' ? (
+          <span className="seg conn" style={{ color: connColor }}>
+            <span className="dot" style={{ background: connColor }} />
+            {connLabel}
+          </span>
+        ) : null}
         {activeTab ? (
           <span className="seg">
             <span className="k">MODULE</span>
@@ -379,10 +379,10 @@ export default function WhaleTerminalShell({
             <span className="v" style={s.color ? { color: s.color } : undefined}>{s.v}</span>
           </span>
         ))}
-        {feed?.at ? (
+        {statusSource === 'whale-feed' && feed.lastTs ? (
           <span className="seg">
-            <span className="k">LAST SYNC</span>
-            <span className="v">{Math.max(0, Math.round((Date.now() - feed.at) / 1000))}S</span>
+            <span className="k">NEWEST TRADE</span>
+            <span className="v">{Math.max(0, Math.round((Date.now() - feed.lastTs) / 60000))}M AGO</span>
           </span>
         ) : null}
         <span className="clock">{clock}</span>

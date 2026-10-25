@@ -28,7 +28,11 @@ export default function SmartMoneyPanel() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.cyan} strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span style={{ fontFamily: FONT_MONO, fontSize: '0.72rem', fontWeight: 700, color: C.cyan, letterSpacing: '0.8px', textTransform: 'uppercase' }}>Smart Money</span>
         </div>
-        <span style={{ fontSize: '0.6rem', fontFamily: FONT_MONO, color: C.muted, background: 'rgba(0,229,255,0.04)', padding: '0.1rem 0.4rem', borderRadius: '3px', border: `1px solid ${C.border}` }}>LIVE</span>
+        {data.as_of && (
+          <span style={{ fontSize: '0.6rem', fontFamily: FONT_MONO, color: C.muted }}>
+            as of {new Date(data.as_of).toISOString().slice(11, 16)} UTC
+          </span>
+        )}
       </div>
 
       {/* Summary */}

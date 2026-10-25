@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { LIVE_THRESHOLDS } from '@/components/live/health'
 
 // Always evaluate at request time. Build-time static generation triggers
 // the 'Dynamic server usage: no-store fetch' bail and pollutes Vercel logs.
@@ -27,6 +28,9 @@ export async function GET() {
   const lastTs = data && data[0]?.timestamp ? new Date(data[0].timestamp).getTime() : 0
   const now = Date.now()
   const active = lastTs > 0 && (now - lastTs) <= 120 * 60 * 1000 // Active if transaction within last 2 hours
+  // Same thresholds as the HealthChip on pages that poll rows.
+  const ageSec = lastTs > 0 ? Math.max(0, Math.round((now - lastTs) / 1000)) : null
+  const status = ageSec === null ? 'stale' : ageSec * 1000 <= LIVE_THRESHOLDS.liveMs ? 'live' : ageSec * 1000 <= LIVE_THRESHOLDS.delayedMs ? 'delayed' : 'stale'
 
-  return NextResponse.json({ active, lastTs: lastTs || null })
+  return NextResponse.json({ active, lastTs: lastTs || null, ageSec, status, serverNow: new Date(now).toISOString() })
 } 

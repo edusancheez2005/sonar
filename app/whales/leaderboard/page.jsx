@@ -84,8 +84,7 @@ const css = `
 .wlb-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
 .wlb-title { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 0; font-size: 1.35rem; font-weight: 650; color: ${C.text}; letter-spacing: -0.01em; }
 .wlb-chip { font-family: ${C.mono}; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; color: ${C.cyan}; background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.18); border-radius: 999px; padding: 0.22rem 0.65rem; }
-.wlb-live { display: inline-flex; align-items: center; gap: 0.35rem; font-family: ${C.mono}; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; color: ${C.green}; }
-.wlb-live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: ${C.green}; box-shadow: 0 0 8px rgba(0,230,118,0.6); }
+.wlb-asof { font-family: ${C.mono}; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.04em; color: ${C.muted}; }
 .wlb-sub { margin: 0.4rem 0 0; font-size: 0.9rem; color: ${C.muted}; max-width: 62ch; line-height: 1.55; }
 .wlb-entities { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #0a1621; text-decoration: none; background: linear-gradient(135deg, #7af8ff 0%, #22d3ee 60%, #36a6ba 100%); box-shadow: 0 4px 18px rgba(34,211,238,0.22); white-space: nowrap; }
 .wlb-entities:hover { filter: brightness(1.07); color: #0a1621; }
@@ -154,6 +153,8 @@ export default async function WhalesLeaderboardPage() {
     console.error('whales/leaderboard data load failed:', err?.message)
   }
 
+  // The page is regenerated every 30 s; this is when this copy was built.
+  const asOf = new Date().toISOString().slice(11, 16)
   const totalVolume = rows.reduce((s, r) => s + Number(r.totalVolume || 0), 0)
   const totalNet = rows.reduce((s, r) => s + Number(r.netUsd || 0), 0)
   const accumulating = rows.filter(r => Number(r.netUsd || 0) > 0).length
@@ -169,7 +170,7 @@ export default async function WhalesLeaderboardPage() {
             <h1 className="wlb-title">
               Whale Leaderboard
               <span className="wlb-chip">24H WINDOW</span>
-              <span className="wlb-live">LIVE</span>
+              <span className="wlb-asof">as of {asOf} UTC</span>
             </h1>
             <p className="wlb-sub">
               The most active whale wallets over the last 24 hours, ranked by trading

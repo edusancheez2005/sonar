@@ -5,9 +5,11 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import styled, { keyframes } from 'styled-components'
+import { useEffect, useState } from 'react'
+import styled, { css, keyframes } from 'styled-components'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
+import { useLivePoll } from '@/components/live/useLivePoll'
+import { HealthChip, healthOf } from '@/components/live/HealthChip'
 
 const slideIn = keyframes`
   from { opacity: 0; transform: translateY(-8px); max-height: 0; }
@@ -41,7 +43,9 @@ const Row = styled.div`
   font-size: 0.68rem;
   transition: background 0.15s;
   border-left: 2px solid transparent;
-  animation: ${p => p.$isNew ? slideIn : 'none'} 0.4s ease-out;
+  @media (prefers-reduced-motion: no-preference) {
+    ${p => p.$isNew && css`animation: ${slideIn} 0.4s ease-out;`}
+  }
 
   &:hover { background: rgba(0, 229, 255, 0.03); }
 `
@@ -70,12 +74,6 @@ const Chain = styled.span`
 
 const Time = styled.span`
   font-size: 0.58rem; color: #5a6a7a; margin-left: auto; white-space: nowrap;
-`
-
-const LiveDot = styled.span`
-  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-  background: #00e676; margin-right: 0.3rem;
-  animation: ${keyframes`0%,100%{opacity:1;}50%{opacity:0.3;}`} 2s infinite;
 `
 
 const Header = styled.div`
@@ -112,46 +110,41 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400)}d ago`
 }
 
+function askOrca(symbol) {
+  const q = `What did whales do with ${symbol} in the last 24 hours, and what moved the price?`
+  return `/ai-advisor?q=${encodeURIComponent(q)}&ticker=${encodeURIComponent(symbol)}&send=1`
+}
+
 export default function WhaleTransactionFeed({ symbol = null, limit = 30, pollInterval = 10000 }) {
-  const [txns, setTxns] = useState([])
-  const [newIds, setNewIds] = useState(new Set())
   const [filter, setFilter] = useState('all') // all, buy, sell
-  const prevIdsRef = useRef(new Set())
-  const intervalRef = useRef(null)
-
-  const fetchTxns = async () => {
-    try {
-      let url = `/api/whales/latest?limit=${limit}`
-      if (symbol) url += `&token=${symbol}`
-      const res = await fetch(url)
-      if (!res.ok) return
-      const json = await res.json()
-      const data = json.data || []
-
-      // Identify new transactions
-      const currentIds = new Set(data.map(t => t.transaction_hash))
-      const fresh = new Set()
-      for (const id of currentIds) {
-        if (!prevIdsRef.current.has(id)) fresh.add(id)
-      }
-      prevIdsRef.current = currentIds
-
-      // Only mark as "new" after first load
-      if (txns.length > 0) {
-        setNewIds(fresh)
-        // Clear "new" animation class after 2s
-        setTimeout(() => setNewIds(new Set()), 2000)
-      }
-
-      setTxns(data)
-    } catch {}
-  }
-
+  const url = `/api/whales/latest?limit=${limit}${symbol ? `&token=${encodeURIComponent(symbol)}` : ''}`
+  // Pauses while the tab is hidden; filter or symbol changes cancel in-flight reads.
+  const poll = useLivePoll((signal) => fetch(url, { signal }), {
+    intervalMs: pollInterval,
+    getIds: (body) => (body?.data || []).map((t) => t.transaction_hash),
+  })
+  const txns = poll.data?.data || []
+  const windowLabel = poll.data?.window_hours > 24 ? 'the last 7 days' : 'the last 24 hours'
+  const [newIds, setNewIds] = useState(new Set())
   useEffect(() => {
-    fetchTxns()
-    intervalRef.current = setInterval(fetchTxns, pollInterval)
-    return () => clearInterval(intervalRef.current)
-  }, [symbol, limit, pollInterval])
+    if (!poll.newIds.length) return
+    setNewIds(new Set(poll.newIds))
+    const t = setTimeout(() => setNewIds(new Set()), 2000)
+    return () => clearTimeout(t)
+  }, [poll.newIds])
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 15000)
+    return () => clearInterval(id)
+  }, [])
+  const health = healthOf({
+    newestAt: txns[0]?.timestamp,
+    now: now + (poll.offsetMs || 0),
+    lastPollOkAt: poll.lastFetchedAt,
+    intervalMs: pollInterval,
+    consecutiveFailures: poll.consecutiveFailures,
+  })
+  const loaded = poll.pollsOk > 0 || poll.consecutiveFailures > 0
 
   const filtered = filter === 'all' ? txns
     : txns.filter(t => t.classification?.toLowerCase() === filter)
@@ -160,8 +153,9 @@ export default function WhaleTransactionFeed({ symbol = null, limit = 30, pollIn
     <div>
       <Header>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <LiveDot />
-          <span style={{ color: '#00e676', fontWeight: 600 }}>LIVE</span>
+          {loaded && txns.length > 0 && (
+            <HealthChip health={health} testId="token-whale-health" title={`Newest trade shown: ${timeAgo(txns[0].timestamp)}`} />
+          )}
           <span style={{ marginLeft: '0.5rem' }}>
             {symbol ? `${symbol} whale transactions` : 'All whale transactions'}
           </span>
@@ -175,7 +169,14 @@ export default function WhaleTransactionFeed({ symbol = null, limit = 30, pollIn
       <Wrapper>
         {filtered.length === 0 && (
           <div style={{ padding: '2rem', textAlign: 'center', fontFamily: FONT_MONO, fontSize: '0.7rem', color: '#5a6a7a' }}>
-            {txns.length === 0 ? 'Loading transactions...' : 'No transactions match filter'}
+            {!loaded
+              ? 'Loading transactions...'
+              : txns.length > 0
+                ? 'No transactions match filter'
+                : <>
+                    {poll.error && !poll.data ? 'Whale trades did not load.' : `No whale trades${symbol ? ` for ${symbol}` : ''} in ${windowLabel}.`}
+                    {symbol ? <> <a href={askOrca(symbol)} style={{ color: '#00e5ff' }}>Ask ORCA</a></> : null}
+                  </>}
           </div>
         )}
         {filtered.map(tx => {
