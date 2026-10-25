@@ -253,6 +253,31 @@ const InfoPop = styled.div`
   p { margin: 0 0 0.45rem; }
   p:last-child { margin: 0; color: #8896a6; }
 `
+const MacroGrid = styled.div`
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem;
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+`
+const MacroCard = styled.div`
+  padding: 0.8rem 0.95rem; border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px;
+  background: rgba(0, 229, 255, 0.015);
+`
+const MacroRule = styled.span`
+  font-size: 0.74rem; color: #8896a6; font-family: ${FONT_SANS};
+  @media (max-width: 700px) { flex-basis: 100%; order: 10; }
+`
+const macroRule = (m) => {
+  const c = m?.counts
+  const total = m?.factors?.length || 0
+  if (!c || !total) return ''
+  if (m.overall_sentiment === 'bearish') return `${c.bearish} of ${total} factors bearish`
+  if (m.overall_sentiment === 'bullish') return `${c.bullish} of ${total} factors bullish`
+  return `${c.bullish} bullish · ${c.bearish} bearish · ${c.neutral} neutral`
+}
+const hoursAgo = (iso) => {
+  const h = Math.round((Date.now() - new Date(iso).getTime()) / 3_600_000)
+  return Number.isFinite(h) ? (h < 1 ? 'under 1 h ago' : `${h} h ago`) : ''
+}
+
 const ChangeNote = styled.div`
   display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
   margin-bottom: 0.75rem; padding: 0.5rem 0.8rem; border-radius: 8px;
@@ -768,6 +793,7 @@ const Dashboard = ({ isPremium = false }) => {
   const [overall, setOverall] = useState({ totalCount: 0, totalVolume: 0, buyCount: 0, sellCount: 0, buyVolume: 0, sellVolume: 0 })
 
   const [macroFactors, setMacroFactors] = useState(null)
+  const [macroShowAll, setMacroShowAll] = useState(false)
   // Provenance of the whale-flow numbers (same snapshot as ORCA).
   const [flowMeta, setFlowMeta] = useState(null)
   const [mostTraded, setMostTraded] = useState([])
@@ -1077,7 +1103,7 @@ const Dashboard = ({ isPremium = false }) => {
                   border: `1px solid ${COLORS.borderSubtle}`,
                   borderRadius: 8, padding: '1rem 1.25rem',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: macroCollapsed ? 0 : '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem 0.75rem', marginBottom: macroCollapsed ? 0 : '0.85rem' }}>
                     <span style={{
                       fontSize: '0.9rem', fontWeight: 600, color: COLORS.textPrimary, fontFamily: FONT_SANS,
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -1093,6 +1119,12 @@ const Dashboard = ({ isPremium = false }) => {
                       }}>
                         {macroFactors.overall_sentiment.toUpperCase()}
                       </span>
+                    )}
+                    {macroFactors?.counts && (
+                      <MacroRule>
+                        {macroRule(macroFactors)}
+                        {macroFactors.generated_at ? ` · updated ${hhmmUtc(macroFactors.generated_at)}, ${hoursAgo(macroFactors.generated_at)}` : ''}
+                      </MacroRule>
                     )}
                     {!macroCollapsed && hasFactors && <Link
                       href={`/ai-advisor?q=${encodeURIComponent('Explain each of these macro factors in simple terms. What does each one mean and how could it affect the overall crypto market? Do NOT analyze any specific coin or pull price data — just explain the macro picture in plain English:\n\n' + macroFactors.factors.map(f => '• ' + f.title + ' (' + f.impact + '): ' + f.summary).join('\n'))}`}
@@ -1123,20 +1155,12 @@ const Dashboard = ({ isPremium = false }) => {
                       Scanning the latest macro headlines…
                     </div>
                   )}
-                  {!macroCollapsed && hasFactors && <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${Math.min(macroFactors.factors.length, 3)}, 1fr)`,
-                    gap: 0,
-                    border: `1px solid ${COLORS.borderSubtle}`, borderRadius: 6,
-                    background: 'rgba(0,229,255,0.015)', overflow: 'hidden',
-                  }}>
-                    {macroFactors.factors.slice(0, 3).map((f, i, arr) => {
+                  {!macroCollapsed && hasFactors && <>
+                  <MacroGrid>
+                    {macroFactors.factors.slice(0, macroShowAll ? undefined : 3).map((f, i) => {
                       const dotColor = f.impact === 'bullish' ? COLORS.green : f.impact === 'bearish' ? COLORS.red : COLORS.textMuted
                       return (
-                      <div key={i} style={{
-                        padding: '0.85rem 1rem',
-                        borderRight: i < arr.length - 1 ? `1px solid ${COLORS.borderSubtle}` : 'none',
-                      }}>
+                      <MacroCard key={i}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.35rem' }}>
                           <span style={{
                             width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
@@ -1145,10 +1169,19 @@ const Dashboard = ({ isPremium = false }) => {
                           <span style={{ fontSize: '0.9rem', fontWeight: 700, color: COLORS.textPrimary }}>{f.title}</span>
                         </div>
                         <div style={{ fontSize: '0.8rem', color: '#8a9ab0', lineHeight: 1.55 }}>{f.summary}</div>
-                      </div>
+                      </MacroCard>
                       )
                     })}
-                  </div>}
+                  </MacroGrid>
+                  {macroFactors.factors.length > 3 && (
+                    <button type="button" onClick={() => setMacroShowAll((v) => !v)} style={{
+                      marginTop: '0.6rem', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                      color: COLORS.cyan, fontSize: '0.78rem', fontFamily: FONT_SANS,
+                    }}>
+                      {macroShowAll ? 'Show the top 3' : `Show all ${macroFactors.factors.length} factors`}
+                    </button>
+                  )}
+                  </>}
                 </div>
               </div>
               )

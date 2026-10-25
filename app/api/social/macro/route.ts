@@ -23,17 +23,23 @@ export async function GET() {
     return NextResponse.json(
       {
         factors: result.factors,
+        // Derived from the factors (lib/social/macroFactors deriveOverall):
+        // the side with more factors wins when it leads by 2 or more.
         overall_sentiment: result.overall_sentiment,
+        llm_overall_sentiment: result.llm_overall_sentiment ?? null,
+        derived_from: result.derived_from ?? 'factors',
+        counts: result.counts ?? null,
+        rule: 'Badge = the side with more factors when it leads by 2 or more; otherwise neutral.',
+        visible_count: 3,
+        generated_at: result.generated_at ?? null,
         last_updated: result.last_updated,
         market: result.market ?? null,
         stale: result.stale,
       },
       {
-        headers: {
-          'Cache-Control': result.stale
-            ? 's-maxage=300'
-            : 's-maxage=43200, stale-while-revalidate=86400',
-        },
+        // 5 minutes at the edge (it was 12 h, so a new generation could take
+        // half a day to show). The function reads one cached row per request.
+        headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' },
       }
     )
   } catch (error: any) {
