@@ -21,7 +21,7 @@ const STEPS = [
     resolve: (refs) => refs?.marketPulse?.current,
     kicker: 'Start here',
     title: 'Is big money buying or selling?',
-    text: 'Four numbers, five seconds: how many coins whales are piling into, how many they are dumping, and how much moved in the last 24 hours.',
+    text: 'Four numbers, five seconds: whales\' net flow (what they received minus what they sent), the coin with the biggest inflow, the one with the biggest outflow, and the total whale volume of the last 24 hours.',
     placement: 'bottom',
   },
   {
@@ -29,7 +29,7 @@ const STEPS = [
     resolve: (refs) => refs?.whaleData?.current,
     kicker: 'Whale flows',
     title: 'Where the money is going',
-    text: 'Green bars are coins whales bought more than they sold today. Red is the opposite. Other tools charge for exactly this view.',
+    text: 'Green bars are coins whales received more of than they sent in the last 24 hours; red is the opposite; grey means about even. Tap the i under any panel for exactly what is counted.',
     placement: 'bottom',
   },
   {

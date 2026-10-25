@@ -26,6 +26,7 @@ import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
 import { usePersonalizedDashboard } from '@/components/wallet/PersonalizedDashboardContext'
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
 import { FONT_SANS, FONT_MONO } from '@/src/styles/fontStacks'
+import { flowTone, FLOW_TONE_COLORS, FLOW_TONE_TEXT, NET_FLOW_DEFINITION } from '@/lib/whale/netFlow'
 
 import { Filler } from 'chart.js'
 
@@ -229,7 +230,36 @@ const PanelBadge = styled.span`
 `
 
 const PanelSubtext = styled.p`
-  font-size: 0.78rem; color: ${COLORS.textMuted}; margin: 0.25rem 0 0; font-family: ${FONT_SANS};
+  font-size: 0.78rem; color: #8896a6; margin: 0.25rem 0 0; font-family: ${FONT_SANS};
+`
+
+// One always-visible line under every whale-flow panel + a tap "i" popover
+// with the shared definition (lib/whale/netFlow.ts).
+const FlowLine = styled.div`
+  display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+  font-size: 0.74rem; color: #8896a6; font-family: ${FONT_SANS};
+  margin: -0.35rem 0 0.75rem;
+`
+const InfoBtn = styled.button`
+  width: 18px; height: 18px; border-radius: 999px; border: 1px solid rgba(136, 150, 166, 0.5);
+  background: transparent; color: #8896a6; font-size: 0.68rem; font-weight: 700; line-height: 1;
+  cursor: pointer; padding: 0; font-family: ${FONT_SANS}; flex-shrink: 0;
+  &:hover, &[aria-expanded="true"] { color: ${COLORS.cyan}; border-color: ${COLORS.cyan}; }
+`
+const InfoPop = styled.div`
+  flex-basis: 100%; margin-top: 0.35rem; padding: 0.7rem 0.85rem; border-radius: 8px;
+  background: rgba(10, 14, 23, 0.96); border: 1px solid ${COLORS.borderSubtle};
+  color: #c4cfdb; font-size: 0.78rem; line-height: 1.55;
+  p { margin: 0 0 0.45rem; }
+  p:last-child { margin: 0; color: #8896a6; }
+`
+const ChangeNote = styled.div`
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  margin-bottom: 0.75rem; padding: 0.5rem 0.8rem; border-radius: 8px;
+  background: rgba(0, 229, 255, 0.04); border: 1px solid ${COLORS.borderSubtle};
+  font-size: 0.78rem; color: #c4cfdb; font-family: ${FONT_SANS};
+  button { background: none; border: none; color: ${COLORS.cyan}; cursor: pointer; font-size: 0.78rem; padding: 0; font-family: ${FONT_SANS}; }
+  .x { margin-left: auto; color: #8896a6; }
 `
 
 // ─── KPI STRIP ──────────────────────────────────────────────────────────────
@@ -522,14 +552,6 @@ const NewsMeta = styled.div`
   display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; font-family: ${FONT_MONO};
 `
 
-const SentimentBadge = styled.span`
-  padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.66rem; font-weight: 700;
-  font-family: ${FONT_MONO}; letter-spacing: 0.5px;
-  color: ${props => props.$sentiment === 'bullish' ? COLORS.green : props.$sentiment === 'bearish' ? COLORS.red : COLORS.amber};
-  background: ${props => props.$sentiment === 'bullish' ? 'rgba(0,230,118,0.08)' : props.$sentiment === 'bearish' ? 'rgba(255,23,68,0.08)' : 'rgba(255,171,0,0.08)'};
-  border: 1px solid ${props => props.$sentiment === 'bullish' ? 'rgba(0,230,118,0.15)' : props.$sentiment === 'bearish' ? 'rgba(255,23,68,0.15)' : 'rgba(255,171,0,0.15)'};
-`
-
 const BreakingTag = styled.span`
   padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.62rem; font-weight: 800;
   font-family: ${FONT_MONO}; letter-spacing: 1px; color: #ff1744;
@@ -546,6 +568,50 @@ const formatCompact = (n) => {
   if (abs >= 1e6) return `${(num/1e6).toFixed(2)}M`;
   if (abs >= 1e3) return `${(num/1e3).toFixed(2)}K`;
   return `${Math.round(num)}`;
+}
+
+// BTC on the whale tape is WBTC + cbBTC + tBTC on Ethereum.
+const BTC_NOTE = 'WBTC + cbBTC + tBTC on Ethereum; Bitcoin-chain whale moves are not in this tape'
+const TokenName = ({ symbol }) => (
+  symbol === 'BTC'
+    ? <span title={BTC_NOTE}>BTC <span style={{ fontSize: '0.72em', color: '#8896a6', fontWeight: 500 }}>(wrapped)</span></span>
+    : <>{symbol}</>
+)
+const signedUsd = (n) => {
+  const v = Number(n) || 0
+  return `${v > 0 ? '+' : v < 0 ? '-' : ''}$${formatCompact(Math.abs(v))}`
+}
+const hhmmUtc = (iso) => {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`
+}
+const minutesAgo = (iso) => {
+  const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000))
+  return m < 1 ? 'just now' : m === 1 ? '1 min ago' : `${m} min ago`
+}
+
+const FlowExplainer = ({ meta, what = 'Whale buys − sells' }) => {
+  const [open, setOpen] = useState(false)
+  if (!meta?.generated_at) return null
+  const ex = meta.excluded || {}
+  const parts = []
+  if (ex.junk?.count) parts.push(`$${formatCompact(ex.junk.usd)} in ${ex.junk.count} protocol / flash-loan rows`)
+  if (ex.exchangeInternal?.count) parts.push(`$${formatCompact(ex.exchangeInternal.usd)} in ${ex.exchangeInternal.count} exchange-internal transfers`)
+  if (ex.overCap?.count) parts.push(`$${formatCompact(ex.overCap.usd)} in ${ex.overCap.count} transfers above $150M`)
+  return (
+    <FlowLine>
+      <span>{what} · 24h · {meta.chainsShort} · updated {minutesAgo(meta.generated_at)} ({hhmmUtc(meta.generated_at)})</span>
+      <InfoBtn type="button" aria-expanded={open} aria-label="How this is calculated" onClick={() => setOpen((o) => !o)}>i</InfoBtn>
+      {open && (
+        <InfoPop role="note">
+          <p>{NET_FLOW_DEFINITION}</p>
+          <p>BUY means the whale address received the token; SELL means it sent it.</p>
+          {parts.length > 0 && <p>Excluded in this window: {parts.join(', ')}.</p>}
+          <p>On-chain observations, not investment advice.</p>
+        </InfoPop>
+      )}
+    </FlowLine>
+  )
 }
 
 // Count-up hook for animated numbers
@@ -701,10 +767,22 @@ const Dashboard = ({ isPremium = false }) => {
   const [tokenOutflows, setTokenOutflows] = useState([])
   const [overall, setOverall] = useState({ totalCount: 0, totalVolume: 0, buyCount: 0, sellCount: 0, buyVolume: 0, sellVolume: 0 })
 
-  // News + signals state for dashboard V2
-  const [newsArticles, setNewsArticles] = useState([])
-  const [signals, setSignals] = useState([])
   const [macroFactors, setMacroFactors] = useState(null)
+  // Provenance of the whale-flow numbers (same snapshot as ORCA).
+  const [flowMeta, setFlowMeta] = useState(null)
+  const [mostTraded, setMostTraded] = useState([])
+  // One-week note about the new definition (until 2026-11-01).
+  const [showFlowNote, setShowFlowNote] = useState(false)
+  const [flowNoteOpen, setFlowNoteOpen] = useState(false)
+  useEffect(() => {
+    try {
+      if (Date.now() < Date.parse('2026-11-01T00:00:00Z') && localStorage.getItem('sonar-netflow-note-v1') !== '1') setShowFlowNote(true)
+    } catch { /* storage blocked: skip the note */ }
+  }, [])
+  const dismissFlowNote = () => {
+    setShowFlowNote(false)
+    try { localStorage.setItem('sonar-netflow-note-v1', '1') } catch { /* ignore */ }
+  }
 
   // Collapsible sections (state persists per browser). v2 keys: the v1 keys
   // shipped with a barely-visible toggle, so anyone who clicked it got stuck
@@ -830,6 +908,19 @@ const Dashboard = ({ isPremium = false }) => {
           setTokenInflows(json.tokenInflows || [])
           setTokenOutflows(json.tokenOutflows || [])
           setOverall(json.overall || { totalCount: 0, totalVolume: 0, buyCount: 0, sellCount: 0, buyVolume: 0, sellVolume: 0 })
+          if (json.generated_at) {
+            const chains = Array.isArray(json.chains_live) ? json.chains_live : []
+            setFlowMeta({
+              generated_at: json.generated_at,
+              excluded: json.excluded || {},
+              chains_live: chains,
+              chains_label: json.chains_label || '',
+              chainsShort: chains.length === 1 ? (chains[0] === 'ethereum' ? 'Ethereum' : chains[0]) : 'all chains',
+            })
+          }
+          if (Array.isArray(json.tokenTradeCounts) && json.tokenTradeCounts.some((x) => x && typeof x === 'object' && 'volume' in x)) {
+            setMostTraded(json.tokenTradeCounts)
+          }
           // Normalize tokenTradeCounts to an array of { token, count }
           const ttc = json.tokenTradeCounts
           let normalized = []
@@ -899,27 +990,6 @@ const Dashboard = ({ isPremium = false }) => {
     
                      // All enhanced insights data is now fetched from the enhanced /api/dashboard/summary endpoint
     
-    const fetchNews = async () => {
-      try {
-        const res = await fetch('/api/social/feed?limit=8&sort=recent', { cache: 'no-store' })
-        if (res.ok) {
-          const json = await res.json()
-          setNewsArticles((json.posts || json.data || []).slice(0, 8))
-        }
-      } catch {}
-    }
-
-    const fetchSignals = async () => {
-      try {
-        const res = await fetch('/api/signals', { cache: 'no-store' })
-        if (res.ok) {
-          const json = await res.json()
-          const sigs = (json.signals || json.data || json || [])
-          setSignals(Array.isArray(sigs) ? sigs.slice(0, 4) : [])
-        }
-      } catch {}
-    }
-
     const pollAlgo = async () => {
       try {
         const res = await fetch('/api/health/algorithm', { cache: 'no-store' })
@@ -928,20 +998,16 @@ const Dashboard = ({ isPremium = false }) => {
       } catch {}
     }
     
-         fetchSummary();
-     fetchNews();
-     fetchSignals();
-     pollAlgo()
-     // Poll summary every 60s to avoid flickering from boundary transactions
-     // Health check and news can poll faster at 15s
-     let fastTick = 0
-     timer = setInterval(() => {
-       fastTick++
-       pollAlgo()
-       fetchNews()
-       // Only refresh summary data every 4th tick (60s) to keep panels stable
-       if (fastTick % 4 === 0) fetchSummary()
-     }, 15000)
+    fetchSummary()
+    pollAlgo()
+    // The health check polls every 15 s; the summary every 4th tick (60 s),
+    // matching its 60 s edge cache.
+    let fastTick = 0
+    timer = setInterval(() => {
+      fastTick++
+      pollAlgo()
+      if (fastTick % 4 === 0) fetchSummary()
+    }, 15000)
     return () => clearInterval(timer)
   }, [])
 
@@ -957,6 +1023,9 @@ const Dashboard = ({ isPremium = false }) => {
             <TerminalLogo>SONAR</TerminalLogo>
             <LiveDot>{algoActive ? 'LIVE' : 'OFFLINE'}</LiveDot>
             <TimeBadge>24H WINDOW</TimeBadge>
+            {flowMeta?.chains_live?.length === 1 && (
+              <TimeBadge title={flowMeta.chains_label}>{flowMeta.chains_live[0] === 'ethereum' ? 'ETHEREUM ONLY' : flowMeta.chains_live[0].toUpperCase()}</TimeBadge>
+            )}
           </CommandBarLeft>
 
           <CommandBarCenter>
@@ -1115,47 +1184,47 @@ const Dashboard = ({ isPremium = false }) => {
                   )}
                 </PulseHeader>
                 {!pulseCollapsed && loading && !hasLoadedOnce.current && <SkeletonKPIStrip />}
+                {!pulseCollapsed && showFlowNote && (
+                  <ChangeNote role="status">
+                    <span>Net flow now excludes protocol, flash-loan and exchange-internal transfers.</span>
+                    <button type="button" onClick={() => setFlowNoteOpen((o) => !o)}>{flowNoteOpen ? 'Hide details' : 'Details'}</button>
+                    <button type="button" className="x" aria-label="Dismiss" onClick={dismissFlowNote}>Dismiss</button>
+                    {flowNoteOpen && <div style={{ flexBasis: '100%', color: '#8896a6' }}>{NET_FLOW_DEFINITION}</div>}
+                  </ChangeNote>
+                )}
                 {!pulseCollapsed && <KPIStrip style={{ display: loading && !hasLoadedOnce.current ? 'none' : undefined }}>
-                  <KPICell>
-                    <KPILabel>Strong Accumulation</KPILabel>
-                    <KPIValue $color={COLORS.green}>
-                      <AnimatedNumber value={tokenInflows.filter(t => (t.netUsd || 0) > 1000000).length} />
-                    </KPIValue>
-                    <KPISub $color={COLORS.green}>
-                      <span style={{ fontSize: '0.7rem' }}>▲</span> ${formatCompact(tokenInflows.reduce((s, t) => s + Math.max(0, t.netUsd || 0), 0))} Net Inflow
-                    </KPISub>
-                  </KPICell>
-
-                  <KPICell>
-                    <KPILabel>Heavy Distribution</KPILabel>
-                    <KPIValue $color={COLORS.red}>
-                      <AnimatedNumber value={tokenOutflows.filter(t => Math.abs(t.netUsd || 0) > 1000000).length} />
-                    </KPIValue>
-                    <KPISub $color={COLORS.red}>
-                      <span style={{ fontSize: '0.7rem' }}>▼</span> ${formatCompact(tokenOutflows.reduce((s, t) => s + Math.abs(t.netUsd || 0), 0))} Net Outflow
-                    </KPISub>
-                  </KPICell>
-
-                  <KPICell>
-                    <KPILabel>High Whale Activity</KPILabel>
-                    <KPIValue $color={COLORS.cyan}>
-                      <AnimatedNumber value={whaleActivity.filter(t => (t.uniqueWhales || 0) > 10).length} />
-                    </KPIValue>
-                    <KPISub $color={COLORS.cyan}>
-                      {whaleActivity.reduce((s, t) => s + (t.uniqueWhales || 0), 0)} Unique Whales
-                    </KPISub>
-                  </KPICell>
-
-                  <KPICell>
-                    <KPILabel>24H Whale Volume</KPILabel>
-                    <KPIValue $color={COLORS.amber}>
-                      ${formatCompact(Math.abs(overall.totalVolume || 0))}
-                    </KPIValue>
-                    <KPISub $color={COLORS.amber}>
-                      {overall.totalCount || 0} Transactions
-                    </KPISub>
-                  </KPICell>
+                  {(() => {
+                    const net = Number(overall.netUsd ?? ((overall.buyVolume || 0) - (overall.sellVolume || 0)))
+                    const tone = flowTone(net, overall.totalVolume || 0)
+                    const topIn = tokenInflows[0]
+                    const topOut = tokenOutflows[0]
+                    return (
+                      <>
+                        <KPICell>
+                          <KPILabel>Net whale flow 24h</KPILabel>
+                          <KPIValue $color={FLOW_TONE_TEXT[tone]}>{signedUsd(net)}</KPIValue>
+                          <KPISub $color="#8896a6">{tone === 'flat' ? 'About even' : tone === 'in' ? 'Whales received more' : 'Whales sent more'}</KPISub>
+                        </KPICell>
+                        <KPICell>
+                          <KPILabel>Biggest inflow</KPILabel>
+                          <KPIValue $color={COLORS.green}>{topIn ? <TokenName symbol={topIn.token} /> : '—'}</KPIValue>
+                          <KPISub $color={COLORS.green}>{topIn ? signedUsd(topIn.netUsd) : 'No net inflow'}</KPISub>
+                        </KPICell>
+                        <KPICell>
+                          <KPILabel>Biggest outflow</KPILabel>
+                          <KPIValue $color={COLORS.red}>{topOut ? <TokenName symbol={topOut.token} /> : '—'}</KPIValue>
+                          <KPISub $color={COLORS.red}>{topOut ? signedUsd(topOut.netUsd) : 'No net outflow'}</KPISub>
+                        </KPICell>
+                        <KPICell>
+                          <KPILabel>Whale volume 24h</KPILabel>
+                          <KPIValue $color={COLORS.amber}>${formatCompact(Math.abs(overall.totalVolume || 0))}</KPIValue>
+                          <KPISub $color={COLORS.amber}>{(overall.totalCount || 0).toLocaleString()} trades · {(overall.uniqueWhales || 0).toLocaleString()} whales</KPISub>
+                        </KPICell>
+                      </>
+                    )
+                  })()}
                 </KPIStrip>}
+                {!pulseCollapsed && <FlowExplainer meta={flowMeta} />}
               </motion.div>
 
               {/* Free user conversion banner */}
@@ -1171,33 +1240,34 @@ const Dashboard = ({ isPremium = false }) => {
                         <TerminalPrompt>Net Inflows</TerminalPrompt>
                         <PanelBadge>24H</PanelBadge>
                       </PanelHeader>
+                      <FlowExplainer meta={flowMeta} />
                       {tokenInflows.length === 0 ? (
                         loading ? <SkeletonBarRows count={5} /> :
-                        <EmptyState>No inflow data in the past 24 hours.</EmptyState>
+                        <EmptyState>No net inflow in the past 24 hours.</EmptyState>
                       ) : (() => {
-                        const altcoins = tokenInflows.filter(t => t.token !== 'BTC')
-                        const altMax = Math.abs(altcoins[0]?.netUsd || 1)
+                        const rowMax = Math.abs(tokenInflows[0]?.netUsd || 1)
                         return (
                           <div>
-                            {altcoins.map((t, idx) => {
-                              const pct = Math.min(100, (Math.abs(t.netUsd || 0) / altMax) * 100)
+                            {tokenInflows.map((t, idx) => {
+                              const pct = Math.min(100, (Math.abs(t.netUsd || 0) / rowMax) * 100)
+                              const tone = t.tone || flowTone(t.netUsd, t.volume)
                               return (
                                 <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
                                   <HBarRow>
                                     <HBarLabel>
                                       <TokenIcon symbol={t.token} size={18} />
-                                      {t.token}
+                                      <TokenName symbol={t.token} />
                                     </HBarLabel>
                                     <HBarTrack>
                                       <HBarFill
-                                        $color={COLORS.green}
+                                        $color={FLOW_TONE_COLORS[tone]}
                                         initial={{ width: 0 }}
                                         animate={{ width: `${pct}%` }}
                                         transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
                                       />
                                     </HBarTrack>
-                                    <HBarValue $color={COLORS.green}>
-                                      +${formatCompact(t.netUsd || 0)}
+                                    <HBarValue $color={FLOW_TONE_TEXT[tone]}>
+                                      {signedUsd(t.netUsd)}
                                     </HBarValue>
                                   </HBarRow>
                                 </Link>
@@ -1214,33 +1284,34 @@ const Dashboard = ({ isPremium = false }) => {
                         <TerminalPrompt>Net Outflows</TerminalPrompt>
                         <PanelBadge>24H</PanelBadge>
                       </PanelHeader>
+                      <FlowExplainer meta={flowMeta} />
                       {tokenOutflows.length === 0 ? (
                         loading ? <SkeletonBarRows count={5} /> :
-                        <EmptyState>No outflow data in the past 24 hours.</EmptyState>
+                        <EmptyState>No net outflow in the past 24 hours.</EmptyState>
                       ) : (() => {
-                        const altcoins = tokenOutflows.filter(t => t.token !== 'BTC')
-                        const altMax = Math.abs(altcoins[0]?.netUsd || 1)
+                        const rowMax = Math.abs(tokenOutflows[0]?.netUsd || 1)
                         return (
                           <div>
-                            {altcoins.map((t, idx) => {
-                              const pct = Math.min(100, (Math.abs(t.netUsd || 0) / altMax) * 100)
+                            {tokenOutflows.map((t, idx) => {
+                              const pct = Math.min(100, (Math.abs(t.netUsd || 0) / rowMax) * 100)
+                              const tone = t.tone || flowTone(t.netUsd, t.volume)
                               return (
                                 <Link key={t.token} href={`/statistics?token=${encodeURIComponent(t.token)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
                                   <HBarRow>
                                     <HBarLabel>
                                       <TokenIcon symbol={t.token} size={18} />
-                                      {t.token}
+                                      <TokenName symbol={t.token} />
                                     </HBarLabel>
                                     <HBarTrack>
                                       <HBarFill
-                                        $color={COLORS.red}
+                                        $color={FLOW_TONE_COLORS[tone]}
                                         initial={{ width: 0 }}
                                         animate={{ width: `${pct}%` }}
                                         transition={{ duration: 0.6, delay: idx * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
                                       />
                                     </HBarTrack>
-                                    <HBarValue $color={COLORS.red}>
-                                      -${formatCompact(Math.abs(t.netUsd || 0))}
+                                    <HBarValue $color={FLOW_TONE_TEXT[tone]}>
+                                      {signedUsd(t.netUsd)}
                                     </HBarValue>
                                   </HBarRow>
                                 </Link>
@@ -1264,12 +1335,13 @@ const Dashboard = ({ isPremium = false }) => {
                           <PanelHeader>
                             <TerminalPrompt>Buy Pressure</TerminalPrompt>
                           </PanelHeader>
+                          <FlowExplainer meta={flowMeta} what="Share of whale trades that were buys (by count, not USD)" />
                           {topBuys.map((item, index) => (
                             <Link key={`buy-${item.coin}-${index}`} href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
                               <PressureRow $accent={COLORS.green}>
                                 <TokenIcon symbol={item.coin} size={18} />
                                 <span style={{ fontFamily: FONT_MONO, fontWeight: 600, color: COLORS.textPrimary, fontSize: '0.85rem' }}>
-                                  {item.coin}
+                                  <TokenName symbol={item.coin} />
                                 </span>
                                 <PressureBar>
                                   <PressureFill $color={COLORS.green} style={{ width: `${item.percentage}%` }} />
@@ -1286,12 +1358,13 @@ const Dashboard = ({ isPremium = false }) => {
                           <PanelHeader>
                             <TerminalPrompt>Sell Pressure</TerminalPrompt>
                           </PanelHeader>
+                          <FlowExplainer meta={flowMeta} what="Share of whale trades that were sells (by count, not USD)" />
                           {topSells.map((item, index) => (
                             <Link key={`sell-${item.coin}-${index}`} href={`/statistics?token=${encodeURIComponent(item.coin)}&sinceHours=24`} style={{ textDecoration: 'none' }}>
                               <PressureRow $accent={COLORS.red}>
                                 <TokenIcon symbol={item.coin} size={18} />
                                 <span style={{ fontFamily: FONT_MONO, fontWeight: 600, color: COLORS.textPrimary, fontSize: '0.85rem' }}>
-                                  {item.coin}
+                                  <TokenName symbol={item.coin} />
                                 </span>
                                 <PressureBar>
                                   <PressureFill $color={COLORS.red} style={{ width: `${item.percentage}%` }} />
@@ -1315,12 +1388,13 @@ const Dashboard = ({ isPremium = false }) => {
                         <PanelHeader>
                           <div>
                             <TerminalPrompt>Most Traded Tokens</TerminalPrompt>
-                            <PanelSubtext>Top tokens by institutional whale transaction volume — 24H</PanelSubtext>
+                            <PanelSubtext>Ranked by 24h whale volume</PanelSubtext>
                           </div>
                           <PanelBadge>LAST 24H</PanelBadge>
                         </PanelHeader>
+                        <FlowExplainer meta={flowMeta} />
 
-                        {noData24h || tokenLeaders.length === 0 ? (
+                        {noData24h || mostTraded.length === 0 ? (
                           <EmptyState>No trading data available for the past 24 hours.</EmptyState>
                         ) : (
                           <DataTable>
@@ -1331,17 +1405,16 @@ const Dashboard = ({ isPremium = false }) => {
                                   <th>Token</th>
                                   <th className="right">Trades</th>
                                   <th className="right">Volume</th>
-                                  <th className="center" style={{ width: '100px' }}>Buy / Sell</th>
-                                  <th className="center" style={{ width: '120px' }}>Flow</th>
+                                  <th className="right">Net</th>
+                                  <th className="center" style={{ width: '100px' }}>Buys / Sells</th>
+                                  <th className="center" style={{ width: '120px' }}>Split</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {tokenLeaders.slice(0, isPremium ? 12 : 5).map((t, idx) => {
+                                {mostTraded.slice(0, isPremium ? 12 : 5).map((t, idx) => {
                                   const totalTrades = (t.buys || 0) + (t.sells || 0)
                                   const buyRatio = totalTrades > 0 ? ((t.buys || 0) / totalTrades) * 100 : 50
-                                  const isBuyHeavy = buyRatio > 60
-                                  const isSellHeavy = buyRatio < 40
-                                  const flowColor = isBuyHeavy ? COLORS.green : isSellHeavy ? COLORS.red : COLORS.amber
+                                  const tone = t.tone || flowTone(t.netUsd, t.volume)
 
                                   return (
                                     <motion.tr
@@ -1356,15 +1429,16 @@ const Dashboard = ({ isPremium = false }) => {
                                       <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                                           <TokenIcon symbol={t.token} size={22} />
-                                          <span style={{ fontWeight: 700, letterSpacing: '0.5px' }}>{t.token}</span>
-                                          <FlowDot $color={flowColor} />
+                                          <span style={{ fontWeight: 700, letterSpacing: '0.5px' }}><TokenName symbol={t.token} /></span>
+                                          <FlowDot $color={FLOW_TONE_COLORS[tone]} />
                                         </div>
                                       </td>
-                                      <td className="right" style={{ fontWeight: 700, color: COLORS.cyan }}>{t.txCount || 0}</td>
+                                      <td className="right" style={{ fontWeight: 700, color: COLORS.cyan }}>{t.count || totalTrades}</td>
                                       <td className="right" style={{ fontWeight: 600 }}>${formatCompact(t.volume || 0)}</td>
+                                      <td className="right" style={{ fontWeight: 700, color: FLOW_TONE_TEXT[tone] }}>{signedUsd(t.netUsd)}</td>
                                       <td className="center">
-                                        <span style={{ fontSize: '0.78rem', color: isBuyHeavy ? COLORS.green : isSellHeavy ? COLORS.red : COLORS.textMuted }}>
-                                          {buyRatio.toFixed(0)}/{(100 - buyRatio).toFixed(0)}
+                                        <span style={{ fontSize: '0.78rem', color: '#8896a6' }}>
+                                          {t.buys || 0} / {t.sells || 0}
                                         </span>
                                       </td>
                                       <td className="center">
@@ -1401,10 +1475,10 @@ const Dashboard = ({ isPremium = false }) => {
                     <PanelHeader>
                       <div>
                         <TerminalPrompt>Whale Token Heatmap</TerminalPrompt>
-                        <PanelSubtext>Token activity heatmap sized by volume, colored by whale sentiment</PanelSubtext>
+                        <PanelSubtext>Sized by whale volume, coloured by net flow (green in, red out, grey flat)</PanelSubtext>
                       </div>
-                      <PanelBadge>LIVE</PanelBadge>
                     </PanelHeader>
+                    <FlowExplainer meta={flowMeta} />
                     <TokenHeatmap />
                   </Panel>
                 </SectionGap>
@@ -1496,7 +1570,7 @@ const TopWhalesSection = () => {
         <PanelHeader>
           <div>
             <TerminalPrompt>Whale Leaderboard</TerminalPrompt>
-            <PanelSubtext>The biggest whales of the last 24 hours, ranked by trading volume — exchanges and stablecoins filtered out</PanelSubtext>
+            <PanelSubtext>Biggest whales of the last 24 hours by trading volume · Ethereum · exchanges, stablecoins, flash-loan and protocol addresses excluded</PanelSubtext>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <PanelBadge>24H VOLUME</PanelBadge>

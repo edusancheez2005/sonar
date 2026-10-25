@@ -121,7 +121,7 @@ export async function GET(req) {
     const tokenLeaders = rows.slice().sort((a, b) => b.netUsdRobust - a.netUsdRobust).slice(0, 10)
     // Most Traded: ranked by 24h whale VOLUME (subtitle says so); count kept.
     const tokenTradeCounts = rows.slice().sort((a, b) => b.volume - a.volume).slice(0, 12)
-      .map((t) => ({ token: t.token, count: t.txCount, volume: t.volume, netUsd: t.netUsd, tone: t.tone }))
+      .map((t) => ({ token: t.token, count: t.txCount, buys: t.buys, sells: t.sells, volume: t.volume, netUsd: t.netUsd, tone: t.tone }))
     const whaleActivity = rows.slice().sort((a, b) => b.uniqueWhales - a.uniqueWhales).slice(0, 12)
       .map((t) => ({ token: t.token, uniqueWhales: t.uniqueWhales, netUsd: t.netUsd, buySellRatio: t.sells === 0 ? t.buys : +(t.buys / t.sells).toFixed(2) }))
 
