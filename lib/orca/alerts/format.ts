@@ -53,14 +53,18 @@ export function formatPriceMove(ticker: string, pct: number): NotificationCopy {
 }
 
 export function formatWhaleFlow(ticker: string, netUsd: number): NotificationCopy {
-  return copy(
+  const c = copy(
     'whale_flow',
     ticker,
     `${ticker} whale net flow ${formatUsd(netUsd)} last 24h`,
-    `Net whale USD flow on ${ticker} over the last 24 hours was ${formatUsd(netUsd)}.`,
+    `Net whale USD flow on ${ticker} over the last 24 hours was ${formatUsd(netUsd)} (excludes protocol and exchange-internal rows).`,
     { netUsd },
     overviewReask(ticker)
   )
+  // One crossing per direction: the dollar figure in the title changes every
+  // run, so it can never be the de-duplication key.
+  c.payload.dedup_key = `whale_flow:${netUsd >= 0 ? 'in' : 'out'}`
+  return c
 }
 
 export function formatWhaleConvergence(

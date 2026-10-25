@@ -66,6 +66,8 @@ export interface NotificationCopy {
     ticker: string
     raw: Record<string, unknown>
     reask: ReaskHint
+    /** Stable de-duplication key (never a changing number); falls back to the title. */
+    dedup_key?: string
   }
 }
 

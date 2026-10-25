@@ -20,7 +20,6 @@
  */
 import {
   evaluatePriceMove,
-  evaluateWhaleFlow,
   evaluateSignalFlip,
   evaluateNewsImpact,
   evaluateWalletActivity,
@@ -31,7 +30,10 @@ import {
 } from '@/lib/orca/alerts/evaluators'
 import { dedupHour } from '@/lib/orca/alerts/dedup'
 import { normaliseAddress } from '@/lib/orca/alerts/validate'
-import { formatWalletActivityFromTxs, type WalletTx } from '@/lib/orca/alerts/format'
+import { formatWalletActivityFromTxs, formatWhaleFlow, type WalletTx } from '@/lib/orca/alerts/format'
+import { stepWhaleFlow, loadWhaleFlowStates, saveWhaleFlowStates, type WhaleFlowState } from '@/lib/orca/alerts/whaleFlowState'
+import { computeTokenFlows } from '@/lib/whale/netFlow'
+import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
 import {
   DAILY_CAP_BY_STYLE,
   MAX_INAPP_PER_DAY,
@@ -392,7 +394,8 @@ export async function runCheckUserAlerts(
         pending = evaluatePriceMove(rule.ticker as string, Number(rule.threshold_pct), supabase, now)
         break
       case 'whale_flow':
-        pending = evaluateWhaleFlow(rule.ticker as string, Number(rule.threshold_usd), supabase, now)
+        // Edge-triggered per rule below; never memoised across rules.
+        pending = Promise.resolve(null)
         break
       case 'signal_flip':
         pending = evaluateSignalFlip(rule.ticker as string, supabase)
@@ -429,8 +432,38 @@ export async function runCheckUserAlerts(
   type Candidate = { rule: AlertRule; copy: NotificationCopy }
   const candidatesByUser = new Map<string, Candidate[]>()
 
+  // whale_flow is edge-triggered per rule (lib/orca/alerts/whaleFlowState):
+  // it fires on a crossing of the shared 24h net (the dashboard's figure),
+  // not on every run while the level stays above the threshold.
+  const whaleCopies = new Map<string, NotificationCopy>()
+  const whaleRules = rules.filter((r) => r.kind === 'whale_flow')
+  if (whaleRules.length > 0) {
+    try {
+      const snap = await computeTokenFlows(supabase as any, { window: '24h', now: now() })
+      const netBy = new Map(snap.tokens.map((x) => [x.symbol, x.netUsd]))
+      const states = await loadWhaleFlowStates(supabase, whaleRules.map((r) => r.id))
+      const nowMs = now().getTime()
+      const changed: Array<{ ruleId: string; state: WhaleFlowState }> = []
+      for (const r of whaleRules) {
+        const sym = canonicalSymbol(r.ticker ?? '')
+        if (!sym) continue
+        const net = netBy.get(sym) ?? 0
+        const prev = states.get(r.id) ?? null
+        const { fire, next } = stepWhaleFlow(prev, net, Number(r.threshold_usd), nowMs)
+        if (!prev || prev.armed !== next.armed || prev.lastFiredAt !== next.lastFiredAt) changed.push({ ruleId: r.id, state: next })
+        if (fire) whaleCopies.set(r.id, formatWhaleFlow(r.ticker as string, net))
+      }
+      await saveWhaleFlowStates(supabase, changed, now().toISOString())
+    } catch {
+      /* no snapshot this run: whale_flow rules wait for the next one */
+    }
+  }
+
   const evaluated = await Promise.all(
-    rules.map(async (rule) => ({ rule, copy: await evaluate(rule) }))
+    rules.map(async (rule) => ({
+      rule,
+      copy: rule.kind === 'whale_flow' ? (whaleCopies.get(rule.id) ?? null) : await evaluate(rule),
+    }))
   )
   for (const { rule, copy } of evaluated) {
     if (!copy) continue
@@ -455,6 +488,9 @@ export async function runCheckUserAlerts(
   for (const [userId, rawCandidates] of candidatesByUser) {
     const style = styleByUser.get(userId) ?? 'balanced'
     const cap = Math.min(DAILY_CAP_BY_STYLE[style], MAX_INAPP_PER_DAY)
+    // Each rule may use at most max(2, cap / the user's enabled rules) per day.
+    const userRuleCount = rules.filter((r) => r.user_id === userId).length || 1
+    const perRuleLimit = Math.max(2, Math.floor(cap / userRuleCount))
 
     // Collapse "any news" + "high-impact news" duplicates for the same article.
     const candidates = dropDuplicateNews(rawCandidates)
@@ -491,7 +527,8 @@ export async function runCheckUserAlerts(
           const hashes = r.payload?.raw?.txHashes
           if (Array.isArray(hashes)) for (const h of hashes) if (typeof h === 'string') notifiedTxUser.add(h)
         } else if (Number.isFinite(ts) && ts >= recentCutoff && r.rule_id && r.title) {
-          recentDupKeys.add(`${r.rule_id}|${r.title}`)
+          const key = (r.payload as { dedup_key?: string } | null)?.dedup_key || r.title
+          recentDupKeys.add(`${r.rule_id}|${key}`)
         }
       }
     } catch {
@@ -512,7 +549,7 @@ export async function runCheckUserAlerts(
         continue
       }
       if (c.rule.kind === 'wallet_activity') {
-        if ((perRuleToday.get(c.rule.id) ?? 0) >= WALLET_RULE_DAILY_CAP) {
+        if ((perRuleToday.get(c.rule.id) ?? 0) >= Math.min(WALLET_RULE_DAILY_CAP, perRuleLimit)) {
           result.capped += 1
           continue
         }
@@ -527,12 +564,17 @@ export async function runCheckUserAlerts(
         const addr = String(c.rule.address || '')
         const label = labels.get(addr.startsWith('0x') ? addr.toLowerCase() : addr) ?? null
         deduped.push({ rule: c.rule, copy: formatWalletActivityFromTxs(addr, c.rule.chain ?? null, fresh, label) })
-      } else if (recentDupKeys.has(`${c.rule.id}|${c.copy.title}`)) {
+      } else if (recentDupKeys.has(`${c.rule.id}|${c.copy.payload?.dedup_key || c.copy.title}`)) {
+        result.capped += 1
+      } else if ((perRuleToday.get(c.rule.id) ?? 0) >= perRuleLimit) {
+        // Fair share: one noisy rule cannot take the whole daily cap.
         result.capped += 1
       } else {
         deduped.push(c)
       }
     }
+    // Rules that fired least today go first when the cap is tight.
+    deduped.sort((a, b) => (perRuleToday.get(a.rule.id) ?? 0) - (perRuleToday.get(b.rule.id) ?? 0))
 
     const remaining = Math.max(0, cap - usedToday)
     if (remaining <= 0) {

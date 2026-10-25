@@ -74,22 +74,32 @@ describe('evaluatePriceMove', () => {
 })
 
 describe('evaluateWhaleFlow', () => {
+  // Shared definition (lib/whale/netFlow): WETH counts as ETH; flash-loan legs
+  // and exchange-internal moves do not count.
+  const W = (n: number) => `0x${String(n).padStart(40, '0')}`
   it('fires when |net| >= threshold', async () => {
     const sb = makeSupabase({
       all_whale_transactions: [
-        { usd_value: 2_000_000, classification: 'buy' },
-        { usd_value: 500_000, classification: 'sell' },
+        { token_symbol: 'WETH', usd_value: 2_000_000, classification: 'buy', whale_address: W(1), from_address: W(2), to_address: W(1) },
+        { token_symbol: 'WETH', usd_value: 500_000, classification: 'sell', whale_address: W(3), from_address: W(3), to_address: W(4) },
       ],
     })
     const c = await evaluateWhaleFlow('ETH', 1_000_000, sb, NOW)
     expect(c).not.toBeNull()
     expect((c!.payload.raw as any).netUsd).toBe(1_500_000)
+    expect(c!.payload.dedup_key).toBe('whale_flow:in')
   })
   it('does not fire below threshold', async () => {
     const sb = makeSupabase({
-      all_whale_transactions: [{ usd_value: 100_000, classification: 'buy' }],
+      all_whale_transactions: [{ token_symbol: 'WETH', usd_value: 100_000, classification: 'buy', whale_address: W(1) }],
     })
     expect(await evaluateWhaleFlow('ETH', 1_000_000, sb, NOW)).toBeNull()
+  })
+  it('ignores a Morpho Blue flash-loan leg the dashboard calls junk', async () => {
+    const sb = makeSupabase({
+      all_whale_transactions: [{ token_symbol: 'WBTC', usd_value: 109_000_000, classification: 'buy', whale_address: '0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb' }],
+    })
+    expect(await evaluateWhaleFlow('BTC', 1_000_000, sb, NOW)).toBeNull()
   })
 })
 

@@ -24,6 +24,7 @@ import { CONVERGENCE_ANY_TICKER } from './types'
 import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
 import { isNonTradeRow } from '@/lib/orca/junk-addresses'
 import { readAllRows } from '@/lib/orca/orchestrator/tools/pagedRead'
+import { computeTokenFlows } from '@/lib/whale/netFlow'
 import { addressVariants, EVM_ADDRESS_RE } from '@/lib/wallet/addressVariants'
 export { addressVariants }
 import { loadNativePrices, transferUsd } from '@/lib/wallet/transferValue'
@@ -118,34 +119,38 @@ export async function evaluatePriceMove(
   }
 }
 
+/**
+ * 24h whale net flow for a ticker on the SHARED definition (lib/whale/netFlow:
+ * no flash-loan legs, no exchange-internal moves, nothing above $150M, wrapped
+ * variants folded) — the figure the dashboard shows. Served from the 5-minute
+ * app_cache snapshot when fresh.
+ */
+export async function whaleFlowNet(
+  ticker: string,
+  supabase: SupabaseLike,
+  now: () => Date = () => new Date()
+): Promise<number | null> {
+  try {
+    const sym = canonicalSymbol(ticker)
+    if (!sym) return null
+    const snap = await computeTokenFlows(supabase as any, { window: '24h', now: now() })
+    const t = snap.tokens.find((x) => x.symbol === sym)
+    return t ? t.netUsd : 0
+  } catch {
+    return null
+  }
+}
+
+/** Level check (stateless). The cron uses the edge-triggered path in runCheckUserAlerts. */
 export async function evaluateWhaleFlow(
   ticker: string,
   thresholdUsd: number,
   supabase: SupabaseLike,
   now: () => Date = () => new Date()
 ): Promise<NotificationCopy | null> {
-  try {
-    const sinceIso = new Date(now().getTime() - 24 * 60 * 60 * 1000).toISOString()
-    const { data } = await supabase
-      .from('all_whale_transactions')
-      .select('usd_value, classification')
-      .eq('token_symbol', ticker)
-      .gte('timestamp', sinceIso)
-      .limit(1000)
-    if (!Array.isArray(data) || data.length === 0) return null
-    let net = 0
-    for (const r of data as Array<{ usd_value: number | string; classification: string }>) {
-      const v = Number(r.usd_value)
-      if (!Number.isFinite(v) || v <= 0) continue
-      const c = String(r.classification || '').toLowerCase()
-      if (c.startsWith('buy')) net += v
-      else if (c.startsWith('sell')) net -= v
-    }
-    if (!Number.isFinite(thresholdUsd) || Math.abs(net) < thresholdUsd) return null
-    return formatWhaleFlow(ticker, net)
-  } catch {
-    return null
-  }
+  const net = await whaleFlowNet(ticker, supabase, now)
+  if (net === null || !Number.isFinite(thresholdUsd) || Math.abs(net) < thresholdUsd) return null
+  return formatWhaleFlow(ticker, net)
 }
 
 /**
@@ -239,10 +244,12 @@ export async function evaluateNewsImpact(
     const sinceIso = new Date(now().getTime() - 60 * 60 * 1000).toISOString()
     const { data } = await supabase
       .from('news_items')
-      .select('title, sentiment_llm, sentiment_raw, url, published_at')
+      .select('title, sentiment_llm, sentiment_raw, url, published_at, fetched_at')
       .eq('ticker', ticker)
-      .gte('published_at', sinceIso)
-      .order('published_at', { ascending: false })
+      // Ingestion time, not publication time: headlines arrive ~10 h after
+      // publication (median), so a published_at window never matched.
+      .gte('fetched_at', sinceIso)
+      .order('fetched_at', { ascending: false })
       .limit(20)
     if (!Array.isArray(data)) return null
     for (const r of data as Array<{ title?: string; sentiment_llm?: number; sentiment_raw?: number; url?: string }>) {
@@ -381,10 +388,10 @@ export async function evaluateNewsAny(
     const sinceIso = new Date(now().getTime() - RECENT_WINDOW_MS).toISOString()
     const { data } = await supabase
       .from('news_items')
-      .select('title, url, published_at')
+      .select('title, url, published_at, fetched_at')
       .eq('ticker', ticker)
-      .gte('published_at', sinceIso)
-      .order('published_at', { ascending: false })
+      .gte('fetched_at', sinceIso)
+      .order('fetched_at', { ascending: false })
       .limit(5)
     if (!Array.isArray(data)) return null
     for (const r of data as Array<{ title?: string; url?: string }>) {
@@ -416,8 +423,8 @@ export async function evaluateSocialPost(
       // Passing a JS array makes PostgREST send a Postgres array literal
       // (cs.{BTC}), which the jsonb @> operator rejects as invalid JSON.
       .contains('tickers_mentioned', JSON.stringify([ticker]))
-      .gte('published_at', sinceIso)
-      .order('published_at', { ascending: false })
+      .gte('ingested_at', sinceIso)
+      .order('ingested_at', { ascending: false })
       .limit(5)
     if (!Array.isArray(data) || data.length === 0) return null
     const r = data[0] as {
