@@ -1,20 +1,25 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import styled from 'styled-components'
+import { FLOW_TONE_COLORS, FLOW_TONE_TEXT } from '@/lib/whale/netFlow'
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
-const SENTIMENT_COLORS = {
-  bullish: '#00d4aa',
-  bearish: '#e74c3c',
-  neutral: '#4a5568',
-}
+// Cell colour = the shared net-flow tone (lib/whale/netFlow.ts flowTone):
+// in / out / flat (under $50K or 5% of the token's volume).
+const TONE_LABELS = { in: 'Net inflow', out: 'Net outflow', flat: 'Flat' }
 
+// The precompute cron keeps exactly these two windows fresh.
 const TIME_OPTIONS = [
-  { label: '6H', hours: 6 },
-  { label: '24H', hours: 24 },
-  { label: '3D', hours: 72 },
-  { label: '7D', hours: 168 },
+  { label: '24H', window: '24h' },
+  { label: '7D', window: '7d' },
 ]
+
+function asOfUtc(iso) {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return `as of ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`
+}
 
 // ─── SQUARIFIED TREEMAP LAYOUT ──────────────────────────────────────────────
 function squarify(items, containerWidth, containerHeight) {
@@ -112,6 +117,13 @@ const Header = styled.div`
 const FilterGroup = styled.div`
   display: flex;
   gap: 0.25rem;
+`
+
+const AsOf = styled.span`
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.5px;
+  color: #8896a6;
 `
 
 const FilterBtn = styled.button`
@@ -241,11 +253,11 @@ const SentimentTag = styled.span`
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-family: var(--font-mono);
-  color: ${({ $sentiment }) => SENTIMENT_COLORS[$sentiment] || '#a0b2c6'};
-  background: ${({ $sentiment }) =>
-    $sentiment === 'bullish' ? 'rgba(0, 212, 170, 0.12)' :
-    $sentiment === 'bearish' ? 'rgba(231, 76, 60, 0.12)' :
-    'rgba(74, 85, 104, 0.2)'};
+  color: ${({ $tone }) => FLOW_TONE_TEXT[$tone] || '#a0b2c6'};
+  background: ${({ $tone }) =>
+    $tone === 'in' ? 'rgba(0, 230, 118, 0.12)' :
+    $tone === 'out' ? 'rgba(255, 23, 68, 0.12)' :
+    'rgba(90, 106, 122, 0.2)'};
 `
 
 const LoadingState = styled.div`
@@ -285,7 +297,8 @@ function formatVol(n) {
 // ─── COMPONENT ──────────────────────────────────────────────────────────────
 export default function TokenHeatmap() {
   const [tokens, setTokens] = useState([])
-  const [hours, setHours] = useState(24)
+  const [windowKey, setWindowKey] = useState('24h')
+  const [generatedAt, setGeneratedAt] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [tooltip, setTooltip] = useState(null)
@@ -298,7 +311,7 @@ export default function TokenHeatmap() {
     setLoading(true)
     setError(null)
 
-    fetch(`/api/wallet-tracker/heatmap?hours=${hours}`)
+    fetch(`/api/wallet-tracker/heatmap?window=${windowKey}`)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
@@ -306,6 +319,7 @@ export default function TokenHeatmap() {
       .then(json => {
         if (!cancelled) {
           setTokens(json.data || [])
+          setGeneratedAt(json.generated_at || null)
           setLoading(false)
         }
       })
@@ -317,7 +331,7 @@ export default function TokenHeatmap() {
       })
 
     return () => { cancelled = true }
-  }, [hours])
+  }, [windowKey])
 
   // Measure container
   useEffect(() => {
@@ -362,14 +376,15 @@ export default function TokenHeatmap() {
         <FilterGroup>
           {TIME_OPTIONS.map(opt => (
             <FilterBtn
-              key={opt.hours}
-              $active={hours === opt.hours}
-              onClick={() => setHours(opt.hours)}
+              key={opt.window}
+              $active={windowKey === opt.window}
+              onClick={() => setWindowKey(opt.window)}
             >
               {opt.label}
             </FilterBtn>
           ))}
         </FilterGroup>
+        {asOfUtc(generatedAt) && <AsOf>{asOfUtc(generatedAt)}</AsOf>}
       </Header>
 
       <TreemapContainer ref={containerRef}>
@@ -381,7 +396,7 @@ export default function TokenHeatmap() {
           <LoadingState>No token data available</LoadingState>
         ) : (
           rects.map((r, i) => {
-            const color = SENTIMENT_COLORS[r.sentiment] || SENTIMENT_COLORS.neutral
+            const color = FLOW_TONE_COLORS[r.tone] || FLOW_TONE_COLORS.flat
             const opacity = 0.4 + 0.6 * (r.total_volume / maxVol)
             const minDim = Math.min(r.w, r.h)
             const symbolSize = Math.max(0.55, Math.min(1.4, minDim / 55))
@@ -431,15 +446,15 @@ export default function TokenHeatmap() {
           <TooltipTitle>{tooltip.token.token_symbol}</TooltipTitle>
           <TooltipRow>
             <TooltipLabel>Buy Vol</TooltipLabel>
-            <TooltipValue $color="#00d4aa">{formatVol(tooltip.token.buy_volume)}</TooltipValue>
+            <TooltipValue $color={FLOW_TONE_TEXT.in}>{formatVol(tooltip.token.buy_volume)}</TooltipValue>
           </TooltipRow>
           <TooltipRow>
             <TooltipLabel>Sell Vol</TooltipLabel>
-            <TooltipValue $color="#e74c3c">{formatVol(tooltip.token.sell_volume)}</TooltipValue>
+            <TooltipValue $color={FLOW_TONE_TEXT.out}>{formatVol(tooltip.token.sell_volume)}</TooltipValue>
           </TooltipRow>
           <TooltipRow>
             <TooltipLabel>Net Flow</TooltipLabel>
-            <TooltipValue $color={tooltip.token.net_flow >= 0 ? '#00d4aa' : '#e74c3c'}>
+            <TooltipValue $color={FLOW_TONE_TEXT[tooltip.token.tone] || FLOW_TONE_TEXT.flat}>
               {formatCompact(tooltip.token.net_flow)}
             </TooltipValue>
           </TooltipRow>
@@ -451,8 +466,8 @@ export default function TokenHeatmap() {
             <TooltipLabel>Trades</TooltipLabel>
             <TooltipValue>{tooltip.token.buy_count + tooltip.token.sell_count} ({tooltip.token.buy_count}B / {tooltip.token.sell_count}S)</TooltipValue>
           </TooltipRow>
-          <SentimentTag $sentiment={tooltip.token.sentiment}>
-            {tooltip.token.sentiment}
+          <SentimentTag $tone={tooltip.token.tone}>
+            {TONE_LABELS[tooltip.token.tone] || 'Flat'}
           </SentimentTag>
         </TooltipBox>
       )}

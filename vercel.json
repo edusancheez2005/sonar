@@ -127,7 +127,14 @@
     {
       "path": "/api/cron/precompute-orca-first-answer",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/precompute-token-flows",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/precompute-token-flows?window=7d",
+      "schedule": "7 * * * *"
     }
   ]
 }
-

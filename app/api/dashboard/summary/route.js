@@ -1,578 +1,196 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { rateLimit, getClientIp, rateLimitResponse } from '@/app/lib/rateLimit'
+import { computeTokenFlows, flowTone, chainsLiveLabel, NET_FLOW_DEFINITION } from '@/lib/whale/netFlow'
+import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
 
 export const dynamic = 'force-dynamic'
 
-// Stablecoins to exclude from dashboard analytics
-const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'USDD', 'FRAX', 'LUSD', 'USDK', 'USDN', 'FEI', 'TRIBE', 'CUSD']
-// Tokens with broken/spammy data excluded from analytics
-// BTC: Whale Alert BTC data includes exchange-internal transfers that inflate volumes ~1000x above altcoins
-const EXCLUDED_TOKENS = ['XRP', 'BTC']
+// Every number here comes from ONE snapshot of the whale tape built by
+// lib/whale/netFlow.ts (app_cache token_flows_24h, refreshed every 5 minutes
+// by /api/cron/precompute-token-flows; a bounded live read when the row is
+// missing or older than 10 minutes). Same definition as ORCA: no flash-loan
+// legs, no exchange-internal moves, no stablecoins, nothing above $150M,
+// wrapped BTC/ETH counted as BTC/ETH. Before 2026-10-25 this route read a
+// 1,000-row slice per chain and counted Morpho Blue flash loans as whale
+// buying ($437M of a $445.5M "Net Inflow" on 2026-10-23).
+
+const EDGE_CACHE = { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' }
+
+function tokenRow(t) {
+  return {
+    token: t.symbol,
+    netUsd: t.netUsd,
+    netUsdRobust: t.robustNetUsd,
+    buys: t.buyCount,
+    sells: t.sellCount,
+    uniqueWhales: t.uniqueWhales,
+    volume: t.volumeUsd,
+    txCount: t.buyCount + t.sellCount,
+    tone: flowTone(t.netUsd, t.volumeUsd),
+  }
+}
+
+async function entityNames(addresses) {
+  const list = [...new Set(addresses.filter(Boolean).map((a) => String(a).toLowerCase()))]
+  if (!list.length) return {}
+  const map = {}
+  try {
+    const { data } = await supabaseAdmin
+      .from('addresses')
+      .select('address, entity_name, label, analysis_tags')
+      .in('address', list)
+    for (const row of data || []) {
+      map[String(row.address).toLowerCase()] = {
+        name: row.entity_name || row.label || null,
+        famous: Boolean(row.analysis_tags?.is_famous),
+      }
+    }
+  } catch { /* names are decoration */ }
+  return map
+}
 
 export async function GET(req) {
   const ip = getClientIp(req)
   const rl = rateLimit(`dashboard-summary:${ip}`, 30, 60000)
   if (!rl.allowed) return rateLimitResponse(rl.retryAfter)
   try {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+    if (!process.env.SUPABASE_URL || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
       return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503 })
     }
 
-    // Round "now" down to the nearest 5 minutes so the 24h window is stable
-    // across refreshes, preventing boundary flickering in inflow/outflow panels
-    const FIVE_MIN = 5 * 60 * 1000
-    const roundedNow = Math.floor(Date.now() / FIVE_MIN) * FIVE_MIN
-    const sinceIso = new Date(roundedNow - 24 * 60 * 60 * 1000).toISOString()
+    const snap = await computeTokenFlows(supabaseAdmin, { window: '24h' })
+    const tokens = snap.tokens || []
+    const recentTxs = (snap.recent_txs || []).slice(0, 10)
+    const topTxs = snap.top_txs || []
+    const names = await entityNames([...recentTxs, ...topTxs].flatMap((t) => [t.whale_address, t.from_address, t.to_address]))
+    const nameOf = (a) => (a ? names[String(a).toLowerCase()]?.name || null : null)
 
-    // Query per-chain with equal limits to avoid BTC dominating results
-    const CHAINS = ['ethereum', 'bitcoin', 'solana', 'polygon', 'arbitrum', 'base']
-    const PER_CHAIN_LIMIT = 2500
-    const SELECT_COLS = 'transaction_hash,timestamp,blockchain,token_symbol,classification,usd_value,from_address,whale_score,to_address,whale_address,counterparty_type'
-
-    const chainResults = await Promise.all(CHAINS.map(async (chain) => {
-      const { data, error } = await supabaseAdmin
-        .from('all_whale_transactions')
-        .select(SELECT_COLS)
-        .eq('blockchain', chain)
-        .not('token_symbol', 'is', null)
-        .not('token_symbol', 'ilike', 'unknown%')
-        .in('classification', ['BUY', 'SELL'])
-        .gte('timestamp', sinceIso)
-        .order('usd_value', { ascending: false })
-        .limit(PER_CHAIN_LIMIT)
-      if (error) console.error(`Dashboard: ${chain} error:`, error)
-      return data || []
+    const recent = recentTxs.map((t) => ({
+      transaction_hash: t.hash,
+      time: t.time,
+      coin: t.symbol,
+      action: t.side,
+      blockchain: t.chain,
+      usd_value: t.usd,
+      from_address: t.from_address,
+      to_address: t.to_address,
+      whale_score: 0,
+      whale_address: t.whale_address,
+      from_entity: nameOf(t.from_address) || t.from_label || null,
+      to_entity: nameOf(t.to_address) || t.to_label || null,
+      whale_entity: nameOf(t.whale_address),
+      whale_is_famous: Boolean(t.whale_address && names[String(t.whale_address).toLowerCase()]?.famous),
     }))
 
-    const recentData = chainResults.flat()
-    recentData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-
-    console.log(`Dashboard API: Fetched ${recentData.length} txs (${CHAINS.map((c, i) => `${c}:${chainResults[i].length}`).join(', ')})`)
-
-    // Filter out exchange entity names used as whale_address (e.g. "coinbase" instead of a real address)
-    const isRealAddress = (addr) => {
-      if (!addr || addr.length < 20) return false
-      if (addr.startsWith('0x') && addr.length >= 42) return true  // EVM
-      if ((addr.startsWith('bc1') || addr.startsWith('1') || addr.startsWith('3')) && addr.length >= 26) return true  // BTC
-      if (addr.startsWith('r') && addr.length >= 25) return true  // XRP
-      if (addr.length >= 32 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(addr)) return true  // Solana
-      return false
-    }
-
-    const filteredData = (recentData || []).filter(t => isRealAddress(t.whale_address))
-
-    // Filter out stablecoins and excluded tokens from analytics
-    const analyticsData = filteredData.filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
-    
-    // Filter stablecoins and excluded tokens from recent transactions too
-    const recent24h = filteredData.filter(t => !STABLECOINS.includes(t.token_symbol?.toUpperCase()) && !EXCLUDED_TOKENS.includes(t.token_symbol?.toUpperCase()))
-
-    // Batch-resolve entity names for recent transactions
-    const recentAddresses = new Set()
-    for (const t of recent24h.slice(0, 50)) {
-      if (t.whale_address) recentAddresses.add(t.whale_address.toLowerCase())
-      if (t.from_address) recentAddresses.add(t.from_address.toLowerCase())
-      if (t.to_address) recentAddresses.add(t.to_address.toLowerCase())
-    }
-    let entityNameMap = {}
-    if (recentAddresses.size > 0) {
-      const { data: nameData } = await supabaseAdmin
-        .from('addresses')
-        .select('address, entity_name, label, address_type, analysis_tags')
-        .in('address', Array.from(recentAddresses))
-      for (const row of nameData || []) {
-        const tags = row.analysis_tags || {}
-        entityNameMap[row.address] = {
-          entity_name: row.entity_name,
-          label: row.label,
-          address_type: row.address_type,
-          is_famous: tags.is_famous || false,
-        }
-      }
-    }
-
-    const recent = recent24h.slice(0, 10).map((t) => {
-      const fromInfo = entityNameMap[t.from_address?.toLowerCase()] || {}
-      const toInfo = entityNameMap[t.to_address?.toLowerCase()] || {}
-      const whaleInfo = entityNameMap[t.whale_address?.toLowerCase()] || {}
-      return {
-        transaction_hash: t.transaction_hash,
-        time: t.timestamp,
-        coin: t.token_symbol,
-        action: (t.classification || '').toUpperCase(),
-        blockchain: t.blockchain,
-        usd_value: Number(t.usd_value || 0),
-        from_address: t.from_address || null,
-        to_address: t.to_address || null,
-        whale_score: Number(t.whale_score || 0),
-        whale_address: t.whale_address || null,
-        from_entity: fromInfo.entity_name || fromInfo.label || null,
-        to_entity: toInfo.entity_name || toInfo.label || null,
-        whale_entity: whaleInfo.entity_name || whaleInfo.label || null,
-        whale_is_famous: whaleInfo.is_famous || false,
-      }
-    })
-    
-    console.log(`Dashboard API: ${recentData?.length || 0} total transactions, ${analyticsData.length} after filtering stablecoins`)
-
-    console.log(`Dashboard API: Found ${recentData?.length || 0} total transactions, ${recent24h.length} in last 24h, showing ${recent.length}`)
-
-    // Accurate 24h counts for totals and global buy/sell ratio (only real whale trades)
-    let total24hCount = null
-    let totalBuyCount24h = null
-    let totalSellCount24h = null
-    try {
-      const [tot, buys, sells] = await Promise.all([
-        supabaseAdmin.from('all_whale_transactions')
-          .select('transaction_hash', { count: 'exact', head: true })
-          .not('token_symbol', 'is', null)
-          .not('token_symbol', 'ilike', 'unknown%')
-          .not('whale_address', 'is', null)
-          .in('classification', ['BUY', 'SELL'])
-          .gte('timestamp', sinceIso),
-        supabaseAdmin.from('all_whale_transactions')
-          .select('classification', { count: 'exact', head: true })
-          .not('token_symbol', 'is', null)
-          .not('token_symbol', 'ilike', 'unknown%')
-          .not('whale_address', 'is', null)
-          .eq('classification', 'BUY')
-          .gte('timestamp', sinceIso),
-        supabaseAdmin.from('all_whale_transactions')
-          .select('classification', { count: 'exact', head: true })
-          .not('token_symbol', 'is', null)
-          .not('token_symbol', 'ilike', 'unknown%')
-          .not('whale_address', 'is', null)
-          .eq('classification', 'SELL')
-          .gte('timestamp', sinceIso)
-      ])
-      total24hCount = tot?.count ?? null
-      totalBuyCount24h = buys?.count ?? null
-      totalSellCount24h = sells?.count ?? null
-    } catch {}
-
-    // Use analytics data (stablecoins filtered out) for aggregation
-    const aggData = analyticsData || []
-
-    // Process the data we have (excluding stablecoins)
-
-    const byCoin = new Map()
-    const byCoinBuyCounts = new Map()
-    const byCoinSellCounts = new Map()
-    const byChain = new Map()
-    const byTokenWhales = new Map()
-    const byTokenVolume = new Map()
-    const byTokenSignedValues = new Map()
-    const allTransactions = []
-
-    // Process aggregated data safely
-    for (const row of aggData || []) {
-      const coin = String(row.token_symbol || '—').trim().toUpperCase()
-      const chain = row.blockchain || '—'
-      const usdValue = Number(row.usd_value || 0)
-      const timestamp = row.timestamp
-      // Use whale_address (required now)
-      const whaleAddress = row.whale_address || ''
-      
-      byChain.set(chain, (byChain.get(chain) || 0) + 1)
-
-      const klass = String(row.classification || '').trim().toLowerCase()
-      const isBuy = klass.startsWith('buy')
-      const isSell = klass.startsWith('sell')
-      if (isBuy) byCoinBuyCounts.set(coin, (byCoinBuyCounts.get(coin) || 0) + 1)
-      else if (isSell) byCoinSellCounts.set(coin, (byCoinSellCounts.get(coin) || 0) + 1)
-      byCoin.set(coin, (byCoin.get(coin) || 0) + 1)
-
-      // Track whale activity per token (NEW: Use whale_address for accurate whale tracking)
-      if (!byTokenWhales.has(coin)) {
-        byTokenWhales.set(coin, { whales: new Set(), netUsd: 0, buys: 0, sells: 0 })
-      }
-      const tokenData = byTokenWhales.get(coin)
-      tokenData.whales.add(whaleAddress) // Use actual whale, not CEX address
-      if (klass === 'buy') {
-        tokenData.buys += 1
-        tokenData.netUsd += usdValue
-      } else if (klass === 'sell') {
-        tokenData.sells += 1
-        tokenData.netUsd -= usdValue
-      }
-
-      // Track token total traded volume (absolute)
-      byTokenVolume.set(coin, (byTokenVolume.get(coin) || 0) + Math.abs(usdValue))
-      // Track signed values for robust net computation per token
-      if (!byTokenSignedValues.has(coin)) byTokenSignedValues.set(coin, [])
-      byTokenSignedValues.get(coin).push(isSell ? -usdValue : usdValue)
-
-      // Store transaction for momentum calculation
-      allTransactions.push({ usd_value: usdValue, timestamp, klass })
-    }
-
-    function computeTopPercent(type) {
-      const coins = new Set([...byCoinBuyCounts.keys(), ...byCoinSellCounts.keys()])
-      const results = []
-      for (const coin of coins) {
-        const buys = Number(byCoinBuyCounts.get(coin) || 0)
-        const sells = Number(byCoinSellCounts.get(coin) || 0)
-        const denom = buys + sells
-        if (denom === 0) continue
-        const numerator = type === 'buy' ? buys : sells
-        let pct = (numerator / denom) * 100
-        if (!Number.isFinite(pct)) pct = 0
-        results.push({ coin, percentage: Number(pct.toFixed(1)) })
-      }
-      results.sort((a, b) => b.percentage - a.percentage)
-      return results.slice(0, 10)
-    }
-
-    // Start with sample-based percents
-    let topBuys = computeTopPercent('buy')
-    let topSells = computeTopPercent('sell')
-
-    // Correct percentages using exact 24h counts per token from Supabase (avoids sampling bias)
-    try {
-      const tokensForAccuracy = Array.from(byCoin.keys()).filter(t => t !== '—' && t !== 'UNKNOWN')
-      const counts = await Promise.all(tokensForAccuracy.map(async (token) => {
-        const [buys, sells] = await Promise.all([
-          supabaseAdmin.from('all_whale_transactions')
-            .select('transaction_hash', { count: 'exact', head: true })
-            .eq('token_symbol', token)
-            .gte('timestamp', sinceIso)
-            .in('classification', ['BUY', 'buy']),
-          supabaseAdmin.from('all_whale_transactions')
-            .select('transaction_hash', { count: 'exact', head: true })
-            .eq('token_symbol', token)
-            .gte('timestamp', sinceIso)
-            .in('classification', ['SELL', 'sell']),
-        ])
-        return { token, buys: Number(buys?.count || 0), sells: Number(sells?.count || 0) }
-      }))
-      const accurate = counts
-        .map(({ token, buys, sells }) => {
-          const denom = buys + sells
-          // Require at least 3 transactions to show in top buys/sells (avoid misleading 100% from 1-2 txs)
-          if (denom < 3) return null
-          return {
-            token,
-            buyPct: +(buys / denom * 100).toFixed(1),
-            sellPct: +(sells / denom * 100).toFixed(1),
-            totalTxs: denom
-          }
-        })
-        .filter(Boolean)
-
-      topBuys = accurate
-        .map(x => ({ coin: x.token, percentage: x.buyPct, count: x.totalTxs }))
-        .sort((a,b)=> b.percentage - a.percentage)
-        .slice(0, 10)
-      topSells = accurate
-        .map(x => ({ coin: x.token, percentage: x.sellPct, count: x.totalTxs }))
-        .sort((a,b)=> b.percentage - a.percentage)
-        .slice(0, 10)
-    } catch {}
-
-    const blockchainVolume = {
-      labels: Array.from(byChain.keys()),
-      data: Array.from(byChain.values()),
-    }
-
-    // Calculate market sentiment using the global 24h buy/sell counts when available
-    let buyRatio = 50 // default neutral
-    let trend = 'neutral'
-    {
-      const hasGlobal = Number.isFinite(Number(totalBuyCount24h)) && Number.isFinite(Number(totalSellCount24h))
-      if (hasGlobal) {
-        const denom = Number(totalBuyCount24h) + Number(totalSellCount24h)
-        if (denom > 0) {
-          buyRatio = (Number(totalBuyCount24h) / denom) * 100
-          if (buyRatio > 60) trend = 'bullish'
-          else if (buyRatio < 40) trend = 'bearish'
-        }
-      } else {
-        let totalBuyCount = 0
-        let totalSellCount = 0
-        for (const [, buys] of byCoinBuyCounts.entries()) totalBuyCount += buys
-        for (const [, sells] of byCoinSellCounts.entries()) totalSellCount += sells
-        const denom = totalBuyCount + totalSellCount
-        if (denom > 0) {
-          buyRatio = (totalBuyCount / denom) * 100
-        if (buyRatio > 60) trend = 'bullish'
-        else if (buyRatio < 40) trend = 'bearish'
-        }
-      }
-    }
-
-    // Calculate risk metrics with trimmed mean to reduce outlier impact
-    const highValueTxs = allTransactions.filter(t => t.usd_value > 1000000).length
-    let avgSize = 0
-    if (allTransactions.length > 0) {
-      const values = allTransactions
-        .map(t => Number(t.usd_value) || 0)
-        .filter(v => Number.isFinite(v) && v >= 0)
-        .sort((a, b) => a - b)
-      const trimCount = Math.floor(values.length * 0.05)
-      const start = Math.min(trimCount, values.length - 1)
-      const end = Math.max(values.length - trimCount, start + 1)
-      const trimmed = values.slice(start, end)
-      const sum = trimmed.reduce((s, v) => s + v, 0)
-      avgSize = trimmed.length > 0 ? sum / trimmed.length : 0
-    }
-
-    // Calculate market momentum as last hour vs previous hour, with sane bounds
-    let volumeChange = 0
-    if (allTransactions.length > 0) {
-      const nowMs = roundedNow
-      const oneHourMs = 60 * 60 * 1000
-      const lastHourStart = nowMs - oneHourMs
-      const prevHourStart = nowMs - 2 * oneHourMs
-      const lastHourVolume = allTransactions
-        .filter(t => new Date(t.timestamp).getTime() >= lastHourStart)
-        .reduce((sum, t) => sum + (Number(t.usd_value) || 0), 0)
-      const prevHourVolume = allTransactions
-        .filter(t => {
-          const ts = new Date(t.timestamp).getTime()
-          return ts >= prevHourStart && ts < lastHourStart
-        })
-        .reduce((sum, t) => sum + (Number(t.usd_value) || 0), 0)
-      if (prevHourVolume > 0) {
-        volumeChange = ((lastHourVolume - prevHourVolume) / prevHourVolume) * 100
-        // Clamp to avoid absurd values from small denominators
-        if (volumeChange > 500) volumeChange = 500
-        if (volumeChange < -500) volumeChange = -500
-      } else {
-        volumeChange = 0
-      }
-    }
-
-    // Build 24h time series (per hour) for volume and count
-    const now = roundedNow
-    const hourMs = 60 * 60 * 1000
-    const seriesBuckets = Array.from({ length: 24 }, (_, i) => ({
-      start: now - (23 - i) * hourMs,
-      end: now - (22 - i) * hourMs,
-      volume: 0,
-      count: 0,
+    const topHighValueTxs = topTxs.map((t) => ({
+      time: t.time,
+      coin: t.symbol,
+      side: t.side,
+      usd: t.usd,
+      chain: t.chain || '—',
+      hash: t.hash,
+      whale_score: 0,
+      whale_entity: nameOf(t.whale_address),
+      from_entity: nameOf(t.from_address) || t.from_label || null,
+      to_entity: nameOf(t.to_address) || t.to_label || null,
     }))
-    for (const t of allTransactions) {
-      const ts = new Date(t.timestamp).getTime()
-      const idxFloat = (ts - (now - 24 * hourMs)) / hourMs
-      const idx = Math.floor(idxFloat)
-      if (idx >= 0 && idx < 24) {
-        seriesBuckets[idx].volume += Number(t.usd_value) || 0
-        seriesBuckets[idx].count += 1
-      }
-    }
-    const timeSeries = {
-      labels: seriesBuckets.map(b => {
-        const d = new Date(b.start)
-        const hh = String(d.getHours()).padStart(2, '0')
-        return `${hh}:00`
-      }),
-      volume: seriesBuckets.map(b => Math.round(b.volume)),
-      count: seriesBuckets.map(b => b.count),
-    }
 
-    // Overall buy/sell counts and volumes
-    let totalBuyCount = 0, totalSellCount = 0, totalBuyVolume = 0, totalSellVolume = 0
-    for (const tx of allTransactions) {
-      if (tx.klass === 'buy') { totalBuyCount++; totalBuyVolume += Number(tx.usd_value) || 0 }
-      else if (tx.klass === 'sell') { totalSellCount++; totalSellVolume += Number(tx.usd_value) || 0 }
-    }
-    const overall = {
-      totalCount: allTransactions.length,
-      totalVolume: Math.round(allTransactions.reduce((s, t) => s + (Number(t.usd_value) || 0), 0)),
-      buyCount: totalBuyCount,
-      sellCount: totalSellCount,
-      buyVolume: Math.round(totalBuyVolume),
-      sellVolume: Math.round(totalSellVolume),
-    }
-    if (Number.isFinite(Number(total24hCount)) && Number(total24hCount) > 0) {
-      overall.totalCount = Number(total24hCount)
-    }
-    // Prefer EXACT, mutually-consistent 24h totals from the database. The
-    // sampled per-chain dataset above under-counts buys/sells (only ~1,000
-    // rows survived PostgREST's cap), which made the command-bar totals
-    // contradict each other (2026-07-09 audit). tape_overall sums server-side.
-    try {
-      const since24 = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-      const { data: tape } = await supabaseAdmin.rpc('tape_overall', { p_since: since24 })
-      const t = Array.isArray(tape) ? tape[0] : tape
-      if (t) {
-        overall.totalCount = Number(t.total_count) || 0
-        overall.buyCount = Number(t.buy_count) || 0
-        overall.sellCount = Number(t.sell_count) || 0
-        overall.buyVolume = Math.round(Number(t.buy_volume) || 0)
-        overall.sellVolume = Math.round(Number(t.sell_volume) || 0)
-        overall.totalVolume = Math.round(Number(t.total_volume) || 0)
-      }
-    } catch {
-      // Migration not applied yet — sampled values stand.
-    }
+    // Buy/Sell Pressure: share of trade COUNT per token (≥ 3 trades).
+    const pressure = tokens
+      .filter((t) => t.buyCount + t.sellCount >= 3)
+      .map((t) => ({ coin: t.symbol, buyPct: +(100 * t.buyCount / (t.buyCount + t.sellCount)).toFixed(1), sellPct: +(100 * t.sellCount / (t.buyCount + t.sellCount)).toFixed(1), count: t.buyCount + t.sellCount }))
+    const topBuys = pressure.slice().sort((a, b) => b.buyPct - a.buyPct || b.count - a.count).slice(0, 10).map((x) => ({ coin: x.coin, percentage: x.buyPct, count: x.count }))
+    const topSells = pressure.slice().sort((a, b) => b.sellPct - a.sellPct || b.count - a.count).slice(0, 10).map((x) => ({ coin: x.coin, percentage: x.sellPct, count: x.count }))
 
-    // Top 10 largest transactions (24h) for Risk Assessment
-    const topHighValueTxs = (recent24h || [])
-      .filter(t => Number(t.usd_value || 0) > 0)
-      .filter(t => String(t.token_symbol || '').trim().toUpperCase() !== 'OXT')
-      .slice()
-      .sort((a, b) => Number(b.usd_value || 0) - Number(a.usd_value || 0))
-      .slice(0, 10)
-      .map(t => {
-        const whaleInfo = entityNameMap[t.whale_address?.toLowerCase()] || {}
-        const fromInfo = entityNameMap[t.from_address?.toLowerCase()] || {}
-        const toInfo = entityNameMap[t.to_address?.toLowerCase()] || {}
-        return {
-          time: t.timestamp,
-          coin: String(t.token_symbol || '—').trim().toUpperCase(),
-          side: String(t.classification || '').trim().toUpperCase(),
-          usd: Math.round(Number(t.usd_value || 0)),
-          chain: t.blockchain || '—',
-          hash: t.transaction_hash || null,
-          whale_score: Number(t.whale_score || 0),
-          whale_entity: whaleInfo.entity_name || whaleInfo.label || null,
-          from_entity: fromInfo.entity_name || fromInfo.label || null,
-          to_entity: toInfo.entity_name || toInfo.label || null,
-        }
-      })
+    const totals = snap.totals || { buyUsd: 0, sellUsd: 0, volumeUsd: 0, buyCount: 0, sellCount: 0 }
+    const denom = totals.buyCount + totals.sellCount
+    const buyRatio = denom > 0 ? (100 * totals.buyCount) / denom : 50
+    const trend = buyRatio > 60 ? 'bullish' : buyRatio < 40 ? 'bearish' : 'neutral'
 
-    // Robust net flow per token: remove extreme outliers via IQR fence, then 5% trimmed sum
-    function quantile(sorted, q) {
-      if (!sorted || sorted.length === 0) return 0
-      const pos = (sorted.length - 1) * q
-      const base = Math.floor(pos)
-      const rest = pos - base
-      if (sorted[base + 1] !== undefined) return sorted[base] + rest * (sorted[base + 1] - sorted[base])
-      return sorted[base]
-    }
-    function robustNet(values) {
-      if (!values || values.length === 0) return 0
-      const abs = values.map(v => Math.abs(Number(v) || 0)).filter(v => Number.isFinite(v)).sort((a, b) => a - b)
-      if (abs.length === 0) return 0
-      const q1 = quantile(abs, 0.25)
-      const q3 = quantile(abs, 0.75)
-      const iqr = q3 - q1
-      const upper = q3 + 3 * iqr
-      const filtered = values.filter(v => Math.abs(Number(v) || 0) <= upper)
-      if (filtered.length <= 5) return filtered.reduce((s, v) => s + (Number(v) || 0), 0)
-      const arr = filtered.slice().sort((a, b) => Math.abs(a) - Math.abs(b))
-      const trim = Math.max(1, Math.floor(arr.length * 0.05))
-      const core = arr.slice(trim, arr.length - trim)
-      return core.reduce((s, v) => s + (Number(v) || 0), 0)
-    }
+    const series = snap.series || []
+    const last = series[series.length - 1]?.volumeUsd || 0
+    const prev = series[series.length - 2]?.volumeUsd || 0
+    let volumeChange = prev > 0 ? ((last - prev) / prev) * 100 : 0
+    volumeChange = Math.max(-500, Math.min(500, volumeChange))
 
-    // Token leaders by net flow (top 10)
-    const tokenAggregate = Array.from(byTokenWhales.entries()).map(([token, data]) => {
-      const signed = byTokenSignedValues.get(token) || []
-      const robustNetValue = robustNet(signed)
-      return {
-        token,
-        netUsd: Math.round(data.netUsd),
-        netUsdRobust: Math.round(robustNetValue),
-        buys: data.buys,
-        sells: data.sells,
-        uniqueWhales: data.whales.size,
-        volume: Math.round(byTokenVolume.get(token) || 0),
-        txCount: signed.length,
-      }
-    })
-    const MIN_TX = 1
-    const tokenLeaders = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX)
-      .slice().sort((a, b) => b.netUsdRobust - a.netUsdRobust)
-      .slice(0, 10)
-    // Minimum threshold: at least 2 transactions OR net value above $10K
-    // Prevents single low-value boundary transactions from causing flickering
+    const rows = tokens.map(tokenRow)
     const MIN_FLOW_USD = 1000
-    let tokenInflows = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX && t.netUsd > 0 && Math.abs(t.netUsd) >= MIN_FLOW_USD)
-      .sort((a, b) => b.netUsd - a.netUsd)
-      .slice(0, 5)
-    const tokenOutflows = tokenAggregate
-      .filter(t => t.txCount >= MIN_TX && t.netUsd < 0 && Math.abs(t.netUsd) >= MIN_FLOW_USD)
-      .sort((a, b) => a.netUsd - b.netUsd)
-      .slice(0, 5)
+    const tokenInflows = rows.filter((t) => t.netUsd > 0 && Math.abs(t.netUsd) >= MIN_FLOW_USD).sort((a, b) => b.netUsd - a.netUsd).slice(0, 5)
+    const tokenOutflows = rows.filter((t) => t.netUsd < 0 && Math.abs(t.netUsd) >= MIN_FLOW_USD).sort((a, b) => a.netUsd - b.netUsd).slice(0, 5)
+    const tokenLeaders = rows.slice().sort((a, b) => b.netUsdRobust - a.netUsdRobust).slice(0, 10)
+    // Most Traded: ranked by 24h whale VOLUME (subtitle says so); count kept.
+    const tokenTradeCounts = rows.slice().sort((a, b) => b.volume - a.volume).slice(0, 12)
+      .map((t) => ({ token: t.token, count: t.txCount, volume: t.volume, netUsd: t.netUsd, tone: t.tone }))
+    const whaleActivity = rows.slice().sort((a, b) => b.uniqueWhales - a.uniqueWhales).slice(0, 12)
+      .map((t) => ({ token: t.token, uniqueWhales: t.uniqueWhales, netUsd: t.netUsd, buySellRatio: t.sells === 0 ? t.buys : +(t.buys / t.sells).toFixed(2) }))
 
-    // Prepare whale activity data safely
-    const whaleActivity = Array.from(byTokenWhales.entries()).map(([token, data]) => ({
-      token,
-      uniqueWhales: data.whales.size,
-      netUsd: Math.round(data.netUsd),
-      buySellRatio: data.sells === 0 ? data.buys : +(data.buys / data.sells).toFixed(2)
-    })).sort((a, b) => b.uniqueWhales - a.uniqueWhales).slice(0, 12)
+    const byChain = snap.chain_counts || {}
 
-    // Most traded tokens by count (from 24h dataset)
-    const topTokens = Array.from(byCoin.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12)
-    const tokenTradeCounts = { labels: topTokens.map(t => t[0]), data: topTokens.map(t => t[1]) }
-
-    const noData24h = (recent24h || []).length === 0
-
-    // Personalized block — additive, only when ?tokens= is present
-    let personalized = null
-    try {
-      const tokensParam = new URL(req.url).searchParams.get('tokens')
-      if (tokensParam) {
-        const userTokens = Array.from(new Set(
-          tokensParam.split(',').map(s => String(s).trim().toUpperCase()).filter(Boolean).slice(0, 50)
-        ))
-        if (userTokens.length > 0) {
-          const tokenSet = new Set(userTokens)
-          const whaleFlow24h = userTokens.map(sym => {
-            const data = byTokenWhales.get(sym)
-            if (!data) return { symbol: sym, net_usd: 0, buy_count: 0, sell_count: 0, unique_whales: 0 }
-            return {
-              symbol: sym,
-              net_usd: Math.round(data.netUsd),
-              buy_count: data.buys,
-              sell_count: data.sells,
-              unique_whales: data.whales.size,
-            }
-          }).sort((a, b) => Math.abs(b.net_usd) - Math.abs(a.net_usd))
-
-          const personalizedTopTxs = (topHighValueTxs || [])
-            .filter(t => tokenSet.has(String(t.coin || t.token_symbol || '').toUpperCase()))
-            .slice(0, 5)
-
-          const personalizedRecent = recent.filter(t => tokenSet.has(String(t.coin || '').toUpperCase()))
-
-          personalized = {
-            tokens: userTokens,
-            whaleFlow24h,
-            topTxs: personalizedTopTxs,
-            recent: personalizedRecent,
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Personalized block failed:', e?.message)
+    const overall = {
+      totalCount: snap.rows_counted,
+      totalVolume: totals.volumeUsd,
+      buyCount: totals.buyCount,
+      sellCount: totals.sellCount,
+      buyVolume: totals.buyUsd,
+      sellVolume: totals.sellUsd,
+      netUsd: totals.buyUsd - totals.sellUsd,
+      uniqueWhales: totals.uniqueWhales || 0,
     }
 
-    return NextResponse.json({ 
-      recent, 
-      topBuys, 
-      topSells, 
-      blockchainVolume,
+    // ?tokens= (the dashboard's "mine" mode): filtered from the same cached
+    // per-token map — never a second live read.
+    let personalized = null
+    const tokensParam = new URL(req.url).searchParams.get('tokens')
+    if (tokensParam) {
+      const want = [...new Set(tokensParam.split(',').map((s) => canonicalSymbol(String(s).trim())).filter(Boolean))].slice(0, 50)
+      const set = new Set(want)
+      const mine = tokens.filter((t) => set.has(t.symbol))
+      personalized = {
+        tokens: want,
+        whaleFlow24h: want.map((sym) => {
+          const t = mine.find((x) => x.symbol === sym)
+          return t
+            ? { symbol: sym, net_usd: t.netUsd, buy_count: t.buyCount, sell_count: t.sellCount, unique_whales: t.uniqueWhales, tone: flowTone(t.netUsd, t.volumeUsd) }
+            : { symbol: sym, net_usd: 0, buy_count: 0, sell_count: 0, unique_whales: 0, tone: 'flat' }
+        }).sort((a, b) => Math.abs(b.net_usd) - Math.abs(a.net_usd)),
+        totals: mine.reduce((s, t) => ({ netUsd: s.netUsd + t.netUsd, volumeUsd: s.volumeUsd + t.volumeUsd, trades: s.trades + t.buyCount + t.sellCount }), { netUsd: 0, volumeUsd: 0, trades: 0 }),
+        topTxs: topHighValueTxs.filter((t) => set.has(t.coin)).slice(0, 5),
+        recent: recent.filter((t) => set.has(t.coin)),
+      }
+    }
+
+    return NextResponse.json({
+      recent,
+      topBuys,
+      topSells,
+      blockchainVolume: { labels: Object.keys(byChain), data: Object.values(byChain) },
       marketSentiment: { ratio: buyRatio, trend },
-      riskMetrics: { highValueCount: highValueTxs, avgTransactionSize: avgSize },
-      marketMomentum: { volumeChange, activityChange: allTransactions.length },
+      riskMetrics: { highValueCount: snap.high_value_count || 0, avgTransactionSize: snap.avg_tx_usd || 0 },
+      marketMomentum: { volumeChange, activityChange: snap.rows_counted },
       whaleActivity,
-      timeSeries,
+      timeSeries: { labels: series.map((b) => b.label), volume: series.map((b) => b.volumeUsd), count: series.map((b) => b.count) },
       tokenLeaders,
-      tokenInflows: tokenInflows.filter(t => String(t.token || '').toUpperCase() !== 'OXT'),
+      tokenInflows,
       tokenOutflows,
       overall,
       topHighValueTxs,
       tokenTradeCounts,
-      noData24h,
+      noData24h: snap.rows_counted === 0,
       ...(personalized ? { personalized } : {}),
-    }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    })
-
+      // Provenance for every panel's one-line explanation and popover.
+      generated_at: snap.generated_at,
+      definition: NET_FLOW_DEFINITION,
+      chains_live: snap.chains_live,
+      chains_label: chainsLiveLabel(snap.chains_live),
+      rows_counted: snap.rows_counted,
+      rows_read: snap.rows_read,
+      excluded: snap.excluded,
+      complete: snap.complete,
+      cached: Boolean(snap.cached),
+    }, { headers: EDGE_CACHE })
   } catch (error) {
     console.error('Unexpected error in dashboard summary:', error)
-    // Return safe fallback data
     return NextResponse.json({
       recent: [],
       topBuys: [],
@@ -582,13 +200,8 @@ export async function GET(req) {
       riskMetrics: { highValueCount: 0, avgTransactionSize: 0 },
       marketMomentum: { volumeChange: 0, activityChange: 0 },
       whaleActivity: [],
-      noData24h: true
-    }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    })
+      noData24h: true,
+      error: 'summary unavailable',
+    }, { status: 200, headers: { 'Cache-Control': 'no-store' } })
   }
-} 
+}

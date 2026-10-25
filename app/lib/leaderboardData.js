@@ -6,6 +6,7 @@ import 'server-only'
 // exactly like the working token page. Freshness comes from the 30s
 // revalidate on the pages and force-dynamic on the API routes.
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { isJunkAddress } from '@/lib/orca/junk-addresses'
 
 // Shared leaderboard aggregations. Called BOTH by the API routes (for the
 // dashboard/client fetches) and directly by the server-rendered pages
@@ -83,7 +84,11 @@ export async function getWhaleLeaderboard() {
     })
     if (error) throw new Error(error.message)
     if (Array.isArray(data)) {
+      // Protocol / flash-loan addresses (Morpho Blue, Balancer Vault) are not
+      // whales: Morpho ranked #1 at +$109M on 2026-10-23. Same list as ORCA and
+      // the dashboard (lib/whale/netFlow.ts). The RPC cannot see it yet.
       const rows = data
+        .filter(r => !isJunkAddress(r.whale_address))
         .filter(r =>
           Number(r.buy_volume || 0) <= MAX_SANE_SIDE_VOLUME_USD &&
           Number(r.sell_volume || 0) <= MAX_SANE_SIDE_VOLUME_USD
@@ -187,7 +192,7 @@ async function getWhaleLeaderboardLegacy() {
   }
 
   const rows = Array.from(byWhale.values())
-    .filter(r => r.tradeCount >= 2)
+    .filter(r => r.tradeCount >= 2 && !isJunkAddress(r.address))
     .map(r => ({
       address: r.address,
       tradeCount: r.tradeCount,

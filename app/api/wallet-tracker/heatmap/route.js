@@ -1,92 +1,48 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { computeTokenFlows, flowTone, chainsLiveLabel, NET_FLOW_DEFINITION } from '@/lib/whale/netFlow'
 
-const STABLECOINS = ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD']
+export const dynamic = 'force-dynamic'
 
+// Token heatmap: the same whale net-flow snapshot as the dashboard summary and
+// ORCA (lib/whale/netFlow.ts; app_cache token_flows_24h / token_flows_7d).
+// Before 2026-10-25 it read an arbitrary 1,000-row slice (about 7.6 h of a
+// "24H" view) and called a token "bullish" when buys beat sells by 1.2×.
 export async function GET(req) {
   if (!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
-    return NextResponse.json(
-      { error: 'Supabase env vars not set' },
-      { status: 503, headers: { 'Cache-Control': 'no-store' } }
-    )
+    return NextResponse.json({ error: 'Supabase env vars not set' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
-
   const { searchParams } = new URL(req.url)
-  const hoursRaw = parseInt(searchParams.get('hours') || '24', 10)
-  const hours = Math.min(Math.max(1, hoursRaw), 168)
-
-  const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
-
-  const { data: txs, error } = await supabaseAdmin
-    .from('all_whale_transactions')
-    .select('whale_address, token_symbol, classification, usd_value')
-    .gte('timestamp', since)
-    .in('classification', ['BUY', 'SELL'])
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  const hours = parseInt(searchParams.get('hours') || '', 10)
+  const window = searchParams.get('window') === '7d' || (Number.isFinite(hours) && hours > 24) ? '7d' : '24h'
+  try {
+    const snap = await computeTokenFlows(supabaseAdmin, { window })
+    const data = snap.tokens
+      .slice()
+      .sort((a, b) => b.volumeUsd - a.volumeUsd)
+      .slice(0, 30)
+      .map((t) => ({
+        token_symbol: t.symbol,
+        buy_volume: t.buyUsd,
+        sell_volume: t.sellUsd,
+        total_volume: t.volumeUsd,
+        buy_count: t.buyCount,
+        sell_count: t.sellCount,
+        unique_wallets: t.uniqueWhales,
+        net_flow: t.netUsd,
+        tone: flowTone(t.netUsd, t.volumeUsd),
+      }))
+    return NextResponse.json({
+      data,
+      window,
+      hours: window === '7d' ? 168 : 24,
+      generated_at: snap.generated_at,
+      definition: NET_FLOW_DEFINITION,
+      chains_live: snap.chains_live,
+      chains_label: chainsLiveLabel(snap.chains_live),
+      rows_counted: snap.rows_counted,
+    }, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } })
+  } catch (e) {
+    return NextResponse.json({ error: String(e?.message || e) }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
-
-  // Group by token_symbol
-  const tokenMap = new Map()
-
-  for (const tx of (txs || [])) {
-    const sym = tx.token_symbol
-    if (!sym || STABLECOINS.includes(sym.toUpperCase())) continue
-
-    if (!tokenMap.has(sym)) {
-      tokenMap.set(sym, {
-        token_symbol: sym,
-        buy_volume: 0,
-        sell_volume: 0,
-        total_volume: 0,
-        buy_count: 0,
-        sell_count: 0,
-        wallets: new Set(),
-        net_flow: 0,
-      })
-    }
-
-    const entry = tokenMap.get(sym)
-    const val = Number(tx.usd_value) || 0
-
-    if (tx.classification === 'BUY') {
-      entry.buy_volume += val
-      entry.buy_count += 1
-    } else {
-      entry.sell_volume += val
-      entry.sell_count += 1
-    }
-
-    entry.total_volume += val
-    entry.wallets.add(tx.whale_address)
-  }
-
-  // Convert to array, compute derived fields, sort and limit
-  const tokens = Array.from(tokenMap.values())
-    .map(t => {
-      const net_flow = t.buy_volume - t.sell_volume
-      let sentiment = 'neutral'
-      if (t.buy_volume > t.sell_volume * 1.2) sentiment = 'bullish'
-      else if (t.sell_volume > t.buy_volume * 1.2) sentiment = 'bearish'
-
-      return {
-        token_symbol: t.token_symbol,
-        buy_volume: t.buy_volume,
-        sell_volume: t.sell_volume,
-        total_volume: t.total_volume,
-        buy_count: t.buy_count,
-        sell_count: t.sell_count,
-        unique_wallets: t.wallets.size,
-        net_flow,
-        sentiment,
-      }
-    })
-    .sort((a, b) => b.total_volume - a.total_volume)
-    .slice(0, 30)
-
-  return NextResponse.json(
-    { data: tokens, hours },
-    { headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=300' } }
-  )
 }
