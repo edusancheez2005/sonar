@@ -289,12 +289,18 @@ export default function Statistics() {
   const [flash, setFlash] = useState(new Set())
   const [now, setNow] = useState(() => Date.now())
 
-  // Live updates: rows newer than the newest one on screen, every 15 s,
-  // paused while the tab is hidden.
+  // Live updates every 15 s, paused while the tab is hidden: rows newer than
+  // the newest one on screen, and every 5th poll the whole page instead (a
+  // quiet resync of rows and exact count), so idle cost stays 4 a minute.
   const live = useLivePoll((signal) => {
+    pollCountRef.current += 1
     const params = filterParams()
-    params.set('after', roundDownIso(newestRef.current ?? Date.now() - 10 * 60_000))
     params.set('limit', '100')
+    if (pollCountRef.current % 5 === 0) {
+      params.set('page', String(page))
+      return fetch(`/api/trades?${params.toString()}`, { signal, cache: 'no-store' })
+    }
+    params.set('after', roundDownIso(newestRef.current ?? Date.now() - 10 * 60_000))
     return fetch(`/api/trades/since?${params.toString()}`, { signal })
   }, { intervalMs: LIVE_POLL_MS })
 
@@ -302,9 +308,14 @@ export default function Statistics() {
     const body = live.data
     if (!body || loading) return
     bumpNewest(body.newest_ts)
-    pollCountRef.current += 1
-    if (pollCountRef.current % 5 === 0) {
-      fetchTrades(page, { background: true })
+    if (typeof body.page === 'number') {
+      // Resync: never reorder rows under the pointer; the count is always safe.
+      if (typeof body.count === 'number' || body.count === null) setTotal(body.count)
+      if (body.page !== page || hoverRef.current) return
+      const before = new Set(rows.map((r) => r.transaction_hash))
+      setRows(body.data || [])
+      setBuffer([])
+      flashRows((body.data || []).map((r) => r.transaction_hash).filter((h) => !before.has(h)))
       return
     }
     const onScreen = new Set(rows.map((r) => r.transaction_hash))
@@ -363,11 +374,10 @@ export default function Statistics() {
     return params
   }
 
-  // Full reads: first load, filter or page changes (with the loader), and a
-  // quiet resync every 5th live poll (background, never the loader).
-  async function fetchTrades(p = 1, { background = false } = {}) {
+  // Full reads with the loader: first load, filter and page changes.
+  async function fetchTrades(p = 1) {
     const seq = ++fetchSeqRef.current
-    if (!background) setLoading(true)
+    setLoading(true)
     const params = filterParams()
     params.set('page', String(p))
     params.set('limit', '100')
@@ -383,7 +393,7 @@ export default function Statistics() {
         bumpNewest(json.newest_ts)
       }
     } catch { /* keep the rows on screen */ }
-    if (seq === fetchSeqRef.current && !background) setLoading(false)
+    if (seq === fetchSeqRef.current) setLoading(false)
   }
 
   function bumpNewest(ts) {
