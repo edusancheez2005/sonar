@@ -141,26 +141,33 @@ const HeaderEnd = styled.div`
   margin-left: auto;
 `
 
-// Personal sits in the header next to the alerts bell (2026-10-25), not in the rail.
+// Personal sits in the header next to the alerts bell (2026-10-25), not in
+// the rail — so it is styled to be seen: cyan tint, cyan edge, soft glow.
 const PersonalLink = styled(NextLink)`
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  height: 34px;
-  padding: 0 0.75rem;
-  border-radius: 8px;
-  border: 1px solid ${(p) => (p.$active ? S.accentLine : 'rgba(255, 255, 255, 0.08)')};
-  background: ${(p) => (p.$active ? S.accentSoft : 'transparent')};
-  color: ${(p) => (p.$active ? S.accentBright : 'var(--text-primary, #e0e6ed)')};
-  font-size: 0.85rem;
-  font-weight: 600;
+  gap: 0.45rem;
+  height: 36px;
+  padding: 0 0.95rem 0 0.8rem;
+  border-radius: 9px;
+  border: 1px solid ${(p) => (p.$active ? 'rgba(0, 229, 255, 0.85)' : 'rgba(0, 229, 255, 0.6)')};
+  background: ${(p) => (p.$active
+    ? 'linear-gradient(135deg, rgba(0, 229, 255, 0.45), rgba(0, 184, 212, 0.22))'
+    : 'linear-gradient(135deg, rgba(0, 229, 255, 0.32), rgba(0, 184, 212, 0.14))')};
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   text-decoration: none;
   white-space: nowrap;
-  &:hover { border-color: ${S.accentLine}; color: ${S.accentBright}; }
-  svg { width: 17px; height: 17px; flex-shrink: 0; }
+  box-shadow: 0 0 18px rgba(0, 229, 255, ${(p) => (p.$active ? 0.28 : 0.16)});
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  &:hover { border-color: rgba(0, 229, 255, 0.85); box-shadow: 0 0 24px rgba(0, 229, 255, 0.32); transform: translateY(-1px); }
+  &:focus-visible { outline: 2px solid ${S.accentBright}; outline-offset: 2px; }
+  svg { width: 17px; height: 17px; flex-shrink: 0; color: #ffffff; }
   @media (max-width: 600px) {
     padding: 0;
-    width: 34px;
+    width: 36px;
     justify-content: center;
     span { display: none; }
   }
