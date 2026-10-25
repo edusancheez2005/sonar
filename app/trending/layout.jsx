@@ -1,11 +1,11 @@
 export const metadata = {
-  title: 'Trending Tokens — Real-Time Crypto Movers',
-  description: 'See which crypto tokens are trending right now based on whale activity, volume spikes, and price movements. Updated in real-time.',
-  keywords: 'trending crypto, trending tokens, crypto movers today, hot crypto tokens, whale activity trending, crypto volume spike',
+  title: 'Trending Crypto by Whale Flow — Tokens Whales Are Rotating Into',
+  description: 'The tokens whales moved into and out of in the last 24 hours, ranked by net flow on the Ethereum whale tape, with price movers and X sentiment. Updated every 5 minutes.',
+  keywords: 'trending crypto, trending tokens, crypto movers today, whale net flow, tokens whales are buying, whale rotation',
   alternates: { canonical: 'https://www.sonartracker.io/trending' },
   openGraph: {
-    title: 'Trending Tokens — Real-Time Crypto Movers | Sonar Tracker',
-    description: 'Crypto tokens trending right now based on whale activity, volume spikes, and price movements.',
+    title: 'Trending Crypto by Whale Flow | Sonar Tracker',
+    description: 'The tokens whales moved into and out of in the last 24 hours, ranked by net flow, with price movers and X sentiment.',
     url: 'https://www.sonartracker.io/trending',
     type: 'website',
   },

@@ -52,8 +52,8 @@ const STEPS = [
     key: 'trending',
     resolve: sidebar('/trending'),
     kicker: 'Trending',
-    title: 'What is heating up right now',
-    text: 'Coins gaining whale and social momentum before they reach the headlines.',
+    title: 'Where whales are moving',
+    text: 'The tokens whales moved into and out of in the last 24 hours, then price movers and X sentiment.',
     placement: 'right',
   },
   {
