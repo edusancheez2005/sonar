@@ -475,9 +475,13 @@ const Center = styled.main`
 `
 
 // Breaking hero
+// The hero stacks by its own width (container query): between the markets
+// and macro columns it is ~350 px wide at a 1200 px window, and the fixed
+// 312 px chart sat on top of the headline.
 const Hero = styled.div`
   border: 1px solid rgba(0, 0, 0, 0.11); border-radius: 5px; background: ${K.cardWhite};
   overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); margin-bottom: 18px;
+  container-type: inline-size;
 `
 const HeroTop = styled.div`display: flex; align-items: center; justify-content: space-between; padding: 11px 18px; border-bottom: 1px solid rgba(0, 0, 0, 0.08); background: ${K.dark};`
 const BreakingPill = styled.span`
@@ -491,15 +495,16 @@ const HeroTokenChip = styled.span`font-family: ${MONO}; font-size: 10px; color: 
 const HeroBody = styled.a`
   display: flex; gap: 26px; padding: 24px 24px 26px; text-decoration: none; color: inherit;
   @media (max-width: 760px) { flex-direction: column; gap: 18px; padding: 20px 18px 22px; }
+  @container (max-width: 680px) { flex-direction: column; gap: 18px; padding: 20px 18px 22px; }
 `
 const HeroLeft = styled.div`flex: 1; min-width: 0;`
-const HeroTitle = styled.h1`font-family: ${HL}; font-weight: ${HL_WEIGHT}; font-size: 33px; line-height: 1.14; letter-spacing: -0.01em; margin: 0 0 12px; color: ${K.ink}; @media (max-width: 760px) { font-size: 26px; }`
+const HeroTitle = styled.h1`font-family: ${HL}; font-weight: ${HL_WEIGHT}; font-size: 33px; line-height: 1.14; letter-spacing: -0.01em; margin: 0 0 12px; color: ${K.ink}; @media (max-width: 760px) { font-size: 26px; } @container (max-width: 680px) { font-size: 26px; }`
 const HeroSummary = styled.p`font-size: 15.5px; line-height: 1.6; color: ${K.body}; margin: 0 0 18px;`
 const WhyBox = styled.div`border-left: 3px solid ${(p) => p.$c}; background: ${(p) => p.$bg}; padding: 12px 16px; border-radius: 0 4px 4px 0;`
 const WhyLabel = styled.div`font-family: ${MONO}; font-size: 10px; letter-spacing: 0.16em; color: ${(p) => p.$c}; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px;`
 const WhyOrca = styled.span`font-family: ${MONO}; font-size: 9px; letter-spacing: 0.12em; color: ${K.teal}; opacity: 0.9; flex: none;`
 const WhyText = styled.p`font-size: 14px; line-height: 1.55; color: ${K.body2}; margin: 0;`
-const ChartCard = styled.div`width: 312px; flex: none; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 5px; padding: 16px; background: ${K.chartCard}; @media (max-width: 760px) { width: 100%; }`
+const ChartCard = styled.div`width: 312px; flex: none; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 5px; padding: 16px; background: ${K.chartCard}; @media (max-width: 760px) { width: 100%; } @container (max-width: 680px) { width: 100%; }`
 const ChartTop = styled.div`display: flex; align-items: baseline; justify-content: space-between;`
 const ChartLabel = styled.span`font-family: ${MONO}; font-size: 12px; color: ${K.muted}; letter-spacing: 0.06em;`
 const ChartSent = styled.span`display: inline-flex; align-items: center; gap: 5px; font-family: ${MONO}; font-size: 10px; color: ${(p) => p.$c}; background: ${(p) => p.$bg}; padding: 3px 8px; border-radius: 3px; letter-spacing: 0.08em;`
