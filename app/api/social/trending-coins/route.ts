@@ -25,5 +25,9 @@ export async function GET(request: NextRequest) {
     defaultLimit: 20,
     maxLimit: 50,
   })
-  return NextResponse.json(result)
+  // Shared at the edge for 5 minutes (the fetcher's own cache is per lambda).
+  const ok = result.status === 'ok' || result.status === 'cached'
+  return NextResponse.json(result, {
+    headers: { 'Cache-Control': ok ? 's-maxage=300, stale-while-revalidate=600' : 'no-store' },
+  })
 }

@@ -6,7 +6,7 @@
  * same 10-min hot cache and 24h stale fallback.
  */
 
-import { isExcludedSymbol } from '@/lib/social/exclusions'
+import { isExcludedSymbol, looksLikeStablecoin } from '@/lib/social/exclusions'
 
 const LC_BASE = 'https://lunarcrush.com/api4'
 
@@ -162,7 +162,7 @@ export async function fetchTrendingCoins(
       const ix = Number(r?.interactions_24h || 0)
       // Stablecoins, wrapped tokens and a perfect 100 sentiment (a few
       // posts, all positive) are never what "trending on X" should mean.
-      if (isExcludedSymbol(r?.symbol) || Number(r?.sentiment) === 100) return false
+      if (isExcludedSymbol(r?.symbol) || looksLikeStablecoin(r) || Number(r?.sentiment) === 100) return false
       return mc >= MIN_MARKET_CAP && ix >= MIN_INTERACTIONS
     })
 
