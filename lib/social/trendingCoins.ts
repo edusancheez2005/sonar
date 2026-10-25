@@ -6,6 +6,8 @@
  * same 10-min hot cache and 24h stale fallback.
  */
 
+import { isExcludedSymbol } from '@/lib/social/exclusions'
+
 const LC_BASE = 'https://lunarcrush.com/api4'
 
 export const VALID_SORTS = new Set([
@@ -17,7 +19,9 @@ export const VALID_SORTS = new Set([
 ])
 
 export const MIN_MARKET_CAP = 50_000_000
-export const MIN_INTERACTIONS = 1_000
+// Raised from 1,000 on 2026-10-25: below ~25k interactions the galaxy-score
+// ranking was led by micro-caps with a handful of posts.
+export const MIN_INTERACTIONS = 25_000
 
 const HOT_TTL = 10 * 60 * 1000
 const STALE_TTL = 24 * 60 * 60 * 1000
@@ -156,6 +160,9 @@ export async function fetchTrendingCoins(
     const cleaned = raw.filter((r) => {
       const mc = Number(r?.market_cap || 0)
       const ix = Number(r?.interactions_24h || 0)
+      // Stablecoins, wrapped tokens and a perfect 100 sentiment (a few
+      // posts, all positive) are never what "trending on X" should mean.
+      if (isExcludedSymbol(r?.symbol) || Number(r?.sentiment) === 100) return false
       return mc >= MIN_MARKET_CAP && ix >= MIN_INTERACTIONS
     })
 

@@ -37,6 +37,11 @@ describe('getTrendingSocial', () => {
         { symbol: 'sol', name: 'Solana', market_cap: 5e10, interactions_24h: 200000, galaxy_score: 85 },
         // dust: galaxy_score 100 but no market cap / activity — must be dropped
         { symbol: 'scam', name: 'Scam', market_cap: 1000, interactions_24h: 5, galaxy_score: 100 },
+        // a stablecoin and a wrapped token with big numbers — also dropped
+        { symbol: 'usde', name: 'Ethena USDe', market_cap: 5e9, interactions_24h: 300000, galaxy_score: 95 },
+        { symbol: 'wbtc', name: 'Wrapped Bitcoin', market_cap: 9e9, interactions_24h: 300000, galaxy_score: 90 },
+        // perfect sentiment from a handful of posts — dropped
+        { symbol: 'fxsave', name: 'f(x) USD Saving', market_cap: 7e7, interactions_24h: 30000, galaxy_score: 89, sentiment: 100 },
       ],
     }
     const r = await runGetTrendingSocial({ limit: 5 }, noopSupabase, now, fakeFetch(body))
@@ -45,6 +50,9 @@ describe('getTrendingSocial', () => {
     const symbols = (r.data as any).coins.map((c: any) => c.symbol)
     expect(symbols).toEqual(['SOL', 'BTC'])
     expect(symbols).not.toContain('SCAM')
+    expect(symbols).not.toContain('USDE')
+    expect(symbols).not.toContain('WBTC')
+    expect(symbols).not.toContain('FXSAVE')
   })
 
   it('honours the sort param (interactions_24h)', async () => {

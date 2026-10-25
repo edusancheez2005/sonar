@@ -1,12 +1,12 @@
 /**
- * API Route: Get trending coins and top gainers/losers
- * Data source: Binance 24hr ticker (replaced CoinGecko)
- * Trending = highest volume; gainers/losers = 24h price change
+ * API Route: price movers for /trending (top gainers and losers).
+ * Data source: Binance rolling-window tickers over the symbols we map
+ * (lib/binance/symbol-map.ts); ?window=1h | 24h | 7d.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { get24hrTicker } from '@/lib/binance/client'
-import { pairToSymbol } from '@/lib/binance/symbol-map'
+import { getRollingTicker } from '@/lib/binance/client'
+import { getAllPairs, pairToSymbol } from '@/lib/binance/symbol-map'
 import { getTokenLogos } from '@/lib/logos/getTokenLogos'
 
 export const dynamic = 'force-dynamic'
@@ -32,77 +32,50 @@ const TOKEN_NAMES: Record<string, string> = {
   MATIC: 'Polygon', POL: 'Polygon',
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const allTickers = await get24hrTicker()
+// 1H / 24H / 7D are real Binance rolling windows (the old 1H/7D/30D buttons
+// re-fetched the same 24 h data and relabelled it; Binance has no 30 d window).
+const WINDOWS: Record<string, string> = { '1h': '1h', '24h': '1d', '7d': '7d' }
 
-    // Filter to only USDT pairs we track
-    const tracked = allTickers
-      .filter(t => t.symbol.endsWith('USDT'))
-      .map(t => {
+export async function GET(request: NextRequest) {
+  const raw = (request.nextUrl.searchParams.get('window') || request.nextUrl.searchParams.get('duration') || '24h').toLowerCase()
+  const window = WINDOWS[raw] ? raw : '24h'
+  try {
+    const pairs = getAllPairs()
+    const tickers = await getRollingTicker(pairs, WINDOWS[window])
+    const rows = tickers
+      .map((t) => {
         const sym = pairToSymbol(t.symbol)
-        if (!sym) return null
+        if (!sym || !Number.isFinite(t.priceChangePercent) || !(t.lastPrice > 0)) return null
         return {
-          id: sym.toLowerCase(),
-          symbol: sym.toLowerCase(),
+          symbol: sym,
           name: TOKEN_NAMES[sym] || sym,
-          image: null, // Frontend uses TokenIcon component which handles this
-          current_price: t.lastPrice,
-          market_cap: null,
-          market_cap_rank: null,
-          price_change_percentage_24h: t.priceChangePercent,
-          price_change_percentage: t.priceChangePercent,
-          volume: t.quoteVolume,
-          total_volume: t.quoteVolume,
-          score: Math.round(t.quoteVolume / 1000000), // Volume-based score (millions)
+          image: null as string | null,
+          price: t.lastPrice,
+          change_pct: t.priceChangePercent,
+          quote_volume: t.quoteVolume,
         }
       })
-      .filter(Boolean) as any[]
+      .filter(Boolean) as Array<{ symbol: string; name: string; image: string | null; price: number; change_pct: number; quote_volume: number }>
 
-    // Attach stored logos server-side (one query) so the page renders icons
-    // without a token-image request per card. Seen 2026-09-30: every major
-    // was a letter because the client passed id="btc" and the lookup 429'd.
-    const logos = await getTokenLogos(tracked.map((t) => t.symbol))
-    for (const t of tracked) t.image = logos[String(t.symbol).toUpperCase()] || null
+    const logos = await getTokenLogos(rows.map((r) => r.symbol))
+    for (const r of rows) r.image = logos[r.symbol] || null
 
-    // Trending = highest quote volume (most traded)
-    const trending = [...tracked]
-      .sort((a, b) => b.volume - a.volume)
-      .slice(0, 15)
-      .map(t => ({
-        id: t.id,
-        symbol: t.symbol,
-        name: t.name,
-        large: t.image,
-        thumb: t.image,
-        market_cap_rank: t.market_cap_rank,
-        current_price: t.current_price,
-        price_change_percentage: t.price_change_percentage,
-        total_volume: t.total_volume,
-        score: t.score,
-        price_btc: null,
-        data: { price_change_percentage_24h: { usd: t.price_change_percentage_24h } },
-      }))
-
-    // Top gainers = highest 24h % change
-    const sortedByChange = [...tracked].sort(
-      (a, b) => b.price_change_percentage - a.price_change_percentage
-    )
-
-    const top_gainers = sortedByChange.slice(0, 20)
-    const top_losers = sortedByChange.slice(-20).reverse()
-
-    return NextResponse.json({
-      success: true,
-      trending,
-      top_gainers,
-      top_losers,
-      timestamp: new Date().toISOString(),
-    })
-  } catch (error) {
-    console.error('Trending API error:', error)
+    const byChange = [...rows].sort((a, b) => b.change_pct - a.change_pct)
     return NextResponse.json(
-      { error: 'Failed to fetch trending data', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        success: true,
+        window,
+        source: 'binance',
+        generated_at: new Date().toISOString(),
+        gainers: byChange.slice(0, 10),
+        losers: byChange.slice(-10).reverse(),
+      },
+      { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } }
+    )
+  } catch (error) {
+    console.error('Trending movers error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch price movers', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
