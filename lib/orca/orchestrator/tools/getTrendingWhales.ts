@@ -11,12 +11,8 @@
  * Per-ticker whale lookups still go through getWhaleFlows.
  */
 import type { SupabaseLike, ToolResult } from '../types'
-import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
-import { isNonTradeRow } from '@/lib/orca/junk-addresses'
+import { foldTokenFlows } from '@/lib/whale/netFlow'
 import { readAllRows } from './pagedRead'
-
-// Same protocol-scale sanity cap as getWhaleFlows (see comment there).
-const MAX_SANE_TX_USD = 150_000_000
 
 const WINDOWS = {
   '1h': 60 * 60 * 1000,
@@ -42,15 +38,6 @@ export interface GetTrendingWhalesArgs {
   chain?: unknown
   window?: unknown
   limit?: unknown
-}
-
-interface Bucket {
-  ticker: string
-  buy_usd: number
-  sell_usd: number
-  buy_count: number
-  sell_count: number
-  whales: Set<string>
 }
 
 export async function run(
@@ -103,49 +90,21 @@ export async function run(
       }
     }
 
-    const buckets = new Map<string, Bucket>()
-    for (const row of data as Array<any>) {
-      // Group wrapped variants under their canonical symbol so the
-      // leaderboard says "BTC", not "WBTC" + "CBBTC" as separate rows.
-      const ticker = canonicalSymbol(String(row?.token_symbol ?? '').trim()) ?? ''
-      if (!ticker || !/^[A-Z0-9._-]{1,12}$/.test(ticker)) continue
-      const v = Number(row?.usd_value)
-      if (!Number.isFinite(v) || v <= 0) continue
-      if (v > MAX_SANE_TX_USD) continue
-      // Flash-loan legs (Morpho Blue, Balancer Vault) and an exchange moving
-      // coins between its own wallets are not whale trades.
-      if (isNonTradeRow(row)) continue
-      const c = String(row?.classification ?? '').toLowerCase()
-      let b = buckets.get(ticker)
-      if (!b) {
-        b = { ticker, buy_usd: 0, sell_usd: 0, buy_count: 0, sell_count: 0, whales: new Set() }
-        buckets.set(ticker, b)
-      }
-      if (row?.whale_address) b.whales.add(String(row.whale_address))
-      if (c.startsWith('buy')) {
-        b.buy_usd += v
-        b.buy_count += 1
-      } else if (c.startsWith('sell')) {
-        b.sell_usd += v
-        b.sell_count += 1
-      }
-    }
-
-    const tokens = Array.from(buckets.values())
-      .map((b) => {
-        const net = b.buy_usd - b.sell_usd
-        return {
-          ticker: b.ticker,
-          buy_usd: Math.round(b.buy_usd),
-          sell_usd: Math.round(b.sell_usd),
-          net_usd: Math.round(net),
-          abs_net_usd: Math.round(Math.abs(net)),
-          direction: net > 0 ? 'up' : net < 0 ? 'down' : 'flat',
-          buy_count: b.buy_count,
-          sell_count: b.sell_count,
-          unique_whales: b.whales.size,
-        }
-      })
+    // The shared net-flow definition (lib/whale/netFlow.ts): wrapped variants
+    // fold into the underlying asset; flash-loan legs, exchange-internal moves,
+    // transfers above $150M and stablecoins are excluded.
+    const tokens = [...foldTokenFlows(data as Array<any>).values()]
+      .map((t) => ({
+        ticker: t.symbol,
+        buy_usd: t.buyUsd,
+        sell_usd: t.sellUsd,
+        net_usd: t.netUsd,
+        abs_net_usd: Math.abs(t.netUsd),
+        direction: t.netUsd > 0 ? 'up' : t.netUsd < 0 ? 'down' : 'flat',
+        buy_count: t.buyCount,
+        sell_count: t.sellCount,
+        unique_whales: t.uniqueWhales,
+      }))
       .filter((t) => t.abs_net_usd >= MIN_NET_USD && t.buy_count + t.sell_count >= 2)
       .sort((a, b) => b.abs_net_usd - a.abs_net_usd)
       .slice(0, limit)

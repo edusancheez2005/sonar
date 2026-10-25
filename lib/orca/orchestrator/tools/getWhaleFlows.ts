@@ -9,7 +9,7 @@
  */
 import type { SupabaseLike, ToolResult } from '../types'
 import { applyLabel, fetchEntityLabels } from './entityLabels'
-import { isExchangeInternalRow, isNoiseRow } from '../../junk-addresses'
+import { isCountedRow, STABLECOINS } from '@/lib/whale/netFlow'
 import { readAllRows } from './pagedRead'
 import { symbolVariants } from '@/lib/wallet/symbol-aliases'
 
@@ -122,22 +122,21 @@ export async function run(
     // Newest whale row seen. The Solana feed stopped on 3 Oct and a 7d SOL
     // answer still read as current (re-judge 2026-10-06); the writer flags it.
     let latestMs = -Infinity
+    // One row rule for every surface (lib/whale/netFlow.ts): junk/flash-loan
+    // legs, exchange-internal moves, the $150M cap. A stablecoin question keeps
+    // its stablecoin rows.
+    const allowStablecoins = STABLECOINS.has(ticker)
     for (const row of data as Array<any>) {
+      const decision = isCountedRow({ ...row, token_symbol: row?.token_symbol ?? ticker }, { allowStablecoins })
       const v = Number(row?.usd_value)
-      if (!Number.isFinite(v) || v <= 0) continue
-      // 2026-09-22 battery: the junk contract filled every "biggest buyer"
-      // slot; 2026-10-06 audit: Balancer Vault flash-loan repayments read as
-      // ETH selling. Junk on any side is not a whale trade, whatever its size.
-      if (isNoiseRow(row)) continue
-      // An exchange moving coins between its own wallets is not a trade.
-      if (isExchangeInternalRow(row)) {
-        excludedInternal += 1
-        excludedInternalUsd += v
-        continue
-      }
-      if (v > MAX_SANE_TX_USD) {
-        excludedOutliers += 1
-        excludedOutlierUsd += v
+      if (!decision.ok) {
+        if (decision.reason === 'exchangeInternal') {
+          excludedInternal += 1
+          excludedInternalUsd += v
+        } else if (decision.reason === 'overCap') {
+          excludedOutliers += 1
+          excludedOutlierUsd += v
+        }
         continue
       }
       const c = String(row?.classification ?? '').toLowerCase()
