@@ -51,6 +51,17 @@ const fadeIn = keyframes`
   to   { opacity: 1; }
 `
 
+// The pill (restyled 2026-10-25): dark glass with a slowly moving gradient
+// edge and a glowing orb, instead of a flat cyan button.
+const edgeShift = keyframes`
+  from { background-position: 0 0, 0% 50%; }
+  to   { background-position: 0 0, 300% 50%; }
+`
+const orbGlow = keyframes`
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 229, 255, 0.55), inset 0 0 4px rgba(255, 255, 255, 0.35); }
+  50%      { box-shadow: 0 0 14px rgba(124, 77, 255, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.35); }
+`
+
 const Pill = styled.button`
   position: fixed;
   bottom: 1.25rem;
@@ -58,36 +69,45 @@ const Pill = styled.button`
   z-index: 950;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1.05rem;
-  background: linear-gradient(135deg, ${colors.primary} 0%, #00b8d4 100%);
-  color: #0a0e17;
-  border: none;
+  gap: 0.6rem;
+  padding: 0.62rem 1.1rem 0.62rem 0.7rem;
+  border: 1px solid transparent;
   border-radius: 999px;
+  background:
+    linear-gradient(rgba(9, 14, 24, 0.94), rgba(9, 14, 24, 0.94)) padding-box,
+    linear-gradient(90deg, #00e5ff, #7c4dff, #00e676, #00e5ff) border-box;
+  background-size: 100% 100%, 300% 100%;
+  animation: ${edgeShift} 8s linear infinite;
+  backdrop-filter: blur(10px);
+  color: ${colors.textPrimary};
   font-family: ${FONT_SANS};
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  font-size: 0.86rem;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 229, 255, 0.28), 0 0 0 1px rgba(0, 229, 255, 0.35);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  &:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgba(0, 229, 255, 0.4); }
-  &:focus-visible { outline: 2px solid #0a0e17; outline-offset: 2px; }
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 22px rgba(0, 229, 255, 0.12);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  &:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 229, 255, 0.25); }
+  &:focus-visible { outline: 2px solid ${colors.primary}; outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 
   @media (max-width: 600px) {
     bottom: 4.75rem; /* clear of the mobile feedback widget */
-    padding: 0.6rem 0.9rem;
-    font-size: 0.78rem;
+    padding: 0.55rem 0.95rem 0.55rem 0.6rem;
+    font-size: 0.8rem;
   }
 `
 
 const PillIcon = styled.span`
-  display: inline-block;
-  width: 9px;
-  height: 9px;
+  position: relative;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: #0a0e17;
-  box-shadow: 0 0 0 2px rgba(10, 14, 23, 0.4);
+  background: radial-gradient(circle at 32% 30%, #ffffff 0%, #7ff3ff 18%, #00b8d4 48%, #5b2bd6 100%);
+  animation: ${orbGlow} 3.2s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+  svg { position: absolute; inset: 0; margin: auto; width: 12px; height: 12px; color: rgba(255, 255, 255, 0.95); }
 `
 
 const Backdrop = styled.div`
@@ -207,7 +227,9 @@ export default function OrcaDrawer() {
     <>
       {!open && (
         <Pill type="button" onClick={() => setOpen(true)} aria-label={pillLabel}>
-          <PillIcon />
+          <PillIcon aria-hidden>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l1.9 5.6 5.6 1.9-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.9L12 2.5z" /></svg>
+          </PillIcon>
           {pillLabel}
         </Pill>
       )}
