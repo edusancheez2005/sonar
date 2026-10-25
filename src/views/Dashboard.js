@@ -21,6 +21,8 @@ import {
 } from 'chart.js'
 import TokenIcon from '@/components/TokenIcon'
 import TokenHeatmap from '@/components/wallet-tracker/TokenHeatmap'
+import WhaleTape from '@/components/dashboard/WhaleTape'
+import { HealthChip } from '@/components/live/HealthChip'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
 import { usePersonalizedDashboard } from '@/components/wallet/PersonalizedDashboardContext'
@@ -46,10 +48,6 @@ const COLORS = {
 }
 
 // ─── ANIMATIONS ───────────────────────────────────────────────────────────────
-const pulseGlow = keyframes`
-  0%, 100% { opacity: 1; box-shadow: 0 0 4px #00e676; }
-  50% { opacity: 0.4; box-shadow: 0 0 8px #00e676, 0 0 16px rgba(0, 230, 118, 0.3); }
-`
 
 // ─── STYLED COMPONENTS ────────────────────────────────────────────────────────
 const DashboardShell = styled.div`
@@ -106,16 +104,6 @@ const CommandBarRight = styled.div`
 
 const TerminalLogo = styled.span`
   font-weight: 800; font-size: 0.85rem; letter-spacing: 2px; color: ${COLORS.cyan}; text-transform: uppercase;
-`
-
-const LiveDot = styled.span`
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  font-size: 0.75rem; font-weight: 600; color: ${COLORS.green};
-  text-transform: uppercase; letter-spacing: 1px;
-  &::before {
-    content: ''; width: 7px; height: 7px; border-radius: 50%;
-    background: ${COLORS.green}; animation: ${pulseGlow} 2s ease-in-out infinite;
-  }
 `
 
 const StatChip = styled.span`
@@ -754,13 +742,11 @@ const Dashboard = ({ isPremium = false }) => {
   const personalizedRef = useRef(personalized)
   useEffect(() => { personalizedRef.current = personalized }, [personalized])
 
-  const [transactions, setTransactions] = useState([]);
   const [topBuys, setTopBuys] = useState([]);
   const [topSells, setTopSells] = useState([]);
   const [blockchainData, setBlockchainData] = useState({ labels: [], data: [] });
   const [tokenTradeCounts, setTokenTradeCounts] = useState([]);
   const [noData24h, setNoData24h] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState('now');
 
   // User greeting state
   const [userName, setUserName] = useState('');
@@ -778,7 +764,8 @@ const Dashboard = ({ isPremium = false }) => {
   const orcaRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const hasLoadedOnce = useRef(false);
-  const [algoActive, setAlgoActive] = useState(true);
+  // Freshness of the whale feed, reported by the tape (no separate health poll).
+  const [tapeHealth, setTapeHealth] = useState(null);
   
      // New state for enhanced insights
    const [marketSentiment, setMarketSentiment] = useState({ ratio: 0, trend: 'neutral' });
@@ -902,23 +889,6 @@ const Dashboard = ({ isPremium = false }) => {
         const res = await fetch(url, { cache: 'no-store' })
         const json = await res.json()
         if (res.ok) {
-          const recent = json.recent || []
-          setTransactions(recent.map(r => {
-            const rawUsd = Math.floor(r.usd_value || 0)
-            return {
-              id: r.transaction_hash || `${r.time}-${r.coin}-${r.usd_value}`,
-              time: new Date(r.time).toLocaleTimeString(),
-              coin: r.coin || '—',
-              action: r.action || 'TRANSFER',
-              blockchain: r.blockchain || '—',
-              rawUsd,
-              usdValue: formatNumber(rawUsd),
-              hash: r.transaction_hash || '—',
-              from_address: r.from_address || '—',
-              to_address: r.to_address || '—',
-              whale_score: r.whale_score || 0,
-            }
-          }))
                      setTopBuys(json.topBuys || [])
            setTopSells(json.topSells || [])
            setBlockchainData(json.blockchainVolume || { labels: [], data: [] })
@@ -1007,8 +977,7 @@ const Dashboard = ({ isPremium = false }) => {
             } catch {}
           }
           setNoData24h(noData);
-          
-          setLastUpdate('just now')
+
         }
       } catch {}
       finally { setLoading(false); hasLoadedOnce.current = true }
@@ -1016,28 +985,15 @@ const Dashboard = ({ isPremium = false }) => {
     
                      // All enhanced insights data is now fetched from the enhanced /api/dashboard/summary endpoint
     
-    const pollAlgo = async () => {
-      try {
-        const res = await fetch('/api/health/algorithm', { cache: 'no-store' })
-        const j = await res.json()
-        if (res.ok) setAlgoActive(Boolean(j.active))
-      } catch {}
-    }
-    
     fetchSummary()
-    pollAlgo()
-    // The health check polls every 15 s; the summary every 4th tick (60 s),
-    // matching its 60 s edge cache.
-    let fastTick = 0
+    // The summary every 60 s, matching its 60 s edge cache; skipped while the
+    // tab is hidden. Freshness comes from the tape below the command bar.
     timer = setInterval(() => {
-      fastTick++
-      pollAlgo()
-      if (fastTick % 4 === 0) fetchSummary()
-    }, 15000)
+      if (!document.hidden) fetchSummary()
+    }, 60000)
     return () => clearInterval(timer)
   }, [])
 
-  const filteredTransactions = transactions;
 
   // ─── RENDER ─────────────────────────────────────────────────────────────────
   return (
@@ -1047,7 +1003,7 @@ const Dashboard = ({ isPremium = false }) => {
         <CommandBar>
           <CommandBarLeft>
             <TerminalLogo>SONAR</TerminalLogo>
-            <LiveDot>{algoActive ? 'LIVE' : 'OFFLINE'}</LiveDot>
+            {tapeHealth && <HealthChip health={tapeHealth.health} prefix="ETH whale feed" testId="dashboard-feed-health" />}
             <TimeBadge>24H WINDOW</TimeBadge>
             {flowMeta?.chains_live?.length === 1 && (
               <TimeBadge title={flowMeta.chains_label}>{flowMeta.chains_live[0] === 'ethereum' ? 'ETHEREUM ONLY' : flowMeta.chains_live[0].toUpperCase()}</TimeBadge>
@@ -1088,6 +1044,11 @@ const Dashboard = ({ isPremium = false }) => {
 
 
         <DashboardContainer>
+            {/* ─── LATEST WHALE TRADES (live tape) ────────────────────── */}
+            <div style={{ paddingTop: '1rem' }}>
+              <WhaleTape onHealth={setTapeHealth} />
+            </div>
+
             {/* ─── FIRST-RUN WELCOME (one-time dialog per account; portals to body) ── */}
             <FirstRunWelcome onTakeTour={() => setShowTutorial(true)} />
 
