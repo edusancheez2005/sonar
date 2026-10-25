@@ -15,6 +15,7 @@
  */
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
+import { nextTopic } from '@/lib/blog/topics'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -261,6 +262,37 @@ export async function GET(req: Request) {
     if (pricingBlocked === true) issues.push('/pricing is blocked in robots.txt again.')
     if (btcIndexed === false) issues.push('/token/BTC is serving noindex again.')
 
+    // --- blog canary ---------------------------------------------------------
+    // The SEO cron answered 200 "All topics exhausted" for three months and
+    // covers died with dall-e-3 unnoticed. Watch the output, not the status code.
+    let blog: any = { lastGuideAgeDays: null, lastGuideSlug: null, pulseAgeDays: null, remainingTopics: null, lastRun: null }
+    try {
+      const ageDays = (iso?: string | null) => (iso ? Math.round(((now.getTime() - Date.parse(iso)) / 86_400_000) * 10) / 10 : null)
+      const [{ data: guides }, { data: pulse }, { data: pub }, { data: lr }] = await Promise.all([
+        supabaseAdmin.from('blog_posts').select('slug, created_at').eq('category', 'guide').eq('published', true).order('created_at', { ascending: false }).limit(1),
+        supabaseAdmin.from('blog_posts').select('created_at').eq('category', 'whale-report').eq('published', true).order('created_at', { ascending: false }).limit(1),
+        supabaseAdmin.from('blog_posts').select('slug').eq('published', true).limit(1000),
+        supabaseAdmin.from('app_cache').select('value, updated_at').eq('key', 'blog_last_run').maybeSingle(),
+      ])
+      const run = (lr?.value || null) as any
+      blog = {
+        lastGuideAgeDays: ageDays(run?.last_success_at || guides?.[0]?.created_at || null),
+        lastGuideSlug: run?.last_success_slug || guides?.[0]?.slug || null,
+        pulseAgeDays: ageDays(pulse?.[0]?.created_at || null),
+        remainingTopics: nextTopic(new Set((pub || []).map((p: any) => p.slug))).remaining,
+        lastRun: run ? {
+          at: run.at || lr?.updated_at || null, ok: !!run.ok, slug: run.slug || run.topic || null,
+          hasImage: !!run.hasImage, coverBytes: run.cover?.bytes ?? null, stages: run.stages || null,
+          error: run.error || null, rejection: run.last_rejection || null,
+        } : null,
+      }
+    } catch (e: any) { blog.error = String(e?.message || e).slice(0, 120) }
+    if ((blog.lastGuideAgeDays ?? 0) > 4) issues.push(`No new blog guide for ${blog.lastGuideAgeDays} days — check /api/cron/seo-article (${blog.lastRun?.error || blog.lastRun?.rejection || 'see blog_last_run'}).`)
+    if (blog.remainingTopics !== null && blog.remainingTopics < 10) issues.push(`Blog topic pool low: ${blog.remainingTopics} topics left — add topics to lib/blog/topics.ts.`)
+    if ((blog.pulseAgeDays ?? 0) > 8) issues.push(`No Whale Pulse post for ${blog.pulseAgeDays} days — check /api/cron/weekly-insights.`)
+    if (blog.lastRun && !blog.lastRun.ok) issues.push(`Last blog run failed: ${blog.lastRun.error || blog.lastRun.rejection || 'unknown'}.`)
+    if (blog.lastRun?.ok && !blog.lastRun.hasImage) issues.push('Last blog article was saved without a cover (the next run self-heals it).')
+
     const summary = {
       posts: { today: postsToday, yesterday: postsYesterday, lastPostHttpStatus: lastPostStatus, budget: Number(process.env.X_DAILY_POST_BUDGET) || 5 },
       recentPosts: recentPosts.slice(-8).reverse(),
@@ -273,6 +305,7 @@ export async function GET(req: Request) {
       orcaQuality: { answers24h: orcaAnswers24h, deadEnds24h: orcaDeadEnds24h },
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,
+      blog,
     }
 
     if (dry) return NextResponse.json({ dry: true, ...summary })
@@ -301,6 +334,8 @@ export async function GET(req: Request) {
       <p>Qualifying $5M–$150M transfers last 8h: <b>${whaleQualifying || 0}</b></p>
       <h3>SEO</h3>
       <p>Sitemap URLs: <b>${sitemapUrls}</b> · /pricing blocked: <b>${pricingBlocked === null ? '?' : pricingBlocked}</b> · /token/BTC indexed: <b>${btcIndexed === null ? '?' : btcIndexed}</b></p>
+      <h3>Blog</h3>
+      <p>Last article: <b>${blog.lastGuideAgeDays ?? '?'}</b> days ago (${blog.lastGuideSlug || 'n/a'}) · topics left: <b>${blog.remainingTopics ?? '?'}</b> · Whale Pulse: <b>${blog.pulseAgeDays ?? '?'}</b> days ago · last run: ${blog.lastRun ? (blog.lastRun.ok ? `ok, cover ${blog.lastRun.coverBytes ? Math.round(blog.lastRun.coverBytes / 1024) + ' KB' : 'missing'}` : `failed (${blog.lastRun.error || blog.lastRun.rejection || 'unknown'})`) : 'none yet'}</p>
       <p style="color:#888;font-size:12px">Automated daily report from /api/cron/x-health-report. Reply to Claude in the Sonar session to change or stop it.</p>`
 
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
