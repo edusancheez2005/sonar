@@ -295,6 +295,10 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
       <Footer>
         <Link href="/dashboard/personal/memory" style={{ color: T.muted }}>What ORCA remembers about you</Link>
         <span>Research only, not financial advice.</span>
+        <span>
+          Some portraits via Wikimedia Commons (MrBeast photo: Tyren Redd,{' '}
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" style={{ color: T.muted }}>CC BY 4.0</a>).
+        </span>
       </Footer>
 
       <OrcaTutorial

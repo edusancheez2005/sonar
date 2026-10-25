@@ -164,14 +164,14 @@ const TABS = [
   { key: 'alerts', label: 'Alerts' },
 ]
 
-// The redesigned page (components/personal/v2) is served at ?v=2 until
-// Eduardo signs it off; then it becomes the default and ?v=1 keeps this
-// one for a week.
+// The redesigned page (components/personal/v2) is the default since
+// 2026-10-25 (Eduardo's OK); ?v=1 keeps the old page until 2026-11-01, then
+// delete PersonalShell and its components.
 export default function PersonalDashboardClient() {
   const [variant, setVariant] = useState(null)
   useEffect(() => {
-    let v = 'v1'
-    try { if (new URLSearchParams(window.location.search).get('v') === '2') v = 'v2' } catch { /* ignore */ }
+    let v = 'v2'
+    try { if (new URLSearchParams(window.location.search).get('v') === '1') v = 'v1' } catch { /* ignore */ }
     setVariant(v)
   }, [])
   if (variant === null) return <PersonalSkeleton />

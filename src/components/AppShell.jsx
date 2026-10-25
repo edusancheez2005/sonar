@@ -141,6 +141,31 @@ const HeaderEnd = styled.div`
   margin-left: auto;
 `
 
+// Personal sits in the header next to the alerts bell (2026-10-25), not in the rail.
+const PersonalLink = styled(NextLink)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 34px;
+  padding: 0 0.75rem;
+  border-radius: 8px;
+  border: 1px solid ${(p) => (p.$active ? S.accentLine : 'rgba(255, 255, 255, 0.08)')};
+  background: ${(p) => (p.$active ? S.accentSoft : 'transparent')};
+  color: ${(p) => (p.$active ? S.accentBright : 'var(--text-primary, #e0e6ed)')};
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  &:hover { border-color: ${S.accentLine}; color: ${S.accentBright}; }
+  svg { width: 17px; height: 17px; flex-shrink: 0; }
+  @media (max-width: 600px) {
+    padding: 0;
+    width: 34px;
+    justify-content: center;
+    span { display: none; }
+  }
+`
+
 const MobileMenuBtn = styled.button`
   display: none;
   flex-shrink: 0;
@@ -780,10 +805,10 @@ const APP_LINKS = [
     Icon: IconDashboard,
   },
   {
-    href: '/dashboard/personal',
-    label: 'Personal',
-    match: (p) => p === '/dashboard/personal' || p?.startsWith('/dashboard/personal/'),
-    Icon: IconPersonalize,
+    href: '/ai-advisor',
+    label: 'Orca AI 2.0',
+    match: (p) => p === '/ai-advisor' || p?.startsWith('/ai-advisor/'),
+    Icon: IconSpark,
   },
   {
     href: '/statistics',
@@ -808,12 +833,6 @@ const APP_LINKS = [
     label: 'News',
     match: (p) => p === '/news' || p?.startsWith('/news/'),
     Icon: IconNews,
-  },
-  {
-    href: '/ai-advisor',
-    label: 'Orca AI 2.0',
-    match: (p) => p === '/ai-advisor' || p?.startsWith('/ai-advisor/'),
-    Icon: IconSpark,
   },
   {
     href: '/personalize',
@@ -1156,6 +1175,16 @@ export default function AppShell({ children, onLogout }) {
           </HeaderSearchWrap>
         </HeaderCenter>
         <HeaderEnd>
+          <PersonalLink
+            href="/dashboard/personal"
+            prefetch={false}
+            $active={pathname === '/dashboard/personal' || pathname?.startsWith('/dashboard/personal/')}
+            aria-current={pathname === '/dashboard/personal' ? 'page' : undefined}
+            data-testid="header-personal"
+          >
+            <IconPersonalize />
+            <span>Personal</span>
+          </PersonalLink>
           {isAuthenticated && <OrcaBell />}
           <MobileMenuBtn type="button" aria-label="Open menu" onClick={() => setDrawerOpen(true)}>
             ☰
