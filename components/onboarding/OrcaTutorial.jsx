@@ -241,9 +241,18 @@ const Secondary = styled(Btn)`
 `
 
 /* ── Component ───────────────────────────────────────────────── */
-export default function OrcaTutorial({ isOpen, onClose, refs }) {
+/**
+ * Props beyond the dashboard defaults (2026-10-25, Personal page tour):
+ *   steps        — the stops to show (default: the dashboard STEPS)
+ *   storageKey   — localStorage key written on finish (default 'sonar_tutorial_completed')
+ *   finishHref   — where the final card's button goes (default FIRST_QUESTION_URL);
+ *                  null = no final card, Finish just closes
+ *   closeOnOutsideClick — a click outside the tip ends the tour for good
+ */
+export default function OrcaTutorial({ isOpen, onClose, refs, steps: stepsProp, storageKey = 'sonar_tutorial_completed', finishHref = FIRST_QUESTION_URL, closeOnOutsideClick = false }) {
+  const allSteps = stepsProp || STEPS
   const [step, setStep] = useState(0)
-  const [steps, setSteps] = useState(STEPS)
+  const [steps, setSteps] = useState(allSteps)
   const [rect, setRect] = useState(null)
   const [mounted, setMounted] = useState(false)
   const [done, setDone] = useState(false)
@@ -263,8 +272,8 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
   // Reset when opened; drop stops whose target is not on screen right now
   useEffect(() => {
     if (isOpen) {
-      const visible = STEPS.filter((st) => isVisible(st.resolve(refsRef.current)))
-      setSteps(visible.length > 0 ? visible : STEPS)
+      const visible = allSteps.filter((st) => isVisible(st.resolve(refsRef.current)))
+      setSteps(visible.length > 0 ? visible : allSteps)
       setStep(0); setDone(false); setRect(null)
     }
   }, [isOpen])
@@ -317,14 +326,26 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
   }, [step, isOpen, done, refs, cur?.key])
 
   const finish = useCallback(() => {
-    localStorage.setItem('sonar_tutorial_completed', 'true')
+    try { localStorage.setItem(storageKey, 'true') } catch { /* storage blocked */ }
     onClose()
-  }, [onClose])
+  }, [onClose, storageKey])
 
   const next = useCallback(() => {
     if (step < steps.length - 1) setStep(s => s + 1)
+    else if (finishHref === null) finish()
     else setDone(true)
-  }, [step, steps.length])
+  }, [step, steps.length, finishHref, finish])
+
+  // Optional: a click anywhere outside the tip ends the tour for good.
+  useEffect(() => {
+    if (!isOpen || !closeOnOutsideClick) return
+    const onDown = (e) => {
+      if (tipRef.current && tipRef.current.contains(e.target)) return
+      finish()
+    }
+    const id = setTimeout(() => document.addEventListener('pointerdown', onDown, true), 0)
+    return () => { clearTimeout(id); document.removeEventListener('pointerdown', onDown, true) }
+  }, [isOpen, closeOnOutsideClick, finish])
 
   // Re-measure the tip whenever step/rect/viewport changes. We position
   // using the REAL rendered tip dimensions, not estimates — that's what
@@ -434,7 +455,7 @@ export default function OrcaTutorial({ isOpen, onClose, refs }) {
                 Explore on my own
               </Secondary>
               <Primary
-                onClick={() => { finish(); window.location.href = FIRST_QUESTION_URL }}
+                onClick={() => { finish(); window.location.href = finishHref || FIRST_QUESTION_URL }}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 style={{ padding: '10px 20px' }}

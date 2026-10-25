@@ -3,6 +3,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
+import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,7 +54,23 @@ export async function POST(request: NextRequest) {
     if (!symbol) return NextResponse.json({ error: 'Symbol required' }, { status: 400 })
 
     const supabase = getSupabase()
-    
+
+    // Only coins we actually price: a symbol is accepted when its canonical
+    // form (WBTC → BTC) has a price snapshot in the last 24 h. Junk such as
+    // MEMECOINS or VITALIK used to land on watchlists and show empty rows.
+    const sym = String(symbol).trim().toUpperCase()
+    if (!/^[A-Z0-9._-]{1,12}$/.test(sym)) return NextResponse.json({ error: 'unknown_symbol' }, { status: 400 })
+    {
+      const canon = canonicalSymbol(sym) || sym
+      const { data: priced } = await supabaseAdminFresh
+        .from('price_snapshots')
+        .select('ticker')
+        .in('ticker', Array.from(new Set([sym, canon])))
+        .gte('timestamp', new Date(Date.now() - 24 * 3_600_000).toISOString())
+        .limit(1)
+      if (!priced || priced.length === 0) return NextResponse.json({ error: 'unknown_symbol' }, { status: 400 })
+    }
+
     // Check count (limit: 5 free, 25 premium)
     const { count } = await supabase
       .from('user_watchlists')
@@ -76,10 +94,10 @@ export async function POST(request: NextRequest) {
 
     const { error } = await supabase
       .from('user_watchlists')
-      .upsert({ user_id: userId, symbol: symbol.toUpperCase() }, { onConflict: 'user_id,symbol' })
+      .upsert({ user_id: userId, symbol: sym }, { onConflict: 'user_id,symbol' })
 
     if (error) throw error
-    return NextResponse.json({ success: true, symbol: symbol.toUpperCase() })
+    return NextResponse.json({ success: true, symbol: sym })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

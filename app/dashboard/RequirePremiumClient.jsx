@@ -1,10 +1,11 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 
 export default function RequirePremiumClient({ children }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [checked, setChecked] = useState(false)
   const [isPremium, setIsPremium] = useState(false)
 
@@ -15,7 +16,7 @@ export default function RequirePremiumClient({ children }) {
         const sb = supabaseBrowser()
         const { data: { session } } = await sb.auth.getSession()
         if (!session?.user) {
-          router.replace('/?login=1&required=/dashboard')
+          router.replace(`/?login=1&required=${encodeURIComponent(pathname || '/dashboard')}`)
           return
         }
         
@@ -43,7 +44,7 @@ export default function RequirePremiumClient({ children }) {
     }
     run()
     return () => { cancelled = true }
-  }, [router])
+  }, [router, pathname])
 
   if (!checked) return null
   

@@ -130,7 +130,7 @@ export async function POST(request: Request) {
     await trackServer(supabaseAdminFresh, {
       userId: user.id,
       event: 'alert_set',
-      props: { source: 'settings', kind, ticker: ticker || null },
+      props: { source: typeof (body as any)?.source === 'string' && /^[a-z_]{1,40}$/.test((body as any).source) ? (body as any).source : 'settings', kind, ticker: ticker || null },
       path: '/dashboard/personal',
     })
 

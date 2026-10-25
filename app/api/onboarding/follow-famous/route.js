@@ -195,6 +195,9 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: NO_STORE })
   }
   const slugs = Array.isArray(body?.slugs) ? body.slugs : body?.slug ? [body.slug] : []
+  // Where the follow came from (the welcome dialog by default; the Personal
+  // page's setup card sends 'personal_onboarding'), for the funnel props.
+  const source = typeof body?.source === 'string' && /^[a-z_]{1,40}$/.test(body.source) ? body.source : 'welcome'
   const wanted = Array.from(new Set(slugs.filter(isFamousSlug)))
   if (wanted.length === 0) {
     return NextResponse.json({ error: 'slug must be one of the famous wallets' }, { status: 400, headers: NO_STORE })
@@ -216,7 +219,7 @@ export async function POST(req) {
       writes.push(trackServer(supabaseAdmin, {
         userId: user.id,
         event: 'follow',
-        props: { source: 'welcome', slug: r.slug, addresses: r.newFollows },
+        props: { source, slug: r.slug, addresses: r.newFollows },
         path: '/dashboard',
       }))
     }
@@ -224,7 +227,7 @@ export async function POST(req) {
       writes.push(trackServer(supabaseAdmin, {
         userId: user.id,
         event: 'alert_set',
-        props: { source: 'welcome', kind: 'wallet_activity', slug: r.slug, rules: r.rulesCreated },
+        props: { source, kind: 'wallet_activity', slug: r.slug, rules: r.rulesCreated },
         path: '/dashboard',
       }))
     }

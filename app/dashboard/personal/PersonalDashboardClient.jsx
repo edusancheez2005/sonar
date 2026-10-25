@@ -26,6 +26,9 @@ import CopilotPane from '@/components/personal/CopilotPane'
 import Tray from '@/components/personal/Tray'
 import YourWhalesModule from '@/components/dashboard/YourWhalesModule'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import PersonalGate from '@/components/personal/PersonalGate'
+import PersonalFeedPage from '@/components/personal/v2/PersonalFeedPage'
+import PersonalSkeleton from '@/components/personal/v2/PersonalSkeleton'
 
 const MONO = "'JetBrains Mono', 'Fira Code', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace"
 
@@ -161,7 +164,24 @@ const TABS = [
   { key: 'alerts', label: 'Alerts' },
 ]
 
+// The redesigned page (components/personal/v2) is served at ?v=2 until
+// Eduardo signs it off; then it becomes the default and ?v=1 keeps this
+// one for a week.
 export default function PersonalDashboardClient() {
+  const [variant, setVariant] = useState(null)
+  useEffect(() => {
+    let v = 'v1'
+    try { if (new URLSearchParams(window.location.search).get('v') === '2') v = 'v2' } catch { /* ignore */ }
+    setVariant(v)
+  }, [])
+  if (variant === null) return <PersonalSkeleton />
+  if (variant === 'v2') {
+    return (
+      <PersonalGate>
+        {({ userId, isPremium }) => <PersonalFeedPage userId={userId} isPremium={isPremium} />}
+      </PersonalGate>
+    )
+  }
   return (
     <RequirePremiumClient>
       {() => <PersonalShell />}
