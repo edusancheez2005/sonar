@@ -54,6 +54,11 @@ const nextConfig = {
         destination: '/wallet-tracker/:address',
         permanent: true,
       },
+      {
+        source: '/frontier',
+        destination: '/solana-whale-tracker',
+        permanent: true,
+      },
     ]
   },
   async headers() {

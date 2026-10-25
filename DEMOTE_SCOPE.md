@@ -79,7 +79,6 @@ If the founder disagrees and wants to override to BULLISH/BEARISH, that decision
 |---|---|
 | [app/api/cron/compute-signals/route.js](app/api/cron/compute-signals/route.js) | Uses STRONG BUY/BUY/SELL/STRONG SELL internally to write to `token_signals.signal`. **Per §2.1, keep the engine running.** No change. |
 | [app/api/cron/evaluate-signals/route.js](app/api/cron/evaluate-signals/route.js) | Outcome evaluation. Keep. |
-| [app/api/frontier/accuracy/route.js](app/api/frontier/accuracy/route.js) | Public? If so, audit the response and gate or strip. | TODO (investigate) |
 | [src/views/Statistics.js](src/views/Statistics.js) | Legacy view from `src/` (not Next.js app dir). Confirm not routed. | TODO (verify dead) |
 | [app/lib/signalEngine.ts](app/lib/signalEngine.ts) | Internal type definition `SignalLabel`. Keep. |
 | [app/lib/technicalAnalysis.ts](app/lib/technicalAnalysis.ts) lines 106, 109 | Internal TA component score comments. Keep. |

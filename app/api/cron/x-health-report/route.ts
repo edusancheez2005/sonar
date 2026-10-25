@@ -212,19 +212,14 @@ export async function GET(req: Request) {
       issues.push(`CoinGecko logo lookup failing: ${coingeckoError} — token icons render as letters site-wide (check COINGECKO_API_KEY / free-tier 429s).`)
     }
 
-    // --- Solana tracked-wallet feed canary (Frontier page) -------------------
-    // 2026-10-01: Helius quota ran out and the Frontier page went blank for a
-    // day with nothing in the email. Age of the newest Solana transfer (index-
-    // friendly per-address read) + share of Solana poll states erroring.
-    let solanaFeedAgeH: number | null = null
+    // --- Solana feed canary ------------------------------------------------
+    // Two Solana inputs: the Railway whale monitor's solana_transactions (the
+    // Solana whale feed) and the hourly tracked-wallet poller's per-address
+    // states (Helius, with an RPC fallback). Report the whale feed's age and the
+    // share of Solana poll states erroring.
     let solanaPollErrorPct: number | null = null
     let solanaPollErrorSample: string | null = null
     try {
-      const { fetchSolanaTransfers } = await import('@/lib/frontier/solanaTransfers')
-      const { rows } = await fetchSolanaTransfers({ select: 'timestamp', sinceIso: new Date(now.getTime() - 7 * 24 * 3_600_000).toISOString(), perAddress: 1, limit: 1 })
-      const first = (rows as any[])[0] as { timestamp?: string } | undefined
-      const t = first?.timestamp ? Date.parse(first.timestamp) : NaN
-      if (Number.isFinite(t)) solanaFeedAgeH = Math.round((now.getTime() - t) / 3_600_000)
       const { data: ps } = await supabaseAdmin
         .from('tracked_address_poll_state')
         .select('last_error')
@@ -237,9 +232,6 @@ export async function GET(req: Request) {
         solanaPollErrorSample = errs[0]?.last_error?.slice(0, 80) || null
       }
     } catch (e: any) { solanaPollErrorSample = String(e?.message || e).slice(0, 80) }
-    // The Frontier page is now driven by the Railway whale monitor's
-    // solana_transactions (the tracked wallets are mostly dormant); that is the
-    // feed to page on. Tracked-feed age + poll errors stay in the report.
     let solanaWhaleAgeH: number | null = null
     try {
       const { data: w } = await supabaseAdmin.from('solana_transactions').select('timestamp').order('timestamp', { ascending: false }).limit(1)
@@ -247,7 +239,7 @@ export async function GET(req: Request) {
       if (Number.isFinite(t)) solanaWhaleAgeH = Math.round((now.getTime() - t) / 3_600_000)
     } catch { /* reported as unknown */ }
     if (solanaWhaleAgeH === null || solanaWhaleAgeH > 3) {
-      issues.push(`Solana whale feed (solana_transactions) stale: ${solanaWhaleAgeH === null ? 'no rows' : solanaWhaleAgeH + 'h'} — Frontier page empty; check the Railway whale-transaction-monitor.`)
+      issues.push(`Solana whale feed stale (Railway monitor): ${solanaWhaleAgeH === null ? 'no rows' : solanaWhaleAgeH + 'h'} — check whale-transaction-monitor.`)
     }
     if ((solanaPollErrorPct ?? 0) > 50) {
       issues.push(`${solanaPollErrorPct}% of Solana tracked-wallet polls erroring${solanaPollErrorSample ? ` (${solanaPollErrorSample})` : ''} — Helius quota? RPC fallback should be covering.`)
@@ -277,7 +269,7 @@ export async function GET(req: Request) {
       orca: { lastWhisperAgeHours: lastWhisperAgeH },
       alchemy: { ok: alchemyOk, error: alchemyError },
       coingecko: { ok: coingeckoOk, error: coingeckoError },
-      solana_feed: { whale_feed_age_h: solanaWhaleAgeH, tracked_newest_age_h: solanaFeedAgeH, poll_error_pct: solanaPollErrorPct, sample_error: solanaPollErrorSample },
+      solana_feed: { whale_feed_age_h: solanaWhaleAgeH, poll_error_pct: solanaPollErrorPct, sample_error: solanaPollErrorSample },
       orcaQuality: { answers24h: orcaAnswers24h, deadEnds24h: orcaDeadEnds24h },
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,
