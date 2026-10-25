@@ -204,7 +204,7 @@ export default function TryClient() {
           mirroring their trades would have looked like.
         </Sub>
         <Chips>
-          <Chip>70,000+ tracked wallets</Chip>
+          <Chip>42,000+ wallet profiles</Chip>
           <Chip>10+ chains · real-time</Chip>
           <Chip>Whale Score + backtests</Chip>
         </Chips>

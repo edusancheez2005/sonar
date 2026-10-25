@@ -183,10 +183,6 @@ export default function OrcaWelcome({ onExampleClick }) {
         
         <Stats>
           <Stat>
-            <StatValue>10M+</StatValue>
-            <StatLabel>News Analyzed</StatLabel>
-          </Stat>
-          <Stat>
             <StatValue>Real-Time</StatValue>
             <StatLabel>Whale Tracking</StatLabel>
           </Stat>

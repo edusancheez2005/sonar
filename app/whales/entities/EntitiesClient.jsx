@@ -250,7 +250,7 @@ export default function EntitiesClient() {
     <Container>
       <PageHeader>
         <Title>Named Entities & Famous Whales</Title>
-        <Subtitle>Track 70,000+ identified wallets across exchanges, institutions, protocols, and notable individuals</Subtitle>
+        <Subtitle>Track named wallets across exchanges, institutions, protocols, and notable individuals</Subtitle>
       </PageHeader>
 
       <Stats>

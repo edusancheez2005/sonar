@@ -81,18 +81,10 @@ function FaqJsonLd() {
           },
           {
             '@type': 'Question',
-            name: 'Is Sonar Tracker free to use and what are the pricing plans?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: 'Yes! Sonar Tracker is currently in demo phase and completely free to use for all users. You can access all core features including real-time whale tracking, advanced analytics, AI insights, comprehensive market data, and basic alert systems at no cost. We may introduce premium features in the future such as advanced portfolio tracking, custom API access, white-label solutions, or institutional-grade reporting tools. However, we are committed to maintaining a robust free tier that provides significant value to individual traders and small investment firms.'
-            },
-          },
-          {
-            '@type': 'Question',
             name: 'How do I set up custom whale alerts and notifications?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Setting up custom whale alerts is simple: 1) Create a free account on Sonar Tracker, 2) Navigate to the Alerts section in your dashboard, 3) Set your alert parameters including minimum transaction size (in USD), specific tokens to monitor, blockchain networks, and alert frequency, 4) Choose your notification preferences (email, in-app, SMS for premium users), 5) Save your alert configuration. Our AI system will continuously monitor for matching transactions and notify you instantly when whale activity meets your criteria. You can create multiple alert profiles for different trading strategies.'
+              text: 'Setting up custom whale alerts is simple: 1) Create a free account on Sonar Tracker, 2) Navigate to the Alerts section in your dashboard, 3) Set your alert parameters including minimum transaction size (in USD), specific tokens to monitor, blockchain networks, and alert frequency, 4) Choose your notification preferences (email, in-app), 5) Save your alert configuration. Our AI system will continuously monitor for matching transactions and notify you instantly when whale activity meets your criteria. You can create multiple alert profiles for different trading strategies.'
             },
           },
           {

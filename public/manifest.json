@@ -9,25 +9,17 @@
   "background_color": "#0a1621",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["finance", "business", "productivity"],
+  "categories": [
+    "finance",
+    "business",
+    "productivity"
+  ],
   "screenshots": [
     {
       "src": "screenshots/stats-dashboard.png",
       "sizes": "1200x630",
       "type": "image/png",
       "label": "Sonar Tracker Dashboard - Real-time crypto analytics"
-    },
-    {
-      "src": "screenshots/top-coins.png",
-      "sizes": "1200x630",
-      "type": "image/png",
-      "label": "Token leaderboards and market analysis"
-    },
-    {
-      "src": "screenshots/news-feed.png",
-      "sizes": "1200x630",
-      "type": "image/png",
-      "label": "Latest crypto market news and updates"
     }
   ],
   "icons": [
@@ -66,25 +58,13 @@
       "name": "Statistics",
       "short_name": "Stats",
       "description": "View token statistics and leaderboards",
-      "url": "/statistics",
-      "icons": [
-        {
-          "src": "screenshots/top-coins.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/statistics"
     },
     {
       "name": "News",
       "short_name": "News",
       "description": "Latest cryptocurrency market news",
-      "url": "/news",
-      "icons": [
-        {
-          "src": "screenshots/news-feed.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/news"
     }
   ]
-} 
+}

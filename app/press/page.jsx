@@ -218,7 +218,6 @@ export default function PressKit() {
             <li>Real-time tracking of cryptocurrency whale transactions over $10,000</li>
             <li>AI-powered market sentiment analysis with Orca 2.0</li>
             <li>Advanced token analytics and risk assessment</li>
-            <li>15-minute data refresh rate for institutional-grade accuracy</li>
             <li>Support for Ethereum with expansion to additional blockchains</li>
             <li>Premium analytics and CSV data export capabilities</li>
           </ul>
@@ -298,10 +297,7 @@ export default function PressKit() {
         >
           <h2>Key Statistics</h2>
           <ul>
-            <li><strong>10,000+</strong> Active Users</li>
-            <li><strong>500M+</strong> Transactions Tracked</li>
             <li><strong>24/7</strong> Real-Time Monitoring</li>
-            <li><strong>15-Minute</strong> Data Refresh Rate</li>
             <li><strong>$10,000</strong> Minimum Transaction Threshold</li>
             <li><strong>Ethereum</strong> Primary Blockchain (More Coming Soon)</li>
           </ul>

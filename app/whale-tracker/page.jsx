@@ -51,7 +51,7 @@ export default function WhaleTrackerPage() {
               { title: 'AI Destination Classification', desc: 'Each transaction is labelled by destination type (exchange-inflow, exchange-outflow, transfer, DeFi) using machine learning trained on millions of historical whale moves. Factual classification, not trading instructions.' },
               { title: 'ORCA AI Analysis', desc: 'Ask our AI analysis tool about any token. ORCA summarises whale flows, sentiment, news, and price data in plain English. Informational only.' },
               { title: 'Custom Alerts', desc: 'Set thresholds by token, chain, or USD value. Get notified when whales make moves that match your criteria.' },
-              { title: 'Whale Leaderboard', desc: 'See the most active whale wallets ranked by net flow, transaction count, and volume. Track 70,000+ identified wallets.' },
+              { title: 'Whale Leaderboard', desc: 'See the most active whale wallets ranked by net flow, transaction count, and volume. Track 42,000+ wallet profiles.' },
               { title: 'Token Heatmaps & Export', desc: 'Visualize whale activity with heatmaps. Export any data to CSV for your own analysis.' },
             ].map((item, i) => (
               <div key={i} style={{ background: 'rgba(13,33,52,0.6)', border: '1px solid rgba(54,166,186,0.15)', borderRadius: '12px', padding: '1.5rem' }}>
@@ -111,7 +111,7 @@ export default function WhaleTrackerPage() {
           {/* Final CTA */}
           <div style={{ textAlign: 'center', padding: '3rem 0' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#e8edf2', marginBottom: '1rem' }}>See the on-chain data.</h2>
-            <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>Join 700+ users who follow whale movements through Sonar. Informational only.</p>
+            <p style={{ color: '#8a9bb0', fontSize: '1.1rem', marginBottom: '2rem' }}>Follow whale movements as they happen. Informational only.</p>
             <a href="/subscribe" style={{ display: 'inline-block', padding: '1rem 2.5rem', borderRadius: '8px', background: 'linear-gradient(135deg, #36a6ba, #2d8a9a)', color: '#fff', fontWeight: 700, textDecoration: 'none', fontSize: '1.1rem' }}>Start Tracking Whales — Free</a>
           </div>
         </div>

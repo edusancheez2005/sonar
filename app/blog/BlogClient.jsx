@@ -274,44 +274,6 @@ const NewsletterSection = styled.section`
   }
 `
 
-const NewsletterForm = styled.form`
-  display: flex;
-  gap: 1rem;
-  max-width: 480px;
-  margin: 0 auto;
-  
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 1rem;
-  }
-`
-
-const EmailInput = styled.input`
-  flex: 1;
-  padding: 1rem 1.5rem;
-  background: var(--background-dark);
-  border: 2px solid var(--secondary);
-  border-radius: 30px;
-  color: var(--text-primary);
-  font-size: 1rem;
-  font-weight: 400;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  
-  &:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1),
-                0 4px 12px rgba(52, 152, 219, 0.15);
-    transform: translateY(-1px);
-  }
-  
-  &::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.7;
-  }
-`
-
 const SubscribeButton = styled.button`
   padding: 1.2rem 3.5rem;
   background: linear-gradient(135deg, var(--primary), #45a3d9);
@@ -580,9 +542,6 @@ const posts = [
 
 export default function BlogClient({ dynamicPosts = [] }) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [email, setEmail] = useState('')
-  const [subscribeMessage, setSubscribeMessage] = useState('')
-  const [isSubscribing, setIsSubscribing] = useState(false)
 
   // Merge AI-generated posts (from Supabase) with hardcoded ones, dedupe by slug, AI posts first.
   const seen = new Set()
@@ -603,25 +562,6 @@ export default function BlogClient({ dynamicPosts = [] }) {
     post.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.category.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
-  const handleSubscribe = async (e) => {
-    e.preventDefault()
-    setIsSubscribing(true)
-    try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      })
-      const json = await res.json()
-      setSubscribeMessage(res.ok ? 'Thanks! You\'re subscribed to whale alerts.' : (json.error || 'Error subscribing'))
-      if (res.ok) setEmail('')
-    } catch (err) {
-      setSubscribeMessage('Error subscribing. Please try again.')
-    } finally {
-      setIsSubscribing(false)
-    }
-  }
 
   return (
     <BlogContainer>
@@ -707,45 +647,13 @@ export default function BlogClient({ dynamicPosts = [] }) {
       )}
 
       <NewsletterSection>
-        <h3>Get Whale Alerts & Trading Insights</h3>
+        <h3>Get whale alerts by email</h3>
         <p>
-          Join 10,000+ traders getting real-time whale movements and market analysis delivered to your inbox
+          Free account, no card. Set a threshold, get an email when a whale crosses it.
         </p>
-        
-        <NewsletterForm onSubmit={handleSubscribe}>
-          <EmailInput
-            type="email"
-            placeholder="Enter your email for whale alerts"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <SubscribeButton type="submit" disabled={isSubscribing}>
-            {isSubscribing ? 'Subscribing...' : 'Get Alerts'}
-          </SubscribeButton>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.5rem', cursor: 'pointer' }}>
-            <input type="checkbox" required style={{ accentColor: '#00e5ff' }} />
-            I agree to receive whale alert emails. <a href="/privacy" style={{ color: '#00e5ff' }}>Privacy Policy</a>
-          </label>
-        </NewsletterForm>
-        
-        {subscribeMessage && (
-          <motion.p 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{ 
-              marginTop: '1.5rem', 
-              padding: '1rem',
-              borderRadius: '12px',
-              background: subscribeMessage.includes('Thanks') ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              color: subscribeMessage.includes('Thanks') ? '#22c55e' : '#ef4444',
-              border: `1px solid ${subscribeMessage.includes('Thanks') ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-              fontWeight: '500'
-            }}
-          >
-            {subscribeMessage}
-          </motion.p>
-        )}
+        <SubscribeButton as="a" href="/?signup=1" style={{ display: 'inline-block', textDecoration: 'none' }}>
+          Create a free account
+        </SubscribeButton>
       </NewsletterSection>
     </BlogContainer>
   )

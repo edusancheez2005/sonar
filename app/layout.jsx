@@ -56,18 +56,6 @@ export const metadata = {
         height: 630,
         alt: 'Sonar Tracker - Real-Time Crypto Whale Tracking Dashboard',
       },
-      {
-        url: '/screenshots/top-coins.png',
-        width: 1200,
-        height: 630,
-        alt: 'Sonar Tracker - Top Coin Analysis',
-      },
-      {
-        url: '/screenshots/news-feed.png',
-        width: 1200,
-        height: 630,
-        alt: 'Sonar Tracker - Crypto News Feed',
-      },
     ],
     type: 'website',
     locale: 'en_US',
@@ -228,8 +216,6 @@ function JsonLd() {
         description: 'Real-time crypto whale tracker and on-chain analytics platform with whale alerts and the ORCA AI research assistant.',
         screenshot: [
           `${siteUrl}/screenshots/stats-dashboard.png`,
-          `${siteUrl}/screenshots/top-coins.png`,
-          `${siteUrl}/screenshots/news-feed.png`,
         ],
       },
       {

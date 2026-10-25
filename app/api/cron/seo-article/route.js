@@ -147,7 +147,6 @@ export async function GET(req) {
 - Top whale tokens by volume: ${sorted.map(([t, v]) => `${t} ($${(v / 1e6).toFixed(1)}M)`).join(', ')}
 - Active signals: ${(signals || []).slice(0, 5).map(s => `${s.token}: ${s.signal} (${s.confidence}% confidence)`).join(', ')}
 - Market sentiment: ${(sentiment || []).slice(0, 5).map(s => `${s.ticker}: ${s.label}`).join(', ')}
-- Sonar tracks 10+ blockchains, 200+ tokens, with 700+ active traders using the platform
 
 IMPORTANT: Weave these real data points naturally into the article. Cite them as "According to Sonar Tracker data" or "Real-time data from sonartracker.io shows".`
       }

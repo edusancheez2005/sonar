@@ -229,7 +229,7 @@ const ChartCard = styled.div`
 `
 
 const BottomGrid = styled.div`
-  display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px;
+  display: grid; grid-template-columns: 1fr; gap: 12px;
   @media (max-width: 880px) { grid-template-columns: 1fr; }
 `
 
@@ -261,11 +261,13 @@ const TableRow = styled.div`
   }
 `
 
-const SignalRow = styled.div`
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 4px;
-  border-bottom: 1px solid rgba(120, 220, 240, 0.06);
-  &:last-child { border-bottom: none; }
+const PreviewCaption = styled.div`
+  font-family: ${FONT_MONO};
+  font-size: 11px; letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #8aa3b0;
+  text-align: center;
+  margin-bottom: 12px;
 `
 
 /* ── component ── */
@@ -278,12 +280,6 @@ const WHALES = [
   ['0xc2…4f70', 'USDT', '55M', 'Tether Treasury', '+$55M'],
 ]
 
-const SIGNALS = [
-  { tag: 'BUY', sym: 'SOL', txt: 'Bullish divergence · 1H', conf: 87 },
-  { tag: 'WATCH', sym: 'ETH', txt: 'Large exchange inflow', conf: 64 },
-  { tag: 'ALERT', sym: 'BTC', txt: 'Whale accumulation pattern', conf: 92 },
-]
-
 export default function DashboardPreview() {
   const [tab, setTab] = useState('whales')
 
@@ -294,6 +290,8 @@ export default function DashboardPreview() {
   }), [])
 
   return (
+    <>
+    <PreviewCaption>Illustrative preview · sample data</PreviewCaption>
     <Wrap>
       {/* Scanning line effect */}
       <motion.div
@@ -422,27 +420,11 @@ export default function DashboardPreview() {
               ))}
             </TableCard>
 
-            <TableCard>
-              <TableTitle>Active signals</TableTitle>
-              {SIGNALS.map((s, i) => (
-                <SignalRow key={i}>
-                  <div style={{
-                    padding: '3px 7px', borderRadius: 3, fontSize: 9, fontFamily: FONT_MONO,
-                    letterSpacing: 1,
-                    border: `1px solid ${s.tag === 'BUY' ? 'rgba(93,240,176,0.4)' : s.tag === 'ALERT' ? 'rgba(245,168,107,0.4)' : 'rgba(125,230,245,0.3)'}`,
-                    color: s.tag === 'BUY' ? '#5DF0B0' : s.tag === 'ALERT' ? '#F5A86B' : '#7FE3F5',
-                  }}>{s.tag}</div>
-                  <div style={{ flex: 1, fontSize: 12 }}>
-                    <div style={{ color: '#E6F7FB' }}>{s.sym} <span style={{ color: 'rgba(180,230,245,0.6)' }}>· {s.txt}</span></div>
-                  </div>
-                  <div style={{ fontFamily: FONT_MONO, fontSize: 11, color: '#7FE3F5' }}>{s.conf}%</div>
-                </SignalRow>
-              ))}
-            </TableCard>
           </BottomGrid>
           </motion.div>
         </Main>
       </Body>
     </Wrap>
+    </>
   )
 }

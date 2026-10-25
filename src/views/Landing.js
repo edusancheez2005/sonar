@@ -32,11 +32,6 @@ const shimmer = keyframes`
   50% { transform: translateX(100%); }
 `;
 
-const scrollCarousel = keyframes`
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-`;
-
 const marqueeScroll = keyframes`
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -182,7 +177,7 @@ const OrcaAccent = styled.span`
   font-weight: 800;
 `;
 
-const TrustSection = styled.section`
+const TapeProof = styled.section`
   padding: 4rem 2rem;
   background: linear-gradient(180deg, rgba(15, 25, 38, 0.6) 0%, rgba(13, 33, 52, 0.8) 100%);
   text-align: center;
@@ -190,125 +185,35 @@ const TrustSection = styled.section`
   h2 {
     font-size: 2.5rem;
     font-weight: 800;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
     background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  .subtitle {
-    font-size: 1.2rem;
+  figure {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(54, 166, 186, 0.25);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  figcaption {
+    margin-top: 1rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-bottom: 3rem;
-  }
-`;
-
-const TestimonialGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-`;
-
-const CarouselOuter = styled.div`
-  overflow: hidden;
-  width: 100%;
-  padding: 1rem 0;
-  mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
-`;
-
-const CarouselTrack = styled.div`
-  display: flex;
-  gap: 2rem;
-  width: max-content;
-  animation: ${scrollCarousel} 40s linear infinite;
-  &:hover { animation-play-state: paused; }
-`;
-
-const CarouselCard = styled.div`
-  flex-shrink: 0;
-  width: 380px;
-  background: linear-gradient(135deg, rgba(13, 33, 52, 0.9) 0%, rgba(26, 40, 56, 0.9) 100%);
-  border: 1px solid rgba(54, 166, 186, 0.3);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(54, 166, 186, 0.2);
   }
 
-  .rating { color: #FFD700; font-size: 1.2rem; margin-bottom: 1rem; }
-  .quote { font-size: 1.05rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1.5rem; font-style: italic; }
-
-  .author {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-
-    .avatar {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      overflow: hidden;
-      flex-shrink: 0;
-      border: 2px solid rgba(54, 166, 186, 0.4);
-
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-      }
-    }
-
-    .info {
-      text-align: left;
-      .name { font-weight: 600; color: var(--primary); font-size: 1.1rem; }
-      .title { font-size: 0.9rem; color: var(--text-secondary); }
-    }
-  }
-`;
-
-const TestimonialCard = styled(motion.div)`
-  background: linear-gradient(135deg, rgba(13, 33, 52, 0.9) 0%, rgba(26, 40, 56, 0.9) 100%);
-  border: 1px solid rgba(54, 166, 186, 0.3);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-
-  .rating { color: #FFD700; font-size: 1.2rem; margin-bottom: 1rem; }
-  .quote { font-size: 1.05rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1.5rem; font-style: italic; }
-
-  .author {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-
-    .avatar {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #36a6ba 0%, #5dd5ed 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1.2rem;
-      color: white;
-      flex-shrink: 0;
-      overflow: hidden;
-    }
-
-    .info {
-      text-align: left;
-      .name { font-weight: 600; color: var(--primary); font-size: 1.1rem; }
-      .title { font-size: 0.9rem; color: var(--text-secondary); }
-    }
+  @media (max-width: 700px) {
+    padding: 3rem 1rem;
+    h2 { font-size: 1.8rem; }
   }
 `;
 
@@ -637,16 +542,6 @@ const V2Ticker = styled.div`
   @media (max-width: 700px) { flex-wrap: wrap; font-size: 11px; }
 `;
 
-const V2TickerLive = styled.span`
-  color: #4ade80;
-  display: inline-flex; align-items: center; gap: 6px;
-  &::before {
-    content: ''; width: 6px; height: 6px; background: #4ade80; border-radius: 50%;
-    box-shadow: 0 0 8px #4ade80;
-    animation: ${heroPulse} 1.4s ease-in-out infinite;
-  }
-`;
-
 const V2TickerVal = styled.span`
   color: #67e8f9;
 `;
@@ -924,27 +819,27 @@ const Landing = () => {
         if (res.ok && !cancelled) {
           const json = await res.json();
           if (json.noData24h) {
-            setLiveTxnCount('1,247');
-            setLiveVolume('$412M');
+            setLiveTxnCount('—');
+            setLiveVolume('—');
             return;
           }
           const count = json.overall?.totalCount || 0;
           const vol = Math.abs(json.overall?.totalVolume || 0);
           const fmtVol = vol >= 1e9 ? `$${(vol/1e9).toFixed(2)}B` : vol >= 1e6 ? `$${(vol/1e6).toFixed(1)}M` : vol >= 1e3 ? `$${(vol/1e3).toFixed(0)}K` : `$${vol.toFixed(0)}`;
-          setLiveTxnCount(count > 0 ? count.toLocaleString() : '1,247');
-          setLiveVolume(vol > 0 ? fmtVol : '$412M');
+          setLiveTxnCount(count > 0 ? count.toLocaleString() : '—');
+          setLiveVolume(vol > 0 ? fmtVol : '—');
         } else if (!cancelled && attempt < 3) {
           setTimeout(() => fetchLiveStats(attempt + 1), 2000);
         } else if (!cancelled) {
-          setLiveTxnCount('1,247');
-          setLiveVolume('$412M');
+          setLiveTxnCount('—');
+          setLiveVolume('—');
         }
       } catch {
         if (!cancelled && attempt < 3) {
           setTimeout(() => fetchLiveStats(attempt + 1), 2000);
         } else if (!cancelled) {
-          setLiveTxnCount('1,247');
-          setLiveVolume('$412M');
+          setLiveTxnCount('—');
+          setLiveVolume('—');
         }
       }
     }
@@ -1082,6 +977,7 @@ const Landing = () => {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get('login') === '1' || params.has('verified')) setShowLoginModal(true);
+      if (params.get('signup') === '1') setShowSignupModal(true);
       if (params.get('required')) { setToastType('error'); setToastMsg('Please log in to access that page.'); setToastVisible(true); }
     } catch {}
   }, []);
@@ -1114,23 +1010,21 @@ const Landing = () => {
       <V2Hero>
         <Globe />
         <V2HeroContent>
-          <V2Eyebrow><V2EyebrowDot />LIVE ON 7 CHAINS</V2Eyebrow>
+          <V2Eyebrow><V2EyebrowDot />LIVE WHALE TAPE · ETHEREUM + BITCOIN ALERTS</V2Eyebrow>
           <V2Headline>
             <V2HeadlineAccent>Sonar</V2HeadlineAccent> Real-Time<br />
             Crypto Intelligence
           </V2Headline>
           <V2Sub>Your crypto market intelligence partner. Track whales. Read signals. Move first.</V2Sub>
           <V2Stats>
-            <V2Stat><b>700+</b> Happy Users</V2Stat>
-            <V2Stat><b>2,000+</b> Signals Generated</V2Stat>
-            <V2Stat><b>10M+</b> News Analyzed</V2Stat>
+            <V2Stat><b>42,000+</b> wallet profiles</V2Stat>{/* HEAD /rest/v1/wallet_profiles Prefer: count=exact → 42,138 on 2026-10-25, rounded down */}
+            <V2Stat><b>24/7</b> Ethereum whale tape</V2Stat>{/* checked 2026-10-25: newest Ethereum whale row under 5 min old (PostgREST, time-bounded) */}
+            <V2Stat><b>Bitcoin</b> whale moves, synced every 10 min</V2Stat>{/* cadence: the vercel.json cron for /api/whale-alerts/sync */}
           </V2Stats>
           <V2Ticker>
-            <V2TickerLive>LIVE</V2TickerLive>
+            <span><V2TickerVal>{liveTxnCount ?? '—'}</V2TickerVal> whale transactions tracked today</span>
             <V2TickerSep>│</V2TickerSep>
-            <span><V2TickerVal>{liveTxnCount || '2,155'}</V2TickerVal> whale transactions tracked today</span>
-            <V2TickerSep>│</V2TickerSep>
-            <span><V2TickerVal>{liveVolume || '$973.4M'}</V2TickerVal> total volume</span>
+            <span><V2TickerVal>{liveVolume ?? '—'}</V2TickerVal> total volume</span>
           </V2Ticker>
           <V2CtaRow>
             <V2BtnPrimary onClick={() => isLoggedIn ? navigate('/dashboard') : setShowSignupModal(true)}>{isLoggedIn ? 'Go to dashboard' : 'Get started free'}</V2BtnPrimary>
@@ -1401,20 +1295,6 @@ const Landing = () => {
                   </div>
                   <span style={{ fontSize: '0.6rem', color: '#3a4a5a', letterSpacing: '1px' }}>DASHBOARD</span>
                 </div>
-                {/* KPI row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
-                  {[
-                    { label: 'WHALE TXS', val: '1,247', color: '#00e5ff' },
-                    { label: 'NET FLOW', val: '+$18.3M', color: '#00e676' },
-                    { label: 'ACTIVE', val: '42', color: '#ffab00' },
-                  ].map((k, ki) => (
-                    <motion.div key={ki} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.5 + ki * 0.15 }}
-                      style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '0.75rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ fontSize: '0.5rem', color: '#4a5a6a', letterSpacing: '1px', marginBottom: '0.3rem' }}>{k.label}</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: k.color }}>{k.val}</div>
-                    </motion.div>
-                  ))}
-                </div>
                 {/* Mini chart with animated line */}
                 <svg viewBox="0 0 300 60" style={{ width: '100%', height: '60px' }}>
                   {[15, 30, 45].map(y => <line key={y} x1="0" y1={y} x2="300" y2={y} stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />)}
@@ -1424,25 +1304,9 @@ const Landing = () => {
                     initial={{ opacity: 0 }} whileInView={{ opacity: 0.3 }} viewport={{ once: true }} transition={{ delay: 2.5, duration: 0.8 }} />
                   <defs><linearGradient id="feat1grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00e5ff" stopOpacity="0.3" /><stop offset="100%" stopColor="#00e5ff" stopOpacity="0" /></linearGradient></defs>
                 </svg>
-                {/* Token rows */}
-                {[
-                  { tok: 'ETH', flow: '+$4.2M', pct: 85, c: '#00e676' },
-                  { tok: 'BTC', flow: '+$2.8M', pct: 60, c: '#ffab00' },
-                  { tok: 'SOL', flow: '-$1.1M', pct: 25, c: '#ff5252' },
-                ].map((r, ri) => (
-                  <motion.div key={ri} initial={{ opacity: 0, x: -15 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 1.2 + ri * 0.15 }}
-                    style={{ display: 'grid', gridTemplateColumns: '40px 1fr 60px', gap: '0.5rem', alignItems: 'center', padding: '0.3rem 0' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#c0d0e0' }}>{r.tok}</span>
-                    <div style={{ height: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
-                      <motion.div initial={{ width: 0 }} whileInView={{ width: `${r.pct}%` }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 1.5 + ri * 0.15 }}
-                        style={{ height: '100%', background: r.c, borderRadius: 2 }} />
-                    </div>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: r.c, textAlign: 'right' }}>{r.flow}</span>
-                  </motion.div>
-                ))}
               </div>
               <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e8edf2', marginBottom: '0.5rem', letterSpacing: '-0.01em' }}>Real-Time Dashboard</h3>
-              <p style={{ color: '#6a7a8a', lineHeight: 1.7, fontSize: '0.95rem', margin: 0 }}>Track whale accumulation, distribution, and token flows across every major blockchain. Live data, sub-second updates.</p>
+              <p style={{ color: '#6a7a8a', lineHeight: 1.7, fontSize: '0.95rem', margin: 0 }}>Follow whale inflows and outflows, token by token, on Ethereum.</p>
             </motion.div>
 
             {/* ── Panel 2: ORCA AI ── */}
@@ -1458,30 +1322,7 @@ const Landing = () => {
                   <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.8 }}
                     style={{ fontSize: '0.6rem', color: '#00e676', fontFamily: FONT_MONO }}>● Online</motion.span>
                 </div>
-                {/* User message */}
-                <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.6 }}
-                  style={{ background: 'rgba(0, 229, 255, 0.06)', border: '1px solid rgba(0, 229, 255, 0.1)', borderRadius: '10px 10px 10px 2px', padding: '0.75rem 1rem', marginBottom: '0.75rem', maxWidth: '85%' }}>
-                  <p style={{ fontSize: '0.8rem', color: '#b0c4d4', margin: 0, lineHeight: 1.5 }}>Why is ETH pumping right now?</p>
-                </motion.div>
-                {/* AI response — typed in */}
-                <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 1.0 }}
-                  style={{ background: 'rgba(155, 89, 182, 0.06)', border: '1px solid rgba(155, 89, 182, 0.12)', borderRadius: '10px 10px 2px 10px', padding: '0.75rem 1rem', marginLeft: 'auto', maxWidth: '90%' }}>
-                  <p style={{ fontSize: '0.8rem', color: '#c0d0e0', margin: 0, lineHeight: 1.6 }}>
-                    <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 1.3 }}>3 whale wallets accumulated <span style={{ color: '#00e676', fontWeight: 700 }}>$12.4M ETH</span> in the last 2 hours.</motion.span>
-                    <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 1.8 }}> Social sentiment shifted <span style={{ color: '#00e676', fontWeight: 700 }}>bullish (+34%)</span> after Vitalik's L2 post.</motion.span>
-                    <motion.span initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 2.3 }}> Signal: <span style={{ color: '#00e676', fontWeight: 700 }}>BUY — 87% confidence</span>.</motion.span>
-                  </p>
-                </motion.div>
-                {/* Confidence bar */}
-                <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 2.8 }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(0, 230, 118, 0.05)', borderRadius: '8px', border: '1px solid rgba(0, 230, 118, 0.1)' }}>
-                  <span style={{ fontSize: '0.6rem', color: '#5a6a7a', fontFamily: FONT_MONO, letterSpacing: '1px' }}>CONFIDENCE</span>
-                  <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
-                    <motion.div initial={{ width: 0 }} whileInView={{ width: '87%' }} viewport={{ once: true }} transition={{ duration: 1, delay: 3.0, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ height: '100%', background: 'linear-gradient(90deg, #ffab00, #00e676)', borderRadius: 2 }} />
-                  </div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#00e676', fontFamily: FONT_MONO }}>87%</span>
-                </motion.div>
+                <p style={{ fontSize: '0.8rem', color: '#8a9bb0', margin: 0, lineHeight: 1.6 }}>Ask about any coin: what whales moved, what the news says, what changed today. Research only, not financial advice.</p>
               </div>
               <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e8edf2', marginBottom: '0.5rem', letterSpacing: '-0.01em' }}>ORCA AI Analysis</h3>
               <p style={{ color: '#6a7a8a', lineHeight: 1.7, fontSize: '0.95rem', margin: 0 }}>Our crypto-trained AI reads whale movements, news, and social sentiment — then tells you what matters and why.</p>
@@ -1591,16 +1432,7 @@ const Landing = () => {
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00e676', display: 'inline-block' }}/>ONLINE
                 </span>
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'rgba(0, 229, 255, 0.7)', marginBottom: '0.75rem' }}>You: "Should I buy Bitcoin right now?"</div>
-              <div style={{ fontSize: '0.75rem', color: '#e0e6ed', lineHeight: '1.7' }}>
-                <span style={{ fontWeight: 700, color: '#00e5ff' }}>Price & Technical:</span> BTC at <span style={{ color: '#00e676' }}>`$71,000`</span> with +8.9% 7d momentum. Bullish trend confirmed by rising volume.
-                <br/><br/>
-                <span style={{ fontWeight: 700, color: '#00e5ff' }}>Whale Intelligence:</span> <span style={{ color: '#00e676' }}>`$190M`</span> net inflow. 42 buy txns vs 46 sells but buy volume 4x higher. Multiple <span style={{ color: '#00e676' }}>`$50M+`</span> Coinbase to cold storage moves. <span style={{ fontWeight: 700, color: '#00e676' }}>Strong accumulation.</span>
-                <br/><br/>
-                <span style={{ fontWeight: 700, color: '#00e5ff' }}>Live X/Twitter:</span> @lookonchain reports BlackRock IBIT saw <span style={{ color: '#00e676' }}>`$380M`</span> inflows this week. @WClementeIII flagging bull flag formation on the daily.
-                <br/><br/>
-                <span style={{ fontWeight: 700, color: '#00e5ff' }}>Verdict:</span> <span style={{ fontWeight: 700, color: '#00e676' }}>HIGH CONVICTION BULLISH</span>. Whale accumulation + ETF inflows + macro tailwinds all align.
-              </div>
+              <p style={{ fontSize: '0.8rem', color: '#8a9bb0', margin: 0, lineHeight: 1.6 }}>Ask about any coin: what whales moved, what the news says, what changed today. Research only, not financial advice.</p>
             </motion.div>
 
             {/* Feature list + CTA */}
@@ -1636,41 +1468,17 @@ const Landing = () => {
         </motion.div>
       </section>
 
-      {/* ─── TESTIMONIALS CAROUSEL ─── */}
-      <TrustSection>
+      {/* ─── PROOF: THE PRODUCT ITSELF ─── */}
+      <TapeProof>
         <motion.h2 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}>
-          700+ traders. $2B+ volume tracked.
+          Built on the tape, not on opinions.
         </motion.h2>
-        <p className="subtitle">Don't take our word for it.</p>
-
-        <CarouselOuter>
-          <CarouselTrack>
-            {/* Duplicate array for infinite scroll effect */}
-            {[...Array(2)].flatMap((_, dupeIdx) => [
-              { name: 'Crypto Trader', role: 'Verified User', quote: 'The whale tracking alerts helped me understand market movements I was completely missing before. Great tool for staying informed.', img: '/assets/faces/face-1.png' },
-              { name: 'Portfolio Analyst', role: 'Verified User', quote: 'I used to wonder why prices suddenly moved. Seeing whale transaction data in real-time gave me context I never had before.', img: '/assets/faces/face-2.png' },
-              { name: 'DeFi Researcher', role: 'Verified User', quote: 'The AI analysis tools help me process on-chain data much faster. Useful for tracking large SOL and ETH movements.', img: '/assets/faces/face-3.png' },
-              { name: 'On-Chain Analyst', role: 'Verified User', quote: 'Clean interface, fast whale alerts, and the ORCA AI advisor gives surprisingly insightful analysis. Good value for the price.', img: '/assets/faces/face-4.png' },
-              { name: 'Swing Trader', role: 'Verified User', quote: 'The sentiment analysis paired with whale tracking provides useful data points. Helps me stay informed about market conditions.', img: '/assets/faces/face-6.png' },
-              { name: 'Institutional Analyst', role: 'Verified User', quote: 'We use Sonar to monitor large transaction flows across multiple chains. The multi-chain coverage is comprehensive.', img: '/assets/faces/face-7.png' },
-              { name: 'Quant Researcher', role: 'Verified User', quote: 'The whale flow data is clean and well-organized. Useful for research and understanding market microstructure.', img: '/assets/faces/face-5.png' },
-              { name: 'Crypto Enthusiast', role: 'Verified User', quote: 'Sonar makes on-chain data accessible. The dashboard is intuitive and the AI explanations help me learn about whale behaviour.', img: '/assets/faces/face-8.png' },
-            ].map((t, i) => (
-              <CarouselCard key={`${dupeIdx}-${i}`}>
-                <div className="rating">★★★★★</div>
-                <p className="quote">"{t.quote}"</p>
-                <div className="author">
-                  <div className="avatar"><img src={t.img} alt={t.name} /></div>
-                  <div className="info">
-                    <div className="name">{t.name}</div>
-                    <div className="title">{t.role}</div>
-                  </div>
-                </div>
-              </CarouselCard>
-            )))}
-          </CarouselTrack>
-        </CarouselOuter>
-      </TrustSection>
+        <figure>
+          <img src="/screenshots/news-terminal.png" width={1440} height={900} style={{ width: '100%', height: 'auto' }} loading="lazy" alt="Sonar News Terminal with live crypto headlines" />
+          <figcaption>The News Terminal — live headlines ranked by whale and sentiment context.</figcaption>
+        </figure>
+        {/* TAPE_SLOT */}
+      </TapeProof>
 
       {/* ─── PRICING ─── */}
       <PricingSection id="pricing">
@@ -1731,18 +1539,9 @@ const Landing = () => {
             style={{ background: 'rgba(26, 40, 56, 0.8)', border: '1px solid rgba(54, 166, 186, 0.2)', borderRadius: '20px', padding: '2.5rem', backdropFilter: 'blur(10px)', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)', transition: 'all 0.3s ease' }}>
             <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Enterprise</h3>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>For funds & teams</div>
-            <div><span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Custom</span></div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Tailored to your needs</div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '1rem 0' }}>
-              {['Everything in Pro', 'API access', 'White-label options', 'Dedicated account manager', 'Custom integrations', 'SLA guarantees'].map((f, i) => (
-                <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {f}
-                </li>
-              ))}
-            </ul>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '1rem 0 1.5rem' }}>Need an API or a team plan?</p>
             <Button className="secondary" style={{ width: '100%', borderRadius: '12px' }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => navigate('/contact')}>
-              Contact Sales
+              Contact us
             </Button>
           </motion.div>
         </div>
@@ -1787,7 +1586,7 @@ const Landing = () => {
             Follow the Pods with Sonar Precision
           </AdvisorTitle>
           <AdvisorSub initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.45, delay: 0.15 }}>
-            Personalized trading ideas from whale flows, risk-managed entries, and instant alerts. Get premium access to the most advanced crypto intelligence platform.
+            Whale flows, news and alerts, explained in plain English. Get premium access to the most advanced crypto intelligence platform.
           </AdvisorSub>
           <Button className="primary"
             style={{ width: '100%', maxWidth: '400px', margin: '2rem auto 0', padding: '1.2rem 3rem', fontSize: '1.2rem', fontWeight: '700', borderRadius: '12px', background: 'linear-gradient(135deg, #36a6ba 0%, #2d8a9a 100%)', color: '#ffffff', border: 'none', boxShadow: '0 8px 24px rgba(54, 166, 186, 0.35)', display: 'block' }}
@@ -1874,7 +1673,7 @@ const Landing = () => {
               </motion.div>
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
                 style={{ marginTop: 'auto', paddingTop: '2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
-                Trusted by 700+ traders worldwide
+                Free account. No card required.
               </motion.p>
             </div>
 
