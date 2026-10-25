@@ -112,6 +112,19 @@ describe('runCheckUserAlerts', () => {
     expect(res.inserted).toBe(0)
   })
 
+  it('records a telemetry row even when nothing fires', async () => {
+    const sb: any = makeSupabase({ profiles: [] })
+    const traces: any[] = []
+    const from = sb.from.bind(sb)
+    sb.from = (table: string) => table === 'orca_traces'
+      ? { insert: (row: any) => { traces.push(row); return Promise.resolve({ data: null, error: null }) } }
+      : from(table)
+    await runCheckUserAlerts(sb, { now: NOW })
+    expect(traces).toHaveLength(1)
+    expect(traces[0].stage).toBe('alerts')
+    expect(traces[0].payload.triggered).toBe(0)
+  })
+
   it('delivers to an owner with no user_profile row at the default cadence', async () => {
     // Most Google sign-ups never got a profile row; notifications_in_app
     // defaults to true, so their alerts must still fire.

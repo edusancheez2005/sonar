@@ -380,7 +380,10 @@ export async function runCheckUserAlerts(
   const styleByUser = owners.length > 0 ? await loadOwnerStyles(supabase, owners) : new Map<string, NotificationStyle>()
   rules = rules.filter((r) => styleByUser.has(r.user_id))
   result.rules_evaluated = rules.length
-  if (rules.length === 0) return result
+  if (rules.length === 0) {
+    await recordRun(supabase, result, now)
+    return result
+  }
 
   // 4. Evaluate each rule, memoising shared reads by (kind, ticker, threshold).
   const memo = new Map<string, Promise<NotificationCopy | null>>()
@@ -472,7 +475,10 @@ export async function runCheckUserAlerts(
     list.push({ rule, copy })
     candidatesByUser.set(rule.user_id, list)
   }
-  if (candidatesByUser.size === 0) return result
+  if (candidatesByUser.size === 0) {
+    await recordRun(supabase, result, now)
+    return result
+  }
 
   // Names for wallet titles ("Binance moved $42M"), only when one fired.
   const walletFired = evaluated.some(({ rule, copy }) => !!copy && rule.kind === 'wallet_activity')
@@ -605,7 +611,17 @@ export async function runCheckUserAlerts(
     }
   }
 
-  // 6. Telemetry (best-effort).
+  // 6. Telemetry.
+  await recordRun(supabase, result, now)
+  return result
+}
+
+/**
+ * One orca_traces row per run, quiet runs included: the health report's
+ * "no runs in 24h" check reads these, and whale_flow is edge-triggered, so
+ * most runs now fire nothing. Best-effort.
+ */
+async function recordRun(supabase: SupabaseLike, result: CheckResult, now: () => Date): Promise<void> {
   try {
     await supabase.from('orca_traces').insert({
       stage: 'alerts',
@@ -622,6 +638,4 @@ export async function runCheckUserAlerts(
   } catch {
     /* swallow */
   }
-
-  return result
 }
