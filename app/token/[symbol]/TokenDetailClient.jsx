@@ -1423,9 +1423,17 @@ export default function TokenDetailClient({ symbol, sinceHours, data, whaleMetri
               {socialData.sentiment != null && (
                 <MetricCard>
                   <MetricLabel>Social Sentiment</MetricLabel>
-                  <MetricValue style={{ color: socialData.sentiment >= 60 ? COLORS.green : socialData.sentiment >= 40 ? COLORS.amber : COLORS.red }}>
+                  {/* The number stays neutral; the tag's colour matches its own word
+                      (a "35% bullish" label used to render in red). */}
+                  <MetricValue style={{ color: '#c4cfdb' }}>
                     {socialData.sentiment}% bullish
                   </MetricValue>
+                  <span style={{
+                    fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.3px',
+                    color: socialData.sentiment >= 55 ? COLORS.green : socialData.sentiment < 45 ? COLORS.red : '#8896a6',
+                  }}>
+                    {socialData.sentiment >= 55 ? 'bullish-leaning' : socialData.sentiment < 45 ? 'bearish-leaning' : 'mixed'}
+                  </span>
                 </MetricCard>
               )}
               {socialData.social_dominance != null && (
