@@ -5,7 +5,7 @@
  */
 import { supabaseAdmin } from '@/app/lib/supabaseAdmin'
 import { loadWhaleRotation } from '@/lib/trending/whaleRotation'
-import { Page, H1, Split } from './primitives'
+import { Page, H1 } from './primitives'
 import WhaleRotationPanel from './WhaleRotationPanel'
 import MoversPanel from './MoversPanel'
 import SentimentPanel from './SentimentPanel'
@@ -21,10 +21,8 @@ export default async function TrendingPage() {
     <Page>
       <H1>Trending crypto by whale flow</H1>
       <WhaleRotationPanel rotation={rotation} />
-      <Split>
-        <MoversPanel />
-        <SentimentPanel />
-      </Split>
+      <MoversPanel />
+      <SentimentPanel />
     </Page>
   )
 }
