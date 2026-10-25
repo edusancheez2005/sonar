@@ -86,6 +86,8 @@ const HIDE_DRAWER_PREFIXES = [
   '/privacy',
   '/terms',
   '/subscribe',
+  // The Personal page has ORCA inline under the feed (2026-10-25).
+  '/dashboard/personal',
 ]
 
 export function shouldShowDrawer(pathname: string | null | undefined): boolean {

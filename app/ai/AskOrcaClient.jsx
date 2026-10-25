@@ -247,6 +247,22 @@ const Body = styled.div`
   a { color: ${colors.primary}; }
 `
 
+const InlineMessages = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 0.25rem 0.25rem 1rem;
+  margin-bottom: 0.75rem;
+`
+const InlineChips = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+`
+
 const StickyInputWrap = styled.div`
   position: sticky;
   bottom: 0;
@@ -534,6 +550,11 @@ export default function AskOrcaClient({
   // The drawer opened from a command chip ("Follow Wintermute"): send it at
   // once; writes still wait for the Confirm card.
   autoSendInitial = false,
+  // Inline on a page (the Personal page, 2026-10-25): no hero, suggestions as
+  // given, a scrolling message box, no page scrolling or keyboard shortcuts.
+  inline = false,
+  suggestions = null,
+  placeholder = null,
 } = {}) {
   const searchParams = useSearchParams()
   // Props win over URL params so the drawer (which has no URL of its own)
@@ -562,9 +583,10 @@ export default function AskOrcaClient({
   const messagesEndRef = useRef(null)
 
   const chips = useMemo(
-    () => getSuggestedChips({ ticker, wallet }),
-    [ticker, wallet]
+    () => (Array.isArray(suggestions) && suggestions.length ? suggestions : getSuggestedChips({ ticker, wallet })),
+    [ticker, wallet, suggestions]
   )
+  const scrollBoxRef = useRef(null)
 
   useEffect(() => {
     const sb = supabaseBrowser()
@@ -578,8 +600,14 @@ export default function AskOrcaClient({
     // The default (block:'start') aligned the END marker with the TOP of the
     // window, so a finished answer scrolled out of view and the user was left
     // looking at the follow-up box and the footer (seen live 2026-09-30).
+    if (inline) {
+      // Scroll the message box, never the page around it.
+      const box = scrollBoxRef.current
+      if (box) box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' })
+      return
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages.length, loading])
+  }, [messages.length, loading, inline])
 
   useEffect(() => {
     if (autoSentRef.current || !session || messages.length > 0) return
@@ -614,7 +642,7 @@ export default function AskOrcaClient({
 
   // Keyboard shortcuts: 1/2/3/4 trigger the corresponding chip when empty.
   useEffect(() => {
-    if (messages.length > 0) return
+    if (messages.length > 0 || inline) return
     function onKey(e) {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return
       const n = parseInt(e.key, 10)
@@ -625,7 +653,7 @@ export default function AskOrcaClient({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [chips, messages.length])
+  }, [chips, messages.length, inline])
 
   // origin feeds the orca_question funnel event: typed | chip | auto_link | auto_first
   async function sendMessage(rawQuestion, origin = 'typed') {
@@ -890,6 +918,71 @@ export default function AskOrcaClient({
 
   // Render — hero state vs conversation state.
   const showHero = messages.length === 0
+
+  if (inline) {
+    return (
+      <Shell $embedded>
+        {!showHero && (
+          <InlineMessages ref={scrollBoxRef} data-testid="orca-inline-messages">
+            {messages.map((m) => (
+              <Bubble key={m.id}>
+                <Role $isUser={m.role === 'user'}>{m.role === 'user' ? 'You' : 'ORCA'}</Role>
+                <Body>
+                  {m.role === 'user' ? (
+                    m.content
+                  ) : m.confirmPending ? (
+                    <ConfirmCard>
+                      <div style={{ marginBottom: '0.85rem' }}>{m.confirmPending.label}</div>
+                      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        <ConfirmBtn type="button" onClick={() => handleConfirm(m.id, true)} disabled={!!m.confirmPending.executing}>
+                          {m.confirmPending.executing ? 'Working…' : 'Confirm'}
+                        </ConfirmBtn>
+                        <CancelBtn type="button" onClick={() => handleConfirm(m.id, false)} disabled={!!m.confirmPending.executing}>
+                          Cancel
+                        </CancelBtn>
+                      </div>
+                    </ConfirmCard>
+                  ) : (
+                    <>
+                      <OrcaMarkdown>{m.content || ''}</OrcaMarkdown>
+                      {m.data?.price && <TokenDataCard message={m} />}
+                    </>
+                  )}
+                </Body>
+              </Bubble>
+            ))}
+            {loading && <Status role="status">{statusText || 'Thinking…'}</Status>}
+          </InlineMessages>
+        )}
+        <InputCard onSubmit={onSubmit} style={{ maxWidth: 'none' }}>
+          <HeroInput
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={showHero ? (placeholder || 'Ask anything, or tell ORCA what to do') : 'Ask a follow-up…'}
+            disabled={loading}
+            aria-label="Message ORCA"
+            data-testid="orca-inline-input"
+          />
+          <SendBtn type="submit" disabled={loading || !input.trim()}>
+            {loading ? '…' : showHero ? 'Ask' : 'Send'}
+          </SendBtn>
+        </InputCard>
+        {error && <ErrorLine>{error}</ErrorLine>}
+        {showHero && (
+          <InlineChips>
+            {chips.map((chip) => (
+              <Chip key={chip.label} type="button" onClick={() => sendMessage(chip.prompt, 'chip')} disabled={loading} data-testid="orca-inline-suggestion">
+                {chip.label}
+              </Chip>
+            ))}
+          </InlineChips>
+        )}
+        <Disclaimer style={{ textAlign: 'left', padding: '0.6rem 0 0' }}>
+          ORCA provides educational analysis only. Not financial advice.
+        </Disclaimer>
+      </Shell>
+    )
+  }
 
   return (
     <Shell $embedded={embedded}>

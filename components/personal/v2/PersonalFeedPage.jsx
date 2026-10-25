@@ -18,7 +18,7 @@ import OnboardingCard from './OnboardingCard'
 import Feed, { AlertFireCard } from './Feed'
 import { CoinsCard, WalletsCard, AlertsCard, MarketCard, MacroCard, ruleText } from './Rail'
 import PersonalSkeleton from './PersonalSkeleton'
-import AskOrcaActions from './AskOrcaActions'
+import OrcaPanel from './OrcaPanel'
 import UpsellSlot from '../UpsellSlot'
 import { Button, Card, SecHead, Muted, hhmmUtc } from './ui'
 
@@ -265,6 +265,7 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
               />
             </>
           )}
+          <OrcaPanel />
         </Column>
 
         <Column ref={railRef}>
@@ -278,7 +279,6 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
               <CoinsCard tickers={tickers} onAdd={addCoin} onRemove={removeCoin} busy={busy.coin} />
               <WalletsCard wallets={follows.wallets} now={now} />
               <AlertsCard rules={alerts.rules} names={names} onManage={scrollToAlerts} />
-              <AskOrcaActions />
               <UpsellSlot isPremium={isPremium} />
             </>
           )}
