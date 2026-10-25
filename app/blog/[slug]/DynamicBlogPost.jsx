@@ -48,6 +48,21 @@ const TagRow = styled.div`
   border-top: 1px solid var(--secondary);
 `
 
+// The one fixed call to action under every database post (never generated).
+const Cta = styled.aside`
+  margin-top: 2.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 229, 255, 0.04);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  p { margin: 0; color: var(--text-primary); font-weight: 600; flex: 1 1 260px; }
+  a { font-weight: 600; white-space: nowrap; }
+`
+
 const Loading = styled.div`
   max-width: 800px; margin: 0 auto; padding: 8rem 2rem;
   text-align: center; color: var(--text-secondary);
@@ -86,6 +101,11 @@ export default function DynamicBlogPost({ slug, initialPost = null }) {
         {updated && <span>Updated {updated}</span>}
       </Meta>
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
+      <Cta aria-label="Next steps">
+        <p>See what whales are doing right now</p>
+        <a href="/whale-tracker">Live whale tracker →</a>
+        <a href={`/ai-advisor?q=${encodeURIComponent(`Explain this in plain English: ${post.title || ''}`)}`}>Ask ORCA about this →</a>
+      </Cta>
       {(post.tags || []).length > 0 && (
         <TagRow>
           {(post.tags || []).slice(0, 6).map(t => <Tag key={t}>{t}</Tag>)}

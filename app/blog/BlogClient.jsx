@@ -1,311 +1,120 @@
 'use client'
-import React, { useState } from 'react'
+/**
+ * Blog index: the newest guides as featured image cards, every other guide
+ * as an image card (cover, or a designed fallback — never an empty slot),
+ * and the weekly whale pulse as a compact dated list. Search filters all of
+ * them into one list.
+ */
+import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import styled from 'styled-components'
-import { motion } from 'framer-motion'
+import { T } from '@/lib/ui/tokens'
 
-
-
-const BlogContainer = styled.main`
+const Page = styled.main`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 4rem 2rem;
-  min-height: 100vh;
-  background: var(--background-dark);
+  padding: 32px 24px 64px;
+  color: ${T.body};
+  font-family: ${T.font.sans};
+  @media (max-width: 760px) { padding: 20px 16px 48px; }
 `
-
-const BlogHeader = styled.div`
-  text-align: center;
-  margin-bottom: 5rem;
-  padding: 2rem 0;
-`
-
-const BlogTitle = styled.h1`
-  font-size: 4rem;
-  font-weight: 700;
-  color: var(--primary);
-  margin-bottom: 1.5rem;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  
-  @media (max-width: 768px) {
-    font-size: 2.8rem;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 2.2rem;
-  }
-`
-
-const BlogSubtitle = styled.p`
-  font-size: 1.3rem;
-  font-weight: 400;
-  color: var(--text-secondary);
-  max-width: 700px;
-  margin: 0 auto 2.5rem;
-  line-height: 1.6;
-  letter-spacing: 0.01em;
-  
-  @media (max-width: 768px) {
-    font-size: 1.1rem;
-    max-width: 90%;
-  }
-`
-
-const SearchBar = styled.div`
-  margin: 0 auto;
-  max-width: 600px;
-  position: relative;
-`
-
-const SearchInput = styled.input`
-  width: 100%;
-  padding: 1.2rem 2rem;
-  background: var(--background-secondary);
-  border: 2px solid var(--secondary);
-  border-radius: 30px;
-  color: var(--text-primary);
-  font-size: 1.1rem;
-  font-weight: 400;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  
-  &:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1), 
-                0 8px 25px rgba(52, 152, 219, 0.15);
-    transform: translateY(-1px);
-  }
-  
-  &::placeholder {
-    color: var(--text-secondary);
-    font-weight: 400;
-    opacity: 0.7;
-  }
-  
-  @media (max-width: 768px) {
-    padding: 1rem 1.5rem;
-    font-size: 1rem;
-  }
-`
-
-const PostsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: 2.5rem;
-  margin-top: 4rem;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    margin-top: 3rem;
-  }
-`
-
-const PostCard = styled(motion.article)`
-  background: var(--background-secondary);
-  border: 1px solid var(--secondary);
-  border-radius: 20px;
-  padding: 2.5rem;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary), #45a3d9);
-    transform: scaleX(0);
-    transition: transform 0.4s ease;
-  }
-  
-  &:hover {
-    border-color: var(--primary);
-    box-shadow: 0 12px 40px rgba(52, 152, 219, 0.15),
-                0 4px 20px rgba(0, 0, 0, 0.1);
-    transform: translateY(-8px);
-    
-    &::before {
-      transform: scaleX(1);
-    }
-  }
-  
-  @media (max-width: 768px) {
-    padding: 2rem;
-    
-    &:hover {
-      transform: translateY(-4px);
-    }
-  }
-`
-
-const PostTitle = styled.h2`
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 1.2rem;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-  
-  @media (max-width: 768px) {
-    font-size: 1.4rem;
-    margin-bottom: 1rem;
-  }
-`
-
-const PostSummary = styled.p`
-  color: var(--text-secondary);
-  line-height: 1.7;
-  margin-bottom: 2rem;
-  font-size: 1rem;
-  font-weight: 400;
-  opacity: 0.9;
-  
-  @media (max-width: 768px) {
-    font-size: 0.95rem;
-    margin-bottom: 1.5rem;
-  }
-`
-
-const PostMeta = styled.div`
+const Head = styled.header`
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  
-  @media (max-width: 480px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  h1 { margin: 0 0 6px; font-size: 28px; font-weight: 600; color: ${T.ink}; }
+  p { margin: 0; font-size: 14px; color: ${T.muted}; max-width: 60ch; }
 `
-
-const ReadTime = styled.span`
-  background: linear-gradient(135deg, var(--primary), #45a3d9);
-  color: white;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+const Search = styled.input`
+  width: 280px;
+  max-width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: ${T.radius.md};
+  border: 1px solid ${T.hairlineStrong};
+  background: ${T.surface2};
+  color: ${T.ink};
+  font-size: 13px;
+  &:focus { outline: none; border-color: ${T.accent}; }
 `
-
-const CategoryTag = styled.span`
-  background: rgba(52, 152, 219, 0.12);
-  color: var(--primary);
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-  display: inline-block;
-  letter-spacing: 0.02em;
-  border: 1px solid rgba(52, 152, 219, 0.2);
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: rgba(52, 152, 219, 0.2);
-    transform: translateY(-1px);
-  }
-`
-
-const NewsletterSection = styled.section`
-  background: linear-gradient(135deg, var(--background-secondary) 0%, rgba(52, 152, 219, 0.05) 100%);
-  border: 1px solid var(--secondary);
-  border-radius: 24px;
-  padding: 4rem 3rem;
-  text-align: center;
-  margin: 5rem 0 3rem;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--primary), #45a3d9, var(--primary));
-  }
-  
-  h3 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: var(--primary);
-    margin-bottom: 1rem;
-    letter-spacing: -0.02em;
-    
-    @media (max-width: 768px) {
-      font-size: 1.8rem;
-    }
-  }
-  
-  p {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    margin-bottom: 2.5rem;
-    line-height: 1.6;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-    
-    @media (max-width: 768px) {
-      font-size: 1rem;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    padding: 3rem 2rem;
-    margin: 4rem 0 2rem;
-  }
-`
-
-const SubscribeButton = styled.button`
-  padding: 1.2rem 3.5rem;
-  background: linear-gradient(135deg, var(--primary), #45a3d9);
-  color: white;
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
+const SectionTitle = styled.h2`
+  margin: 32px 0 12px;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
-  white-space: nowrap;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  @media (max-width: 600px) {
-    padding: 1rem 2rem;
-  }
+  color: ${T.muted};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+`
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(${(p) => p.$cols || 3}, minmax(0, 1fr));
+  gap: 16px;
+  @media (max-width: 1000px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+`
+const Card = styled(Link)`
+  display: flex;
+  flex-direction: column;
+  border: 1px solid ${T.hairlineStrong};
+  border-radius: ${T.radius.md};
+  background: ${T.surface};
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+  &:hover { border-color: ${T.accentBorder}; }
+  &:hover h3 { color: ${T.accent}; }
+  &:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; }
+`
+const Media = styled.div`
+  aspect-ratio: 3 / 2;
+  background: ${T.surface2};
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+`
+const Fallback = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  padding: 16px;
+  background:
+    radial-gradient(120% 90% at 85% 10%, rgba(0, 229, 255, 0.18), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 24px 24px,
+    ${T.bg};
+  span { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: ${T.accent}; }
+`
+const Body = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  flex: 1;
+  h3 { margin: 0; font-size: 16px; line-height: 1.35; font-weight: 600; color: ${T.ink}; transition: color 0.15s; }
+  p { margin: 0; font-size: 13.5px; line-height: 1.5; color: ${T.body}; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+`
+const Meta = styled.div`
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: ${T.muted};
+  b { font-weight: 600; color: ${T.body}; }
+`
+const PulseList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid ${T.hairlineStrong};
+  border-radius: ${T.radius.md};
+  background: ${T.surface};
+  li + li { border-top: 1px solid ${T.hairline}; }
+  a { display: flex; gap: 16px; align-items: baseline; padding: 12px 16px; text-decoration: none; color: ${T.ink}; font-size: 14px; }
+  a:hover span.t { color: ${T.accent}; }
+  time { flex-shrink: 0; width: 96px; font-size: 12px; color: ${T.muted}; font-family: ${T.font.mono}; }
 `
 
 const posts = [
@@ -540,121 +349,96 @@ const posts = [
   },
 ]
 
+const PULSE = 'Whale-report'
+
+function PostCard({ post }) {
+  return (
+    <Card href={`/blog/${post.slug}`}>
+      <Media>
+        {post.coverImage
+          ? <img src={post.coverImage} alt="" width={1536} height={1024} loading="lazy" decoding="async" />
+          : <Fallback aria-hidden><span>{post.category}</span></Fallback>}
+      </Media>
+      <Body>
+        <h3>{post.title}</h3>
+        {post.summary && <p>{post.summary}</p>}
+        <Meta><b>{post.category}</b><span>{post.date}</span><span>{post.readTime}</span></Meta>
+      </Body>
+    </Card>
+  )
+}
+
 export default function BlogClient({ dynamicPosts = [] }) {
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Merge AI-generated posts (from Supabase) with hardcoded ones, dedupe by slug, AI posts first.
-  const seen = new Set()
-  const mergedPosts = []
-  for (const p of dynamicPosts) {
-    if (!p?.slug || seen.has(p.slug)) continue
-    seen.add(p.slug)
-    mergedPosts.push(p)
-  }
-  for (const p of posts) {
-    if (!p?.slug || seen.has(p.slug)) continue
-    seen.add(p.slug)
-    mergedPosts.push(p)
-  }
+  // Database posts first (newest first), then the hand-written ones; one card per slug.
+  const merged = useMemo(() => {
+    const seen = new Set()
+    const out = []
+    for (const p of [...dynamicPosts, ...posts]) {
+      if (!p?.slug || seen.has(p.slug)) continue
+      seen.add(p.slug)
+      out.push(p)
+    }
+    return out
+  }, [dynamicPosts])
 
-  const filteredPosts = mergedPosts.filter(post =>
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.category.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const q = searchTerm.trim().toLowerCase()
+  const matches = (p) => !q || [p.title, p.summary, p.category].some((v) => String(v || '').toLowerCase().includes(q))
+  const guides = merged.filter((p) => p.category !== PULSE && matches(p))
+  const pulse = merged.filter((p) => p.category === PULSE && matches(p))
+  const featured = q ? [] : guides.filter((p) => p.coverImage).slice(0, 3)
+  const rest = guides.filter((p) => !featured.includes(p))
 
   return (
-    <BlogContainer>
-      <BlogHeader>
-        <BlogTitle>Crypto Whale Insights</BlogTitle>
-        <BlogSubtitle>
-          Master whale tracking, copy trading strategies, and on-chain analytics with our comprehensive guides
-        </BlogSubtitle>
-        
-        <SearchBar>
-          <SearchInput
-            type="text"
-            placeholder="Search articles by topic, category, or keyword..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </SearchBar>
-      </BlogHeader>
+    <Page>
+      <Head>
+        <div>
+          <h1>Crypto Whale Insights</h1>
+          <p>Guides to reading on-chain whale activity, and a weekly summary of what the largest wallets did.</p>
+        </div>
+        <Search
+          type="search"
+          placeholder="Search guides"
+          aria-label="Search the blog"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </Head>
 
-      <PostsGrid>
-        {filteredPosts.map((post, index) => (
-          <PostCard
-            key={post.slug}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              delay: index * 0.1,
-              duration: 0.6,
-              ease: [0.4, 0, 0.2, 1]
-            }}
-            whileHover={{ scale: 1.02 }}
-          >
-            <Link 
-              href={`/blog/${post.slug}`} 
-              style={{ 
-                textDecoration: 'none', 
-                color: 'inherit',
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%'
-              }}
-            >
-              <CategoryTag>{post.category}</CategoryTag>
-              <PostTitle>{post.title}</PostTitle>
-              <PostSummary>{post.summary}</PostSummary>
-              <PostMeta>
-                <span style={{ fontWeight: '500' }}>{post.date}</span>
-                <ReadTime>{post.readTime}</ReadTime>
-              </PostMeta>
-            </Link>
-          </PostCard>
-        ))}
-      </PostsGrid>
-
-      {filteredPosts.length === 0 && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ 
-            textAlign: 'center', 
-            padding: '4rem 2rem', 
-            color: 'var(--text-secondary)',
-            background: 'var(--background-secondary)',
-            borderRadius: '20px',
-            border: '1px solid var(--secondary)',
-            margin: '2rem 0'
-          }}
-        >
-          <h3 style={{ 
-            fontSize: '1.5rem', 
-            marginBottom: '1rem', 
-            color: 'var(--text-primary)' 
-          }}>
-            No articles found
-          </h3>
-          <p style={{ 
-            fontSize: '1.1rem', 
-            lineHeight: '1.6' 
-          }}>
-            Try searching for different keywords or browse all articles
-          </p>
-        </motion.div>
+      {featured.length > 0 && (
+        <>
+          <SectionTitle>Latest guides</SectionTitle>
+          <Grid $cols={3}>{featured.map((p) => <PostCard key={p.slug} post={p} />)}</Grid>
+        </>
       )}
 
-      <NewsletterSection>
-        <h3>Get whale alerts by email</h3>
-        <p>
-          Free account, no card. Set a threshold, get an email when a whale crosses it.
-        </p>
-        <SubscribeButton as="a" href="/?signup=1" style={{ display: 'inline-block', textDecoration: 'none' }}>
-          Create a free account
-        </SubscribeButton>
-      </NewsletterSection>
-    </BlogContainer>
+      {rest.length > 0 && (
+        <>
+          <SectionTitle>{q ? 'Guides' : 'All guides'}</SectionTitle>
+          <Grid $cols={3}>{rest.map((p) => <PostCard key={p.slug} post={p} />)}</Grid>
+        </>
+      )}
+
+      {pulse.length > 0 && (
+        <>
+          <SectionTitle>Weekly Whale Pulse</SectionTitle>
+          <PulseList>
+            {pulse.map((p) => (
+              <li key={p.slug}>
+                <Link href={`/blog/${p.slug}`}>
+                  <time>{p.date}</time>
+                  <span className="t">{p.title}</span>
+                </Link>
+              </li>
+            ))}
+          </PulseList>
+        </>
+      )}
+
+      {guides.length === 0 && pulse.length === 0 && (
+        <p style={{ marginTop: 32, color: T.muted }}>No articles match “{searchTerm}”.</p>
+      )}
+    </Page>
   )
 }

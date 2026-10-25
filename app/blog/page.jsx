@@ -12,9 +12,11 @@ export const metadata = {
 export const revalidate = 600
 
 async function getDynamicPosts() {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return []
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE
+  if (!url || !key) return []
   try {
-    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+    const sb = createClient(url, key, { auth: { persistSession: false } })
     const { data, error } = await sb
       .from('blog_posts')
       .select('slug,title,description,category,cover_image,content,created_at')
@@ -36,7 +38,7 @@ async function getDynamicPosts() {
         readTime: `${readMin} min read`,
         category: (p.category && p.category !== 'guide')
           ? p.category.charAt(0).toUpperCase() + p.category.slice(1)
-          : 'AI Research',
+          : 'Guide',
         date: dateObj
           ? dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
           : '',
