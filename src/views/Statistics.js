@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
@@ -8,19 +8,18 @@ import dynamic from 'next/dynamic'
 
 const TokenIcon = dynamic(() => import('@/components/TokenIcon'), { ssr: false })
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
+import { useLivePoll, LIVE_POLL_MS } from '@/components/live/useLivePoll'
+import { HealthChip, healthOf } from '@/components/live/HealthChip'
+import { mergeRows, roundDownIso } from '@/components/live/mergeRows'
+import { FONT_MONO, FONT_SANS } from '@/src/styles/fontStacks'
 
-const MONO_FONT = "'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace"
-const SANS_FONT = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+const MONO_FONT = FONT_MONO
+const SANS_FONT = FONT_SANS
 const COLORS = {
   cyan: '#00e5ff', green: '#00e676', red: '#ff1744', amber: '#ffab00',
   textPrimary: '#e0e6ed', textMuted: '#5a6a7a',
   panelBg: 'rgba(13, 17, 28, 0.8)', borderSubtle: 'rgba(0, 229, 255, 0.08)',
 }
-
-const pulseGlow = keyframes`
-  0%, 100% { opacity: 1; box-shadow: 0 0 4px #00e676; }
-  50% { opacity: 0.4; box-shadow: 0 0 8px #00e676, 0 0 16px rgba(0, 230, 118, 0.3); }
-`
 
 const StatisticsContainer = styled.div`
   min-height: 100vh;
@@ -53,14 +52,18 @@ const TitleText = styled.h1`
   margin: 0;
 `
 
-const LiveDot = styled.span`
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  font-size: 0.7rem; font-weight: 600; color: ${COLORS.green};
-  text-transform: uppercase; letter-spacing: 1px; font-family: ${MONO_FONT};
-  &::before {
-    content: ''; width: 7px; height: 7px; border-radius: 50%;
-    background: ${COLORS.green}; animation: ${pulseGlow} 2s ease-in-out infinite;
-  }
+const NewPill = styled.button`
+  display: block;
+  margin: 0 auto 0.6rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid ${COLORS.cyan};
+  background: rgba(0, 229, 255, 0.08);
+  color: ${COLORS.cyan};
+  font-family: ${MONO_FONT};
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
 `
 
 const Panel = styled.div`
@@ -192,6 +195,7 @@ const DataTable = styled.div`
     white-space: nowrap; font-family: ${SANS_FONT};
   }
   thead th.right { text-align: right; }
+  tbody tr.is-new td { background: rgba(0, 229, 255, 0.07); }
   tbody tr {
     border-bottom: 1px solid rgba(255, 255, 255, 0.02);
     transition: background 0.15s ease; cursor: default;
@@ -276,6 +280,60 @@ export default function Statistics() {
   })
 
   const debounceRef = useRef(null)
+  const fetchSeqRef = useRef(0)
+  const newestRef = useRef(null) // ms of the newest row seen, for `after`
+  const hoverRef = useRef(false)
+  const pollCountRef = useRef(0)
+  const flashTimerRef = useRef(null)
+  const [buffer, setBuffer] = useState([])
+  const [flash, setFlash] = useState(new Set())
+  const [now, setNow] = useState(() => Date.now())
+
+  // Live updates: rows newer than the newest one on screen, every 15 s,
+  // paused while the tab is hidden.
+  const live = useLivePoll((signal) => {
+    const params = filterParams()
+    params.set('after', roundDownIso(newestRef.current ?? Date.now() - 10 * 60_000))
+    params.set('limit', '100')
+    return fetch(`/api/trades/since?${params.toString()}`, { signal })
+  }, { intervalMs: LIVE_POLL_MS })
+
+  useEffect(() => {
+    const body = live.data
+    if (!body || loading) return
+    bumpNewest(body.newest_ts)
+    pollCountRef.current += 1
+    if (pollCountRef.current % 5 === 0) {
+      fetchTrades(page, { background: true })
+      return
+    }
+    const onScreen = new Set(rows.map((r) => r.transaction_hash))
+    const incoming = (body.data || []).filter((r) => !onScreen.has(r.transaction_hash))
+    if (!incoming.length && !(buffer.length && page === 1 && !hoverRef.current)) return
+    if (page === 1 && !hoverRef.current) {
+      const { rows: merged, newIds } = mergeRows(rows, [...buffer, ...incoming], 100)
+      setRows(merged)
+      setTotal((t) => (t == null ? t : t + newIds.length))
+      setBuffer([])
+      flashRows(newIds)
+    } else {
+      setBuffer((b) => mergeRows(b, incoming, 100).rows)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live.data])
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 5000)
+    return () => clearInterval(id)
+  }, [])
+
+  const health = healthOf({
+    newestAt: newestRef.current,
+    now: now + (live.offsetMs || 0),
+    lastPollOkAt: live.lastFetchedAt,
+    intervalMs: LIVE_POLL_MS,
+    consecutiveFailures: live.consecutiveFailures,
+  })
   const prevFiltersRef = useRef({ token:'', side:'', chain:'', minUsd:'', maxUsd:'', sinceHours:24 })
 
   // Fetch Whale Whisper
@@ -294,8 +352,7 @@ export default function Statistics() {
     loadChains()
   }, [])
 
-  async function fetchTrades(p = 1) {
-    setLoading(true)
+  function filterParams() {
     const params = new URLSearchParams()
     params.set('sinceHours', String(sinceHours))
     if (minUsd) params.set('minUsd', String(minUsd))
@@ -303,12 +360,51 @@ export default function Statistics() {
     if (token) params.set('token', token)
     if (side) params.set('side', side)
     if (chain) params.set('chain', chain)
+    return params
+  }
+
+  // Full reads: first load, filter or page changes (with the loader), and a
+  // quiet resync every 5th live poll (background, never the loader).
+  async function fetchTrades(p = 1, { background = false } = {}) {
+    const seq = ++fetchSeqRef.current
+    if (!background) setLoading(true)
+    const params = filterParams()
     params.set('page', String(p))
-    params.set('limit', '200')
-    const res = await fetch(`/api/trades?${params.toString()}`, { cache: 'no-store' })
-    const json = await res.json()
-    if (res.ok) { setRows(json.data || []); setTotal(json.count || 0); setPage(json.page || p) }
-    setLoading(false)
+    params.set('limit', '100')
+    try {
+      const res = await fetch(`/api/trades?${params.toString()}`, { cache: 'no-store' })
+      const json = await res.json()
+      if (seq !== fetchSeqRef.current) return
+      if (res.ok) {
+        setRows(json.data || [])
+        setTotal(typeof json.count === 'number' ? json.count : null)
+        setPage(json.page || p)
+        setBuffer([])
+        bumpNewest(json.newest_ts)
+      }
+    } catch { /* keep the rows on screen */ }
+    if (seq === fetchSeqRef.current && !background) setLoading(false)
+  }
+
+  function bumpNewest(ts) {
+    const t = ts ? Date.parse(ts) : NaN
+    if (Number.isFinite(t) && (newestRef.current == null || t > newestRef.current)) newestRef.current = t
+  }
+
+  function flashRows(ids) {
+    if (!ids.length) return
+    setFlash(new Set(ids))
+    clearTimeout(flashTimerRef.current)
+    flashTimerRef.current = setTimeout(() => setFlash(new Set()), 2000)
+  }
+
+  function showBuffered() {
+    if (page !== 1) { fetchTrades(1); return }
+    const { rows: merged, newIds } = mergeRows(rows, buffer, 100)
+    setRows(merged)
+    setTotal((t) => (t == null ? t : t + newIds.length))
+    setBuffer([])
+    flashRows(newIds)
   }
 
   async function exportToCSV() {
@@ -321,7 +417,7 @@ export default function Statistics() {
     
     setExporting(true)
     try {
-      // Fetch up to 10,000 records for export
+      // The first 100 rows of the current filters (one page of /api/trades).
       const params = new URLSearchParams()
       params.set('sinceHours', String(sinceHours))
       if (minUsd) params.set('minUsd', String(minUsd))
@@ -414,8 +510,6 @@ export default function Statistics() {
       } catch (err) {
         console.error('Error checking premium status:', err)
       }
-      
-    fetchTrades(1)
     }
     init()
   }, [])
@@ -436,7 +530,12 @@ export default function Statistics() {
       <motion.div variants={fadeUp} initial="hidden" animate="visible">
         <PageTitle>
           <TitleText>Market Statistics</TitleText>
-          <LiveDot>LIVE</LiveDot>
+          <HealthChip
+            health={health}
+            testId="statistics-health"
+            title={newestRef.current ? `Newest trade matching your filters: ${new Date(newestRef.current).toISOString().slice(11, 19)} UTC` : 'No trades match your filters yet'}
+          />
+          {page > 1 && <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>live updates paused on page {page}</span>}
         </PageTitle>
       </motion.div>
 
@@ -530,8 +629,8 @@ export default function Statistics() {
           <GhostButton
             type="button"
             onClick={exportToCSV}
+            title="Exports the first 100 rows of the current filters"
             disabled={exporting || loading || rows.length === 0}
-            title="Export CSV"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -572,7 +671,7 @@ export default function Statistics() {
           </Field>
           <Field>
             <label>Since (hours)</label>
-            <PillInput type="number" min="0" value={sinceHours} onChange={(e)=>setSinceHours(Number(e.target.value))} />
+            <PillInput type="number" min="1" max="720" value={sinceHours} onChange={(e)=>setSinceHours(Math.min(Math.max(Number(e.target.value) || 1, 1), 720))} />
           </Field>
         </Toolbar>
 
@@ -581,7 +680,18 @@ export default function Statistics() {
             <SonarLoader text="Scanning transactions..." size={60} compact />
           ) : (
             <>
-              <DataTable>
+              {buffer.length > 0 && (
+                <NewPill type="button" onClick={showBuffered} data-testid="statistics-new-pill">
+                  {buffer.length} new {buffer.length === 1 ? 'trade' : 'trades'} — show
+                </NewPill>
+              )}
+              {live.consecutiveFailures >= 3 && (
+                <div style={{ marginBottom: '0.6rem', fontSize: '0.78rem', color: COLORS.textMuted }}>
+                  Live updates are not reaching us right now; the table shows the last rows we received.{' '}
+                  <Link href={`/ai-advisor?q=${encodeURIComponent('What are the largest whale trades in the last hour?')}&send=1`} style={{ color: COLORS.cyan }}>Ask ORCA</Link>
+                </div>
+              )}
+              <DataTable onMouseEnter={() => { hoverRef.current = true }} onMouseLeave={() => { hoverRef.current = false }}>
               <table>
               <thead>
                 <tr>
@@ -596,7 +706,7 @@ export default function Statistics() {
               </thead>
               <tbody>
                   {(isPremium ? rows : rows.slice(0, 50)).map((t, idx) => (
-                    <motion.tr key={t.transaction_hash} custom={idx} variants={rowVariant} initial="hidden" animate="visible">
+                    <motion.tr key={t.transaction_hash} custom={idx} variants={rowVariant} initial="hidden" animate="visible" className={flash.has(t.transaction_hash) ? 'is-new' : undefined}>
                       <td className="muted" style={{ fontSize: '0.75rem' }}>{new Date(t.timestamp).toLocaleString()}</td>
                       <td>
                         <Link href={`/token/${encodeURIComponent(t.token_symbol || '-')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -622,7 +732,7 @@ export default function Statistics() {
                   background: 'rgba(0, 229, 255, 0.03)', border: `1px solid ${COLORS.borderSubtle}`,
                   borderRadius: '4px', fontFamily: SANS_FONT, fontSize: '0.8rem', color: COLORS.textMuted
                 }}>
-                  Showing 50 of {total.toLocaleString()} transactions.
+                  Showing 50 of {total == null ? 'many' : total.toLocaleString()} transactions.
                   <a href="/subscribe" style={{ color: COLORS.cyan, marginLeft: '0.4rem', fontWeight: 600, textDecoration: 'underline' }}>
                     Upgrade for full data + CSV export
                   </a>
@@ -630,7 +740,7 @@ export default function Statistics() {
               )}
               <Pagination>
                 <GhostButton type="button" onClick={()=>fetchTrades(Math.max(1, page-1))}>← PREV</GhostButton>
-                <span style={{ fontFamily: MONO_FONT }}>Page {page} · {total.toLocaleString()} txns</span>
+                <span style={{ fontFamily: MONO_FONT }}>Page {page} · {total == null ? `first ${rows.length} rows` : `${total.toLocaleString()} txns`}</span>
                 <GhostButton type="button" onClick={()=>fetchTrades(page+1)}>NEXT →</GhostButton>
               </Pagination>
             </>

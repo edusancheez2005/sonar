@@ -42,6 +42,26 @@ const StyledImage = styled(Image)`
   object-fit: cover;
 `
 
+// One logo lookup per symbol per page load (misses included), shared by
+// every icon on the page: a 100-row table used to send 100+ requests.
+const logoLookups = new Map<string, Promise<string | null>>()
+
+function lookupLogo(symbol?: string, coingeckoId?: string): Promise<string | null> {
+  const params = new URLSearchParams()
+  if (symbol) params.set('symbol', symbol)
+  if (coingeckoId) params.set('id', coingeckoId)
+  const key = params.toString()
+  let pending = logoLookups.get(key)
+  if (!pending) {
+    pending = fetch(`/api/coingecko/token-image?${params}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => (data?.image_url as string) || null)
+      .catch(() => null)
+    logoLookups.set(key, pending)
+  }
+  return pending
+}
+
 export default function TokenIcon({
   symbol,
   coingeckoId,
@@ -71,30 +91,15 @@ export default function TokenIcon({
   }, [symbol, coingeckoId, imageUrl])
 
   const fetchTokenImage = async () => {
-    try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      if (symbol) params.set('symbol', symbol)
-      if (coingeckoId) params.set('id', coingeckoId)
-
-      const response = await fetch(`/api/coingecko/token-image?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.image_url) {
-          setImgSrc(data.image_url)
-          setImgError(false)
-        } else {
-          setImgError(true)
-        }
-      } else {
-        setImgError(true)
-      }
-    } catch (error) {
-      console.error('Failed to fetch token image:', error)
+    setLoading(true)
+    const url = await lookupLogo(symbol, coingeckoId)
+    if (url) {
+      setImgSrc(url)
+      setImgError(false)
+    } else {
       setImgError(true)
-    } finally {
-      setLoading(false)
     }
+    setLoading(false)
   }
 
   const handleImageError = () => {
