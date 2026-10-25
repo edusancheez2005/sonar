@@ -47,7 +47,10 @@ export interface CheckResult {
   rules_evaluated: number
   triggered: number
   inserted: number
+  /** Dropped by a limit: per-rule daily cap, fair share, or the user's daily cap. */
   capped: number
+  /** Skipped because the user already got this alert (same hour, same transfers, same story). */
+  deduped: number
   /** wallet_alerts rows folded into user_alerts during this run */
   folded_wallet_alerts: number
 }
@@ -348,6 +351,7 @@ export async function runCheckUserAlerts(
     triggered: 0,
     inserted: 0,
     capped: 0,
+    deduped: 0,
     folded_wallet_alerts: 0,
   }
 
@@ -553,7 +557,7 @@ export async function runCheckUserAlerts(
       // The hourly unique key would drop it anyway; skip before it takes a cap
       // slot or claims tx hashes the next hour should still pick up.
       if (firedThisHour.has(c.rule.id)) {
-        result.capped += 1
+        result.deduped += 1
         continue
       }
       if (c.rule.kind === 'wallet_activity') {
@@ -565,7 +569,7 @@ export async function runCheckUserAlerts(
         const txs = Array.isArray(raw.txs) ? raw.txs : []
         const fresh = txs.filter((t) => !notifiedTxUser.has(t.h) && !claimed.has(t.h))
         if (fresh.length === 0) {
-          result.capped += 1
+          result.deduped += 1
           continue
         }
         for (const t of fresh) claimed.add(t.h)
@@ -573,7 +577,7 @@ export async function runCheckUserAlerts(
         const label = labels.get(addr.startsWith('0x') ? addr.toLowerCase() : addr) ?? null
         deduped.push({ rule: c.rule, copy: formatWalletActivityFromTxs(addr, c.rule.chain ?? null, fresh, label) })
       } else if (recentDupKeys.has(`${c.rule.id}|${c.copy.payload?.dedup_key || c.copy.title}`)) {
-        result.capped += 1
+        result.deduped += 1
       } else if ((perRuleToday.get(c.rule.id) ?? 0) >= perRuleLimit) {
         // Fair share: one noisy rule cannot take the whole daily cap.
         result.capped += 1
@@ -633,6 +637,7 @@ async function recordRun(supabase: SupabaseLike, result: CheckResult, now: () =>
         triggered: result.triggered,
         inserted: result.inserted,
         capped: result.capped,
+        deduped: result.deduped,
         folded_wallet_alerts: result.folded_wallet_alerts,
         at: now().toISOString(),
       },

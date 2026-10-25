@@ -315,6 +315,7 @@ describe('runCheckUserAlerts — dedup across runs and hours', () => {
     })
     const res = await runCheckUserAlerts(sb as any, { now: () => new Date('2026-10-03T12:20:00Z') })
     expect(res.inserted).toBe(0)
-    expect(res.capped).toBe(1)
+    expect(res.capped).toBe(0)
+    expect(res.deduped).toBe(1)
   })
 })

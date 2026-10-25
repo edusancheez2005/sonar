@@ -296,7 +296,7 @@ export async function GET(req: Request) {
     // --- alerts canary -------------------------------------------------------
     // 24h totals from the alert cron's telemetry rows (orca_traces stage=alerts).
     // Before 2026-10-25, 13,773 of 14,082 triggers in 7 days were capped.
-    let alerts: any = { runs: 0, rules_evaluated: 0, triggered: 0, inserted: 0, capped: 0 }
+    let alerts: any = { runs: 0, rules_evaluated: 0, triggered: 0, inserted: 0, capped: 0, deduped: 0 }
     try {
       const since24 = new Date(now.getTime() - 24 * 3_600_000).toISOString()
       const { data: traces } = await supabaseAdmin.from('orca_traces').select('payload').eq('stage', 'alerts').gte('created_at', since24).limit(1000)
@@ -308,6 +308,7 @@ export async function GET(req: Request) {
         alerts.triggered += Number(p.triggered) || 0
         alerts.inserted += Number(p.inserted) || 0
         alerts.capped += Number(p.capped) || 0
+        alerts.deduped += Number(p.deduped) || 0
       }
     } catch (e: any) { alerts.error = String(e?.message || e).slice(0, 120) }
     if (alerts.runs === 0) issues.push('Alert cron recorded no runs in 24h — check /api/cron/check-user-alerts.')
@@ -356,7 +357,7 @@ export async function GET(req: Request) {
       <h3>SEO</h3>
       <p>Sitemap URLs: <b>${sitemapUrls}</b> · /pricing blocked: <b>${pricingBlocked === null ? '?' : pricingBlocked}</b> · /token/BTC indexed: <b>${btcIndexed === null ? '?' : btcIndexed}</b></p>
       <h3>Alerts (24h)</h3>
-      <p>Cron runs: <b>${alerts.runs}</b> · rules checked: <b>${alerts.rules_evaluated}</b> · triggered: <b>${alerts.triggered}</b> · delivered: <b>${alerts.inserted}</b> · capped: <b>${alerts.capped}</b></p>
+      <p>Cron runs: <b>${alerts.runs}</b> · rules checked: <b>${alerts.rules_evaluated}</b> · triggered: <b>${alerts.triggered}</b> · delivered: <b>${alerts.inserted}</b> · capped: <b>${alerts.capped}</b> · already sent: <b>${alerts.deduped}</b></p>
       <h3>Blog</h3>
       <p>Last article: <b>${blog.lastGuideAgeDays ?? '?'}</b> days ago (${blog.lastGuideSlug || 'n/a'}) · topics left: <b>${blog.remainingTopics ?? '?'}</b> · Whale Pulse: <b>${blog.pulseAgeDays ?? '?'}</b> days ago · last run: ${blog.lastRun ? (blog.lastRun.ok ? `ok, cover ${blog.lastRun.coverBytes ? Math.round(blog.lastRun.coverBytes / 1024) + ' KB' : 'missing'}` : `failed (${blog.lastRun.error || blog.lastRun.rejection || 'unknown'})`) : 'none yet'}</p>
       <p style="color:#888;font-size:12px">Automated daily report from /api/cron/x-health-report. Reply to Claude in the Sonar session to change or stop it.</p>`
