@@ -24,6 +24,8 @@ import { getEvmTransfers } from '@/lib/wallet/transfers'
 import { getEtherscanTransfers, ETHERSCAN_CHAIN_IDS } from '@/lib/wallet/etherscan-transfers'
 import { getSolanaTrackedTransfers } from '@/lib/wallet/sol-tracked-transfers'
 import { getTokenInfoByContract } from '@/lib/coingecko/client'
+import { readAllRows } from '@/lib/orca/orchestrator/tools/pagedRead'
+import { isExchangeLabel } from '@/lib/orca/junk-addresses'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 min — Vercel pro plan
@@ -51,6 +53,9 @@ const SOLANA_CHAINS = new Set(['solana'])
 const SUPPORTED_CHAINS = [...Object.keys(ALCHEMY_CHAIN_MAP), ...SOLANA_CHAINS]
 
 const MAX_ADDRESSES = 200          // top-N per run; bumped later when stable
+// One entity may take at most this many slots of a run's universe fill, so a
+// 75-address celebrity cannot crowd out everyone else (Kevin Rose did).
+const MAX_ADDRESSES_PER_ENTITY = 3
 const FROM_BLOCK_LOOKBACK = 50_000 // ~7 days on Ethereum at 12 s blocks
 // Arkham entity_type values actually present in tracked_address_universe
 // today: cex, dex, fund, dex-aggregator, cdp, custodian, bridge,
@@ -111,15 +116,68 @@ async function fetchFamousAddresses() {
   return out
 }
 
+const EVM_RE = /^0x[0-9a-fA-F]{40}$/
+const SOLANA_ADDR_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
+
+/**
+ * Addresses users follow or hold an enabled wallet_activity alert on. They are
+ * polled in EVERY hourly sweep (users are waiting on them), except exchange
+ * wallets: those are covered by the whale tape, and walking an exchange hot
+ * wallet's 50,000-block history is the Alchemy "exceeded request buffer
+ * limit" failure. EVM addresses are polled on Ethereum.
+ */
+async function fetchUserTrackedAddresses() {
+  const out = []
+  try {
+    const [{ data: follows }, { data: rules }, { data: entities }, { data: cexRows }] = await Promise.all([
+      supabaseAdmin.from('wallet_follows').select('address').limit(5000),
+      supabaseAdmin.from('user_alerts').select('address, chain').eq('kind', 'wallet_activity').eq('enabled', true).limit(5000),
+      supabaseAdmin.from('curated_entities').select('slug, display_name, addresses'),
+      supabaseAdmin.from('tracked_address_universe').select('address').eq('arkham_entity_type', 'cex').limit(5000),
+    ])
+    const exchange = new Set((cexRows || []).map((r) => String(r.address || '').toLowerCase()))
+    for (const e of entities || []) {
+      if (!isExchangeLabel(e.display_name) && !isExchangeLabel(String(e.slug || '').replace(/-/g, ' '))) continue
+      for (const a of e.addresses || []) if (a?.address) exchange.add(String(a.address).toLowerCase())
+    }
+    const seen = new Set()
+    const add = (raw, hint) => {
+      const address = String(raw || '').trim()
+      if (!address) return
+      const key = address.toLowerCase()
+      if (seen.has(key) || exchange.has(key)) return
+      let chain = null
+      if (EVM_RE.test(address)) chain = 'ethereum'
+      else if (SOLANA_ADDR_RE.test(address) && (!hint || hint === 'solana')) chain = 'solana'
+      if (!chain || !SUPPORTED_CHAINS.includes(chain)) return
+      seen.add(key)
+      out.push({ chain, address, arkham_entity_name: null, arkham_entity_type: 'user', arkham_label: 'Followed wallet' })
+    }
+    for (const f of follows || []) add(f.address, null)
+    for (const r of rules || []) add(r.address, r.chain)
+  } catch {
+    /* the sweep still runs on the universe */
+  }
+  return out
+}
+
 // Whole-table read: filtering with .in(900+ addresses) would blow the URL
 // length, and the table only ever holds one row per polled address. A row
 // missing here just means "never polled" → sorts to the front of the sweep.
 async function getLastBlockMap() {
   const out = new Map()
-  const { data } = await supabaseAdmin
-    .from('tracked_address_poll_state')
-    .select('chain, address, last_block, last_polled, last_error')
-    .limit(5000)
+  // Paged: PostgREST caps a read at 1,000 rows, so with 1,392 states the
+  // recently-polled rows fell outside the slice, looked "never polled" and
+  // won the sweep every hour (the same celebrities, while Vitalik's and
+  // Binance's picker addresses were never polled).
+  const { data } = await readAllRows(
+    () => supabaseAdmin
+      .from('tracked_address_poll_state')
+      .select('chain, address, last_block, last_polled, last_error')
+      .order('chain', { ascending: true })
+      .order('address', { ascending: true }),
+    { maxRows: 20000 }
+  )
   for (const row of data || []) {
     out.set(`${row.chain}:${row.address}`, {
       last_block: row.last_block || 0,
@@ -317,14 +375,40 @@ export async function GET(request) {
 
   const lastBlocks = await getLastBlockMap()
 
-  // Least-recently-polled first over the WHOLE priority universe, then cap
-  // to this run's slice. Never-polled rows (no state) sort to the front, so
+  // Followed / alerted wallets first, every hour. When the same address is
+  // already in the universe or famous list, that row (richer label, its own
+  // poll-state key) moves to the front instead of a duplicate being added.
+  const userRows = await fetchUserTrackedAddresses()
+  const byLower = new Map(addresses.map((a) => [`${a.chain}:${String(a.address).toLowerCase()}`, a]))
+  const pinned = []
+  const pinnedKeys = new Set()
+  for (const u of userRows) {
+    const k = `${u.chain}:${String(u.address).toLowerCase()}`
+    if (pinnedKeys.has(k)) continue
+    pinnedKeys.add(k)
+    pinned.push(byLower.get(k) || u)
+  }
+  let rest = addresses.filter((a) => !pinnedKeys.has(`${a.chain}:${String(a.address).toLowerCase()}`))
+
+  // Least-recently-polled first over the rest of the universe, then cap to
+  // this run's slice. Never-polled rows (no state) sort to the front, so
   // newly added chains/entities backfill before steady-state rotation.
-  addresses.sort((a, b) => {
+  rest.sort((a, b) => {
     const ap = lastBlocks.get(`${a.chain}:${a.address}`)?.last_polled || ''
     const bp = lastBlocks.get(`${b.chain}:${b.address}`)?.last_polled || ''
     return ap < bp ? -1 : ap > bp ? 1 : 0
   })
+  // At most MAX_ADDRESSES_PER_ENTITY slots per entity in this run's fill;
+  // the others keep their place in the rotation for later hours.
+  const perEntity = new Map()
+  rest = rest.filter((a) => {
+    const ent = String(a.arkham_entity_name || a.address).toLowerCase()
+    const n = perEntity.get(ent) || 0
+    if (n >= MAX_ADDRESSES_PER_ENTITY) return false
+    perEntity.set(ent, n + 1)
+    return true
+  })
+  addresses = [...pinned, ...rest]
   if (chainParam) addresses = addresses.filter((a) => a.chain === chainParam)
   if (addresses.length > limitParam) addresses = addresses.slice(0, limitParam)
 
