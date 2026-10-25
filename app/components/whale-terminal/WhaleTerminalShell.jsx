@@ -13,8 +13,8 @@ import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import { C, FONT_MONO } from '@/app/lib/terminalTheme'
 import { pulseGlow } from './primitives'
 import AlertBanner from '@/components/wallet-tracker/AlertBanner'
-import { useLivePoll } from '@/components/live/useLivePoll'
-import { HealthChip, healthOf } from '@/components/live/HealthChip'
+import { HealthChip } from '@/components/live/HealthChip'
+import { useWhaleFeedHealth } from '@/components/live/useWhaleFeedHealth'
 
 const TABS = [
   { id: 'research', label: 'Research', href: '/wallet-tracker' },
@@ -225,23 +225,6 @@ const SrTitle = styled.h1`
   white-space: nowrap;
   border: 0;
 `
-
-// ── feed status ──────────────────────────────────────────────────────
-// Freshness of the Ethereum whale feed from /api/health/algorithm, once a
-// minute and never while the tab is hidden. (It used to poll /api/ticker and
-// said CONNECTED even when that returned nothing.)
-function useWhaleFeedHealth(enabled) {
-  const poll = useLivePoll((signal) => fetch('/api/health/algorithm', { cache: 'no-store', signal }), { intervalMs: 60_000, enabled })
-  const lastTs = poll.data?.lastTs ?? null
-  const health = healthOf({
-    newestAt: lastTs,
-    now: Date.now() + (poll.offsetMs || 0),
-    lastPollOkAt: poll.lastFetchedAt,
-    intervalMs: 60_000,
-    consecutiveFailures: poll.consecutiveFailures,
-  })
-  return { health, lastTs, polled: poll.pollsOk > 0 || poll.consecutiveFailures > 0 }
-}
 
 export default function WhaleTerminalShell({
   title = 'WHALE_TERMINAL',

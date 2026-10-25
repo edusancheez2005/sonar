@@ -21,8 +21,9 @@ import {
 } from 'chart.js'
 import TokenIcon from '@/components/TokenIcon'
 import TokenHeatmap from '@/components/wallet-tracker/TokenHeatmap'
-import WhaleTape from '@/components/dashboard/WhaleTape'
 import { HealthChip } from '@/components/live/HealthChip'
+import { useWhaleFeedHealth } from '@/components/live/useWhaleFeedHealth'
+import MacroCarousel from '@/components/dashboard/MacroCarousel'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
 import { usePersonalizedDashboard } from '@/components/wallet/PersonalizedDashboardContext'
@@ -241,17 +242,8 @@ const InfoPop = styled.div`
   p { margin: 0 0 0.45rem; }
   p:last-child { margin: 0; color: #8896a6; }
 `
-const MacroGrid = styled.div`
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem;
-  @media (max-width: 900px) { grid-template-columns: 1fr; }
-`
-const MacroCard = styled.div`
-  padding: 0.8rem 0.95rem; border: 1px solid ${COLORS.borderSubtle}; border-radius: 8px;
-  background: rgba(0, 229, 255, 0.015);
-`
-const MacroRule = styled.span`
-  font-size: 0.74rem; color: #8896a6; font-family: ${FONT_SANS};
-  @media (max-width: 700px) { flex-basis: 100%; order: 10; }
+const MacroUpdated = styled.span`
+  font-size: 0.72rem; color: #8896a6; font-family: ${FONT_SANS};
 `
 const macroRule = (m) => {
   const c = m?.counts
@@ -260,10 +252,6 @@ const macroRule = (m) => {
   if (m.overall_sentiment === 'bearish') return `${c.bearish} of ${total} factors bearish`
   if (m.overall_sentiment === 'bullish') return `${c.bullish} of ${total} factors bullish`
   return `${c.bullish} bullish · ${c.bearish} bearish · ${c.neutral} neutral`
-}
-const hoursAgo = (iso) => {
-  const h = Math.round((Date.now() - new Date(iso).getTime()) / 3_600_000)
-  return Number.isFinite(h) ? (h < 1 ? 'under 1 h ago' : `${h} h ago`) : ''
 }
 
 const ChangeNote = styled.div`
@@ -764,8 +752,8 @@ const Dashboard = ({ isPremium = false }) => {
   const orcaRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const hasLoadedOnce = useRef(false);
-  // Freshness of the whale feed, reported by the tape (no separate health poll).
-  const [tapeHealth, setTapeHealth] = useState(null);
+  // Freshness of the whale feed for the command-bar chip (once a minute).
+  const feedHealth = useWhaleFeedHealth();
   
      // New state for enhanced insights
    const [marketSentiment, setMarketSentiment] = useState({ ratio: 0, trend: 'neutral' });
@@ -780,7 +768,6 @@ const Dashboard = ({ isPremium = false }) => {
   const [overall, setOverall] = useState({ totalCount: 0, totalVolume: 0, buyCount: 0, sellCount: 0, buyVolume: 0, sellVolume: 0 })
 
   const [macroFactors, setMacroFactors] = useState(null)
-  const [macroShowAll, setMacroShowAll] = useState(false)
   // Provenance of the whale-flow numbers (same snapshot as ORCA).
   const [flowMeta, setFlowMeta] = useState(null)
   const [mostTraded, setMostTraded] = useState([])
@@ -987,7 +974,7 @@ const Dashboard = ({ isPremium = false }) => {
     
     fetchSummary()
     // The summary every 60 s, matching its 60 s edge cache; skipped while the
-    // tab is hidden. Freshness comes from the tape below the command bar.
+    // tab is hidden. The command-bar chip has its own once-a-minute check.
     timer = setInterval(() => {
       if (!document.hidden) fetchSummary()
     }, 60000)
@@ -1003,7 +990,7 @@ const Dashboard = ({ isPremium = false }) => {
         <CommandBar>
           <CommandBarLeft>
             <TerminalLogo>SONAR</TerminalLogo>
-            {tapeHealth && <HealthChip health={tapeHealth.health} prefix="ETH whale feed" testId="dashboard-feed-health" />}
+            {feedHealth.polled && <HealthChip health={feedHealth.health} prefix="ETH whale feed" testId="dashboard-feed-health" />}
             <TimeBadge>24H WINDOW</TimeBadge>
             {flowMeta?.chains_live?.length === 1 && (
               <TimeBadge title={flowMeta.chains_label}>{flowMeta.chains_live[0] === 'ethereum' ? 'ETHEREUM ONLY' : flowMeta.chains_live[0].toUpperCase()}</TimeBadge>
@@ -1044,11 +1031,6 @@ const Dashboard = ({ isPremium = false }) => {
 
 
         <DashboardContainer>
-            {/* ─── LATEST WHALE TRADES (live tape) ────────────────────── */}
-            <div style={{ paddingTop: '1rem' }}>
-              <WhaleTape onHealth={setTapeHealth} />
-            </div>
-
             {/* ─── FIRST-RUN WELCOME (one-time dialog per account; portals to body) ── */}
             <FirstRunWelcome onTakeTour={() => setShowTutorial(true)} />
 
@@ -1072,7 +1054,7 @@ const Dashboard = ({ isPremium = false }) => {
                       Macro Factors
                     </span>
                     {macroFactors?.overall_sentiment && (
-                      <span style={{
+                      <span title={macroRule(macroFactors)} style={{
                         fontSize: '0.65rem', fontWeight: 700, padding: '0.25rem 0.6rem', borderRadius: 4,
                         letterSpacing: '1px', textTransform: 'uppercase', fontFamily: FONT_MONO,
                         color: sentColor, border: `1px solid ${sentColor}66`,
@@ -1081,11 +1063,8 @@ const Dashboard = ({ isPremium = false }) => {
                         {macroFactors.overall_sentiment.toUpperCase()}
                       </span>
                     )}
-                    {macroFactors?.counts && (
-                      <MacroRule>
-                        {macroRule(macroFactors)}
-                        {macroFactors.generated_at ? ` · updated ${hhmmUtc(macroFactors.generated_at)}, ${hoursAgo(macroFactors.generated_at)}` : ''}
-                      </MacroRule>
+                    {macroFactors?.generated_at && (
+                      <MacroUpdated>Updated {hhmmUtc(macroFactors.generated_at)}</MacroUpdated>
                     )}
                     {!macroCollapsed && hasFactors && <Link
                       href={`/ai-advisor?q=${encodeURIComponent('Explain each of these macro factors in simple terms. What does each one mean and how could it affect the overall crypto market? Do NOT analyze any specific coin or pull price data — just explain the macro picture in plain English:\n\n' + macroFactors.factors.map(f => '• ' + f.title + ' (' + f.impact + '): ' + f.summary).join('\n'))}`}
@@ -1116,33 +1095,7 @@ const Dashboard = ({ isPremium = false }) => {
                       Scanning the latest macro headlines…
                     </div>
                   )}
-                  {!macroCollapsed && hasFactors && <>
-                  <MacroGrid>
-                    {macroFactors.factors.slice(0, macroShowAll ? undefined : 3).map((f, i) => {
-                      const dotColor = f.impact === 'bullish' ? COLORS.green : f.impact === 'bearish' ? COLORS.red : COLORS.textMuted
-                      return (
-                      <MacroCard key={i}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.35rem' }}>
-                          <span style={{
-                            width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                            background: dotColor, boxShadow: `0 0 8px ${dotColor}88`,
-                          }}/>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: COLORS.textPrimary }}>{f.title}</span>
-                        </div>
-                        <div style={{ fontSize: '0.8rem', color: '#8a9ab0', lineHeight: 1.55 }}>{f.summary}</div>
-                      </MacroCard>
-                      )
-                    })}
-                  </MacroGrid>
-                  {macroFactors.factors.length > 3 && (
-                    <button type="button" onClick={() => setMacroShowAll((v) => !v)} style={{
-                      marginTop: '0.6rem', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                      color: COLORS.cyan, fontSize: '0.78rem', fontFamily: FONT_SANS,
-                    }}>
-                      {macroShowAll ? 'Show the top 3' : `Show all ${macroFactors.factors.length} factors`}
-                    </button>
-                  )}
-                  </>}
+                  {!macroCollapsed && hasFactors && <MacroCarousel factors={macroFactors.factors} />}
                 </div>
               </div>
               )
