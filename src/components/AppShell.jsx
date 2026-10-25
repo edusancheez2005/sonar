@@ -1152,7 +1152,7 @@ export default function AppShell({ children, onLogout }) {
           </HeaderSearchWrap>
         </HeaderCenter>
         <HeaderEnd>
-          <OrcaBell />
+          {isAuthenticated && <OrcaBell />}
           <MobileMenuBtn type="button" aria-label="Open menu" onClick={() => setDrawerOpen(true)}>
             ☰
           </MobileMenuBtn>

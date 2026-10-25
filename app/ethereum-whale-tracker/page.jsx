@@ -56,7 +56,7 @@ export default function EthereumWhaleTrackerPage() {
           { icon: 'building', title: 'DeFi Whale Intelligence', desc: 'Track whale interactions with Aave, Uniswap, Lido, and Eigenlayer. See when large positions are opened or closed.' },
           { icon: 'cpu', title: 'ORCA AI for Ethereum', desc: 'Ask ORCA about ETH on-chain activity. Get context on ICO wallets, foundation transfers, custodial flows, and DeFi protocol activity.' },
           { icon: 'trending', title: 'Exchange Flow Tracking', desc: 'Monitor ETH moving in and out of all major exchanges. Sonar reports net inflow / net outflow magnitudes — descriptive data, not buy or sell signals.' },
-          { icon: 'bell', title: 'Custom Alerts', desc: 'Set alerts for ETH and any ERC-20 token. Get notified when whale activity exceeds your threshold or when net-flow direction changes.' },
+          { icon: 'bell', title: 'Custom Alerts', desc: 'Get notified when 24h whale net flow on ETH or an ERC-20 token crosses a threshold you set, or when a wallet you follow moves more than $25K, in-app and by email.' },
         ]}
         steps={[
           { title: 'Sonar monitors every ETH transaction over $10K', desc: 'Our pipeline captures whale movements across native ETH and all major ERC-20 tokens as they confirm on the Ethereum blockchain.' },

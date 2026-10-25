@@ -55,7 +55,7 @@ export default function SolanaWhaleTrackerPage() {
           { icon: 'lock', title: 'Staking Flow Monitoring', desc: 'Track large SOL unstaking events that signal potential selling 2-3 days ahead. Epoch-based lock periods give you a predictive window no other chain offers.' },
           { icon: 'cpu', title: 'ORCA AI for Solana', desc: 'Ask ORCA about SOL-specific whale activity. Get plain-English analysis of staking events, DEX flows on Jupiter and Raydium, and memecoin whale movements.' },
           { icon: 'eye', title: 'Wallet Tracker', desc: 'Follow any Solana wallet — VC funds, protocol treasuries, even memecoin snipers. Monitor all their transactions and DeFi interactions in real time.' },
-          { icon: 'bell', title: 'Custom Alerts', desc: 'Set alerts for SOL transactions above any threshold. Get notified when whale activity matches your criteria via email or in-app notifications.' },
+          { icon: 'bell', title: 'Custom Alerts', desc: 'Get notified when 24h whale net flow on a coin crosses a threshold you set, or when a wallet you follow moves more than $25K, in-app and by email.' },
           { icon: 'chart', title: 'Net Flow Analytics', desc: 'See whether SOL whales are accumulating or distributing across 1h, 6h, 24h, and 7d timeframes. Spot trend changes before they hit the price.' },
         ]}
         steps={[

@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
+import { DAILY_CAP_BY_STYLE, MAX_INAPP_PER_DAY } from '@/lib/orca/alerts/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -44,10 +45,32 @@ export async function GET(request: Request) {
       .is('read_at', null)
     if (countErr) throw countErr
 
+    // Today's deliveries vs the user's daily cap, for the "limit reached" line.
+    let todayCount: number | null = null
+    let dailyCap: number | null = null
+    try {
+      const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0)
+      const { count: today } = await supabaseAdminFresh
+        .from('user_notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', dayStart.toISOString())
+      const { data: prof } = await supabaseAdminFresh
+        .from('user_profile')
+        .select('notification_style')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      const style = (prof as any)?.notification_style === 'quiet' || (prof as any)?.notification_style === 'frequent' ? (prof as any).notification_style : 'balanced'
+      todayCount = today ?? 0
+      dailyCap = Math.min(DAILY_CAP_BY_STYLE[style as 'quiet' | 'balanced' | 'frequent'], MAX_INAPP_PER_DAY)
+    } catch { /* optional */ }
+
     return NextResponse.json(
       {
         items: data ?? [],
         unread_count: count ?? 0,
+        today_count: todayCount,
+        daily_cap: dailyCap,
         fetched_at: new Date().toISOString(),
       },
       { headers: { 'Cache-Control': 'private, no-store' } }

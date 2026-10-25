@@ -152,6 +152,10 @@ export function openNotificationInOrca(notification) {
     if (notification?.kind === 'wallet_activity' && addr) params.set('wallet', addr)
     else if (notification?.ticker && notification.ticker !== '_ALL_') params.set('ticker', notification.ticker)
     else if (addr) params.set('wallet', addr)
+    // Ask straight away instead of leaving a pre-filled box.
+    params.set('send', '1')
+    // Funnel: track() posts with keepalive, so it survives the navigation.
+    import('@/lib/analytics/track').then(({ track }) => track('alert_opened', { kind: notification?.kind || null })).catch(() => {})
     window.location.assign(`/ai?${params.toString()}`)
     return true
   } catch {

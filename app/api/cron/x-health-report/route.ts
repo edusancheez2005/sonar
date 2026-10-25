@@ -293,6 +293,26 @@ export async function GET(req: Request) {
     if (blog.lastRun && !blog.lastRun.ok) issues.push(`Last blog run failed: ${blog.lastRun.error || blog.lastRun.rejection || 'unknown'}.`)
     if (blog.lastRun?.ok && !blog.lastRun.hasImage) issues.push('Last blog article was saved without a cover (the next run self-heals it).')
 
+    // --- alerts canary -------------------------------------------------------
+    // 24h totals from the alert cron's telemetry rows (orca_traces stage=alerts).
+    // Before 2026-10-25, 13,773 of 14,082 triggers in 7 days were capped.
+    let alerts: any = { runs: 0, rules_evaluated: 0, triggered: 0, inserted: 0, capped: 0 }
+    try {
+      const since24 = new Date(now.getTime() - 24 * 3_600_000).toISOString()
+      const { data: traces } = await supabaseAdmin.from('orca_traces').select('payload').eq('stage', 'alerts').gte('created_at', since24).limit(1000)
+      for (const tr of (traces || []) as Array<{ payload?: any }>) {
+        const p = tr.payload || {}
+        if (p.kind && p.kind !== 'check') continue
+        alerts.runs += 1
+        alerts.rules_evaluated = Math.max(alerts.rules_evaluated, Number(p.rules_evaluated) || 0)
+        alerts.triggered += Number(p.triggered) || 0
+        alerts.inserted += Number(p.inserted) || 0
+        alerts.capped += Number(p.capped) || 0
+      }
+    } catch (e: any) { alerts.error = String(e?.message || e).slice(0, 120) }
+    if (alerts.runs === 0) issues.push('Alert cron recorded no runs in 24h — check /api/cron/check-user-alerts.')
+    else if (alerts.triggered > 50 && alerts.capped / alerts.triggered > 0.8) issues.push(`Alerts: ${alerts.capped} of ${alerts.triggered} triggers capped in 24h — a rule is flooding.`)
+
     const summary = {
       posts: { today: postsToday, yesterday: postsYesterday, lastPostHttpStatus: lastPostStatus, budget: Number(process.env.X_DAILY_POST_BUDGET) || 5 },
       recentPosts: recentPosts.slice(-8).reverse(),
@@ -306,6 +326,7 @@ export async function GET(req: Request) {
       seo: { sitemapUrls, pricingBlocked, btcIndexed },
       issues,
       blog,
+      alerts,
     }
 
     if (dry) return NextResponse.json({ dry: true, ...summary })
@@ -334,6 +355,8 @@ export async function GET(req: Request) {
       <p>Qualifying $5M–$150M transfers last 8h: <b>${whaleQualifying || 0}</b></p>
       <h3>SEO</h3>
       <p>Sitemap URLs: <b>${sitemapUrls}</b> · /pricing blocked: <b>${pricingBlocked === null ? '?' : pricingBlocked}</b> · /token/BTC indexed: <b>${btcIndexed === null ? '?' : btcIndexed}</b></p>
+      <h3>Alerts (24h)</h3>
+      <p>Cron runs: <b>${alerts.runs}</b> · rules checked: <b>${alerts.rules_evaluated}</b> · triggered: <b>${alerts.triggered}</b> · delivered: <b>${alerts.inserted}</b> · capped: <b>${alerts.capped}</b></p>
       <h3>Blog</h3>
       <p>Last article: <b>${blog.lastGuideAgeDays ?? '?'}</b> days ago (${blog.lastGuideSlug || 'n/a'}) · topics left: <b>${blog.remainingTopics ?? '?'}</b> · Whale Pulse: <b>${blog.pulseAgeDays ?? '?'}</b> days ago · last run: ${blog.lastRun ? (blog.lastRun.ok ? `ok, cover ${blog.lastRun.coverBytes ? Math.round(blog.lastRun.coverBytes / 1024) + ' KB' : 'missing'}` : `failed (${blog.lastRun.error || blog.lastRun.rejection || 'unknown'})`) : 'none yet'}</p>
       <p style="color:#888;font-size:12px">Automated daily report from /api/cron/x-health-report. Reply to Claude in the Sonar session to change or stop it.</p>`

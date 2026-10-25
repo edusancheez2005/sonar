@@ -66,7 +66,7 @@ async function executeConfirmedWrites(
   confirmedCalls: WriteCall[],
   userId: string,
   supabase: any
-): Promise<{ results: ConfirmedWriteResult[]; text: string; success: boolean; intent: string }> {
+): Promise<{ results: ConfirmedWriteResult[]; text: string; success: boolean; intent: string; invalidate: string[] }> {
   const results: ConfirmedWriteResult[] = []
   const listings: string[] = []
   let touchedAlerts = false
@@ -134,7 +134,12 @@ async function executeConfirmedWrites(
   }
   const text = parts.length > 0 ? parts.join(' ') : 'No changes were made.'
   const intent = touchedAlerts && added.length === 0 && removed.length === 0 ? 'alert_write' : 'watchlist_write'
-  return { results, text, success: failed.length === 0, intent }
+  // Clients turn each key into an 'orca:<key>-changed' event so open panels
+  // (AlertsTab, the watchlist) refresh without a reload.
+  const invalidate: string[] = []
+  if (alertsCreated.length || alertsRemoved.length) invalidate.push('alerts')
+  if (added.length || removed.length) invalidate.push('watchlist')
+  return { results, text, success: failed.length === 0, intent, invalidate }
 }
 
 // Vercel function timeout. The legacy v1 path fans out to multiple upstream
@@ -704,7 +709,7 @@ export async function POST(request: Request) {
 
         // Non-SSE callers: execute writes, return single JSON envelope.
         if (!acceptSse) {
-          const { results, text, success, intent } = await executeConfirmedWrites(
+          const { results, text, success, intent, invalidate } = await executeConfirmedWrites(
             confirmedCalls,
             userId,
             supabase as any
@@ -726,6 +731,7 @@ export async function POST(request: Request) {
             response: text,
             intent,
             writeResults: results,
+            invalidate,
             quota: quotaStatus,
           })
         }
@@ -737,7 +743,7 @@ export async function POST(request: Request) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
             }
             try {
-              const { results, text, success, intent } = await executeConfirmedWrites(
+              const { results, text, success, intent, invalidate } = await executeConfirmedWrites(
                 confirmedCalls,
                 userId,
                 supabase as any
@@ -763,6 +769,7 @@ export async function POST(request: Request) {
                 response: text,
                 intent,
                 writeResults: results,
+                invalidate,
                 quota: quotaStatus,
               })
             } catch (err: any) {

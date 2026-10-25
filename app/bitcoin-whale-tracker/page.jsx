@@ -56,7 +56,7 @@ export default function BitcoinWhaleTrackerPage() {
           { icon: 'moon', title: 'Dormant Wallet Alerts', desc: 'Get flagged when long-dormant Bitcoin wallets (5+ years inactive) suddenly move BTC. ORCA AI describes the destination (exchange vs new cold wallet) — context only.' },
           { icon: 'cpu', title: 'ORCA AI for Bitcoin', desc: 'Ask ORCA about BTC-specific on-chain data: exchange reserves, miner outflows, government wallet movements, and UTXO age distribution.' },
           { icon: 'database', title: 'UTXO Age Analysis', desc: 'Track Coin Days Destroyed and HODL Waves metrics. Movement of long-dormant coins is a descriptive on-chain observation, not a directional indicator.' },
-          { icon: 'bell', title: 'Custom BTC Alerts', desc: 'Set alerts for BTC transactions above any threshold. Get notified when government wallets, miners, or dormant whales transact.' },
+          { icon: 'bell', title: 'Custom BTC Alerts', desc: 'Get notified when 24h whale net flow on BTC (wrapped BTC on Ethereum) crosses a threshold you set, or when a wallet you follow moves more than $25K, in-app and by email.' },
         ]}
         steps={[
           { title: 'Sonar monitors every BTC transaction over $10K', desc: 'Our pipeline captures Bitcoin whale movements across the UTXO model, tracking address clusters rather than individual accounts for accurate entity mapping.' },

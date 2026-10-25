@@ -12,6 +12,9 @@ const STRIPE_BY_KIND = {
   signal_flip: '#a78bfa',
   news_high_impact: '#fbbf24',
   whale_convergence: '#7af8ff',
+  wallet_activity: '#f472b6',
+  news_any: '#fcd34d',
+  social_post: '#60a5fa',
 }
 
 function relativeTime(iso) {

@@ -102,7 +102,7 @@ export function OrcaBell() {
               pointerEvents: 'none',
             }}
           >
-            {unread > 9 ? '9+' : unread}
+            {unread > 99 ? '99+' : unread}
           </span>
         )}
       </button>

@@ -528,15 +528,17 @@ export default function AlertsTab({ client, fetchImpl }) {
     load()
   }, [load])
 
-  // Refresh muted tickers when ORCA mutes/unmutes via a voice-write.
+  // Refresh when ORCA mutes/unmutes or creates/removes an alert in chat.
   useEffect(() => {
-    function onMuteChanged() { load() }
+    function onChanged() { load() }
     if (typeof window !== 'undefined') {
-      window.addEventListener('orca:mute-changed', onMuteChanged)
+      window.addEventListener('orca:mute-changed', onChanged)
+      window.addEventListener('orca:alerts-changed', onChanged)
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener('orca:mute-changed', onMuteChanged)
+        window.removeEventListener('orca:mute-changed', onChanged)
+        window.removeEventListener('orca:alerts-changed', onChanged)
       }
     }
   }, [load])

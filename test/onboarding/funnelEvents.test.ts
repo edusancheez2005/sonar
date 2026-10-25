@@ -6,8 +6,9 @@ import { readFileSync } from 'node:fs'
 
 describe('funnel events', () => {
   it('has exactly the eight Week-1 events, matching the SQL CHECK constraint', () => {
-    expect([...FUNNEL_EVENTS]).toEqual(['signup', 'welcome_choice', 'follow', 'alert_set', 'orca_question', 'paywall_view', 'checkout', 'paid'])
-    const sql = readFileSync('supabase/migrations/20261003_funnel_events.sql', 'utf8')
+    expect([...FUNNEL_EVENTS]).toEqual(['signup', 'welcome_choice', 'follow', 'alert_set', 'orca_question', 'paywall_view', 'checkout', 'paid', 'alert_opened'])
+    // The latest CHECK lives in the alert_opened migration; the first still holds the original eight.
+    const sql = readFileSync('supabase/migrations/20261024_funnel_events_alert_opened.sql', 'utf8')
     for (const e of FUNNEL_EVENTS) expect(sql).toContain(`'${e}'`)
   })
   it('rejects unknown names', () => {
@@ -59,7 +60,7 @@ describe('famous wallets picker list', () => {
 describe('client event allowlist', () => {
   it('lets the browser send only welcome_choice and paywall_view', async () => {
     const { CLIENT_EVENTS, isClientEvent } = await import('@/lib/analytics/events')
-    expect([...CLIENT_EVENTS]).toEqual(['welcome_choice', 'paywall_view'])
+    expect([...CLIENT_EVENTS]).toEqual(['welcome_choice', 'paywall_view', 'alert_opened'])
     for (const e of ['signup', 'follow', 'alert_set', 'orca_question', 'checkout', 'paid']) {
       expect(isClientEvent(e)).toBe(false)
     }

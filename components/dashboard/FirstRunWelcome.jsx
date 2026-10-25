@@ -655,8 +655,9 @@ export default function FirstRunWelcome({ onTakeTour }) {
             <Eyebrow>Follow famous wallets</Eyebrow>
             <Heading id="sonar-welcome-title">Pick who to watch.</Heading>
             <Sub>
-              One tap each. When they move you will see it on your dashboard and
-              in your inbox, and by email if you want.
+              One tap each follows the wallet and sets an alert: you hear when it
+              moves more than $25K ($1M for Binance, Wintermute and Justin Sun),
+              on your dashboard and in your inbox, and by email if you want.
             </Sub>
 
             <PickerHead>

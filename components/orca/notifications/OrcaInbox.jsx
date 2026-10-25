@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { TILE } from '../inline/tileTokens'
 import { NotificationCard } from './NotificationCard'
-import { fetchInbox, clearAllNotifications } from './client'
+import { fetchInbox, clearAllNotifications, markAllRead } from './client'
 
 const PAGE = 20
 
@@ -15,6 +15,7 @@ export function OrcaInbox({ open, onClose }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(false)
+  const [limitInfo, setLimitInfo] = useState(null)
   const panelRef = useRef(null)
 
   const load = useCallback(async (before = null) => {
@@ -24,10 +25,21 @@ export function OrcaInbox({ open, onClose }) {
     const incoming = Array.isArray(res.items) ? res.items : []
     setItems((prev) => (before ? [...prev, ...incoming] : incoming))
     setHasMore(incoming.length >= PAGE)
+    if (!before && Number.isFinite(res?.today_count) && Number.isFinite(res?.daily_cap)) {
+      setLimitInfo({ today: res.today_count, cap: res.daily_cap })
+    }
+    return res
   }, [])
 
+  // Opening the drawer reads everything: the list still shows this visit's
+  // unread styling, and the bell clears. (read_at had been set 3 times ever.)
   useEffect(() => {
-    if (open) load(null)
+    if (!open) return
+    let cancelled = false
+    load(null).then((res) => {
+      if (!cancelled && Number(res?.unread_count) > 0) markAllRead()
+    })
+    return () => { cancelled = true }
   }, [open, load])
 
   // ESC to close.
@@ -49,8 +61,9 @@ export function OrcaInbox({ open, onClose }) {
 
   if (!open) return null
 
-  const onMarkAll = async () => {
-    // Optimistically clear the list, then delete every notification server-side.
+  const onClearAll = async () => {
+    // Destructive: deletes every notification. Ask first.
+    if (typeof window !== 'undefined' && !window.confirm('Delete all notifications? This cannot be undone.')) return
     setItems([])
     await clearAllNotifications()
   }
@@ -111,10 +124,11 @@ export function OrcaInbox({ open, onClose }) {
           </span>
           <button
             type="button"
-            onClick={onMarkAll}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: TILE.cyanText, fontSize: 11 }}
+            onClick={onClearAll}
+            disabled={items.length === 0}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: items.length ? 'pointer' : 'default', color: TILE.grey, fontSize: 11 }}
           >
-            Mark all read
+            Clear all
           </button>
           <button
             type="button"
@@ -129,7 +143,7 @@ export function OrcaInbox({ open, onClose }) {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {items.length === 0 && !loading && (
             <div style={{ padding: 24, textAlign: 'center', color: TILE.grey, fontSize: 13 }}>
-              No notifications yet. ORCA will ping you here when something on your watchlist moves.
+              No notifications yet. Your alerts land here when they fire.
             </div>
           )}
           {items.map((n) => (
@@ -140,6 +154,11 @@ export function OrcaInbox({ open, onClose }) {
               onRemove={(id) => setItems((prev) => prev.filter((it) => it.id !== id))}
             />
           ))}
+          {limitInfo && limitInfo.today >= limitInfo.cap && (
+            <div data-testid="inbox-limit" style={{ padding: '10px 16px', color: TILE.grey, fontSize: 11.5, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              Daily limit reached ({limitInfo.today}/{limitInfo.cap}): raise your alert cadence in settings, or wait for tomorrow (UTC).
+            </div>
+          )}
           {hasMore && (
             <div style={{ padding: 12, textAlign: 'center' }}>
               <button
