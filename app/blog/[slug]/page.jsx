@@ -1,7 +1,14 @@
 import React from 'react'
+import { notFound } from 'next/navigation'
 import BlogPostClient from './BlogPostClient'
 import DynamicBlogPost from './DynamicBlogPost'
 import { createClient } from '@supabase/supabase-js'
+
+const OG_FALLBACK = 'https://www.sonartracker.io/screenshots/stats-dashboard.png'
+
+// Post pages are cached for an hour; the article writers call revalidatePath
+// after every write, so new and rewritten posts show up at once.
+export const revalidate = 3600
 
 async function getDynamicPost(slug) {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null
@@ -85,12 +92,12 @@ export async function generateMetadata({ params }) {
         type: 'article',
         publishedTime: dyn.created_at,
         modifiedTime: dyn.updated_at,
-        images: dyn.cover_image ? [{ url: dyn.cover_image }] : [],
+        images: [{ url: dyn.cover_image || OG_FALLBACK }],
         siteName: 'Sonar Tracker',
       },
     }
   }
-  return { title: 'Sonar Tracker Blog', description: 'Crypto whale tracking insights.' }
+  return { title: 'Article not found', robots: { index: false, follow: true } }
 }
 
 function BlogPostSchema({ slug }) {
@@ -130,7 +137,7 @@ function DynamicBlogSchema({ post, slug }) {
       logo: { '@type': 'ImageObject', url: 'https://www.sonartracker.io/logo2.png' },
     },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `https://www.sonartracker.io/blog/${slug}` },
-    image: post.cover_image || 'https://www.sonartracker.io/screenshots/stats-dashboard.png',
+    image: post.cover_image || OG_FALLBACK,
   }
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 }
@@ -138,6 +145,8 @@ function DynamicBlogSchema({ post, slug }) {
 export default async function BlogPost({ params }) {
   const isStaticPost = !!posts[params.slug]
   const dyn = isStaticPost ? null : await getDynamicPost(params.slug)
+  // Unknown or unpublished slugs used to answer 200 with "Loading article".
+  if (!isStaticPost && !dyn) notFound()
   return (
     <>
       {isStaticPost && <BlogPostSchema slug={params.slug} />}

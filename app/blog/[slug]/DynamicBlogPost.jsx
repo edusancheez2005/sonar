@@ -16,13 +16,16 @@ const Wrap = styled.div`
   a { color: var(--primary); text-decoration: none; &:hover { text-decoration: underline; } }
   ul, ol { margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text-secondary); }
   li { margin-bottom: 0.5rem; line-height: 1.6; }
-  img { max-width: 100%; border-radius: 12px; margin: 1.5rem 0; }
+  img { max-width: 100%; height: auto; border-radius: 12px; margin: 1.5rem 0; }
   blockquote {
     border-left: 3px solid var(--primary); margin: 1.5rem 0; padding: 1rem 1.5rem;
     background: rgba(54,166,186,0.05); border-radius: 0 8px 8px 0;
     p { color: var(--text-secondary); margin: 0; }
   }
-  table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 1.5rem 0;
+    display: block; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
   th { background: rgba(54,166,186,0.1); color: var(--primary); padding: 0.75rem; text-align: left; border-bottom: 2px solid rgba(54,166,186,0.2); font-weight: 600; }
   td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--secondary); color: var(--text-secondary); }
   strong { color: var(--text-primary); }
@@ -68,14 +71,19 @@ export default function DynamicBlogPost({ slug, initialPost = null }) {
   if (loading) return <Loading>Loading article...</Loading>
   if (error || !post) return <Loading>Article not found.</Loading>
 
-  const date = new Date(post.created_at).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  })
+  const fmt = (d) => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const date = fmt(post.created_at)
+  const updated = post.updated_at && fmt(post.updated_at) !== date ? fmt(post.updated_at) : null
+  // Whale-pulse posts written before 2026-10-25 have no <h1> in their body.
+  const hasTitle = /<h1[\s>]/i.test(post.content || '')
 
   return (
     <Wrap>
+      {!hasTitle && post.title && <h1>{post.title}</h1>}
       <Meta>
+        <span>Sonar Tracker team</span>
         <span>{date}</span>
+        {updated && <span>Updated {updated}</span>}
       </Meta>
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
       {(post.tags || []).length > 0 && (
