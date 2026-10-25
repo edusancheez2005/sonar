@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server'
 import { getUserFromRequest } from '@/app/lib/walletAuth'
 import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 import { trackServer } from '@/lib/analytics/trackServer'
+import { canonicalSymbol } from '@/lib/wallet/symbol-aliases'
 import {
   MAX_ACTIVE_RULES_PER_USER,
   DEFAULT_PRICE_MOVE_PCT,
@@ -76,6 +77,18 @@ export async function POST(request: Request) {
     } else {
       ticker = normaliseTicker((body as any).ticker)
       if (!ticker) return NextResponse.json({ error: 'invalid_ticker' }, { status: 400 })
+    }
+
+    // A price alert needs a coin we price (it would never fire otherwise):
+    // the symbol or its canonical form (WBTC → BTC) priced in the last 24 h.
+    if (kind === 'price_move' && ticker) {
+      const { data: priced } = await supabaseAdminFresh
+        .from('price_snapshots')
+        .select('ticker')
+        .in('ticker', Array.from(new Set([ticker, canonicalSymbol(ticker) || ticker])))
+        .gte('timestamp', new Date(Date.now() - 24 * 3_600_000).toISOString())
+        .limit(1)
+      if (!priced || priced.length === 0) return NextResponse.json({ error: 'unknown_symbol' }, { status: 400 })
     }
 
     // Fill sensible defaults before validating threshold shape.

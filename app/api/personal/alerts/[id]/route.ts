@@ -40,7 +40,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       patch.threshold_pct = pct
       patch.threshold_usd = null
     }
-    if ((body as any).threshold_usd !== undefined) {
+    if ((body as any).threshold_usd === null) {
+      // "Any valued move" — only wallet_activity rules allow a null floor
+      // (the chk_threshold_shape constraint rejects it for other kinds).
+      patch.threshold_usd = null
+    } else if ((body as any).threshold_usd !== undefined) {
       const usd = Number((body as any).threshold_usd)
       if (!Number.isFinite(usd) || usd <= 0) {
         return NextResponse.json({ error: 'invalid_threshold' }, { status: 400 })

@@ -86,3 +86,34 @@ describe('AlertsTab — muted tickers', () => {
     })
   })
 })
+
+describe('AlertsTab — editing an alert in place', () => {
+  it('changes a price alert from 1% to 2.5% with one PATCH', async () => {
+    const rule = { id: '11111111-1111-4111-8111-111111111111', kind: 'price_move', ticker: 'BTC', threshold_pct: 1, threshold_usd: null, enabled: true }
+    const fetchImpl = makeFetch({ rules: [rule] })
+    render(<AlertsTab client={makeClient('tok')} fetchImpl={fetchImpl as any} />)
+    await userEvent.click(await screen.findByRole('button', { name: /change the threshold, now ±1%/i }))
+    const input = screen.getByLabelText('New threshold')
+    await userEvent.clear(input)
+    await userEvent.type(input, '2.5{enter}')
+    await waitFor(() => {
+      const patch = (fetchImpl as any).mock.calls.find((c: any[]) => c[1]?.method === 'PATCH')
+      expect(patch[0]).toBe(`/api/personal/alerts/${rule.id}`)
+      expect(JSON.parse(patch[1].body)).toEqual({ threshold_pct: 2.5 })
+    })
+  })
+
+  it('lets a wallet alert go back to any move', async () => {
+    const rule = { id: '22222222-2222-4222-8222-222222222222', kind: 'wallet_activity', ticker: null, address: '0xabc0000000000000000000000000000000000001', threshold_pct: null, threshold_usd: 100000, enabled: true }
+    const fetchImpl = makeFetch({ rules: [rule] })
+    render(<AlertsTab client={makeClient('tok')} fetchImpl={fetchImpl as any} />)
+    await userEvent.click(await screen.findByRole('button', { name: /change the threshold/i }))
+    const input = screen.getByLabelText('New threshold')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'any{enter}')
+    await waitFor(() => {
+      const patch = (fetchImpl as any).mock.calls.find((c: any[]) => c[1]?.method === 'PATCH')
+      expect(JSON.parse(patch[1].body)).toEqual({ threshold_usd: null })
+    })
+  })
+})

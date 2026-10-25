@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import styled, { keyframes } from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import AlertPresets from '@/components/personal/AlertPresets'
-import { CADENCE_SENTENCE } from '@/lib/orca/alerts/presets'
+import { CADENCE_SENTENCE, ALERT_PRESETS, parseCustomValue } from '@/lib/orca/alerts/presets'
 import { DAILY_CAP_BY_STYLE } from '@/lib/orca/alerts/types'
 import { EMAIL_CAP_BY_STYLE } from '@/lib/orca/alerts/emailNotifications'
 
@@ -361,6 +361,28 @@ const Chip = styled.span`
   border-radius: 999px;
   padding: 3px 9px;
   white-space: nowrap;
+  font-family: inherit;
+  &:is(button) { cursor: pointer; }
+  &:is(button):hover { border-color: ${(p) => p.$color}; }
+  &:is(button):focus-visible { outline: 2px solid ${(p) => p.$color}; outline-offset: 2px; }
+`
+const EditBox = styled.form`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  input {
+    width: 110px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    background: rgba(0, 0, 0, 0.25);
+    color: #eef3f8;
+    font-size: 12px;
+  }
+  button { height: 28px; padding: 0 9px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  button[type='submit'] { border: none; background: #00e5ff; color: #0a0e17; font-weight: 700; }
+  button[type='button'] { border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #9fb2c4; }
 `
 const Switch = styled.button`
   position: relative;
@@ -487,6 +509,8 @@ export default function AlertsTab({ client, fetchImpl, embedded = false, wallets
   const [error, setError] = useState(null)
   const [muted, setMuted] = useState({ tickers: [], until_iso: null })
   const [testState, setTestState] = useState(null)
+  const [editing, setEditing] = useState(null) // { id, value }
+  const [editError, setEditError] = useState(null)
 
   const meta = KIND_META[form.kind]
 
@@ -645,6 +669,44 @@ export default function AlertsTab({ client, fetchImpl, embedded = false, wallets
       })
       await load()
     } catch {}
+  }
+
+  // Change an existing rule's number in place (PATCH /api/personal/alerts/:id).
+  const editPreset = (r) => ALERT_PRESETS.find((p) => p.kind === r.kind && p.unit)
+  const startEdit = (r) => {
+    setEditError(null)
+    const cur = r.kind === 'price_move' || r.kind === 'whale_convergence' ? r.threshold_pct : r.threshold_usd
+    setEditing({ id: r.id, value: cur == null ? (r.kind === 'wallet_activity' ? 'any' : '') : String(cur) })
+  }
+  const saveEdit = async (e, r) => {
+    e.preventDefault()
+    const preset = editPreset(r)
+    const raw = String(editing?.value || '').trim().toLowerCase()
+    let patch = null
+    if (r.kind === 'wallet_activity' && (raw === 'any' || raw === '0' || raw === '')) patch = { threshold_usd: null }
+    else {
+      const v = preset ? parseCustomValue(preset, raw) : null
+      if (v === null) {
+        setEditError(preset?.unit === 'usd' ? 'Enter an amount like 250k or 2m.' : preset?.unit === 'pct' ? 'Enter a percentage like 1.5.' : 'Enter a number of wallets, 2 to 20.')
+        return
+      }
+      patch = preset.unit === 'usd' ? { threshold_usd: v } : { threshold_pct: v }
+    }
+    const doFetch = fetchImpl ?? fetch
+    const t = await token()
+    try {
+      const res = await doFetch(`/api/personal/alerts/${r.id}`, {
+        method: 'PATCH',
+        headers: { authorization: `Bearer ${t}`, 'content-type': 'application/json' },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) { setEditError('Could not change this alert.'); return }
+      setEditing(null)
+      await load()
+      try { window.dispatchEvent(new CustomEvent('orca:alerts-changed')) } catch { /* ignore */ }
+    } catch {
+      setEditError('Could not change this alert.')
+    }
   }
 
   const removeRule = async (rule) => {
@@ -828,7 +890,25 @@ export default function AlertsTab({ client, fetchImpl, embedded = false, wallets
                     {isAddr && r.chain ? ` · ${r.chain}` : ''}
                   </CardMeta>
                 </CardMain>
-                <Chip $color={m.color}>{thresholdChip(r)}</Chip>
+                {editing?.id === r.id ? (
+                  <EditBox onSubmit={(e) => saveEdit(e, r)}>
+                    <input
+                      autoFocus
+                      value={editing.value}
+                      onChange={(e) => setEditing({ id: r.id, value: e.target.value })}
+                      placeholder={r.kind === 'wallet_activity' ? '250k, or any' : r.kind === 'price_move' ? '% e.g. 1.5' : r.kind === 'whale_convergence' ? 'wallets e.g. 4' : 'e.g. 2m'}
+                      aria-label="New threshold"
+                    />
+                    <button type="submit">Save</button>
+                    <button type="button" onClick={() => { setEditing(null); setEditError(null) }}>Cancel</button>
+                  </EditBox>
+                ) : editPreset(r) ? (
+                  <Chip as="button" type="button" $color={m.color} onClick={() => startEdit(r)} title="Change this number" aria-label={`Change the threshold, now ${thresholdChip(r)}`}>
+                    {thresholdChip(r)} · edit
+                  </Chip>
+                ) : (
+                  <Chip $color={m.color}>{thresholdChip(r)}</Chip>
+                )}
                 <Switch
                   type="button"
                   $on={!!r.enabled}
@@ -850,6 +930,7 @@ export default function AlertsTab({ client, fetchImpl, embedded = false, wallets
           })}
         </List>
       )}
+      {editError && <Note style={{ color: '#ff7a7a', marginTop: -8 }}>{editError}</Note>}
       {status === 'ready' && rules.length === 0 && (
         <Empty>
           No alerts yet. Pick a preset above, or tell ORCA:

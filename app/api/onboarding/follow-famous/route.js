@@ -50,7 +50,9 @@ export async function POST(req) {
   }
 
   // Entities are independent; "Follow all six" runs them side by side.
-  const settled = await Promise.allSettled(wanted.map((slug) => followFamous(supabaseAdmin, user.id, slug)))
+  // Optional floor from the alert preset editor (USD; null = any move).
+  const minUsd = body?.min_usd === null ? null : Number(body?.min_usd) >= 1_000 ? Number(body.min_usd) : undefined
+  const settled = await Promise.allSettled(wanted.map((slug) => followFamous(supabaseAdmin, user.id, slug, { minUsd })))
   const results = settled.map((r, i) =>
     r.status === 'fulfilled' ? r.value : { slug: wanted[i], ok: false, error: 'internal_error' }
   )
