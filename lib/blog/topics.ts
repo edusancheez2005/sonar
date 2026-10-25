@@ -52,6 +52,18 @@ export const TOPIC_POOL: BlogTopic[] = [
   { kind: 'rewrite', slug: 'solana-whale-tracker-real-time', keyword: 'solana whale tracker', data: 'solana_transactions (Railway monitor; check freshness first)',
     angle: 'Tracking Solana whale movements: how large SOL and SPL token transfers are recorded, how to read them on Solscan, and what on-chain data can and cannot tell you' },
 
+  // Unpublished 2026-10-25 for invented win-rate, uptime and user-count figures.
+  { kind: 'rewrite', slug: 'crypto-fear-greed-index-trading', keyword: 'crypto fear and greed index', data: TAPE,
+    angle: 'The crypto Fear & Greed Index explained: what goes into it, how it has moved alongside large whale transfers, and why it describes mood rather than timing' },
+  { kind: 'rewrite', slug: 'crypto-whale-alert-bot-setup', keyword: 'crypto whale alert bot', data: TAPE,
+    angle: 'How whale alert bots work: where the transfer data comes from, how size thresholds and cooldowns cut noise, and how Telegram and Discord deliver the messages' },
+  { kind: 'rewrite', slug: 'on-chain-metrics-trading-guide', keyword: 'on chain metrics', data: TAPE,
+    angle: 'On-chain metrics explained: SOPR, NVT and exchange reserves — what each measures, how it is calculated and the situations in which each misleads' },
+  { kind: 'rewrite', slug: 'crypto-data-aggregation-workflow', keyword: 'crypto data aggregation', data: TAPE,
+    angle: 'Combining crypto data sources: prices, on-chain transfers and news, how they disagree, and a simple workflow for checking one against another' },
+  { kind: 'rewrite', slug: 'whale-watching-crypto-strategy', keyword: 'whale watching crypto', data: TAPE,
+    angle: 'Whale watching in crypto: which large moves are worth reading (exchange deposits and withdrawals, fresh wallets) and which are routine (exchange reshuffles, bridges)' },
+
   // ── New topics (12 = one month at the cap) ───────────────────────────────
   { kind: 'new', slug: 'what-is-a-crypto-whale', keyword: 'what is a crypto whale', data: TAPE,
     angle: 'What is a crypto whale? Size thresholds by asset, how whales appear on-chain, and how to tell a real move from an exchange reshuffle' },
