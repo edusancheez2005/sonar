@@ -97,7 +97,10 @@ export async function generateMetadata({ params }) {
       },
     }
   }
-  return { title: 'Article not found', robots: { index: false, follow: true } }
+  // Metadata resolves before the root loading boundary streams the shell, so
+  // notFound() here yields a real HTTP 404 (in the page body it would arrive
+  // after a 200 status had already been sent).
+  notFound()
 }
 
 function BlogPostSchema({ slug }) {

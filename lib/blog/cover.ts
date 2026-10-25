@@ -17,13 +17,13 @@ export function coverPrompt(subject: string): string {
 }
 
 /** First cover model this key can use (models.retrieve proves access, not billing). */
-export async function resolveCoverModel(openai: OpenAI): Promise<string | null> {
+export async function resolveCoverModel(openai: OpenAI, errors?: string[]): Promise<string | null> {
   for (const m of COVER_MODELS) {
     try {
       await openai.models.retrieve(m)
       return m
-    } catch {
-      /* try the next one */
+    } catch (e: any) {
+      errors?.push(`${m}: ${e?.status || ''} ${String(e?.message || e).slice(0, 120)}`.trim())
     }
   }
   return null

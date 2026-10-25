@@ -285,7 +285,8 @@ export async function GET(req) {
 
     const text = textProvider()
     const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
-    const imageModel = openai ? await resolveCoverModel(openai) : null
+    const imageErrors = []
+    const imageModel = openai ? await resolveCoverModel(openai, imageErrors) : null
 
     if (dryRun) {
       const { data: heal } = await sb.from('blog_posts').select('slug').eq('published', true).is('cover_image', null).order('created_at', { ascending: false }).limit(1)
@@ -299,6 +300,8 @@ export async function GET(req) {
         text_model_ok: text ? await modelReachable(text.client, text.model) : false,
         image_model: imageModel,
         image_model_ok: !!imageModel,
+        openai_key_present: !!process.env.OPENAI_API_KEY,
+        image_model_errors: imageErrors,
         self_heal_target: heal?.[0]?.slug || null,
       })
     }
