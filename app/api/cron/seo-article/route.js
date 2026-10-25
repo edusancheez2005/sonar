@@ -360,6 +360,8 @@ export async function GET(req) {
     const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : topic.angle
     const description = firstParagraph(linked.replace(/<h1[\s\S]*?<\/h1>/i, '')) || topic.angle.slice(0, 155)
     const nowIso = new Date().toISOString()
+    // A rewrite keeps the post's existing cover when no new one was made.
+    const { data: existing } = await sb.from('blog_posts').select('cover_image').eq('slug', topic.slug).maybeSingle()
     const { error: upErr } = await sb.from('blog_posts').upsert({
       slug: topic.slug,
       title,
@@ -373,6 +375,9 @@ export async function GET(req) {
     if (upErr) throw new Error(`upsert: ${upErr.message}`)
 
     let cover = null
+    if (coverRes.status !== 'fulfilled' && existing?.cover_image && !/blob\.core\.windows\.net/.test(existing.cover_image)) {
+      await sb.from('blog_posts').update({ content: withCover(linked, existing.cover_image, title) }).eq('slug', topic.slug)
+    }
     if (coverRes.status === 'fulfilled') {
       cover = coverRes.value
       const { error: coverErr } = await sb.from('blog_posts')
