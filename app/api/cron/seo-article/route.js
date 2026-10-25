@@ -46,7 +46,9 @@ function withDeadline(promise, ms, label) {
 function textProvider() {
   const override = process.env.BLOG_WRITER_MODEL
   const xaiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY
-  if (xaiKey) return { client: new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' }), model: override || 'grok-4.3', provider: 'xai' }
+  // The flagship model: the mini (grok-4.3) wrote 919 of the 1,400 words asked
+  // for on 2026-10-25 and the lint rejected it. 10 articles a month, cents each.
+  if (xaiKey) return { client: new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' }), model: override || 'grok-4.5', provider: 'xai' }
   if (process.env.OPENAI_API_KEY) return { client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }), model: override || 'gpt-4.1-mini', provider: 'openai' }
   return null
 }
@@ -149,12 +151,12 @@ STRUCTURE (HTML only; start directly with <h1>):
 2. An opening paragraph that states one dated figure from SONAR DATA in its first two sentences, then says what the reader will learn.
 3. <h2>In this guide</h2> with a short <ul> of the section titles (plain list, no anchor links).
 4. <h2>Key takeaways</h2> with an HTML table, columns "Point" and "What it means", four rows.
-5. Six to eight <h2> body sections with substantive paragraphs. Two or three tables in the whole article (the takeaways table counts), each holding on-chain facts. One or two <blockquote><p>…</p></blockquote> pull-quotes in total, one factual sentence each.
+5. Six to eight <h2> body sections, each 180 to 280 words (three or four paragraphs of real explanation, not filler). Two or three tables in the whole article (the takeaways table counts), each holding on-chain facts. One or two <blockquote><p>…</p></blockquote> pull-quotes in total, one factual sentence each.
 6. <h2>What to watch</h2>: concrete things a reader can check on-chain, never predictions.
 7. <h2>FAQ</h2> with three or four <h3> questions and short answers.
 8. A closing <p><em>This article is for information only. It is not financial advice, and on-chain data shows transfers, not intentions.</em></p>
 
-LENGTH: 1,400 to 2,200 words, never more than 2,500.
+LENGTH: 1,400 to 2,200 words in total, never more than 2,500. Count as you write: an article under 1,400 words is discarded.
 
 LINKS:
 - Six to ten internal links, only from INTERNAL LINKS, written as <a href="https://www.sonartracker.io/PATH">anchor</a>.
