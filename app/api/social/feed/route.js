@@ -3,6 +3,14 @@ import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
 
+function parseSince(raw) {
+  if (!raw) return null
+  const m = /^(\d{1,3})([hd])$/.exec(raw.trim())
+  if (m) return new Date(Date.now() - Number(m[1]) * (m[2] === 'h' ? 3_600_000 : 86_400_000)).toISOString()
+  const t = Date.parse(raw)
+  return Number.isFinite(t) ? new Date(t).toISOString() : false
+}
+
 /**
  * GET /api/social/feed
  * Returns the social feed — top crypto posts/tweets from influencers.
@@ -13,6 +21,7 @@ export const dynamic = 'force-dynamic'
  *   - ticker: filter posts mentioning a specific ticker
  *   - limit: max results (default 50, max 200)
  *   - sort: interactions (default) | recent
+ *   - since: 48h | 7d | ISO timestamp (optional; unbounded when absent)
  */
 export async function GET(req) {
   try {
@@ -41,6 +50,13 @@ export async function GET(req) {
       // JS array (which PostgREST sends as cs.{BTC}, rejected as invalid JSON).
       query = query.contains('tickers_mentioned', JSON.stringify([ticker]))
     }
+
+    // Optional time bound: since=48h | 7d | <ISO>. Without it the feed stays
+    // unbounded (NewsTerminal relies on that); "most shared" with no bound
+    // returned posts from February to June.
+    const since = parseSince(searchParams.get('since'))
+    if (since === false) return NextResponse.json({ error: 'since must be like 48h, 7d or an ISO time' }, { status: 400 })
+    if (since) query = query.gte('published_at', since)
 
     if (sort === 'recent') {
       query = query.order('published_at', { ascending: false })
