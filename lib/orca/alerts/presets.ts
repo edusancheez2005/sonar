@@ -10,8 +10,8 @@ import { CONVERGENCE_DEFAULT_MIN_WHALES } from './types'
 export const CADENCE_SENTENCE =
   'Price, whale-flow and news rules are checked every 5 minutes; wallet-activity rules are checked every 5 minutes against wallet data we refresh hourly.'
 
-/** whale_convergence needs migration 20261001 on production; hidden until it has run. */
-export const CONVERGENCE_PRESET_ENABLED = false
+/** whale_convergence needs migration 20261001; Eduardo ran it on 2026-10-25. */
+export const CONVERGENCE_PRESET_ENABLED = true
 
 export type PresetTarget = 'wallet' | 'coin'
 

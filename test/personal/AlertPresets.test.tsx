@@ -64,8 +64,8 @@ describe('AlertPresets', () => {
 })
 
 describe('presets library', () => {
-  it('hides whale convergence until its migration has run', () => {
-    expect(visiblePresets().map((p) => p.kind)).not.toContain('whale_convergence')
+  it('offers whale convergence now that its migration has run', () => {
+    expect(visiblePresets().map((p) => p.kind)).toContain('whale_convergence')
   })
   it('builds request bodies per unit', () => {
     const flow = ALERT_PRESETS.find((p) => p.kind === 'whale_flow')!
