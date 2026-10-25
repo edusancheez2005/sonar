@@ -12,7 +12,7 @@ import {
 import { getSmartMoneyActivity, type SmartMoneyStat } from '@/lib/whale/smartMoney'
 import { readAllRows } from '@/lib/orca/orchestrator/tools/pagedRead'
 
-export const ROTATION_ROWS_PER_SIDE = 5
+export const ROTATION_ROWS_PER_SIDE = 4
 export const ROTATION_MIN_TRADES = 2
 /** X post counts are shown only from this many posts in 24 h. */
 export const POSTS_MIN = 10

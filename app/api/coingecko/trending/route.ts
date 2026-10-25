@@ -8,29 +8,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRollingTicker } from '@/lib/binance/client'
 import { getAllPairs, pairToSymbol } from '@/lib/binance/symbol-map'
 import { getTokenLogos } from '@/lib/logos/getTokenLogos'
+import { TOKEN_NAMES } from '@/lib/trending/tokenNames'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-// Token name map for display (Binance only gives symbols)
-const TOKEN_NAMES: Record<string, string> = {
-  BTC: 'Bitcoin', ETH: 'Ethereum', BNB: 'BNB', SOL: 'Solana',
-  XRP: 'XRP', ADA: 'Cardano', DOGE: 'Dogecoin', AVAX: 'Avalanche',
-  DOT: 'Polkadot', LINK: 'Chainlink', UNI: 'Uniswap', ATOM: 'Cosmos',
-  LTC: 'Litecoin', FIL: 'Filecoin', NEAR: 'NEAR Protocol', APT: 'Aptos',
-  ARB: 'Arbitrum', OP: 'Optimism', AAVE: 'Aave', MKR: 'Maker',
-  CRV: 'Curve', SNX: 'Synthetix', COMP: 'Compound', SUSHI: 'SushiSwap',
-  ALGO: 'Algorand', FTM: 'Fantom', SAND: 'The Sandbox', MANA: 'Decentraland',
-  AXS: 'Axie Infinity', GRT: 'The Graph', SHIB: 'Shiba Inu', PEPE: 'Pepe',
-  WLD: 'Worldcoin', SUI: 'Sui', SEI: 'Sei', TIA: 'Celestia',
-  INJ: 'Injective', STX: 'Stacks', IMX: 'Immutable', RENDER: 'Render',
-  FET: 'Fetch.ai', JUP: 'Jupiter', WIF: 'dogwifhat', BONK: 'Bonk',
-  FLOKI: 'Floki', JASMY: 'JasmyCoin', ENA: 'Ethena', PENDLE: 'Pendle',
-  TAO: 'Bittensor', ONDO: 'Ondo', TRX: 'Tron', TON: 'Toncoin',
-  ETC: 'Ethereum Classic', XLM: 'Stellar', HBAR: 'Hedera', VET: 'VeChain',
-  ICP: 'Internet Computer', THETA: 'Theta', RUNE: 'THORChain', ENS: 'ENS',
-  MATIC: 'Polygon', POL: 'Polygon',
-}
 
 // 1H / 24H / 7D are real Binance rolling windows (the old 1H/7D/30D buttons
 // re-fetched the same 24 h data and relabelled it; Binance has no 30 d window).

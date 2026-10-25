@@ -13,9 +13,9 @@ const snap: any = {
 }
 
 describe('shapeRotation', () => {
-  it('takes the five largest inflows and outflows by the dashboard netUsd', () => {
+  it('takes the four largest inflows and outflows by the dashboard netUsd', () => {
     const r = shapeRotation(snap)
-    expect(r.inflows.map((x) => x.symbol)).toEqual(['LINK', 'SHIB', 'UNI', 'A', 'B'])
+    expect(r.inflows.map((x) => x.symbol)).toEqual(['LINK', 'SHIB', 'UNI', 'A'])
     expect(r.outflows.map((x) => x.symbol)).toEqual(['BTC', 'ETHFI'])
     expect(r.inflows[0].netUsd).toBe(1.26e6)
   })
