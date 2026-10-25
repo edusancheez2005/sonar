@@ -1105,8 +1105,12 @@ export default function AppShell({ children, onLogout }) {
   const railIconOnly = showCollapsedRail && !railPeek
   const sidebarOpenMobile = drawerOpen
 
-  const kbdSidebar =
-    typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent) ? '⌘B' : 'Ctrl+B'
+  // Server and first client render agree on 'Ctrl+B'; Macs switch after
+  // mount (reading navigator during render was a hydration mismatch).
+  const [kbdSidebar, setKbdSidebar] = useState('Ctrl+B')
+  useEffect(() => {
+    if (/Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)) setKbdSidebar('⌘B')
+  }, [])
 
   const handleLogout = async () => {
     try {
