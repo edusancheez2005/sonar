@@ -1,7 +1,7 @@
 /**
  * GET /api/trades/since?after=<ISO>&… — rows newer than `after`, same filters
- * as /api/trades. Polled by the Statistics table and the dashboard tape; the
- * client rounds `after` down to 10 s so open tabs share one edge entry.
+ * as /api/trades. Polled by the Statistics table every 3 s; the client
+ * rounds `after` down to 10 s so open tabs share one edge entry (2 s cache).
  */
 import { NextResponse } from 'next/server'
 import { supabaseAdminFresh as supabaseAdmin } from '@/app/lib/supabaseAdmin'
@@ -32,6 +32,6 @@ export async function GET(req) {
       serverNow: new Date(now).toISOString(),
       newest_ts: data?.[0]?.timestamp ?? null,
     },
-    { headers: { 'Cache-Control': 's-maxage=5, stale-while-revalidate=5' } }
+    { headers: { 'Cache-Control': 's-maxage=2, stale-while-revalidate=2' } }
   )
 }

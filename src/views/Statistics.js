@@ -1,14 +1,14 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
 import dynamic from 'next/dynamic'
 
 const TokenIcon = dynamic(() => import('@/components/TokenIcon'), { ssr: false })
 import SonarLoader from '@/components/wallet-tracker/SonarLoader'
-import { useLivePoll, LIVE_POLL_MS } from '@/components/live/useLivePoll'
+import { useLivePoll } from '@/components/live/useLivePoll'
 import { HealthChip, healthOf } from '@/components/live/HealthChip'
 import { mergeRows, roundDownIso } from '@/components/live/mergeRows'
 import { FONT_MONO, FONT_SANS } from '@/src/styles/fontStacks'
@@ -243,6 +243,29 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] } }
 }
 
+// Statistics checks for new trades every 3 s (the since route is edge-cached
+// for 2 s, so every check can see a new row); ages tick every second.
+const STATS_POLL_MS = 3_000
+const RESYNC_EVERY = 20 // a full page read (rows + exact count) once a minute
+
+function ago(ts, nowMs) {
+  const t = typeof ts === 'number' ? ts : Date.parse(ts)
+  const s = Math.max(0, Math.round((nowMs - t) / 1000))
+  if (!Number.isFinite(s)) return ''
+  if (s < 60) return `${s}s ago`
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`
+  return `${Math.floor(s / 86400)} d ago`
+}
+
+function clock(ts) {
+  const d = new Date(ts)
+  if (Number.isNaN(d.getTime())) return ''
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const today = new Date().toDateString() === d.toDateString()
+  return today ? time : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`
+}
+
 const rowVariant = {
   hidden: { opacity: 0, y: 12 },
   visible: (i) => ({
@@ -267,17 +290,16 @@ export default function Statistics() {
   const [isPremium, setIsPremium] = useState(true) // All features unlocked
   const [whisperData, setWhisperData] = useState(null)
 
-  // Whale Whisper collapse state, remembered per browser. Server render is
-  // always "expanded"; stored state applies after mount.
-  const [whisperCollapsed, setWhisperCollapsed] = useState(false)
+  // Whale Whisper drops open on every visit, half a second after it appears,
+  // so it is obvious the panel can be hidden (Eduardo, 2026-10-25).
+  const [whisperCollapsed, setWhisperCollapsed] = useState(true)
+  const hasWhisper = Boolean(whisperData?.narrative)
   useEffect(() => {
-    try { if (localStorage.getItem('sonar-collapse2-whisper') === '1') setWhisperCollapsed(true) } catch { /* ignore */ }
-  }, [])
-  const toggleWhisper = () => setWhisperCollapsed(c => {
-    const next = !c
-    try { localStorage.setItem('sonar-collapse2-whisper', next ? '1' : '0') } catch { /* ignore */ }
-    return next
-  })
+    if (!hasWhisper) return
+    const t = setTimeout(() => setWhisperCollapsed(false), 500)
+    return () => clearTimeout(t)
+  }, [hasWhisper])
+  const toggleWhisper = () => setWhisperCollapsed((c) => !c)
 
   const debounceRef = useRef(null)
   const fetchSeqRef = useRef(0)
@@ -289,20 +311,20 @@ export default function Statistics() {
   const [flash, setFlash] = useState(new Set())
   const [now, setNow] = useState(() => Date.now())
 
-  // Live updates every 15 s, paused while the tab is hidden: rows newer than
-  // the newest one on screen, and every 5th poll the whole page instead (a
-  // quiet resync of rows and exact count), so idle cost stays 4 a minute.
+  // Live updates every 3 s, paused while the tab is hidden: rows newer than
+  // the newest one on screen, and every 20th poll (once a minute) the whole
+  // page instead — a quiet resync of rows and the exact count.
   const live = useLivePoll((signal) => {
     pollCountRef.current += 1
     const params = filterParams()
     params.set('limit', '100')
-    if (pollCountRef.current % 5 === 0) {
+    if (pollCountRef.current % RESYNC_EVERY === 0) {
       params.set('page', String(page))
       return fetch(`/api/trades?${params.toString()}`, { signal, cache: 'no-store' })
     }
     params.set('after', roundDownIso(newestRef.current ?? Date.now() - 10 * 60_000))
     return fetch(`/api/trades/since?${params.toString()}`, { signal })
-  }, { intervalMs: LIVE_POLL_MS })
+  }, { intervalMs: STATS_POLL_MS })
 
   useEffect(() => {
     const body = live.data
@@ -334,7 +356,7 @@ export default function Statistics() {
   }, [live.data])
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 5000)
+    const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
 
@@ -342,7 +364,7 @@ export default function Statistics() {
     newestAt: newestRef.current,
     now: now + (live.offsetMs || 0),
     lastPollOkAt: live.lastFetchedAt,
-    intervalMs: LIVE_POLL_MS,
+    intervalMs: STATS_POLL_MS,
     consecutiveFailures: live.consecutiveFailures,
   })
   const prevFiltersRef = useRef({ token:'', side:'', chain:'', minUsd:'', maxUsd:'', sinceHours:24 })
@@ -540,12 +562,14 @@ export default function Statistics() {
       <motion.div variants={fadeUp} initial="hidden" animate="visible">
         <PageTitle>
           <TitleText>Market Statistics</TitleText>
-          <HealthChip
+          {newestRef.current != null && <HealthChip
             health={health}
             testId="statistics-health"
-            title={newestRef.current ? `Newest trade matching your filters: ${new Date(newestRef.current).toISOString().slice(11, 19)} UTC` : 'No trades match your filters yet'}
-          />
-          {page > 1 && <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>live updates paused on page {page}</span>}
+            title={`Newest trade matching your filters: ${new Date(newestRef.current).toISOString().slice(11, 19)} UTC`}
+          />}
+          {page > 1
+            ? <span style={{ fontSize: '0.72rem', color: COLORS.textMuted }}>live updates paused on page {page}</span>
+            : newestRef.current && <span style={{ fontSize: '0.75rem', color: COLORS.textMuted, fontFamily: MONO_FONT }} data-testid="statistics-newest">newest trade {ago(newestRef.current, now + (live.offsetMs || 0))}</span>}
         </PageTitle>
       </motion.div>
 
@@ -562,13 +586,15 @@ export default function Statistics() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <span style={{
                 padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.5px', textTransform: 'uppercase',
+                fontFamily: MONO_FONT, letterSpacing: '0.5px', textTransform: 'uppercase',
                 background: whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.1)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.1)' : 'rgba(0,229,255,0.06)',
                 color: whisperData.market_bias === 'bullish' ? '#00e676' : whisperData.market_bias === 'bearish' ? '#ff1744' : '#00e5ff',
                 border: `1px solid ${whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.2)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.2)' : 'rgba(0,229,255,0.1)'}`,
               }}>{whisperData.market_bias === 'bullish' ? 'NET INFLOW' : whisperData.market_bias === 'bearish' ? 'NET OUTFLOW' : 'BALANCED'}</span>
-              <span style={{ fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{whisperData.confidence}%</span>
-              <span style={{ fontSize: '0.72rem', color: '#5a6a7a', fontFamily: "'JetBrains Mono', monospace" }}>{new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span style={{ fontSize: '0.72rem', color: '#5a6a7a', fontFamily: MONO_FONT }}>{whisperData.confidence}%</span>
+              <span style={{ fontSize: '0.72rem', color: '#5a6a7a', fontFamily: MONO_FONT }} title={new Date(whisperData.created_at).toLocaleString()}>
+                {new Date(whisperData.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {ago(whisperData.created_at, now)}
+              </span>
               <button
                 type="button"
                 aria-expanded={!whisperCollapsed}
@@ -589,7 +615,12 @@ export default function Statistics() {
             </div>
           </div>
           {/* Narrative with highlighted keywords and staggered paragraphs */}
-          {!whisperCollapsed && <div style={{ fontSize: '0.875rem', lineHeight: 1.65, color: '#c0cad6' }}>
+          <AnimatePresence initial={false}>
+          {!whisperCollapsed && <motion.div key="whisper-body"
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ height: { duration: 0.6, ease: [0.22, 0.61, 0.36, 1] }, opacity: { duration: 0.35 } }}
+            style={{ overflow: 'hidden' }}>
+          <div style={{ fontSize: '0.875rem', lineHeight: 1.65, color: '#c0cad6' }}>
             {whisperData.narrative.split('\n\n').filter(Boolean).map((para, idx) => (
               <motion.p key={idx} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.15 + idx * 0.2 }}
                 style={{ margin: idx > 0 ? '0.75rem 0 0' : 0, padding: '0.5rem 0.75rem', borderLeft: `2px solid ${idx === 0 ? 'rgba(0,229,255,0.3)' : idx === whisperData.narrative.split('\n\n').filter(Boolean).length - 1 ? (whisperData.market_bias === 'bullish' ? 'rgba(0,230,118,0.4)' : whisperData.market_bias === 'bearish' ? 'rgba(255,23,68,0.4)' : 'rgba(0,229,255,0.3)') : 'rgba(255,255,255,0.06)'}`, borderRadius: '0 4px 4px 0', background: idx === 0 ? 'rgba(0,229,255,0.02)' : 'transparent' }}
@@ -614,14 +645,16 @@ export default function Statistics() {
                   })
                 }} />
             ))}
-          </div>}
-          {!whisperCollapsed && whisperData.summary && (
+          </div>
+          {whisperData.summary && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
               style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(0,229,255,0.06)', fontSize: '0.8rem', color: '#8a9ab0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
               {whisperData.summary}
             </motion.div>
           )}
+          </motion.div>}
+          </AnimatePresence>
         </motion.div>
       )}
 
@@ -717,7 +750,10 @@ export default function Statistics() {
               <tbody>
                   {(isPremium ? rows : rows.slice(0, 50)).map((t, idx) => (
                     <motion.tr key={t.transaction_hash} custom={idx} variants={rowVariant} initial="hidden" animate="visible" className={flash.has(t.transaction_hash) ? 'is-new' : undefined}>
-                      <td className="muted" style={{ fontSize: '0.75rem' }}>{new Date(t.timestamp).toLocaleString()}</td>
+                      <td className="muted" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                        {clock(t.timestamp)}
+                        <span style={{ marginLeft: '0.5rem', color: COLORS.cyan, opacity: 0.8 }}>{ago(t.timestamp, now + (live.offsetMs || 0))}</span>
+                      </td>
                       <td>
                         <Link href={`/token/${encodeURIComponent(t.token_symbol || '-')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                           <TokenIcon symbol={t.token_symbol} size={18} />
