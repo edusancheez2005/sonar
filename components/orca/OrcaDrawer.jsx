@@ -191,6 +191,22 @@ export default function OrcaDrawer() {
   const visible = enabled && shouldShowDrawer(pathname)
   const ctx = useMemo(() => contextFromPath(pathname), [pathname])
   const [open, setOpen] = useState(false)
+  const [seed, setSeed] = useState({ q: '', send: false, key: 0 })
+
+  // Other surfaces open the drawer with a command typed in, e.g. the Personal
+  // page's "Ask ORCA to do it" chips: window event 'orca:open' { q }. The
+  // event's detail.handled tells the sender the drawer took it.
+  useEffect(() => {
+    if (!visible) return
+    function onOpen(e) {
+      const q = typeof e?.detail?.q === 'string' ? e.detail.q.slice(0, 300) : ''
+      if (e?.detail) e.detail.handled = true
+      setSeed((s) => ({ q, send: !!e?.detail?.send, key: s.key + 1 }))
+      setOpen(true)
+    }
+    window.addEventListener('orca:open', onOpen)
+    return () => window.removeEventListener('orca:open', onOpen)
+  }, [visible])
 
   // Close on route change so the drawer doesn't leak stale context between pages.
   useEffect(() => {
@@ -226,7 +242,7 @@ export default function OrcaDrawer() {
   return (
     <>
       {!open && (
-        <Pill type="button" onClick={() => setOpen(true)} aria-label={pillLabel}>
+        <Pill type="button" onClick={() => { setSeed((s) => ({ q: '', send: false, key: s.key })); setOpen(true) }} aria-label={pillLabel}>
           <PillIcon aria-hidden>
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l1.9 5.6 5.6 1.9-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.9L12 2.5z" /></svg>
           </PillIcon>
@@ -246,9 +262,12 @@ export default function OrcaDrawer() {
             </Header>
             <Body>
               <AskOrcaClient
+                key={seed.key}
                 embedded
                 ticker={ctx.ticker || null}
                 wallet={ctx.wallet || null}
+                initialQ={seed.q || undefined}
+                autoSendInitial={!!seed.q && seed.send}
               />
             </Body>
           </Panel>

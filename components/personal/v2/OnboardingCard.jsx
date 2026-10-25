@@ -9,6 +9,7 @@ import styled from 'styled-components'
 import TokenIcon from '@/components/TokenIcon'
 import { FAMOUS_WALLETS } from '@/lib/onboarding/famousWallets'
 import AlertPresets from '@/components/personal/AlertPresets'
+import AskOrcaActions from './AskOrcaActions'
 import { T } from '@/lib/ui/tokens'
 import { Card, Button, Input, Avatar, Muted, fmtUsd } from './ui'
 
@@ -184,6 +185,7 @@ export default function OnboardingCard({ suggestions = [], wallets = [], coins =
 
       <div style={{ paddingTop: 12, borderTop: `1px solid ${T.hairlineStrong}` }}>
         <Button type="button" onClick={onTour} data-testid="onboarding-tour">Take the 60-second tour</Button>
+        <AskOrcaActions compact />
       </div>
     </Card>
   )

@@ -18,6 +18,7 @@ import OnboardingCard from './OnboardingCard'
 import Feed, { AlertFireCard } from './Feed'
 import { CoinsCard, WalletsCard, AlertsCard, MarketCard, MacroCard, ruleText } from './Rail'
 import PersonalSkeleton from './PersonalSkeleton'
+import AskOrcaActions from './AskOrcaActions'
 import UpsellSlot from '../UpsellSlot'
 import { Button, Card, SecHead, Muted, hhmmUtc } from './ui'
 
@@ -178,12 +179,10 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
   // ORCA-created alerts refetch the feed too.
   useEffect(() => {
     const on = () => poll.refresh()
-    window.addEventListener('orca:alerts-changed', on)
-    window.addEventListener('orca:watchlist-changed', on)
-    return () => {
-      window.removeEventListener('orca:alerts-changed', on)
-      window.removeEventListener('orca:watchlist-changed', on)
-    }
+    // ORCA (drawer or chat) and other surfaces change follows, alerts and mutes too.
+    const events = ['orca:alerts-changed', 'orca:watchlist-changed', 'orca:follows-changed', 'orca:mute-changed', 'sonar:follows-changed']
+    events.forEach((e) => window.addEventListener(e, on))
+    return () => events.forEach((e) => window.removeEventListener(e, on))
   }, [poll])
 
   if (!feed) {
@@ -279,6 +278,7 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
               <CoinsCard tickers={tickers} onAdd={addCoin} onRemove={removeCoin} busy={busy.coin} />
               <WalletsCard wallets={follows.wallets} now={now} />
               <AlertsCard rules={alerts.rules} names={names} onManage={scrollToAlerts} />
+              <AskOrcaActions />
               <UpsellSlot isPremium={isPremium} />
             </>
           )}

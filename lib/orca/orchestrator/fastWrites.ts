@@ -26,6 +26,7 @@ import { CONVERGENCE_ANY_TICKER } from '../alerts/types'
 import { detectAddress, type Chain } from './detectAddress'
 import { parseDuration } from './parseDuration'
 import { isValidTicker } from '../ticker-extractor'
+import { FAMOUS_WALLETS } from '@/lib/onboarding/famousWallets'
 
 export type WriteTool =
   | 'addToWatchlist'
@@ -37,9 +38,13 @@ export type WriteTool =
   | 'untrackWallet'
   | 'muteTicker'
   | 'unmuteTicker'
+  // 2026-10-25: everything the Personal page does by hand, by voice.
+  | 'followFamous'
+  | 'unfollowFamous'
+  | 'sendTestAlert'
 
 /** Alert kinds the chat detector can create (mirrors lib/orca/alerts/types). */
-export type FastAlertKind = 'price_move' | 'whale_flow' | 'signal_flip' | 'news_high_impact' | 'whale_convergence'
+export type FastAlertKind = 'price_move' | 'whale_flow' | 'signal_flip' | 'news_high_impact' | 'whale_convergence' | 'wallet_activity'
 
 /** Canonical chains accepted by the user_wallets table CHECK constraint. */
 export const VALID_CHAINS = new Set<string>([
@@ -56,6 +61,8 @@ export interface WriteCallArgs {
   chain?: string
   // Mute writes.
   minutes?: number
+  // Famous-wallet follows (lib/onboarding/famousWallets slug).
+  slug?: string
 }
 
 /** first6…last4 — mirrors the WalletRow.jsx abbreviation. */
@@ -282,6 +289,7 @@ function alertKindLabel(kind: FastAlertKind): string {
     case 'signal_flip': return 'signal change'
     case 'news_high_impact': return 'high-impact news'
     case 'whale_convergence': return 'whale convergence'
+    case 'wallet_activity': return 'wallet move'
   }
 }
 
@@ -456,6 +464,100 @@ export function detectMuteWrite(
   return null
 }
 
+// ── Personal-page actions by voice (2026-10-25) ────────────────────────────
+// "follow MrBeast", "unfollow Trump", "alert me when 0xabc… moves over $100K",
+// "send me a test alert". Execution lives in the chat route.
+
+const FAMOUS_ALIASES: Record<string, string[]> = {
+  'vitalik-buterin': ['vitalik buterin', 'vitalik'],
+  binance: ['binance'],
+  wintermute: ['wintermute'],
+  mrbeast: ['mrbeast', 'mr beast', 'mr. beast'],
+  'donald-trump': ['donald trump', 'trump'],
+  'justin-sun': ['justin sun'],
+}
+const FAMOUS_MATCHERS = FAMOUS_WALLETS.map((w: { slug: string; name: string; minUsd: number }) => {
+  const aliases = FAMOUS_ALIASES[w.slug] || [w.name.toLowerCase()]
+  const body = aliases.map((a) => a.replace(/[.]/g, '\\.?').replace(/\s+/g, '\\s*')).join('|')
+  return { slug: w.slug, name: w.name, minUsd: w.minUsd, re: new RegExp(`(?:^|[^a-z0-9])(?:${body})(?:'s)?(?![a-z0-9])`, 'i') }
+})
+
+const FOLLOW_RE = /\b(follow|track|watch|monitor|keep (?:an )?eye on|subscribe to|add)\b/i
+const UNFOLLOW_RE = /\b(unfollow|un-follow|stop\s+(?:following|tracking|watching|monitoring)|untrack|remove|drop|forget)\b/i
+const TEST_ALERT_RE = /\b(send|give|fire|trigger|shoot)\b[^.?!]{0,30}\btest\b[^.?!]{0,20}\b(alert|notification|ping)s?\b|\btest\s+(?:my\s+)?(?:alerts?|notifications?|bell)\b/i
+
+function usdShort(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
+  return `$${Math.round(n)}`
+}
+
+/** "send me a test alert" — runs straight away (it only touches the user's own inbox). */
+export function detectTestAlert(message: string): FastWriteDetection | null {
+  if (typeof message !== 'string') return null
+  const msg = message.trim()
+  if (!msg || msg.length > 120 || !TEST_ALERT_RE.test(msg)) return null
+  return { calls: [{ tool: 'sendTestAlert', args: {} }], label: 'Send a test alert to your bell?' }
+}
+
+/**
+ * Follow / unfollow one of the six famous wallets by name. A follow also sets
+ * its alert (the same as the Personal page's one-tap follow). A bare "trump"
+ * with a % or price word is the TRUMP token, not the wallet.
+ */
+export function detectFamousWrite(message: string): FastWriteDetection | null {
+  if (typeof message !== 'string') return null
+  const msg = message.trim()
+  if (!msg || msg.length > 140) return null
+  const hit = FAMOUS_MATCHERS.find((m) => m.re.test(msg))
+  if (!hit) return null
+  const unfollow = UNFOLLOW_RE.test(msg)
+  const follow = FOLLOW_RE.test(msg)
+  const alertAsk = ALERT_INTENT_RE.test(msg) && /\b(move|moves|moving|sends?|receives?|buys?|sells?|transfers?|wallet|does anything)\b/i.test(msg)
+  if (!unfollow && !follow && !alertAsk) return null
+  // "alert me when TRUMP moves 5%" is a token price alert.
+  if (/%|\bprice\b|\btoken\b|\bcoin\b/i.test(msg) && hit.slug === 'donald-trump' && !/donald/i.test(msg)) return null
+  if (unfollow) {
+    return {
+      calls: [{ tool: 'unfollowFamous', args: { slug: hit.slug } }],
+      label: `Stop following ${hit.name} and remove its alerts?`,
+    }
+  }
+  return {
+    calls: [{ tool: 'followFamous', args: { slug: hit.slug } }],
+    label: `Follow ${hit.name}? You'll get an alert in your bell when it moves more than ${usdShort(hit.minUsd)}.`,
+  }
+}
+
+/**
+ * "alert me when 0xabc… moves", "notify me if bc1q… sends more than $1M":
+ * follow the wallet (so it shows on the Personal page) and add a
+ * wallet_activity rule, optionally with a USD floor.
+ */
+export function detectWalletAlertWrite(message: string, opts: DetectFastWriteOptions = {}): FastWriteDetection | null {
+  if (typeof message !== 'string') return null
+  const msg = message.trim()
+  if (!msg || msg.length > 200 || !ALERT_INTENT_RE.test(msg)) return null
+  if (REMOVE_ALERT_RE.test(msg)) return null
+  let detected = detectAddress(msg)
+  if (!detected && opts.contextAddress && /\b(this|that|the|it)\s+(wallet|address)\b/i.test(msg)) detected = opts.contextAddress
+  if (!detected) return null
+  const { address, chain } = detected
+  const short = shortenAddress(address)
+  const usd = parseThreshold(msg)?.threshold_usd ?? null
+  const alertArgs: WriteCallArgs = { address, chain, kind: 'wallet_activity' }
+  if (usd) alertArgs.threshold_usd = Math.round(usd)
+  return {
+    calls: [
+      { tool: 'trackWallet', args: { address, chain } },
+      { tool: 'createAlert', args: alertArgs },
+    ],
+    label: usd
+      ? `Follow ${short} and alert you when it moves more than ${usdShort(usd)}?`
+      : `Follow ${short} and alert you whenever it makes a valued move?`,
+  }
+}
+
 export function detectFastWrite(
   message: string,
   opts: DetectFastWriteOptions = {}
@@ -465,6 +567,16 @@ export function detectFastWrite(
   if (!msg) return null
   // Hard cap: long messages are unlikely to be one-shot write commands.
   if (msg.length > 200) return null
+
+  // Personal-page actions: test alert, famous wallets by name, alerts on an
+  // address. They need a test phrase, a famous name or an address, so they
+  // never fire on plain token text.
+  const test = detectTestAlert(msg)
+  if (test) return test
+  const famous = detectFamousWrite(msg)
+  if (famous) return famous
+  const walletAlert = detectWalletAlertWrite(msg, opts)
+  if (walletAlert) return walletAlert
 
   // Alert commands take precedence — "track SOL alert" should create an alert,
   // not add SOL to the watchlist. detectAlertWrite returns null for non-alert
@@ -564,6 +676,21 @@ export function sanitiseConfirmCalls(input: unknown): WriteCall[] | null {
       if (!ticker) continue
       const kind = ALERT_KIND_SET.has(argsRaw.kind) ? (argsRaw.kind as FastAlertKind) : undefined
       out.push({ tool, args: kind ? { ticker, kind } : { ticker } })
+    } else if (tool === 'createAlert' && argsRaw && argsRaw.kind === 'wallet_activity') {
+      const address = String(argsRaw.address || '').trim()
+      const chain = String(argsRaw.chain || '').trim().toLowerCase()
+      if (!VALID_CHAINS.has(chain)) continue
+      if (!/^[A-Za-z0-9._:-]+$/.test(address) || address.length < 4 || address.length > 128) continue
+      const args: WriteCallArgs = { address, chain, kind: 'wallet_activity' }
+      const usd = Number(argsRaw.threshold_usd)
+      if (Number.isFinite(usd) && usd > 0) args.threshold_usd = Math.round(usd)
+      out.push({ tool, args })
+    } else if (tool === 'followFamous' || tool === 'unfollowFamous') {
+      const slug = String(argsRaw?.slug || '')
+      if (!FAMOUS_WALLETS.some((w: { slug: string }) => w.slug === slug)) continue
+      out.push({ tool, args: { slug } })
+    } else if (tool === 'sendTestAlert') {
+      out.push({ tool, args: {} })
     } else if (tool === 'createAlert') {
       if (!argsRaw || typeof argsRaw !== 'object') continue
       const ticker = normaliseTicker(String(argsRaw.ticker || ''))

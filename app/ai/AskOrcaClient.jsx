@@ -531,6 +531,9 @@ export default function AskOrcaClient({
   wallet: walletProp,
   initialQ: initialQProp,
   embedded = false,
+  // The drawer opened from a command chip ("Follow Wintermute"): send it at
+  // once; writes still wait for the Confirm card.
+  autoSendInitial = false,
 } = {}) {
   const searchParams = useSearchParams()
   // Props win over URL params so the drawer (which has no URL of its own)
@@ -579,10 +582,13 @@ export default function AskOrcaClient({
   }, [messages.length, loading])
 
   useEffect(() => {
-    if (autoSentRef.current || !session || embedded || messages.length > 0) return
+    if (autoSentRef.current || !session || messages.length > 0) return
+    if (embedded && !(autoSendInitial && initialQ)) return
     let q = null
     let origin = 'auto_link'
-    if (autoSend && initialQ) {
+    if (autoSendInitial && initialQ) {
+      q = initialQ
+    } else if (autoSend && initialQ) {
       q = initialQ
       // Email sign-up lands here via FIRST_QUESTION_URL with the flag armed:
       // scripted, not a click on the welcome dialog's link.
@@ -604,7 +610,7 @@ export default function AskOrcaClient({
     } catch { /* ignore */ }
     sendMessage(q, origin)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSend, session, initialQ, embedded])
+  }, [autoSend, autoSendInitial, session, initialQ, embedded])
 
   // Keyboard shortcuts: 1/2/3/4 trigger the corresponding chip when empty.
   useEffect(() => {
@@ -761,6 +767,15 @@ export default function AskOrcaClient({
             setMessages((prev) => prev.map((m) => (m.id === sid ? finalMsg : m)))
           } else {
             setMessages((prev) => [...prev, finalMsg])
+          }
+          // Actions that run without a confirm (a test alert) still refresh
+          // the bell and the Personal page.
+          if (Array.isArray(event.invalidate)) {
+            try {
+              for (const key of event.invalidate) {
+                if (typeof key === 'string' && key) window.dispatchEvent(new CustomEvent(`orca:${key}-changed`))
+              }
+            } catch { /* ignore */ }
           }
         } else if (event.type === 'error') {
           throw new Error(event.message || event.error || 'Stream error')

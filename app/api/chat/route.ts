@@ -35,7 +35,14 @@ import {
   runCreateAlert,
   runRemoveAlert,
   runListAlerts,
+  runMuteTicker,
+  runUnmuteTicker,
 } from '@/lib/orca/orchestrator/tools/writeTools'
+import { runCreateWalletAlert } from '@/lib/orca/orchestrator/tools/personalWrites'
+import { followWallet, unfollowWallets } from '@/lib/wallet/follows'
+import { followFamous, unfollowFamous } from '@/lib/onboarding/followFamous'
+import { famousBySlug } from '@/lib/onboarding/famousWallets'
+import { sendTestAlert } from '@/lib/orca/alerts/testAlert'
 import { loadPersonalizationContext, buildPersonalizationBlock, loadActiveAlertSummaries } from '@/lib/orca/memory/personalization'
 import { extractMemoryFacts } from '@/lib/orca/memory/extractor'
 import { waitUntil } from '@vercel/functions'
@@ -47,6 +54,17 @@ interface ConfirmedWriteResult {
   tool: WriteCall['tool']
   ok: boolean
   error?: string
+  /** One finished sentence for the summary (Personal-page actions). */
+  note?: string
+}
+
+function shortAddr(a: string): string {
+  return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a
+}
+function usdShort(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
+  return `$${Math.round(n)}`
 }
 
 const ALERT_KIND_LABEL: Record<string, string> = {
@@ -70,6 +88,7 @@ async function executeConfirmedWrites(
   const results: ConfirmedWriteResult[] = []
   const listings: string[] = []
   let touchedAlerts = false
+  const touched = new Set<string>()
 
   for (const call of confirmedCalls) {
     const ticker = call.args.ticker || ''
@@ -77,7 +96,7 @@ async function executeConfirmedWrites(
       const fn = call.tool === 'addToWatchlist' ? runAddToWatchlist : runRemoveFromWatchlist
       const r = await fn({ userId, ticker }, supabase)
       results.push({ ticker, tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed') })
-    } else if (call.tool === 'createAlert') {
+    } else if (call.tool === 'createAlert' && call.args.kind !== 'wallet_activity') {
       touchedAlerts = true
       const r = await runCreateAlert(
         { userId, ticker, kind: call.args.kind, threshold_pct: call.args.threshold_pct, threshold_usd: call.args.threshold_usd },
@@ -104,12 +123,63 @@ async function executeConfirmedWrites(
       for (const rule of rules as Array<{ ticker: string; kind: string }>) {
         listings.push(`${rule.ticker} ${ALERT_KIND_LABEL[rule.kind] || rule.kind}`)
       }
+    // ── Personal-page actions (2026-10-25): the same writes as the buttons.
+    } else if (call.tool === 'trackWallet') {
+      const address = String(call.args.address || '')
+      const r = await followWallet(supabase, userId, address)
+      results.push({ ticker: shortAddr(address), tool: call.tool, ok: r.ok, error: r.error, note: r.ok ? (r.created ? `Following ${shortAddr(address)}; its moves will show on your Personal page.` : `You already follow ${shortAddr(address)}.`) : undefined })
+      if (r.ok) {
+        touched.add('follows')
+        if (r.created) void trackServer(supabase, { userId, event: 'follow', props: { source: 'orca', address }, path: '/ai-advisor' })
+      }
+    } else if (call.tool === 'untrackWallet') {
+      const address = String(call.args.address || '')
+      const r = await unfollowWallets(supabase, userId, [address], { removeAlerts: true })
+      results.push({ ticker: shortAddr(address), tool: call.tool, ok: r.ok, error: r.error, note: r.ok ? (r.removed ? `Stopped following ${shortAddr(address)}${r.alertsRemoved ? ' and removed its alerts' : ''}.` : `You were not following ${shortAddr(address)}.`) : undefined })
+      if (r.ok) { touched.add('follows'); if (r.alertsRemoved) touched.add('alerts') }
+    } else if (call.tool === 'createAlert') { // wallet_activity
+      const address = String(call.args.address || '')
+      const r = await runCreateWalletAlert({ userId, address, threshold_usd: call.args.threshold_usd }, supabase)
+      const usd = Number(call.args.threshold_usd) || 0
+      results.push({ ticker: shortAddr(address), tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed'), note: r.ok ? (usd ? `Alert set: ${shortAddr(address)} moves more than ${usdShort(usd)}.` : `Alert set: any valued move by ${shortAddr(address)}.`) : undefined })
+      if (r.ok) {
+        touched.add('alerts')
+        void trackServer(supabase, { userId, event: 'alert_set', props: { source: 'orca', kind: 'wallet_activity' }, path: '/ai-advisor' })
+      }
+    } else if (call.tool === 'followFamous' || call.tool === 'unfollowFamous') {
+      const slug = String(call.args.slug || '')
+      const spec = famousBySlug(slug)
+      const r: any = call.tool === 'followFamous' ? await followFamous(supabase, userId, slug) : await unfollowFamous(supabase, userId, slug)
+      const name = r?.name || spec?.name || slug
+      let note: string | undefined
+      if (r?.ok && call.tool === 'followFamous') {
+        note = r.newFollows > 0
+          ? `Following ${name}${r.alert ? `; you'll get an alert in your bell when it moves more than ${usdShort(spec?.minUsd || 0)}` : ''}.`
+          : `You already follow ${name}.`
+        if (r.newFollows > 0) void trackServer(supabase, { userId, event: 'follow', props: { source: 'orca', slug, addresses: r.newFollows }, path: '/ai-advisor' })
+        if (r.rulesCreated > 0) void trackServer(supabase, { userId, event: 'alert_set', props: { source: 'orca', kind: 'wallet_activity', slug, rules: r.rulesCreated }, path: '/ai-advisor' })
+      } else if (r?.ok) {
+        note = r.removed ? `Stopped following ${name}${r.alertsRemoved ? ` and removed ${r.alertsRemoved === 1 ? 'its alert' : `its ${r.alertsRemoved} alerts`}` : ''}.` : `You were not following ${name}.`
+      }
+      results.push({ ticker: name, tool: call.tool, ok: !!r?.ok, error: r?.ok ? undefined : (r?.error || 'write_failed'), note })
+      if (r?.ok) { touched.add('follows'); touched.add('alerts') }
+    } else if (call.tool === 'muteTicker' || call.tool === 'unmuteTicker') {
+      const r = call.tool === 'muteTicker'
+        ? await runMuteTicker({ userId, ticker, minutes: call.args.minutes }, supabase)
+        : await runUnmuteTicker({ userId, ticker }, supabase)
+      const hours = Math.round((Number(call.args.minutes) || 1440) / 60)
+      results.push({ ticker, tool: call.tool, ok: r.ok, error: r.ok ? undefined : (r.error || 'write_failed'), note: r.ok ? (call.tool === 'muteTicker' ? `Muted ${ticker} alerts for ${hours >= 48 ? `${Math.round(hours / 24)} days` : `${hours} hours`}.` : `${ticker} alerts are back on.`) : undefined })
+      if (r.ok) touched.add('mute')
+    } else if (call.tool === 'sendTestAlert') {
+      const r = await sendTestAlert(supabase, userId)
+      results.push({ ticker: '', tool: call.tool, ok: r.ok, error: r.ok ? undefined : r.error, note: r.ok ? 'Sent a test alert. Check the bell at the top of the page.' : r.error === 'test_limit' ? 'You can send 3 test alerts an hour; try again a little later.' : undefined })
+      if (r.ok) touched.add('notifications')
     }
   }
 
   const added = results.filter((r) => r.ok && r.tool === 'addToWatchlist').map((r) => r.ticker)
   const removed = results.filter((r) => r.ok && r.tool === 'removeFromWatchlist').map((r) => r.ticker)
-  const alertsCreated = results.filter((r) => r.ok && r.tool === 'createAlert').map((r) => r.ticker)
+  const alertsCreated = results.filter((r) => r.ok && r.tool === 'createAlert' && !r.note).map((r) => r.ticker)
   const alertsRemoved = results.filter((r) => r.ok && r.tool === 'removeAlert').map((r) => r.ticker)
   const listed = results.some((r) => r.ok && r.tool === 'listAlerts')
   const failed = results.filter((r) => !r.ok)
@@ -122,14 +192,16 @@ async function executeConfirmedWrites(
   if (listed) {
     parts.push(listings.length ? `Your active alerts: ${listings.join('; ')}.` : 'You have no active alerts yet.')
   }
-  if (failed.length) {
-    const rawErr = String(failed[0].error || 'error')
+  for (const r of results) if (r.note && (r.ok || r.error === 'test_limit')) parts.push(r.note)
+  const failedForSummary = failed.filter((f) => !(f.tool === 'sendTestAlert' && f.error === 'test_limit'))
+  if (failedForSummary.length) {
+    const rawErr = String(failedForSummary[0].error || 'error')
     const reason = rawErr === 'rule_limit_reached'
       ? 'you have reached the 50-alert limit'
       : /user_alerts_kind_check|chk_threshold_shape/.test(rawErr)
         ? 'this alert type needs a one-time database update first — ask Eduardo to run supabase/migrations/20261001_whale_convergence_alert.sql'
         : rawErr
-    const labels = failed.map((f) => f.ticker).filter(Boolean).join(', ')
+    const labels = failedForSummary.map((f) => f.ticker).filter(Boolean).join(', ')
     parts.push(`Could not update ${labels || 'one item'} (${reason}).`)
   }
   const text = parts.length > 0 ? parts.join(' ') : 'No changes were made.'
@@ -137,8 +209,9 @@ async function executeConfirmedWrites(
   // Clients turn each key into an 'orca:<key>-changed' event so open panels
   // (AlertsTab, the watchlist) refresh without a reload.
   const invalidate: string[] = []
-  if (alertsCreated.length || alertsRemoved.length) invalidate.push('alerts')
-  if (added.length || removed.length) invalidate.push('watchlist')
+  if (alertsCreated.length || alertsRemoved.length) touched.add('alerts')
+  if (added.length || removed.length) touched.add('watchlist')
+  invalidate.push(...touched)
   return { results, text, success: failed.length === 0, intent, invalidate }
 }
 
@@ -829,8 +902,9 @@ export async function POST(request: Request) {
         // user to confirm "Show your active alerts?" is pointless friction
         // (2026-07-18 audit: "What alerts do I have set?" dead-ended in a
         // confirm trip the UI never completed).
-        if (detection.calls.every((c) => c.tool === 'listAlerts')) {
-          const { results, text, success, intent } = await executeConfirmedWrites(
+        // A test alert only touches the user's own inbox, so it runs straight away too.
+        if (detection.calls.every((c) => c.tool === 'listAlerts' || c.tool === 'sendTestAlert')) {
+          const { results, text, success, intent, invalidate } = await executeConfirmedWrites(
             detection.calls as WriteCall[],
             userId,
             supabase as any
@@ -848,14 +922,14 @@ export async function POST(request: Request) {
             console.warn('[fastWrites] chat_history insert failed', persistErr)
           }
           if (!acceptSse) {
-            return NextResponse.json({ success, response: text, intent, writeResults: results, quota: quotaStatus })
+            return NextResponse.json({ success, response: text, intent, writeResults: results, invalidate, quota: quotaStatus })
           }
           const listEncoder = new TextEncoder()
           const listStream = new ReadableStream({
             start(controller) {
               controller.enqueue(
                 listEncoder.encode(
-                  `data: ${JSON.stringify({ type: 'complete', success, response: text, intent, writeResults: results, quota: quotaStatus })}\n\n`
+                  `data: ${JSON.stringify({ type: 'complete', success, response: text, intent, writeResults: results, invalidate, quota: quotaStatus })}\n\n`
                 )
               )
               controller.close()
