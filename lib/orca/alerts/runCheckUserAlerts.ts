@@ -523,6 +523,8 @@ export async function runCheckUserAlerts(
         created_at?: string
       }>
       for (const r of rows) {
+        // "Send me a test" rows never count against caps or dedup.
+        if ((r.payload as { test?: unknown } | null)?.test) continue
         const ts = r.created_at ? Date.parse(r.created_at) : NaN
         if (!Number.isFinite(ts) || ts >= dayStartMs) {
           usedToday += 1

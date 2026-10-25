@@ -18,6 +18,7 @@ function makeSupabase(config: {
   rules?: any[]
   priceByTicker?: Record<string, number>
   notificationsUsed?: number
+  usedRows?: any[]
   inserted?: any[]
 }) {
   const inserted = config.inserted ?? []
@@ -52,7 +53,7 @@ function makeSupabase(config: {
         ])
       }
       if (table === 'user_notifications') {
-        const used = Array.from({ length: config.notificationsUsed ?? 0 }, (_, i) => ({ id: i }))
+        const used = config.usedRows ?? Array.from({ length: config.notificationsUsed ?? 0 }, (_, i) => ({ id: i }))
         const b: any = {
           select: () => b,
           eq: () => b,
@@ -162,5 +163,18 @@ describe('runCheckUserAlerts', () => {
     expect(res.triggered).toBe(1)
     expect(res.inserted).toBe(0)
     expect(res.capped).toBe(1)
+  })
+
+  it('does not count "Send me a test" rows against the daily cap', async () => {
+    const sb = makeSupabase({
+      profiles: [{ user_id: 'u1', notifications_in_app: true, notification_style: 'quiet' }],
+      rules: [{ id: 'r1', user_id: 'u1', ticker: 'SOL', kind: 'price_move', threshold_pct: 5, threshold_usd: null, enabled: true }],
+      priceByTicker: { SOL: 9.1 },
+      usedRows: Array.from({ length: 5 }, (_, i) => ({ id: i, rule_id: null, payload: { test: true }, created_at: '2026-06-03T11:30:00Z' })),
+    })
+    const res = await runCheckUserAlerts(sb as any, { now: NOW })
+    expect(res.triggered).toBe(1)
+    expect(res.capped).toBe(0)
+    expect(res.inserted).toBe(1)
   })
 })

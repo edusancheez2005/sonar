@@ -8,11 +8,11 @@ import { FAMOUS_WALLETS } from '@/lib/onboarding/famousWallets'
 function setup(over: Partial<React.ComponentProps<typeof OnboardingCard>> = {}) {
   const props = {
     suggestions: [{ symbol: 'LINK', trades: 12 }],
-    hasFollows: false,
-    hasCoins: false,
+    wallets: [],
+    coins: [],
     onAddCoin: vi.fn().mockResolvedValue({ ok: true }),
     onFollow: vi.fn().mockResolvedValue(true),
-    onPreset: vi.fn().mockResolvedValue(true),
+    onAlertSaved: vi.fn(),
     onTour: vi.fn(),
     busy: {},
     ...over,
@@ -30,7 +30,7 @@ describe('OnboardingCard', () => {
     expect(screen.getAllByTestId('personal-onboarding')).toHaveLength(1)
     expect(screen.getByText('Add coins')).toBeTruthy()
     expect(screen.getByText('Follow a wallet')).toBeTruthy()
-    expect(screen.getByText('Set a one-tap alert')).toBeTruthy()
+    expect(screen.getByText('Set an alert')).toBeTruthy()
     expect(screen.getByTestId('onboarding-tour')).toBeTruthy()
   })
 
@@ -53,19 +53,11 @@ describe('OnboardingCard', () => {
     expect((await screen.findByRole('alert')).textContent).toMatch(/VITALIK/)
   })
 
-  it('keeps both presets disabled until there is something to alert on', () => {
+  it('offers the alert presets, with famous wallets when the user follows none', async () => {
     setup()
-    expect((screen.getByTestId('onboarding-preset-wallet') as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByTestId('onboarding-preset-price') as HTMLButtonElement).disabled).toBe(true)
-  })
-
-  it('saves each preset once it is possible', async () => {
-    const p = setup({ hasFollows: true, hasCoins: true })
-    await userEvent.click(screen.getByTestId('onboarding-preset-wallet'))
-    await userEvent.click(screen.getByTestId('onboarding-preset-price'))
-    expect(p.onPreset).toHaveBeenCalledWith('wallet')
-    expect(p.onPreset).toHaveBeenCalledWith('price')
-    await waitFor(() => expect(screen.getAllByText('Saved')).toHaveLength(2))
+    expect(screen.getByTestId('alert-presets-row')).toBeTruthy()
+    await userEvent.click(screen.getByTestId('alert-preset-wallet_activity'))
+    expect(screen.getByTestId(`alert-preset-chip-${FAMOUS_WALLETS[0].slug}`)).toBeTruthy()
   })
 
   it('marks a followed wallet as Following', async () => {

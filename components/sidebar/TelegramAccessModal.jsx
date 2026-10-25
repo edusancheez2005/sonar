@@ -267,7 +267,7 @@ export default function TelegramAccessModal({
           </TgBadge>
           <div>
             <Title id="tg-access-title">Sonar on Telegram</Title>
-            <Sub>Real-time whale alerts in your pocket.</Sub>
+            <Sub>Public channel — not your personal alerts.</Sub>
           </div>
         </Header>
 

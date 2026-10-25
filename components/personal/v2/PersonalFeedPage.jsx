@@ -170,23 +170,10 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
     }
   }, [poll])
 
-  const preset = useCallback(async (key) => {
-    const wallets = feed?.follows?.status === 'ok' ? feed.follows.data.wallets : []
-    const coins = feed?.tickers?.status === 'ok' ? feed.tickers.data.filter((t) => t.valid) : []
-    const bodies = key === 'wallet'
-      ? wallets.map((w) => ({ kind: 'wallet_activity', address: w.address, threshold_usd: 100000, source: 'personal_onboarding' }))
-      : coins.map((t) => ({ kind: 'price_move', ticker: t.ticker, threshold_pct: 5, source: 'personal_onboarding' }))
-    if (bodies.length === 0) return false
-    const headers = { 'Content-Type': 'application/json', ...(await authHeaders()) }
-    const results = await Promise.all(bodies.map((b) => fetch('/api/personal/alerts', { method: 'POST', headers, body: JSON.stringify(b) }).then((r) => r.ok).catch(() => false)))
-    const ok = results.some(Boolean)
-    if (ok) {
-      track('welcome_choice', { choice: 'personal_alert' })
-      try { window.dispatchEvent(new CustomEvent('orca:alerts-changed')) } catch { /* ignore */ }
-      poll.refresh()
-    }
-    return ok
-  }, [feed, poll])
+  const alertSaved = useCallback(() => {
+    track('welcome_choice', { choice: 'personal_alert' })
+    poll.refresh()
+  }, [poll])
 
   // ORCA-created alerts refetch the feed too.
   useEffect(() => {
@@ -224,8 +211,7 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
   const market = ok(feed.market) ? feed.market.data : []
   const macro = ok(feed.macro) ? feed.macro.data : null
   const tape = ok(feed.tape) ? feed.tape.data : { newest_at: null, chains_label: '', suggestions: [] }
-  const hasFollows = follows.wallets.length > 0
-  const hasCoins = tickers.some((t) => t.valid)
+  const coinSyms = tickers.filter((t) => t.valid).map((t) => t.ticker)
   const dayAgo = now - 24 * 3_600_000
   const fired = alerts.notifications.find((n) => !n.read && Date.parse(n.created_at) >= dayAgo) || null
   const firedRule = fired ? alerts.rules.find((r) => r.id === fired.rule_id) : null
@@ -258,11 +244,11 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
           {feed.empty ? (
             <OnboardingCard
               suggestions={tape.suggestions || []}
-              hasFollows={hasFollows}
-              hasCoins={hasCoins}
+              wallets={follows.wallets}
+              coins={coinSyms}
               onAddCoin={addCoin}
               onFollow={followFamous}
-              onPreset={preset}
+              onAlertSaved={alertSaved}
               onTour={openTour}
               busy={busy}
             />
@@ -292,7 +278,7 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
             <>
               <CoinsCard tickers={tickers} onAdd={addCoin} onRemove={removeCoin} busy={busy.coin} />
               <WalletsCard wallets={follows.wallets} now={now} />
-              <AlertsCard rules={alerts.rules} names={names} hasFollows={hasFollows} hasCoins={hasCoins} onPreset={preset} onManage={scrollToAlerts} />
+              <AlertsCard rules={alerts.rules} names={names} onManage={scrollToAlerts} />
               <UpsellSlot isPremium={isPremium} />
             </>
           )}
@@ -302,7 +288,7 @@ export default function PersonalFeedPage({ userId, isPremium = false }) {
       <section id="alerts" ref={alertsRef} style={{ marginTop: 16, scrollMarginTop: 80 }}>
         <Card>
           <SecHead title="Alert settings" />
-          <AlertsTab />
+          <AlertsTab embedded wallets={follows.wallets} coins={coinSyms} />
         </Card>
       </section>
 

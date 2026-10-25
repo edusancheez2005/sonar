@@ -1,9 +1,10 @@
 'use client'
 import React, { useEffect, useState, useCallback } from 'react'
 import styled from 'styled-components'
+import { describeRule } from '@/lib/orca/alerts/presets'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
-import { shortenAddress, formatUsd, timeAgo } from '@/lib/wallet-tracker'
+import { shortenAddress, timeAgo } from '@/lib/wallet-tracker'
 
 /* ------------------------------------------------------------------ */
 /*  Auth helper                                                       */
@@ -416,9 +417,9 @@ export default function WalletTrackerProfile() {
 
       // Alerts (auth required — scoped to the signed-in user)
       if (hasAuth) {
-        fetch('/api/alerts', { headers })
+        fetch('/api/personal/alerts', { headers })
           .then(r => r.ok ? r.json() : null)
-          .then(json => { if (json?.data) setAlerts(json.data) })
+          .then(json => { if (Array.isArray(json?.rules)) setAlerts(json.rules) })
           .catch(() => {})
           .finally(() => setAlertsLoading(false))
       } else {
@@ -447,7 +448,7 @@ export default function WalletTrackerProfile() {
     setDeletingId(id)
     try {
       const headers = await getAuthHeaders()
-      const res = await fetch(`/api/alerts/${id}`, { method: 'DELETE', headers })
+      const res = await fetch(`/api/personal/alerts/${id}`, { method: 'DELETE', headers })
       if (res.ok) {
         setAlerts(prev => prev.filter(a => a.id !== id))
       }
@@ -517,18 +518,15 @@ export default function WalletTrackerProfile() {
         {alertsLoading ? (
           <LoadingText>Loading alerts...</LoadingText>
         ) : alerts.length === 0 ? (
-          <EmptyState>No active alerts. Set one up on any wallet page.</EmptyState>
+          <EmptyState>No alerts yet. Set one up on your <a href="/dashboard/personal#alerts">Personal page</a> or any wallet page.</EmptyState>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {alerts.map(alert => (
               <AlertRow key={alert.id}>
                 <div className="info">
-                  <span className="addr">{shortenAddress(alert.address, 8)}</span>
+                  <span className="addr">{describeRule(alert)}</span>
                   <div className="details">
-                    <span className="badge">{alert.alert_type}</span>
-                    {alert.min_usd_value != null && (
-                      <span>Min: {formatUsd(alert.min_usd_value)}</span>
-                    )}
+                    <span className="badge">{alert.enabled ? 'On' : 'Paused'}</span>
                     {alert.chain && <span>{alert.chain}</span>}
                   </div>
                 </div>

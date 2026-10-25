@@ -362,7 +362,7 @@ export function detectAlertWrite(
   if (threshold_usd != null) args.threshold_usd = threshold_usd
 
   let label: string
-  if (kind === 'price_move') label = `Alert you when ${ticker} moves ${threshold_pct}% in 24h?`
+  if (kind === 'price_move') label = `Alert you when ${ticker} moves ${threshold_pct}% in an hour?`
   else if (kind === 'whale_flow') {
     const m = (threshold_usd ?? 0) >= 1_000_000
       ? `$${((threshold_usd ?? 0) / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`

@@ -3,10 +3,10 @@
  * AlertsTab — Proactive Alerts stage.
  * =============================================================================
  * Lets the user manage ORCA alert rules without leaving the dashboard:
- *   - a type picker (price move, whale flow, signal change, news, wallet, social)
- *   - an adaptive add-rule form (ticker OR wallet address + threshold)
+ *   - plain-English presets (AlertPresets) first
+ *   - "Advanced": the type picker and the adaptive add-rule form
  *   - a card list of active rules with per-kind colour coding + toggle
- *   - delivery + cadence controls
+ *   - delivery + cadence controls and "Send me a test"
  *
  * Talks to /api/personal/alerts and /api/notifications/preferences using the
  * same Supabase access-token pattern as the other tabs. Props mirror
@@ -15,6 +15,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import styled, { keyframes } from 'styled-components'
 import { supabaseBrowser } from '@/app/lib/supabaseBrowserClient'
+import AlertPresets from '@/components/personal/AlertPresets'
+import { CADENCE_SENTENCE } from '@/lib/orca/alerts/presets'
+import { DAILY_CAP_BY_STYLE } from '@/lib/orca/alerts/types'
+import { EMAIL_CAP_BY_STYLE } from '@/lib/orca/alerts/emailNotifications'
 
 /**
  * Per-kind presentation metadata. `target` decides which input the form shows:
@@ -156,10 +160,6 @@ function KindIcon({ kind, color }) {
   }
 }
 
-const pulse = keyframes`
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(0.78); }
-`
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -183,19 +183,22 @@ const Title = styled.h2`
   letter-spacing: 0.01em;
   color: #eef3f8;
 `
-const LiveDot = styled.span`
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #2ee6c5;
-  box-shadow: 0 0 8px #2ee6c5;
-  animation: ${pulse} 1.8s ease-in-out infinite;
-`
 const Sub = styled.span`
   font-size: 11px;
   color: #7c8aa0;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+`
+const Advanced = styled.details`
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 14px;
+  summary {
+    cursor: pointer;
+    font-size: 12.5px;
+    color: #9fb2c4;
+    margin-bottom: 12px;
+  }
+  summary:hover { color: #eef3f8; }
 `
 const Panel = styled.div`
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015));
@@ -475,7 +478,7 @@ function formatMuteUntil(iso) {
   }
 }
 
-export default function AlertsTab({ client, fetchImpl }) {
+export default function AlertsTab({ client, fetchImpl, embedded = false, wallets = [], coins = [] }) {
   const [rules, setRules] = useState([])
   const [status, setStatus] = useState('loading')
   const [prefs, setPrefs] = useState({ notifications_in_app: true, notification_style: 'balanced', notifications_email: false, email_state: null })
@@ -483,6 +486,7 @@ export default function AlertsTab({ client, fetchImpl }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [muted, setMuted] = useState({ tickers: [], until_iso: null })
+  const [testState, setTestState] = useState(null)
 
   const meta = KIND_META[form.kind]
 
@@ -589,7 +593,6 @@ export default function AlertsTab({ client, fetchImpl }) {
         return
       }
       payload.address = address
-      if (form.chain.trim()) payload.chain = form.chain.trim()
       if (meta.threshold === 'usd_optional' && Number(form.threshold) > 0) {
         payload.threshold_usd = Number(form.threshold)
       }
@@ -676,6 +679,24 @@ export default function AlertsTab({ client, fetchImpl }) {
     } catch {}
   }
 
+  const sendTest = async () => {
+    const doFetch = fetchImpl ?? fetch
+    const t = await token()
+    if (!t) return
+    setTestState('sending')
+    try {
+      const res = await doFetch('/api/personal/alerts/test', { method: 'POST', headers: { authorization: `Bearer ${t}` } })
+      if (res.ok) {
+        setTestState('sent')
+        try { window.dispatchEvent(new CustomEvent('orca:notifications-changed')) } catch { /* ignore */ }
+      } else {
+        setTestState(res.status === 429 ? 'limit' : 'error')
+      }
+    } catch {
+      setTestState('error')
+    }
+  }
+
   const thresholdChip = (r) => {
     if (r.kind === 'price_move') return `±${r.threshold_pct}%`
     if (r.kind === 'whale_convergence') return `${r.threshold_pct || 3}+ whales · 24h`
@@ -693,12 +714,24 @@ export default function AlertsTab({ client, fetchImpl }) {
 
   return (
     <Wrap>
-      <Head>
-        <LiveDot />
-        <Title>Alerts</Title>
-        <Sub>{activeCount} active · ORCA pings you when something changes</Sub>
-      </Head>
+      {!embedded && (
+        <Head>
+          <Title>Alerts</Title>
+          <Sub>{activeCount} active</Sub>
+        </Head>
+      )}
 
+      <AlertPresets
+        variant="full"
+        token={token}
+        wallets={wallets}
+        coins={coins}
+        emailOn={!!prefs.notifications_email}
+        onSaved={() => load()}
+      />
+
+      <Advanced>
+        <summary>Advanced: build any alert</summary>
       <Panel as="form" onSubmit={addRule}>
         <TypeRow>
           {KINDS.map((k) => (
@@ -731,21 +764,6 @@ export default function AlertsTab({ client, fetchImpl }) {
                   placeholder="0x… or Solana address"
                   aria-label="Wallet address"
                 />
-              </Field>
-              <Field>
-                Chain (optional)
-                <Select
-                  value={form.chain}
-                  onChange={(e) => setForm((f) => ({ ...f, chain: e.target.value }))}
-                  aria-label="Chain"
-                >
-                  <option value="">Any chain</option>
-                  <option value="ethereum">Ethereum</option>
-                  <option value="solana">Solana</option>
-                  <option value="base">Base</option>
-                  <option value="arbitrum">Arbitrum</option>
-                  <option value="bsc">BNB Chain</option>
-                </Select>
               </Field>
               <Field>
                 Min size (optional)
@@ -789,6 +807,7 @@ export default function AlertsTab({ client, fetchImpl }) {
         </Row>
         {error && <Note style={{ color: '#ff7a7a' }}>{error}</Note>}
       </Panel>
+      </Advanced>
 
       {status === 'ready' && rules.length > 0 && (
         <List>
@@ -833,10 +852,9 @@ export default function AlertsTab({ client, fetchImpl }) {
       )}
       {status === 'ready' && rules.length === 0 && (
         <Empty>
-          No alerts yet. Pick a type above — or just tell ORCA:
+          No alerts yet. Pick a preset above, or tell ORCA:
           <br />
-          <em>“alert me when SOL moves 5%”</em> · <em>“watch wallet 0xabc… for movement”</em> ·{' '}
-          <em>“ping me on any BONK news”</em>
+          <em>“alert me when SOL moves 5% in an hour”</em> · <em>“ping me on big BONK news”</em>
         </Empty>
       )}
 
@@ -895,15 +913,16 @@ export default function AlertsTab({ client, fetchImpl }) {
               onChange={(e) => updatePref({ notification_style: e.target.value })}
               aria-label="Cadence"
             >
-              <option value="quiet">Quiet</option>
-              <option value="balanced">Balanced</option>
-              <option value="frequent">Frequent</option>
+              <option value="quiet">Quiet · up to {DAILY_CAP_BY_STYLE.quiet} a day</option>
+              <option value="balanced">Balanced · up to {DAILY_CAP_BY_STYLE.balanced} a day</option>
+              <option value="frequent">Frequent · up to {DAILY_CAP_BY_STYLE.frequent} a day</option>
             </Select>
           </Check>
         </Channels>
         <Note>
-          Alerts are informational only and never financial advice. They are delivered to your in-app
-          inbox{prefs.notifications_email ? ', and by email (at most 3 a day)' : ''}.
+          {CADENCE_SENTENCE} Alerts are informational only and never financial advice. They are
+          delivered to your in-app inbox
+          {prefs.notifications_email ? `, and by email (at most ${EMAIL_CAP_BY_STYLE[prefs.notification_style || 'balanced'] ?? 3} a day)` : ''}.
           {prefs.notifications_email && prefs.email_state === 'pending'
             ? ' Check your inbox and confirm your address to start receiving alert emails.'
             : ''}
@@ -911,6 +930,16 @@ export default function AlertsTab({ client, fetchImpl }) {
             ? ' Email alerts need an email address on your account; wallet sign-ins do not have one.'
             : ''}
         </Note>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Btn type="button" onClick={sendTest} disabled={testState === 'sending'} data-testid="alerts-send-test">
+            {testState === 'sending' ? 'Sending…' : 'Send me a test'}
+          </Btn>
+          <span aria-live="polite" style={{ fontSize: 12, color: '#9fb2c4' }}>
+            {testState === 'sent' && 'Sent. Check the bell at the top of the page.'}
+            {testState === 'limit' && 'You can send 3 tests an hour.'}
+            {testState === 'error' && 'Could not send a test. Try again.'}
+          </span>
+        </div>
       </Panel>
     </Wrap>
   )

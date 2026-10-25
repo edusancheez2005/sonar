@@ -8,6 +8,7 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import TokenIcon from '@/components/TokenIcon'
 import { FAMOUS_WALLETS } from '@/lib/onboarding/famousWallets'
+import AlertPresets from '@/components/personal/AlertPresets'
 import { T } from '@/lib/ui/tokens'
 import { Card, Button, Input, Avatar, Muted, fmtUsd } from './ui'
 
@@ -90,32 +91,10 @@ const WalletBlurb = styled.div`
   line-height: 1.4;
   color: ${T.muted};
 `
-const Presets = styled.div`
-  display: grid;
-  gap: 8px;
-`
-const Preset = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: ${T.radius.md};
-  border: 1px solid ${T.hairlineStrong};
-  background: transparent;
-  color: ${T.ink};
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-  &:hover:not(:disabled) { border-color: ${T.accent}; }
-  &:disabled { cursor: default; }
-`
-
-export default function OnboardingCard({ suggestions = [], hasFollows, hasCoins, onAddCoin, onFollow, onPreset, onTour, busy = {} }) {
+export default function OnboardingCard({ suggestions = [], wallets = [], coins = [], onAddCoin, onFollow, onAlertSaved, onTour, busy = {} }) {
   const [symbol, setSymbol] = useState('')
   const [error, setError] = useState(null)
   const [followed, setFollowed] = useState({})
-  const [presetDone, setPresetDone] = useState({})
 
   const add = async (sym) => {
     const s = String(sym || '').trim().toUpperCase()
@@ -130,12 +109,6 @@ export default function OnboardingCard({ suggestions = [], hasFollows, hasCoins,
     setFollowed((f) => ({ ...f, [w.slug]: 'pending' }))
     const ok = await onFollow(w.slug)
     setFollowed((f) => ({ ...f, [w.slug]: ok ? 'done' : 'error' }))
-  }
-
-  const preset = async (key) => {
-    setPresetDone((p) => ({ ...p, [key]: 'pending' }))
-    const ok = await onPreset(key)
-    setPresetDone((p) => ({ ...p, [key]: ok ? 'done' : 'error' }))
   }
 
   return (
@@ -204,17 +177,8 @@ export default function OnboardingCard({ suggestions = [], hasFollows, hasCoins,
       </Step>
 
       <Step>
-        <StepTitle><StepNum>3</StepNum>Set a one-tap alert</StepTitle>
-        <Presets>
-          <Preset type="button" disabled={!hasFollows || presetDone.wallet === 'pending' || presetDone.wallet === 'done'} onClick={() => preset('wallet')} data-testid="onboarding-preset-wallet">
-            <span>A wallet I follow moves more than $100K</span>
-            <Muted style={{ fontSize: 12 }}>{presetDone.wallet === 'done' ? 'Saved' : hasFollows ? 'Save' : 'Follow a wallet first'}</Muted>
-          </Preset>
-          <Preset type="button" disabled={!hasCoins || presetDone.price === 'pending' || presetDone.price === 'done'} onClick={() => preset('price')} data-testid="onboarding-preset-price">
-            <span>A coin on my watchlist moves 5% in an hour</span>
-            <Muted style={{ fontSize: 12 }}>{presetDone.price === 'done' ? 'Saved' : hasCoins ? 'Save' : 'Add a coin first'}</Muted>
-          </Preset>
-        </Presets>
+        <StepTitle><StepNum>3</StepNum>Set an alert</StepTitle>
+        <AlertPresets variant="row" wallets={wallets} coins={coins} onSaved={onAlertSaved} />
         <p style={{ margin: '10px 0 0', fontSize: 12, color: T.muted }}>Alerts arrive in the bell at the top of the page. Email is optional and set in alert settings.</p>
       </Step>
 

@@ -62,34 +62,11 @@ const Input = styled.input`
   }
 `
 
-const Toggle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.3rem;
-`
-
-const ToggleSwitch = styled.button`
-  width: 40px;
-  height: 22px;
-  border-radius: 11px;
-  border: none;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s;
-  background: ${({ $on }) => $on ? 'var(--primary)' : 'var(--secondary)'};
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: ${({ $on }) => $on ? '20px' : '2px'};
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #fff;
-    transition: left 0.2s;
-  }
+const Note = styled.p`
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
 `
 
 const BtnRow = styled.div`
@@ -133,41 +110,49 @@ const SecondaryBtn = styled(Btn)`
   }
 `
 
+// Wallet alerts are user_alerts rows of kind wallet_activity, the same model
+// as the Personal page and ORCA. Telegram delivery for personal alerts does
+// not exist yet, so the modal says so and collects nothing.
 export default function AlertModal({ address, chain, onClose }) {
   const [alertType, setAlertType] = useState('large_transaction')
-  const [minUsd, setMinUsd] = useState('')
-  const [notifyTelegram, setNotifyTelegram] = useState(false)
-  const [telegramChatId, setTelegramChatId] = useState('')
+  const [minUsd, setMinUsd] = useState('100000')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
 
   const handleSave = async () => {
     setSaving(true)
+    setError(null)
     try {
       const { data } = await supabaseBrowser().auth.getSession()
       const token = data?.session?.access_token
       if (!token) {
-        alert('Please sign in to set an alert.')
-        setSaving(false)
+        setError('Sign in to set an alert.')
         return
       }
-      await fetch('/api/alerts', {
+      const floor = Number(minUsd)
+      const res = await fetch('/api/personal/alerts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          kind: 'wallet_activity',
           address,
-          chain: chain || null,
-          alert_type: alertType,
-          min_usd_value: minUsd ? Number(minUsd) : null,
-          notify_telegram: notifyTelegram,
-          telegram_chat_id: telegramChatId || null,
+          ...(chain ? { chain } : {}),
+          ...(alertType === 'large_transaction' && floor > 0 ? { threshold_usd: floor } : {}),
+          source: 'wallet_page',
         }),
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setError(body?.error === 'rule_limit_reached' ? 'You have reached the 50-alert limit.' : 'Could not create this alert. Try again.')
+        return
+      }
+      try { window.dispatchEvent(new CustomEvent('orca:alerts-changed')) } catch { /* ignore */ }
       onClose()
     } catch {
-      // ignore
+      setError('Could not create this alert. Try again.')
     } finally {
       setSaving(false)
     }
@@ -180,38 +165,28 @@ export default function AlertModal({ address, chain, onClose }) {
 
         <Label>Alert Type</Label>
         <Select value={alertType} onChange={e => setAlertType(e.target.value)}>
-          <option value="large_transaction">Large Transaction</option>
-          <option value="any_activity">Any Activity</option>
-          <option value="token_transfer">Token Transfer</option>
-          <option value="new_token">New Token Interaction</option>
+          <option value="large_transaction">Large transaction</option>
+          <option value="any_activity">Any activity</option>
         </Select>
 
-        <Label>Minimum USD Value</Label>
-        <Input
-          type="number"
-          placeholder="e.g. 100000"
-          value={minUsd}
-          onChange={e => setMinUsd(e.target.value)}
-        />
-
-        <Label>Telegram Notifications</Label>
-        <Toggle>
-          <ToggleSwitch $on={notifyTelegram} onClick={() => setNotifyTelegram(!notifyTelegram)} />
-          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            {notifyTelegram ? 'Enabled' : 'Disabled'}
-          </span>
-        </Toggle>
-
-        {notifyTelegram && (
+        {alertType === 'large_transaction' && (
           <>
-            <Label>Telegram Chat ID</Label>
+            <Label>Minimum USD Value</Label>
             <Input
-              placeholder="Your Telegram chat ID"
-              value={telegramChatId}
-              onChange={e => setTelegramChatId(e.target.value)}
+              type="number"
+              placeholder="e.g. 100000"
+              value={minUsd}
+              onChange={e => setMinUsd(e.target.value)}
             />
           </>
         )}
+
+        <Note>
+          Alerts arrive in the bell, and by email if you turned it on in alert settings. Telegram delivery
+          for personal alerts is coming soon. Wallet moves are checked every 5 minutes against wallet data we
+          refresh hourly.
+        </Note>
+        {error && <Note role="alert" style={{ color: 'var(--error, #ff6b6b)' }}>{error}</Note>}
 
         <BtnRow>
           <SecondaryBtn onClick={onClose}>Cancel</SecondaryBtn>

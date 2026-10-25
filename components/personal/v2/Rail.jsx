@@ -7,6 +7,7 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import TokenIcon from '@/components/TokenIcon'
 import { HealthChip, healthOf } from '@/components/live/HealthChip'
+import { describeRule } from '@/lib/orca/alerts/presets'
 import { T } from '@/lib/ui/tokens'
 import { Card, SecHead, Avatar, Muted, Num, Button, Input, TextLink, Spark, fmtUsd, fmtPrice, fmtPct, hhmmUtc, timeAgo, toneColor } from './ui'
 
@@ -159,29 +160,11 @@ export function WalletsCard({ wallets = [], now }) {
   )
 }
 
-const KIND_SHORT = {
-  wallet_activity: 'Wallet move', whale_flow: 'Whale net flow', price_move: 'Price move', news_high_impact: 'Big headline',
-  news_any: 'Any headline', social_post: 'Social post', signal_flip: 'Signal change', whale_convergence: 'Several whales',
-}
-// `names` maps a lowercased address to the followed wallet's name.
-export function ruleText(r, names) {
-  if (!r) return ''
-  const named = r.address ? names?.get(String(r.address).toLowerCase()) : null
-  const target = r.ticker && r.ticker !== '_ALL_' ? r.ticker : named || (r.address ? `${String(r.address).slice(0, 6)}…${String(r.address).slice(-4)}` : 'any coin')
-  if (r.kind === 'price_move') return `${target} moves ${r.threshold_pct}% in an hour`
-  if (r.kind === 'whale_flow') return `${target} whale net flow above ${fmtUsd(r.threshold_usd)}`
-  if (r.kind === 'wallet_activity') return `${target} moves more than ${fmtUsd(r.threshold_usd || 0)}`
-  return `${KIND_SHORT[r.kind] || r.kind}: ${target}`
-}
+// One phrasing per kind, shared with AlertPresets and the wallet page.
+export const ruleText = describeRule
 
-export function AlertsCard({ rules = [], names, hasFollows, hasCoins, onPreset, onManage }) {
+export function AlertsCard({ rules = [], names, onManage }) {
   const active = rules.filter((r) => r.enabled)
-  const [done, setDone] = useState({})
-  const preset = async (k) => {
-    setDone((d) => ({ ...d, [k]: 'pending' }))
-    const ok = await onPreset(k)
-    setDone((d) => ({ ...d, [k]: ok ? 'done' : 'error' }))
-  }
   return (
     <Card data-testid="rail-alerts">
       <SecHead title="Your alerts" count={active.length} right={<TextLink href="#alerts" onClick={(e) => { e.preventDefault(); onManage() }}>Manage</TextLink>} />
@@ -193,14 +176,10 @@ export function AlertsCard({ rules = [], names, hasFollows, hasCoins, onPreset, 
           {active.length > 5 && <R style={{ fontSize: 12, color: T.muted }}>and {active.length - 5} more</R>}
         </Rows>
       ) : (
-        <div style={{ display: 'grid', gap: 8 }}>
-          <Button type="button" onClick={() => preset('wallet')} disabled={!hasFollows || !!done.wallet} data-testid="rail-preset-wallet" style={{ justifyContent: 'flex-start', height: 'auto', padding: '8px 10px', whiteSpace: 'normal', textAlign: 'left' }}>
-            {done.wallet === 'done' ? 'Saved: ' : ''}A wallet I follow moves more than $100K
-          </Button>
-          <Button type="button" onClick={() => preset('price')} disabled={!hasCoins || !!done.price} data-testid="rail-preset-price" style={{ justifyContent: 'flex-start', height: 'auto', padding: '8px 10px', whiteSpace: 'normal', textAlign: 'left' }}>
-            {done.price === 'done' ? 'Saved: ' : ''}A coin on my watchlist moves 5% in an hour
-          </Button>
-        </div>
+        <>
+          <p style={{ margin: '0 0 10px', fontSize: 13, color: T.body }}>No alerts yet. Presets take two clicks.</p>
+          <Button type="button" onClick={onManage} data-testid="rail-alerts-setup">Set up an alert</Button>
+        </>
       )}
       <p style={{ margin: '10px 0 0', fontSize: 12, color: T.muted }}>Delivered to the bell; email if you turned it on in alert settings.</p>
     </Card>

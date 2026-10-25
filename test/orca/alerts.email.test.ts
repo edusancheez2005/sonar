@@ -57,6 +57,18 @@ describe('emailPendingNotifications', () => {
     expect(sb.updates.find((u) => u.table === 'user_profile')?.userId).toBe('u1')
   })
 
+  it('never emails "Send me a test" rows', async () => {
+    const test = { ...n(9, 'u1'), title: 'Test alert', payload: { test: true } }
+    const sb = makeSupabase({
+      pending: [test],
+      profiles: [{ user_id: 'u1', notifications_email: true, notifications_last_email_at: null, notification_style: 'balanced' }],
+    })
+    const sent: any[] = []
+    const res = await emailPendingNotifications(sb as any, deps(sent), { now: NOW })
+    expect(res).toMatchObject({ candidates: 0, sent: 0 })
+    expect(sent).toEqual([])
+  })
+
   it('holds rows (unstamped) while the style gap is open, and only sends what fired since the last email', async () => {
     const pending = [n(1, 'u1', '2026-10-03T11:58:00Z'), n(2, 'u1', '2026-10-03T07:00:00Z')]
     // balanced = 3h gap: last email 2h ago → hold

@@ -140,6 +140,7 @@ export async function emailPendingNotifications(
       if (error || !Array.isArray(data)) return result
       for (const n of data as PendingNotification[]) {
         if (!n?.user_id || !prefs.has(n.user_id)) continue
+        if ((n.payload as { test?: unknown } | null)?.test) continue // "Send me a test" rows are never emailed
         result.candidates += 1
         const list = byUser.get(n.user_id) ?? []
         list.push(n)
