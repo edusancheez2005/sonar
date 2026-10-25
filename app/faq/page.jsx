@@ -223,7 +223,7 @@ const faqData = [
       },
       {
         question: 'How often is data updated?',
-        answer: 'Whale transaction data updates every 15 minutes. Price data from Binance refreshes in real-time. News articles are ingested continuously. ORCA AI accesses the latest data for every query.'
+        answer: 'Ethereum whale trades reach the feed within about 30 seconds of our monitor detecting them; the page refreshes itself every 15 seconds. Bitcoin whale alerts (a separate feed) refresh every 10 minutes; whale net flow is Ethereum-only for now. Price data from Binance refreshes in real-time. News articles are ingested continuously. ORCA AI accesses the latest data for every query.'
       },
       {
         question: 'Can I export data?',

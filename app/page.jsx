@@ -68,7 +68,7 @@ function FaqJsonLd() {
             name: 'Is Sonar Tracker data real-time and how accurate is it?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: 'Sonar Tracker provides near real-time data for whale transactions. The ingestion pipeline updates every 15 minutes across supported blockchains and the UI refreshes automatically. The platform aggregates on-chain transactions, public news, and social metrics into descriptive views. Sonar does not provide financial advice or trade recommendations. Past performance of any displayed metric does not guarantee future results.'
+              text: 'Sonar Tracker provides near real-time data for whale transactions. Ethereum whale trades reach the feed within about 30 seconds of our monitor detecting them; the page refreshes itself every 15 seconds. Bitcoin whale alerts (a separate feed) refresh every 10 minutes; whale net flow is Ethereum-only for now. The platform aggregates on-chain transactions, public news, and social metrics into descriptive views. Sonar does not provide financial advice or trade recommendations. Past performance of any displayed metric does not guarantee future results.'
             },
           },
           {
