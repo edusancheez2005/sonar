@@ -761,6 +761,17 @@ function IconPersonalize() {
   )
 }
 
+/** Connect wallet — a wallet outline with its clasp. */
+function IconWallet() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <rect x="4" y="8" width="16" height="11" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M20 12h-3.5a1.5 1.5 0 0 0 0 3H20" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 const APP_LINKS = [
   {
     href: '/dashboard',
@@ -806,9 +817,9 @@ const APP_LINKS = [
   },
   {
     href: '/personalize',
-    label: 'Personalize',
+    label: 'Connect wallet',
     match: (p) => p === '/personalize' || p?.startsWith('/personalize/'),
-    Icon: IconPersonalize,
+    Icon: IconWallet,
     soon: true,
   },
 ]

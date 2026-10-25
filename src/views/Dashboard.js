@@ -20,7 +20,6 @@ import {
   Legend
 } from 'chart.js'
 import TokenIcon from '@/components/TokenIcon'
-import WhaleAlertsCard from '../components/WhaleAlertsCard';
 import TokenHeatmap from '@/components/wallet-tracker/TokenHeatmap'
 import PremiumGate from '@/components/PremiumGate'
 import { SkeletonKPIStrip, SkeletonBarRows } from '@/components/SkeletonLoader'
@@ -659,7 +658,6 @@ const rowVariant = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const Dashboard = ({ isPremium = false }) => {
-  console.log('🔍 Dashboard isPremium:', isPremium)
 
   const personalized = usePersonalizedDashboard()
   const personalizedRef = useRef(personalized)
@@ -981,7 +979,7 @@ const Dashboard = ({ isPremium = false }) => {
             )}
 
             <OrcaNavBtn href="/ai-advisor" ref={orcaRef}>
-              🐋 Ask ORCA
+              Ask ORCA
             </OrcaNavBtn>
             <TutorialBtn onClick={() => {
               localStorage.removeItem('sonar_tutorial_completed')
@@ -1039,7 +1037,7 @@ const Dashboard = ({ isPremium = false }) => {
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,229,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,229,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(0,229,255,0.15)' }}
                     >
-                      🐋 Ask ORCA
+                      Ask ORCA
                     </Link>}
                     {hasFactors && <CollapseBtn
                       type="button"

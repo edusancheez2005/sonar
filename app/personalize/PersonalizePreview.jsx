@@ -815,7 +815,7 @@ export default function PersonalizePreview() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            Make Sonar yours.
+            Connect your wallet.
           </Headline>
           <Lede
             initial={{ opacity: 0, y: 16 }}

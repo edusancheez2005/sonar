@@ -49,3 +49,6 @@ scripts/arkham-probe.log
 scripts/arkham-probe2.log
 build.log
 scripts/arkham-batch-raw-*.json
+
+# TypeScript incremental build state (rewritten by local tsc runs)
+tsconfig.tsbuildinfo
