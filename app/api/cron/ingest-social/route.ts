@@ -1,13 +1,14 @@
 /**
- * CRON: Social Feed Ingestion via LunarCrush
- * Schedule: Every 4 hours
- * 
- * Optimized for Vercel 120s timeout:
- * - Step 1: Trending creators list (1 call)
- * - Step 2: Top posts per topic for 8 key topics (8 calls)
- * - Step 3: Top 15 tracked creator posts (15 calls)
- * - Step 4: AI summaries for 3 topics (3 calls)
- * Total: ~27 calls × 3.5s delay = ~95s (under 120s limit)
+ * CRON: Social feed ingestion via LunarCrush.
+ * Schedule: every 2 hours at :30 (vercel.json).
+ *
+ * One call per topic (8): the top posts for each topic go into social_posts
+ * (the dashboard's Social Pulse, /news social, social-post alerts).
+ * Removed 2026-10-25: the creators list, the tracked-creator posts and the
+ * AI "whatsup" summaries never wrote a row in eight months (social_creators,
+ * the tracked_creator category and social_ai_summaries were all empty) and
+ * spent ~250 LunarCrush calls a day of the 2,000/day cap ORCA shares.
+ * Each run writes a system_health row (component 'ingest-social').
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -19,22 +20,7 @@ export const maxDuration = 120
 
 const LC = 'https://lunarcrush.com/api4/public'
 
-// VIP accounts: fetch 10 posts each (these move markets with ANY tweet — geopolitical, economic, crypto)
-const PRIORITY_TRACKED = [
-  'realDonaldTrump', 'elonmusk', 'saylor', 'VitalikButerin',
-  'CathieDWood', 'RaoulGMI', 'CryptoHayes', 'brian_armstrong'
-]
-
-// All tracked creators (priority + secondary). Must fit in 120s Vercel timeout.
-const TRACKED = [
-  'elonmusk', 'realDonaldTrump', 'VitalikButerin', 'CZ_Binance',
-  'brian_armstrong', 'justinsuntron', 'APompliano', 'scottmelker',
-  'WuBlockchain', 'CryptoCapo_', 'AltcoinSherpa', 'cobie',
-  'tier10k', 'WatcherGuru', 'RaoulGMI', 'CryptoHayes', 'CathieDWood'
-]
-
 const TOPICS = ['bitcoin', 'ethereum', 'solana', 'xrp', 'dogecoin', 'defi', 'arbitrum', 'pepe']
-const AI_TOPICS = ['bitcoin', 'ethereum', 'solana']
 
 export async function GET(request: Request) {
   const t0 = Date.now()
@@ -54,41 +40,12 @@ export async function GET(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   )
 
-  const stats = { creators: 0, posts: 0, tracked: 0, summaries: 0, errors: 0 }
+  const stats = { posts: 0, errors: 0 }
   const debug: string[] = []
   const hdr = { Authorization: `Bearer ${apiKey}` }
   const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 
-  // ─── STEP 1: Trending creators (1 call) ───────────────────────
-  try {
-    const r = await fetch(`${LC}/creators/list/v1?sort=interactions_24h&limit=50`, { headers: hdr, signal: AbortSignal.timeout(12000) })
-    const txt = await r.text()
-    debug.push(`creators: status=${r.status} len=${txt.length}`)
-    if (r.ok && txt.length > 10) {
-      const j = JSON.parse(txt)
-      const items = j.data || j.results || (Array.isArray(j) ? j : [])
-      debug.push(`creators items: ${items.length}`)
-      for (const c of items.slice(0, 50)) {
-        const { error } = await sb.from('social_creators').upsert({
-          creator_id: String(c.id || c.twitter_screen_name || c.screen_name || Math.random()),
-          network: c.network || 'twitter',
-          screen_name: c.twitter_screen_name || c.screen_name || '',
-          display_name: c.display_name || c.twitter_screen_name || '',
-          followers: c.followers || c.twitter_followers || 0,
-          interactions_24h: c.interactions_24h || 0,
-          posts_24h: c.num_posts_24h || 0,
-          rank: c.rank || null,
-          profile_image: c.profile_image || c.twitter_profile_image || null,
-          galaxy_score: c.galaxy_score || null,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'creator_id,network' })
-        if (!error) stats.creators++
-      }
-    } else { debug.push(`creators: status=${r.status}`) }
-  } catch (e: any) { stats.errors++; debug.push(`creators err: ${e.message}`) }
-  await wait(3500)
-
-  // ─── STEP 2: Top posts per topic (8 calls) ────────────────────
+  // ─── Top posts per topic (8 calls) ────────────────────────────
   for (const topic of TOPICS) {
     if (Date.now() - t0 > 100000) break
     try {
@@ -153,63 +110,18 @@ export async function GET(request: Request) {
     await wait(3500)
   }
 
-  // ─── STEP 3: Tracked creator posts (15 calls) ─────────────────
-  for (const handle of TRACKED) {
-    if (Date.now() - t0 > 100000) break
-    const isPriority = PRIORITY_TRACKED.includes(handle)
-    const postLimit = isPriority ? 10 : 5
-    try {
-      const r = await fetch(`${LC}/creator/twitter/${handle}/posts/v1?limit=${postLimit}`, { headers: hdr, signal: AbortSignal.timeout(8000) })
-      if (r.ok) {
-        const j = await r.json()
-        for (const p of (j.data || [])) {
-          const body = p.post_title || p.post_description || p.body || p.text || ''
-          if (body.length < 10) continue
-          const { error } = await sb.from('social_posts').upsert({
-            post_id: String(p.id || Date.now() + Math.random()),
-            post_type: p.post_type || 'tweet',
-            network: p.network || 'twitter',
-            creator_id: String(p.creator_id || handle),
-            creator_name: p.creator_display_name || handle,
-            creator_screen_name: p.creator_name || handle,
-            creator_followers: p.creator_followers || 0,
-            creator_image: p.creator_avatar || null,
-            body, title: p.post_title || null,
-            url: p.post_link || null,
-            sentiment: p.post_sentiment || null,
-            interactions: p.interactions_24h || 0,
-            likes: p.likes || 0, retweets: p.retweets || 0, replies: p.replies || 0,
-            category: 'tracked_creator',
-            tickers_mentioned: extractTickers(`${p.post_title || ''} ${body}`),
-            published_at: p.post_created ? (typeof p.post_created === 'number' ? new Date(p.post_created * 1000).toISOString() : (String(p.post_created).match(/^\d{10,}$/) ? new Date(Number(p.post_created) * 1000).toISOString() : p.post_created)) : new Date().toISOString(),
-            ingested_at: new Date().toISOString(),
-          }, { onConflict: 'post_id,network' })
-          if (!error) stats.tracked++
-        }
-      }
-    } catch { stats.errors++ }
-    await wait(3500)
-  }
-
-  // ─── STEP 4: AI Summaries (3 calls) ───────────────────────────
-  for (const topic of AI_TOPICS) {
-    if (Date.now() - t0 > 110000) break
-    try {
-      const r = await fetch(`${LC}/topic/${topic}/whatsup/v1`, { headers: hdr, signal: AbortSignal.timeout(10000) })
-      if (r.ok) {
-        const j = await r.json()
-        const summary = j.data?.summary || j.data?.text || (typeof j.data === 'string' ? j.data : null)
-        if (summary) {
-          await sb.from('social_ai_summaries').insert({ topic, summary, generated_at: new Date().toISOString() })
-          stats.summaries++
-        }
-      }
-    } catch { stats.errors++ }
-    await wait(3500)
-  }
-
   const elapsed = Date.now() - t0
   console.log(`[Social] Done in ${elapsed}ms:`, stats)
+  try {
+    await sb.from('system_health').insert({
+      component: 'ingest-social',
+      status: stats.posts > 0 ? (stats.errors > 0 ? 'partial' : 'ok') : 'error',
+      started_at: new Date(t0).toISOString(),
+      finished_at: new Date().toISOString(),
+      duration_ms: elapsed,
+      details: { ...stats, topics: TOPICS.length },
+    })
+  } catch { /* best-effort heartbeat */ }
 
   return NextResponse.json({ success: true, elapsed_ms: elapsed, ...stats, debug: debug.slice(0, 30) })
 }
