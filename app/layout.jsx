@@ -28,7 +28,10 @@ export const metadata = {
     address: false,
     telephone: false,
   },
-  alternates: { canonical: siteUrl },
+  // No site-wide canonical: every page without its own inherited the homepage
+  // as canonical, so Google filed /whales, /changelog, /faq … as duplicates of
+  // the homepage ("Alternate page with proper canonical tag"). The homepage
+  // sets its own in app/page.jsx; other pages self-canonicalise or set theirs.
   category: 'Cryptocurrency',
   classification: 'Blockchain Analytics',
   robots: {

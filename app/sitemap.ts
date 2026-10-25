@@ -4,7 +4,8 @@ import { SYMBOL_TO_COINGECKO_ID } from '@/lib/wallet-backtest/engine'
 
 const BASE = 'https://www.sonartracker.io'
 
-// Fallback hardcoded blog slugs (in case DB is unreachable)
+// Fallback hardcoded blog slugs (in case DB is unreachable). The comparison
+// posts pulled on 2025-04-21 are noindex and must not be listed here.
 const fallbackBlogSlugs = [
   'what-is-whale-tracking',
   'copy-whale-trades',
@@ -12,13 +13,10 @@ const fallbackBlogSlugs = [
   'orca-ai-crypto-trading',
   'bullish-bearish-sentiment-trading',
   'top-whales-7day-analysis',
-  'nansen-vs-sonar-tracker',
-  'best-crypto-whale-tracking-tools-2025',
   'how-to-track-whale-wallets',
   'whale-tracking-predicted-crashes',
   'how-ai-changing-crypto-trading',
   'on-chain-analysis-beginners',
-  'arkham-vs-sonar-tracker',
   'free-crypto-analytics-tools-2025',
   'eth-whale-activity-analysis',
   'bitcoin-whale-accumulation-patterns',
@@ -29,10 +27,8 @@ const fallbackBlogSlugs = [
   'institutional-traders-on-chain-data',
   'sol-whale-tracker',
   'building-trading-strategy-whale-intelligence',
-  'glassnode-vs-sonar',
   'custom-whale-alerts-setup',
   'why-crypto-keeps-getting-dumped',
-  'whale-alert-alternative',
   'how-to-track-crypto-whales',
   'best-crypto-whale-tracking-tools',
   'orca-ai-crypto-analyst',
@@ -84,7 +80,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/wallet-tracker`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${BASE}/backtest`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE}/community`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
-    { url: `${BASE}/pricing`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
   ]
 
   // SEO landing pages
