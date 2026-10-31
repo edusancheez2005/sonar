@@ -1,0 +1,62 @@
+<!-- Roscap: Google Consent Mode v2 default and tag loader (v1), basic mode.
+     Where: Webflow > Site settings > Custom code > Head code. Keep it as the FIRST script in that slot.
+     Before publishing: remove the GA4 measurement ID from Site settings > Integrations (Google Analytics), and remove the
+     hard-coded gtag.js snippet from every page's head custom code. Webflow prints Integrations and page-level tags before
+     this slot, so a tag added there would run before the consent default below and set _ga before any choice is made.
+     Basic mode: nothing is requested from Google until the visitor allows analytics or marketing. Google Analytics is
+     configured only when analytics is allowed, and the Google Ads tag only when marketing is allowed.
+     VERSION must match the VERSION constant in the consent script (site-footer.html). -->
+<script>
+(function (w, d) {
+  var VERSION = 1;
+  w.dataLayer = w.dataLayer || [];
+  function gtag() { w.dataLayer.push(arguments); }
+  w.gtag = gtag;
+  /* 1. Default: everything optional denied until the visitor chooses. Essential storage is allowed. */
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    functionality_storage: 'granted',
+    security_storage: 'granted',
+    wait_for_update: 500
+  });
+  gtag('set', 'ads_data_redaction', true);
+  gtag('set', 'url_passthrough', false);
+  /* 2. Load the Google tag once, on the first "yes", and configure only what the visitor allowed.
+        The consent script (site-footer.html) calls rcTags() after every choice. */
+  var loaded = false, on = {};
+  w.rcTags = function (k) {
+    if (!k || !(k.analytics || k.marketing)) return;
+    if (!loaded) {
+      loaded = true;
+      /* rc-loader:start */
+      var s = d.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS';
+      d.head.appendChild(s);
+      /* rc-loader:end */
+      gtag('js', new Date());
+    }
+    if (k.analytics && !on.ga) { on.ga = true; gtag('config', 'G-H8HS2R6NLS', { allow_google_signals: false, cookie_expires: 34128000 }); } /* Signals off (measurement only); _ga lifetime 13 months in every browser, as the policy states */
+    if (k.marketing && !on.ads) { on.ads = true; gtag('config', 'AW-238397354910'); } /* Google Ads. AW-238397354910 was found in the account: confirm in Google Ads > Tag setup */
+  };
+  /* 3. A choice stored on an earlier visit applies straight away. */
+  var c = null;
+  try {
+    var m = d.cookie.match(/(?:^|; )roscap_consent=([^;]*)/);
+    var raw = m ? decodeURIComponent(m[1]) : localStorage.getItem('roscap_consent');
+    c = raw ? JSON.parse(raw) : null;
+  } catch (e) {}
+  if (c && c.version === VERSION) {
+    gtag('consent', 'update', {
+      analytics_storage: c.analytics ? 'granted' : 'denied',
+      ad_storage: c.marketing ? 'granted' : 'denied',
+      ad_user_data: c.marketing ? 'granted' : 'denied',
+      ad_personalization: 'denied'
+    });
+    w.rcTags(c);
+  }
+})(window, document);
+</script>

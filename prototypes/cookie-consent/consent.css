@@ -1,0 +1,72 @@
+/* Roscap cookie consent v1. Self-contained. Cream card, teal text and buttons, no gold on cream. */
+.rc-banner,.rc-modal{--c:#FFFCF5;--t:#043435;--t2:#0a4a4b;--g:#4F5B5B;--l:rgba(4,52,53,.16);
+  font:400 15px/1.55 "Switzer",Arial,sans-serif;color:#12161D;box-sizing:border-box}
+.rc-banner *,.rc-modal *{box-sizing:inherit;margin:0}
+.rc-banner[hidden],.rc-modal[hidden]{display:none}
+.rc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rc-h,.rc-dialog h2{font:italic 500 1.5rem/1.2 "Boska",Georgia,serif;color:var(--t)}
+.rc-a{color:var(--t);text-decoration:underline;text-underline-offset:3px}
+.rc-a:hover,.rc-text:hover{color:var(--t2)}
+.rc-banner :focus-visible,.rc-modal :focus-visible{outline:2px solid var(--t);outline-offset:3px}
+
+/* Accept all and Reject non-essential always share one style */
+.rc-btn{flex:1 1 150px;display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border:1px solid var(--t);border-radius:4px;
+  background:var(--t);color:#fff;font-family:inherit;font-size:.9375rem;font-weight:500;line-height:1.2;cursor:pointer;transition:.2s}
+.rc-btn:hover{background:var(--t2);border-color:var(--t2)}
+.rc-btn.rc-outline{background:transparent;color:var(--t)}
+.rc-btn.rc-outline:hover,.rc-text{display:inline-flex;align-items:center;min-height:44px;margin:4px 0 -8px -4px;padding:0 4px;border:0;background:none;color:var(--t);
+  font-family:inherit;font-size:.9375rem;font-weight:500;line-height:1.2;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+.rc-banner{position:fixed;left:24px;bottom:24px;z-index:90;width:min(440px,calc(100% - 48px));padding:26px 28px 22px;background:var(--c);
+  border:1px solid var(--l);border-radius:12px;box-shadow:0 30px 70px -30px rgba(4,52,53,.55)}
+.rc-banner p{margin-top:10px;color:var(--g)}
+.rc-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+
+.rc-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(4,52,53,.55);overflow:auto}
+.rc-dialog{width:min(560px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:30px 32px 28px;
+  background:var(--c);border-radius:12px;box-shadow:0 40px 90px -30px rgba(2,37,38,.7)}
+.rc-dialog:focus{outline:none}
+.rc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.rc-dialog h2{font-size:1.75rem;padding-top:6px}
+.rc-close{flex:none;display:grid;place-items:center;width:44px;height:44px;margin:-6px -10px 0 0;padding:0;border:0;border-radius:50%;background:none;color:var(--t);cursor:pointer}
+.rc-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.rc-intro,.rc-status,.rc-foot{color:var(--g)}
+.rc-intro{margin-top:12px}
+.rc-cats{list-style:none;padding:0;margin-top:20px;border-top:1px solid var(--l)}
+.rc-cat{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name sw" "desc sw";column-gap:18px;align-items:center;padding:15px 0 17px;border-bottom:1px solid var(--l)}
+.rc-name{grid-area:name;font-size:1.0625rem;font-weight:500;line-height:1.3;color:var(--t)}
+.rc-name small{margin-left:8px;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--g)}
+.rc-desc{grid-area:desc;margin-top:4px;font-size:.875rem;line-height:1.5;color:var(--g)}
+.rc-switch{grid-area:sw;width:60px;height:44px;padding:8px 6px;border:0;background:none;cursor:pointer}
+.rc-switch i{position:relative;display:block;width:48px;height:28px;border:2px solid var(--t);border-radius:14px;transition:.2s}
+.rc-switch i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--t);transition:.2s}
+.rc-switch[aria-checked="true"] i{background:var(--t)}
+.rc-switch[aria-checked="true"] i::after{background:#fff;transform:translateX(20px)}
+.rc-switch:disabled{cursor:default}
+.rc-switch:disabled i{opacity:.5}
+.rc-status{margin-top:14px;font-size:.875rem}
+.rc-status b{font-weight:500;color:var(--t)}
+.rc-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.rc-actions .rc-btn{flex:1 1 auto;white-space:nowrap}
+.rc-foot{margin-top:16px;font-size:.875rem}
+
+/* one quiet rise, only for visitors who allow motion */
+@media (prefers-reduced-motion:no-preference){
+  .rc-banner{opacity:0;transform:translateY(12px);transition:opacity .45s cubic-bezier(.22,.61,.36,1),transform .45s cubic-bezier(.22,.61,.36,1)}
+  .rc-banner.rc-in{opacity:1;transform:none}
+  .rc-dialog{animation:rc-pop .3s cubic-bezier(.22,.61,.36,1)}
+  @keyframes rc-pop{from{opacity:0;transform:translateY(8px)}}
+}
+
+/* phones: bottom sheets */
+@media (max-width:767px){
+  .rc-banner{left:0;right:0;bottom:0;width:auto;border-radius:14px 14px 0 0;border-bottom:0;padding:22px 20px calc(18px + env(safe-area-inset-bottom,0px))}
+  .rc-modal{place-items:end stretch;padding:0}
+  .rc-dialog{width:100%;max-height:calc(100dvh - 24px);border-radius:14px 14px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0px))}
+  .rc-dialog h2{font-size:1.5rem;padding-top:4px}
+  .rc-intro{margin-top:8px;font-size:.9375rem}
+  .rc-cats{margin-top:16px}
+  .rc-cat{column-gap:12px;padding:12px 0 14px}
+  .rc-desc{font-size:.8125rem}
+}
+@media (max-width:479px){.rc-row .rc-btn{flex-basis:100%}}

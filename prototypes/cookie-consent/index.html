@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cookie consent | Roscap prototype</title>
+<meta name="description" content="Prototype of the in-house cookie consent banner and preferences dialog for roscap.co.uk, with Google Consent Mode v2.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#043435">
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="consent.css">
+<style>
+/* demo page only */
+.skip{position:absolute;left:16px;top:-100px;z-index:100;background:var(--gold);color:var(--ink);padding:12px 18px;border-radius:6px;font-weight:500}
+.skip:focus{top:16px}
+main:focus{outline:none}
+.nav-link{padding-block:12px}
+.nav-cta{min-height:44px}
+.foot-col .foot-h{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin:0 0 6px}
+.foot-col a{padding-block:5px;margin-block:-3px}
+.social a{width:36px;height:36px}
+.foot :focus-visible,.demo :focus-visible,.intro :focus-visible{outline-color:var(--teal)}
+.hero{min-height:88vh;min-height:88svh}
+.proto-label{position:fixed;right:14px;bottom:14px;z-index:60;background:var(--teal);color:var(--cream);font-size:12px;letter-spacing:.02em;padding:7px 12px;border-radius:999px;border:1px solid var(--line-dark);box-shadow:0 8px 24px -12px rgba(0,0,0,.5);pointer-events:none}
+html.rc-dialog-open .proto-label{display:none}
+@media (max-width:767px){html.rc-banner-open .proto-label{display:none}}
+/* prototype state panel */
+.demo{border-top:1px solid var(--line)}
+.demo-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.demo .tag{border-style:dashed;border-color:var(--teal);color:var(--teal);font-size:13px;padding:6px 14px}
+.demo-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:28px;margin-top:28px}
+.demo-card{border:1px dashed rgba(4,52,53,.35);border-radius:10px;padding:20px 22px;background:#fff}
+.demo-card h3{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:12px}
+.demo pre,.demo code{font:400 13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
+.demo pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.demo ol{list-style:decimal;padding-left:22px;display:grid;gap:6px;max-height:320px;overflow:auto}
+.demo ol li{color:var(--grey);overflow-wrap:anywhere}
+.demo ol li.is-update{color:var(--teal)}
+.demo-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.demo-row .btn{min-height:44px;font-size:14px;border:1px solid var(--teal);cursor:pointer}
+.demo-row .btn.ghost{background:transparent;color:var(--teal)}
+.demo-row .btn.ghost:hover{background:rgba(4,52,53,.07)}
+.demo-note{margin-top:14px;font-size:13px;color:var(--grey)}
+@media (max-width:860px){.demo-grid{grid-template-columns:minmax(0,1fr)}}
+</style>
+<!-- Prototype only: capture every gtag() call in a visible log instead of loading Google. Not part of the handoff. -->
+<script>
+window.__rcLog = [];
+(function () {
+  var dl = [];
+  dl.push = function (a) {
+    Array.prototype.push.call(dl, a);
+    window.__rcLog.push({ t: Date.now(), args: Array.prototype.slice.call(a) });
+    if (window.__rcOnLog) window.__rcOnLog();
+    return dl.length;
+  };
+  window.dataLayer = dl;
+})();
+</script>
+<!-- rc-head:start (generated from webflow/site-head.html by work/cookie/build.py; the gtag.js loader is replaced by a log line) -->
+<script>
+(function (w, d) {
+  var VERSION = 1;
+  w.dataLayer = w.dataLayer || [];
+  function gtag() { w.dataLayer.push(arguments); }
+  w.gtag = gtag;
+  /* 1. Default: everything optional denied until the visitor chooses. Essential storage is allowed. */
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    functionality_storage: 'granted',
+    security_storage: 'granted',
+    wait_for_update: 500
+  });
+  gtag('set', 'ads_data_redaction', true);
+  gtag('set', 'url_passthrough', false);
+  /* 2. Load the Google tag once, on the first "yes", and configure only what the visitor allowed.
+        The consent script (site-footer.html) calls rcTags() after every choice. */
+  var loaded = false, on = {};
+  w.rcTags = function (k) {
+    if (!k || !(k.analytics || k.marketing)) return;
+    if (!loaded) {
+      loaded = true;
+      /* prototype: the real snippet creates <script async src="https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS"> here */
+  w.dataLayer.push(['(prototype) gtag.js for G-H8HS2R6NLS loads here, on the first yes (basic consent mode)']);
+      gtag('js', new Date());
+    }
+    if (k.analytics && !on.ga) { on.ga = true; gtag('config', 'G-H8HS2R6NLS', { allow_google_signals: false, cookie_expires: 34128000 }); } /* Signals off (measurement only); _ga lifetime 13 months in every browser, as the policy states */
+    if (k.marketing && !on.ads) { on.ads = true; gtag('config', 'AW-238397354910'); } /* Google Ads. AW-238397354910 was found in the account: confirm in Google Ads > Tag setup */
+  };
+  /* 3. A choice stored on an earlier visit applies straight away. */
+  var c = null;
+  try {
+    var m = d.cookie.match(/(?:^|; )roscap_consent=([^;]*)/);
+    var raw = m ? decodeURIComponent(m[1]) : localStorage.getItem('roscap_consent');
+    c = raw ? JSON.parse(raw) : null;
+  } catch (e) {}
+  if (c && c.version === VERSION) {
+    gtag('consent', 'update', {
+      analytics_storage: c.analytics ? 'granted' : 'denied',
+      ad_storage: c.marketing ? 'granted' : 'denied',
+      ad_user_data: c.marketing ? 'granted' : 'denied',
+      ad_personalization: 'denied'
+    });
+    w.rcTags(c);
+  }
+})(window, document);
+</script>
+<!-- rc-head:end -->
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- rc-markup:start -->
+<!-- Roscap cookie consent (v1): banner, preferences dialog and live region. consent.js moves the banner and dialog to the top of <body>. -->
+<section class="rc-banner" id="rc-banner" role="region" aria-label="Cookie consent" hidden>
+  <h2 class="rc-h">Cookies on this site</h2>
+  <p>We use essential cookies to run this site. If you agree, we also use Google Analytics to understand how the site is used, and Google Ads measurement to see which enquiries come from our adverts. Details are in our <a class="rc-a" href="https://www.roscap.co.uk/cookie-policy">Cookie Policy</a>.</p>
+  <div class="rc-row">
+    <button class="rc-btn" type="button" data-rc="accept">Accept all</button>
+    <button class="rc-btn" type="button" data-rc="reject">Reject non-essential</button>
+  </div>
+  <button class="rc-text" type="button" data-rc="open">Manage preferences</button>
+</section>
+
+<div class="rc-modal" id="rc-modal" hidden>
+  <div class="rc-dialog" id="rc-dialog" role="dialog" aria-modal="true" aria-labelledby="rc-dialog-h" aria-describedby="rc-dialog-p" tabindex="-1">
+    <div class="rc-top">
+      <h2 id="rc-dialog-h">Cookie preferences</h2>
+      <button class="rc-close" type="button" data-rc="close" aria-label="Close without saving"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <p class="rc-intro" id="rc-dialog-p">Choose which optional cookies we may use. You can change your choice at any time using the Cookie preferences link in the footer.</p>
+    <ul class="rc-cats">
+      <li class="rc-cat">
+        <span class="rc-name" id="rc-l-essential">Essential <small>Always on</small></span>
+        <p class="rc-desc" id="rc-d-essential">Needed for the site to work securely and to remember your cookie choice. Cloudflare security cookie (_cfuvid) and our roscap_consent cookie.</p>
+        <button class="rc-switch" type="button" role="switch" aria-checked="true" disabled aria-labelledby="rc-l-essential" aria-describedby="rc-d-essential"><i aria-hidden="true"></i></button>
+      </li>
+      <li class="rc-cat">
+        <span class="rc-name" id="rc-l-analytics">Analytics</span>
+        <p class="rc-desc" id="rc-d-analytics">Google Analytics 4 helps us understand how the site is used, for example which pages are read. Cookies _ga and _ga_H8HS2R6NLS, kept for up to 13 months.</p>
+        <button class="rc-switch" type="button" role="switch" aria-checked="false" id="rc-sw-analytics" data-rc="switch" aria-labelledby="rc-l-analytics" aria-describedby="rc-d-analytics"><i aria-hidden="true"></i></button>
+      </li>
+      <li class="rc-cat">
+        <span class="rc-name" id="rc-l-marketing">Marketing measurement</span>
+        <p class="rc-desc" id="rc-d-marketing">Google Ads conversion measurement tells us which enquiries came from our adverts. Cookies _gcl_au and _gcl_ls, kept for 90 days. No personalised advertising.</p>
+        <button class="rc-switch" type="button" role="switch" aria-checked="false" id="rc-sw-marketing" data-rc="switch" aria-labelledby="rc-l-marketing" aria-describedby="rc-d-marketing"><i aria-hidden="true"></i></button>
+      </li>
+    </ul>
+    <p class="rc-status" id="rc-status" aria-live="polite"></p>
+    <div class="rc-actions">
+      <button class="rc-btn" type="button" data-rc="save">Save choices</button>
+      <button class="rc-btn rc-outline" type="button" data-rc="accept">Accept all</button>
+      <button class="rc-btn rc-outline" type="button" data-rc="reject">Reject non-essential</button>
+    </div>
+    <p class="rc-foot">Read our <a class="rc-a" href="https://www.roscap.co.uk/cookie-policy">Cookie Policy</a> for the full list of cookies.</p>
+  </div>
+</div>
+<p class="rc-sr" id="rc-live" aria-live="polite"></p>
+<!-- rc-markup:end -->
+
+<header class="nav" id="nav">
+  <div class="nav-in">
+    <a class="nav-brand" href="https://www.roscap.co.uk/" aria-label="Roscap home"><img src="../shared/img/logo-nav.svg" alt="Roscap" width="148" height="41"></a>
+    <nav class="nav-menu" id="nav-menu" aria-label="Main">
+      <div class="nav-links">
+        <a class="nav-link is-current" href="https://www.roscap.co.uk/" aria-current="page">Home</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/about-us">About Us</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/our-services">Our Services</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/track-record">Track Record</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/partner-program">Partner Program</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/insights">Insights</a>
+      </div>
+      <a class="nav-cta" href="https://www.roscap.co.uk/contact-us"><i aria-hidden="true"></i>Speak to Us</a>
+    </nav>
+    <button class="nav-burger" type="button" aria-controls="nav-menu" aria-expanded="false" aria-label="Menu"><span></span></button>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="hero-in">
+      <h1 id="hero-h">Real Estate Capital. <span class="gold-text">Redefined.</span></h1>
+      <p class="hero-p">Roscap is a specialist real estate capital advisory and private investment firm connecting developers and investors with tailored debt and equity solutions across the UK, Europe and North America.</p>
+      <a class="sbtn" href="#who-we-are">Explore Our Services</a>
+    </div>
+  </section>
+
+  <section class="sec intro" id="who-we-are" aria-labelledby="wwa-h">
+    <div class="pg"><div class="container">
+      <div class="stack" style="max-width:720px">
+        <p class="tag">Who We Are</p>
+        <h2 class="h2" id="wwa-h">A Real Estate Capital Advisory Built on Long-Term Relationships</h2>
+        <span class="gdiv" aria-hidden="true"></span>
+        <div class="para">
+          <p>Roscap is a specialist intermediary between capital and opportunity. We advise and arrange financing for developers, investors and family offices, working with a carefully selected network of capital providers.</p>
+          <p>This page is a lightweight stand-in for the homepage. The banner, dialog and footer link behave exactly as they would on the live site; only the Google tag is simulated.</p>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="sec demo" aria-labelledby="demo-h">
+    <div class="pg"><div class="container">
+      <div class="demo-head">
+        <p class="tag">Prototype only</p>
+        <h2 class="h2" id="demo-h" style="font-size:2rem">Consent state</h2>
+      </div>
+      <p class="para" style="margin-top:14px;max-width:720px">This panel is not part of the handoff. It shows what the banner stores and the exact calls it makes to Google Consent Mode. On the live site these calls go to gtag.js; here they are written to the list instead and nothing is sent to Google.</p>
+      <div class="demo-grid">
+        <div class="demo-card">
+          <h3>Stored choice</h3>
+          <pre id="demo-state">reading</pre>
+        </div>
+        <div class="demo-card">
+          <h3>Simulated gtag calls, in order</h3>
+          <ol id="demo-log" tabindex="0" aria-label="Simulated gtag calls"></ol>
+        </div>
+      </div>
+      <div class="demo-row">
+        <button class="btn ghost" type="button" data-rc="open">Open preferences</button>
+        <button class="btn ghost" type="button" id="demo-reset">Reset choice</button>
+        <button class="btn ghost" type="button" id="demo-bump">Simulate policy update</button>
+      </div>
+      <p class="demo-note" id="demo-note">Reset clears the cookie and the localStorage mirror and shows the banner again. Simulate policy update rewrites the stored choice with an older version number and reloads: the banner must ask again.</p>
+    </div></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="pg"><div class="container">
+    <div class="foot-top">
+      <img class="foot-logo" src="../shared/img/logo-footer.svg" alt="Roscap" width="144" height="40" loading="lazy">
+      <div class="social">
+        <a href="https://www.linkedin.com/company/roscap" aria-label="LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4V21H3V9.75zM9.5 9.75h3.8v1.6h.06c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.77 2.6 4.77 6V21h-4v-5.1c0-1.22-.02-2.78-1.7-2.78-1.7 0-1.96 1.33-1.96 2.7V21h-4V9.75z"/></svg></a>
+        <a href="https://www.instagram.com/roscap.uk" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.3a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm4.9-8.95a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM12 2.5c-2.6 0-2.92.01-3.94.06-1.02.05-1.71.21-2.32.44a4.7 4.7 0 0 0-1.7 1.1 4.7 4.7 0 0 0-1.1 1.7c-.24.6-.4 1.3-.44 2.32C2.51 9.08 2.5 9.4 2.5 12s.01 2.92.06 3.94c.05 1.02.2 1.71.44 2.32.25.63.58 1.17 1.1 1.7.53.52 1.07.85 1.7 1.1.6.23 1.3.39 2.32.44 1.02.05 1.34.06 3.94.06s2.92-.01 3.94-.06c1.02-.05 1.71-.21 2.32-.44a4.7 4.7 0 0 0 1.7-1.1 4.7 4.7 0 0 0 1.1-1.7c.23-.6.39-1.3.44-2.32.05-1.02.06-1.34.06-3.94s-.01-2.92-.06-3.94c-.05-1.02-.21-1.71-.44-2.32a4.7 4.7 0 0 0-1.1-1.7 4.7 4.7 0 0 0-1.7-1.1c-.6-.23-1.3-.39-2.32-.44C14.92 2.51 14.6 2.5 12 2.5zm0 1.7c2.56 0 2.86.01 3.87.06.93.04 1.44.2 1.78.33.45.17.77.38 1.1.72.34.34.55.66.72 1.1.13.34.29.85.33 1.78.05 1.01.06 1.31.06 3.87s-.01 2.86-.06 3.87c-.04.93-.2 1.44-.33 1.78-.17.45-.38.77-.72 1.1-.33.34-.65.55-1.1.72-.34.13-.85.29-1.78.33-1.01.05-1.31.06-3.87.06s-2.86-.01-3.87-.06c-.93-.04-1.44-.2-1.78-.33a2.97 2.97 0 0 1-1.1-.72 2.97 2.97 0 0 1-.72-1.1c-.13-.34-.29-.85-.33-1.78-.05-1.01-.06-1.31-.06-3.87s.01-2.86.06-3.87c.04-.93.2-1.44.33-1.78.17-.45.38-.77.72-1.1.33-.34.65-.55 1.1-.72.34-.13.85-.29 1.78-.33 1.01-.05 1.31-.06 3.87-.06z"/></svg></a>
+      </div>
+    </div>
+    <div class="foot-mid">
+      <div class="foot-cols">
+        <div class="foot-col"><h3 class="foot-h">Quick Links</h3><a href="https://www.roscap.co.uk/about-us">About Us</a><a href="https://www.roscap.co.uk/our-services">Our Services</a><a href="https://www.roscap.co.uk/track-record">Track Record</a><a href="https://www.roscap.co.uk/partner-program">Partner Program</a><a href="https://www.roscap.co.uk/insights">Insights</a></div>
+        <div class="foot-col"><h3 class="foot-h">Legal</h3><a href="https://www.roscap.co.uk/privacy-policy">Privacy Policy</a><a href="https://www.roscap.co.uk/cookie-policy">Cookie Policy</a><a class="cookie-preferences" href="#cookie-preferences" data-rc="open">Cookie preferences</a><a href="https://www.roscap.co.uk/website-terms-of-use">Terms of Use</a><a href="https://www.roscap.co.uk/disclaimer">Disclaimer</a><a href="https://www.roscap.co.uk/accessibility-statement">Accessibility</a></div>
+        <div class="foot-col"><h3 class="foot-h">Governance</h3><a href="https://www.roscap.co.uk/compliance-governance">Compliance &amp; Governance</a></div>
+      </div>
+      <div class="news">
+        <p>Sign up for new alerts and receive updates in your inbox.</p>
+        <form class="news-form" data-mock novalidate aria-label="Newsletter sign-up (switched off in this mock-up)">
+          <input type="email" placeholder="Enter your email" aria-label="Email address" autocomplete="off">
+          <button type="submit" aria-label="Sign up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </form>
+        <p class="form-note" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="foot-tnc">
+      <p class="copy">© Roscap 2026 | Boutique Real Estate Capital Advisory</p>
+      <p>Roscap undertakes introductory activities and provides advisory services solely in relation to unregulated activities. Roscap does not carry on, nor does it hold itself out as carrying on, any activities which are regulated under the Financial Services and Markets Act 2000 (Regulated Activities) Order.</p>
+      <p>Roscap is not authorised or regulated by the Financial Conduct Authority. Accordingly, any services provided by Roscap are not covered by the Financial Services Compensation Scheme or the Financial Ombudsman Service.</p>
+    </div>
+  </div></div>
+  <div class="proto-label">Prototype · Cookie consent</div>
+</footer>
+
+<script src="../shared/site.js"></script>
+<script src="consent.js"></script>
+<script>
+/* Prototype state panel. Not part of the handoff. */
+(function () {
+  var state = document.getElementById('demo-state');
+  var log = document.getElementById('demo-log');
+  function cookieRaw() {
+    var m = document.cookie.match(/(?:^|; )roscap_consent=([^;]*)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  function renderState() {
+    var c = cookieRaw(), ls = null;
+    try { ls = localStorage.getItem('roscap_consent'); } catch (e) {}
+    var fileNote = location.protocol === 'file:' ? '\n\n(cookies are not available on file:// pages; open the page over http(s) to see the cookie. The localStorage mirror below is live.)' : '';
+    state.textContent = 'cookie roscap_consent:\n' + (c || 'not set') + '\n\nlocalStorage roscap_consent:\n' + (ls || 'not set') + '\n\nRoscapConsent.get():\n' + JSON.stringify(window.RoscapConsent && window.RoscapConsent.get()) + fileNote;
+  }
+  function fmt(args) {
+    return 'gtag(' + args.map(function (a) { return a instanceof Date ? 'new Date()' : JSON.stringify(a); }).join(', ') + ')';
+  }
+  function renderLog() {
+    log.innerHTML = '';
+    window.__rcLog.forEach(function (e) {
+      var li = document.createElement('li');
+      li.textContent = typeof e.args[0] === 'string' && e.args[0].indexOf('(prototype)') === 0 ? e.args[0] : fmt(e.args);
+      if (e.args[1] === 'update') li.className = 'is-update';
+      log.appendChild(li);
+    });
+    log.scrollTop = log.scrollHeight; /* keep the latest call in view */
+  }
+  window.__rcOnLog = renderLog;
+  document.addEventListener('roscap-consent', renderState);
+  document.getElementById('demo-reset').addEventListener('click', function () { window.RoscapConsent.reset(); renderState(); });
+  document.getElementById('demo-bump').addEventListener('click', function () {
+    var c = window.RoscapConsent.get() || { analytics: true, marketing: false, timestamp: new Date().toISOString() };
+    c.version = 0;
+    var s = JSON.stringify(c);
+    document.cookie = 'roscap_consent=' + encodeURIComponent(s) + '; Max-Age=15552000; Path=/; SameSite=Lax';
+    try { localStorage.setItem('roscap_consent', s); } catch (e) {}
+    location.reload();
+  });
+  renderState();
+  renderLog();
+})();
+</script>
+</body>
+</html>
