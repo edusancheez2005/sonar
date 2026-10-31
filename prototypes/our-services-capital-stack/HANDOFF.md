@@ -18,7 +18,7 @@ The build is CSS scroll-driven animations, with no library. Each narration block
 
 Why not GSAP here: Our Services does not load GSAP today (Home does, through page custom code), the choreography is 4 opacity and transform tweens that CSS runs on the compositor, and the whole module costs 7.6 KB of code against roughly 115 KB for GSAP plus ScrollTrigger. See section 5 for the Interactions-panel alternative if you would rather build it without code.
 
-Browser support for the CSS path: Chrome and Edge 115+ (`timeline-scope` 116+), Safari 26+, Firefox 159+, about 88 percent of users. Everyone else gets the IntersectionObserver path, which looks the same but steps rather than scrubs.
+Browser support for the CSS path: Chrome and Edge 115+ (`timeline-scope` 116+) and Safari 26+. Firefox support and the current share of users are to be checked on caniuse.com (css-scroll-driven-animations) at build time rather than taken from this document. Everyone else gets the IntersectionObserver path, which looks the same but steps rather than scrubs; a browser with neither scroll-driven animations nor IntersectionObserver gets the finished static stack.
 
 ## 3. Element structure and class names
 
@@ -76,8 +76,8 @@ Webflow custom code fields take 50,000 characters each (site head and footer, pa
 
 | Piece | Where | Size |
 | --- | --- | --- |
-| Mode script (sets `data-cs-mode` on `<html>` before first paint) | Page settings, Custom code, Inside `<head>` tag, first | 781 characters |
-| Module CSS, wrapped in `<style>` | Page settings, Inside `<head>` tag, after the mode script | 12,274 characters |
+| Mode script (sets `data-cs-mode` on `<html>` before first paint) | Page settings, Custom code, Inside `<head>` tag, first | 913 characters |
+| Module CSS, wrapped in `<style>` | Page settings, Inside `<head>` tag, after the mode script | 12,836 characters |
 | Module JS, wrapped in `<script defer>` or placed before `</body>` | Page settings, Before `</body>` tag | 5,131 characters |
 
 The mode script must run before the page paints, so it goes in the head and not in the footer. The CSS relies on the site tokens already used by the live stylesheet (`--teal`, `--gold-ink`, `--ink`, `--black2`, `--grey`, `--cream-deep`, `--line`, `--ease`, `--f-body`, `--f-display`, `--nav-h`); if the live site does not define them as custom properties, replace each `var()` with the hex value from the prototype's base.css.
@@ -91,7 +91,8 @@ The mode script must run before the page paints, so it goes in the head and not 
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var forced = /(\?|&)cs=fallback(&|$)/.test(location.search);
   var css = !!(window.CSS && CSS.supports && CSS.supports('animation-timeline: view()') && CSS.supports('timeline-scope: --cs-n1'));
-  h.setAttribute('data-cs-mode', reduce ? 'static' : (css && !forced ? 'css' : 'fallback'));
+  var io = 'IntersectionObserver' in window; /* no observer, no fallback choreography: show the finished stack */
+  h.setAttribute('data-cs-mode', reduce ? 'static' : (css && !forced ? 'css' : (io ? 'fallback' : 'static')));
 })();
 </script>
 ```
@@ -108,7 +109,7 @@ Paste `webflow-paste/module.css` inside a `<style>` tag. It has 4 parts: tokens 
   --cs-run:30vh;      /* scroll distance one layer takes to build */
   --cs-line:.52;      /* viewport fraction where a narration becomes current (aria-current); .58 on mobile */
   --cs-anchor:.42;    /* where a narration lands when its layer button is pressed; .5 on mobile */
-  --cs-ghost:#56706C; /* unbuilt layer label, 5.0:1 on the card's cream */
+  --cs-ghost:#56706C; /* unbuilt layer label, 4.8:1 on the tinted unbuilt layer, 5.0:1 on the card's cream */
 }
 ```
 
@@ -121,7 +122,7 @@ The heart of the CSS path, for reference:
   html[data-cs-mode="css"] .cs-note:nth-child(1) .cs-trigger{view-timeline-name:--cs-n1}   /* ... to 4 */
   html[data-cs-mode="css"] [data-on="1"]{--tl:--cs-n1}                                        /* ... to 4 */
   html[data-cs-mode="css"] .cs-layer::before{animation:cs-fill var(--ease) both;animation-timeline:var(--tl);animation-range:entry 0% entry 100%}
-  html[data-cs-mode="css"] .cs-layer-t{animation:cs-ink linear both;animation-timeline:var(--tl);animation-range:entry 10% entry 90%}
+  html[data-cs-mode="css"] .cs-layer-t{animation:cs-ink linear both;animation-timeline:var(--tl);animation-range:entry 10% entry 40%}
   html[data-cs-mode="css"] .cs-seg::before{animation:cs-draw linear both;animation-timeline:var(--tl);animation-range:entry 0% entry 100%}
 }
 @keyframes cs-fill{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -144,16 +145,18 @@ Paste `webflow-paste/module.js` inside `<script>`. It is the whole of `capital-s
 | aria-current, live region, keyboard arrows, scroll-to-layer, IntersectionObserver fallback | | JS (footer) |
 | Reduced-motion static state | | mode script + CSS |
 
-Alternative without custom CSS: Webflow's native Interactions with GSAP now include ScrollTrigger with scrubbing and pinning, staggers, SplitText, and a per-interaction prefers-reduced-motion choice (no animation, or skip to end). You could build the 4 arrivals in the panel: 4 "while scrolling in view" interactions, each triggered by one narration block (start when its top hits 70 percent of the viewport, end at 40 percent), animating that layer's fill opacity and 14px rise plus its bracket and axis segments (scaleY 0 to 1), with the sticky card unchanged. Set each one's reduced-motion option to skip to end. What the panel cannot do is the button behaviour, aria-current and the live region, so the JS stays either way, and this route loads GSAP and ScrollTrigger on Our Services. Our recommendation is the CSS path above; the panel route is the fallback if the owner prefers everything editable in the Designer.
+Alternative without custom CSS: Webflow's native Interactions with GSAP include ScrollTrigger with scrubbing and pinning. You could build the 4 arrivals in the panel: 4 scroll-scrubbed interactions, each triggered by one narration block (start when its top hits 70 percent of the viewport, end at 40 percent), animating that layer's fill opacity and 14px rise plus its bracket and axis segments (scaleY 0 to 1), with the sticky card unchanged and no pinning. Check what the panel offers for prefers-reduced-motion in your workspace; if it has a per-interaction option, set it to skip to end, otherwise keep the mode script and the `@media (prefers-reduced-motion: reduce)` block so the finished stack still shows. What the panel cannot do is the button behaviour, aria-current and the live region, so the JS stays either way, and this route loads GSAP and ScrollTrigger on Our Services. Our recommendation is the CSS path above; the panel route is the fallback if the owner prefers everything editable in the Designer.
 
 ## 6. Copy to enter
 
 Narration blocks (new copy for the owner's approval; British English, no em dashes, no numbers invented):
 
 1. Common Equity. Title: "Joint venture equity and co-investment". Text: "The top of the stack: the position that takes the first loss and carries the upside. Roscap raises joint venture equity and arranges direct co-investment for developers, sponsors and family offices, in shared-risk structures with aligned upside and objectives that stay consistent from entry to exit." Link: "Equity and co-investment" to #equity.
-2. Preferred Equity. Title: "Preferred equity". Text: "Sits behind the senior lender and ahead of the common equity. Roscap structures fixed-return positions behind senior debt with potential profit participation, typically used to reduce the sponsor's own equity requirement while the senior facility stays conventional." Link: "Equity and co-investment" to #equity.
+2. Preferred Equity. Title: "Preferred equity". Text: "Sits behind the debt and ahead of the common equity. Roscap structures fixed-return positions behind senior debt with potential profit participation, often used to reduce the sponsor’s own equity requirement while the senior facility stays conventional." Link: "Equity and co-investment" to #equity. CONFIRM with the owner: "often used to reduce the sponsor’s own equity requirement" is a general market description, not a Roscap figure; keep or cut as they prefer.
 3. Mezzanine Debt. Title: "Mezzanine finance". Text: "The top of the debt. Roscap arranges mezzanine finance as subordinated capital to enhance leverage or bridge equity requirements, negotiated alongside the senior facility so that the intercreditor terms work for both lenders and the sponsor." Link: "Real estate debt advisory" to #debt.
-4. Senior Debt. Title: "Development finance, bridging finance, and commercial and BTL mortgages". Text: "The foundation of the stack, secured by a first charge over the asset. This is where most of Roscap's debt advisory sits: development finance for ground-up, conversion or renovation projects, bridging finance for acquisitions, refinancing or equity release, and income-based term lending for stabilised assets. Stretch-senior facilities sit here too, taking the senior position further up the stack." Link: "Real estate debt advisory" to #debt.
+4. Senior Debt. Title: "Development finance, bridging finance, and commercial and BTL mortgages". Text: "The foundation of the stack, secured by a first charge over the asset. This is where most of Roscap’s debt advisory sits: development finance for ground-up, conversion or renovation projects, bridging finance for acquisitions, refinancing or equity release, and income-based term lending for stabilised assets. Stretch-senior facilities sit here too, taking the senior position further up the stack." Link: "Real estate debt advisory" to #debt. CONFIRM with the owner: "secured by a first charge over the asset" is the standard description of senior real estate debt in the UK; keep unless Roscap describes it differently.
+
+Use curly apostrophes (’) in the narrations, as the live page does elsewhere.
 
 Steps heading: "Where Roscap works in the stack". Live region text pattern (set by the script): "Preferred Equity, layer 2 of 4. Preferred equity".
 
@@ -162,17 +165,17 @@ Two tidy-ups elsewhere on the page, already in the prototype: the Equity and Co-
 ## 7. Accessibility, reduced motion, mobile
 
 - Layers are real buttons, 80px tall on desktop and 44px on mobile, so tap targets stay at 44px or more. Tab reaches each layer; Enter or Space scrolls the page so that layer's narration lands at the anchor line and the layer builds; Up, Down, Left, Right, Home and End move between layers and activate them. `aria-current="true"` marks the current layer and a visually hidden `aria-live="polite"` paragraph announces "Name, layer N of 4. Service title".
-- Colour: white text only on the 2 teal layers; dark ink (#12161D) on gold and pale gold. Unbuilt labels use #56706C, 5.0:1 on the cream card. Gold #E1C979 is 1.6:1 on cream, so it is never used for text or as the only state or focus indicator on cream: the current-layer diamond and the active narration rule use the darker gold #7A6318 (5.6:1), and focus rings on light backgrounds are 2px teal with a 3px offset (gold rings stay on the dark bands and nav, where gold on teal is 8.3:1).
+- Colour: white text only on the 2 teal layers; dark ink (#12161D) on gold and pale gold. Unbuilt labels use #56706C, 4.8:1 on the faintly tinted unbuilt layer and 5.0:1 on the cream card. While a teal layer is scrubbing in, its label crosses from the unbuilt grey-green to white as the fill darkens, so for a few viewport-percent of scroll the label is below 4.5:1 against the half-built fill; the label is at its final ink by 40 percent of the build and every resting state once a layer is built passes. The bracket and axis labels (decorative, aria-hidden) fade in over the last quarter of the build for the same reason. Gold #E1C979 is 1.6:1 on cream, so it is never used for text or as the only state or focus indicator on cream: the current-layer diamond and the active narration rule use the darker gold #7A6318 (5.6:1), and focus rings on light backgrounds are 2px teal with a 3px offset (gold rings stay on the dark bands and nav, where gold on teal is 8.3:1).
 - Reduced motion: the mode script sets `data-cs-mode="static"`, no rule animates or transitions, the completed stack and all four narrations show statically. The `@media (prefers-reduced-motion: reduce)` block repeats this in CSS in case the script is ever removed. The script also switches to static if the visitor turns reduced motion on while the page is open.
 - No JavaScript: the HTML is the completed stack with all four narrations. The build only ever subtracts from the static state, so nothing is hidden by default.
-- Mobile (767px and below): no tall pin. The card becomes compact (44px layers, 6px gaps, 11px labels), sticks 6px under the 64px nav and occupies about 39 percent of a 390 by 844 viewport; the narrations scroll beneath it and build their layers as they rise past 78 percent of the viewport. No horizontal overflow: `scrollWidth` is 390 at 390px wide. Tablet (768 to 991px) is the same single column with a 60px-layer card, maximum width 640px, centred.
+- Mobile (767px and below): no tall pin. The card becomes compact (44px layers, 6px gaps, 11px labels), sticks 6px under the 64px nav and occupies about 31 percent of a 390 by 844 viewport (39 percent of a 390 by 660 one); the narrations scroll beneath it and build their layers as they rise past 78 percent of the viewport. A cream cap (`.cs-stage::before`, 24px tall, below 992px) sits above the card so the text passing beneath does not show in the gap between the nav and the card. No horizontal overflow: `scrollWidth` is 390 at 390px wide. Tablet (768 to 991px) is the same single column with a 60px-layer card, maximum width 640px, centred.
 - Layout shift: zero from the module. Layer rows have fixed heights, the fill is a pseudo-element, the build changes only opacity, transform and colour.
 
 ## 8. Performance
 
-- Added to the page: module CSS 12.3 KB raw (whole page stylesheet 20.5 KB raw, 5.6 KB gzip) and JS 5.1 KB raw (2.0 KB gzip). No images were added for the module; the SVG graphic it replaces is no longer needed. No library, no fonts beyond the site's Boska and Switzer.
+- Added to the page: module CSS 12.8 KB raw (whole page stylesheet 21.1 KB raw, 5.8 KB gzip) and JS 5.1 KB raw (2.0 KB gzip). No images were added for the module; the SVG graphic it replaces is no longer needed. No library, no fonts beyond the site's Boska and Switzer.
 - Animated properties are opacity, transform and colour only; the sticky card is one layer. No scroll listeners in the CSS path except `scrollend`, which fires once per scroll; the fallback uses one IntersectionObserver on 4 elements.
-- The bundled prototype is 579,166 bytes (566 KB) in one file: 5 woff2 fonts, the hero photograph (what-we-do-thames.webp, 167 KB), the small hero poster from the shared stylesheet, 9 SVG icons and logos, and about 70 KB of HTML, CSS and JS. No video.
+- The bundled prototype is 579,903 bytes (566 KB) in one file: 5 woff2 fonts, the hero photograph (what-we-do-thames.webp, 167 KB), the small hero poster from the shared stylesheet, 9 SVG icons and logos, and about 70 KB of HTML, CSS and JS. No video.
 - Below-the-fold images carry `loading="lazy"` and explicit width and height.
 
 ## 9. Assumptions
@@ -180,7 +183,7 @@ Two tidy-ups elsewhere on the page, already in the prototype: the Equity and Co-
 - Hero photograph: the live page's construction photograph was not in the shared image set, so the prototype uses the Thames aerial with the same teal overlay. Keep the live photograph in Webflow.
 - Card icons: 3 debt and equity icons and 4 asset-class icons were not in the shared set and are drawn as simple gold line SVGs in the prototype; keep the live SVGs in Webflow.
 - Layer colours sampled from the live graphic: Common Equity #043435, Preferred Equity #044446, Mezzanine Debt #E1C979, Senior Debt #FFEBAA, card #FFF8E6.
-- Narration copy is new and describes the position of each layer in general terms with no figures, rates or ratios; "typically used to reduce the sponsor's own equity requirement" (Preferred Equity) and "secured by a first charge" (Senior Debt) are the two statements the owner should confirm are how Roscap wants the products described.
+- Narration copy is new and describes the position of each layer in general terms with no figures, rates or ratios; "often used to reduce the sponsor’s own equity requirement" (Preferred Equity) and "secured by a first charge over the asset" (Senior Debt) are the two statements the owner should confirm are how Roscap wants the products described (marked CONFIRM in section 6). The Preferred Equity narration says "behind the debt" rather than "behind the senior lender" so that it agrees with the diagram, where Mezzanine Debt sits between Preferred Equity and Senior Debt.
 - Per the owner's decision, the page carries no enquiry form, phone number or visible email; the existing "Get in Touch" buttons link to /contact-us and the footer newsletter form stays as it is on the live site.
 - The scroll distance between narrations (about 32vh plus the text) sets the pace; it is deliberately calm and can be tightened by lowering the `.cs-notes` gap.
 
@@ -191,8 +194,8 @@ Two tidy-ups elsewhere on the page, already in the prototype: the Equity and Co-
 3. DevTools, Rendering, Emulate prefers-reduced-motion: the completed stack shows immediately and nothing moves; `<html>` has `data-cs-mode="static"`.
 4. Disable JavaScript: the completed stack and all four narrations show.
 5. Keyboard only: Tab to the first layer, press Enter, then Down, Down, End, Up. Focus follows the arrows, the page scrolls with each press, `aria-current` moves, and a screen reader hears "Name, layer N of 4. Title".
-6. 390px wide: no horizontal scroll, card sticks under the nav, every label fits, 44px layers.
+6. 390px wide: no horizontal scroll, card sticks under the nav, every label fits, 44px layers, and no narration text shows in the gap between the nav and the card while scrolling.
 7. 820px wide: single column, card centred, narrations beneath.
-8. Lighthouse accessibility on staging has no colour-contrast or heading-order findings (the prototype passes axe-core with 0 violations at 1440px and 390px, at the top of the page and mid-module).
+8. Lighthouse accessibility on staging has no colour-contrast or heading-order findings (the prototype passes axe-core with 0 violations at 1440px and 390px at the top of the page and with every built layer at rest). If you run axe while a layer is half built, it can report the fading label of that layer; scroll on until the layer has finished and run again.
 9. The prototype label (fixed pill, bottom right) is prototype-only; do not add it to Webflow.
 10. Publish to staging only; the owner approves on staging before roscap.co.uk.

@@ -18,7 +18,8 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var forced = /(\?|&)cs=fallback(&|$)/.test(location.search);
   var css = !!(window.CSS && CSS.supports && CSS.supports('animation-timeline: view()') && CSS.supports('timeline-scope: --cs-n1'));
-  h.setAttribute('data-cs-mode', reduce ? 'static' : (css && !forced ? 'css' : 'fallback'));
+  var io = 'IntersectionObserver' in window; /* no observer, no fallback choreography: show the finished stack */
+  h.setAttribute('data-cs-mode', reduce ? 'static' : (css && !forced ? 'css' : (io ? 'fallback' : 'static')));
 })();
 </script>
 </head>
@@ -123,7 +124,7 @@
               <span class="cs-trigger" aria-hidden="true"></span>
               <p class="cs-note-k"><span class="cs-note-n">2</span> Preferred Equity</p>
               <h4 class="cs-note-h">Preferred equity</h4>
-              <p class="cs-note-p">Sits behind the senior lender and ahead of the common equity. Roscap structures fixed-return positions behind senior debt with potential profit participation, typically used to reduce the sponsor's own equity requirement while the senior facility stays conventional.</p>
+              <p class="cs-note-p">Sits behind the debt and ahead of the common equity. Roscap structures fixed-return positions behind senior debt with potential profit participation, often used to reduce the sponsor’s own equity requirement while the senior facility stays conventional.</p>
               <a class="cs-note-a" href="#equity">Equity and co-investment<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></a>
             </li>
             <li class="cs-note" id="cs-note-3">
@@ -137,7 +138,7 @@
               <span class="cs-trigger" aria-hidden="true"></span>
               <p class="cs-note-k"><span class="cs-note-n">4</span> Senior Debt</p>
               <h4 class="cs-note-h">Development finance, bridging finance, and commercial and BTL mortgages</h4>
-              <p class="cs-note-p">The foundation of the stack, secured by a first charge over the asset. This is where most of Roscap's debt advisory sits: development finance for ground-up, conversion or renovation projects, bridging finance for acquisitions, refinancing or equity release, and income-based term lending for stabilised assets. Stretch-senior facilities sit here too, taking the senior position further up the stack.</p>
+              <p class="cs-note-p">The foundation of the stack, secured by a first charge over the asset. This is where most of Roscap’s debt advisory sits: development finance for ground-up, conversion or renovation projects, bridging finance for acquisitions, refinancing or equity release, and income-based term lending for stabilised assets. Stretch-senior facilities sit here too, taking the senior position further up the stack.</p>
               <a class="cs-note-a" href="#debt">Real estate debt advisory<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></a>
             </li>
           </ol>

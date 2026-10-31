@@ -1,0 +1,56 @@
+{
+ "verdict": "ship",
+ "score_out_of_10": 8,
+ "fixed": [
+  "Preferred Equity narration: 'Sits behind the senior lender' changed to 'Sits behind the debt' so the copy agrees with the diagram (Mezzanine Debt sits between Preferred Equity and Senior Debt); 'typically used' softened to 'often used'. Both flagged phrasings are now marked CONFIRM for the owner in HANDOFF.md section 6 and section 9 (index.html, webflow-paste/module-markup.html, HANDOFF.md).",
+  "Straight apostrophes in the narrations (sponsor's, Roscap's) changed to curly apostrophes to match the live page typography (index.html, module-markup.html, HANDOFF.md).",
+  "Mobile and tablet: narration text was visible in the 6px (390) and 18px (820) gap between the fixed nav and the sticky card while it passed beneath. Added a 24px cream cap (.cs-stage::before) below 992px; verified gone at 390x844, 390x660 and 820x1180 (shots/qa-stack/mob-3b-built.png, short-820x1180-note2.png).",
+  "Tablet: the 'Where Roscap works in the stack' heading was left-aligned to the container while the card and narrations are centred at 640px, so it peeked out to the left of the sticky card. Now max-width 640px and centred below 992px.",
+  "The fallback ghost tint rule (html[data-cs-mode=fallback] .cs-layer background) sat inside the @supports block for scroll-driven animations, so browsers that actually take the fallback path would not have received it. Moved outside @supports.",
+  "Head mode script: a browser with neither scroll-driven animations nor IntersectionObserver would have been put in fallback mode with layers at opacity 0 forever (the JS returns early without an observer). It now gets data-cs-mode=static (index.html, webflow-paste/head-mode-script.html, HANDOFF.md 4.1).",
+  "Contrast during the scrub: axe flagged .cs-bracket-label 'Debt' as serious colour-contrast at a mid-build rest position (it faded over 60% of the build, so it sat at about 50% opacity for roughly 18vh of scroll). Bracket and axis labels now fade over the last quarter of the build (entry 65% to 90%, bottom label 70% to 95%); the layer label ink now reaches its final colour by 40% of the build instead of 90%, shortening the low-contrast crossover from 48% to 32% of each teal layer's build. A 25-position axe sweep at 1440 and 390 now reports 0 violations.",
+  "HANDOFF.md: unverifiable browser-share claims (Firefox 159+, about 88 percent) replaced with an instruction to check caniuse at build time; the Webflow Interactions per-interaction reduced-motion claim softened to 'check what the panel offers'; sizes updated (mode script 913, CSS 12,836, JS 5,131 characters; bundle 579,903 bytes; stylesheet 21.1 KB raw, 5.8 KB gzip); ghost label contrast corrected to 4.8:1 on the tinted unbuilt layer (5.0:1 was on the plain card); mobile card share corrected to 31 percent of 390x844 (39 percent is at 390x660); QA checklist items 6 and 8 extended (nav gap, axe mid-build note).",
+  "Re-bundled with tools/inline.py to proto/dist/our-services-capital-stack.html (579,903 bytes) and re-verified; webflow-paste files confirmed identical to the source (module.js diff clean, module.css a verbatim subset of capital-stack.css, module-markup.html and head script present verbatim in index.html)."
+ ],
+ "open": [
+  {
+   "issue": "Layer label contrast during the scroll scrub (CSS path only). Because the teal fill fades in over a light card, there is a window in each teal layer's build where neither the ghost grey-green nor white can reach 4.5:1 against the half-built fill. After the fix the label is below 4.5:1 for about 32% of the build (about 10vh of scroll per teal layer, down from 48%) and below 3:1 for 20% (was 32%). The user can rest there because the animation is scroll-linked. Every built state, the ghost state, the fallback path (time-based transitions) and the static path pass.",
+   "evidence": "Computed from the CSS: fill cubic-bezier(.22,.61,.36,1) over entry 0 to 100%, ink linear entry 10 to 40%, ghost #56706C to #FFFFFF on #043435 over #F7F2E1 (work/qa-stack: Python contrast model in the session log). axe cannot measure it because the fill is a ::before pseudo-element, so axe reports 0 violations. A full fix is a wipe reveal (clip-path) with a clipped copy of the label inside the fill, which changes the layer's internals and the motion; not applied under 'do not redesign'.",
+   "severity": "low"
+  },
+  {
+   "issue": "Pacing on short desktop viewports is at the threshold: the module wrapper (#capital-stack, which includes the intro copy) is 3.45 viewport heights at 1366x768 and 3.76 at 1024x768, against about 3.5 suggested. At 1440x900 it is 3.14 and at 390x844 3.16; the build itself (first layer start to last layer end) spans only 2.1 to 2.4 viewport heights. If the owner wants it tighter, lower the .cs-notes gap maximum (clamp(7rem,32vh,18rem)) to about 14rem.",
+   "evidence": "work/qa-stack/verify-after.json moduleViewportHeights: desk 3.14, mob 3.16, short-1366x768 3.45, short-1024x768 3.76, short-390x660 4.04; buildSpanViewportHeights 2.10 (1440), 1.76 (390), 2.29 (1366x768), 2.44 (1024x768).",
+   "severity": "low"
+  },
+  {
+   "issue": "Prototype type scale differs from the live page: the live 'Capital Raising Across the Real Estate Spectrum' H2 renders at roughly 64px over 3 lines (Boska italic), the prototype's shared .h2 is 40px over 2 lines, and the live layers are square-cornered where the prototype uses a 4px radius. Nothing to change in Webflow (the live heading class stays), but Shikhar should not copy the prototype's heading size.",
+   "evidence": "shots/qa-stack/live-1440-section.png versus shots/qa-stack/desk-01-ghost.png; live/html/our-services.html heading styles.",
+   "severity": "low"
+  },
+  {
+   "issue": "Two copy statements need the owner's confirmation before publishing (they are general market descriptions, not Roscap figures): 'often used to reduce the sponsor's own equity requirement' (Preferred Equity) and 'secured by a first charge over the asset' (Senior Debt). Both are marked CONFIRM in HANDOFF.md.",
+   "evidence": "HANDOFF.md section 6 items 2 and 4, section 9 Assumptions.",
+   "severity": "low"
+  },
+  {
+   "issue": "Live region keeps its last announcement after the visitor scrolls back above the module (active returns to 0, text stays 'Common Equity, layer 1 of 4...'). Harmless for screen readers (polite regions announce changes only) but the stale text could be cleared when nothing is built.",
+   "evidence": "verify-after.json desk.states 'back-to-0': active 0, live 'Common Equity, layer 1 of 4. Joint venture equity and co-investment'.",
+   "severity": "low"
+  },
+  {
+   "issue": "Footer newsletter form stays on the page (it is on the live site). It is a newsletter sign-up, not an enquiry form, so it is consistent with Edu's decision, but worth a one-line confirmation that the decision covers only enquiry forms.",
+   "evidence": "index.html line 316 form.news-form, aria-label 'Newsletter sign-up (switched off in this prototype)'. No tel: or mailto: links, no phone or email strings anywhere on the page; 2 'Get in Touch' links, both to https://www.roscap.co.uk/contact-us.",
+   "severity": "low"
+  }
+ ],
+ "verification": {
+  "console_errors": 0,
+  "axe_serious_critical": 0,
+  "mobile_scroll_width": 390,
+  "bundle_bytes": 579903,
+  "module_viewport_heights_1440": 3.14,
+  "module_viewport_heights_390": 3.16
+ },
+ "notes": "Verified on the rebuilt bundle with Playwright Chromium (CSS scroll-driven path detected, data-cs-mode=css) and with ?cs=fallback. Order Common Equity, Preferred Equity, Mezzanine Debt, Senior Debt confirmed in DOM and in the build sequence at 1440x900 and 390x844: fills 0.87 mid-build then 1 at each layer's end, brackets and axis segments draw per layer, fast jump to the end builds all 4, scrolling back to layer 2 unbuilds 3 and 4 (fills 1, 0.87, 0, 0) and scrolling above the module returns to the ghost state. Fallback path: stepped .is-on at each narration, same unbuild on the way back, 0 console errors. Reduced motion: data-cs-mode=static, all fills 1, all narrations opacity 1. No JS: complete stack, white and dark ink correct. Keyboard: Enter on layer 1 scrolls and sets aria-current; ArrowDown, ArrowRight, End, ArrowUp, Home, Space all move focus and current state with the live region reading 'Name, layer N of 4. Title'; focus ring is solid 2px teal rgb(4,52,53) with 3px offset on layers and narration links (no gold on cream). Layer targets 299x80 at 1440 and 180x44 at 390; narration links 183x25. Ghost label #56706C is 5.04:1 on the card and 4.77:1 on the tinted unbuilt layer; dimmed narration (#282828 at .7 on cream) is 5.43:1; gold-ink diamond 5.47:1. CLS 0.0017 at 1440 (nav menu and prototype pill at first paint, not the module) and 0 at 390, slow 60px steps and fast 700px jumps. Sticky card never overlaps a narration at 1366x768, 1024x768, 390x660 or 820x1180 (overlap null in every state); readable area below the card 148px, 192px, 333px, 735px respectively. Scroll width 390 at 390 and 360 at 360. Copy: 0 em dashes, 0 exclamation marks, British spelling, digits only in the process numbers, live Equity paragraph used once, both live disclaimer paragraphs in the footer, no FCA or regulated-advice wording beyond the live 'advise on and arrange' copy. Live comparison screenshots: shots/qa-stack/live-1440-stack.png, live-390-stack.png versus desk-4b-built.png and mob-4b-built.png: colours (#043435, #044446, #E1C979, #FFEBAA on #FFF8E6), double-headed brackets, axis arrow and risk labels match. Handoff addressed to Shikhar, staging-first on roscap-site.webflow.io, 50,000-character slots, native versus code table and GSAP Interactions alternative present, 0 em dashes. Scripts: work/qa-stack/verify.js, axe-sweep.js, live-shots.js; results verify-before.json and verify-after.json."
+}

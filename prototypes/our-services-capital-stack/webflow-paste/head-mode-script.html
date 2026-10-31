@@ -9,6 +9,7 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var forced = /(\?|&)cs=fallback(&|$)/.test(location.search);
   var css = !!(window.CSS && CSS.supports && CSS.supports('animation-timeline: view()') && CSS.supports('timeline-scope: --cs-n1'));
-  h.setAttribute('data-cs-mode', reduce ? 'static' : (css && !forced ? 'css' : 'fallback'));
+  var io = 'IntersectionObserver' in window; /* no observer, no fallback choreography: show the finished stack */
+  h.setAttribute('data-cs-mode', reduce ? 'static' : (css && !forced ? 'css' : (io ? 'fallback' : 'static')));
 })();
 </script>
