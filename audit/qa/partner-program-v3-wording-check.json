@@ -16,15 +16,26 @@
         "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
       ]
     },
-    "1440 step nav verbatim": {
+    "1440 step nav = excerpts of live titles": {
       "pass": true,
       "detail": [
         "Join the Program",
-        "Exclusively refer clients to Roscap",
-        "We work with clients to provide capital solutions",
-        "Receive regular progress updates from Roscap",
-        "Upon deal completion, receive your referral commissions",
-        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+        "Exclusively refer clients",
+        "Capital solutions",
+        "Regular progress updates",
+        "Referral commissions",
+        "Commissions in perpetuity"
+      ]
+    },
+    "1440 one short line per step": {
+      "pass": true,
+      "detail": [
+        "Speak to our team to become a Roscap partner.",
+        "Introduce clients who need capital for their real estate projects.",
+        "We arrange tailored debt and equity solutions for your clients.",
+        "You are kept informed as each transaction progresses.",
+        "Your commission is paid once the deal completes.",
+        "Each further deal with that client brings you another commission."
       ]
     },
     "1440 removed elements absent": {
@@ -77,7 +88,7 @@
       "pass": true,
       "detail": {
         "pos": "sticky",
-        "h": 462
+        "h": 557
       }
     },
     "1440 marquee moves, pauses on hover and focus": {
@@ -112,15 +123,26 @@
         "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
       ]
     },
-    "390 step nav verbatim": {
+    "390 step nav = excerpts of live titles": {
       "pass": true,
       "detail": [
         "Join the Program",
-        "Exclusively refer clients to Roscap",
-        "We work with clients to provide capital solutions",
-        "Receive regular progress updates from Roscap",
-        "Upon deal completion, receive your referral commissions",
-        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+        "Exclusively refer clients",
+        "Capital solutions",
+        "Regular progress updates",
+        "Referral commissions",
+        "Commissions in perpetuity"
+      ]
+    },
+    "390 one short line per step": {
+      "pass": true,
+      "detail": [
+        "Speak to our team to become a Roscap partner.",
+        "Introduce clients who need capital for their real estate projects.",
+        "We arrange tailored debt and equity solutions for your clients.",
+        "You are kept informed as each transaction progresses.",
+        "Your commission is paid once the deal completes.",
+        "Each further deal with that client brings you another commission."
       ]
     },
     "390 removed elements absent": {
@@ -196,15 +218,26 @@
         "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
       ]
     },
-    "1440-reduce step nav verbatim": {
+    "1440-reduce step nav = excerpts of live titles": {
       "pass": true,
       "detail": [
         "Join the Program",
-        "Exclusively refer clients to Roscap",
-        "We work with clients to provide capital solutions",
-        "Receive regular progress updates from Roscap",
-        "Upon deal completion, receive your referral commissions",
-        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+        "Exclusively refer clients",
+        "Capital solutions",
+        "Regular progress updates",
+        "Referral commissions",
+        "Commissions in perpetuity"
+      ]
+    },
+    "1440-reduce one short line per step": {
+      "pass": true,
+      "detail": [
+        "Speak to our team to become a Roscap partner.",
+        "Introduce clients who need capital for their real estate projects.",
+        "We arrange tailored debt and equity solutions for your clients.",
+        "You are kept informed as each transaction progresses.",
+        "Your commission is paid once the deal completes.",
+        "Each further deal with that client brings you another commission."
       ]
     },
     "1440-reduce removed elements absent": {
@@ -257,7 +290,7 @@
       "pass": true,
       "detail": {
         "pos": "sticky",
-        "h": 462
+        "h": 557
       }
     },
     "1440-reduce logos static grid": {
@@ -289,15 +322,26 @@
         "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
       ]
     },
-    "390-reduce step nav verbatim": {
+    "390-reduce step nav = excerpts of live titles": {
       "pass": true,
       "detail": [
         "Join the Program",
-        "Exclusively refer clients to Roscap",
-        "We work with clients to provide capital solutions",
-        "Receive regular progress updates from Roscap",
-        "Upon deal completion, receive your referral commissions",
-        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+        "Exclusively refer clients",
+        "Capital solutions",
+        "Regular progress updates",
+        "Referral commissions",
+        "Commissions in perpetuity"
+      ]
+    },
+    "390-reduce one short line per step": {
+      "pass": true,
+      "detail": [
+        "Speak to our team to become a Roscap partner.",
+        "Introduce clients who need capital for their real estate projects.",
+        "We arrange tailored debt and equity solutions for your clients.",
+        "You are kept informed as each transaction progresses.",
+        "Your commission is paid once the deal completes.",
+        "Each further deal with that client brings you another commission."
       ]
     },
     "390-reduce removed elements absent": {
@@ -364,9 +408,9 @@
       "pass": true,
       "detail": {
         "top": 84,
-        "bottom": 547,
+        "bottom": 593,
         "vh": 720,
-        "active": "04Receive regular progress updates from Roscap"
+        "active": "04Regular progress updates"
       }
     }
   },

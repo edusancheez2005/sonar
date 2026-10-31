@@ -2,16 +2,31 @@
 
 For Shikhar (Webflow). Build on roscap-site.webflow.io first, check the QA list, then publish.
 Approved design: concept F (deal list with preview) plus the odometer rates panel. Nothing was redesigned; this is the production version.
+The hero keeps the live design and the panther video (owner's decision, 31 Oct 2026); only its files and loading change (section 0).
+Owner's requests of 31 Oct 2026, also built: the contact block is the live one again (section 2.2), and the deal list has a sixth row, "All transactions", that shows a mosaic of all 22 transaction photographs (section 2.1). "View 22 selected transactions" stays under the list.
+Also from 31 Oct 2026: "Who We Are" and "What We Do" (with the Asset Classes / Sources of Capital cards) are the live sections again; the only change there is the switch between the two card sets and the counters' easing (section 2.3). The hero's "Explore Our Services" links to /our-services, as live.
 
 ## Files
 
 | What | Path |
 | --- | --- |
-| Working prototype (open index.html; shared assets in ../shared) | proto/homepage-track-record-and-rates/index.html, home.css, home.js, rates.js, deal-list.js, hero.mp4 |
-| Single-file bundle for review (1,406 KB; the hero video stays a separate file next to it) | proto/dist/homepage-track-record-and-rates.html |
-| Paste-ready Webflow code | proto/homepage-track-record-and-rates/webflow/home-head.html (12,745 chars), home-footer.html (27,951 chars), rates-panel.markup.html, track-record.markup.html |
-| Screenshots | shots/home-F/*.png (1440, 1024 and 390 widths, reduced motion, feed blocked, feed corrupted) |
-| Test script and report | tools/verify-home.js, shots/home-F/report.json |
+| Working prototype (open index.html; shared assets in ../shared) | index.html, home.css, home.js, rates.js, deal-list.js, media/ (hero videos and stills; deals/ the 22 mosaic tiles, 260,914 bytes in all; contact/ the live contact card texture) |
+| Single-file bundle for review (4.9 MB because both hero videos are embedded so the panther plays when the file is opened on its own; the live page loads them as separate files) | homepage-track-record-and-rates.bundle.html |
+| Asset Classes / Sources of Capital switch and counters (section 2.3) | webflow/what-we-do-slider.html (8,040 chars) |
+| Paste-ready Webflow code | webflow/home-head.html (14,558 chars), home-footer.html (31,973 chars), hero-video.html, rates-panel.markup.html, track-record.markup.html |
+| Screenshots | `screenshots/` in this folder (1440, 1024 and 390 widths, the All transactions mosaic, the contact block compared with live, reduced motion, feed blocked, feed corrupted) |
+| Test reports | `audit/qa/homepage-F.json`, `audit/qa/homepage-v3-verify.json` |
+
+## 0. Hero: keep the panther video, make it light
+
+The hero stays exactly as live: the panther clip full screen, the copy bottom-left (Boska italic 64 px heading, 18 px paragraph, gold button), no overlay. Measured against www.roscap.co.uk, the heading, paragraph and button land on the same pixels at 1440 and 390. What changes is underneath:
+
+- One clip, two files, cut from the 6.8 MB original on S3 (1440 x 1078): `hero-desktop.mp4` 1280 x 958, 1.4 MB (sharper than the 962 x 720 copy Webflow holds today: SSIM 20.5 to 21 dB against 18.8 dB) and `hero-portrait.mp4` 576 x 1078, 0.7 MB for phones held upright, cropped on the panther so both eyes stay in frame (on live one eye is cut off on phones). Both H.264, no audio, keyframe every second, fast start.
+- The hero shows the frame the video starts on (1.0 s, as the live `#t=1`) on teal, so the white copy is never shown on cream before the video arrives (today it is), and the switch from still to moving is seamless.
+- The video starts straight after first paint, pauses when scrolled away, and has a small pause button level with "Explore Our Services" (WCAG 2.2.2). Under reduced motion, Save-Data, or when the browser refuses autoplay (iOS Low Power Mode), a close-up still shows instead.
+- Delete the hidden Webflow Background Video element in the hero (`.hero-bg.hide.w-background-video`): it is not shown but downloads its 1.5 MB copy on every visit.
+
+Paste-ready code: `webflow/hero-video.html` (four parts: page head CSS and preloads, the new `<video>` for the existing `.hero-bg` Embed, a pause-button Embed, page footer script). Replace `HOST` with where the files are served from (the MP4s can stay on the roscap S3 bucket; set Content-Type and `Cache-Control: public, max-age=31536000, immutable`, which the current file lacks). The CSS sets `isolation: isolate` on the hero section: without it the video layer (z-index -1) would sit behind the new teal background and vanish. Tested by applying all four parts to a copy of the live Home page HTML: the panther plays on desktop (1280 file) and phone (portrait file), one video request only, pause button on top and clickable, still under reduced motion.
 
 ## 1. Rates panel: mapping onto the existing Home section
 
@@ -74,7 +89,37 @@ Collection List: filter Featured = on, sort Sort order ascending, limit 5. Struc
 
 Behaviour (deal-list.js): from 860 px the rows are tabs (roving tabindex, arrow keys, Home and End, Enter and Space), hovering a row only previews it in the pane and the pane returns to the selected row when the pointer leaves the list; clicking selects. Up to 859 px the list is an accordion: the pane sits under the open row by CSS `order` (no DOM move), rows are `aria-expanded` buttons controlling a `region`, tapping the open row closes it, tapping another row opens it there and brings the row to the top of the screen. Photos crossfade after decoding (old layer removed, inactive layers `aria-hidden`); the other photos are prefetched at low priority once the module is on screen.
 
-Designer-native: structure, classes, CMS binding, copy, images, the facts card, the CTA. Custom code: the CSS in the head (12,745 chars) and the two scripts in the footer (27,951 chars). Limits are 50,000 characters for each of the site or page head, the page footer and a Code Embed; the current Home footer code is about 6,300 chars, so the total stays near 47,000. Minify before pasting if you prefer, or host `rates.js` and `deal-list.js` on the roscap-rates GitHub Pages origin and paste two `<script defer src>` lines instead. Check the limit your Designer actually shows on the Home page footer field before pasting: if it is the older 10,000-character limit, use the hosted-file option. Webflow's native Interactions with GSAP (ScrollTrigger scrub, staggers, a per-interaction reduced-motion option) could replace the CSS reveals of the heading, rows and pane if you prefer to keep those in the Designer; the odometer, the chips, the wave canvas and the tab logic stay in code.
+Designer-native: structure, classes, CMS binding, copy, images, the facts card, the CTA. Custom code: the CSS in the head (14,558 chars) and the two scripts in the footer (31,973 chars). Limits are 50,000 characters for each of the site or page head, the page footer and a Code Embed; the current Home footer code is about 6,300 chars, so the footer total stays near 38,300. Minify before pasting if you prefer, or host `rates.js` and `deal-list.js` on the roscap-rates GitHub Pages origin and paste two `<script defer src>` lines instead. Check the limit your Designer actually shows on the Home page footer field before pasting: if it is the older 10,000-character limit, use the hosted-file option. Webflow's native Interactions with GSAP (ScrollTrigger scrub, staggers, a per-interaction reduced-motion option) could replace the CSS reveals of the heading, rows and pane if you prefer to keep those in the Designer; the odometer, the chips, the wave canvas and the tab logic stay in code.
+
+### 2.1 Row 06 "All transactions" and the mosaic
+
+What the visitor sees: under the five featured rows, a sixth row in the same style: "06", the figure "22" in the amount style, the title "All transactions" and the gold sub-label "UK, Europe & North America", with the same arrow. Selecting it (click, keyboard or tap) fills the photo area with a mosaic of all 22 transaction photographs on a dark teal frame with 4 px gaps: 6 columns at desktop, the two largest deals (Kensington and Sheffield) as double-width tiles in the first row, 22 tiles in all; 4 columns under 860 px. The facts card under it shows two items only, both already published by Roscap: "Markets: UK, Europe and North America" and "Record: 22 transactions in 7 countries". "View 22 selected transactions" stays under the list and links to /track-record.
+
+Designer structure (reference markup in `webflow/track-record.markup.html`):
+- Row 06 is static Designer content placed after the Collection List of the five featured rows, inside the same `.dl-list` Div: a Div `.dl-item` holding a Div `.dl-row` with the custom attributes shown in the markup file (`data-name`, `data-amount`, `data-product`, `data-label` and `data-mosaic="all"`). The head CSS makes the Collection List wrappers `display: contents`, so the CMS rows and row 06 form one list for the keyboard and for screen readers.
+- The mosaic is a second Collection List inside `.dl-photo`: Collection List Wrapper `.dl-mosaic` (custom attribute `aria-hidden` = `true`), Collection List `.dl-mosaic-grid`, Collection Item `.dl-tile`, Image `.dl-tile-img` bound to a new Image field "Mosaic tile" (about 240 px wide WebP, quality 60; the prototype's 22 tiles are in `media/deals/`). Source: Transactions, all items, no filter, sorted by Sort order ascending. The first two items get the class `is-wide` from the script (the Designer cannot give a class to the first two CMS items only).
+- Second facts card: a static `dl.dl-facts.is-all` after the first facts card, with the two items above. CSS shows one card or the other.
+
+Behaviour: the tiles do not load with the page. The script loads them once the list is within about 300 px of the viewport, or on the first hover or focus of row 06, whichever comes first (measured: 0 tile requests at load and 650 px away, all 22 at 200 px away). Every tile has width and height, so nothing shifts. The mosaic is decorative (aria-hidden, empty alt); the pane heading announces "All transactions, 22 transactions in 7 countries" when row 06 is selected. Reduced motion: no crossfade, instant switch.
+
+Verified on the bundle (Playwright, Chromium): row 06 reachable with the arrow keys and selected with Enter or Space; click selects it at 1440 and 1024; on a phone a tap opens the mosaic under the row and a second tap closes it; all 22 tiles inside the frame at 1440, 1024 and 390; no horizontal scroll; 0 console errors; axe 0 violations with row 06 open at 390, and 0 at 1440 and 390 once the page has settled (a mid-fade sample can catch the facts text at partial opacity).
+
+### 2.2 Contact block: the live one
+
+The prototype's earlier contact section is replaced by the live homepage contact block, unchanged in look: the teal rounded card with the wave texture, the form on the left (Name, Email, Phone, Subject, Message), the small gold "Contact" label, the heading "Let's discuss your next transaction, funding requirement, or investment opportunity." and the gold Submit at the bottom right. Compared with live in pixels at 1440 and 390 (`screenshots/compare-live-vs-prototype-contact-*.png`, live on the left). Invisible fixes only, the same as on the Partner Program page: the visible Submit is a real submit button tied to the form (`<button type="submit" form="wf-form-Contact-Form">`), visually hidden labels for the five fields, Subject set to a plain text field, autocomplete on Name, Email and Phone. If this block is the shared Component used on other pages, these fixes apply there too.
+
+### 2.3 Who We Are and What We Do: the live sections, smoother switch
+
+The prototype first used the owner's concept versions of these two sections. They are now the live sections, rebuilt from the live markup and stylesheet and compared side by side with live at 1440 and 390 (`screenshots/compare-live-vs-prototype-who-we-are-*`, `-what-we-do-*`, `-sources-of-capital-1440`): same classes, wording, photographs, icons, teal cards, arrows, headings and "Explore Our Services" button. Two live dashes are printed as a comma and a colon in the prototype (copy rule); on live, keep the text as it is.
+
+Nothing changes in the Designer except one optional improvement: type the real figures (60, 120, 25) into the three counters instead of 0. Everything else is in `webflow/what-we-do-slider.html` (8,040 characters, Home > Custom code > Before body), which replaces the live Swiper set-up, the heading code and the counters code (the file's header says exactly which blocks to delete). Tested on a copy of the live homepage with the live stylesheet: same look, the switch, the heading swap, keyboard and the counters all work, no console errors.
+
+What changes for the visitor:
+- Switching between Asset Classes and Sources of Capital (arrows, headings or a swipe): the four cards slide 24 px and fade out while the new four slide in from the other side one after another, 55 ms apart; the headings fade, swap and come back as on live. There is never an empty frame and the section height never jumps. Live uses a plain Swiper slide.
+- The headings and arrows become real keyboard controls (Tab, Enter, Space; Left and Right arrows on a heading).
+- The inactive heading sits at 55% opacity instead of 40%, so it meets WCAG contrast for large text (3.4:1 instead of 2.55:1). Barely visible.
+- Counters: same count-up over 2 s when the figures reach 80% of the screen, eased out instead of eased in. With the real figures in the Designer, visitors without JavaScript, search engines and screen readers get 60, 120 and 25 rather than 0.
+- Reduced motion: the switch is instant and the counters show the final figures.
 
 ## 3. Exact CSS and JS to paste
 
@@ -86,13 +131,13 @@ Designer-native: structure, classes, CMS binding, copy, images, the facts card, 
 
 - Live Home (Lighthouse, this session): 9,793 KiB on mobile, score 66 (87 desktop), LCP 5.8 s mobile. 8,128 KiB of that is two videos (a 6.6 MB mp4 from S3 plus a 1.5 MB Webflow-hosted copy, both requested at load), 1,039 KiB images (one 893 KB PNG), 472 KiB scripts.
 - Prototype bundle: 1,439,547 bytes as one file including base64 fonts (115 KB raw) and all images (about 600 KB raw). Source files: index.html 24 KB, home.css 12.5 KB, rates.js 17.8 KB, deal-list.js 10.0 KB, home.js 4.9 KB. No Lenis (18.8 KB), no extra GSAP or ScrollTrigger (117 KB); the live page keeps its own GSAP 3.15 for Swiper headings.
-- Hero video pattern: `<video preload="none" poster=... data-src="hero.mp4" muted loop playsinline>`; `home.js` sets `src` after `window.load` only when the viewport is at least 992 px, `prefers-reduced-motion` is not set and `saveData` is off, and pauses it when the hero leaves the viewport. On the live site serve one compressed mp4 (the prototype file is 1.55 MB, 962x720, 17.7 s) and remove the second copy; phones then download no video at all, which removes about 8 MB from the mobile page.
+- Hero video (section 0): 1.4 MB on desktop or 0.7 MB on phones, loaded after first paint, instead of 6.8 MB plus a hidden 1.5 MB copy at load. The still frames are 10 to 28 KB each. That removes about 6.7 MB from desktop and 7.6 MB from mobile while keeping the panther on every screen.
 - Images: every below-the-fold image has `width`, `height`, `loading="lazy"` and `decoding="async"`; deal photos are 628 to 720 px wide WebP (34 to 96 KB each); the contact background was resized to 1200 px (116 KB instead of 443 KB). Replace the 893 KB PNG on the live page with the CMS WebP variant.
 - Motion: reveals and the panel clip use CSS scroll-driven animations (`animation-timeline: view()`) behind `@supports`, with an IntersectionObserver fallback that adds `.is-vis`; the odometer is CSS transitions; the stats count-up is a 2 s requestAnimationFrame; the wave canvas runs only on screen, on fine pointers, at 30 fps, and idles after 8 s. Measured: 0 requestAnimationFrame callbacks per second with the panel off screen or just below the fold, 60 with it on screen (30 draws).
 
 ## 5. Reduced motion and mobile
 
-- `prefers-reduced-motion: reduce`: no hero video, no reveals, no clip animation, odometer shows final values immediately, chips visible at once, waves static, no pulse, no photo crossfade, instant scrolling. Verified by computed styles and screenshots (`rates-reduced-1440.png`, `rates-reduced-390.png`).
+- `prefers-reduced-motion: reduce`: a close-up still instead of the hero video, no reveals, no clip animation, odometer shows final values immediately, chips visible at once, waves static, no pulse, no photo crossfade, instant scrolling. Verified by computed styles and screenshots (`screenshots/1440-rates-reduced-motion.png`).
 - 390 px: single-column rates (one rate per row, chip and dates beside the number), accordion list with 81 to 95 px tap rows, 44 px slider arrows, no horizontal overflow (scrollWidth 390). 1024 px: two equal columns, rows 72 to 86 px, rate chips stacked under the numbers.
 - No hover effects on touch (`@media (hover: hover)`), `-webkit-tap-highlight-color: transparent`.
 
@@ -113,13 +158,16 @@ Designer-native: structure, classes, CMS binding, copy, images, the facts card, 
 1. Rates: numbers match rates.json (BoE 3.75, Fed 3.75 to 4.00, EURIBOR 2.643 on 31 Oct 2026); chips read "Cut 25 bps", "Raised 25 bps", "Up 2.5 bps"; dates "since 18 Dec 2025", "since 17 Sep 2026", "fixing of 29 Oct 2026"; "Checked 31 Oct 2026" (the day's date) visible.
 2. Block rates.json in DevTools (or go offline): placeholders stay, Checked line hidden, no console error from the page (only the browser's failed request line).
 3. Scroll the panel into view once: digits roll once, chips fade in after the roll; scroll away and back: nothing re-rolls.
-4. Reduced motion on (macOS Accessibility or Chrome rendering emulation): no roll, no reveals, static waves, no video.
+4. Reduced motion on (macOS Accessibility or Chrome rendering emulation): no roll, no reveals, static waves, the panther close-up still instead of the video.
 5. Keyboard: Tab to the first row, Arrow Down twice selects Rome and moves focus, Enter and Space select, Home and End work, the pane heading is announced by VoiceOver or NVDA on selection only (not while hovering), focus ring is teal on the rows and the pane (gold would be 1.6:1 on cream) and gold on the dark panel.
 6. Mouse: hovering a row previews it, moving off the list returns the pane to the selected row, clicking selects.
 7. Phone: tapping a row opens the pane under it and brings the row to the top; tapping the open row closes it; no horizontal scroll; tap rows at least 44 px.
 8. axe DevTools: 0 violations at 1440 and 390 (the prototype scored 0 and 0, also with Div rows in place of the buttons).
-9. Lighthouse mobile: no video request, total weight well under 2 MB with the live images, LCP improved; check CLS stays 0.
-10. Publish to staging, repeat 1 to 9 on the staging URL, then publish to production and repeat 1 and 2.
+9. Row 06: arrow keys reach "All transactions" and Enter selects it; the mosaic shows all 22 photographs with the two wide tiles first; the facts card reads "UK, Europe and North America" and "22 transactions in 7 countries"; on a phone a tap opens it under the row and a second tap closes it; in the Network tab no tile loads until the list is near the screen.
+10. Who We Are and What We Do look the same as live at 1440 and 390; Asset Classes and Sources of Capital switch with the arrows, the headings, Enter or Space on a focused heading or arrow, and a swipe on a phone; the cards cascade in and never leave an empty frame; the counters end on 60, 120 and 25.
+11. Contact block: looks the same as live; on desktop an empty Submit shows the browser's required-field messages and a valid one sends (notification arrives, success state as today).
+12. Hero: the panther plays on a phone (portrait file, both eyes in frame) and on desktop (1280 file), starting at 1 s; one video request in the Network tab (no hidden duplicate); pause button pauses and resumes; the copy sits bottom-left as before; nothing white-on-cream while loading. Lighthouse mobile: LCP is the still frame, total weight about 2.5 MB with the live images; CLS stays 0.
+13. Publish to staging, repeat 1 to 12 on the staging URL, then publish to production and repeat 1 and 2.
 
 ## Audit items resolved (concepts audit, data audit, coordinator notes)
 

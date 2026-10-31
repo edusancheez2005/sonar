@@ -3,24 +3,124 @@
 
 /* ---------- page glue ---------- */
 @media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth}}
-.sec,.rates-sec,.contact-sec{scroll-margin-top:calc(var(--nav-h) + 8px)}
+.sec,.rates-sec,.section{scroll-margin-top:calc(var(--nav-h) + 8px)}
 .hero-video{opacity:0;transition:opacity 1.2s ease}
 .hero-video.is-playing{opacity:1}
-.points{padding:0;margin:4px 0 0;list-style:none}
-.stat-num{display:inline-flex;align-items:baseline}
+
+/* ---------- hero: the live hero (panther video, copy bottom-left, no overlay), weight fixed.
+   Values measured on www.roscap.co.uk at 1440 and 390. The section carries the frame the video starts on
+   (1.0 s) on teal, so the white copy is never on cream; .is-still swaps in a close-up when there is no video. ---------- */
+.hero.hero--live{display:flex;place-items:initial;justify-content:flex-start;align-items:flex-end;padding:100px 0 80px;background:#043435 url(media/hero-start-1440.webp) 50% 50%/cover no-repeat}
+.hero.hero--live::before,.hero.hero--live::after{content:none}
+.hero--live.is-still{background-image:url(media/hero-still-1440.webp)}
+.hero--live .hero-bg{position:absolute;inset:0;z-index:-1;overflow:hidden}
+.hero--live .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 50%;z-index:auto}
+.hero-wrap{position:relative;width:100%;max-width:1380px;margin:0 auto;padding:0 36px}
+.hero-copy{display:flex;flex-direction:column;align-items:flex-start;max-width:509px}
+.hero--live h1{font:italic 500 64px/1.22 var(--f-display);color:#fff;margin:0}
+.hero--live .hero-p{font:400 18px/28px var(--f-body);color:#fff;margin:24px 0 0;max-width:none}
+.hero-btn{display:inline-flex;align-items:center;margin-top:40px;padding:10px 20px;border-radius:4px;background:var(--gold);color:var(--ink);font:400 14px/21px var(--f-body);transition:background-color .25s}
+.hero-btn:hover{background:#ecd894}
+/* pause control for the moving background (WCAG 2.2.2), level with the button; only shown once the video is playing */
+.hero-pause{position:absolute;right:max(16px,calc((100% - 1380px) / 2 + 36px));bottom:78px;z-index:2;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.45);border-radius:50%;background:rgba(2,37,38,.35);color:#fff;cursor:pointer;transition:background-color .2s,border-color .2s}
+.hero-pause:hover{background:rgba(2,37,38,.6);border-color:#fff}
+.hero-pause:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.hero-pause[hidden]{display:none}
+.hero-pause svg{width:14px;height:14px;fill:currentColor}
+.hero-pause .i-play,.hero-pause[aria-pressed="true"] .i-pause{display:none}
+.hero-pause[aria-pressed="true"] .i-play{display:block}
+@media (max-width:767px){
+  .hero.hero--live{padding:52px 0 80px}
+  .hero-wrap{padding:0 16px}
+  .hero--live h1{font-size:44px}
+  .hero--live .hero-p{font-size:14px;line-height:1.5556}
+  .hero-pause{right:16px}
+}
+@media (max-width:767px) and (orientation:portrait){
+  .hero.hero--live{background-image:url(media/hero-start-portrait.webp)}
+  .hero--live.is-still{background-image:url(media/hero-still-portrait.webp)}
+}
+@media (prefers-reduced-motion:no-preference){
+  .js .hero-copy > *{animation:hero-in 1.1s var(--ease) both;animation-delay:.15s}
+  .js .hero-copy > :nth-child(2){animation-delay:.27s}
+  .js .hero-copy > :nth-child(3){animation-delay:.39s}
+}
 .foot-col .foot-h{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:6px}
-/* slider: each panel is a div holding a real list; inactive tabs use a solid muted teal (4.8:1 on cream) instead of opacity */
-.asl-slide{display:block}
-.asl-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
-.asl-tab{opacity:1;color:#4F7879;transition:color .35s ease,font-size .35s var(--ease)}
-.asl-tab:hover{opacity:1;color:var(--teal)}
-.asl-tab.is-active{opacity:1;color:var(--teal)}
-.asl-slide.is-in .asl-card{animation:card-in .6s var(--ease) both}
-.asl-slide.is-in .asl-card:nth-child(2){animation-delay:.07s}
-.asl-slide.is-in .asl-card:nth-child(3){animation-delay:.14s}
-.asl-slide.is-in .asl-card:nth-child(4){animation-delay:.21s}
-@keyframes card-in{from{opacity:0;transform:translateY(14px)}}
-@media (max-width:767px){.asl-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- Who We Are and What We Do: AS LIVE. Values from the live stylesheet (roscap-site.webflow.shared.css), scoped to .lv.
+   The only change is motion: the slider's switch between the two card sets (see the slider block below) and the counters' easing. ---------- */
+.lv .two-col-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:26px}
+.lv .grid-content-wrap{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:28px}
+.lv .grid-content-wrap.is-small{max-width:90%}
+.lv .tag-wrap{border:1px solid var(--gold);border-radius:30px;padding:8px 20px;font-size:1rem;line-height:1.5;color:var(--ink)}
+.lv .heading-style-h1{font-family:var(--f-display);font-size:4rem;font-weight:500;line-height:1.3;color:var(--teal);margin:0}
+.lv .heading-style-h1 em,.lv .sec2-h{font-style:italic;font-weight:500;line-height:1.3}
+.lv .golden-divider{width:207px;height:2px;background:var(--gold)}
+.lv .para-wrap{max-width:96%;font-weight:300}
+.lv .text-size-smedium{font-size:1.125rem;font-weight:400;line-height:1.55556}
+.lv .text-weight-light{font-weight:300}
+.lv .text-size-smedium.text-weight-light.text-color-black2{font-size:1.125rem} /* as live: this combo stays 18px on phones too */
+.lv .text-weight-normal{font-weight:400}
+.lv .text-color-black2{color:#282828}
+.lv .text-color-grey{color:#61656e}
+.lv .text-color-white{color:#fff}
+.lv .wwa-image{display:block;width:100%;height:100%;object-fit:cover;border-radius:.5rem}
+.lv .wwa-image._2{max-height:40.375rem}
+.lv .stats-cards-wrap{display:flex;justify-content:space-between;gap:5%;margin-top:70px}
+.lv .stats-card{display:flex;flex-direction:column;gap:20px;width:320px;padding-top:20px;border-top:2px solid var(--gold);line-height:1}
+.lv .stats-num{font-family:var(--f-display);font-size:5rem;font-weight:400;color:var(--ink)}
+.section.bg-white{background-color:#fff}
+.lv .cards-points-wrapper{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto;grid-auto-flow:column;gap:.5rem;width:100%;margin:0;padding:0;list-style:none}
+.lv .cards-num-item{display:flex;justify-content:flex-start;align-items:center;gap:18px}
+.lv .number-tag{flex:none;display:flex;justify-content:center;align-items:center;width:29px;height:29px;border-radius:50%;background:var(--teal);color:#fff;font-size:.875rem}
+.lv .h-slider-wrap{display:flex;flex-direction:column;justify-content:center;align-items:center;margin-top:50px}
+.lv .slider-wrap{display:flex;flex-direction:column;justify-content:center;align-items:center;width:100%}
+.lv .slider-header-wrap{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:50px}
+.lv .slider-heading-container{display:flex;justify-content:flex-start;align-items:center;gap:60px}
+.lv .slider-heading{font-family:var(--f-display);font-size:1.5rem;font-weight:500;line-height:1.2;opacity:.55;margin:0;order:1} /* live .4 is 2.55:1 on white; .55 reaches 3.4:1 (WCAG large text) */
+.lv .slider-heading.is-active{font-size:2.5rem;opacity:1;order:0}
+.lv .slider-heading-btn{all:unset;cursor:pointer;color:var(--ink)}
+.lv .slider-heading-btn:focus-visible{outline:2px solid var(--teal);outline-offset:4px;border-radius:2px}
+.lv .swiper-button-wrap{display:flex;gap:12px}
+.lv .slider-arrow{display:flex;justify-content:center;align-items:center;width:40px;height:40px;padding:0;border:0;border-radius:100%;background:#f6f6f6;color:#fff;cursor:pointer;transition:background-color .2s}
+.lv .slider-arrow:hover{background:var(--teal)}
+.lv .slider-arrow.swiper-next{transform:rotate(180deg)}
+.lv .slider-arrow:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.lv .arrow-embed{display:flex;color:#8d8d8d}
+.lv .swiper.is-home{display:grid;width:100%;touch-action:pan-y}
+.lv .asl-slide{display:block;grid-area:1/1;min-width:0;flex:none} /* overrides the concept-era .asl-slide grid in shared/base.css */
+.lv .asl-slide:not(.is-on){visibility:hidden}
+.lv .slider-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:16px;margin:0;padding:0;list-style:none}
+.lv .slider-item{padding:24px 50px;border-radius:6px;background-image:linear-gradient(63deg,#043435,#044344)}
+.lv .slider-inn-item{display:flex;justify-content:flex-start;align-items:stretch;gap:50px}
+.lv .slider-image,.lv .slider-image._2{width:2.625rem;height:2.625rem;border-radius:.5rem}
+.lv .slide-grey-line{flex:none;width:1px;background:#fff3}
+.lv .slide-para-wrap{display:flex;justify-content:flex-start;align-items:center}
+.lv .button-wrap{margin-top:50px}
+@media (max-width:991px){
+  .lv .heading-style-h1{font-size:3rem}
+  .lv .two-col-grid{grid-template-columns:1fr}
+  .lv .grid-content-wrap.is-small{max-width:none}
+  .lv .stats-cards-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .lv .slider-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto}
+}
+@media (max-width:767px){
+  .lv .heading-style-h1{font-size:2.5rem}
+}
+@media (max-width:479px){
+  .lv .tag-wrap{padding-left:16px;padding-right:16px;font-size:.875rem}
+  .lv .text-size-smedium{font-size:.875rem}
+  .lv .stats-cards-wrap{grid-template-columns:1fr}
+  .lv .stats-card{width:100%}
+  .lv .stats-num{font-size:2.5rem}
+  .lv .cards-points-wrapper{grid-template-columns:1fr;grid-auto-flow:row}
+  .lv .slider-grid{grid-template-columns:1fr}
+  .lv .slider-item{padding-left:20px;padding-right:20px}
+  .lv .slider-inn-item{gap:16px}
+  .lv .slider-header-wrap{flex-direction:column;justify-content:space-between;align-items:flex-start;gap:20px}
+  .lv .slider-heading-container{gap:24px}
+  .lv .slider-image,.lv .slider-image._2{width:24px;height:24px}
+}
 
 /* ---------- market rates: odometer panel ---------- */
 .rates-sec{padding-block:0}
@@ -107,10 +207,28 @@
 .dl-pane.is-swap .dl-facts dd{animation:facts-in .4s var(--ease) both}
 .dl-pane.is-swap .dl-facts div:nth-child(2) dd{animation-delay:.04s}
 .dl-pane.is-swap .dl-facts div:nth-child(3) dd{animation-delay:.08s}
+
+/* row 06 "All transactions": while it is in the pane, the photo area shows a mosaic of all 22 transaction photographs
+   and the second facts card replaces the first. The frame has the photo area's size, ratio and radius: teal, 4px between
+   tiles, 6 columns; the first two tiles (Kensington and Sheffield, the two largest) are double width. It stays
+   display:none until deal-list.js wakes the tiles, so the lazy tile images are never fetched with the page. */
+.dl-list .w-dyn-list,.dl-list .w-dyn-items{display:contents} /* Webflow: the CMS rows and the static row 06 behave as one list */
+.dl-mosaic{position:absolute;inset:0;display:none;padding:4px;background:#043435;opacity:0;transition:opacity .55s ease}
+.dl-mosaic.is-live{display:block}
+.dl-mosaic.is-on{opacity:1}
+.dl-mosaic-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:4px;height:100%}
+.dl-tile{min-width:0;min-height:0;overflow:hidden;border-radius:4px;background:rgba(255,252,245,.06)}
+.dl-tile.is-wide{grid-column:span 2}
+.dl-tile-img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease}
+.dl-tile-img.is-loaded{opacity:1}
+.dl-facts.is-all{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dl-pane:not(.is-all) .dl-facts.is-all,.dl-pane.is-all .dl-facts:not(.is-all){display:none}
+@media (prefers-reduced-motion: reduce){.dl-mosaic,.dl-tile-img{transition:none}}
+
 @media (max-width:859px){
   .dl{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:0}
   .dl-list{display:contents}
-  .dl-item:last-child:not(.has-pane) .dl-row{border-bottom:1px solid var(--line)}
+  .dl-list > .dl-item:last-child:not(.has-pane) .dl-row{border-bottom:1px solid var(--line)}
   .dl-pane{grid-column:auto;grid-row:auto;padding:2px 0 22px}
   .dl-pane.is-last{border-bottom:1px solid var(--line)}
   .dl-pane[hidden]{display:none}
@@ -129,13 +247,71 @@
   .rate{padding-bottom:0}
 }
 @media (max-width:767px){
-  .asl-arrow{width:44px;height:44px}
   .tr-h{font-size:2.4rem}
 }
 @media (max-width:560px){
   .dl-row{grid-template-columns:minmax(84px,auto) minmax(0,1fr) 34px;padding-left:14px;gap:12px}
   .dl-n{display:none}
   .dl-facts{grid-template-columns:minmax(0,1fr);gap:12px;padding:16px 18px}
+  /* phones: 4 columns so the tiles stay legible (about 82 x 62 px at 390); the frame grows to 7:8 to hold 6 rows */
+  .dl-pane.is-all .dl-photo{aspect-ratio:7/8}
+  .dl-mosaic-grid{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))}
+  .dl-facts.is-all{grid-template-columns:minmax(0,1fr)}
+}
+
+/* ---------- contact: the live Home contact block, unchanged look. Values measured on www.roscap.co.uk at 1440 and 390;
+   same component, markup and texture as the Partner Program prototype. Live Webflow class names are kept; the live
+   .container is .wf-container here because ../shared/base.css owns .container. The live 684 KB wave SVG at 30% opacity
+   is shown as a 47 KB WebP pre-composited on teal (101 KB at 2x), same position and fit. ---------- */
+.wf-container{width:100%;max-width:1380px;margin-inline:auto;padding-inline:2.25rem}
+.section{position:relative;padding-block:6.25rem}
+.section.pt-0{padding-top:0}
+.heading-style-h2{font-family:var(--f-display);font-size:2.5rem;font-style:italic;line-height:1.3}
+.heading-style-h2.text-weight-medium{font-style:normal;font-weight:500}
+.text-size-smedium{font-size:1.125rem;font-weight:400;line-height:1.55556}
+.text-color-golden{color:var(--gold)}
+.button{-webkit-appearance:none;appearance:none;display:inline-block;background-color:#fff;color:var(--ink);text-align:center;border:0;border-radius:4px;padding:10px 20px;font:400 .875rem/1.5 var(--f-body);cursor:pointer;transition:all .2s}
+.button.golden{background-color:var(--gold)}
+.button.golden:hover{border:1px solid var(--gold);background-color:#fff;color:var(--ink)}
+.subscribe-form-wrap{position:relative;overflow:hidden;display:flex;gap:16px;padding:72px 44px;border-radius:12px;background-color:var(--teal);color:#fff}
+.subs-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:50px;width:90%}
+.subs-form-block{position:relative;z-index:5;min-width:0}
+.input-field{display:block;width:100%;height:72px;margin:0 0 10px;padding:24px;border:1px solid #ccc;border-radius:6px;background-color:#fff;color:var(--ink);font:300 1.125rem/1.42857 var(--f-body);vertical-align:middle}
+.input-field::placeholder{color:#999}
+.input-field:focus{border-color:#3898ec;outline:0}
+.input-field:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+textarea.input-field.height-135{height:136px;margin-bottom:0}
+.button.golden.formbuttonhide-desktop{display:none}
+.subs-form-block .form-note{min-height:0;margin:0;font-size:14px;line-height:1.5;color:#fff}
+.subs-form-block .form-note:not(:empty){margin-top:12px}
+.subs-detail-wrap{position:relative;z-index:5;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:40px;min-width:0}
+.contact-banner-wrap{display:flex;flex-direction:column;gap:40px}
+.subscribe-form-wrap .subs-bg{position:absolute;top:0;right:0;bottom:auto;left:auto;z-index:auto;width:80%;height:100%;max-width:100%;object-fit:cover;opacity:1;border-radius:8px;pointer-events:none}
+.subs-circle-bg{position:absolute;inset:0;max-width:none;border-radius:8px;pointer-events:none}
+@media (max-width:991px){
+  .section{padding-block:4rem}
+  .subscribe-form-wrap{padding-top:40px;padding-bottom:40px}
+  .subs-form-grid{display:flex;flex-direction:column;gap:24px;width:100%}
+  .subs-form-block{order:9999}
+  .subs-detail-wrap{gap:24px}
+  .contact-button-wrap{display:none}
+  .button.golden.formbuttonhide-desktop{display:block;margin-top:1rem}
+  .subscribe-form-wrap .subs-bg{height:70%}
+  .subs-circle-bg{z-index:1;width:auto;height:90%;object-fit:cover}
+}
+@media (max-width:767px){
+  .section{padding-block:3.25rem}
+  .section.pt-0{padding-bottom:2rem}
+  .heading-style-h2.text-weight-medium{font-size:1.5rem}
+}
+@media (max-width:479px){
+  .wf-container{padding-inline:16px}
+  .text-size-smedium{font-size:.875rem}
+  .subscribe-form-wrap{padding:24px 16px}
+  .input-field{height:50px;padding-left:10px;font-size:16px}
+  textarea.input-field.height-135{margin-bottom:10px}
+  .subs-form-grid{gap:32px}
+  .contact-banner-wrap{gap:24px}
 }
 
 /* ---------- motion: CSS scroll-driven where supported, IntersectionObserver fallback otherwise ---------- */
@@ -161,13 +337,14 @@
     .js .dl-item:nth-child(3){transition-delay:.14s}
     .js .dl-item:nth-child(4){transition-delay:.21s}
     .js .dl-item:nth-child(5){transition-delay:.28s}
+    .js .dl-item:nth-child(6){transition-delay:.35s}
     .js .rates-panel{clip-path:inset(7% 5% 7% 5% round 36px);transition:clip-path 1s var(--ease)}
     .js .rates-panel.is-vis{clip-path:inset(0 0 0 0 round 8px)}
   }
 }
 @media (prefers-reduced-motion: reduce){
-  .odo-strip,.dl-img,.dl-row,.dl-row::before,.dl-go,.dl-go svg,.asl-track,.hero-video{transition:none}
-  .dl-pane.is-swap .dl-facts dd,.asl-slide.is-in .asl-card{animation:none}
+  .odo-strip,.dl-img,.dl-row,.dl-row::before,.dl-go,.dl-go svg,.hero-video,.lv .slider-arrow{transition:none}
+  .dl-pane.is-swap .dl-facts dd{animation:none}
 }
 
 /* ---------- prototype label ---------- */

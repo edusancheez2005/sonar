@@ -129,10 +129,28 @@
 .dl-pane.is-swap .dl-facts dd{animation:facts-in .4s var(--ease) both}
 .dl-pane.is-swap .dl-facts div:nth-child(2) dd{animation-delay:.04s}
 .dl-pane.is-swap .dl-facts div:nth-child(3) dd{animation-delay:.08s}
+
+/* row 06 "All transactions": while it is in the pane, the photo area shows a mosaic of all 22 transaction photographs
+   and the second facts card replaces the first. The frame has the photo area's size, ratio and radius: teal, 4px between
+   tiles, 6 columns; the first two tiles (Kensington and Sheffield, the two largest) are double width. It stays
+   display:none until deal-list.js wakes the tiles, so the lazy tile images are never fetched with the page. */
+.dl-list .w-dyn-list,.dl-list .w-dyn-items{display:contents} /* Webflow: the CMS rows and the static row 06 behave as one list */
+.dl-mosaic{position:absolute;inset:0;display:none;padding:4px;background:#043435;opacity:0;transition:opacity .55s ease}
+.dl-mosaic.is-live{display:block}
+.dl-mosaic.is-on{opacity:1}
+.dl-mosaic-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:4px;height:100%}
+.dl-tile{min-width:0;min-height:0;overflow:hidden;border-radius:4px;background:rgba(255,252,245,.06)}
+.dl-tile.is-wide{grid-column:span 2}
+.dl-tile-img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s ease}
+.dl-tile-img.is-loaded{opacity:1}
+.dl-facts.is-all{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dl-pane:not(.is-all) .dl-facts.is-all,.dl-pane.is-all .dl-facts:not(.is-all){display:none}
+@media (prefers-reduced-motion: reduce){.dl-mosaic,.dl-tile-img{transition:none}}
+
 @media (max-width:859px){
   .dl{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:0}
   .dl-list{display:contents}
-  .dl-item:last-child:not(.has-pane) .dl-row{border-bottom:1px solid var(--line)}
+  .dl-list > .dl-item:last-child:not(.has-pane) .dl-row{border-bottom:1px solid var(--line)}
   .dl-pane{grid-column:auto;grid-row:auto;padding:2px 0 22px}
   .dl-pane.is-last{border-bottom:1px solid var(--line)}
   .dl-pane[hidden]{display:none}
@@ -158,6 +176,10 @@
   .dl-row{grid-template-columns:minmax(84px,auto) minmax(0,1fr) 34px;padding-left:14px;gap:12px}
   .dl-n{display:none}
   .dl-facts{grid-template-columns:minmax(0,1fr);gap:12px;padding:16px 18px}
+  /* phones: 4 columns so the tiles stay legible (about 82 x 62 px at 390); the frame grows to 7:8 to hold 6 rows */
+  .dl-pane.is-all .dl-photo{aspect-ratio:7/8}
+  .dl-mosaic-grid{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))}
+  .dl-facts.is-all{grid-template-columns:minmax(0,1fr)}
 }
 
 /* ---------- motion: CSS scroll-driven where supported, IntersectionObserver fallback otherwise ---------- */
@@ -183,6 +205,7 @@
     .js .dl-item:nth-child(3){transition-delay:.14s}
     .js .dl-item:nth-child(4){transition-delay:.21s}
     .js .dl-item:nth-child(5){transition-delay:.28s}
+    .js .dl-item:nth-child(6){transition-delay:.35s}
     .js .rates-panel{clip-path:inset(7% 5% 7% 5% round 36px);transition:clip-path 1s var(--ease)}
     .js .rates-panel.is-vis{clip-path:inset(0 0 0 0 round 8px)}
   }

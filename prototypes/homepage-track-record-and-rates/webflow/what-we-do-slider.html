@@ -1,0 +1,114 @@
+<!-- Home: Asset Classes / Sources of Capital switch, and the counters (owner's request: keep both sections as they are, with a better transition).
+     Where: Page settings (Home) > Custom code > Before </body> tag. It works on the live markup as it is: .slider-wrap, .swiper.is-home,
+     .swiper-wrapper.is-home > .swiper-slide, .slider-heading, .swiper-prev and .swiper-next. Nothing changes in the Designer.
+     Remove from the Home custom code: "new Swiper('.slider-wrap .swiper', ...)", the HEADING SETUP / HEADING TRANSITION / CLICK HEADING /
+     SYNC ON SLIDE CHANGE / INITIAL STATE blocks and the COUNTERS block; this file replaces all of them. If nothing else on Home uses Swiper
+     once the Track Record module replaces the carousels, also remove the Swiper CSS and JS links from Home. -->
+<style>
+/* the two card sets share one grid cell, so the section height never jumps */
+.slider-wrap .swiper-wrapper.is-home{display:grid!important;transform:none!important}
+.slider-wrap .swiper-wrapper.is-home>.swiper-slide{grid-area:1/1;width:100%!important;min-width:0;margin:0!important}
+.slider-wrap .swiper-wrapper.is-home>.swiper-slide:not(.is-on){visibility:hidden}
+/* headings as live (active first and large); the inactive one at 55% instead of 40% so it meets WCAG contrast for large text */
+.slider-wrap .slider-heading{order:1;opacity:.55;cursor:pointer}
+.slider-wrap .slider-heading.is-active{order:0;opacity:1}
+.slider-wrap .slider-heading:focus-visible,.slider-wrap .slider-arrow:focus-visible{outline:2px solid #043435;outline-offset:3px}
+.slider-wrap .slider-arrow{cursor:pointer}
+</style>
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  /* 1. Asset Classes / Sources of Capital. The arrows loop, the headings switch, a horizontal swipe switches on touch screens.
+     The switch: the four cards slide 24 px and fade out while the new four slide in from the other side one after another
+     (55 ms apart), so there is never an empty frame; the headings fade, swap and come back as on live. Reduced motion: instant. */
+  (function () {
+    var box = document.querySelector('.slider-wrap');
+    if (!box) return;
+    var slides = $$('.swiper-wrapper.is-home > .swiper-slide', box), heads = $$('.slider-heading', box);
+    var prev = box.querySelector('.swiper-prev'), next = box.querySelector('.swiper-next');
+    if (slides.length < 2 || heads.length < 2) return;
+    var names = heads.map(function (h) { return h.textContent.trim(); });
+    var idx = 0, busy = false, canAnimate = !reduce && typeof Element.prototype.animate === 'function';
+    function setOn(el, on) {
+      el.classList.toggle('is-on', on);
+      if (on) { el.removeAttribute('aria-hidden'); el.removeAttribute('inert'); } else { el.setAttribute('aria-hidden', 'true'); el.setAttribute('inert', ''); }
+    }
+    function markHeads(i) { heads.forEach(function (h, k) { h.classList.toggle('is-active', k === i); h.classList.toggle('is-inactive', k !== i); h.setAttribute('aria-pressed', String(k === i)); }); }
+    function go(i, dir) {
+      i = (i + slides.length) % slides.length;
+      if (i === idx || busy) return;
+      var from = slides[idx], to = slides[i];
+      dir = dir || (i > idx ? 1 : -1);
+      if (!canAnimate) { setOn(from, false); setOn(to, true); markHeads(i); idx = i; return; }
+      busy = true;
+      var outItems = $$('.slider-item', from), inItems = $$('.slider-item', to);
+      outItems.forEach(function (el) { el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(' + (-24 * dir) + 'px)' }], { duration: 220, easing: 'cubic-bezier(.55,0,1,.45)', fill: 'forwards' }); });
+      heads.forEach(function (h) { var act = h.classList.contains('is-active'); h.animate([{ opacity: act ? 1 : 0.55, transform: 'none' }, { opacity: 0, transform: 'translateX(' + (act ? 10 : -10) + '%)' }], { duration: 170, easing: 'ease-in', fill: 'forwards' }); });
+      setTimeout(function () {
+        setOn(to, true);
+        inItems.forEach(function (el, k) { el.animate([{ opacity: 0, transform: 'translateX(' + (32 * dir) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 440, delay: k * 55, easing: 'cubic-bezier(.25,1,.5,1)', fill: 'backwards' }); });
+      }, 90);
+      setTimeout(function () {
+        markHeads(i);
+        heads.forEach(function (h) { h.getAnimations().forEach(function (an) { an.cancel(); }); var act = h.classList.contains('is-active'); h.animate([{ opacity: 0, transform: 'translateX(' + (act ? -10 : 10) + '%)' }, { opacity: act ? 1 : 0.55, transform: 'none' }], { duration: 250, easing: 'cubic-bezier(.25,1,.5,1)' }); });
+      }, 170);
+      setTimeout(function () { setOn(from, false); outItems.forEach(function (el) { el.getAnimations().forEach(function (an) { an.cancel(); }); }); idx = i; busy = false; }, 240);
+    }
+    function asButton(el, label, fn) {
+      el.setAttribute('role', 'button'); el.setAttribute('tabindex', '0'); if (label) el.setAttribute('aria-label', label);
+      el.addEventListener('click', fn);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } });
+    }
+    slides.forEach(function (s, k) { s.setAttribute('role', 'group'); s.setAttribute('aria-label', names[k] || ''); setOn(s, k === 0); });
+    markHeads(0);
+    heads.forEach(function (h, k) {
+      asButton(h, null, function () { go(k); });
+      h.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault(); var d = e.key === 'ArrowRight' ? 1 : -1, t = (idx + d + heads.length) % heads.length; go(t, d); heads[t].focus();
+      });
+    });
+    if (prev) asButton(prev, 'Previous set', function () { go(idx - 1, -1); });
+    if (next) asButton(next, 'Next set', function () { go(idx + 1, 1); });
+    var view = box.querySelector('.swiper.is-home') || box, x0 = null, y0 = null;
+    view.style.touchAction = 'pan-y';
+    view.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') return; x0 = e.clientX; y0 = e.clientY; });
+    view.addEventListener('pointerup', function (e) {
+      if (x0 === null) return; var dx = e.clientX - x0, dy = e.clientY - y0; x0 = y0 = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) { var d = dx < 0 ? 1 : -1; go(idx + d, d); }
+    });
+    view.addEventListener('pointercancel', function () { x0 = y0 = null; });
+  })();
+
+  /* 2. Counters, as live (count up once over 2 s when the figures reach 80% of the screen height), with an ease-out instead of
+     live's ease-in. Put the real figures (60, 120, 25) in the Designer instead of 0: visitors without JS, search engines and
+     screen readers then get the real numbers; the script resets them to 0 just before counting. */
+  (function () {
+    var els = $$('.stats-num-span[data-count]');
+    if (!els.length || reduce || !('IntersectionObserver' in window)) return;
+    els.forEach(function (el) {
+      var to = Number(el.getAttribute('data-count'));
+      if (!isFinite(to)) return;
+      var sr = document.createElement('span'); sr.textContent = String(to);
+      sr.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap';
+      el.parentNode.insertBefore(sr, el); el.setAttribute('aria-hidden', 'true');
+      el.textContent = '0';
+      var io = new IntersectionObserver(function (es) {
+        if (!es[0].isIntersecting) return;
+        io.disconnect();
+        var t0 = null;
+        var step = function (ts) {
+          if (t0 === null) t0 = ts;
+          var p = Math.min(1, (ts - t0) / 2000), e = 1 - Math.pow(1 - p, 3);
+          el.textContent = String(Math.round(to * e));
+          if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }, { rootMargin: '0px 0px -20% 0px' });
+      io.observe(el);
+    });
+  })();
+})();
+</script>

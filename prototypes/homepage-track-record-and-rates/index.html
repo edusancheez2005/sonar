@@ -9,6 +9,9 @@
 <script>document.documentElement.classList.add('js');</script>
 <link rel="stylesheet" href="../shared/base.css">
 <link rel="stylesheet" href="home.css">
+<!-- hero still frames: the frame the video starts on, fetched early so the hero never shows white text on cream -->
+<link rel="preload" as="image" href="media/hero-start-portrait.webp" media="(max-width: 767px) and (orientation: portrait)" fetchpriority="high">
+<link rel="preload" as="image" href="media/hero-start-1440.webp" media="not all and (max-width: 767px) and (orientation: portrait)" fetchpriority="high">
 </head>
 <body>
 
@@ -32,89 +35,107 @@
 
 <main id="top">
 
-  <!-- hero: poster in the HTML, the video is a separate file that home.js loads after window load on wide screens only -->
-  <section class="hero" aria-labelledby="hero-h">
-    <video class="hero-video" id="hero-video" muted loop playsinline preload="none" poster="../shared/img/hero-poster.jpg" data-src="hero.mp4" aria-hidden="true" tabindex="-1"></video>
-    <div class="hero-in">
-      <h1 id="hero-h">Real Estate Capital. <span class="gold-text">Redefined.</span></h1>
-      <p class="hero-p">Roscap is a specialist real estate capital advisory and private investment firm connecting developers and investors with tailored debt and equity solutions across the UK, Europe and North America.</p>
-      <a class="sbtn" href="#what-we-do">Explore Our Services</a>
+  <!-- hero: the live hero (panther video, copy bottom-left, no overlay) with the weight fixed.
+       The section shows the frame the video starts on (1.0 s) on teal, so the white text is never on cream.
+       Phones in portrait get a 576 x 1078 crop centred on the panther (0.7 MB); everything else the 1280 px file (1.4 MB).
+       home.js starts it straight after first paint at 1.0 s, as the live embed does (#t=1), pauses it off screen,
+       and shows a close-up still instead under reduced motion, Save-Data, or when autoplay is blocked. -->
+  <section class="hero hero--live" id="hero" aria-labelledby="hero-h">
+    <div class="hero-bg" aria-hidden="true">
+      <video class="hero-video" id="hero-video" muted loop playsinline preload="none" poster="media/hero-start-1440.webp" data-start="1" tabindex="-1">
+        <source data-src="media/hero-portrait.mp4" type="video/mp4" media="(max-width: 767px) and (orientation: portrait)">
+        <source data-src="media/hero-desktop.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class="hero-wrap">
+      <div class="hero-copy">
+        <h1 id="hero-h">Real Estate Capital.<br>Redefined.</h1>
+        <p class="hero-p">Roscap is a specialist real estate capital advisory and private investment firm connecting developers and investors with tailored debt and equity solutions across the UK, Europe, and North America.</p>
+        <a class="hero-btn" href="https://www.roscap.co.uk/our-services">Explore Our Services</a>
+      </div>
+    </div>
+    <button class="hero-pause" id="hero-pause" type="button" aria-pressed="false" aria-label="Pause background video" hidden>
+      <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 3h2.5v10H4.5zM9 3h2.5v10H9z"/></svg>
+      <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3l8 5-8 5z"/></svg>
+    </button>
+  </section>
+
+  <!-- ============ WHO WE ARE: as live (live classes, wording, image and counters). The live text's dash is printed as a comma (copy rule). ============ -->
+  <section class="section lv" id="who-we-are" aria-labelledby="wwa-h">
+    <div class="wf-container">
+      <div class="two-col-grid">
+        <div class="grid-content-wrap is-small" data-reveal>
+          <div class="tag-wrap"><div>Who We Are</div></div>
+          <h2 class="heading-style-h1 text-weight-medium text-color-heading" id="wwa-h"><em class="sec2-h">A Real Estate Capital Advisory Built on Long-Term Relationships</em></h2>
+          <div class="golden-divider"></div>
+          <div class="para-wrap"><p class="text-size-smedium text-weight-light text-color-black2">Roscap is a specialist intermediary between capital and opportunity. We advise and arrange financing for property developers, investors, and family offices. We work with carefully selected capital providers and present each transaction clearly and efficiently. <br><br>With up-to-date knowledge of the real estate finance market, our team provides advice shaped by current conditions, ensuring every client and project secures the most appropriate form of capital.</p></div>
+        </div>
+        <img class="wwa-image" src="../shared/img/who-we-are-columns.webp" alt="Classical stone columns and a lamp post outside a historic City of London building" width="660" height="646" loading="lazy" decoding="async" data-reveal>
+      </div>
+      <div class="stats-cards-wrap">
+        <div class="stats-card" data-reveal><div class="stats-num"><span class="stats-num-span" data-count="60">60</span>+</div><p class="text-size-smedium text-color-grey">Projects funded</p></div>
+        <div class="stats-card" data-reveal><div class="stats-num">£ <span class="stats-num-span" data-count="120">120</span>m+</div><p class="text-size-smedium text-color-grey">In completed transactions</p></div>
+        <div class="stats-card" data-reveal><div class="stats-num"><span class="stats-num-span" data-count="25">25</span>+</div><p class="text-size-smedium text-color-grey">Years of combined experience</p></div>
+      </div>
     </div>
   </section>
 
-  <!-- who we are -->
-  <section class="sec" id="who-we-are" aria-labelledby="wwa-h">
-    <div class="pg"><div class="container">
-      <div class="split">
-        <div class="stack" data-reveal>
-          <p class="tag">Who We Are</p>
-          <h2 class="h2" id="wwa-h">A Real Estate Capital Advisory Built on Long-Term Relationships</h2>
-          <span class="gdiv" aria-hidden="true"></span>
-          <div class="para">
-            <p>Roscap is a specialist intermediary between capital and opportunity. We advise and arrange financing for developers, investors and family offices, working with a carefully selected network of capital providers.</p>
-            <p>With up-to-date knowledge of the real estate finance market, our team provides advice shaped by current conditions, so that each client secures the most suitable form of capital.</p>
-          </div>
-        </div>
-        <img class="wwa-img" src="../shared/img/who-we-are-columns.webp" alt="Classical stone columns and a lamp post outside a historic City of London building" width="660" height="646" loading="lazy" decoding="async" data-reveal>
-      </div>
-      <ul class="stats">
-        <li class="stat" data-reveal><span class="stat-num"><span data-count="60">60</span>+</span><span class="stat-label">Projects funded</span></li>
-        <li class="stat" data-reveal><span class="stat-num">£<span data-count="120">120</span>m+</span><span class="stat-label">In completed transactions</span></li>
-        <li class="stat" data-reveal><span class="stat-num"><span data-count="25">25</span>+</span><span class="stat-label">Years of combined experience</span></li>
-      </ul>
-    </div></div>
-  </section>
-
-  <!-- what we do -->
-  <section class="sec" id="what-we-do" aria-labelledby="wwd-h">
-    <div class="pg"><div class="container">
-      <div class="split">
-        <img class="wwd-img" src="../shared/img/what-we-do-thames.webp" alt="Aerial view of the Thames, Tower Bridge and Canary Wharf at dusk" width="990" height="969" loading="lazy" decoding="async" data-reveal>
-        <div class="stack" data-reveal>
-          <p class="tag">What We Do</p>
-          <h2 class="h2" id="wwd-h">Capital Raising For Every Stage of a Real Estate Project's Lifecycle</h2>
-          <span class="gdiv" aria-hidden="true"></span>
-          <p class="para">We arrange finance across every layer of the capital stack, from senior and stretch-senior debt through mezzanine finance to equity.</p>
-          <ol class="points">
-            <li class="point"><b aria-hidden="true">1</b>Pre-planning sites</li>
-            <li class="point"><b aria-hidden="true">2</b>Site acquisitions</li>
-            <li class="point"><b aria-hidden="true">3</b>Developments &amp; conversions</li>
-            <li class="point"><b aria-hidden="true">4</b>Renovation projects</li>
-            <li class="point"><b aria-hidden="true">5</b>Pre-stabilised but completed assets</li>
-            <li class="point"><b aria-hidden="true">6</b>Income-producing investments</li>
+  <!-- ============ WHAT WE DO: as live, including the Asset Classes / Sources of Capital slider (live look and controls).
+       CHANGED vs live: only the switch between the two card sets (a short staggered slide and fade instead of the Swiper slide). ============ -->
+  <section class="section bg-white lv" id="what-we-do" aria-labelledby="wwd-h">
+    <div class="wf-container">
+      <div class="two-col-grid">
+        <img class="wwa-image _2" src="../shared/img/what-we-do-thames.webp" alt="Aerial view of the Thames, Tower Bridge and Canary Wharf at dusk" width="990" height="969" loading="lazy" decoding="async" data-reveal>
+        <div class="grid-content-wrap" data-reveal>
+          <div class="tag-wrap"><div>What We Do</div></div>
+          <h2 class="heading-style-h1 text-weight-medium text-color-heading" id="wwd-h"><em>Capital Raising For Every Stage of a Real Estate Project’s Lifecycle</em></h2>
+          <div class="golden-divider"></div>
+          <p class="text-size-smedium text-weight-light text-color-black2">We arrange finance across every layer of the capital stack: from senior and stretch-senior loans through to mezzanine and equity funding. <br><br><span class="text-weight-normal">Roscap sources capital for projects at all stages of their lifecycle:</span></p>
+          <ol class="cards-points-wrapper">
+            <li class="cards-num-item"><span class="number-tag" aria-hidden="true">1</span><span class="text-size-smedium">Pre-planning sites</span></li>
+            <li class="cards-num-item"><span class="number-tag" aria-hidden="true">2</span><span class="text-size-smedium">Site acquisitions</span></li>
+            <li class="cards-num-item"><span class="number-tag" aria-hidden="true">3</span><span class="text-size-smedium">Developments &amp; conversions</span></li>
+            <li class="cards-num-item"><span class="number-tag" aria-hidden="true">4</span><span class="text-size-smedium">Renovation projects</span></li>
+            <li class="cards-num-item"><span class="number-tag" aria-hidden="true">5</span><span class="text-size-smedium">Pre-stabilised but completed assets</span></li>
+            <li class="cards-num-item"><span class="number-tag" aria-hidden="true">6</span><span class="text-size-smedium">Income-producing investments</span></li>
           </ol>
+          <p class="text-size-smedium text-weight-light text-color-black2">Whether funding a ground-up development, refinancing a completed scheme, or co-investing alongside private capital, we bring together the right parties to deliver the right solution.</p>
         </div>
       </div>
-
-      <div class="asl" id="asl" data-reveal>
-        <div class="asl-head">
-          <div class="asl-tabs" role="tablist" aria-label="Asset classes and sources of capital">
-            <button class="asl-tab is-active" type="button" role="tab" id="asl-tab-0" aria-selected="true" aria-controls="asl-slide-0" tabindex="0">Asset Classes</button>
-            <button class="asl-tab" type="button" role="tab" id="asl-tab-1" aria-selected="false" aria-controls="asl-slide-1" tabindex="-1">Sources of Capital</button>
+      <div class="h-slider-wrap">
+        <div class="slider-wrap" id="asl">
+          <div class="slider-header-wrap">
+            <div class="slider-heading-container">
+              <h3 class="slider-heading is-active"><button class="slider-heading-btn" type="button" data-slide="0" aria-controls="asl-slide-0" aria-pressed="true">Asset Classes</button></h3>
+              <h3 class="slider-heading"><button class="slider-heading-btn" type="button" data-slide="1" aria-controls="asl-slide-1" aria-pressed="false">Sources of Capital</button></h3>
+            </div>
+            <div class="swiper-button-wrap">
+              <button class="slider-arrow swiper-prev" type="button" data-dir="-1" aria-label="Previous set"><span class="arrow-embed"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M16.6673 10L3.33398 10M3.33398 10L8.33398 15M3.33398 10L8.33398 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <button class="slider-arrow swiper-next" type="button" data-dir="1" aria-label="Next set"><span class="arrow-embed"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M16.6673 10L3.33398 10M3.33398 10L8.33398 15M3.33398 10L8.33398 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+            </div>
           </div>
-          <div class="asl-arrows">
-            <button class="asl-arrow" type="button" data-dir="-1" aria-label="Previous" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
-            <button class="asl-arrow" type="button" data-dir="1" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <div class="swiper is-home" aria-live="polite">
+            <div class="asl-slide is-on" id="asl-slide-0" role="group" aria-label="Asset Classes">
+              <ul class="slider-grid">
+                <li class="slider-item"><div class="slider-inn-item"><img class="slider-image" src="../shared/img/icon-residential.svg" alt="" width="42" height="42" loading="lazy" decoding="async"><div class="slide-grey-line"></div><div class="slide-para-wrap"><div class="text-color-white text-size-smedium">Residential</div></div></div></li>
+                <li class="slider-item"><div class="slider-inn-item"><img class="slider-image" src="../shared/img/icon-industrial.svg" alt="" width="42" height="42" loading="lazy" decoding="async"><div class="slide-grey-line"></div><div class="slide-para-wrap"><div class="text-color-white text-size-smedium">Industrial &amp; Logistics</div></div></div></li>
+                <li class="slider-item"><div class="slider-inn-item"><img class="slider-image _2" src="../shared/img/icon-social-housing.svg" alt="" width="42" height="42" loading="lazy" decoding="async"><div class="slide-grey-line"></div><div class="slide-para-wrap"><div class="text-color-white text-size-smedium">Social Housing &amp; Care</div></div></div></li>
+                <li class="slider-item"><div class="slider-inn-item"><img class="slider-image" src="../shared/img/icon-commercial.svg" alt="" width="42" height="42" loading="lazy" decoding="async"><div class="slide-grey-line"></div><div class="slide-para-wrap"><div class="text-color-white text-size-smedium">Commercial</div></div></div></li>
+              </ul>
+            </div>
+            <div class="asl-slide" id="asl-slide-1" role="group" aria-label="Sources of Capital" aria-hidden="true" inert>
+              <ul class="slider-grid">
+                <li class="slider-item"><div class="slider-inn-item"><img class="slider-image" src="../shared/img/icon-banks.svg" alt="" width="42" height="42" loading="lazy" decoding="async"><div class="slide-grey-line"></div><div class="slide-para-wrap"><div class="text-color-white text-size-smedium">Commercial Banks</div></div></div></li>
+                <li class="slider-item"><div class="slider-inn-item"><img class="slider-image" src="../shared/img/icon-funds.svg" alt="" width="42" height="42" loading="lazy" decoding="async"><div class="slide-grey-line"></div><div class="slide-para-wrap"><div class="text-color-white text-size-smedium">Funds</div></div></div></li>
+                <li class="slider-item"><div class="slider-inn-item"><img class="slider-image" src="../shared/img/icon-family-offices.svg" alt="" width="42" height="42" loading="lazy" decoding="async"><div class="slide-grey-line"></div><div class="slide-para-wrap"><div class="text-color-white text-size-smedium">Family Offices</div></div></div></li>
+                <li class="slider-item"><div class="slider-inn-item"><img class="slider-image" src="../shared/img/icon-investment-banks.svg" alt="" width="42" height="42" loading="lazy" decoding="async"><div class="slide-grey-line"></div><div class="slide-para-wrap"><div class="text-color-white text-size-smedium">Investment Banks</div></div></div></li>
+              </ul>
+            </div>
           </div>
-        </div>
-        <div class="asl-view">
-          <div class="asl-track" id="asl-track">
-            <div class="asl-slide" role="tabpanel" id="asl-slide-0" aria-labelledby="asl-tab-0"><ul class="asl-cards">
-              <li class="asl-card"><img src="../shared/img/icon-residential.svg" alt="" width="61" height="56" loading="lazy"><p>Residential</p></li>
-              <li class="asl-card"><img src="../shared/img/icon-industrial.svg" alt="" width="61" height="56" loading="lazy"><p>Industrial &amp; Logistics</p></li>
-              <li class="asl-card"><img src="../shared/img/icon-social-housing.svg" alt="" width="61" height="56" loading="lazy"><p>Social Housing &amp; Care</p></li>
-              <li class="asl-card"><img src="../shared/img/icon-commercial.svg" alt="" width="61" height="56" loading="lazy"><p>Commercial</p></li>
-            </ul></div>
-            <div class="asl-slide" role="tabpanel" id="asl-slide-1" aria-labelledby="asl-tab-1" aria-hidden="true" inert><ul class="asl-cards">
-              <li class="asl-card"><img src="../shared/img/icon-banks.svg" alt="" width="61" height="56" loading="lazy"><p>Commercial Banks</p></li>
-              <li class="asl-card"><img src="../shared/img/icon-funds.svg" alt="" width="61" height="56" loading="lazy"><p>Funds</p></li>
-              <li class="asl-card"><img src="../shared/img/icon-family-offices.svg" alt="" width="61" height="56" loading="lazy"><p>Family Offices</p></li>
-              <li class="asl-card"><img src="../shared/img/icon-investment-banks.svg" alt="" width="61" height="56" loading="lazy"><p>Investment Banks</p></li>
-            </ul></div>
-          </div>
+          <div class="button-wrap"><a class="button golden" href="https://www.roscap.co.uk/our-services">Explore Our Services</a></div>
         </div>
       </div>
-    </div></div>
+    </div>
   </section>
 
   <!-- market rates: odometer panel. Static values below are the Designer placeholders; rates.js replaces them from the feed.
@@ -226,10 +247,48 @@
               <span class="dl-n" aria-hidden="true">05</span><span class="dl-amt">£8.3m</span><span class="dl-meta"><b>Birmingham, UK</b><span>Development Finance</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </button>
           </li>
+          <!-- row 06: static Designer content after the Collection List of the five featured transactions.
+               data-mosaic makes the pane show the mosaic and the second facts card; data-label is what the pane heading announces. -->
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-6" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="All transactions" data-amount="22" data-product="UK, Europe &amp; North America"
+              data-label="All transactions, 22 transactions in 7 countries" data-mosaic="all">
+              <span class="dl-n" aria-hidden="true">06</span><span class="dl-amt">22</span><span class="dl-meta"><b>All transactions</b><span>UK, Europe &amp; North America</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
         </ul>
         <div class="dl-pane" id="dl-pane" role="tabpanel" aria-labelledby="dl-tab-1" tabindex="0">
           <h3 class="sr dl-pane-h" aria-live="polite">Kensington, London, £27.5m, Development Finance</h3>
           <figure class="dl-photo">
+            <!-- mosaic of all 22 transactions (row 06): in Webflow a second Collection List (Transactions, all items, sorted by Sort order),
+                 Image bound to the Mosaic tile field, Lazy load. Decorative: the facts card carries the information.
+                 The frame stays display:none until deal-list.js wakes the tiles (list within 300 px of the viewport, or first hover or focus of row 06). -->
+            <div class="dl-mosaic" aria-hidden="true">
+              <div class="dl-mosaic-grid">
+                <div class="dl-tile is-wide"><img class="dl-tile-img" src="media/deals/kensington.webp" width="480" height="266" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile is-wide"><img class="dl-tile-img" src="media/deals/sheffield.webp" width="480" height="266" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/rome.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/london.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/birmingham.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/dublin.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/bath.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/bradford.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/marbella.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/wakefield.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/huddersfield.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/bristol.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/surrey.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/cannes.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/manchester.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/buckinghamshire.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/florida.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/edinburgh.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/liverpool.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/leeds.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/nottingham.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="media/deals/tirana.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+              </div>
+            </div>
             <img class="dl-img is-on" src="../shared/img/deal-kensington.webp" alt="Terrace of white stucco and brick townhouses with black iron railings on a tree-lined Kensington street" width="720" height="551" loading="lazy" decoding="async">
           </figure>
           <dl class="dl-facts">
@@ -237,34 +296,57 @@
             <div><dt>Capital</dt><dd id="dl-cap">Institutional Private Credit Fund</dd></div>
             <div><dt>Terms</dt><dd id="dl-terms">70% LTC · 58% LTV · 8.5% p.a.</dd></div>
           </dl>
+          <!-- facts for row 06 (static Designer content, shown instead of the card above while row 06 is in the pane) -->
+          <dl class="dl-facts is-all">
+            <div><dt>Markets</dt><dd>UK, Europe and North America</dd></div>
+            <div><dt>Record</dt><dd>22 transactions in 7 countries</dd></div>
+          </dl>
         </div>
         <a class="btn dl-cta" href="https://www.roscap.co.uk/track-record">View 22 selected transactions<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
     </div></div>
   </section>
 
-  <!-- contact -->
-  <section class="contact-sec" id="contact" aria-labelledby="contact-h">
-    <div class="pg"><div class="container">
-      <div class="subs" data-reveal>
-        <img class="subs-bg" src="../shared/img/contact-bg-1200.webp" alt="" width="1200" height="651" loading="lazy" decoding="async">
-        <div class="subs-grid">
-          <div class="subs-copy">
-            <p class="tag">Contact</p>
-            <h2 class="subs-h" id="contact-h">Let's discuss your next transaction, funding requirement, or investment opportunity.</h2>
+  <!-- contact: the live Home contact block, unchanged look (live markup and class names; same component as the Partner Program prototype).
+       Invisible fixes only: the visible Submit is a real submit button tied to the form, visually hidden labels, Subject type="text", autocomplete.
+       Mock in the prototype (data-mock): nothing is sent. -->
+  <section class="section pt-0" id="contact" aria-labelledby="contact-h">
+    <div class="wf-container">
+      <div class="subscribe-form-wrap" data-reveal>
+        <div class="subs-form-grid">
+          <div class="subs-form-block">
+            <!-- Webflow Form Block "Contact Form": live id and field ids kept -->
+            <form id="wf-form-Contact-Form" name="wf-form-Contact-Form" data-name="Contact Form" method="get" data-mock>
+              <label class="sr" for="name">Name</label>
+              <input class="input-field" id="name" name="name" type="text" placeholder="Name" maxlength="256" autocomplete="name" required>
+              <label class="sr" for="email">Email</label>
+              <input class="input-field" id="email" name="email" type="email" placeholder="Email" maxlength="256" autocomplete="email" required>
+              <label class="sr" for="Phone">Phone</label>
+              <input class="input-field" id="Phone" name="Phone" type="tel" placeholder="Phone" maxlength="256" autocomplete="tel" required>
+              <label class="sr" for="Subject">Subject</label>
+              <input class="input-field" id="Subject" name="Subject" type="text" placeholder="Subject" maxlength="256" required>
+              <label class="sr" for="Message">Message</label>
+              <textarea class="input-field height-135" id="Message" name="Message" placeholder="Message" maxlength="5000"></textarea>
+              <!-- in-form submit: shown below 992px, as live -->
+              <input class="button golden formbuttonhide-desktop" type="submit" value="Submit" data-wait="Please wait...">
+              <p class="form-note" aria-live="polite"></p>
+            </form>
           </div>
-          <form class="form" data-mock novalidate aria-label="Contact form (switched off in this prototype)">
-            <input class="field" type="text" placeholder="Full name" aria-label="Full name" autocomplete="off">
-            <input class="field" type="email" placeholder="Email address" aria-label="Email address" autocomplete="off">
-            <input class="field" type="tel" placeholder="Phone number" aria-label="Phone number" autocomplete="off">
-            <input class="field" type="text" placeholder="Company" aria-label="Company" autocomplete="off">
-            <textarea class="field wide" placeholder="Tell us about your project" aria-label="Tell us about your project"></textarea>
-            <button class="sbtn" type="submit">Submit</button>
-            <p class="form-note" aria-live="polite"></p>
-          </form>
+          <div class="subs-detail-wrap">
+            <div class="contact-banner-wrap">
+              <div class="text-size-smedium text-color-golden">Contact</div>
+              <h2 class="heading-style-h2 text-weight-medium" id="contact-h">Let’s discuss your next transaction, funding requirement, or investment opportunity.</h2>
+            </div>
+            <!-- desktop submit (992px and up): on live a link that clicks the hidden submit through Finsweet mirror-click; here a real submit button tied to the form -->
+            <div class="contact-button-wrap">
+              <button class="button golden" type="submit" form="wf-form-Contact-Form">Submit</button>
+            </div>
+          </div>
         </div>
+        <img class="subs-bg" src="media/contact/contact-waves.webp" srcset="media/contact/contact-waves@2x.webp 2x" width="1128" height="612" alt="" loading="lazy" decoding="async">
+        <img class="subs-circle-bg" src="media/contact/subs-circle-bg.svg" width="1340" height="612" alt="" loading="lazy" decoding="async">
       </div>
-    </div></div>
+    </div>
   </section>
 </main>
 

@@ -1,0 +1,37 @@
+<!-- Our Services: paste into Page settings > Custom code > Before </body> tag -->
+<script>
+/* Our Services: capital stack build and Asset Classes entrance. No libraries. Without JS or with reduced motion everything shows, static. */
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasIO = 'IntersectionObserver' in window;
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  /* 1. Asset Classes entrance: the cards that come into view together fade up one after another, 70 ms apart.
+     Without IntersectionObserver or with reduced motion they are simply shown. */
+  var cards = $$('.assets-card');
+  if (cards.length) {
+    if (reduce || !hasIO) cards.forEach(function (c) { c.classList.add('is-in'); });
+    else {
+      cards[0].parentNode.classList.add('as-armed');
+      var aio = new IntersectionObserver(function (entries) {
+        entries.filter(function (e) { return e.isIntersecting; })
+          .map(function (e) { return e.target; })
+          .sort(function (a, b) { return cards.indexOf(a) - cards.indexOf(b); })
+          .forEach(function (c, i) { c.style.setProperty('--d', (i * 70) + 'ms'); c.classList.add('is-in'); aio.unobserve(c); });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.25 });
+      cards.forEach(function (c) { aio.observe(c); });
+    }
+  }
+
+  /* 2. Capital stack build: arm the card, then play the build once when 40% of it is visible.
+     Without IntersectionObserver or with reduced motion the card is never armed, so the complete stack simply shows. */
+  var cs = document.getElementById('capital-stack');
+  if (cs && !reduce && hasIO) {
+    cs.classList.add('cs-armed');
+    var csio = new IntersectionObserver(function (entries) {
+      if (entries.some(function (e) { return e.isIntersecting && e.intersectionRatio >= 0.4; })) { cs.classList.add('is-in'); csio.disconnect(); }
+    }, { threshold: [0, 0.4, 0.6] });
+    csio.observe(cs);
+  }
+})();
+</script>

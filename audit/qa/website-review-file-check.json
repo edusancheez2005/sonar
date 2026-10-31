@@ -1,0 +1,141 @@
+{
+ "errors": [],
+ "checks": {
+  "home: page content present": {
+   "pass": true,
+   "detail": "Cookies on this site\n\nWe use essential cookies to run this site. If you agree, we also use Google Analytics to understan"
+  },
+  "home: footer has Cookie preferences link": {
+   "pass": true
+  },
+  "home: prototype label hidden": {
+   "pass": true,
+   "detail": 0
+  },
+  "home: no horizontal overflow": {
+   "pass": true,
+   "detail": [
+    1440,
+    1440
+   ]
+  },
+  "home: cookie banner shows on first visit": {
+   "pass": true
+  },
+  "home: banner hides after Reject": {
+   "pass": true
+  },
+  "services: page content present": {
+   "pass": true,
+   "detail": "Home\nAbout Us\nOur Services\nTrack Record\nPartner Program\nInsights\nSPEAK TO US\nOur Services\n\nRoscap provides structured re"
+  },
+  "services: footer has Cookie preferences link": {
+   "pass": true
+  },
+  "services: prototype label hidden": {
+   "pass": true,
+   "detail": 0
+  },
+  "services: no horizontal overflow": {
+   "pass": true,
+   "detail": [
+    1440,
+    1440
+   ]
+  },
+  "services: banner stays hidden (choice remembered across pages)": {
+   "pass": true
+  },
+  "partner: page content present": {
+   "pass": true,
+   "detail": "Home\nAbout Us\nOur Services\nTrack Record\nPartner Program\nInsights\nSPEAK TO US\nPartner Program\n\nAs a professional in the r"
+  },
+  "partner: footer has Cookie preferences link": {
+   "pass": true
+  },
+  "partner: prototype label hidden": {
+   "pass": true,
+   "detail": 0
+  },
+  "partner: no horizontal overflow": {
+   "pass": true,
+   "detail": [
+    1440,
+    1440
+   ]
+  },
+  "partner: banner stays hidden (choice remembered across pages)": {
+   "pass": true
+  },
+  "speak: page content present": {
+   "pass": true,
+   "detail": "Skip to content\nHome\nAbout Us\nOur Services\nTrack Record\nPartner Program\nInsights\nSPEAK TO US\nSpeak with our team to disc"
+  },
+  "speak: footer has Cookie preferences link": {
+   "pass": true
+  },
+  "speak: prototype label hidden": {
+   "pass": true,
+   "detail": 0
+  },
+  "speak: no horizontal overflow": {
+   "pass": true,
+   "detail": [
+    1440,
+    1440
+   ]
+  },
+  "speak: banner stays hidden (choice remembered across pages)": {
+   "pass": true
+  },
+  "nav link \"Partner Program\" inside Home opens the Partner tab": {
+   "pass": true
+  },
+  "links to unchanged pages open in a new tab": {
+   "pass": true,
+   "detail": "_blank"
+  },
+  "home: row 06 shows the 22-photo mosaic": {
+   "pass": true,
+   "detail": {
+    "sel": "true",
+    "tiles": 22,
+    "cls": "dl-mosaic is-live is-on"
+   }
+  },
+  "phone view renders the page at 390 px": {
+   "pass": true,
+   "detail": 390
+  },
+  "\"Show cookie banner again\" brings the banner back": {
+   "pass": true
+  },
+  "notes panel shows the message": {
+   "pass": true,
+   "detail": {
+    "on": true,
+    "h": "Hi Clemente,\n\nI've gone through the whole Roscap website, page by page, on compu",
+    "len": 7716
+   }
+  },
+  "Copy message puts the plain text on the clipboard": {
+   "pass": true,
+   "detail": "Hi Clemente,\n\nI've gone through the whole Roscap website, page by page, on compu"
+  },
+  "\"Open Our Services\" button switches to the page": {
+   "pass": true
+  },
+  "review file usable on a phone (no page overflow)": {
+   "pass": true,
+   "detail": {
+    "sw": 390,
+    "tabsScrollable": true
+   }
+  },
+  "no errors in the review shell": {
+   "pass": true,
+   "detail": []
+  }
+ },
+ "loadMs": 1462
+}

@@ -5,7 +5,13 @@
    (Div rows get role="button") controlling a region, and tapping the open row closes it.
    Rows carry the pane fields as data attributes (data-name, data-amount, data-product, data-asset, data-capital,
    data-terms, data-img, data-alt, data-w, data-h) so a Webflow Collection List can output them; rows may be
-   <button> or <div role="tab" tabindex> (Enter and Space are handled here for non-buttons). */
+   <button> or <div role="tab" tabindex> (Enter and Space are handled here for non-buttons).
+   Row 06 "All transactions" (static, after the five CMS rows) carries data-mosaic: while it is in the pane, the photo
+   area shows .dl-mosaic (a second Collection List of all transactions) instead of a single photo, the pane gets
+   .is-all (which swaps in the second facts card, .dl-facts.is-all) and the pane heading announces its data-label.
+   The mosaic tiles are lazy images inside a display:none frame, so the browser does not fetch them with the page;
+   they are switched to eager once the list is within 300px of the viewport, or on the first hover or focus of
+   row 06, whichever comes first. */
 (function () {
   'use strict';
   var dl = document.getElementById('dl');
@@ -17,13 +23,15 @@
   if (!list || !rows.length || !pane) return;
   var photo = pane.querySelector('.dl-photo');
   var heading = pane.querySelector('.dl-pane-h');
+  var mosaic = photo ? photo.querySelector('.dl-mosaic') : null;
+  var tiles = mosaic ? Array.prototype.slice.call(mosaic.querySelectorAll('img')) : [];
   var out = { asset: document.getElementById('dl-asset'), capital: document.getElementById('dl-cap'), terms: document.getElementById('dl-terms') };
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var mq = window.matchMedia('(max-width: 859px)');
   var cur = Math.max(0, rows.map(function (r) { return r.getAttribute('aria-selected'); }).indexOf('true'));
   var shown = cur;   /* what the pane displays (a hover preview can differ from the selection on wide screens) */
   var open = true;   /* accordion state on small screens */
-  var hoverTimer = 0, leaveTimer = 0, token = 0;
+  var hoverTimer = 0, leaveTimer = 0, token = 0, woken = false;
 
   rows.forEach(function (r, k) {
     r.parentNode.style.order = String(2 * k + 1);
@@ -31,10 +39,20 @@
     if (!r.id) r.id = 'dl-tab-' + (k + 1);
     var n = r.querySelector('.dl-n');
     if (n && !n.textContent.trim()) n.textContent = (k + 1 < 10 ? '0' : '') + (k + 1);
+    /* Webflow wraps the CMS rows in .w-dyn-list > .w-dyn-items (role="list") while row 06 is a static sibling:
+       neutral roles on those wrappers keep every row in the one tablist (or list on phones) */
+    for (var el = r.parentNode.parentNode; el && el !== list && el !== dl; el = el.parentNode) el.setAttribute('role', 'none');
   });
   if (cta) cta.style.order = '99';
+  if (mosaic) {
+    mosaic.setAttribute('aria-hidden', 'true');
+    /* a Collection List cannot give single items a class: the first two tiles get the double-width class here */
+    var cells = mosaic.querySelectorAll('.dl-tile');
+    if (cells.length > 1 && !mosaic.querySelector('.dl-tile.is-wide')) { cells[0].classList.add('is-wide'); cells[1].classList.add('is-wide'); }
+  }
 
   function tabsMode() { return !mq.matches; }
+  function isAll(row) { return row.hasAttribute('data-mosaic'); }
   function navH() { var n = document.getElementById('nav'); return (n ? n.offsetHeight : 72) + 16; }
   function attr(row, k) {
     var v = row.getAttribute('data-' + k) || '';
@@ -49,6 +67,19 @@
     root.style.scrollBehavior = 'auto';
     window.scrollTo(0, y);
     root.style.scrollBehavior = prev;
+  }
+
+  /* mosaic tiles: lazy images in a display:none frame are left alone by the browser; switching them to eager
+     starts the downloads (once) even before the frame is shown. Each tile fades in when it has loaded. */
+  function wakeTiles() {
+    if (woken || !mosaic) return;
+    woken = true;
+    tiles.forEach(function (im) {
+      var done = function () { im.classList.add('is-loaded'); };
+      if (im.complete && im.naturalWidth) done();
+      else { im.addEventListener('load', done); im.addEventListener('error', done); }
+      if (im.getAttribute('loading') === 'lazy') im.setAttribute('loading', 'eager');
+    });
   }
 
   /* ---------- state to DOM ---------- */
@@ -85,12 +116,39 @@
     syncRows();
   }
 
-  /* crossfades the photo: the new image is decoded first, then faded in over the old one */
+  /* puts a layer (a new photo, or the mosaic) on top and fades it in; the layers under it fade out and are then
+     removed (photos) or put back to display:none (the mosaic). Inactive photos are aria-hidden with an empty alt. */
+  function reveal(layer) {
+    var olds = Array.prototype.filter.call(photo.children, function (el) { return el !== layer && (el === mosaic || el.classList.contains('dl-img')); });
+    if (photo.lastElementChild !== layer) { layer.classList.remove('is-on'); photo.appendChild(layer); }
+    if (layer === mosaic) mosaic.classList.add('is-live');
+    olds.forEach(function (el) { el.classList.remove('is-on'); if (el !== mosaic) { el.setAttribute('aria-hidden', 'true'); el.alt = ''; } });
+    var on = function () { if (photo.lastElementChild === layer) layer.classList.add('is-on'); }; /* unless a newer layer came on top */
+    if (reduce) on(); else requestAnimationFrame(function () { requestAnimationFrame(on); });
+    setTimeout(function () {
+      olds.forEach(function (el) {
+        if (el.classList.contains('is-on') || el === photo.lastElementChild) return; /* brought back meanwhile */
+        if (el === mosaic) mosaic.classList.remove('is-live');
+        else if (el.parentNode) el.parentNode.removeChild(el);
+      });
+    }, reduce ? 0 : 700);
+  }
+
+  /* shows the row's photo (decoded first, then crossfaded over the old one) or, for row 06, the mosaic */
   function swapImage(row) {
-    var src = attr(row, 'img'), alt = attr(row, 'alt');
     var t = ++token;
-    var current = photo.querySelector('.dl-img.is-on');
-    if (current && current.getAttribute('src') === src) { current.alt = alt; return; }
+    if (isAll(row)) {
+      if (!mosaic) return;
+      wakeTiles();
+      if (photo.lastElementChild !== mosaic || !mosaic.classList.contains('is-on')) reveal(mosaic);
+      return;
+    }
+    /* phones: the frame changes ratio with the row, so the mosaic goes at once instead of fading under the photo */
+    if (mosaic && !tabsMode()) mosaic.classList.remove('is-on', 'is-live');
+    var src = attr(row, 'img'), alt = attr(row, 'alt');
+    if (!src) return;
+    var top = photo.lastElementChild;
+    if (top && top.classList.contains('dl-img') && top.classList.contains('is-on') && top.getAttribute('src') === src) { top.alt = alt; return; }
     var next = document.createElement('img');
     next.className = 'dl-img';
     next.decoding = 'async';
@@ -101,15 +159,9 @@
     next.src = src;
     var show = function () {
       if (t !== token) return;
-      var olds = photo.querySelectorAll('.dl-img');
-      photo.appendChild(next);
       next.alt = alt;
       next.removeAttribute('aria-hidden');
-      for (var i = 0; i < olds.length; i++) { olds[i].classList.remove('is-on'); olds[i].setAttribute('aria-hidden', 'true'); olds[i].alt = ''; }
-      requestAnimationFrame(function () { requestAnimationFrame(function () { next.classList.add('is-on'); }); });
-      setTimeout(function () {
-        for (var i = 0; i < olds.length; i++) if (olds[i].parentNode && !olds[i].classList.contains('is-on')) olds[i].parentNode.removeChild(olds[i]);
-      }, reduce ? 0 : 700);
+      reveal(next);
     };
     if (next.decode) next.decode().then(show, show); else if (next.complete) show(); else { next.onload = show; next.onerror = show; }
   }
@@ -117,13 +169,16 @@
   /* fills the pane from row i; the pane label and the polite live heading change only on a selection
      (announce = true), never on a hover preview, so screen readers are not read every row the mouse passes */
   function render(i, animate, announce) {
-    var row = rows[i];
-    if (out.asset) out.asset.textContent = attr(row, 'asset');
-    if (out.capital) out.capital.textContent = attr(row, 'capital');
-    if (out.terms) out.terms.textContent = attr(row, 'terms');
+    var row = rows[i], all = isAll(row);
+    pane.classList.toggle('is-all', all);
+    if (!all) {
+      if (out.asset) out.asset.textContent = attr(row, 'asset');
+      if (out.capital) out.capital.textContent = attr(row, 'capital');
+      if (out.terms) out.terms.textContent = attr(row, 'terms');
+    }
     if (announce) {
       pane.setAttribute('aria-labelledby', row.id);
-      if (heading) heading.textContent = [attr(row, 'name'), attr(row, 'amount'), attr(row, 'product')].filter(Boolean).join(', ');
+      if (heading) heading.textContent = attr(row, 'label') || [attr(row, 'name'), attr(row, 'amount'), attr(row, 'product')].filter(Boolean).join(', ');
     }
     swapImage(row);
     if (animate && !reduce) { pane.classList.remove('is-swap'); void pane.offsetWidth; pane.classList.add('is-swap'); }
@@ -160,10 +215,12 @@
   rows.forEach(function (r, i) {
     r.addEventListener('click', function () { select(i, { scroll: true, toggle: true }); });
     r.addEventListener('pointerenter', function (e) {
+      if (isAll(r)) wakeTiles();
       if (e.pointerType !== 'mouse' || !tabsMode()) return;
       clearTimeout(leaveTimer); clearTimeout(hoverTimer);
       hoverTimer = setTimeout(function () { preview(i); }, 110);
     });
+    if (isAll(r)) r.addEventListener('focus', wakeTiles);
     r.addEventListener('keydown', function (e) {
       var j;
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') j = (i + 1) % rows.length;
@@ -196,5 +253,12 @@
       if (es[0].isIntersecting) { io.disconnect(); (window.requestIdleCallback || function (f) { setTimeout(f, 400); })(warm); }
     }, { rootMargin: '200px 0px' });
     io.observe(dl);
-  }
+    /* the mosaic tiles: once the list is within 300px of the viewport (row 06 hover or focus also wakes them) */
+    if (mosaic) {
+      var tio = new IntersectionObserver(function (es) {
+        if (es[0].isIntersecting) { tio.disconnect(); wakeTiles(); }
+      }, { rootMargin: '300px 0px' });
+      tio.observe(dl);
+    }
+  } else wakeTiles();
 })();

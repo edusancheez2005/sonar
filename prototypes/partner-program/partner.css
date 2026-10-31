@@ -57,6 +57,7 @@ ol{list-style:none;margin:0;padding:0}
 .pr-para-wrap{display:flex;flex-direction:column;gap:16px}
 
 /* ---------- how it works (from prototype v1, unchanged) ---------- */
+.tag.on-dark{color:#fff}
 .h2.on-dark{color:#fff}
 .p-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;color:#fff;font-size:15px;font-weight:500;border-bottom:1px solid rgba(225,201,121,.65);transition:border-color .2s,color .2s}
 .p-link:hover{border-color:var(--gold)}
@@ -72,12 +73,14 @@ ol{list-style:none;margin:0;padding:0}
 .how-aside-in{display:flex;flex-direction:column;align-items:flex-start;gap:22px}
 .how-nav{width:100%;max-width:24rem;margin-top:14px;border-top:1px solid var(--line-dark)}
 .how-nav li{border-bottom:1px solid var(--line-dark)}
-.how-nav a{display:flex;align-items:baseline;gap:16px;min-height:46px;padding:11px 2px;font-size:15px;line-height:1.45;color:rgba(255,255,255,.58);transition:color .3s} /* live step titles are long: they wrap, numbers stay on the first line */
+.how-nav a{display:flex;align-items:center;gap:16px;min-height:46px;padding:4px 2px;font-size:15px;color:rgba(255,255,255,.58);transition:color .3s}
 .how-nav a span{font:400 .9375rem/1 var(--f-display);color:var(--gold);opacity:.75;width:1.9em;flex:none;letter-spacing:.04em;transition:opacity .3s} /* .75 keeps the dimmed numbers at 5.3:1 on teal (.65 measured 4.35:1) */
 .how-nav a:hover{color:#fff}
 .how-nav li.is-active a{color:#fff}
 .how-nav li.is-active a span{opacity:1}
-.how-nav li.is-active a::after{content:"";flex:none;align-self:center;margin-left:auto;width:22px;height:1px;background:var(--gold)}
+.how-nav li.is-active a::after{content:"";flex:none;margin-left:auto;width:22px;height:1px;background:var(--gold)}
+.how-brochure{font-size:15px;color:rgba(255,255,255,.72);margin-top:8px}
+.how-brochure .p-link{min-height:44px}
 
 .steps{position:relative;display:grid;padding-top:8px}
 .step{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,19rem);gap:2.5rem;align-items:start;padding:2.5rem 0 2.5rem 3.25rem} /* top-aligned: the step number sits level with its dot */
@@ -92,6 +95,7 @@ ol{list-style:none;margin:0;padding:0}
 .step-copy{display:flex;flex-direction:column;gap:12px;min-width:0}
 .step-num{font:400 .9375rem/1 var(--f-display);color:var(--gold);letter-spacing:.06em}
 .step h3{font:italic 500 1.75rem/1.25 var(--f-display);color:#fff;text-wrap:balance}
+.step-copy p:not(.step-num){font-weight:300;font-size:1.0625rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:34rem}
 
 /* step visuals: small brand cards built from CSS, no figures */
 .vis{min-width:0}

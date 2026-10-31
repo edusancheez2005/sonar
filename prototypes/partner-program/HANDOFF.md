@@ -10,6 +10,8 @@ This replaces the first Partner Program prototype (superseded; it remains in thi
 
 Second round (31 October), also from the owner: the How it works heading and the six steps use the live wording exactly; nothing new is written into the section (no introduction line, no step descriptions, no extra links); the small pause button under the logos goes.
 
+Third round (31 October): the owner preferred the earlier layout of How it works, with a little text under each step. The "How it works" pill, the compact step list and the "Download our brochure" link are back, and each step has one short line under its live title. The heading and the six titles stay the live wording.
+
 ## 0. What changes, section by section
 
 | # | Section (live classes) | Change | Effort |
@@ -28,7 +30,7 @@ How the prototype was checked against live (Playwright, 1440 and 390 wide):
 - Pixel comparison of live vs prototype: "Why Partner With Us?" heading block and "Our Partners" heading are identical (0.0 mean difference) at both widths; the hero is identical below the nav at 1440 apart from the prototype label; the contact block differs by about 1 level in 255 (texture raster).
 - Computed styles of 26 matched elements compared one by one: everything matches except the requested changes and three properties with no visible effect (image vertical-align, button appearance, and the opacity of the pre-composited contact texture, see section 9).
 - "Staging simulation": the steps in this document were applied to a copy of the live page HTML, loaded with the live Webflow stylesheet and scripts. Result: the Why cards and the reduced-motion logo grid are pixel-identical to the prototype, the How it works band differs on 0.11% of pixels, no console errors, no duplicate ids. So the code below works with the live CSS, not only with the prototype CSS.
-- Re-run after the second round (31 October): heading and six step titles read exactly as the live carousel; no pause button; the strip takes keyboard focus; spacing of the closing line unchanged (50 / 16 / 56px); no console errors, no duplicate ids, no horizontal scroll at 1440 and 390. Prototype checks: axe 0 violations at 1440 and 390 (with and without reduced motion); the logos pause on hover, on keyboard focus and on a tap and start again afterwards; the sticky column (484px) stays fully visible at 1280 x 720.
+- Re-run after the third round (31 October): heading and six step titles read exactly as the live carousel; no pause button; the strip takes keyboard focus; spacing of the closing line unchanged (50 / 16 / 56px); no console errors, no duplicate ids, no horizontal scroll at 1440 and 390. Prototype checks (47, all pass): axe 0 violations at 1440 and 390 (with and without reduced motion); the logos pause on hover, on keyboard focus and on a tap and start again afterwards; the sticky column (557px) stays fully visible at 1280 x 720.
 
 ## 1. Hero: no change
 
@@ -64,17 +66,19 @@ Removing Swiper saves 155 KB of JavaScript (43.7 KB gzipped) and 14.6 KB of CSS 
 
 ### 3.2 Build (Designer structure)
 
-Build it where `section-copy-me-join` was (between the Why cards section and the "Our Partners" heading section). The heading and the six step titles are the live carousel's text, word for word (they are also in the prototype source, `prototypes/partner-program/index.html`, the block that starts at `<section class="how pg" id="how-it-works"`). No other text is added.
+Build it where `section-copy-me-join` was (between the Why cards section and the "Our Partners" heading section). The heading and the six step titles are the live carousel's text, word for word (they are also in the prototype source, `prototypes/partner-program/index.html`, the block that starts at `<section class="how pg" id="how-it-works"`). Each step also has one short line under its title, listed below; the lines restate the step and add no new facts.
 
 ```
 Section            class how            id how-it-works      attribute aria-labelledby = how-h
   Div              class how-grid
     Div (tag aside)  class how-aside
       Div          class how-aside-in
+        Paragraph  classes tag on-dark          "How it works"
         Heading H2 classes h2 on-dark   id how-h  "How Our Partner Program Works"
         Div (tag nav) class how-nav   attribute aria-label = Steps
           List (ordered), 6 List Items, each a Link Block href #step-1 ... #step-6
-            containing a Text Span "01" ... "06" followed by the step title, exactly as in the steps
+            containing a Text Span "01" ... "06" followed by the short label (list below)
+        Paragraph  class how-brochure   Link (class p-link, href #brochure) "Download our brochure"
     List (ordered)  class steps
       6 x List Item  class step   id step-1 ... step-6
         Div  class step-seg   attribute aria-hidden = true
@@ -82,6 +86,7 @@ Section            class how            id how-it-works      attribute aria-labe
         Div  class step-copy
           Paragraph  class step-num   attribute aria-hidden = true   "01"
           Heading H3                   step title (live wording, see the list below)
+          Paragraph                    the step's short line (list below)
         Embed (Code Embed)   the step's decorative card: copy the <div class="vis" aria-hidden="true"> ... </div> block of that step
   Div              class how-more       id brochure
     (move here) the existing white-divider horiz
@@ -89,27 +94,30 @@ Section            class how            id how-it-works      attribute aria-labe
   (move here) the existing leadgen-popup-overlay
 ```
 
-The six step titles (live, word for word):
-1. Join the Program
-2. Exclusively refer clients to Roscap
-3. We work with clients to provide capital solutions
-4. Receive regular progress updates from Roscap
-5. Upon deal completion, receive your referral commissions
-6. As Roscap completes subsequent deals with the client, receive commissions in perpetuity
+The six steps: title (live, word for word), short line underneath, and the label in the sticky step list (an excerpt of the title):
+
+| # | Title (H3) | Short line (Paragraph) | Step list label |
+|---|---|---|---|
+| 01 | Join the Program | Speak to our team to become a Roscap partner. | Join the Program |
+| 02 | Exclusively refer clients to Roscap | Introduce clients who need capital for their real estate projects. | Exclusively refer clients |
+| 03 | We work with clients to provide capital solutions | We arrange tailored debt and equity solutions for your clients. | Capital solutions |
+| 04 | Receive regular progress updates from Roscap | You are kept informed as each transaction progresses. | Regular progress updates |
+| 05 | Upon deal completion, receive your referral commissions | Your commission is paid once the deal completes. | Referral commissions |
+| 06 | As Roscap completes subsequent deals with the client, receive commissions in perpetuity | Each further deal with that client brings you another commission. | Commissions in perpetuity |
 
 Notes:
-- The six small cards are decorative (aria-hidden), contain small SVGs and inline `--w` values, so Code Embeds are the simplest way to keep them exact. Their few labels only reuse words already on the live site (the step titles, and Senior debt, Mezzanine, Equity from Our Services). Everything a reader needs is in the step titles.
+- The six small cards are decorative (aria-hidden), contain small SVGs and inline `--w` values, so Code Embeds are the simplest way to keep them exact. Their few labels only reuse words already on the live site (the step titles, and Senior debt, Mezzanine, Equity from Our Services). Everything a reader needs is in the step titles and their short lines.
 - The old carousel heading was a second H1 on the page; the new heading is an H2, so the page keeps one H1.
 - Upload `prototypes/partner-program/img/texture-waves.webp` (6 KB) to Assets and put its URL into the CSS where it says `ASSET-URL/texture-waves.webp`, or set it on the `how` class in the Designer (Backgrounds: image, cover, centre) and delete that url from the CSS.
-- The sticky column clears the live nav (85px high): `top: calc(85px + 2rem)`, and `calc(85px + .75rem)` on short laptops. Measured: the column is 484px high at 1440, so it fits at 1280 x 720 and above.
+- The sticky column clears the live nav (85px high): `top: calc(85px + 2rem)`, and `calc(85px + .75rem)` on short laptops. Measured: the column is 557px high at 1440, so it fits at 1280 x 720 and above.
 
 ### 3.3 Brochure line
 
-The live closing line stays verbatim at the bottom of the teal band ("For more information, download our brochure or contact us below." and the gold Download button), spaced as live: faint full-width rule, 50px, the line, 16px, the button, 56px to the end of the band (checked in pixels against live at 1440 and 390). There is no extra brochure link in the sticky column. On live, the Download button keeps opening the existing brochure pop-up form, which redirects to the PDF after submission. In the prototype it links straight to the PDF only because the pop-up is not rebuilt there.
+The live closing line stays verbatim at the bottom of the teal band ("For more information, download our brochure or contact us below." and the gold Download button), spaced as live: faint full-width rule, 50px, the line, 16px, the button, 56px to the end of the band (checked in pixels against live at 1440 and 390). The sticky column's "Download our brochure" link jumps to it (`#brochure`). On live, the Download button keeps opening the existing brochure pop-up form, which redirects to the PDF after submission. In the prototype it links straight to the PDF only because the pop-up is not rebuilt there.
 
 ### 3.4 Page custom code (CSS and JS to paste)
 
-Page settings > Custom code. Webflow allows 50,000 characters per slot. The head block below is 14,235 characters and the footer block 3,093 characters, so both fit with room to spare. They contain the How it works styles and behaviour and the Our Partners marquee (section 4). They were generated from the tested prototype files and validated in the staging simulation (section 0).
+Page settings > Custom code. Webflow allows 50,000 characters per slot. The head block below is 14,552 characters and the footer block 3,093 characters, so both fit with room to spare. They contain the How it works styles and behaviour and the Our Partners marquee (section 4). They were generated from the tested prototype files and validated in the staging simulation (section 0).
 
 Inside the head tag:
 
@@ -119,7 +127,7 @@ Inside the head tag:
 <style>
 /* tokens used by the new How it works section (scoped; the site has no such variables) */
 .how{--teal:#043435;--gold:#E1C979;--cream:#FFFCF5;--gold-ink:#7A6318;--grey:#61656E;--ink:#12161D;--line:rgba(4,52,53,.14);--line-dark:rgba(225,201,121,.3);--ease:cubic-bezier(.22,.61,.36,1);--f-display:Boska,Arial,sans-serif;--nav-h:85px;--gutter:2.5rem}
-html{scroll-padding-top:calc(85px + 1rem)} /* the step links (#step-n) land below the fixed nav (85px on live) */
+html{scroll-padding-top:calc(85px + 1rem)} /* anchors (#step-n, #brochure) land below the fixed nav (85px on live) */
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 /* prototype base styles the section relies on (scoped to .how) */
 .how{padding-left:var(--gutter);padding-right:var(--gutter)}
@@ -127,9 +135,11 @@ html{scroll-padding-top:calc(85px + 1rem)} /* the step links (#step-n) land belo
 /* element resets with element-level specificity (0,0,1): they beat the site's h2/p/ul/li rules by source order, but not the section's class rules */
 :where(.how) h2,:where(.how) h3,:where(.how) p,:where(.how) li{margin:0}
 :where(.how) ol,:where(.how) ul{list-style:none;margin:0;padding:0}
+.how .tag{display:inline-flex;align-items:center;width:max-content;padding:8px 20px;border:1px solid var(--gold);border-radius:30px;font-size:15px;line-height:1.3}
 .how .h2{font:italic 500 2.5rem/1.3 var(--f-display);text-wrap:balance}
 .how :focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 /* ---------- how it works (from prototype v1, unchanged) ---------- */
+.tag.on-dark{color:#fff}
 .h2.on-dark{color:#fff}
 .p-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;color:#fff;font-size:15px;font-weight:500;border-bottom:1px solid rgba(225,201,121,.65);transition:border-color .2s,color .2s}
 .p-link:hover{border-color:var(--gold)}
@@ -145,12 +155,14 @@ html{scroll-padding-top:calc(85px + 1rem)} /* the step links (#step-n) land belo
 .how-aside-in{display:flex;flex-direction:column;align-items:flex-start;gap:22px}
 .how-nav{width:100%;max-width:24rem;margin-top:14px;border-top:1px solid var(--line-dark)}
 .how-nav li{border-bottom:1px solid var(--line-dark)}
-.how-nav a{display:flex;align-items:baseline;gap:16px;min-height:46px;padding:11px 2px;font-size:15px;line-height:1.45;color:rgba(255,255,255,.58);transition:color .3s} /* live step titles are long: they wrap, numbers stay on the first line */
+.how-nav a{display:flex;align-items:center;gap:16px;min-height:46px;padding:4px 2px;font-size:15px;color:rgba(255,255,255,.58);transition:color .3s}
 .how-nav a span{font:400 .9375rem/1 var(--f-display);color:var(--gold);opacity:.75;width:1.9em;flex:none;letter-spacing:.04em;transition:opacity .3s} /* .75 keeps the dimmed numbers at 5.3:1 on teal (.65 measured 4.35:1) */
 .how-nav a:hover{color:#fff}
 .how-nav li.is-active a{color:#fff}
 .how-nav li.is-active a span{opacity:1}
-.how-nav li.is-active a::after{content:"";flex:none;align-self:center;margin-left:auto;width:22px;height:1px;background:var(--gold)}
+.how-nav li.is-active a::after{content:"";flex:none;margin-left:auto;width:22px;height:1px;background:var(--gold)}
+.how-brochure{font-size:15px;color:rgba(255,255,255,.72);margin-top:8px}
+.how-brochure .p-link{min-height:44px}
 
 .steps{position:relative;display:grid;padding-top:8px}
 .step{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,19rem);gap:2.5rem;align-items:start;padding:2.5rem 0 2.5rem 3.25rem} /* top-aligned: the step number sits level with its dot */
@@ -165,6 +177,7 @@ html{scroll-padding-top:calc(85px + 1rem)} /* the step links (#step-n) land belo
 .step-copy{display:flex;flex-direction:column;gap:12px;min-width:0}
 .step-num{font:400 .9375rem/1 var(--f-display);color:var(--gold);letter-spacing:.06em}
 .step h3{font:italic 500 1.75rem/1.25 var(--f-display);color:#fff;text-wrap:balance}
+.step-copy p:not(.step-num){font-weight:300;font-size:1.0625rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:34rem}
 
 /* step visuals: small brand cards built from CSS, no figures */
 .vis{min-width:0}
@@ -446,7 +459,7 @@ Both forms on this page are named "Contact Form", so both render `id="wf-form-Co
 
 ## 6. Wording
 
-Everything a visitor reads on this page is the live wording; the owner asked to keep it. That includes the hero ("Join hundreds of current partners ..."), the Why cards and step 06 ("As Roscap completes subsequent deals with the client, receive commissions in perpetuity"). The only new words are the small labels inside the decorative step cards, which reuse words from the step titles and from the live Our Services page and are hidden from screen readers. Nothing on the page states or implies FCA authorisation; the footer disclaimer says Roscap is not authorised or regulated by the FCA.
+Everything a visitor reads on this page is the live wording; the owner asked to keep it. That includes the hero ("Join hundreds of current partners ..."), the Why cards and the six step titles, step 06 included ("As Roscap completes subsequent deals with the client, receive commissions in perpetuity"). New visible words, all in How it works: the "How it works" pill, the step list labels (excerpts of the live titles), the "Download our brochure" link, and the six short lines in the table in 3.2, which restate each step without adding facts. The labels inside the decorative step cards reuse words from the step titles and the live Our Services page and are hidden from screen readers. Nothing on the page states or implies FCA authorisation; the footer disclaimer says Roscap is not authorised or regulated by the FCA.
 
 ## 7. QA checklist (staging)
 
@@ -454,7 +467,7 @@ Everything a visitor reads on this page is the live wording; the owner asked to 
 - [ ] Why cards: icon, 32px, text; equal heights per row; 287px high at 1440; 1 column on phones with 28px between icon and text; gold border on hover as before.
 - [ ] Swiper gone: no swiper files in the Network panel, no console errors.
 - [ ] How it works: sticky column at 992px and wider; the indicator follows the steps; indicator links scroll to each step below the nav; steps reveal in Chrome and Edge (scroll-driven) and in Safari and Firefox (fallback); Download opens the brochure pop-up and its form still redirects to the PDF.
-- [ ] The heading and the six step titles match the live carousel word for word; no other text in the section apart from the live closing line.
+- [ ] The heading and the six step titles match the live carousel word for word; each step has its short line; the step list shows the short labels from the table in 3.2.
 - [ ] One H1 on the page (Partner Program); How it works heading is an H2.
 - [ ] Our Partners: logos move slowly right to left without a jump at the loop point; they pause on hover; Tab reaches the strip (teal ring around it) and it pauses, Tab again and it moves; on a phone a tap pauses it and a tap elsewhere starts it again; no logo pops in at the right edge.
 - [ ] Reduced motion (macOS: Accessibility > Display > Reduce motion; Windows: Settings > Accessibility > Visual effects > Animation effects off): logos show today's 4 x 2 grid, How it works fully visible, nothing animates.
@@ -464,12 +477,12 @@ Everything a visitor reads on this page is the live wording; the owner asked to 
 - [ ] No duplicate ids (Chrome DevTools console: `[...document.querySelectorAll('[id]')].map(e=>e.id).filter((v,i,a)=>a.indexOf(v)!==i)` returns an empty list).
 - [ ] axe DevTools: 0 serious or critical issues at 1440 and 390.
 - [ ] 390px: no horizontal scroll.
-- [ ] Short laptops (1280 x 720, 1366 x 768): the sticky column, including step 06, stays fully visible while the steps scroll.
+- [ ] Short laptops (1280 x 720, 1366 x 768): the sticky column, including "Download our brochure", stays fully visible while the steps scroll.
 
 ## 8. Performance
 
 - Removed: Swiper JS and CSS (about 47 KB gzipped, 2 requests) and the hidden timeline markup.
-- Added: about 14,200 characters of CSS and 3,100 of JS inline, and one 6 KB texture. Logos are the same 8 files (143 KB), lazy, no second download for the copy.
+- Added: about 14,600 characters of CSS and 3,100 of JS inline, and one 6 KB texture. Logos are the same 8 files (143 KB), lazy, no second download for the copy.
 - Optional (invisible, not part of this brief): hero image Eager with `fetchpriority=high` (section 1). The contact card's wave texture is a 684 KB SVG on live; the prototype shows the same look with a 47 KB WebP (101 KB at 2x) pre-composited on teal (`img/contact-waves.webp`, `img/contact-waves@2x.webp`). Swapping it would affect every page that uses the contact block, so it needs its own decision.
 
 ## 9. Prototype-only differences (ignore when building)

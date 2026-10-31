@@ -1,0 +1,454 @@
+{
+ "390": {
+  "hero": {
+   "early": {
+    "present": true,
+    "t": 0,
+    "paused": false,
+    "ready": 0,
+    "vw": 0,
+    "vh": 0,
+    "playing": false,
+    "src": "blob:null/ae"
+   },
+   "later": {
+    "present": true,
+    "t": 5.5,
+    "paused": false,
+    "ready": 4,
+    "vw": 576,
+    "vh": 1078,
+    "playing": true,
+    "src": "blob:null/ae"
+   },
+   "plays": true
+  },
+  "lazyAtLoad": {
+   "n": 22,
+   "decoded": 0,
+   "lazy": 22,
+   "mosaicDisplay": "none"
+  },
+  "lazyAt650pxAway": {
+   "n": 22,
+   "decoded": 0,
+   "lazy": 22,
+   "mosaicDisplay": "none"
+  },
+  "lazyAt200pxAway": {
+   "n": 22,
+   "decoded": 22,
+   "lazy": 0,
+   "mosaicDisplay": "none"
+  },
+  "axeInitial": {
+   "serious": [],
+   "critical": [],
+   "other": []
+  },
+  "tapOpen": {
+   "expanded": "true",
+   "paneVisible": true,
+   "paneDirectlyUnderRow": true,
+   "paneRole": "region"
+  },
+  "tapOpenPane": {
+   "selectedIndex": 6,
+   "active": "dl-tab-6",
+   "paneAll": true,
+   "paneHidden": false,
+   "mosaic": {
+    "cls": "dl-mosaic is-live is-on",
+    "opacity": "1",
+    "onTop": true,
+    "centreHitsTile": true,
+    "rect": [
+     20,
+     174,
+     350,
+     400
+    ],
+    "photoRect": [
+     350,
+     400
+    ],
+    "tilesInsideFrame": 22,
+    "tileSizes": [
+     [
+      169,
+      62
+     ],
+     [
+      169,
+      62
+     ],
+     [
+      83,
+      62
+     ],
+     [
+      83,
+      62
+     ]
+    ]
+   },
+   "heading": "All transactions, 22 transactions in 7 countries",
+   "labelledby": "dl-tab-6",
+   "facts": [
+    "MARKETS UK, Europe and North America RECORD 22 transactions in 7 countries"
+   ],
+   "topPhoto": "",
+   "scrollWidth": 390
+  },
+  "axeRow6Open": {
+   "serious": [],
+   "critical": [],
+   "other": []
+  },
+  "scrollWidthOpen": 390,
+  "tapClose": {
+   "expanded": "false",
+   "paneHidden": true
+  },
+  "tapRow2After": {
+   "selectedIndex": 2,
+   "paneAll": false,
+   "photoRect": [
+    350,
+    263
+   ],
+   "mosaicCls": "dl-mosaic",
+   "topPhoto": "1YzBedAFBmRpsjgXLVeJQ1RwAAAAA="
+  },
+  "scrollWidth": 390,
+  "errors": []
+ },
+ "1024": {
+  "pane": {
+   "selectedIndex": 6,
+   "mosaic": {
+    "cls": "dl-mosaic is-live is-on",
+    "opacity": "1",
+    "onTop": true,
+    "centreHitsTile": true,
+    "rect": [
+     535,
+     100,
+     449,
+     337
+    ],
+    "photoRect": [
+     449,
+     337
+    ],
+    "tilesInsideFrame": 22,
+    "tileSizes": [
+     [
+      144,
+      79
+     ],
+     [
+      144,
+      79
+     ],
+     [
+      70,
+      79
+     ],
+     [
+      70,
+      79
+     ]
+    ]
+   },
+   "facts": [
+    "MARKETS UK, Europe and North America RECORD 22 transactions in 7 countries"
+   ]
+  },
+  "scrollWidth": 1024,
+  "errors": []
+ },
+ "1440": {
+  "hero": {
+   "early": {
+    "present": true,
+    "t": 0,
+    "paused": false,
+    "ready": 0,
+    "vw": 0,
+    "vh": 0,
+    "playing": false,
+    "src": "blob:null/27"
+   },
+   "later": {
+    "present": true,
+    "t": 5.47,
+    "paused": false,
+    "ready": 4,
+    "vw": 1280,
+    "vh": 958,
+    "playing": true,
+    "src": "blob:null/27"
+   },
+   "plays": true
+  },
+  "lazyAtLoad": {
+   "n": 22,
+   "decoded": 0,
+   "lazy": 22,
+   "mosaicDisplay": "none"
+  },
+  "lazyAt650pxAway": {
+   "n": 22,
+   "decoded": 0,
+   "lazy": 22,
+   "mosaicDisplay": "none"
+  },
+  "lazyAt200pxAway": {
+   "n": 22,
+   "decoded": 22,
+   "lazy": 0,
+   "mosaicDisplay": "none"
+  },
+  "keyboardRow6": {
+   "selectedIndex": 6,
+   "active": "dl-tab-6",
+   "paneAll": true,
+   "paneHidden": false,
+   "mosaic": {
+    "cls": "dl-mosaic is-live is-on",
+    "opacity": "1",
+    "onTop": true,
+    "centreHitsTile": true,
+    "rect": [
+     651,
+     90,
+     709,
+     532
+    ],
+    "photoRect": [
+     709,
+     532
+    ],
+    "tilesInsideFrame": 22,
+    "tileSizes": [
+     [
+      231,
+      128
+     ],
+     [
+      231,
+      128
+     ],
+     [
+      113,
+      128
+     ],
+     [
+      113,
+      128
+     ]
+    ]
+   },
+   "heading": "All transactions, 22 transactions in 7 countries",
+   "labelledby": "dl-tab-6",
+   "facts": [
+    "MARKETS UK, Europe and North America RECORD 22 transactions in 7 countries"
+   ],
+   "topPhoto": "",
+   "scrollWidth": 1440
+  },
+  "focusRing": {
+   "focusVisible": true,
+   "outline": "solid 2px rgb(4, 52, 53)"
+  },
+  "keyHome": 1,
+  "keyEnd": 6,
+  "enterOnRow3": {
+   "selectedIndex": 3,
+   "paneAll": false,
+   "topPhoto": "ty56gDLkVccyCQg7y1haL/BAAAAA==",
+   "heading": "Rome, Italy, €4.6m, Bridge Loan",
+   "mosaicCls": "dl-mosaic"
+  },
+  "spaceOnRow6": {
+   "selectedIndex": 6,
+   "paneAll": true,
+   "mosaicOnTop": true,
+   "opacity": "1",
+   "heading": "All transactions, 22 transactions in 7 countries"
+  },
+  "hoverRow2": {
+   "selectedIndex": 6,
+   "paneAll": false,
+   "topPhoto": "1YzBedAFBmRpsjgXLVeJQ1RwAAAAA=",
+   "heading": "All transactions, 22 transactions in 7 countries"
+  },
+  "afterLeave": {
+   "selectedIndex": 6,
+   "paneAll": true,
+   "mosaicOnTop": true,
+   "opacity": "1"
+  },
+  "hoverRow6": {
+   "selectedIndex": 1,
+   "paneAll": true,
+   "mosaicOnTop": true,
+   "opacity": "1",
+   "headingUnchanged": "Kensington, London, £27.5m, Development Finance"
+  },
+  "clickRow6": {
+   "selectedIndex": 6,
+   "active": "dl-tab-6",
+   "paneAll": true,
+   "paneHidden": false,
+   "mosaic": {
+    "cls": "dl-mosaic is-live is-on",
+    "opacity": "1",
+    "onTop": true,
+    "centreHitsTile": true,
+    "rect": [
+     651,
+     90,
+     709,
+     532
+    ],
+    "photoRect": [
+     709,
+     532
+    ],
+    "tilesInsideFrame": 22,
+    "tileSizes": [
+     [
+      231,
+      128
+     ],
+     [
+      231,
+      128
+     ],
+     [
+      113,
+      128
+     ],
+     [
+      113,
+      128
+     ]
+    ]
+   },
+   "heading": "All transactions, 22 transactions in 7 countries",
+   "labelledby": "dl-tab-6",
+   "facts": [
+    "MARKETS UK, Europe and North America RECORD 22 transactions in 7 countries"
+   ],
+   "topPhoto": "",
+   "scrollWidth": 1440
+  },
+  "axeRow6Selected": {
+   "serious": [
+    "color-contrast:1"
+   ],
+   "critical": [],
+   "other": []
+  },
+  "scrollWidth": 1440,
+  "contactForm": {
+   "fields": [
+    {
+     "id": "name",
+     "type": "text",
+     "label": "Name",
+     "autocomplete": "name",
+     "required": true
+    },
+    {
+     "id": "email",
+     "type": "email",
+     "label": "Email",
+     "autocomplete": "email",
+     "required": true
+    },
+    {
+     "id": "Phone",
+     "type": "tel",
+     "label": "Phone",
+     "autocomplete": "tel",
+     "required": true
+    },
+    {
+     "id": "Subject",
+     "type": "text",
+     "label": "Subject",
+     "autocomplete": null,
+     "required": true
+    },
+    {
+     "id": "Message",
+     "type": "textarea",
+     "label": "Message",
+     "autocomplete": null,
+     "required": false
+    }
+   ],
+   "deskSubmit": {
+    "tag": "BUTTON",
+    "type": "submit",
+    "formId": "wf-form-Contact-Form",
+    "visible": true
+   },
+   "mobileSubmitDisplay": "none",
+   "mock": true
+  },
+  "errors": []
+ },
+ "1440-initial": {
+  "axe": {
+   "serious": [],
+   "critical": [],
+   "other": []
+  },
+  "errors": []
+ },
+ "reduced": {
+  "onSelect": {
+   "cls": "dl-mosaic is-live is-on",
+   "opacity": "1",
+   "transition": "0s",
+   "oldPhotos": 1
+  },
+  "after60ms": {
+   "oldPhotos": 0,
+   "opacity": "1"
+  },
+  "backToRow1After250ms": {
+   "mosaicCls": "dl-mosaic",
+   "photoOn": true,
+   "photoOpacity": "1",
+   "imgTransition": "0s"
+  },
+  "hero": {
+   "present": false,
+   "still": true
+  },
+  "errors": []
+ },
+ "files-requests-1440": {
+  "atLoad": 0,
+  "at650pxAway": 0,
+  "at200pxAway": 22,
+  "errors": []
+ },
+ "files-requests-390": {
+  "atLoad": 0,
+  "at650pxAway": 0,
+  "at200pxAway": 22,
+  "errors": []
+ },
+ "files-focus-wake": {
+  "before": 0,
+  "afterFocus": 22,
+  "scrollY": 0,
+  "errors": []
+ }
+}

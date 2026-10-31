@@ -1,6 +1,14 @@
-<!-- Reference structure for the Designer. The five <li> rows become Collection Items (Transactions, Featured = yes, sorted by Sort order, limit 5);
-     each data-* attribute is a custom attribute bound to a CMS field. Webflow outputs <div> not <button> for the rows: give the Div
-     role="tab" and tabindex="-1" (first item tabindex="0") as custom attributes; deal-list.js handles Enter and Space. -->
+<!-- Reference structure for the Designer.
+     Rows 01 to 05: Collection Items (Transactions, Featured = on, sorted by Sort order, limit 5) inside a Collection List placed in the
+     .dl-list Div; each data-* attribute is a custom attribute bound to a CMS field. Webflow outputs <div> not <button> for the rows and wraps
+     the items in .w-dyn-list > .w-dyn-items: deal-list.js sets the roles, tabindex and ids at runtime, gives those wrappers role="none",
+     handles Enter and Space, and the head CSS makes the wrappers display:contents, so row 06 and the CMS rows form one list.
+     Row 06: static Designer content (a Div .dl-item holding a Div .dl-row with the custom attributes shown) placed after the Collection List,
+     inside the same .dl-list Div.
+     Mosaic: a second Collection List inside .dl-photo. Collection List Wrapper .dl-mosaic (custom attribute aria-hidden = true), Collection List
+     .dl-mosaic-grid, Collection Item .dl-tile, Image .dl-tile-img bound to the Mosaic tile field (Lazy load, alt Decorative). Transactions, all
+     items, no filter, sorted by Sort order ascending. The first two items cannot carry a class in the Designer: deal-list.js adds is-wide to them.
+     Second facts card .dl-facts.is-all: static Designer content after the first card. -->
   <!-- track record: deal list with preview (option F). Rows are static HTML; Webflow outputs the same from a Collection List. -->
   <section class="sec tr-sec" id="track-record" aria-labelledby="tr-h">
     <div class="pg"><div class="container">
@@ -58,10 +66,48 @@
               <span class="dl-n" aria-hidden="true">05</span><span class="dl-amt">£8.3m</span><span class="dl-meta"><b>Birmingham, UK</b><span>Development Finance</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </button>
           </li>
+          <!-- row 06: static Designer content after the Collection List of the five featured transactions.
+               data-mosaic makes the pane show the mosaic and the second facts card; data-label is what the pane heading announces. -->
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-6" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="All transactions" data-amount="22" data-product="UK, Europe &amp; North America"
+              data-label="All transactions, 22 transactions in 7 countries" data-mosaic="all">
+              <span class="dl-n" aria-hidden="true">06</span><span class="dl-amt">22</span><span class="dl-meta"><b>All transactions</b><span>UK, Europe &amp; North America</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
         </ul>
         <div class="dl-pane" id="dl-pane" role="tabpanel" aria-labelledby="dl-tab-1" tabindex="0">
           <h3 class="sr dl-pane-h" aria-live="polite">Kensington, London, £27.5m, Development Finance</h3>
           <figure class="dl-photo">
+            <!-- mosaic of all 22 transactions (row 06): in Webflow a second Collection List (Transactions, all items, sorted by Sort order),
+                 Image bound to the Mosaic tile field, Lazy load. Decorative: the facts card carries the information.
+                 The frame stays display:none until deal-list.js wakes the tiles (list within 300 px of the viewport, or first hover or focus of row 06). -->
+            <div class="dl-mosaic" aria-hidden="true">
+              <div class="dl-mosaic-grid">
+                <div class="dl-tile is-wide"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-kensington.webp" width="480" height="266" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile is-wide"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-sheffield.webp" width="480" height="266" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-rome.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-london.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-birmingham.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-dublin.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-bath.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-bradford.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-marbella.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-wakefield.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-huddersfield.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-bristol.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-surrey.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-cannes.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-manchester.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-buckinghamshire.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-florida.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-edinburgh.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-liverpool.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-leeds.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-nottingham.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/<site-id>/mosaic-tirana.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+              </div>
+            </div>
             <img class="dl-img is-on" src="https://cdn.prod.website-files.com/<site-id>/deal-kensington.webp" alt="Terrace of white stucco and brick townhouses with black iron railings on a tree-lined Kensington street" width="720" height="551" loading="lazy" decoding="async">
           </figure>
           <dl class="dl-facts">
@@ -69,9 +115,13 @@
             <div><dt>Capital</dt><dd id="dl-cap">Institutional Private Credit Fund</dd></div>
             <div><dt>Terms</dt><dd id="dl-terms">70% LTC · 58% LTV · 8.5% p.a.</dd></div>
           </dl>
+          <!-- facts for row 06 (static Designer content, shown instead of the card above while row 06 is in the pane) -->
+          <dl class="dl-facts is-all">
+            <div><dt>Markets</dt><dd>UK, Europe and North America</dd></div>
+            <div><dt>Record</dt><dd>22 transactions in 7 countries</dd></div>
+          </dl>
         </div>
         <a class="btn dl-cta" href="https://www.roscap.co.uk/track-record">View 22 selected transactions<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
     </div></div>
   </section>
-
