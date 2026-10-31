@@ -11,7 +11,7 @@
      #baserate-{key}         the number; data-from holds the digits the odometer rolls in from ("0.00")
      #changerate-{key}       the movement chip ("Cut 25 bps", "Raised 25 bps", "Up 2.5 bps")
      #changedate-{key}       the line under the chip ("since 18 Dec 2025", "fixing of 29 Oct 2026")
-     #asof-{key}             the data date ("As of 31 Oct 2026"; "Last data 21 Oct 2026, awaiting update" when stale)
+     #asof-{key}             empty and hidden normally; "Last data 21 Oct 2026, awaiting update" only when that rate is stale
      #rates-updated          "Checked 31 Oct 2026" (the feed's check time); shown only once the feed validated
    key = boe | fed | euribor
    #rates-panel carries data-state = loading | live | stale | error for styling hooks. */
@@ -200,7 +200,7 @@
       view.chip = (change > 0 ? 'Raised ' : 'Cut ') + bps(change) + ' bps';
       view.dir = change > 0 ? 1 : -1;
       view.date = 'since ' + fmtDate(rate.changed_on);
-      view.asOfLine = 'As of ' + fmtDate(asOf);
+      view.asOfLine = ''; /* no separate data-date line: the 'since' date says it (owner's call, 31 Oct 2026) */
     }
     if (view.stale) view.asOfLine = 'Last data ' + fmtDate(asOf) + ', awaiting update';
     return view;
