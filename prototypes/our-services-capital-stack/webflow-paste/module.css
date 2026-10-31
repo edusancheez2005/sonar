@@ -1,0 +1,170 @@
+/* The Capital Stack module (page head custom code, inside <style>). Tokens first, then layout, then the three motion paths. */
+:root{
+  --cs-h:80px;            /* layer height */
+  --cs-g:12px;            /* gap between layers */
+  --cs-inset:30%;         /* bottom inset of the view timelines: a layer starts building when its narration's top crosses this line (70% of the viewport) */
+  --cs-run:30vh;          /* height of the invisible trigger inside each narration = how much scroll one layer takes to build */
+  --cs-line:.52;          /* fraction of the viewport height where a narration becomes "current" (JS) */
+  --cs-anchor:.42;        /* where a narration lands (fraction of viewport height) when its layer button is pressed */
+  --cs-ghost:#56706C;     /* unbuilt layer label: 5.0:1 on the card's cream */
+  --cs-hair:rgba(4,52,53,.16);
+}
+
+/* ---------- expertise + capital stack ---------- */
+.cs-sec{padding-bottom:0}
+.cs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:0 clamp(2rem,6vw,6rem);align-items:start}
+.cs-intro{grid-column:1;grid-row:1;gap:28px;max-width:36rem}
+.cs-stage{grid-column:2;grid-row:1/3;position:sticky;top:calc(var(--nav-h) + 56px);align-self:start;z-index:2}
+.cs-steps{grid-column:1;grid-row:2;min-width:0}
+
+.cs-steps-h{margin-top:clamp(3.5rem,12vh,7rem);font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink)}
+.cs-notes{list-style:none;margin:0;padding:clamp(2rem,7vh,4.5rem) 0 clamp(5rem,26vh,14rem);display:flex;flex-direction:column;gap:clamp(7rem,32vh,18rem)}
+.cs-note{position:relative;max-width:33rem;padding-left:28px;border-left:1px solid var(--line);transition:border-color .5s var(--ease)}
+.cs-trigger{position:absolute;left:0;top:0;width:1px;height:var(--cs-run);pointer-events:none}
+.cs-note::before{content:"";position:absolute;left:-1px;top:0;bottom:0;width:2px;background:var(--gold-ink);transform:scaleY(0);transform-origin:top;transition:transform .6s var(--ease)}
+.cs-note.is-active::before{transform:none}
+.cs-note-k{display:flex;align-items:baseline;gap:12px;font:500 11.5px/1 var(--f-body);letter-spacing:.11em;text-transform:uppercase;color:var(--teal)}
+.cs-note-n{font:400 1.625rem/1 var(--f-display);letter-spacing:0;color:var(--grey);transition:color .5s}
+.cs-note.is-active .cs-note-n{color:var(--gold-ink)}
+.cs-note-h{margin-top:14px;font:italic 500 1.75rem/1.25 var(--f-display);color:var(--black2);text-wrap:balance;transition:color .5s}
+.cs-note.is-active .cs-note-h{color:var(--teal)}
+.cs-note-p{margin-top:14px;font-weight:300;font-size:1.0625rem;line-height:1.62;color:var(--black2);transition:opacity .5s}
+html[data-cs-mode="css"] .cs-note:not(.is-active) .cs-note-p,
+html[data-cs-mode="fallback"] .cs-note:not(.is-active) .cs-note-p{opacity:.7}
+.cs-note-a{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding-bottom:3px;border-bottom:1px solid var(--gold);font-size:14px;font-weight:500;color:var(--teal);transition:color .2s,border-color .2s}
+.cs-note-a:hover{color:var(--gold-ink)}
+.cs-note-a svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* card */
+.cs-card{background:var(--cream-deep);border:1px solid rgba(225,201,121,.6);border-radius:8px;padding:36px 40px 40px}
+.cs-title{font:400 1.25rem/1.3 var(--f-body);color:var(--teal);text-align:center}
+.cs-diagram{margin-top:32px;display:grid;grid-template-columns:44px minmax(0,1fr) 26px 104px;grid-template-rows:auto;column-gap:14px}
+.cs-layers{grid-column:2;grid-row:1;display:grid;grid-template-rows:repeat(4,var(--cs-h));row-gap:var(--cs-g);min-width:0}
+.cs-layer{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px var(--cs-hair);cursor:pointer;text-align:center;font:400 1.125rem/1.2 var(--f-body);color:var(--on);-webkit-tap-highlight-color:transparent}
+.cs-layer::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--bg)}
+.cs-layer-t{position:relative;color:var(--on)}
+.cs-layer.is-common{--bg:#043435;--on:#fff}
+.cs-layer.is-preferred{--bg:#044446;--on:#fff}
+.cs-layer.is-mezz{--bg:#E1C979;--on:var(--ink)}
+.cs-layer.is-senior{--bg:#FFEBAA;--on:var(--ink)}
+.cs-layer:hover::before{filter:brightness(1.05)}
+/* current marker: small diamond in the gutter (dark gold, 5.6:1 on the cream, so the state reads without colour vision) */
+.cs-layer::after{content:"";position:absolute;left:-13px;top:50%;width:7px;height:7px;border-radius:1px;background:var(--gold-ink);transform:translateY(-50%) rotate(45deg) scale(0);transition:transform .45s var(--ease)}
+.cs-layer[aria-current="true"]::after{transform:translateY(-50%) rotate(45deg) scale(1)}
+
+/* brackets (left) and axis (right): segments, one per layer row, so they draw layer by layer */
+.cs-bracket{grid-column:1;grid-row:1;position:relative;display:grid;grid-template-rows:repeat(2,var(--cs-h));row-gap:var(--cs-g);align-self:start;--x:calc(100% - 9px)}
+.cs-bracket.is-debt{margin-top:calc(2*(var(--cs-h) + var(--cs-g)))}
+.cs-axis{grid-column:3;grid-row:1;display:grid;grid-template-rows:repeat(4,var(--cs-h));row-gap:var(--cs-g);--x:50%}
+.cs-seg{position:relative;display:block}
+.cs-seg::before{content:"";position:absolute;top:0;bottom:calc(-1*var(--cs-g));left:var(--x);width:1px;background:var(--teal);transform-origin:top center}
+.cs-seg:last-child::before{bottom:0}
+.cs-seg::after{content:"";position:absolute;left:calc(var(--x) - 3.5px);width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent}
+.cs-seg:first-child::after{top:0;border-bottom:7px solid var(--teal)}
+.cs-seg:last-child::after{bottom:0;border-top:7px solid var(--teal)}
+.cs-seg:not(:first-child):not(:last-child)::after{display:none}
+.cs-bracket-label{position:absolute;left:3px;top:50%;transform:translate(-50%,-50%) rotate(-90deg);transform-origin:center;font-size:13px;line-height:1;color:var(--teal);white-space:nowrap}
+.cs-axis-label{grid-column:4;grid-row:1;font-size:13px;line-height:1.4;color:var(--black2)}
+.cs-axis-label.is-top{align-self:start;margin-top:-2px}
+.cs-axis-label.is-bottom{align-self:end;margin-bottom:-2px}
+
+/* ---------- motion path A: CSS scroll-driven animations ---------- */
+@keyframes cs-fill{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes cs-ink{from{color:var(--cs-ghost)}to{color:var(--on)}}
+@keyframes cs-draw{from{transform:scaleY(0)}to{transform:none}}
+@keyframes cs-fade{from{opacity:0}to{opacity:1}}
+
+@supports (animation-timeline: view()) and (timeline-scope: --cs-n1) {
+  html[data-cs-mode="css"] .cs{timeline-scope:--cs-n1,--cs-n2,--cs-n3,--cs-n4}
+  /* the timeline subject is the fixed-height trigger at the top of each narration, so every layer
+     takes the same --cs-run of scroll to build whatever the length of its text */
+  html[data-cs-mode="css"] .cs-trigger{view-timeline-axis:block;view-timeline-inset:0 var(--cs-inset)}
+  html[data-cs-mode="css"] .cs-note:nth-child(1) .cs-trigger{view-timeline-name:--cs-n1}
+  html[data-cs-mode="css"] .cs-note:nth-child(2) .cs-trigger{view-timeline-name:--cs-n2}
+  html[data-cs-mode="css"] .cs-note:nth-child(3) .cs-trigger{view-timeline-name:--cs-n3}
+  html[data-cs-mode="css"] .cs-note:nth-child(4) .cs-trigger{view-timeline-name:--cs-n4}
+  html[data-cs-mode="css"] .cs-layer,
+  html[data-cs-mode="fallback"] .cs-layer{background:rgba(4,52,53,.03)}
+  html[data-cs-mode="css"] [data-on="1"]{--tl:--cs-n1}
+  html[data-cs-mode="css"] [data-on="2"]{--tl:--cs-n2}
+  html[data-cs-mode="css"] [data-on="3"]{--tl:--cs-n3}
+  html[data-cs-mode="css"] [data-on="4"]{--tl:--cs-n4}
+
+  html[data-cs-mode="css"] .cs-layer::before{animation:cs-fill var(--ease) both;animation-timeline:var(--tl);animation-range:entry 0% entry 100%}
+  html[data-cs-mode="css"] .cs-layer-t{animation:cs-ink linear both;animation-timeline:var(--tl);animation-range:entry 10% entry 90%}
+  html[data-cs-mode="css"] .cs-seg::before{animation:cs-draw linear both;animation-timeline:var(--tl);animation-range:entry 0% entry 100%}
+  html[data-cs-mode="css"] .cs-seg:first-child::after{animation:cs-fade linear both;animation-timeline:var(--tl);animation-range:entry 0% entry 25%}
+  html[data-cs-mode="css"] .cs-seg:last-child::after{animation:cs-fade linear both;animation-timeline:var(--tl);animation-range:entry 75% entry 100%}
+  html[data-cs-mode="css"] .cs-bracket-label,
+  html[data-cs-mode="css"] .cs-axis-label.is-top{animation:cs-fade linear both;animation-timeline:var(--tl);animation-range:entry 20% entry 80%}
+  html[data-cs-mode="css"] .cs-axis-label.is-bottom{animation:cs-fade linear both;animation-timeline:var(--tl);animation-range:entry 45% entry 95%}
+}
+
+/* ---------- motion path B: IntersectionObserver fallback (classes from capital-stack.js) ---------- */
+html[data-cs-mode="fallback"] .cs-layer::before{opacity:0;transform:translateY(14px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+html[data-cs-mode="fallback"] .cs-layer.is-on::before{opacity:1;transform:none}
+html[data-cs-mode="fallback"] .cs-layer-t{color:var(--cs-ghost);transition:color .7s var(--ease)}
+html[data-cs-mode="fallback"] .cs-layer.is-on .cs-layer-t{color:var(--on)}
+html[data-cs-mode="fallback"] .cs-seg::before{transform:scaleY(0);transition:transform .8s var(--ease)}
+html[data-cs-mode="fallback"] .cs-seg.is-on::before{transform:none}
+html[data-cs-mode="fallback"] .cs-seg::after{opacity:0;transition:opacity .5s var(--ease) .35s}
+html[data-cs-mode="fallback"] .cs-seg.is-on::after{opacity:1}
+html[data-cs-mode="fallback"] .cs-bracket-label,
+html[data-cs-mode="fallback"] .cs-axis-label{opacity:0;transition:opacity .6s var(--ease) .3s}
+html[data-cs-mode="fallback"] .cs-bracket-label.is-on,
+html[data-cs-mode="fallback"] .cs-axis-label.is-on{opacity:1}
+
+/* ---------- reduced motion: belt and braces on top of data-cs-mode="static" ---------- */
+@media (prefers-reduced-motion: reduce){
+  .cs-layer::before,.cs-layer-t,.cs-seg::before,.cs-seg::after,.cs-bracket-label,.cs-axis-label{animation:none !important;transition:none !important;opacity:1 !important}
+  .cs-layer::before,.cs-seg::before{transform:none !important}
+  .cs-layer-t{color:var(--on) !important}
+  .cs-layer{background:transparent !important}
+  .cs-note-p{opacity:1 !important}
+  .cs-note::before,.cs-layer::after{transition:none}
+}
+
+
+@media (max-width:1180px){
+  .cs-card{padding:30px 30px 34px}
+  .cs-diagram{grid-template-columns:40px minmax(0,1fr) 24px 96px;column-gap:12px}
+  :root{--cs-h:72px}
+}
+
+@media (max-width:991px){
+  :root{--cs-h:60px;--cs-g:9px;--cs-inset:22%;--cs-line:.58;--cs-anchor:.5}
+  .cs{display:block}
+  .cs-intro{max-width:none}
+  .cs-stage{position:sticky;top:calc(var(--nav-h) + 10px);margin-top:3rem;z-index:3}
+  .cs-card{max-width:640px;margin-inline:auto;padding:24px 28px 28px;box-shadow:0 18px 40px -28px rgba(4,52,53,.45)}
+  .cs-title{font-size:1.0625rem}
+  .cs-diagram{margin-top:20px;grid-template-columns:38px minmax(0,1fr) 24px 92px;column-gap:12px}
+  .cs-layer{font-size:1rem}
+  .cs-steps-h{margin-top:3rem}
+  .cs-notes{gap:clamp(5rem,24vh,10rem);padding-top:2rem;padding-bottom:clamp(4rem,22vh,9rem)}
+  .cs-note{max-width:640px;margin-inline:auto}
+  .cs-note-h{font-size:1.5rem}
+}
+
+@media (max-width:767px){
+  :root{--cs-h:44px;--cs-g:6px}
+  .cs-stage{top:calc(var(--nav-h) + 6px);margin-top:2.25rem}
+  .cs-card{padding:14px 14px 16px;border-radius:6px}
+  .cs-title{font-size:.9375rem}
+  .cs-diagram{margin-top:12px;grid-template-columns:26px minmax(0,1fr) 16px 74px;column-gap:8px}
+  .cs-layer{font-size:.875rem;padding:0 8px;border-radius:3px}
+  .cs-layer::after{left:-8px;width:5px;height:5px}
+  .cs-bracket{--x:calc(100% - 5px)}
+  .cs-bracket-label{font-size:11px;left:2px}
+  .cs-axis-label{font-size:11px;line-height:1.35}
+  .cs-steps-h{margin-top:2.25rem}
+  .cs-notes{gap:clamp(4rem,18vh,7rem);padding-top:1.5rem;padding-bottom:clamp(3rem,16vh,6rem)}
+  .cs-note{padding-left:18px}
+  .cs-note-h{font-size:1.375rem}
+  .cs-note-p{font-size:1rem}
+}
+
+@media (max-width:359px){
+  .cs-diagram{grid-template-columns:22px minmax(0,1fr) 14px 66px;column-gap:6px}
+  .cs-axis-label{font-size:10px}
+}

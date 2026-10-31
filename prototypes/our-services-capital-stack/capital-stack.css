@@ -1,0 +1,290 @@
+/* Our Services prototype: page styles + "The Capital Stack" scroll-driven module.
+   Shared tokens, nav, hero, footer live in ../shared/base.css. Everything here is page-level.
+
+   Module contract
+   - Static HTML is the complete stack. Motion only ever subtracts from it, so no JS and no
+     scroll-driven support both show the finished diagram and all four narrations.
+   - html[data-cs-mode="css"]      CSS scroll-driven animations: each narration (.cs-note) owns a
+                                   named view timeline; layers, brackets and axis segments in the
+                                   sticky card animate on it through timeline-scope on .cs.
+   - html[data-cs-mode="fallback"] IntersectionObserver in capital-stack.js toggles .is-on; CSS transitions.
+   - html[data-cs-mode="static"]   prefers-reduced-motion: completed stack, nothing moves.
+   - data-on="N" on a part means "built once layer N has arrived". */
+
+:root{
+  --cs-h:80px;            /* layer height */
+  --cs-g:12px;            /* gap between layers */
+  --cs-inset:30%;         /* bottom inset of the view timelines: a layer starts building when its narration's top crosses this line (70% of the viewport) */
+  --cs-run:30vh;          /* height of the invisible trigger inside each narration = how much scroll one layer takes to build */
+  --cs-line:.52;          /* fraction of the viewport height where a narration becomes "current" (JS) */
+  --cs-anchor:.42;        /* where a narration lands (fraction of viewport height) when its layer button is pressed */
+  --cs-ghost:#56706C;     /* unbuilt layer label: 5.0:1 on the card's cream */
+  --cs-hair:rgba(4,52,53,.16);
+}
+
+/* ---------- small page bits ---------- */
+/* gold (#E1C979) is 1.6:1 on cream, so focus rings on light backgrounds are teal; gold stays on the dark bands and nav */
+main :focus-visible,.foot :focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.band :focus-visible,.proc :focus-visible,.cta :focus-visible,.hero :focus-visible{outline-color:var(--gold)}
+.skip{position:absolute;left:16px;top:-60px;z-index:100;background:var(--teal);color:#fff;padding:10px 16px;border-radius:4px;font-size:14px}
+.skip:focus{top:12px}
+.rule{border:0;border-top:1px solid var(--rule);margin:0}
+[id]{scroll-margin-top:calc(var(--nav-h) + 24px)}
+
+/* ---------- hero (shorter than the home hero, like the live sub-page) ---------- */
+.hero.hero-sub{min-height:clamp(560px,70vh,700px);background-image:url(../shared/img/what-we-do-thames.webp);background-position:center 40%}
+.hero-sub::before{background:radial-gradient(120% 95% at 50% 50%,rgba(4,52,53,.84) 20%,rgba(4,52,53,.62) 100%)}
+.hero-sub .hero-in{gap:1.1rem;padding-top:calc(var(--nav-h) + 4.5rem);padding-bottom:4.5rem;max-width:900px}
+.hero-sub h1{font-size:3.5rem;margin-bottom:.4rem}
+.hero-sub .hero-p{max-width:760px;font-size:1.0625rem}
+
+/* ---------- section heads (centred, like the live page) ---------- */
+.sec-head{padding-bottom:4rem}
+.head-c{display:flex;flex-direction:column;align-items:center;text-align:center;gap:28px;max-width:860px;margin-inline:auto}
+.head-c .para{max-width:760px}
+.cs-sec .rule{margin-top:clamp(2rem,5vh,4rem)}
+
+/* ---------- expertise + capital stack ---------- */
+.cs-sec{padding-bottom:0}
+.cs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:0 clamp(2rem,6vw,6rem);align-items:start}
+.cs-intro{grid-column:1;grid-row:1;gap:28px;max-width:36rem}
+.cs-stage{grid-column:2;grid-row:1/3;position:sticky;top:calc(var(--nav-h) + 56px);align-self:start;z-index:2}
+.cs-steps{grid-column:1;grid-row:2;min-width:0}
+
+.cs-steps-h{margin-top:clamp(3.5rem,12vh,7rem);font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink)}
+.cs-notes{list-style:none;margin:0;padding:clamp(2rem,7vh,4.5rem) 0 clamp(5rem,26vh,14rem);display:flex;flex-direction:column;gap:clamp(7rem,32vh,18rem)}
+.cs-note{position:relative;max-width:33rem;padding-left:28px;border-left:1px solid var(--line);transition:border-color .5s var(--ease)}
+.cs-trigger{position:absolute;left:0;top:0;width:1px;height:var(--cs-run);pointer-events:none}
+.cs-note::before{content:"";position:absolute;left:-1px;top:0;bottom:0;width:2px;background:var(--gold-ink);transform:scaleY(0);transform-origin:top;transition:transform .6s var(--ease)}
+.cs-note.is-active::before{transform:none}
+.cs-note-k{display:flex;align-items:baseline;gap:12px;font:500 11.5px/1 var(--f-body);letter-spacing:.11em;text-transform:uppercase;color:var(--teal)}
+.cs-note-n{font:400 1.625rem/1 var(--f-display);letter-spacing:0;color:var(--grey);transition:color .5s}
+.cs-note.is-active .cs-note-n{color:var(--gold-ink)}
+.cs-note-h{margin-top:14px;font:italic 500 1.75rem/1.25 var(--f-display);color:var(--black2);text-wrap:balance;transition:color .5s}
+.cs-note.is-active .cs-note-h{color:var(--teal)}
+.cs-note-p{margin-top:14px;font-weight:300;font-size:1.0625rem;line-height:1.62;color:var(--black2);transition:opacity .5s}
+html[data-cs-mode="css"] .cs-note:not(.is-active) .cs-note-p,
+html[data-cs-mode="fallback"] .cs-note:not(.is-active) .cs-note-p{opacity:.7}
+.cs-note-a{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding-bottom:3px;border-bottom:1px solid var(--gold);font-size:14px;font-weight:500;color:var(--teal);transition:color .2s,border-color .2s}
+.cs-note-a:hover{color:var(--gold-ink)}
+.cs-note-a svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* card */
+.cs-card{background:var(--cream-deep);border:1px solid rgba(225,201,121,.6);border-radius:8px;padding:36px 40px 40px}
+.cs-title{font:400 1.25rem/1.3 var(--f-body);color:var(--teal);text-align:center}
+.cs-diagram{margin-top:32px;display:grid;grid-template-columns:44px minmax(0,1fr) 26px 104px;grid-template-rows:auto;column-gap:14px}
+.cs-layers{grid-column:2;grid-row:1;display:grid;grid-template-rows:repeat(4,var(--cs-h));row-gap:var(--cs-g);min-width:0}
+.cs-layer{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px var(--cs-hair);cursor:pointer;text-align:center;font:400 1.125rem/1.2 var(--f-body);color:var(--on);-webkit-tap-highlight-color:transparent}
+.cs-layer::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--bg)}
+.cs-layer-t{position:relative;color:var(--on)}
+.cs-layer.is-common{--bg:#043435;--on:#fff}
+.cs-layer.is-preferred{--bg:#044446;--on:#fff}
+.cs-layer.is-mezz{--bg:#E1C979;--on:var(--ink)}
+.cs-layer.is-senior{--bg:#FFEBAA;--on:var(--ink)}
+.cs-layer:hover::before{filter:brightness(1.05)}
+/* current marker: small diamond in the gutter (dark gold, 5.6:1 on the cream, so the state reads without colour vision) */
+.cs-layer::after{content:"";position:absolute;left:-13px;top:50%;width:7px;height:7px;border-radius:1px;background:var(--gold-ink);transform:translateY(-50%) rotate(45deg) scale(0);transition:transform .45s var(--ease)}
+.cs-layer[aria-current="true"]::after{transform:translateY(-50%) rotate(45deg) scale(1)}
+
+/* brackets (left) and axis (right): segments, one per layer row, so they draw layer by layer */
+.cs-bracket{grid-column:1;grid-row:1;position:relative;display:grid;grid-template-rows:repeat(2,var(--cs-h));row-gap:var(--cs-g);align-self:start;--x:calc(100% - 9px)}
+.cs-bracket.is-debt{margin-top:calc(2*(var(--cs-h) + var(--cs-g)))}
+.cs-axis{grid-column:3;grid-row:1;display:grid;grid-template-rows:repeat(4,var(--cs-h));row-gap:var(--cs-g);--x:50%}
+.cs-seg{position:relative;display:block}
+.cs-seg::before{content:"";position:absolute;top:0;bottom:calc(-1*var(--cs-g));left:var(--x);width:1px;background:var(--teal);transform-origin:top center}
+.cs-seg:last-child::before{bottom:0}
+.cs-seg::after{content:"";position:absolute;left:calc(var(--x) - 3.5px);width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent}
+.cs-seg:first-child::after{top:0;border-bottom:7px solid var(--teal)}
+.cs-seg:last-child::after{bottom:0;border-top:7px solid var(--teal)}
+.cs-seg:not(:first-child):not(:last-child)::after{display:none}
+.cs-bracket-label{position:absolute;left:3px;top:50%;transform:translate(-50%,-50%) rotate(-90deg);transform-origin:center;font-size:13px;line-height:1;color:var(--teal);white-space:nowrap}
+.cs-axis-label{grid-column:4;grid-row:1;font-size:13px;line-height:1.4;color:var(--black2)}
+.cs-axis-label.is-top{align-self:start;margin-top:-2px}
+.cs-axis-label.is-bottom{align-self:end;margin-bottom:-2px}
+
+/* ---------- motion path A: CSS scroll-driven animations ---------- */
+@keyframes cs-fill{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes cs-ink{from{color:var(--cs-ghost)}to{color:var(--on)}}
+@keyframes cs-draw{from{transform:scaleY(0)}to{transform:none}}
+@keyframes cs-fade{from{opacity:0}to{opacity:1}}
+
+@supports (animation-timeline: view()) and (timeline-scope: --cs-n1) {
+  html[data-cs-mode="css"] .cs{timeline-scope:--cs-n1,--cs-n2,--cs-n3,--cs-n4}
+  /* the timeline subject is the fixed-height trigger at the top of each narration, so every layer
+     takes the same --cs-run of scroll to build whatever the length of its text */
+  html[data-cs-mode="css"] .cs-trigger{view-timeline-axis:block;view-timeline-inset:0 var(--cs-inset)}
+  html[data-cs-mode="css"] .cs-note:nth-child(1) .cs-trigger{view-timeline-name:--cs-n1}
+  html[data-cs-mode="css"] .cs-note:nth-child(2) .cs-trigger{view-timeline-name:--cs-n2}
+  html[data-cs-mode="css"] .cs-note:nth-child(3) .cs-trigger{view-timeline-name:--cs-n3}
+  html[data-cs-mode="css"] .cs-note:nth-child(4) .cs-trigger{view-timeline-name:--cs-n4}
+  html[data-cs-mode="css"] .cs-layer,
+  html[data-cs-mode="fallback"] .cs-layer{background:rgba(4,52,53,.03)}
+  html[data-cs-mode="css"] [data-on="1"]{--tl:--cs-n1}
+  html[data-cs-mode="css"] [data-on="2"]{--tl:--cs-n2}
+  html[data-cs-mode="css"] [data-on="3"]{--tl:--cs-n3}
+  html[data-cs-mode="css"] [data-on="4"]{--tl:--cs-n4}
+
+  html[data-cs-mode="css"] .cs-layer::before{animation:cs-fill var(--ease) both;animation-timeline:var(--tl);animation-range:entry 0% entry 100%}
+  html[data-cs-mode="css"] .cs-layer-t{animation:cs-ink linear both;animation-timeline:var(--tl);animation-range:entry 10% entry 90%}
+  html[data-cs-mode="css"] .cs-seg::before{animation:cs-draw linear both;animation-timeline:var(--tl);animation-range:entry 0% entry 100%}
+  html[data-cs-mode="css"] .cs-seg:first-child::after{animation:cs-fade linear both;animation-timeline:var(--tl);animation-range:entry 0% entry 25%}
+  html[data-cs-mode="css"] .cs-seg:last-child::after{animation:cs-fade linear both;animation-timeline:var(--tl);animation-range:entry 75% entry 100%}
+  html[data-cs-mode="css"] .cs-bracket-label,
+  html[data-cs-mode="css"] .cs-axis-label.is-top{animation:cs-fade linear both;animation-timeline:var(--tl);animation-range:entry 20% entry 80%}
+  html[data-cs-mode="css"] .cs-axis-label.is-bottom{animation:cs-fade linear both;animation-timeline:var(--tl);animation-range:entry 45% entry 95%}
+}
+
+/* ---------- motion path B: IntersectionObserver fallback (classes from capital-stack.js) ---------- */
+html[data-cs-mode="fallback"] .cs-layer::before{opacity:0;transform:translateY(14px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+html[data-cs-mode="fallback"] .cs-layer.is-on::before{opacity:1;transform:none}
+html[data-cs-mode="fallback"] .cs-layer-t{color:var(--cs-ghost);transition:color .7s var(--ease)}
+html[data-cs-mode="fallback"] .cs-layer.is-on .cs-layer-t{color:var(--on)}
+html[data-cs-mode="fallback"] .cs-seg::before{transform:scaleY(0);transition:transform .8s var(--ease)}
+html[data-cs-mode="fallback"] .cs-seg.is-on::before{transform:none}
+html[data-cs-mode="fallback"] .cs-seg::after{opacity:0;transition:opacity .5s var(--ease) .35s}
+html[data-cs-mode="fallback"] .cs-seg.is-on::after{opacity:1}
+html[data-cs-mode="fallback"] .cs-bracket-label,
+html[data-cs-mode="fallback"] .cs-axis-label{opacity:0;transition:opacity .6s var(--ease) .3s}
+html[data-cs-mode="fallback"] .cs-bracket-label.is-on,
+html[data-cs-mode="fallback"] .cs-axis-label.is-on{opacity:1}
+
+/* ---------- reduced motion: belt and braces on top of data-cs-mode="static" ---------- */
+@media (prefers-reduced-motion: reduce){
+  .cs-layer::before,.cs-layer-t,.cs-seg::before,.cs-seg::after,.cs-bracket-label,.cs-axis-label{animation:none !important;transition:none !important;opacity:1 !important}
+  .cs-layer::before,.cs-seg::before{transform:none !important}
+  .cs-layer-t{color:var(--on) !important}
+  .cs-layer{background:transparent !important}
+  .cs-note-p{opacity:1 !important}
+  .cs-note::before,.cs-layer::after{transition:none}
+}
+
+/* ---------- debt / equity bands ---------- */
+.band{background:var(--teal);color:#fff;padding-block:5.5rem 5rem}
+.band-h{font:500 2rem/1.25 var(--f-display);color:var(--gold);text-align:center}
+.cards{display:grid;gap:16px;margin-top:50px}
+.cards-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cards-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{display:flex;flex-direction:column;justify-content:space-between;gap:64px;min-height:380px;padding:28px 28px 32px;background:#044446;border-radius:8px}
+.card>div{min-height:8.75em}  /* equal text blocks so the titles line up across a row */
+.card-ico{width:54px;height:54px;object-fit:contain;fill:none;stroke:var(--gold);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.card h4{font:500 1.5rem/1.2 var(--f-display);color:var(--gold);text-wrap:balance}
+.card p{margin-top:14px;font-weight:300;font-size:1.0625rem;line-height:1.55;color:rgba(255,255,255,.88)}
+.band-foot{margin-top:50px;font:500 1.5rem/1.35 var(--f-display);color:var(--gold);text-align:center;text-wrap:balance;max-width:60rem;margin-inline:auto}
+
+/* ---------- asset classes ---------- */
+.assets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-block:1px solid var(--line)}
+.asset{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center;padding:44px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-height:160px}
+.asset:nth-child(4n){border-right:0}
+.asset:nth-child(n+5){border-bottom:0}
+.asset img,.asset svg{width:46px;height:46px;object-fit:contain;fill:none;stroke:var(--gold);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.asset p{font-size:1.125rem;line-height:1.3;color:var(--ink);max-width:12ch;text-wrap:balance}
+
+/* ---------- process ---------- */
+.proc{background:var(--teal);color:#fff;margin-top:6.25rem}
+.proc-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:clamp(2rem,6vw,5rem);align-items:start}
+.proc-copy{position:sticky;top:calc(var(--nav-h) + 40px)}
+.proc .tag{color:#fff}
+.proc .h2{color:#fff}
+.proc .para{color:rgba(255,255,255,.86)}
+.proc .sbtn{margin-top:8px}
+.psteps{display:flex;flex-direction:column;gap:20px}
+.pitem{display:grid;grid-template-columns:32px minmax(0,1fr);gap:22px}
+.pnum{display:flex;flex-direction:column;align-items:center;gap:10px}
+.pnum span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid rgba(225,201,121,.5);color:var(--gold);font-size:13px;font-weight:500}
+.pnum::after{content:"";width:1px;flex:1;background:rgba(225,201,121,.3)}
+.pitem:last-child .pnum::after{display:none}
+.pcard{padding:30px 32px 32px;border:1px solid rgba(225,201,121,.28);border-radius:8px;background:rgba(255,255,255,.035)}
+.pcard h3{font:500 1.75rem/1.15 var(--f-display);color:var(--gold)}
+.pcard p{margin-top:14px;font-weight:300;font-size:1.0625rem;line-height:1.55;color:rgba(255,255,255,.86)}
+
+/* ---------- CTA ---------- */
+.cta-sec{padding-block:6.25rem 2.5rem}
+.cta{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;text-align:center;gap:36px;padding:118px 40px;background:var(--teal);border-radius:12px;color:#fff}
+.cta-waves{position:absolute;inset:0;width:100%;height:100%;z-index:-1;color:rgba(255,255,255,.24);pointer-events:none}
+.cta-h{font:400 2.75rem/1.25 var(--f-display);max-width:16ch;text-wrap:balance}
+
+/* footer column headings are h3 on this page (h2 > h3 order); same look as the shared h4 rule */
+.foot-col h3,.foot-h{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:6px}
+
+/* ---------- prototype label ---------- */
+.proto{position:fixed;right:16px;bottom:16px;z-index:70;display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:999px;background:rgba(18,22,29,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:rgba(255,255,255,.72);font-size:12px;line-height:1;box-shadow:0 12px 30px -12px rgba(0,0,0,.55);max-width:calc(100vw - 32px);white-space:nowrap}
+.proto strong{font-weight:500;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;font-size:10.5px}
+.proto span+span::before,.proto strong+span::before{content:"·";margin-right:10px;color:rgba(255,255,255,.4)}
+.menu-open .proto{opacity:0}
+
+/* ---------- responsive ---------- */
+@media (max-width:1180px){
+  .cs-card{padding:30px 30px 34px}
+  .cs-diagram{grid-template-columns:40px minmax(0,1fr) 24px 96px;column-gap:12px}
+  :root{--cs-h:72px}
+}
+@media (max-width:991px){
+  :root{--cs-h:60px;--cs-g:9px;--cs-inset:22%;--cs-line:.58;--cs-anchor:.5}
+  /* single column: intro, then the compact sticky card, then the narrations beneath it */
+  .cs{display:block}
+  .cs-intro{max-width:none}
+  .cs-stage{position:sticky;top:calc(var(--nav-h) + 10px);margin-top:3rem;z-index:3}
+  .cs-card{max-width:640px;margin-inline:auto;padding:24px 28px 28px;box-shadow:0 18px 40px -28px rgba(4,52,53,.45)}
+  .cs-title{font-size:1.0625rem}
+  .cs-diagram{margin-top:20px;grid-template-columns:38px minmax(0,1fr) 24px 92px;column-gap:12px}
+  .cs-layer{font-size:1rem}
+  .cs-steps-h{margin-top:3rem}
+  .cs-notes{gap:clamp(5rem,24vh,10rem);padding-top:2rem;padding-bottom:clamp(4rem,22vh,9rem)}
+  .cs-note{max-width:640px;margin-inline:auto}
+  .cs-note-h{font-size:1.5rem}
+  .cards-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cards-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{min-height:0;gap:40px}
+  .proc-grid{grid-template-columns:minmax(0,1fr)}
+  .proc-copy{position:static}
+  .proc{margin-top:4rem}
+  .cta{padding:84px 32px}
+  .cta-h{font-size:2.25rem}
+}
+@media (max-width:767px){
+  :root{--cs-h:44px;--cs-g:6px}
+  .hero.hero-sub{min-height:0}
+  .hero-sub h1{font-size:2.75rem}
+  .hero-sub .hero-p{font-size:1rem}
+  .cs-stage{top:calc(var(--nav-h) + 6px);margin-top:2.25rem}
+  .cs-card{padding:14px 14px 16px;border-radius:6px}
+  .cs-title{font-size:.9375rem}
+  .cs-diagram{margin-top:12px;grid-template-columns:26px minmax(0,1fr) 16px 74px;column-gap:8px}
+  .cs-layer{font-size:.875rem;padding:0 8px;border-radius:3px}
+  .cs-layer::after{left:-8px;width:5px;height:5px}
+  .cs-bracket{--x:calc(100% - 5px)}
+  .cs-bracket-label{font-size:11px;left:2px}
+  .cs-axis-label{font-size:11px;line-height:1.35}
+  .cs-steps-h{margin-top:2.25rem}
+  .cs-notes{gap:clamp(4rem,18vh,7rem);padding-top:1.5rem;padding-bottom:clamp(3rem,16vh,6rem)}
+  .cs-note{padding-left:18px}
+  .cs-note-h{font-size:1.375rem}
+  .cs-note-p{font-size:1rem}
+  .head-c{gap:22px}
+  .band{padding-block:3.5rem 3.25rem}
+  .band-h{font-size:1.625rem}
+  .cards{margin-top:32px;gap:12px}
+  .cards-4,.cards-3{grid-template-columns:minmax(0,1fr)}
+  .card{padding:24px 22px 26px;gap:28px}
+  .card h4{font-size:1.375rem}
+  .band-foot{margin-top:32px;font-size:1.25rem}
+  .assets{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .asset{padding:30px 12px;min-height:0;gap:16px}
+  .asset:nth-child(4n){border-right:1px solid var(--line)}
+  .asset:nth-child(2n){border-right:0}
+  .asset:nth-child(n+5){border-bottom:1px solid var(--line)}
+  .asset:nth-child(n+7){border-bottom:0}
+  .asset p{font-size:1rem}
+  .pitem{grid-template-columns:28px minmax(0,1fr);gap:14px}
+  .pnum span{width:28px;height:28px;font-size:12px}
+  .pcard{padding:22px 20px 24px}
+  .pcard h3{font-size:1.5rem}
+  .cta-sec{padding-block:3.25rem 1.5rem}
+  .cta{padding:64px 24px;gap:28px;border-radius:10px}
+  .cta-h{font-size:1.875rem}
+  .proto{right:50%;transform:translateX(50%);bottom:10px;gap:8px;padding:8px 12px;font-size:11px}
+}
+@media (max-width:359px){
+  .cs-diagram{grid-template-columns:22px minmax(0,1fr) 14px 66px;column-gap:6px}
+  .cs-axis-label{font-size:10px}
+}

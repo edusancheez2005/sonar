@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Our Services prototype: the capital stack, built as you scroll | Roscap</title>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="capital-stack.css">
+<script>
+/* Capital stack: choose the motion path before first paint so nothing flashes.
+   css      = CSS scroll-driven animations (no library)
+   fallback = IntersectionObserver reveals, step by step
+   static   = prefers-reduced-motion: completed stack, no choreography
+   Add ?cs=fallback to the URL to force the fallback path for testing. */
+(function () {
+  var h = document.documentElement;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var forced = /(\?|&)cs=fallback(&|$)/.test(location.search);
+  var css = !!(window.CSS && CSS.supports && CSS.supports('animation-timeline: view()') && CSS.supports('timeline-scope: --cs-n1'));
+  h.setAttribute('data-cs-mode', reduce ? 'static' : (css && !forced ? 'css' : 'fallback'));
+})();
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="nav-in">
+    <a class="nav-brand" href="https://www.roscap.co.uk/" aria-label="Roscap home"><img src="../shared/img/logo-nav.svg" alt="Roscap" width="148" height="41"></a>
+    <nav class="nav-menu" id="nav-menu" aria-label="Main">
+      <div class="nav-links">
+        <a class="nav-link" href="https://www.roscap.co.uk/">Home</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/about-us">About Us</a>
+        <a class="nav-link is-current" href="https://www.roscap.co.uk/our-services" aria-current="page">Our Services</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/track-record">Track Record</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/partner-program">Partner Program</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/insights">Insights</a>
+      </div>
+      <a class="nav-cta" href="https://www.roscap.co.uk/contact-us"><i aria-hidden="true"></i>Speak to Us</a>
+    </nav>
+    <button class="nav-burger" type="button" aria-controls="nav-menu" aria-expanded="false" aria-label="Menu"><span></span></button>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ===== Hero ===== -->
+  <section class="hero hero-sub">
+    <div class="hero-in">
+      <h1>Our Services</h1>
+      <p class="hero-p">Roscap provides structured real estate capital solutions across the full capital stack: from senior debt to co-investment equity.</p>
+      <p class="hero-p">We advise developers, investors, and institutions on structuring and securing capital that aligns with both the project and the market.</p>
+      <p class="hero-p">Our role is to simplify complexity, deliver clarity and ensure each transaction is executed with precision.</p>
+    </div>
+  </section>
+
+  <!-- ===== Our expertise + The Capital Stack module ===== -->
+  <section class="sec pg cs-sec" id="expertise" aria-labelledby="expertise-h">
+    <div class="container">
+      <div class="cs" id="capital-stack">
+
+        <div class="stack cs-intro">
+          <span class="tag">Our expertise</span>
+          <h2 class="h2" id="expertise-h">Capital Raising Across the Real Estate Spectrum</h2>
+          <div class="gdiv"></div>
+          <div class="para">
+            <p>We arrange debt and equity across planning, development and investment strategies.</p>
+            <p>Our clients include property developers, investors, and family offices seeking institutional-quality structuring and execution.</p>
+            <p>Each transaction is tailored to the asset, the capital structure, and the long-term objectives of our clients and their funding partners.</p>
+          </div>
+        </div>
+
+        <!-- Sticky stage: the diagram. Static HTML is the complete stack; motion only subtracts from it. -->
+        <div class="cs-stage">
+          <div class="cs-card">
+            <h3 class="cs-title">The Capital Stack</h3>
+            <div class="cs-diagram">
+
+              <div class="cs-bracket is-equity" aria-hidden="true">
+                <span class="cs-seg" data-on="1"></span>
+                <span class="cs-seg" data-on="2"></span>
+                <span class="cs-bracket-label" data-on="1">Equity</span>
+              </div>
+              <div class="cs-bracket is-debt" aria-hidden="true">
+                <span class="cs-seg" data-on="3"></span>
+                <span class="cs-seg" data-on="4"></span>
+                <span class="cs-bracket-label" data-on="3">Debt</span>
+              </div>
+
+              <div class="cs-layers" role="group" aria-label="Capital stack layers, top to bottom. Select a layer to read how Roscap works in it.">
+                <button class="cs-layer is-common" type="button" data-on="1" data-i="1" aria-controls="cs-note-1"><span class="cs-layer-t">Common Equity</span></button>
+                <button class="cs-layer is-preferred" type="button" data-on="2" data-i="2" aria-controls="cs-note-2"><span class="cs-layer-t">Preferred Equity</span></button>
+                <button class="cs-layer is-mezz" type="button" data-on="3" data-i="3" aria-controls="cs-note-3"><span class="cs-layer-t">Mezzanine Debt</span></button>
+                <button class="cs-layer is-senior" type="button" data-on="4" data-i="4" aria-controls="cs-note-4"><span class="cs-layer-t">Senior Debt</span></button>
+              </div>
+
+              <div class="cs-axis" aria-hidden="true">
+                <span class="cs-seg" data-on="1"></span>
+                <span class="cs-seg" data-on="2"></span>
+                <span class="cs-seg" data-on="3"></span>
+                <span class="cs-seg" data-on="4"></span>
+              </div>
+              <p class="cs-axis-label is-top" data-on="1" aria-hidden="true">High risk,<br>High return</p>
+              <p class="cs-axis-label is-bottom" data-on="4" aria-hidden="true">Low risk,<br>Low return</p>
+
+            </div>
+          </div>
+          <p class="sr" aria-live="polite" id="cs-live"></p>
+        </div>
+
+        <div class="cs-steps">
+          <h3 class="cs-steps-h">Where Roscap works in the stack</h3>
+          <ol class="cs-notes">
+            <li class="cs-note" id="cs-note-1">
+              <span class="cs-trigger" aria-hidden="true"></span>
+              <p class="cs-note-k"><span class="cs-note-n">1</span> Common Equity</p>
+              <h4 class="cs-note-h">Joint venture equity and co-investment</h4>
+              <p class="cs-note-p">The top of the stack: the position that takes the first loss and carries the upside. Roscap raises joint venture equity and arranges direct co-investment for developers, sponsors and family offices, in shared-risk structures with aligned upside and objectives that stay consistent from entry to exit.</p>
+              <a class="cs-note-a" href="#equity">Equity and co-investment<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></a>
+            </li>
+            <li class="cs-note" id="cs-note-2">
+              <span class="cs-trigger" aria-hidden="true"></span>
+              <p class="cs-note-k"><span class="cs-note-n">2</span> Preferred Equity</p>
+              <h4 class="cs-note-h">Preferred equity</h4>
+              <p class="cs-note-p">Sits behind the senior lender and ahead of the common equity. Roscap structures fixed-return positions behind senior debt with potential profit participation, typically used to reduce the sponsor's own equity requirement while the senior facility stays conventional.</p>
+              <a class="cs-note-a" href="#equity">Equity and co-investment<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></a>
+            </li>
+            <li class="cs-note" id="cs-note-3">
+              <span class="cs-trigger" aria-hidden="true"></span>
+              <p class="cs-note-k"><span class="cs-note-n">3</span> Mezzanine Debt</p>
+              <h4 class="cs-note-h">Mezzanine finance</h4>
+              <p class="cs-note-p">The top of the debt. Roscap arranges mezzanine finance as subordinated capital to enhance leverage or bridge equity requirements, negotiated alongside the senior facility so that the intercreditor terms work for both lenders and the sponsor.</p>
+              <a class="cs-note-a" href="#debt">Real estate debt advisory<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></a>
+            </li>
+            <li class="cs-note" id="cs-note-4">
+              <span class="cs-trigger" aria-hidden="true"></span>
+              <p class="cs-note-k"><span class="cs-note-n">4</span> Senior Debt</p>
+              <h4 class="cs-note-h">Development finance, bridging finance, and commercial and BTL mortgages</h4>
+              <p class="cs-note-p">The foundation of the stack, secured by a first charge over the asset. This is where most of Roscap's debt advisory sits: development finance for ground-up, conversion or renovation projects, bridging finance for acquisitions, refinancing or equity release, and income-based term lending for stabilised assets. Stretch-senior facilities sit here too, taking the senior position further up the stack.</p>
+              <a class="cs-note-a" href="#debt">Real estate debt advisory<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></a>
+            </li>
+          </ol>
+        </div>
+
+      </div>
+      <hr class="rule">
+    </div>
+  </section>
+
+  <!-- ===== Debt Funding ===== -->
+  <section class="sec pg sec-head" id="debt" aria-labelledby="debt-h">
+    <div class="container">
+      <div class="head-c">
+        <span class="tag">Debt Funding</span>
+        <h2 class="h2" id="debt-h">Real Estate Debt Advisory</h2>
+        <div class="gdiv"></div>
+        <div class="para">
+          <p>We advise on and arrange senior, stretch-senior, and mezzanine debt across a range of real estate strategies.</p>
+          <p>Our understanding of the lending market allows us to identify and negotiate suitable structures, balancing leverage, cost, and flexibility.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="band pg" aria-labelledby="debt-cards-h">
+    <div class="container">
+      <h3 class="band-h" id="debt-cards-h">Roscap’s experience covers:</h3>
+      <ul class="cards cards-4">
+        <li class="card">
+          <svg class="card-ico" viewBox="0 0 56 56" aria-hidden="true"><path d="M6 50h44M10 50V20h12v30M14 20V8h4v12M18 10h30l4 6H18M46 16v34M38 16v10M38 26h-6v4h6M30 50V36h10v14"/></svg>
+          <div><h4>Development Finance</h4><p>Funding for ground-up, conversion or renovation projects.</p></div>
+        </li>
+        <li class="card">
+          <img class="card-ico" src="../shared/img/icon-commercial.svg" alt="" width="57" height="55" loading="lazy">
+          <div><h4>Bridging Finance</h4><p>Short-term funding for acquisitions, refinancing, or equity release.</p></div>
+        </li>
+        <li class="card">
+          <img class="card-ico" src="../shared/img/icon-banks.svg" alt="" width="40" height="45" loading="lazy">
+          <div><h4>Commercial and BTL Mortgages</h4><p>Income-based term lending for stabilised assets.</p></div>
+        </li>
+        <li class="card">
+          <svg class="card-ico" viewBox="0 0 56 56" aria-hidden="true"><path d="M6 8v42h44M14 40l10-12 8 6 14-18M38 16h8v8M40 48h10M44 44v8"/></svg>
+          <div><h4>Mezzanine Finance</h4><p>Subordinated capital to enhance leverage or bridge equity requirements.</p></div>
+        </li>
+      </ul>
+      <p class="band-foot">Debt can be structured to suit each stage of a project, from site acquisition to stabilisation.</p>
+    </div>
+  </section>
+
+  <!-- ===== Equity Funding ===== -->
+  <section class="sec pg sec-head" id="equity" aria-labelledby="equity-h">
+    <div class="container">
+      <div class="head-c">
+        <span class="tag">Equity Funding</span>
+        <h2 class="h2" id="equity-h">Equity and Co-Investment</h2>
+        <div class="gdiv"></div>
+        <div class="para">
+          <p>We raise and structure equity for developers, sponsors, and family offices seeking joint ventures, preferred equity, or direct co-investment.</p>
+          <p>Our investor base includes private and institutional partners seeking exposure to UK, Europe, and North America real estate through aligned, professionally structured opportunities.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="band pg" aria-labelledby="equity-cards-h">
+    <div class="container">
+      <h3 class="band-h" id="equity-cards-h">Roscap provides access to:</h3>
+      <ul class="cards cards-3">
+        <li class="card">
+          <svg class="card-ico" viewBox="0 0 56 56" aria-hidden="true"><path d="M26 10a18 18 0 1 0 18 18H26z"/><path d="M32 4a18 18 0 0 1 18 18H32z"/></svg>
+          <div><h4>Preferred Equity</h4><p>Fixed-return positions behind senior debt with potential profit participation.</p></div>
+        </li>
+        <li class="card">
+          <svg class="card-ico" viewBox="0 0 56 56" aria-hidden="true"><path d="M4 22l8-8 10 2 7 7M52 22l-8-8-9 3-8 8c-2 2 1 5 3 3l6-5M12 14l-8 8 14 14c2 2 5 2 7 0M44 14l8 8-13 13c-2 2-5 2-7 0l-2-2M25 36l4 4c2 2 5 2 7 0M20 31l5 5"/></svg>
+          <div><h4>Joint Venture Equity</h4><p>Shared-risk structures with aligned upside.</p></div>
+        </li>
+        <li class="card">
+          <img class="card-ico" src="../shared/img/icon-funds.svg" alt="" width="45" height="34" loading="lazy">
+          <div><h4>Corporate Capital Raising</h4><p>For operating businesses with real estate holdings.</p></div>
+        </li>
+      </ul>
+      <p class="band-foot">We focus on transparency and alignment between sponsor and investor, ensuring objectives are consistent from entry to exit.</p>
+    </div>
+  </section>
+
+  <!-- ===== Asset classes ===== -->
+  <section class="sec pg sec-head" id="assets" aria-labelledby="assets-h">
+    <div class="container">
+      <div class="head-c">
+        <span class="tag">Asset Classes</span>
+        <h2 class="h2" id="assets-h">Real Estate Asset Classes</h2>
+        <div class="gdiv"></div>
+        <div class="para">
+          <p>Roscap raises finance across a broad range of real estate asset classes throughout the UK, Europe, and North America.</p>
+          <p>Our experience covers both residential and commercial sectors, from development-led strategies to income-producing investments.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <ul class="assets" aria-label="Asset classes">
+    <li class="asset"><img src="../shared/img/icon-residential.svg" alt="" width="46" height="46" loading="lazy"><p>Residential</p></li>
+    <li class="asset"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M4 42h40M8 42V10h20v32M28 20h12v22M12 16h4M12 22h4M12 28h4M20 16h4M20 22h4M20 28h4M32 26h4M32 32h4M16 42v-8h6v8M30 6h2v4h-2zM24 6h2v4h-2z"/></svg><p>Hotels</p></li>
+    <li class="asset"><img src="../shared/img/icon-industrial.svg" alt="" width="44" height="45" loading="lazy"><p>Industrial &amp; Logistics</p></li>
+    <li class="asset"><img src="../shared/img/icon-banks.svg" alt="" width="40" height="45" loading="lazy"><p>Offices</p></li>
+    <li class="asset"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 20V12l4-6h28l4 6v8M6 20c0 3 2 5 5 5s5-2 5-5c0 3 2 5 5 5s5-2 5-5c0 3 2 5 5 5s5-2 5-5c0 3 2 5 5 5s5-2 5-5M8 25v17h32V25M20 42V32h8v10M6 12h36"/></svg><p>Retail</p></li>
+    <li class="asset"><img src="../shared/img/icon-social-housing.svg" alt="" width="52" height="42" loading="lazy"><p>Social Housing &amp; Care</p></li>
+    <li class="asset"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 42h36M10 42V24h28v18M16 30h4M16 36h4M28 30h4M28 36h4M22 42v-6h4v6M4 14l20-8 20 8-20 8zM34 18v8c0 2-4 4-10 4s-10-2-10-4v-8M44 14v8"/></svg><p>Student Accommodation</p></li>
+    <li class="asset"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M4 40c8-6 12-6 20 0s12 6 20 0M4 40V12l10-4v32M14 8l20-2v34M34 6l10 4v30M22 22h4M22 28h4M38 20h2M38 26h2"/></svg><p>Land</p></li>
+  </ul>
+
+  <!-- ===== Our process ===== -->
+  <section class="sec pg proc" id="process" aria-labelledby="process-h">
+    <div class="container">
+      <div class="proc-grid">
+        <div class="stack proc-copy">
+          <span class="tag">Our Process</span>
+          <h2 class="h2" id="process-h">A Structured Approach to Every Transaction</h2>
+          <div class="gdiv"></div>
+          <p class="para">Each mandate follows a clear and consistent process to ensure transparency and timely completion.</p>
+          <a class="sbtn" href="https://www.roscap.co.uk/contact-us">Get in Touch</a>
+        </div>
+        <ol class="psteps">
+          <li class="pitem"><div class="pnum"><span>1</span></div><div class="pcard"><h3>Initial review</h3><p>Pre-empt capital partner questions and analyse the transaction.</p></div></li>
+          <li class="pitem"><div class="pnum"><span>2</span></div><div class="pcard"><h3>Engagement</h3><p>Client signs our engagement letter, authorising Roscap to represent them.</p></div></li>
+          <li class="pitem"><div class="pnum"><span>3</span></div><div class="pcard"><h3>Capital markets</h3><p>Create presentation materials, engage funders and present the deal.</p></div></li>
+          <li class="pitem"><div class="pnum"><span>4</span></div><div class="pcard"><h3>Review offers</h3><p>Organise the terms in a coherent format and present to the client, advising on the pros and cons.</p></div></li>
+          <li class="pitem"><div class="pnum"><span>5</span></div><div class="pcard"><h3>Negotiation</h3><p>Re-engage shortlisted funders to fine tune the offers.</p></div></li>
+          <li class="pitem"><div class="pnum"><span>6</span></div><div class="pcard"><h3>Deal Closing</h3><p>Finalise offer and intimately manage the transaction through application, due diligence and completion.</p></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section class="sec pg cta-sec" aria-labelledby="cta-h">
+    <div class="container">
+      <div class="cta">
+        <svg class="cta-waves" aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 1200 400">
+          <defs>
+            <pattern id="wave" width="120" height="28" patternUnits="userSpaceOnUse" patternTransform="rotate(-32)">
+              <path d="M0 14c20-16 40-16 60 0s40 16 60 0" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            </pattern>
+            <linearGradient id="wave-fade" x1="0" x2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity=".9"/>
+              <stop offset=".55" stop-color="#fff" stop-opacity=".25"/>
+              <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+            <mask id="wave-mask"><rect width="1200" height="400" fill="url(#wave-fade)"/></mask>
+          </defs>
+          <rect width="1200" height="400" fill="url(#wave)" mask="url(#wave-mask)"/>
+        </svg>
+        <h2 class="cta-h" id="cta-h">Let’s discuss your next transaction</h2>
+        <a class="sbtn" href="https://www.roscap.co.uk/contact-us">Get in Touch</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="pg"><div class="container">
+    <div class="foot-top">
+      <img class="foot-logo" src="../shared/img/logo-footer.svg" alt="Roscap" width="144" height="40" loading="lazy">
+      <div class="social">
+        <a href="https://www.linkedin.com/company/roscap" aria-label="LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4V21H3V9.75zM9.5 9.75h3.8v1.6h.06c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.77 2.6 4.77 6V21h-4v-5.1c0-1.22-.02-2.78-1.7-2.78-1.7 0-1.96 1.33-1.96 2.7V21h-4V9.75z"/></svg></a>
+        <a href="https://www.instagram.com/roscap.uk" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.3a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm4.9-8.95a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM12 2.5c-2.6 0-2.92.01-3.94.06-1.02.05-1.71.21-2.32.44a4.7 4.7 0 0 0-1.7 1.1 4.7 4.7 0 0 0-1.1 1.7c-.24.6-.4 1.3-.44 2.32C2.51 9.08 2.5 9.4 2.5 12s.01 2.92.06 3.94c.05 1.02.2 1.71.44 2.32.25.63.58 1.17 1.1 1.7.53.52 1.07.85 1.7 1.1.6.23 1.3.39 2.32.44 1.02.05 1.34.06 3.94.06s2.92-.01 3.94-.06c1.02-.05 1.71-.21 2.32-.44a4.7 4.7 0 0 0 1.7-1.1 4.7 4.7 0 0 0 1.1-1.7c.23-.6.39-1.3.44-2.32.05-1.02.06-1.34.06-3.94s-.01-2.92-.06-3.94c-.05-1.02-.21-1.71-.44-2.32a4.7 4.7 0 0 0-1.1-1.7 4.7 4.7 0 0 0-1.7-1.1c-.6-.23-1.3-.39-2.32-.44C14.92 2.51 14.6 2.5 12 2.5zm0 1.7c2.56 0 2.86.01 3.87.06.93.04 1.44.2 1.78.33.45.17.77.38 1.1.72.34.34.55.66.72 1.1.13.34.29.85.33 1.78.05 1.01.06 1.31.06 3.87s-.01 2.86-.06 3.87c-.04.93-.2 1.44-.33 1.78-.17.45-.38.77-.72 1.1-.33.34-.65.55-1.1.72-.34.13-.85.29-1.78.33-1.01.05-1.31.06-3.87.06s-2.86-.01-3.87-.06c-.93-.04-1.44-.2-1.78-.33a2.97 2.97 0 0 1-1.1-.72 2.97 2.97 0 0 1-.72-1.1c-.13-.34-.29-.85-.33-1.78-.05-1.01-.06-1.31-.06-3.87s.01-2.86.06-3.87c.04-.93.2-1.44.33-1.78.17-.45.38-.77.72-1.1.33-.34.65-.55 1.1-.72.34-.13.85-.29 1.78-.33 1.01-.05 1.31-.06 3.87-.06z"/></svg></a>
+      </div>
+    </div>
+    <div class="foot-mid">
+      <div class="foot-cols">
+        <div class="foot-col"><h3 class="foot-h">Quick Links</h3><a href="https://www.roscap.co.uk/about-us">About Us</a><a href="https://www.roscap.co.uk/our-services" aria-current="page">Our Services</a><a href="https://www.roscap.co.uk/track-record">Track Record</a><a href="https://www.roscap.co.uk/partner-program">Partner Program</a><a href="https://www.roscap.co.uk/insights">Insights</a></div>
+        <div class="foot-col"><h3 class="foot-h">Legal</h3><a href="https://www.roscap.co.uk/privacy-policy">Privacy Policy</a><a href="https://www.roscap.co.uk/cookie-policy">Cookie Policy</a><a href="https://www.roscap.co.uk/website-terms-of-use">Terms of Use</a><a href="https://www.roscap.co.uk/disclaimer">Disclaimer</a><a href="https://www.roscap.co.uk/accessibility-statement">Accessibility</a></div>
+        <div class="foot-col"><h3 class="foot-h">Governance</h3><a href="https://www.roscap.co.uk/compliance-governance">Compliance &amp; Governance</a></div>
+      </div>
+      <div class="news">
+        <p>Sign up for new alerts and receive updates in your inbox.</p>
+        <form class="news-form" data-mock novalidate aria-label="Newsletter sign-up (switched off in this prototype)">
+          <input type="email" placeholder="Enter your email" aria-label="Email address" autocomplete="off">
+          <button type="submit" aria-label="Sign up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </form>
+        <p class="form-note" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="foot-tnc">
+      <p class="copy">© Roscap 2026 | Boutique Real Estate Capital Advisory</p>
+      <p>Roscap undertakes introductory activities and provides advisory services solely in relation to unregulated activities. Roscap does not carry on, nor does it hold itself out as carrying on, any activities which are regulated under the Financial Services and Markets Act 2000 (Regulated Activities) Order.</p>
+      <p>Roscap is not authorised or regulated by the Financial Conduct Authority. Accordingly, any services provided by Roscap are not covered by the Financial Services Compensation Scheme or the Financial Ombudsman Service.</p>
+    </div>
+  </div></div>
+</footer>
+
+<div class="proto" aria-hidden="true"><strong>Prototype</strong><span>Our Services</span><span>Capital stack</span></div>
+
+<script src="../shared/site.js" defer></script>
+<script src="capital-stack.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<script>
+/* Capital stack: choose the motion path before first paint so nothing flashes.
+   css      = CSS scroll-driven animations (no library)
+   fallback = IntersectionObserver reveals, step by step
+   static   = prefers-reduced-motion: completed stack, no choreography
+   Add ?cs=fallback to the URL to force the fallback path for testing. */
+(function () {
+  var h = document.documentElement;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var forced = /(\?|&)cs=fallback(&|$)/.test(location.search);
+  var css = !!(window.CSS && CSS.supports && CSS.supports('animation-timeline: view()') && CSS.supports('timeline-scope: --cs-n1'));
+  h.setAttribute('data-cs-mode', reduce ? 'static' : (css && !forced ? 'css' : 'fallback'));
+})();
+</script>

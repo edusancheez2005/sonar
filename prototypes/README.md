@@ -5,7 +5,7 @@ Static HTML prototypes for roscap.co.uk, built with the site's own colours, type
 | Prototype | Folder | Status |
 |---|---|---|
 | Speak to us (contact page) | `speak-to-us/` | Ready for review |
-| Our Services capital stack (scroll animation) | `our-services-capital-stack/` | In progress |
+| Our Services capital stack (scroll animation) | `our-services-capital-stack/` | Ready for review |
 | Home: Track Record deal list (concept F) and market-rates panel, build-ready | `homepage-track-record-and-rates/` | In progress |
 | Partner Program | `partner-program/` | Ready for review |
 
