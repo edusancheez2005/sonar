@@ -1,0 +1,312 @@
+{
+  "scope": "Partner Program (/partner-program), Contact Us / Speak to Us (/contact-us), /contact-us-success, every form on the site (home, insights, partner, blog template, contact, brochure popup, footer newsletter), the 404 page, and cookie consent / tracking. Live site audited 31 Oct 2026 at 1440x900, 1024x768 and 390x844 (iPhone emulation) with Playwright, axe-core, curl and the pre-run Lighthouse reports. Read-only: no form was submitted.",
+  "summary": "The Partner Program page is structurally sound but reads as dry because every section is text over flat colour: a full-viewport stock photo hero carrying a 59-word paragraph, four icon cards that are 60 percent empty space, a 6-step 'How it works' carousel that hides the three most important steps (updates, commission, repeat commission) behind clicks, a logo grid with no names or links, and the same generic contact form used on the home page. Two issues block conversion or carry compliance risk: the partner page's contact form has a visible 'Submit' link that depends on a Finsweet mirror-click script which is not loaded on this page (the real submit button is display:none on desktop and tablet), and the same pattern is live on the blog template; and no cookie banner exists while GA4 and a Google Ads conversion tag set cookies and send hits on first load, even though the Cookie Policy says non-essential cookies are used 'only where you have provided consent via our cookie banner'. The brochure 'Download' gate is cosmetic (the 9.2 MB image-only PDF URL is in the page source) and its form shares the name 'Contact Form' with the real enquiry form. The contact page is clean and the form is above the fold, but it offers no phone, address, response time or booking route, every form on the site uses placeholder-only labels, the Subject field is type=tel, and the FAQ copy uses lender language ('fund', 'underwrite', 'apply') and promises timescales. Several marketing claims ('Join hundreds of current partners', 'commissions in perpetuity', brochure 'Interest Rate: Starting from 4% p.a.') are unverified or belong in a partner agreement rather than marketing copy and are flagged for compliance review. The 404 page is Webflow's unbranded default (correct 404 status, but no navigation or footer).",
+  "strengths": [
+    "Consistent brand system across both pages: teal, cream and gold, Boska italic display headings and Switzer body, generous spacing; the contact hero with the form on the right at 1440 is a clear, premium layout.",
+    "No JavaScript errors or console errors on any page or viewport; no horizontal overflow at 390 px; buttons are at least 41 px tall and the carousel arrows are 44 px on mobile.",
+    "/this-page-does-not-exist-xyz returns a true HTTP 404 (curl and Playwright), and /contact-us-success carries <meta name=robots content=noindex>, is absent from sitemap.xml and has a self canonical.",
+    "The footer disclaimer correctly states Roscap is not authorised or regulated by the FCA; no live copy on these two pages claims or implies FCA authorisation.",
+    "The GA4 key event generate_lead fires on /contact-us-success and is linked to a Google Ads conversion, so paid landing on /contact-us can be measured once consent is handled.",
+    "Swiper's a11y module is active (slides have role=group and '1 / 6' labels, arrows have role=button, aria-label and tabindex), the brochure popup fits the 390x844 viewport without scrolling, and the Download button does not jump the page.",
+    "The contact form's visible native submit button works without third-party scripts, the form has a redirect to a dedicated success page, and the FAQ toggles open with Enter and update aria-expanded."
+  ],
+  "findings": [
+    {
+      "id": "PC-01",
+      "page": "/partner-program",
+      "title": "Partner page contact form cannot be submitted on desktop or tablet: visible 'Submit' is a mirror-click link whose script is not loaded",
+      "severity": "critical",
+      "category": "conversion",
+      "evidence": "Form #wf-form-Contact-Form (Name, Email, Phone, Subject, Message) at the bottom of the page. The real <input type=submit> has class 'button golden formbuttonhide-desktop' and site.css sets .button.golden.formbuttonhide-desktop { display:none } above the tablet breakpoint (computed display none, visible false at 1440 and 1024; shown only in the mobile media query). The visible gold 'Submit' is <a href='#' fs-mirrorclick-element='trigger' class='button golden w-button'>, which relies on Finsweet Attributes mirror-click. The partner page loads no Finsweet script (document.scripts: gtag, jQuery, 3 Webflow chunks, GSAP x4, Swiper; window.FinsweetAttributes is undefined), whereas /, /insights, /contact-us and /contact-us-success load https://cdn.jsdelivr.net/npm/@finsweet/attributes@2/attributes.js. The blog template (/blogs/development-exit-finance) has the same hidden submit + trigger anchor and also loads no Finsweet script. Verified from markup and runtime globals only; the link was not clicked.",
+      "recommendation": "In Webflow Designer, on the Partner Program page and the Blog post template: delete the 'Submit' link block inside .contact-button-wrap, and remove the combo class formbuttonhide-desktop from the form's native Submit button (or set it to display:block at Desktop) so the real button shows at all breakpoints. This also removes the dependency on a third-party CDN script. If the mirror-click layout is wanted for alignment, add the Finsweet attributes script to Site Settings head code instead of per-page code so every page that uses it gets it. Re-test at 1440 and 1024 by tabbing to the button.",
+      "effort": "S",
+      "viewport": "1440x900 and 1024x768",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-desktop-chunk3.png"
+    },
+    {
+      "id": "PC-02",
+      "page": "site-wide (tested on /partner-program, /contact-us, /contact-us-success, 404)",
+      "title": "No cookie consent banner; GA4 and Google Ads conversion tags set cookies and send hits before any consent, contradicting the Cookie and Privacy Policies (for compliance review)",
+      "severity": "critical",
+      "category": "compliance",
+      "evidence": "In fresh browser contexts with no interaction, on every page and viewport: <script async src='https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS'> loads from <head> (195 KB), followed by requests to analytics.google.com/g/collect (page_view) and stats.g.doubleclick.net/g/collect. Cookies set on first paint: _ga and _ga_H8HS2R6NLS (domain .roscap.co.uk, expiry 400 days) on all pages; on /contact-us-success additionally _gcl_au (90 days) plus localStorage key _gcl_ls, and three requests to https://www.google.com/measurement/conversion?...en=generate_lead...hn=www.googleadservices.com. The GA hit parameter gcd=13l3l3l3l1l1 indicates no Consent Mode defaults are set, and npa=0. DOM search for elements or text matching cookie/consent found nothing except the footer 'Cookie Policy' link (consentNamedEls 0 on all pages). Only _cfuvid (Cloudflare, session, httpOnly) is strictly necessary. /cookie-policy states: 'Non-essential cookies are used only where you have provided consent via our cookie banner.' and 'Our cookie banner/preference centre provides the current cookie list, including provider, purpose, and duration.' and 'You can manage your choices at any time using the cookie preference link in the website footer (if enabled)'. /privacy-policy states: 'Technical and usage data ... interactions with the website (subject to your cookie preferences).' and 'To operate, secure, and improve our website (legitimate interests; and consent where cookies are not strictly necessary).' Neither a banner nor a footer preference link exists.",
+      "recommendation": "Implement the in-house banner Clemente approved. In Webflow Site Settings head code, before gtag: set Consent Mode v2 defaults to denied for analytics_storage, ad_storage, ad_user_data and ad_personalization (gtag('consent','default',{...})), and only call gtag('consent','update',{...granted}) when the visitor accepts; store the choice in localStorage/cookie 'roscap_consent' and expose a 'Cookie preferences' link in the footer Legal column that reopens the banner. Keep the banner to two buttons (Accept all, Reject non-essential) plus a link to /cookie-policy, in brand colours, bottom-left on desktop and full-width on mobile. Then update the Cookie Policy's cookie list to name _ga, _ga_H8HS2R6NLS, _gcl_au and _cfuvid with purpose and duration. Items for compliance review under UK GDPR and PECR: analytics and advertising cookies set without consent; policy statements that describe controls which do not exist.",
+      "effort": "M",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/contact-desktop-chunk1.png"
+    },
+    {
+      "id": "PC-03",
+      "page": "/partner-program",
+      "title": "Why the page feels dry: dense hero over a stock photo, half-empty icon cards, the key steps hidden in a carousel, and no imagery or proof below the fold",
+      "severity": "high",
+      "category": "ux",
+      "evidence": "Hero: section.is-header is 900 px tall at 1440x900 (100vh, also 844 px at 390x844). It holds an H1 (64 px) and one centred paragraph of 59 words / 384 characters in 18 px white (7 lines, 772 px wide) over a stock Big Ben / red bus photo with a 60 percent teal overlay (.hero-bg-overlay.is-green rgba(4,52,53,0.6)); no CTA in the hero. Icon cards: four .pr-cards each 312x394 px (grid min-height 394 px, justify-content space-between), icon 83 px high, text 72 to 108 px, leaving roughly 200 px of empty white between icon and text; on mobile each card stacks at about 400 px tall for one line of text. 'How Our Partner Program Works': six text-only teal cards in a Swiper carousel showing 3 of 6; steps 04 to 06 ('Receive regular progress updates', 'Upon deal completion, receive your referral commissions', 'As Roscap completes subsequent deals with the client, receive commissions in perpetuity') are only visible after clicking Next 3 times; cards use aspect-ratio 4/5 with the title pushed to the bottom and the upper 60 percent empty. No photograph, diagram, person, number or testimonial appears after the hero; 'Our Partners' is 8 logos with no names. The closing form is the same five-field generic form as the home page under the home-page headline 'Let's discuss your next transaction, funding requirement, or investment opportunity.'",
+      "recommendation": "Keep the structure, change the proportions and the content density. 1) Hero (section.is-header): reduce to about 70vh, cut the paragraph to one sentence ('A referral programme for property professionals: introduce clients who need capital and share in the fee when the deal completes.'), add two buttons under it, 'Join the programme' (to the page's own form, anchor #partner-form) and 'Download the brochure'. 2) Why partner cards (.pr-cards-grid): remove min-height 394 and aspect-ratio, set the card to icon + 16 px gap + text, add one supporting line per card (for example 'Earn an additional revenue stream' + 'A referral fee on completion, with ongoing fees on repeat business with the same client'). 3) Replace the carousel with a static 6-step timeline (see PC-10) so steps 05 and 06 are visible without interaction. 4) Add one proof block between the steps and the logos: 'What partners receive' with 3 facts that can be confirmed (fee basis, update cadence, marketing materials). 5) Retitle the closing form 'Join the programme' with a Subject preset or a 'Your profession' select (see PC-19). Imagery: one honest photograph of the team or a meeting, or none; no further stock.",
+      "effort": "M",
+      "viewport": "1440x900, 390x844",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-desktop-chunk1.png"
+    },
+    {
+      "id": "PC-04",
+      "page": "/partner-program and brochure PDF",
+      "title": "Unverified and contractual claims in marketing copy: 'Join hundreds of current partners', 'commissions in perpetuity', and the brochure's fee percentages (for compliance review)",
+      "severity": "high",
+      "category": "copy",
+      "evidence": "Hero paragraph: 'Join hundreds of current partners who are successfully working with Roscap to support their client's capital requirements.' The page shows 8 partner logos. Carousel step 06: 'As Roscap completes subsequent deals with the client, receive commissions in perpetuity'. Brochure page 4 'TERMS & CONDITIONS': 'The Partner works exclusively with Roscap', 'The Partner will receive a 25% introductory referral fee for the first deal completed. For all future transactions with the same Client, the Partner will receive a 10% referral fee in perpetuity.', 'All referral fees are paid from the total deal commissions that Roscap receives.' Brochure page 2: 'Roscap has established over 1000 relationships with capital partners across the globe.' Both headline claims are flagged in the brief as unconfirmed and awaiting Clemente.",
+      "recommendation": "Until confirmed, replace with wording that is true today and does not promise a perpetual payment: hero 'Join our growing network of brokers, agents, architects, accountants and solicitors who introduce clients to Roscap.'; step 06 'Receive a further referral fee when we complete subsequent deals with the same client, as set out in your partner agreement.' If the numbers are confirmed, state them precisely ('300+ partners') and move the fee mechanics into a downloadable partner agreement or a 'Terms' section with 'subject to the partner agreement'. For compliance review: fee promises and 'in perpetuity' in marketing copy for introducers, 'exclusively' obligations stated only in a brochure, and 'over 1000 relationships' which is not substantiated on the site.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/brochure-p4-terms.png"
+    },
+    {
+      "id": "PC-05",
+      "page": "/partner-program and brochure PDF",
+      "title": "Lender-style and rate wording on the partner page and brochure ('minimal work', 'Interest Rate: Starting from 4% p.a.', 'private equity and debt firm') (for compliance review)",
+      "severity": "high",
+      "category": "compliance",
+      "evidence": "Icon card 2: 'Earn an additional recurring revenue stream with minimal work'. Brochure page 2: 'Roscap is a real estate private equity and debt firm.' Brochure page 3 'Debt Capital Raising': 'Interest Rate: Starting from 4% p.a.', 'Loan-to-Value Ratio: Up to 90%', 'Loan Amount: £100,000 to £100,000,000', 'Timelines: 6-36 months'. The footer on every page states Roscap 'undertakes introductory activities and provides advisory services solely in relation to unregulated activities' and is 'not authorised or regulated by the Financial Conduct Authority'. The brochure also lists 'Investment Loans' and the Privacy Policy lists 'buy-to-let mortgages'.",
+      "recommendation": "Partner page: change card 2 to 'Earn an additional revenue stream alongside your core service'. Brochure (re-export, see PC-06): describe Roscap as 'a real estate capital advisory firm' consistent with the site; remove or qualify the rate ('indicative lender pricing varies by asset, leverage and sponsor; terms are set by the lender') and LTV ('lender dependent'); drop 'Starting from'. For compliance review: headline rates and LTVs in marketing material from an unregulated introducer, and any reference to regulated mortgage contracts (owner-occupied or consumer buy-to-let) anywhere in the brochure or policies.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/brochure-p3-services.png"
+    },
+    {
+      "id": "PC-06",
+      "page": "/partner-program",
+      "title": "Brochure 'Download' gate is cosmetic, the PDF is 9.2 MB with no text layer, the popup form is named 'Contact Form', and the popup has no dialog semantics",
+      "severity": "high",
+      "category": "technical",
+      "evidence": "Clicking 'Download' (a.button.golden href='#', Webflow interaction) sets .leadgen-popup-overlay to display:flex with the heading <h1>Fill the form to download our brochure</h1> and a form (Full Name, Company Name, Company Email, Phone Number, all required, placeholders only, no privacy line). The form's data-redirect is the public file https://cdn.prod.website-files.com/693e84a885fe6122f0427916/696691d0e9eef486af9a744b_Roscap%20Partner%20Program.pdf, visible in the page source, so the gate can be bypassed. curl: HTTP 200, content-length 9211904 bytes (9.2 MB), 5 pages, producer pdf-lib, each page a single 1695x2400 JPEG (total image payload about 1.5 MB), no extractable text (pypdf returns 0 characters per page), so it is not searchable, not accessible and not indexable; it opens in the same tab via Webflow's redirect, replacing the site. The popup form's data-name is 'Contact Form', identical to the enquiry form on the same page, with duplicate ids (wf-form-Contact-Form, name, email, Phone). Popup accessibility: no role=dialog or aria-modal, focus stays on the Download button after opening (Tab then enters the first field), Escape does not close it (display stayed flex), the close control is a <div class='leadgen-close-wrap'> with no tabindex or role, body overflow stays visible. Mobile: popup 590 px tall fits in 844 px.",
+      "recommendation": "Decide the gate. Option A (open): make 'Download' a direct link to the PDF with target=_blank and rel=noopener and track it with a GA4 file_download event; delete the popup. Option B (gated): keep the form, rename it 'Partner Brochure Request', add 'Your details are used to send the brochure and follow up about the programme. See our Privacy Policy.', redirect to a noindex page /partner-brochure-thank-you that links the file (so the URL is not in the partner page source) and fires a distinct GA4 event. In both cases re-export the brochure from the design source as a text PDF under 2 MB (export text as text, JPEG quality 70, 1600 px wide) and fix its claims (PC-04, PC-05). Popup: add role=dialog, aria-modal=true and aria-labelledby on .leadgen-cont, make the close control a <button aria-label='Close'>, move focus to the first field on open and back to Download on close, close on Escape (small custom code snippet), and demote the heading from H1 to a div styled as heading.",
+      "effort": "M",
+      "viewport": "1440x900, 390x844",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-download-popup.png"
+    },
+    {
+      "id": "PC-07",
+      "page": "/contact-us (and every form on the site)",
+      "title": "Forms use placeholder-only labels, Subject is type=tel, no autocomplete, duplicate ids, and the newsletter button has no name",
+      "severity": "high",
+      "category": "a11y",
+      "evidence": "Contact form (/contact-us): zero <label> elements on the page (0 on every pre-fetched page); fields rely on placeholders coloured #999 on white (2.85:1, below 4.5:1), which disappear on typing. <input name='Subject' type='tel' required> (confirmed in markup and at runtime: type 'tel'); on iOS this opens the numeric keypad for a text subject and invites phone autofill; on /partner-program and / the same field is type='text'. No autocomplete attributes on name, email or tel fields. Phone is required while Message is optional. Footer newsletter: <input type=submit value='' class='footer-submit'> flagged by axe as critical input-button-name on every page; its email field also has no label. Partner page: duplicate ids 'wf-form-Contact-Form', 'name', 'email', 'Phone' across the brochure and enquiry forms. Focus state on inputs is only the browser's blue border (outline none, border rgb(56,152,236)), acceptable but off-brand.",
+      "recommendation": "In Webflow: add a Label element above each field (class 'form-label', 14 px, white on the teal panels, cream background cards keep black), or a visually hidden label class if the minimal look must stay; set Subject to Plain text; set autocomplete name, email, tel and organization on the matching fields; make Message required or Phone optional (recommend Phone optional, Message required); give the footer submit a value 'Subscribe' with text hidden visually and an aria-label; rename field ids on the brochure form (brochure-name, brochure-email, brochure-phone) so ids are unique; add a 2 px gold focus ring (box-shadow 0 0 0 2px #E1C979) to .input-field:focus-visible and .footer-form-input:focus-visible.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/contact-mobile-chunk1.png"
+    },
+    {
+      "id": "PC-08",
+      "page": "/contact-us and /contact-us-success",
+      "title": "Contact page gives few ways to make contact (hidden phone, no address, no response time), and the success page fires the conversion on any direct load",
+      "severity": "medium",
+      "category": "conversion",
+      "evidence": "Hero (section.is-contactus, 900 px): H1 sentence 'Speak with our team to discuss your next transaction, funding requirement, or investment opportunity.', then only two links: mailto:info@roscap.co.uk and instagram.com/roscap.uk. The phone link <a href='tel:+447850522789' class='c-social-card hide'> exists but .hide is display:none at every breakpoint (visible false at 1440, 1024 and 390). No postal address or registered office, no map, no response-time statement, no booking link (checked for calendly, cal.com, hubspot meetings). Grid is 646px 646px with the left column 524 px wide and 533 px tall, leaving the lower half of the hero empty under the two links. Success page: H1 'Thank you for filling the form. Our team will reach out to you soon!' with the same two links and nothing else in a 900 px teal panel; no next step, no expected response time. Loading https://www.roscap.co.uk/contact-us-success directly (no form submission) triggered generate_lead on analytics.google.com and three www.google.com/measurement/conversion requests on every viewport, so bookmarks, shares or bots hitting the URL count as conversions.",
+      "recommendation": "Contact hero left column: show the phone (remove .hide) or delete the element; add a line 'Roscap Limited, [registered office], London' and 'We reply within 1 working day' only if the team commits to it; optionally a 'Book a 20 minute call' link if a scheduler is in use. Success page copy: 'Thank you. We have received your enquiry and will reply within one working day. In the meantime: Our Services, Track Record, Insights.' with three links. Conversion integrity: in the success page's page-level head code, fire the GA4 event only when document.referrer contains '/contact-us' or when sessionStorage has a flag set on the contact page's form submit handler; alternatively convert the GA4 key event to a Webflow form 'success' DOM event on /contact-us rather than a page view.",
+      "effort": "S",
+      "viewport": "1440x900, 390x844",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/success-desktop.png"
+    },
+    {
+      "id": "PC-09",
+      "page": "/partner-program and /contact-us",
+      "title": "Heading structure and landmarks: three H1s on the partner page, step numbers as H3, hidden legacy section left in the DOM, no <main>, unnamed logo and social links, low-contrast footer text",
+      "severity": "medium",
+      "category": "a11y",
+      "evidence": "Partner page headings: H1 'Partner Program', H2 'Why Partner With Us?', H1 'How Our Partner Program Works', H3 '01' / H3 'Join the Program' (and so on for 6 steps), H1 'Fill the form to download our brochure', H2 'How The Partner Program Works' (inside section#pr-timeline-section with class hide, display:none, containing 11 <img> tags and legacy step text), H2 'Our Partners', H2 'Let's discuss...'. axe: heading-order (moderate) on .join-number; region violations on 23 nodes (no <main> on any page); link-name (serious) on a.nav_brand-2 (logo image alt=''), the three footer social links (icons only), and on mobile a.nav_button-2 (hamburger); color-contrast (serious) on p.text-color-grey2 #8d8d8d on #fffcf5 = 3.23:1 (footer copyright and disclaimer, 14 px). FAQ landmarks: each Webflow dropdown list is a <nav>, giving 5 nav landmarks inside the FAQ.",
+      "recommendation": "Partner page: set 'How Our Partner Program Works' to H2, step titles to H3, and change the '01' numbers to a div with aria-hidden=true (keep the visual); demote the popup heading (PC-06); delete section#pr-timeline-section (dead content). Site-wide: wrap page content in a <main> element (Webflow: set the .main-wrapper div tag to Main); add alt 'Roscap' to the nav logo image or aria-label 'Roscap home' to a.nav_brand-2; aria-label 'Email Roscap', 'Roscap on LinkedIn', 'Roscap on Instagram' on the footer social links and 'Open menu' on the hamburger; change --grey2 to #6f6f6f (4.6:1 on #FFFCF5) for the footer text.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-desktop-chunk3.png"
+    },
+    {
+      "id": "PC-10",
+      "page": "/partner-program",
+      "title": "'How Our Partner Program Works' carousel hides steps, confuses pagination, breaks at tablet width and costs a third-party library",
+      "severity": "medium",
+      "category": "ux",
+      "evidence": "Swiper 12 (swiper-bundle.min.js 37 KB plus swiper-bundle.min.css from cdn.jsdelivr.net, render blocking, no SRI, no cache headers per Lighthouse) drives 6 static steps. Desktop: slidesPerView 3, so the sequence is 1-2-3, then 2-3-4, 3-4-5, 4-5-6 (4 clicks of Next to reach the end; Next disabled at active index 3). Pagination shows 4 bullets for 6 steps ('Go to slide 1..4'). Keyboard: bullets and arrows are tabbable (Swiper a11y), ArrowRight does nothing (keyboard module not enabled). Mobile 390: 1 slide per view, 6 swipes, each card 424 px tall with the title at the bottom and the upper area empty; 6 bullets 8x8 px. Tablet 1024: the connector arrows between cards render as 3 px dashes (join-arrow-slot embed collapses), see screenshot. Step texts recorded: 01 Join the Program; 02 Exclusively refer clients to Roscap; 03 We work with clients to provide capital solutions; 04 Receive regular progress updates from Roscap; 05 Upon deal completion, receive your referral commissions; 06 As Roscap completes subsequent deals with the client, receive commissions in perpetuity.",
+      "recommendation": "Replace the Swiper with a static ordered list styled as a timeline: on desktop a 6-column row (or 3x2 grid) of compact cards 180 to 220 px tall with the number, a 1-line title and a 1-line detail, gold connector line drawn with a CSS pseudo-element; on mobile a vertical list with a left gold rail. Optional restrained motion: a CSS scroll-driven reveal (animation-timeline: view(); @supports fallback shows everything, and prefers-reduced-motion disables it). Remove the Swiper script and stylesheet from the page head/footer code. If a carousel must stay: slidesPerView 'auto' with partial next-card peek, keyboard: { enabled: true }, pagination type 'fraction' ('3 / 6'), and fix the tablet arrow embed.",
+      "effort": "M",
+      "viewport": "1440x900, 1024x768, 390x844",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-tablet-chunk2.png"
+    },
+    {
+      "id": "PC-11",
+      "page": "/contact-us",
+      "title": "FAQ copy positions Roscap as a lender and promises timescales ('fund', 'underwrite', 'apply', '5–10 working days') (for compliance review)",
+      "severity": "high",
+      "category": "compliance",
+      "evidence": "FAQ questions and answers: 'What types of projects and assets does Roscap fund?' with answer 'We arrange funding for ... We also fund international projects through our global capital network.'; 'What information do I need to apply for property finance through Roscap?' with answer 'To underwrite a deal, we typically require ...'; 'How quickly can Roscap arrange development finance or a bridging loan?' with answer 'For urgent acquisitions, Roscap can secure bridging loans in as little as 5–10 working days, subject to valuation and legal readiness. Development finance and commercial mortgages typically complete within 6–8 weeks'; first answer 'secure competitive terms'. The footer states Roscap only undertakes introductory and advisory activities. The last answer ends without a full stop ('...international real estate projects').",
+      "recommendation": "Reword to introducer and adviser language: 'What types of projects does Roscap arrange finance for?', 'We arrange funding ... We also arrange finance for international projects'; 'What information do I need to start a conversation with Roscap?' and 'To assess a deal and approach lenders, we typically ask for ...'; timescale answer: 'Timing depends on the lender, valuation and legal readiness. Bridging facilities are usually the fastest; development finance and commercial mortgages take longer because of lender due diligence.' Remove specific day and week counts unless the team is content for them to be read as commitments. Add the missing full stop. For compliance review: 'fund', 'underwrite', 'secure' and quoted timescales as potential holding-out as a lender and as promises of outcome.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/contact-faq-multi.png"
+    },
+    {
+      "id": "PC-12",
+      "page": "/contact-us",
+      "title": "FAQ accordion is a Webflow dropdown menu: no focus indicator, 'menu' semantics, answers misaligned, no FAQPage schema",
+      "severity": "medium",
+      "category": "a11y",
+      "evidence": "Each item is div.faqs-acc.w-dropdown: toggle <div role=button tabindex=0 aria-haspopup='menu' aria-expanded=false id=w-dropdown-toggle-n>, list <nav class=w-dropdown-list>. Keyboard: Enter opens it and aria-expanded becomes true, but computed focus style on the toggle is outline none and box-shadow none (hover shows a 2 px gold border, focus shows nothing). Items open independently (first and third open together), chevron rotates 180 degrees. Open state: the answer paragraph starts at x=82 while the question starts at x=110 and sits on the cream page background outside the white card, in 22 px / 33 px text versus the 20 px question (see screenshot). Questions are plain divs, not headings. No <script type='application/ld+json'> on the page (jsonLd: []).",
+      "recommendation": "Keep the look, fix the mechanics: add .faqs-acc-header:focus-visible { border-color:#E1C979; outline:2px solid #E1C979; outline-offset:2px }; set the question wrapper tag to H3; give the open list the same white card and 41 px left padding as the header (class faqs-body-wrapper padding 0 41px 24px) and set answer text to 18 px; if rebuilding, use a native <details><summary> embed per item to drop the menu semantics and the five <nav> landmarks. Add FAQPage JSON-LD in the page head code only after the FAQ copy has passed compliance review (PC-11).",
+      "effort": "S",
+      "viewport": "1440x900",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/contact-faq-multi.png"
+    },
+    {
+      "id": "PC-13",
+      "page": "/partner-program and /contact-us",
+      "title": "Motion: scroll-in fades ignore prefers-reduced-motion, nav menu vanishes on scroll down, popup appears with no transition, and GSAP is loaded but unused",
+      "severity": "medium",
+      "category": "motion",
+      "evidence": "Webflow IX2 sets inline opacity:0 on sections below the fold (section.pt-0 icon cards, 'Our Partners', the form section) until scrolled into view; tested with reducedMotion 'reduce' (matchMedia true) and the same opacity:0 state is applied, and site.css contains 0 prefers-reduced-motion rules. Site-wide script fades .nav_menu_2 to opacity 0 with pointer-events none on any downward scroll and restores it on upward scroll (desktop only). The brochure popup toggles display none to flex with opacity 1 immediately (no transition). gsap.min.js 29 KB + ScrollTrigger 18 KB + SplitText 4 KB + TextPlugin 4 KB load on both pages but ScrollTrigger.getAll() is 0 and the only inline code is gsap.registerPlugin(...). Swiper transition speed 600 ms is fine.",
+      "recommendation": "Add to site-wide custom CSS: @media (prefers-reduced-motion: reduce) { [data-w-id], .section { opacity:1 !important; transform:none !important; transition:none !important } } and set Webflow Interactions to respect reduced motion where the option exists. Move the GSAP script tags from Site Settings to page-level footer code on the pages that actually animate (home, our-services) so partner and contact save about 55 KB of blocking JS. Give the popup a 150 ms opacity transition (IX2 'fade in' step) and keep the overlay backdrop blur. Reconsider hiding the nav on scroll down: on a long page like Partner Program it removes the 'Speak to us' CTA exactly while the visitor reads; a 'shrink on scroll' is calmer and keeps the CTA.",
+      "effort": "S",
+      "viewport": "1440x900",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-download-popup.png"
+    },
+    {
+      "id": "PC-14",
+      "page": "/partner-program and /contact-us",
+      "title": "Page weight and LCP: 195 KB gtag, a 202 KB decorative SVG on the contact hero, Swiper from a third CDN, unsized images",
+      "severity": "medium",
+      "category": "performance",
+      "evidence": "Lighthouse mobile: partner-program performance 71, LCP 4.3 s, TBT 350 ms, 693 KB; contact-us performance 67, LCP 5.9 s, TBT 330 ms, 764 KB. Largest requests, partner: gtag.js 195 KB, webflow chunks 89 + 53 KB, Swiper JS 37 KB (+ CSS), jQuery 31 KB, hero webp 32 KB (800 w variant served on mobile), GSAP 55 KB across 4 files. Contact: Vector-2.svg 202 KB (the hero's decorative wave background img.hero-bg.is-contact, loading=lazy on an above-the-fold image), gtag 195 KB. Lighthouse flags render-blocking Swiper CSS/JS and GSAP, jsDelivr assets without efficient cache lifetimes, 8 to 12 unsized images (logos, icons) and forced reflow.",
+      "recommendation": "1) Run Vector-2.svg through SVGO (expect under 40 KB) or replace it with a 1200 px wide WebP at quality 60 (about 60 KB) as a CSS background; remove loading=lazy from hero images. 2) Load gtag only after consent (PC-02) which removes 195 KB from first load for non-consenting visitors. 3) Remove Swiper (PC-10) and page-scope GSAP (PC-13). 4) Add width and height attributes to the 8 partner logos and 4 icons in Webflow image settings. 5) Keep the partner hero webp but add fetchpriority=high via the Webflow 'Load: eager' setting.",
+      "effort": "M",
+      "viewport": "390x844",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/contact-mobile-chunk1.png"
+    },
+    {
+      "id": "PC-15",
+      "page": "/partner-program",
+      "title": "'Our Partners' logos have no names, no links, inconsistent sizing and messy source files",
+      "severity": "medium",
+      "category": "visual",
+      "evidence": "Eight img.asset-image, all alt='' and none wrapped in a link: cover-1.webp (Revere, 409x45 shown 204x22), anyooooo.png (ANYO, 151x67 shown 151x67), cambridonaon.png (Cambridge Finance, 246x67), image 60.png (Capio Consult, 450x450 shown 150x130), Alliance_cap_email_signature__2_-removebg-preview 1.webp (Alliance Capital, 313x150, cut from an email signature), crowwwwwn.png (Crown Investments, 260x260), ryre.webp (RYRE, 316x316 shown 108x108), design spae.png (Design Space 2, 419x112). Mixed PNG/WebP, mixed visual weights (a dark blue block beside a thin gold wordmark), and screen readers hear nothing in this section except the heading. On mobile the eight logos stack in a single 1400 px tall column.",
+      "recommendation": "Give each image alt text with the partner name (or add a visually hidden list of names), set a consistent max-height of 40 px with the card centred, consider a single-colour teal treatment to calm the grid, rename the assets in Webflow Assets to the partner names, and confirm written permission for each logo. On mobile use a 2-column grid. If partners have public sites, make each logo a link with rel=noopener.",
+      "effort": "S",
+      "viewport": "1440x900, 390x844",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-desktop-chunk2.png"
+    },
+    {
+      "id": "PC-16",
+      "page": "/404",
+      "title": "404 page is Webflow's unbranded default: no navigation, no footer, stock icon, H3 only",
+      "severity": "medium",
+      "category": "ux",
+      "evidence": "curl and Playwright: HTTP 404 (correct), title 'Not Found', canonical https://www.roscap.co.uk/404. Body is div.utility-page_component with Webflow's static icon (cdn.prod.website-files.com/static/page-not-found.211a85e40c.svg), <h3>Page Not Found</h3>, 'The page you are looking for doesn't exist or has been moved', a white 'Go Home' button in Webflow's default .button style (not the gold brand button). No navbar, no footer, no links other than home. axe: no main landmark, no H1. GA4 loads here too.",
+      "recommendation": "In Webflow Pages > Utility pages > 404: add the site Navbar and Footer symbols, replace the icon with the Roscap mark, use H1 'Page not found' in Boska italic, body copy 'The page may have moved or the link may be out of date.', and three brand buttons: Home, Our Services, Speak to us. Set the page title to 'Page not found | Roscap'.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/404-desktop.png"
+    },
+    {
+      "id": "PC-17",
+      "page": "/partner-program, /contact-us, /contact-us-success",
+      "title": "Copy consistency: US 'Program' versus UK 'programme', possessive error, three variants of the nav CTA, exclamation marks in system copy",
+      "severity": "low",
+      "category": "copy",
+      "evidence": "Nav, H1, carousel heading and <title> use 'Partner Program' while the meta description uses 'Roscap's partner programme'; footer link reads 'Partner program' (lower-case p). Hero: 'to support their client's capital requirements' (should be clients'). Nav CTA markup contains 'Speak with us', 'Speak to Us' and 'SPEAK TO US'. Success page H1: 'Thank you for filling the form. Our team will reach out to you soon!'. Webflow default error copy on every form: 'Oops! Something went wrong while submitting the form.' Hero/meta: 'maximise' and 'Utilise' are UK spellings, so the page is otherwise UK English.",
+      "recommendation": "Standardise on 'Partner Programme' in visible copy and <title> (keep the URL /partner-program and the nav label can follow); fix to 'their clients' capital requirements'; use 'Speak to us' everywhere; success copy 'Thank you. We have received your enquiry and will reply within one working day.'; error copy 'Something went wrong. Please email info@roscap.co.uk and we will pick it up.' Remove exclamation marks from system messages.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/success-desktop.png"
+    },
+    {
+      "id": "PC-18",
+      "page": "site-wide forms",
+      "title": "Every enquiry form is named 'Contact Form' with different success behaviours, so leads cannot be attributed and GA4 only measures /contact-us",
+      "severity": "medium",
+      "category": "data",
+      "evidence": "Form inventory (data-name): 'Contact Form' on / (no redirect), /insights (no redirect), /partner-program enquiry (no redirect), /partner-program brochure popup (redirect to PDF), blog template (no redirect), /contact-us (redirect /contact-us-success); 'Footer Subscription Form' on all pages. All submit to Webflow's native endpoint (webflow.com/api/v1/form/ in the Webflow JS) and appear in the Webflow Forms inbox and notification emails under the same name. Only the /contact-us form reaches the success page that fires generate_lead, so partner, home, insights and blog enquiries are invisible to GA4 and Google Ads.",
+      "recommendation": "Rename each form in its Form settings ('Home enquiry', 'Insights enquiry', 'Partner programme enquiry', 'Brochure request', 'Blog enquiry', 'Contact enquiry'); add a hidden field 'source_page' prefilled by a 2-line script with location.pathname; set the same redirect /contact-us-success on every enquiry form (or fire the GA4 event on the Webflow form success element) so all leads count. For the partner enquiry add a required select 'I am a' (Broker, Estate agent, Architect, Accountant, Solicitor, Developer, Other) which also makes the page feel built for its audience.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-desktop-chunk3.png"
+    },
+    {
+      "id": "PC-19",
+      "page": "site-wide footer",
+      "title": "Newsletter form has no consent line, no double opt-in statement and a nameless icon button (for compliance review)",
+      "severity": "low",
+      "category": "compliance",
+      "evidence": "Footer: 'Sign up for new alerts and receive updates in your inbox.' with <input type=email placeholder='Email Address' required> and <input type=submit value=''> (arrow icon as background image). Success copy is Webflow's default 'Thank you! Your submission has been received!'; no privacy or unsubscribe wording; no mention of a confirmation email; submissions go to the Webflow Forms inbox (no mailing tool integration is visible from the front end).",
+      "recommendation": "Add one line under the field: 'Occasional market updates. Unsubscribe at any time. See our Privacy Policy.'; give the button an accessible name 'Subscribe' (PC-07); set success copy 'Thanks, you are on the list.' For compliance review under PECR: consent wording for marketing email to people who are not existing customers, and how the list is stored and unsubscribed if it only lives in the Webflow inbox.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-mobile-chunk6.png"
+    },
+    {
+      "id": "PC-20",
+      "page": "/partner-program",
+      "title": "Hero text contrast varies over the photo: fine on average, below 4.5:1 over light streaks",
+      "severity": "low",
+      "category": "visual",
+      "evidence": "Pixel sampling of partner-desktop-fold.png behind the hero paragraph (x 330 to 1110, y 400 to 600, excluding text pixels): background luminance median gives 7.3:1 against white, 95th percentile 4.2:1, 99th percentile 1.8:1 (motion-blur light streaks from the bus and street lamps). Overlay is rgba(4,52,53,0.6).",
+      "recommendation": "Raise .hero-bg-overlay.is-green to 0.72 opacity or add a linear-gradient from rgba(4,52,53,0.85) at the text block to 0.5 at the edges; with the shorter hero copy from PC-03 the text block is small enough to protect fully.",
+      "effort": "S",
+      "viewport": "1440x900",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-desktop-fold.png"
+    }
+  ],
+  "opportunities": [
+    {
+      "page": "/partner-program",
+      "title": "A 'What partners receive' terms block instead of a carousel step",
+      "description": "Once Clemente confirms the fee basis, show it plainly in a three-column cream block under the timeline: 'Referral fee on completion', 'Fee on repeat deals with the same client', 'Progress updates at each milestone', each with one qualifying line and a link to the partner agreement. Transparency is the strongest conversion lever for introducers and it removes the need to put percentages or 'in perpetuity' in headlines.",
+      "effort": "S"
+    },
+    {
+      "page": "/partner-program",
+      "title": "Audience-specific enquiry form and prefilled route",
+      "description": "Give the partner page its own form (fields: Name, Company, Email, Phone optional, 'I am a' select, Message) titled 'Join the programme', and point the hero and card CTA to it with an anchor (#partner-form) rather than to the generic /contact-us. Use a hidden source field so partner leads are distinguishable in Webflow and GA4.",
+      "effort": "S"
+    },
+    {
+      "page": "/partner-program",
+      "title": "CSS scroll-driven timeline reveal (no library)",
+      "description": "Build the 6-step timeline as a static grid and add a restrained reveal with CSS animation-timeline: view() that draws the gold connector and fades each step in as it enters the viewport; wrap in @supports and @media (prefers-reduced-motion: no-preference) so unsupported browsers and reduced-motion users see the finished state. Zero JavaScript, lighter than Swiper, and it adds meaning (sequence) rather than decoration.",
+      "effort": "M"
+    },
+    {
+      "page": "/partner-program",
+      "title": "Serve the brochure as a web page",
+      "description": "Publish the brochure content as /partner-programme/brochure (or sections on the partner page) with a 'Download PDF' link. It becomes indexable, accessible, lighter and editable in Webflow when terms change, and the PDF can be regenerated from the same copy.",
+      "effort": "M"
+    },
+    {
+      "page": "/contact-us",
+      "title": "'What happens next' strip under the form",
+      "description": "Three small steps in the empty lower half of the hero's left column: 'We reply within one working day', 'A 20 minute call to understand the deal', 'Indicative options from our lender and investor network'. Only include commitments the team will keep; it answers the main anxiety on a contact page and fills dead space without imagery.",
+      "effort": "S"
+    },
+    {
+      "page": "/contact-us",
+      "title": "Phone and office line, and a scheduler if one is used",
+      "description": "Reveal the existing tel link (+44 7850 522789 formatted with spaces), add the registered office line and, if the team uses Calendly or similar, a 'Book a call' link. Each is one element in the existing .c-social-wrap.",
+      "effort": "S"
+    },
+    {
+      "page": "/404",
+      "title": "Branded 404 with navigation",
+      "description": "A cream page with the navbar and footer symbols, the Roscap mark, H1 'Page not found', one line, and three gold buttons (Home, Our Services, Speak to us). Keeps lost visitors, especially from old blog links, inside the site.",
+      "effort": "S"
+    }
+  ],
+  "screenshots": [
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-desktop-chunk1.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-desktop-chunk2.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-carousel-step3.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-download-popup.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/partner-tablet-chunk2.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/contact-desktop-chunk1.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/contact-faq-multi.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/404-desktop.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/success-desktop.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/brochure-p4-terms.png"
+  ],
+  "data": "## Form inventory (site-wide, from live markup)\n\n| Page | Form (data-name) | Fields (type, required) | Labels | Submit | Redirect / success copy | Fits context |\n|---|---|---|---|---|---|---|\n| /contact-us | Contact Form | name text req; email email req; Phone tel req; Subject **tel** req; Message textarea optional | placeholder only | native input, visible, fs-mirrorclick target | /contact-us-success; inline 'Thank you!' hidden; fail 'Oops! Something went wrong while submitting the form.' | yes, but no labels, Subject type wrong, no consent line, no spam protection visible (no honeypot, no reCAPTCHA/Turnstile) |\n| / (home) | Contact Form | same 5 fields, Subject text | placeholder only | native submit hidden on desktop (formbuttonhide-desktop) + anchor trigger; Finsweet loaded so it works | none; inline 'Thank you! Your submission has been received!' | generic |\n| /insights | Contact Form | same as home | placeholder only | same pattern, Finsweet loaded | none; inline default | generic |\n| /partner-program (bottom) | Contact Form | same 5 fields, Subject text | placeholder only | native submit display:none at >=992; anchor trigger; **Finsweet NOT loaded: dead on desktop/tablet** | none; inline default | generic headline from home, no partner fields |\n| /partner-program (popup) | Contact Form (leadgen-fomr) | name text req; Company-Name text req; email email req ('Company Email'); Phone tel req | placeholder only | native, visible | redirect to public PDF (9.2 MB, image-only) | gate is cosmetic; same data-name as enquiry form; duplicate ids |\n| /blogs/* template | Contact Form | same as home | placeholder only | hidden submit + anchor trigger; **Finsweet NOT loaded** | none | same bug as partner page |\n| all pages (footer) | Footer Subscription Form | Email email req | none | input type=submit value='' (icon) | none; 'Thank you! Your submission has been received!' | no consent / double opt-in wording |\n| /contact-us-success, legal pages, /our-services, /about-us, /track-record | footer form only | | | | | |\n\nAll forms post to Webflow's native endpoint (string 'https://webflow.com/api/v1/form/' present in webflow.schunk.e24cca2f96656830.js); form method attribute is 'get' with no action, Webflow JS intercepts.\n\n## Tracking and cookies (fresh context, no interaction)\n\n| Page | Third-party hosts | Cookies after load | Notes |\n|---|---|---|---|\n| /partner-program | googletagmanager.com (gtag 195 KB), analytics.google.com, stats.g.doubleclick.net, cdn.jsdelivr.net (Swiper), d3e54v103j8qbb.cloudfront.net (jQuery) | _cfuvid (CF, session, httpOnly), _ga, _ga_H8HS2R6NLS (400 days) | gcd=13l3l3l3l1l1 (no consent mode defaults), npa=0 |\n| /contact-us | same minus Swiper, plus @finsweet/attributes@2 (15 chunks) | same | |\n| /this-page-does-not-exist-xyz | gtag, analytics, doubleclick, cloudfront | same | GA on 404 |\n| /contact-us-success | plus www.google.com/measurement/conversion x3 (hn=googleadservices.com) | plus _gcl_au (90 days) and localStorage _gcl_ls | generate_lead fires on page load, 3 conversion pings |\n\nNo consent banner element, no consent-mode script, no footer preference link on any page. Cookie Policy and Privacy Policy sentences quoted in PC-02.\n\n## Carousel steps recorded (desktop, Next clicked until disabled)\n\n| Click | Active index | Visible slides | Prev/Next |\n|---|---|---|---|\n| 0 | 0 | 1,2,3 | prev disabled |\n| 1 | 1 | 2,3,4 | |\n| 2 | 2 | 3,4,5 | |\n| 3 | 3 | 4,5,6 | next disabled |\n\nStep texts: 01 Join the Program; 02 Exclusively refer clients to Roscap; 03 We work with clients to provide capital solutions; 04 Receive regular progress updates from Roscap; 05 Upon deal completion, receive your referral commissions; 06 As Roscap completes subsequent deals with the client, receive commissions in perpetuity. Pagination: 4 bullets. Mobile: 1 slide per view, swipe and arrow tap both advance (active 0 to 3 recorded), arrows 44x44, bullets 8x8. Keyboard: bullets and arrows tabbable; ArrowRight on the page does nothing.\n\n## Partner logos\n\n| File | Natural | Displayed (1440) | alt | link |\n|---|---|---|---|---|\n| cover-1.webp (Revere) | 409x45 | 204x22 | '' | no |\n| anyooooo.png (ANYO) | 151x67 | 151x67 | '' | no |\n| cambridonaon.png (Cambridge Finance) | 246x67 | 204x56 | '' | no |\n| image 60.png (Capio Consult) | 450x450 | 150x130 | '' | no |\n| Alliance_cap_email_signature__2_-removebg-preview 1.webp | 313x150 | 204x98 | '' | no |\n| crowwwwwn.png (Crown Investments) | 260x260 | 108x108 | '' | no |\n| ryre.webp (RYRE) | 316x316 | 108x108 | '' | no |\n| design spae.png (Design Space 2) | 419x112 | 204x55 | '' | no |\n\n## axe-core (serious/critical, desktop and mobile)\n\n- color-contrast (serious): footer p.text-color-grey2 #8d8d8d on #fffcf5 = 3.23:1, both pages, all viewports.\n- input-button-name (critical): footer .footer-submit value=''.\n- link-name (serious): a.nav_brand-2 (logo alt=''), footer .social-link x3; on mobile also a.nav_button-2 (hamburger).\n- heading-order (moderate): h3.join-number '01' after h1 (partner).\n- region (moderate): 23 nodes partner, 20 nodes contact: no <main>.\n- 404: landmark-one-main, page-has-heading-one, region.\n\n## Lighthouse (pre-run)\n\n| Page | Device | Perf | A11y | LCP | TBT | Weight |\n|---|---|---|---|---|---|---|\n| partner-program | mobile | 71 | 85 | 4.3 s | 350 ms | 693 KB |\n| partner-program | desktop | 94 | 85 | 1.2 s | 10 ms | 860 KB |\n| contact-us | mobile | 67 | 87 | 5.9 s | 330 ms | 764 KB |\n| contact-us | desktop | 85 | 87 | 1.3 s | 220 ms | 764 KB |\n\n## Brochure PDF\n\nURL in page source as data-redirect; HTTP 200; 9,211,904 bytes; 5 pages 1695x2400; producer pdf-lib; one JPEG per page (about 1.5 MB total image data); no text layer (pypdf 0 chars/page); poppler reports a damaged xref ('Couldn't find trailer dictionary') although pypdf and browsers open it. Content: cover; 'Real Estate Private Equity & Debt Advisory' + 'The ROSCAP Process' wheel; 'Our Services' (Equity Capital Raising, Debt Capital Raising with 'Interest Rate: Starting from 4% p.a.', 'Loan-to-Value Ratio: Up to 90%', Real Estate Acquisitions and Disposals £1m to £250m); 'About the Program' + 5-step chevron graphic + Terms & Conditions (25% first deal, 10% in perpetuity, exclusivity); back cover with email and instagram.\n\n## 404 and success\n\n- /this-page-does-not-exist-xyz: HTTP 404 via curl and Playwright; Webflow default utility page; no nav/footer; title 'Not Found'; canonical /404.\n- /contact-us-success: HTTP 200; <meta name=robots content=noindex>; not in sitemap.xml (0 matches); canonical self; title 'Enquiry Received | Roscap'; H1 'Thank you for filling the form. Our team will reach out to you soon!'; only mailto and instagram links; footer newsletter form present.\n\n## Motion checks\n\n- Sections below the fold carry inline opacity:0 (Webflow IX2) until scrolled; identical under prefers-reduced-motion: reduce; 0 reduced-motion rules in site.css.\n- Nav menu: opacity 0 + pointer-events none on scroll down, restored on scroll up (desktop).\n- Download popup: display none to flex, opacity 1 instantly; no page jump (scrollY unchanged); Escape does not close; close control is a div.\n- GSAP core + ScrollTrigger + SplitText + TextPlugin loaded on both pages; ScrollTrigger.getAll() = 0; no inline animation code.\n\n## Assumptions and limits\n\n- No form was submitted and no submit control was clicked; the dead-submit finding (PC-01) rests on computed display of the native button, the absence of the Finsweet script and window.FinsweetAttributes being undefined, and the same markup working on pages that do load Finsweet.\n- The gcd parameter interpretation (no consent-mode defaults) follows Google's documented encoding; the absence of any gtag('consent', ...) call in page scripts corroborates it.\n- Where submissions go after the Webflow Forms inbox (CRM, mailing tool) is not visible from the front end.\n- The partner claims ('hundreds', 'in perpetuity', '25%/10%') are treated as unverified per the brief; recommendations assume they are unconfirmed until Clemente answers.\n- Scripts and outputs: /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/work/partner-contact/ (pages.js, interact.js, motion.js and their JSON results); screenshots in /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/partner-contact/."
+}

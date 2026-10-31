@@ -1,0 +1,437 @@
+{
+  "scope": "Home (https://www.roscap.co.uk/) and About Us (/about-us), audited 31 October 2026 at 1440x900, 1024x768 and 390x844 (iPhone emulation, DPR 2), plus no-JS and prefers-reduced-motion passes. Read-only: no form was submitted.",
+  "summary": "Both pages look premium and consistent (Boska italic display, Switzer body, teal, cream and gold), have no console errors, no horizontal overflow and CLS of 0, and the footer carries the correct not-authorised disclaimer. The Home page's problems are concentrated in the hero: a custom-code video embed pulls a 6.77 MB MP4 from an S3 bucket in us-east-1 with no poster while a hidden Webflow background video still downloads a further 1.5 MB, so 8.1 MB of the 9.8 MB page is video and, until the first frame paints, the white headline sits on a cream background and is invisible. There is still no cookie banner and GA4 fires before consent. The About page is light (1.5 MB) but loads a script from a CodeSandbox URL, its team dialog is a keyboard trap (focus cycles between two links, Escape does nothing, the close control is an image), its hero image is lazy-loaded and upscaled 3.3x on mobile, and its content is thin: no founding year, office, company number or the 2026 National Property Awards finalist places, two team members without photos, and a role title that contradicts the bio. Copy is largely clean but a handful of phrases (private investment firm, co-investing, our portfolio, projects funded, ensuring every client secures) read as if Roscap deploys capital or guarantees outcomes, which sits awkwardly next to the introductory-only disclaimer. The approved rates panel works correctly against the live feed; its remaining issues are polish (no visual up/down cue, 12 px updated line, stale hard-coded fallback values).",
+  "strengths": [
+    "Coherent, restrained visual system on both pages: Boska italic display, Switzer body, teal #043435, cream #FFFCF5 and gold #E1C979 used consistently; generous spacing; no horizontal overflow at 390, 1024 or 1440; CLS 0 on Home and 0.004 to 0.007 on About.",
+    "Hero value proposition is legible in one screen at every width: one headline, one 40-word paragraph, one gold CTA. The mobile menu is clear, full-screen, with the current page in gold and a large Speak With Us button.",
+    "The approved Current market rates panel works: runtime values match the feed exactly (BoE 3.75% / -0.25%, Fed 3.75% - 4.00% / +0.25%, EURIBOR 2.643% / +0.025%), the line Updated 31 October 2026 is injected, and title tooltips carry source and decision date.",
+    "Correct FCA wording in the footer on both pages (Roscap is not authorised or regulated by the Financial Conduct Authority). No page copy claims authorisation.",
+    "Keyboard basics are mostly right: logical tab order (37 stops on Home desktop), visible focus rings on every link and button, Swiper arrows exposed as role=button with aria-label Next slide / Previous slide and tabindex 0, team dialog opens with Enter and locks background scroll.",
+    "No console errors or page errors, and no failed resources other than GA collect beacons aborted on navigation; canonicals, meta descriptions and Organization JSON-LD present (logo URL returns HTTP 200).",
+    "Desktop nav behaviour is considered: menu links fade out on wheel-scroll down and return on scroll up while the logo and Speak To Us stay visible; navbar turns solid teal after 80% of viewport.",
+    "About page is comparatively light (1,553 KiB mobile) and already uses AVIF for the hero and story images."
+  ],
+  "findings": [
+    {
+      "id": "HA-01",
+      "page": "/",
+      "title": "Hero loads two videos: 6.77 MB S3 MP4 with no poster plus a hidden 1.5 MB Webflow background video",
+      "severity": "high",
+      "category": "performance",
+      "evidence": "section.is-heroheader contains a custom-code embed (.hero-bg.w-embed) with <video autoplay muted loop playsinline><source src=\"https://roscap.s3.us-east-1.amazonaws.com/Roscap+Video++(1).mp4#t=1\"> (HEAD: Content-Length 6766236, 1440x1078, 17.7 s, no poster, served direct from S3 us-east-1, not via a CDN) AND the original Webflow element .hero-bg.hide.w-background-video, which is display:none but whose <video> still requests the 1,553,967-byte MP4 and 20 KB poster. Network capture at all three viewports: both files download (status 206) on desktop and on the 390 px mobile profile. Lighthouse: 6,608 KiB + 1,520 KiB of a 9,793 KiB mobile page; LCP 5.8 s mobile, performance 66. The S3 video only starts playing once buffered (first byte at 1.4 s, complete at 4.0 s on a fast connection).",
+      "recommendation": "Delete the S3 custom-code embed and use the Webflow background video element instead (it already has a poster and a 1.5 MB MP4), or re-encode the clip once at 1280x720, 24 fps, ~10 s loop, target 1.0 to 1.5 MB H.264 plus WebM and upload to Webflow. Keep preload=metadata, add the poster, and on the 479 px breakpoint show the poster only (Webflow background video offers no mobile toggle, so add a small script that removes the <source> when matchMedia('(max-width: 767px)') matches). Expected saving: about 6.6 MB, two thirds of the page.",
+      "effort": "M",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-fold.png"
+    },
+    {
+      "id": "HA-02",
+      "page": "/",
+      "title": "Hero text is white on cream until the video's first frame paints",
+      "severity": "high",
+      "category": "visual",
+      "evidence": "Computed styles: .section.is-heroheader background-color rgba(0,0,0,0), .main-wrapper transparent, body #FFFCF5, h1 and paragraph colour #FFFFFF. With video requests blocked (simulating a slow connection before the 6.7 MB file arrives) the fold shows an empty cream block with the headline, paragraph and nav links invisible; only the gold button and logo are visible. Screenshots home-d1440-novideo-fold.png and home-m390-novideo-fold.png. The hero has no poster image and no fallback colour.",
+      "recommendation": "In Webflow Designer set .section.is-heroheader background colour to the brand teal #043435 and give the video a poster (the Webflow element already has one). Optionally add a 60% teal gradient overlay like the About page's .overlllaaaay so text contrast no longer depends on the frame.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-novideo-fold.png"
+    },
+    {
+      "id": "HA-03",
+      "page": "/ and /about-us",
+      "title": "No cookie consent banner; GA4 loads and sends hits before consent",
+      "severity": "critical",
+      "category": "compliance",
+      "evidence": "Head code loads https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS with gtag('config') immediately; on every page load 3 requests to googletagmanager.com, analytics.google.com and stats.g.doubleclick.net were recorded before any interaction. DOM scan for elements whose id or class contains 'cookie' returned none on either page. The in-house banner approved by Clemente is not live. Footer links to /cookie-policy exist but no consent mechanism.",
+      "recommendation": "Ship the approved in-house banner: default gtag consent mode to denied (gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied'})) in head code, load gtag only after accept, store the choice in localStorage, and expose a Cookie settings link in the footer Legal column. Google Ads landing on /contact-us makes this more urgent (PECR requires prior consent for non-essential cookies).",
+      "effort": "M",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-04",
+      "page": "/about-us",
+      "title": "Team Read more dialog is a keyboard trap with no keyboard close",
+      "severity": "critical",
+      "category": "a11y",
+      "evidence": "Opened Suleman's dialog with Enter on the .team-popup-trigger (role=button, tabindex=0). Pressing Tab 8 times cycled focus only between the two .team-popup-social-card links (Finsweet a11y focus trap). Escape does not close it (closesOnEscape false at all viewports). The close control is <img class=\"popup-cross team-popup-close-trigger\" alt=\"\"> with no role, tabindex or name, so it cannot be reached or activated by keyboard. aria-labelledby=\"fs-modal-1-heading\" points to an id that does not exist; both dialogs share id=\"fs-modal-1-popup\" (duplicate ids); trigger ids are 'Suleman Rafiq' and 'Clemente M. Apollonj-Ghetti' (spaces); the rest of the page is not inert. Screenshot about-d1440-team-popup.png.",
+      "recommendation": "In the Teams collection template: make the close control a <button type=button aria-label=\"Close\"> containing the cross SVG; in the custom modal script add document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOpenModal(); }) and return focus to the trigger on close; bind unique ids with the CMS slug (fs-modal-{slug}-popup, fs-modal-{slug}-heading) and put the heading id on the dialog's h3; set aria-expanded back to false on close.",
+      "effort": "M",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-d1440-team-popup.png"
+    },
+    {
+      "id": "HA-05",
+      "page": "/about-us",
+      "title": "Production page loads a script from a CodeSandbox URL",
+      "severity": "high",
+      "category": "technical",
+      "evidence": "About Us page custom code includes <script src=\"https://jj59l3.csb.app/script.js\"> (HTTP 200, 1,486 bytes, Cache-Control: private, no-cache, no-store). Its content is an earlier copy of the Home counters and Swiper init (power3.out easing, no loop) that targets .stats-cards-wrap and .slider-wrap .swiper, neither of which exists on About Us, so it does nothing. A CodeSandbox host is outside Roscap's control and could be changed or removed at any time, and it adds a third-party connection on every About Us load.",
+      "recommendation": "Remove the <script src=\"https://jj59l3.csb.app/script.js\"> tag from the About Us page settings (Before </body>). Also remove the second copy of the Finsweet a11y loader embedded in each Teams collection item (it is injected once per card).",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-06",
+      "page": "/ and /about-us",
+      "title": "Footer newsletter submit button has no accessible name",
+      "severity": "high",
+      "category": "a11y",
+      "evidence": "<input type=\"submit\" class=\"footer-submit w-button\" value=\"\"> (arrow drawn by CSS). axe: input-button-name, impact critical, 1 node on every page; Lighthouse accessibility 85 (Home) and 88 (About). The email field has placeholder only (no label).",
+      "recommendation": "Set the button value to Subscribe (or aria-label=\"Subscribe\" if the arrow-only look is kept) and give the email input a visually hidden label; add one line of consent microcopy under the field (what is sent, how often, link to Privacy Policy).",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-sec-footer.png"
+    },
+    {
+      "id": "HA-07",
+      "page": "/ and /about-us",
+      "title": "Logo link, hamburger and footer social icons have no accessible name",
+      "severity": "high",
+      "category": "a11y",
+      "evidence": "axe link-name, serious: a.nav_brand-2 (img alt=\"\"), a.nav_button-2 href=\"#\" (Lottie hamburger, no aria-label or aria-expanded; 5th violation at 390 px), and the three footer .social-link anchors (mailto, LinkedIn, Instagram) containing unlabelled SVGs. 4 nodes at desktop, 5 at mobile, on both pages. The Instagram URL carries a share token (?igsh=MXM1OXRtbDhiYTUx).",
+      "recommendation": "Logo img alt=\"Roscap home\"; hamburger aria-label=\"Open menu\" with aria-expanded toggled by the Webflow interaction; social links aria-label=\"Email Roscap\", \"Roscap on LinkedIn\", \"Roscap on Instagram\"; strip the igsh parameter.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-08",
+      "page": "/ and /about-us",
+      "title": "Every desktop nav link and the CTA announce their text twice",
+      "severity": "medium",
+      "category": "a11y",
+      "evidence": "Each .nav_menu_link-2 contains two .nav-link-text divs (one .hide-tablet) for the hover roll, so accessible names are 'Home Home', 'About Us About Us', 'Partner Program Partner Program'; the CTA reads 'SPEAK TO US SPEAK TO US' (two .cta-text-wrapper). Tab-order log confirms. About Us also has a double non-breaking space ('About  Us') visible as a wider gap in the nav and mobile menu.",
+      "recommendation": "Add aria-hidden=\"true\" to the duplicate .nav-link-text.hide-tablet and the second .cta-text-wrapper (custom attribute in Designer); replace the double space in the About Us label.",
+      "effort": "S",
+      "viewport": "1440, 1024",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-09",
+      "page": "/about-us",
+      "title": "Hero image is the LCP element but is lazy-loaded and upscaled 3.3x on mobile",
+      "severity": "high",
+      "category": "performance",
+      "evidence": "<img class=\"hero-bg\" loading=\"lazy\" sizes=\"(max-width: 1924px) 100vw\" srcset 500w/800w/1080w/1924w>. At 390 px (DPR 2) the browser picks the 800w candidate (naturalWidth 390 CSS px, 259 tall) and object-fit: cover stretches it to 390x844 CSS px (780x1688 device px): upscale factor 3.26, visibly soft floodlights and players (about-m390-hero-detail.png). Lighthouse mobile LCP 6.3 s, performance 64; desktop LCP 1.7 s.",
+      "recommendation": "In the image settings set Load to Eager and add fetchpriority=\"high\" (custom attribute); provide a portrait crop for the 479 px breakpoint or a 1600w candidate so mobile receives at least 780 px wide pixels for the cover area; keep AVIF.",
+      "effort": "S",
+      "viewport": "390",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-m390-hero-detail.png"
+    },
+    {
+      "id": "HA-10",
+      "page": "/",
+      "title": "Who We Are image is an 893 KB PNG",
+      "severity": "medium",
+      "category": "performance",
+      "evidence": "img.wwa-image src 695b99d1f58899ba986c7340_image 53.png: 891 KiB resource, 660x646 intrinsic, rendered 641x685 at 1440 (slightly upscaled and cropped) and 358x350 at 390 via the 500w candidate. Third largest asset on the page after the two videos. The neighbouring What We Do image is already AVIF (199 KiB at 1320w).",
+      "recommendation": "Re-export as AVIF or WebP at 1320 px wide (expected 80 to 120 KB) and upload in place; Webflow's asset panel can also convert to WebP. alt text stays empty if decorative.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-11",
+      "page": "/about-us",
+      "title": "Team photos are 390 KB PNGs served at 1440 px for a 520 px slot",
+      "severity": "medium",
+      "category": "performance",
+      "evidence": "sullll.png 392 KiB and cleee.png 370 KiB (1440x1537 and 1439x1534 intrinsic), srcset 500w/547w with sizes=\"100vw\", rendered 520x564 at desktop. Both load twice in the DOM (card and dialog) and have alt=\"\" although they are the only photos of named people.",
+      "recommendation": "Convert the Teams image field assets to WebP/AVIF (Webflow asset conversion) and set sizes to (max-width: 767px) 100vw, 520px; alt should be the person's name bound from the CMS.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-12",
+      "page": "/",
+      "title": "Stat counters read 0+, £ 0m+, 0+ without JavaScript and animate even with reduced motion",
+      "severity": "medium",
+      "category": "data",
+      "evidence": "Raw HTML: <span data-count=\"60\" class=\"stats-num-span\">0</span>+, £ <span data-count=\"120\">0</span>m+, <span data-count=\"25\">0</span>+, each .stats-card also carries style=\"opacity:0\" (Webflow interaction). No-JS pass: cards invisible, text 0+. With JS, GSAP ScrollTrigger (start top 80%, once) counts from 0 to 60+, £ 120m+ and 25+ over 2 s with circ.in easing and en-US formatting. With prefers-reduced-motion: reduce emulated the counters still animated (2+, £ 5m+, 1+ mid-way). Googlebot renders JS so indexing is fine, but text-only crawlers, reader modes and AI agents see zeros. Also the label 'Projects funded' implies Roscap lends; the About hero says 'arrange over £120m'.",
+      "recommendation": "Put the final numbers in the HTML (60, 120, 25) and let the script set textContent to 0 only when it is about to animate and matchMedia('(prefers-reduced-motion: reduce)').matches is false; use toLocaleString('en-GB'); remove the space in '£ 120m+'; relabel 'Projects funded' as 'Transactions arranged' and 'In completed transactions' as 'Arranged for clients'.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-sec-stats.png"
+    },
+    {
+      "id": "HA-13",
+      "page": "/",
+      "title": "Rates panel polish: no visual up/down cue, stale hard-coded fallback, 12 px updated line, title-only tooltips",
+      "severity": "medium",
+      "category": "data",
+      "evidence": "Runtime values match the feed (checked 31 Oct 2026 01:04 UTC) and #rates-updated is rendered. But: the script adds classes up/down/flat to #changerate-* and the site CSS defines none of them, so change values render in the same grey (rgb(97,101,110)) as the rate; the hard-coded HTML fallback for EURIBOR is 2.642% / +0.006% against the feed's 2.643% / +0.025% (shown if the fetch fails or JS is off, with no date); #rates-updated is 12 px, colour #222, right-aligned under the cards; tooltips exist only as title attributes (not reachable on touch or by keyboard); the cards start at opacity:0 (Webflow reveal). This is polish on an approved module, not a redesign.",
+      "recommendation": "Add CSS for .up and .down (e.g. a 6 px chevron via ::before in teal and gold, or a muted gold for up and teal for down, avoiding red/green only); refresh the fallback values whenever the site is published or hide the change cell until the feed loads; raise #rates-updated to 13 to 14 px and align it to the first card's left edge; move the title text into a small visible caption under the row ('Change shown is the size of the last BoE or Fed decision; EURIBOR change is since the previous fixing').",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-sec-baserate.png"
+    },
+    {
+      "id": "HA-14",
+      "page": "/",
+      "title": "Asset Classes / Sources of Capital tab headings are not keyboard operable and fail contrast",
+      "severity": "medium",
+      "category": "a11y",
+      "evidence": ".slider-heading elements are <h3> with click handlers (GSAP swap) but no role, tabindex or key handler; the inactive one has opacity .4 giving 2.55:1 (axe color-contrast, serious, #a0a2a5 on #fff at 18 pt). Swiper arrows are keyboard operable and announce correctly; the swiper wrapper has aria-live=polite. Slides are two groups of four cards.",
+      "recommendation": "Give both headings role=\"tab\", tabindex=\"0\", aria-selected and an Enter/Space handler, or render them as <button>s styled as headings; raise inactive opacity to .6 or use the grey token with a 2 px gold underline for the active tab. Alternative that removes 38 KB of Swiper JS: at 992 px and above show both groups as a static two-column grid with the two headings as column titles.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-sec-slider.png"
+    },
+    {
+      "id": "HA-15",
+      "page": "/ and /about-us",
+      "title": "Footer legal text fails contrast (3.23:1)",
+      "severity": "medium",
+      "category": "a11y",
+      "evidence": "p.text-size-small.text-color-grey2 (copyright line and the two disclaimer paragraphs): #8d8d8d on #fffcf5 at 14 px, 3.23:1 (axe serious, 2 to 3 nodes per page). The disclaimer is the most important compliance text on the site and is the hardest to read.",
+      "recommendation": "Change the grey2 token to #6b6f76 or darker (4.5:1 on cream) for .text-color-grey2, or use the body text colour at 14 px weight 400; add the missing full stop after 'Financial Ombudsman Service'.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-full-c3.png"
+    },
+    {
+      "id": "HA-16",
+      "page": "/ and /about-us",
+      "title": "No main landmark, placeholder-only form labels, required phone, off-brand focus colour",
+      "severity": "medium",
+      "category": "a11y",
+      "evidence": "Zero <main> on both pages (axe landmark-one-main, 11 to 25 region violations); Home contact form: 0 <label> elements, all fields placeholder-only, Phone (type=tel) and Subject both required, Message optional; inputs use outline:none and show only Webflow's default blue #3898ec border on focus, which is visible but off-brand against teal and gold. Home's Subject is correctly type=text (the type=tel issue is on /contact-us, outside this scope).",
+      "recommendation": "Set .main-wrapper tag to <main> in Designer; add visually hidden labels bound to each input id; make Phone optional (or explain why it is needed); restyle :focus-visible on .input-field and .footer-form-input to a 2 px gold #E1C979 outline with offset.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-full-c2.png"
+    },
+    {
+      "id": "HA-17",
+      "page": "/",
+      "title": "Copy implies Roscap invests or lends its own capital and guarantees outcomes",
+      "severity": "medium",
+      "category": "compliance",
+      "evidence": "Hero: 'specialist real estate capital advisory and private investment firm'. What We Do: 'co-investing alongside private capital'. Track Record: 'Our portfolio includes residential, commercial, and mixed-use schemes'. Stats: 'Projects funded'. Who We Are: 'ensuring every client and project secures the most appropriate form of capital' (a guarantee). Footer disclaimer says Roscap undertakes introductory and advisory activities only. None of this claims FCA authorisation, but 'investment firm' and 'our portfolio' are the words a reader (or a regulator) would associate with managing or deploying money.",
+      "recommendation": "Confirm with Clemente whether Roscap co-invests; if not, change to 'specialist real estate capital advisory firm', 'alongside private capital partners', 'Transactions we have arranged include', 'Transactions arranged', and 'helping every client and project secure'. Keep the hero tagline.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-full-c0.png"
+    },
+    {
+      "id": "HA-18",
+      "page": "/about-us",
+      "title": "Team section is inconsistent and thin on trust signals",
+      "severity": "high",
+      "category": "ux",
+      "evidence": "Four Teams CMS items under the heading 'Leadership Team': Suleman and Clemente have photos, a short bio, Read more dialog, email and LinkedIn (cards 834 px tall at 1440); Mowgli Frere and Makaiel Javed have no photo, no dialog, a long bio and only a LinkedIn link (cards 439 px), and an associate is listed as leadership. Nowhere on the page: founding year, office location (the word office does not appear), company number (Roscap Limited 13536901), the National Property Awards 2026 finalist places for Property Debt Advisor of the Year and Finance Broker of the Year that Clemente announced in August 2026 (0 matches for award or finalist), lender or partner relationships, memberships. 'Our Story' contains no dates, places or events; 'founded', 'discretion' and 'discipline' each appear 3 times across hero and story.",
+      "recommendation": "Add photos for Mowgli and Makaiel in the Teams collection so all four cards share one layout (photo, name, role, two-line bio, Read more, LinkedIn); rename the heading 'Our Team' or split 'Leadership' and 'Team'; insert a one-row facts strip between Our Story and the team (Founded [year], London, Roscap Limited 13536901, Finalist, National Property Awards 2026: Property Debt Advisor of the Year and Finance Broker of the Year, subject to Clemente confirming the wording); rewrite Our Story with 3 concrete beats (founded by Suleman in [year], Clemente joined as Co-CEO in 2025, markets covered).",
+      "effort": "M",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-d1440-full-c1.png"
+    },
+    {
+      "id": "HA-19",
+      "page": "/about-us",
+      "title": "Bio copy errors and a role contradiction",
+      "severity": "medium",
+      "category": "copy",
+      "evidence": "Mowgli Frere card: role 'Head of Southern Europe' but bio ends 'He is now the Head of Western Europe for Roscap'. 'snowy French alps' (Alps), 'Skema business school' (SKEMA Business School), 'sourcing Real Estate opportunities' (lower case), chatty tone unlike the other bios. Clemente dialog: 'Bocconi University, consistently ranked among Europe's top five institutions for economics and finance' (unsourced ranking claim). 'Connect on Linkedin' x2 (LinkedIn). Makaiel's name links to https://www.linkedin.com/in/makaieljaved?utm_source=share_via&utm_content=profile&utm_medium=member_android and the card has a second link to the clean URL. H1 'Real Estate Capital Advisors' uses the US spelling; FCA and UK usage is 'advisers'.",
+      "recommendation": "Pick one region title for Mowgli and fix the bio to match; correct capitalisation; drop or source the Bocconi ranking ('graduated from Bocconi University' is enough); normalise to 'Connect on LinkedIn'; replace Makaiel's URL with https://www.linkedin.com/in/makaieljaved/ and remove the duplicate link; use 'advisers' in the H1 and title tag.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-d1440-full-c1.png"
+    },
+    {
+      "id": "HA-20",
+      "page": "/about-us",
+      "title": "Hero and story imagery do not relate to real estate capital",
+      "severity": "medium",
+      "category": "visual",
+      "evidence": "Hero background is a floodlit five-a-side football match at night (new hero bg.avif) under the headline 'An Expert Team of Real Estate Capital Advisors'; Our Story image is a library reading room (our story.avif). Home uses architecture, Tower Bridge and the panther motif, which carry the brand far better. Both About images are decorative (alt empty).",
+      "recommendation": "Replace the hero with a teal-graded London architecture or skyline-at-dusk photograph (or a still of the team in the office) and the story image with a Roscap-specific photo (office, deal documents, a completed scheme from the track record); keep the existing 40% teal overlay and crop ratios.",
+      "effort": "M",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-d1440-fold.png"
+    },
+    {
+      "id": "HA-21",
+      "page": "/",
+      "title": "One generic CTA path; investors and introducers have no obvious next step",
+      "severity": "medium",
+      "category": "conversion",
+      "evidence": "Visible CTAs on Home desktop: Speak To Us (nav), Explore Our Services (hero, y=779) and again after the slider (y=3258), View Portfolio x3 (all /track-record), Submit. All content speaks to borrowers and developers; the only investor cue is the phrase 'private investment firm' and the only introducer entry point is the Partner Program nav item. The contact form has no field to say who the enquirer is, so GA4 generate_lead cannot be segmented. Value proposition is clear within 5 seconds for a developer; not for a capital provider or introducer.",
+      "recommendation": "Add a quiet three-link row under the hero paragraph (same pill style as the tag-wrap labels): 'Raising capital for a project: Our Services', 'Deploying capital: Speak to us', 'Introducing a client: Partner Program'. Add a 'I am a' select (Developer or investor seeking finance, Capital provider, Introducer, Other) to the Home contact form in place of the Subject field and pass it to GA4 as an event parameter. Reduce View Portfolio to one button under the cards (moot once concept F ships).",
+      "effort": "M",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-m390-fold.png"
+    },
+    {
+      "id": "HA-22",
+      "page": "/ and /about-us",
+      "title": "Site-wide head loads GSAP plus three plugins and Swiper on pages that do not use them",
+      "severity": "medium",
+      "category": "performance",
+      "evidence": "Head code on every page: gsap.min.js, SplitText.min.js, TextPlugin.min.js, ScrollTrigger.min.js (gsap.registerPlugin(SplitText,TextPlugin,ScrollTrigger)), swiper@12 CSS and JS from jsdelivr, Finsweet attributes, jQuery (Webflow). About Us uses none of GSAP or Swiper. Lighthouse unused JavaScript: 157 KiB (Home) and 164 KiB (About); TBT 300 to 340 ms on mobile; gtag alone is 195 KiB transfer. No code on either page calls SplitText or TextPlugin.",
+      "recommendation": "Move GSAP core, ScrollTrigger and Swiper into the Home page's own Before </body> code, drop SplitText and TextPlugin, and pin Swiper to an exact version (swiper@12.0.x) instead of a floating major; load gtag after consent (HA-03).",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-23",
+      "page": "/ and /about-us",
+      "title": "Nothing on the site respects prefers-reduced-motion",
+      "severity": "medium",
+      "category": "motion",
+      "evidence": "site.css contains 0 prefers-reduced-motion rules. 14 data-w-id elements run Webflow fade and translate reveals (7 start at opacity:0; 3 sections carry inline transforms), the hero heading fades in on load, the GSAP counters animate regardless of the setting, the slider headings slide and fade, and the hamburger is a Lottie. In the reduced-motion emulation the hero video stayed paused at 1 s (browser behaviour, not site code) while the counters still counted. Motion is otherwise smooth (no jank observed; CLS 0) and modest in amount; its purpose is decorative except for the counters and the tab swap.",
+      "recommendation": "Add to the site-wide head a @media (prefers-reduced-motion: reduce) block that sets animation-duration and transition-duration to .01ms on all elements (both declarations marked important so they beat Webflow's inline styles), plus a JS guard that sets the final counter values and pauses the hero video (video.pause(); video.removeAttribute('autoplay')) when the media query matches. Mark the Webflow interactions as 'Reduce motion' where the IX panel offers it.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-24",
+      "page": "/ and /about-us",
+      "title": "Mobile menu: hamburger has no state, Escape does not close, background still scrolls",
+      "severity": "low",
+      "category": "a11y",
+      "evidence": "At 390 px the menu opens as a fixed full-screen panel (.nav_menu_2 display:flex, 390x844) with 6 links and SPEAK WITH US. The trigger <a href=\"#\" class=\"nav_button-2\"> has no aria-expanded or label (also HA-07); pressing Escape leaves the menu open; body overflow stays visible so the page can scroll behind the panel. The menu itself is clear and well sized.",
+      "recommendation": "Toggle aria-expanded on the hamburger in the open/close interaction, add body { overflow:hidden } while open (a class toggled by the same interaction), and close on Escape in the nav script.",
+      "effort": "S",
+      "viewport": "390, 1024",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-m390-menu.png"
+    },
+    {
+      "id": "HA-25",
+      "page": "/ and /about-us",
+      "title": "Tablet (1024 px) footer columns and team role labels wrap badly",
+      "severity": "low",
+      "category": "visual",
+      "evidence": "At 1024x768 the footer link columns are too narrow: 'Quick links', 'About Us', 'Our Services', 'Track Record', 'Partner program', 'Privacy Policy', 'Cookie Policy', 'Terms of Use' each break onto two lines; on About Us 'Co-CEO' wraps to 'Co-' / 'CEO' beside 'Clemente M. Apollonj-Ghetti' which itself wraps. The desktop nav at 1024 is tight but fits.",
+      "recommendation": "At the 991 px breakpoint give .footer-left.is-links a min-width (e.g. 9rem) or stack the three columns above the newsletter block; set white-space: nowrap on the team role label and let the name wrap.",
+      "effort": "S",
+      "viewport": "1024",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-t1024-full-c1.png"
+    },
+    {
+      "id": "HA-26",
+      "page": "/ and /about-us",
+      "title": "Small copy and consistency fixes",
+      "severity": "low",
+      "category": "copy",
+      "evidence": "Contact CTA label appears as 'Speak to Us' (desktop nav), 'Speak To Us' (hover duplicate), 'Speak With Us' (mobile menu) and 'Get in Touch' (About banner). Footer 'Partner program' vs nav 'Partner Program'. Heading case is mixed: 'Capital Raising For Every Stage of a Real Estate Project's Lifecycle' (title case) against 'Experience across multiple Sectors and Markets' (mixed). '£ 120m+' has a space after the pound sign. Body copy uses em dashes in two places. The H1 markup contains two zero-width joiners between 'Capital.' and 'Redefined.' (U+200D), harmless visually but read by some screen readers. 'Pre-stabilised but completed assets' reads better as 'Completed, pre-stabilised assets'. 'Sign up for new alerts' is vague about what subscribers receive. The disclaimer lacks a final full stop.",
+      "recommendation": "Standardise on 'Speak to Us' everywhere; sentence case for all H2s; '£120m+'; replace em dashes with commas or full stops; remove the ZWJ characters by retyping the H1 line break; 'Receive occasional market updates and new insights' for the newsletter line; add the full stop.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-27",
+      "page": "/ and /about-us",
+      "title": "Display headings use a synthesised italic; Boska italic faces are not loaded",
+      "severity": "low",
+      "category": "visual",
+      "evidence": "@font-face declarations: Boska 300, 400, 500, 700, all font-style: normal (font-display: swap). Every display heading (.heading-style-h1, .heading-style-h1.hero, h2 <em>) is font-style: italic, so browsers slant the upright glyphs instead of using Boska's drawn italics. The faux slant is visible in the hero's 'Real Estate Capital. Redefined.' and the serif's terminals.",
+      "recommendation": "Upload Boska-MediumItalic.woff2 (and Regular Italic if used) in Site settings, Fonts, so Webflow emits font-style: italic faces; no CSS change needed.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-fold.png"
+    },
+    {
+      "id": "HA-28",
+      "page": "/ and /about-us",
+      "title": "Decorative wave SVG is 668 KB uncompressed and loads on every page",
+      "severity": "low",
+      "category": "performance",
+      "evidence": "subscribe bg.svg: 668 KiB resource, 103 KiB transfer, used as the pattern behind the Home contact block and the About CTA banner (plus subs circle bg.svg). It is the fourth largest asset on About Us.",
+      "recommendation": "Simplify the path count in the SVG (or re-export at lower precision) to under 60 KB, or replace with a CSS repeating-radial-gradient in the same teal tones.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": ""
+    },
+    {
+      "id": "HA-29",
+      "page": "/",
+      "title": "Hero content and three sections are invisible without JavaScript",
+      "severity": "low",
+      "category": "technical",
+      "evidence": "No-JS pass: .heading-wrap (hero headline, paragraph, CTA), the three .stats-card, .wwa-image._2 and the three .baserate-card carry style=\"opacity:0\" set by Webflow interactions, so a no-JS or script-blocked visitor sees the video but no hero text (home-nojs-fold.png). Forms are method=get with no action, so without JS they would submit the data into the URL. Webflow has no native fallback; Googlebot renders JS, so the SEO risk is low.",
+      "recommendation": "For the hero, stats and rates cards switch the Webflow interaction's initial state from 'set opacity 0 in the element' to a class added by the interaction, or add a <noscript> style that forces these selectors to opacity:1.",
+      "effort": "S",
+      "viewport": "all",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-nojs-fold.png"
+    }
+  ],
+  "opportunities": [
+    {
+      "page": "/",
+      "title": "Lighter hero with a still-first strategy",
+      "description": "Place a 60 to 80 KB AVIF poster (the panther frame) as the .section.is-heroheader background with a teal gradient overlay, then load a single 720p, 10 second, 1.2 MB loop only at 992 px and above after the load event (small script: if window.innerWidth >= 992 and not prefers-reduced-motion, append the source and play). Mobile keeps the still. Removes about 6.6 MB from the mobile page and makes LCP the poster, not the video.",
+      "effort": "M"
+    },
+    {
+      "page": "/",
+      "title": "Audience strip under the hero",
+      "description": "Three quiet text links in the tag-wrap pill style directly beneath the Explore Our Services button: 'Raising capital for a project' (to /our-services), 'Deploying capital' (to /contact-us#investors or Speak to Us), 'Introducing a client' (to /partner-program). Gives investors and introducers a visible next step within the first screen without adding a new section.",
+      "effort": "S"
+    },
+    {
+      "page": "/",
+      "title": "Counters as a reveal rather than a count-up",
+      "description": "Keep the final figures in the HTML and replace the GSAP count with a CSS scroll-driven reveal (animation-timeline: view() with @supports fallback to a simple fade) on .stats-card; the figure rises 8 px and fades in; reduced-motion users see it static. Lower JS, honest to crawlers, same premium feel.",
+      "effort": "S"
+    },
+    {
+      "page": "/",
+      "title": "Rates panel micro-polish within the approved design",
+      "description": "Add a 6 px chevron before the change value (up in gold, down in teal, both with text so colour is not the only cue), a one-line caption under the row explaining the change basis, and move 'Updated 31 October 2026' into that caption at 13 px aligned to the card edge. Add aria-live=\"off\" on the cards so screen readers are not interrupted when values populate.",
+      "effort": "S"
+    },
+    {
+      "page": "/",
+      "title": "What We Do numbered list as a gentle scroll-in",
+      "description": "The six lifecycle stages (1 to 6) are the most scannable element on the page; a CSS scroll-driven stagger (each row fades and slides 6 px in as it enters view, 60 ms apart, disabled under prefers-reduced-motion) would give the section rhythm without GSAP. Place on .section.bg-white .two-col-grid list items.",
+      "effort": "S"
+    },
+    {
+      "page": "/",
+      "title": "Static two-column grid instead of the Swiper at desktop",
+      "description": "At 992 px and above show 'Asset Classes' and 'Sources of Capital' side by side (4 cards each, same teal cards), keeping Swiper only below 992 px. Removes a click to see the second set, fixes the tab accessibility issue, and allows Swiper to be dropped from desktop entirely.",
+      "effort": "M"
+    },
+    {
+      "page": "/about-us",
+      "title": "Facts strip and awards line",
+      "description": "Between Our Story and the team, a single row in the stats-card style: Founded [year] | London | Roscap Limited 13536901 | Finalist, National Property Awards 2026 (Property Debt Advisor of the Year; Finance Broker of the Year). Wording to be confirmed by Clemente before publishing. Also add 'London' and the company number to the footer legal block on every page.",
+      "effort": "S"
+    },
+    {
+      "page": "/about-us",
+      "title": "One team card pattern for all four people",
+      "description": "Photos for Mowgli and Makaiel in the Teams collection; the same card (photo, name, role, two-line bio, Read more, LinkedIn) for everyone; dialog made keyboard-closable (HA-04). Consider a 'How we work' trio (Discretion, Diligence, Execution) as three short paragraphs with concrete examples to replace the current abstract Our Story text.",
+      "effort": "M"
+    },
+    {
+      "page": "/ and /about-us",
+      "title": "Footer newsletter clarity",
+      "description": "Add a visible label 'Email address', a named Subscribe button, and one line: 'Occasional market updates and new insights. Unsubscribe any time. See our Privacy Policy.' Fixes HA-06 and makes the sign-up GDPR-friendly.",
+      "effort": "S"
+    },
+    {
+      "page": "/",
+      "title": "Track Record cards (current) versus approved concept F",
+      "description": "Current module: three full-width cards (1,308 px wide, 611 to 667 px tall at 1440), text left (location, amount, Product, Asset Class, Capital, Key Metrics) and 765x594 WebP photo right, each with its own View Portfolio button; on mobile the image stacks above the text and the three cards run about 2,000 CSS px. Concept F's deal list will shorten the section and remove the three duplicate buttons; carry over the Key Metrics row format (70% LTC | 58% LTV | 8.5% p.a.) and the gold hairline, and keep one View Portfolio CTA.",
+      "effort": "M"
+    }
+  ],
+  "screenshots": [
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-fold.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-novideo-fold.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-full-c2.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-d1440-sec-baserate.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/home-m390-menu.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-d1440-full-c1.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-d1440-team-popup.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/about-m390-hero-detail.png"
+  ],
+  "data": "## Method\nPlaywright Chromium at 1440x900, 1024x768 and 390x844 (isMobile, hasTouch, DPR 2, iPhone UA), full-page and section screenshots, console and network capture, axe-core 4.x at 1440 and 390, Tab-through, no-JS pass (javaScriptEnabled false) and prefers-reduced-motion pass. Lighthouse figures quoted from the pre-run JSON (not re-run). Scripts: /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/work/home-about/audit.js, followup.js, novideo.js, focus.js; raw results audit-results.json and followup-results.json in the same folder; screenshots in /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/home-about/.\n\n## Page weight and timing\n| Page | Viewport | Requests | Transfer (LH) | Header-sum bytes (Playwright) | LCP | TBT | CLS | Perf | A11y |\n|---|---|---|---|---|---|---|---|---|---|\n| Home | mobile | 53 (LH) / 60 | 9,793 KiB | 11.6 MB | 5.8 s | 300 ms | 0 | 66 | 85 |\n| Home | desktop | 53 / 60 | 9,874 KiB | 11.6 MB | 2.0 s | 0 ms | 0 | 87 | 85 |\n| About | mobile | 47 / 53 | 1,553 KiB | 2.9 MB | 6.3 s | 340 ms | 0.004 | 64 | 88 |\n| About | desktop | 48 / 53 | 1,614 KiB | 2.9 MB | 1.7 s | 0 ms | 0.007 | 86 | 88 |\nPlaywright header sums are higher because both hero videos were fully fetched (Lighthouse stops early). Page heights: Home 7,622 px (1440), 8,445 (1024), 8,650 (390); About 4,669 / 4,877 / 5,882. No horizontal overflow at any width. Load event: 1.0 to 1.6 s on the datacentre connection.\n\n## Third-party hosts contacted\nHome: cdn.prod.website-files.com (34 requests, 4.6 MB incl. hidden 1.5 MB video), roscap.s3.us-east-1.amazonaws.com (1, 6.77 MB video), cdn.jsdelivr.net (18: swiper@12 CSS and JS, @finsweet/attributes@2, attributes-a11y@1 and their chunks), d3e54v103j8qbb.cloudfront.net (jQuery 3.5.1, 87 KB), www.googletagmanager.com (gtag, 194 KB), analytics.google.com (2 collect, aborted), stats.g.doubleclick.net, edusancheez2005.github.io (rates.json, 1.6 KB). About adds jj59l3.csb.app (script.js, 1.5 KB, no-cache) and drops S3 and GitHub.\n\n## Console and failures\nconsole.error: 0 on both pages at all viewports. pageerror: 0. Failed requests: only https://analytics.google.com/g/collect (net::ERR_ABORTED x2, beacon aborted on page close), benign. No 4xx or 5xx.\n\n## Video inventory (Home hero)\n| Element | Source | Bytes | Dimensions | Poster | Playing | Notes |\n|---|---|---|---|---|---|---|\n| .hero-bg.w-embed video (custom code) | roscap.s3.us-east-1.amazonaws.com/Roscap+Video++(1).mp4#t=1 | 6,766,236 | 1440x1078, 17.7 s | none | yes (autoplay muted loop playsinline, preload metadata) | Rendered 1440x900 / 1024x768 / 390x844 via object-fit cover; also downloaded in full on the 390 px profile |\n| .hero-bg.hide.w-background-video video (Webflow) | cdn.prod.website-files.com ..._mp4.mp4 (+ _webm.webm 5.3 MB alternative) | 1,553,967 | 962x720, 17.7 s | yes (20,961 B JPEG) | no (parent display:none) | Still downloads MP4 and poster on every load |\nReduced-motion emulation: S3 video paused at 1 s after network idle (browser behaviour); counters still animated. Normal load: video first byte at 1.4 s, fully buffered at 4.0 s, playback began between load and network idle.\n\n## Counters (Home .stats-cards-wrap)\nHTML: 0+ / £ 0m+ / 0+ with data-count 60 / 120 / 25; cards style opacity:0. After JS and scroll: 60+ / £ 120m+ / 25+ (GSAP, 2 s, circ.in, toLocaleString en-US). No-JS: zeros and invisible. About hero claims 'over £120m', consistent with the 120 figure.\n\n## Rates panel (section.is-baserate)\n| Key | HTML fallback | Runtime | Feed (31 Oct 2026 01:04 UTC) | Title tooltip |\n|---|---|---|---|---|\n| boe | 3.75% / -0.25% | 3.75% / -0.25% (class down) | 3.75% / -0.25%, changed_on 2025-12-18 | Change at the last Bank of England decision (18 December 2025); source Bank of England, Bank Rate history |\n| fed | 3.75% - 4.00% / +0.25% | same (class up) | same, changed_on 2026-09-17 | Change at the last Federal Reserve decision (17 September 2026); FRED DFEDTARU/DFEDTARL |\n| euribor | 2.642% / +0.006% (stale) | 2.643% / +0.025% (class up) | 2.643% / +0.025%, as_of 2026-10-29 | Change since the previous daily fixing (29 October 2026); euribor-rates.eu |\n'Updated 31 October 2026' injected as #rates-updated (12 px, #222, right-aligned, width matched to the card row). stale: [] in feed. CSS has no .up/.down/.flat rules; change colour equals rate colour rgb(97,101,110). Rate 18 px, title 22 px #12161d, cards transparent with hairline borders on cream.\n\n## axe-core summary (violations)\n| Page/viewport | critical | serious | moderate |\n|---|---|---|---|\n| Home 1440 | input-button-name 1 | color-contrast 3, link-name 4 | landmark-one-main 1, region 25 |\n| Home 390 | input-button-name 1 | color-contrast 3, link-name 5 | landmark-one-main 1, region 12 |\n| About 1440 | input-button-name 1 | color-contrast 2, link-name 4 | landmark-one-main 1, region 24 |\n| About 390 | input-button-name 1 | color-contrast 2, link-name 5 | landmark-one-main 1, region 11 |\nExample selectors: .footer-submit; .nav_brand-2; .nav_button-2; a[href$=\"mailto:info@roscap.co.uk\"]; .social-link[target=_blank]; .slider-heading.is-inactive (2.55:1); .text-size-small.text-color-grey2 (3.23:1). Duplicate ids on About: fs-modal-1-popup x2, w-node-_381a9258... x2, clip0_347_14799 x2.\n\n## Keyboard\nHome 1440: 37 stops (logo, 6 nav links, Speak To Us, hero CTA, swiper prev/next, Explore Our Services, 3x View Portfolio, 5 form fields, Submit mirror link, 3 social icons, 11 footer links, newsletter input and submit). Every link/button shows a focus ring (UA outline auto). Inputs: outline none, focus shown only by Webflow's #3898ec border. Home 390: 25+ stops; the hidden mirror Submit becomes the real input submit at mobile. About 1440: 30 stops; team triggers focusable (2 px blue outline from Finsweet), Enter opens dialog, focus moves to the email link, Tab cycles between the 2 links only, Escape does nothing, close img not focusable, click on cross closes. Slider: arrows operable by keyboard; heading tabs not. Mobile menu: opens by click, no Escape, no aria-expanded.\n\n## Images (visible, Home 1440)\n| Asset | Format | Intrinsic | Rendered | Bytes | alt | lazy |\n|---|---|---|---|---|---|---|\n| Logo.svg (nav) | svg | 148x41 | 128x35 | small | empty (link unnamed) | yes |\n| image 53.png (Who We Are) | png | 660x646 | 641x685 | 891 KiB | empty | yes |\n| Spectrum image.avif (What We Do) | avif | 1320x1292 | 641x646 | 199 KiB (121 KiB p-800 mobile) | empty | yes |\n| 8 slider icons .svg | svg | 40 to 57 px | 42x42 (24 mobile) | tiny | empty | yes |\n| Image-2 / Image-3 / Mask group .webp (track record) | webp | 765x594 | 725x587 to 643 | ~50 to 90 KiB | empty | yes |\n| subscribe bg.svg | svg | 1128x612 | 1046x608 | 668 KiB (103 transfer) | empty | yes |\n| subs circle bg.svg | svg | 1340x612 | 1340x612 | small | empty | yes |\n| Logo-2.svg (footer) | svg | 144x40 | 144x40 | small | empty | yes |\nAbout 1440: new hero bg.avif 1440x960 -> 1440x900 (85 KiB; mobile p-800 27 KiB upscaled 3.26x), our story.avif 1360x1220 -> 641x575 (57 KiB), sullll.png 1440x1537 -> 520x564 (392 KiB), cleee.png 1439x1534 -> 520x564 (370 KiB), cross.svg close icon (alt empty), email and LinkedIn SVG icons (alt empty). All alt attributes on both pages are empty except the hidden 'BE Logo White'.\n\n## Fonts\nBoska 300/400/500/700 upright only (woff2, swap); Switzer 300/400/500/600/700 upright. Display headings are font-style italic, so italics are synthesised. Fonts loaded on Home: Boska Regular 30 KiB, Boska Medium 30 KiB, Switzer Medium 19 KiB, Switzer Bold 19 KiB (plus Regular/Light as needed).\n\n## Copy inventory and notes\nHome H1 'Real Estate Capital. Redefined.' (contains 2 U+200D). H2s: 'A Real Estate Capital Advisory Built on Long-Term Relationships', 'Capital Raising For Every Stage of a Real Estate Project's Lifecycle', 'Experience across multiple Sectors and Markets', 3 card headings + 3 amounts as H2 (Kensington, London £27.5m; Sheffield, UK £19.8m; Rome, Italy €4.6m), contact H2. H3: Asset Classes, Sources of Capital. Title: 'Real Estate Capital Advisory UK | Roscap'; meta: 'Roscap is a boutique advisory arranging debt and equity ... in confidence.' About: H1 'An Expert Team of Real Estate Capital Advisors'; H2 'Founded on Discretion and Diligence', 'Leadership Team', 'Let's discuss your next transaction'; H3 x6 (names, two duplicated in dialogs). Title 'About Roscap - Real Estate Capital Advisory Firm'. Spelling is UK throughout except 'Advisors'. No typos found beyond those in HA-19 and HA-26. No copy states or implies FCA authorisation; the only cautionary phrases are listed in HA-17. Key metrics on cards (8.5% p.a., 12% IRR) are presented as historic facts, acceptable. Newsletter and contact success/fail messages are Webflow defaults.\n\n## Nav behaviour\n.navbar: 10% teal with 50 px backdrop blur over the hero; adds .is-scrolled (solid #043435) after scrollY >= 0.8 x viewport height; on desktop a wheel-scroll down sets .nav_menu_2 opacity 0 (links hidden, logo and CTA remain), scroll up restores it; on mobile the menu is a fixed full-screen panel. Speak To Us hover is a text roll (two stacked labels).\n\n## Concepts D and E\nNot in this auditor's scope (Home rates and Track Record modules are approved; concept review assigned elsewhere).\n\n## Assumptions and limits\n- Lighthouse numbers are from the pre-run JSON dated 31 Oct 2026 01:00 UTC; not re-run.\n- The National Property Awards finalist claim is taken from the brief (Clemente, Aug 2026) and was not independently verified; it is recommended only subject to confirmation.\n- 'Private investment firm' and 'co-investing' are flagged as questions for Clemente, not as confirmed misstatements.\n- Reduced-motion video pause observed in Chromium emulation may not reproduce in Safari or Firefox.\n- No forms were submitted; the Finsweet mirror-click Submit link on Home (href=#) was inspected only: @finsweet/attributes@2 is loaded on Home so the mirror should fire, but it was not exercised.\n- Earlier shots named home-desktop-*, about-mobile-* etc. in the same folder were produced by another process; this auditor's files use the d1440 / t1024 / m390 suffixes."
+}

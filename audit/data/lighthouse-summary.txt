@@ -1,0 +1,19 @@
+home mobile performance=66 accessibility=85 best-practices=100 seo=100 agentic-browsing=50 LCP 5.8 s TBT 300 ms CLS 0 weight Total size was 9,793 KiB
+home desktop performance=87 accessibility=85 best-practices=100 seo=100 agentic-browsing=50 LCP 2.0 s TBT 0 ms CLS 0 weight Total size was 9,874 KiB
+about-us mobile performance=64 accessibility=88 best-practices=96 seo=100 agentic-browsing=50 LCP 6.3 s TBT 340 ms CLS 0.004 weight Total size was 1,553 KiB
+about-us desktop performance=86 accessibility=88 best-practices=96 seo=100 agentic-browsing=50 LCP 1.7 s TBT 0 ms CLS 0.007 weight Total size was 1,614 KiB
+our-services mobile performance=76 accessibility=83 best-practices=100 seo=100 agentic-browsing=50 LCP 4.8 s TBT 280 ms CLS 0.001 weight Total size was 609 KiB
+our-services desktop performance=94 accessibility=83 best-practices=100 seo=100 agentic-browsing=50 LCP 1.3 s TBT 0 ms CLS 0.002 weight Total size was 679 KiB
+track-record mobile performance=74 accessibility=82 best-practices=96 seo=100 agentic-browsing=50 LCP 4.2 s TBT 380 ms CLS 0.002 weight Total size was 7,001 KiB
+track-record desktop performance=95 accessibility=82 best-practices=96 seo=100 agentic-browsing=50 LCP 1.0 s TBT 10 ms CLS 0.004 weight Total size was 13,390 KiB
+partner-program mobile performance=71 accessibility=85 best-practices=100 seo=100 agentic-browsing=50 LCP 4.3 s TBT 350 ms CLS 0.001 weight Total size was 693 KiB
+partner-program desktop performance=94 accessibility=85 best-practices=100 seo=100 agentic-browsing=50 LCP 1.2 s TBT 10 ms CLS 0.001 weight Total size was 860 KiB
+insights mobile performance=62 accessibility=85 best-practices=96 seo=100 agentic-browsing=50 LCP 6.5 s TBT 320 ms CLS 0 weight Total size was 3,649 KiB
+insights desktop performance=83 accessibility=85 best-practices=96 seo=100 agentic-browsing=50 LCP 2.6 s TBT 0 ms CLS 0 weight Total size was 12,389 KiB
+contact-us mobile performance=67 accessibility=87 best-practices=100 seo=100 agentic-browsing=50 LCP 5.9 s TBT 330 ms CLS 0 weight Total size was 764 KiB
+contact-us desktop performance=85 accessibility=87 best-practices=100 seo=100 agentic-browsing=50 LCP 1.3 s TBT 220 ms CLS 0 weight Total size was 764 KiB
+blog-structure mobile performance=50 accessibility=83 best-practices=96 seo=100 agentic-browsing=50 LCP 5.9 s TBT 820 ms CLS 0 weight Total size was 1,450 KiB
+blog-structure desktop performance=89 accessibility=83 best-practices=100 seo=100 agentic-browsing=50 LCP 2.1 s TBT 30 ms CLS 0 weight Total size was 1,454 KiB
+blog-debt-advisory mobile performance=65 accessibility=86 best-practices=96 seo=100 agentic-browsing=50 LCP 5.5 s TBT 360 ms CLS 0 weight Total size was 2,164 KiB
+blog-debt-advisory desktop performance=86 accessibility=86 best-practices=100 seo=100 agentic-browsing=50 LCP 2.5 s TBT 0 ms CLS 0.009 weight Total size was 2,243 KiB
+DONE

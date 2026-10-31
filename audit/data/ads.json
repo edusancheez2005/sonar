@@ -1,0 +1,216 @@
+{
+  "scope": "Google Ads account 443-916-9682 (Roscap) read via the Windsor.ai google_ads connector: what paid traffic the website received, where it landed, where it leaked, what conversion tracking exists, and which page changes would most improve paid conversion when a Search-only campaign restarts landing on /contact-us. Read-only; no Windsor write actions were called.",
+  "summary": "The account has run exactly one campaign, the Performance Max campaign Bridging Finance Broker (id 24071655090), which served from 29 Jul to 10 Aug 2026 and has been paused since: £193.42 spent, 13,749 impressions, 436 clicks, CTR 3.2%, average CPC £0.44, 0 conversions. Pulls for Nov 2024 to Oct 2025, the last 90 days after 10 Aug 2026 and the last 7 days all return no rows, so the account has been inactive for 12 weeks. 92% of clicks (402 of 436) came from Display, YouTube and Discover placements and 95% from mobile or tablet; Search clicks were only 34 but cost £2.25 each, 35% of spend. 98.6% of clicks (430) landed on the homepage via the non-www final URL https://roscap.co.uk, which 301-redirects to www, and PMax URL expansion also sent clicks to /contact-us (4 clicks, £22.53), /insights and even /privacy-policy. The homepage hero (Real Estate Capital. Redefined., CTA Explore Our Services) does not mention bridging or development finance, so the ad promise and the landing page did not match; GA4 (per the setup log) recorded 1 form submit from 415 paid sessions. Conversion tracking now consists of 2 primary GA4-imported actions (generate_lead and Contact Us) with no Google Ads tag on the site; they were created after the campaign stopped, so the 0 conversions is a tracking gap, not proof the site cannot convert. The planned /contact-us landing page has 4 fixable conversion blockers for paid mobile traffic: the required Subject field is type=tel (numeric keypad), the phone link is hidden by a .hide class at every width, the form has placeholders only and a generic Submit button, and mobile LCP is 5.9 s with a 202 KiB lazy-loaded hero SVG.",
+  "strengths": [
+    "Auto-tagging is enabled and the account is GBP / Europe/London, so GA4-imported conversions can attribute to gclid without extra set-up.",
+    "The GA4 key event generate_lead is already imported as a primary conversion action (SUBMIT_LEAD_FORM, ONE_PER_CLICK, 90-day window), the right counting method for lead forms.",
+    "Delivery was UK-only (country breakdown shows only United Kingdom) and the campaign stopped cleanly (status PAUSED, no end date forced), so no spend has leaked since 10 Aug 2026.",
+    "Search placements achieved 5.1% CTR, so the ad copy themes (bridging and development finance broker) resonate with searchers even though the landing page did not.",
+    "/contact-us already carries bridging-specific copy in its FAQ (bridging loans, development finance, lender types), has a canonical www URL, is far lighter than the homepage (764 KiB vs 9,793 KiB) and its success page /contact-us-success returns 200, which gives a clean place to verify generate_lead fires.",
+    "The contact form exposes a tel: link and mailto: link in the markup, so adding direct contact options is a matter of unhiding, not building."
+  ],
+  "findings": [
+    {
+      "id": "ADS-01",
+      "page": "Google Ads",
+      "title": "Account inactive since 10 Aug 2026; 0 conversions recorded and the conversion actions post-date the campaign, so a restart begins with no learning data",
+      "severity": "high",
+      "category": "data",
+      "evidence": "Windsor google_ads pulls by date: 2024-11-01 to 2025-10-31 returned 0 rows; 2025-11-01 to 2026-10-31 returned 12 active dates, all between 2026-07-29 and 2026-08-10 (no row for 2 Aug); 2026-08-02 to 2026-10-31 returned 8 rows, the last dated 2026-08-10 (36 impressions, 1 click, £0.52); last_7d returned 0 rows. Campaign start_date 2026-07-28, campaign_status PAUSED, campaign_primary_status PAUSED, asset_group_primary_status NOT_ELIGIBLE, bidding MAXIMIZE_CONVERSIONS with daily budget £18.60. conversions = 0 and all_conversions = 0 on every row; the conversion_action_name x conversions pull returned 0 rows. Lifetime per API: 13,749 impressions, 436 clicks, £193.42 (setup log quoted 13.9k, 444, about £197; the API figures are used here).",
+      "recommendation": "Treat the PMax run as a traffic test, not a conversion benchmark. Before the Search restart, confirm in GA4 DebugView that generate_lead fires on a test submission of the /contact-us form (use the staging site, do not submit the live form) and that it shows as Recording in Google Ads. Start the Search campaign on Maximize Clicks or Manual CPC for the first 2 to 3 weeks because Maximize Conversions has zero history to learn from, then switch once 15 or more conversions exist.",
+      "effort": "S",
+      "viewport": "n/a",
+      "screenshot": ""
+    },
+    {
+      "id": "ADS-02",
+      "page": "/",
+      "title": "98.6% of paid clicks landed on the homepage, whose hero does not mention bridging or development finance and whose CTA is Explore Our Services",
+      "severity": "high",
+      "category": "conversion",
+      "evidence": "expanded_final_url report (Jul to Oct 2026): URLs with no path (roscap.co.uk root variants) 13,552 impressions, 430 clicks, £170.73 (98.6% of clicks, 88.3% of spend); /contact-us 133 impressions, 4 clicks, £22.53; /insights 64 impressions, 2 clicks, £0.17; /privacy-policy 2 impressions, 0 clicks. Asset group headlines: Bridging Finance Broker, Development Finance Broker, Property Funding, Contact Roscap today, Real Estate Capital; long headline Bridging Finance Broker; description Bridging & Development Finance from £500k to over £100m. Live homepage text (live/text/index.txt lines 21 to 24): Real Estate Capital. Redefined. / Roscap is a specialist real estate capital advisory and private investment firm ... / Explore Our Services. The word bridging does not appear on the homepage; Bridge Loan appears once (line 97) inside the deal list. Setup log: GA4 showed 405 of 415 paid sessions landing on the homepage with 1 form submit (0.24%). Screenshot shots/ads/home-mobile-part1.png shows the panther hero, headline and Explore Our Services button with no enquiry CTA above the fold.",
+      "recommendation": "Keep the planned move to /contact-us as the Search landing page and make its hero answer the search: change the H1 in section.is-header.is-contactus from the generic Speak with our team ... to a line that names the service, for example Bridging and development finance, arranged by a specialist broker, with the current sentence as the sub-line. Do not send paid traffic to the homepage again unless the hero gains a Speak to us button and a one-line statement of what Roscap arranges.",
+      "effort": "S",
+      "viewport": "390x844",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/home-mobile-part1.png"
+    },
+    {
+      "id": "ADS-03",
+      "page": "Google Ads",
+      "title": "92% of clicks came from Display, YouTube and Discover on mobile; Search clicks were 8% of clicks but 35% of spend at £2.25 CPC",
+      "severity": "high",
+      "category": "conversion",
+      "evidence": "ad_network_type breakdown: CONTENT 6,487 impressions, 277 clicks, £95.37 (CTR 4.27%, CPC £0.34); YOUTUBE 5,114, 70, £6.42 (CTR 1.37%, CPC £0.09); DISCOVER 1,516, 55, £22.96 (CPC £0.42); SEARCH 587, 30, £67.47 (CTR 5.11%, CPC £2.25); SEARCH_PARTNERS 45, 4, £1.21. Non-search = 402 clicks (92.2%) and £124.75 (64.5%). device: MOBILE 10,150 impressions, 350 clicks, £140.56 (80.3% of clicks); TABLET 65 clicks; DESKTOP 21 clicks at £1.45 CPC; CONNECTED_TV 85 impressions. network x device: CONTENT on MOBILE alone was 230 clicks for £75.07; SEARCH on MOBILE 14 clicks cost £38.01 (£2.72 CPC). keyword_text and search_term pulls return null (PMax exposes neither), so there is no search-term data to mine.",
+      "recommendation": "Restart as a Search-only campaign (Google Search network only, untick search partners and Display expansion), presence-only location targeting (the PMax campaign used PRESENCE_OR_INTEREST), exact and phrase match on bridging finance broker, development finance broker and bridging loan broker terms, with a negative list for jobs, courses, calculators and consumer mortgage terms. Expect roughly 10x fewer visitors per pound than the PMax run, so each landing-page defect below costs real money.",
+      "effort": "S",
+      "viewport": "n/a",
+      "screenshot": ""
+    },
+    {
+      "id": "ADS-04",
+      "page": "Google Ads",
+      "title": "Final URL is the non-www https://roscap.co.uk, so every paid click paid for a 301 redirect; 108 clicks were recorded against http:// variants",
+      "severity": "high",
+      "category": "technical",
+      "evidence": "asset_group_final_urls = [\"https://roscap.co.uk\"]. curl via the sandbox proxy: https://roscap.co.uk returns 301 to https://www.roscap.co.uk/ (0.46 s), https://www.roscap.co.uk returns 200, https://www.roscap.co.uk/contact-us returns 200 and its canonical is https://www.roscap.co.uk/contact-us. expanded_final_url rows beginning http:// total 3,084 impressions, 108 clicks, £48.65 (24.8% of clicks); plain http could not be tested from this sandbox (proxy returns 405 for http), so the number of hops for those clicks is unverified. The URL parameters also show three different gad_campaignid values (24071700873, 24076677998, 24071700714) that differ from the campaign_id 24071655090.",
+      "recommendation": "Set every ad, sitelink and asset final URL to the exact canonical form https://www.roscap.co.uk/contact-us (and www URLs for sitelinks). On mobile at 5.9 s LCP, removing the redirect hop is the cheapest speed gain available. Ask Shikhar to confirm in Webflow hosting that roscap.co.uk and http:// both 301 directly to https://www.roscap.co.uk in one hop.",
+      "effort": "S",
+      "viewport": "n/a",
+      "screenshot": ""
+    },
+    {
+      "id": "ADS-05",
+      "page": "/contact-us",
+      "title": "Required Subject field is type=tel, so mobile visitors (80% of paid clicks) get a numeric keypad for a text field",
+      "severity": "critical",
+      "category": "conversion",
+      "evidence": "Live markup: <input class=\"input-field w-input\" maxlength=\"256\" name=\"Subject\" data-name=\"Subject\" placeholder=\"Subject\" type=\"tel\" id=\"Subject\" required=\"\"/>. Playwright on the live page at 390x844 and 1440x900: document.querySelector('#Subject').type === 'tel', inputmode empty, required. On iOS the tel keypad shows digits only, so a required free-text field cannot be completed as intended; Android users must switch keyboards. 350 of 436 paid clicks were MOBILE and 65 TABLET.",
+      "recommendation": "In Webflow Designer open the Contact Form, select the Subject field, Settings panel, Text Field Type: change Phone to Plain. If the field is not needed for routing, remove it entirely; 4 required fields plus a message is already long for a first contact.",
+      "effort": "S",
+      "viewport": "390x844 and 1440x900",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/contact-us-mobile-part1.png"
+    },
+    {
+      "id": "ADS-06",
+      "page": "/contact-us",
+      "title": "The phone link is hidden at every viewport, so paid mobile visitors have no click-to-call option",
+      "severity": "high",
+      "category": "conversion",
+      "evidence": "Markup: <a href=\"tel:+447850522789\" class=\"c-social-card hide w-inline-block\"> inside div.c-social-wrap. Playwright computed style at 390x844 and 1440x900: display none, bounding box 0x0. The rendered hero (shots/ads/contact-us-mobile-part1.png) shows only info@roscap.co.uk and @roscap.uk beside the heading. The phone number is present in the DOM and in live/text/contact-us.txt (line 20) but is never visible. Google Ads conversion actions include no call action (conversion_action list has 6 website actions, none of type PHONE_CALL).",
+      "recommendation": "If the number may be published, remove the hide class from that .c-social-card so the call link sits beside the email in .c-social-wrap, and add a call asset to the Search campaign so calls from ads are counted. If Clemente does not want a public number, replace the hidden link with a Book a call link to a calendar page, which is a stronger second CTA than the Instagram handle currently shown.",
+      "effort": "S",
+      "viewport": "390x844 and 1440x900",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/contact-us-mobile-part1.png"
+    },
+    {
+      "id": "ADS-07",
+      "page": "/contact-us",
+      "title": "Form relies on placeholders only, uses a generic Submit button and gives no reassurance about what happens next",
+      "severity": "medium",
+      "category": "ux",
+      "evidence": "form#wf-form-Contact-Form contains 0 <label> elements (Playwright count); fields Name, Email, Phone, Subject, Message each use placeholder text as the only label; submit button value Submit (class button golden contact). Placeholders disappear on input, so a mobile user who returns to the form cannot see which field is which. No privacy or handling note sits near the button; the only nearby copy is the H1. Lighthouse label audit passes only because placeholders count as accessible names, which does not help sighted users. Screenshot shots/ads/contact-us-mobile-part1.png shows five grey boxes and a Submit button.",
+      "recommendation": "Add visible Webflow Label elements above each field (Name, Work email, Phone, What are you financing?, Message), rename the button to Send enquiry or Request a call back, and add one factual line under the button such as Your enquiry goes directly to our advisory team and is treated in confidence. Do not add a response-time promise (hard rule on timescales). Keep the cream and teal styling; labels in Switzer small caps would fit the existing form.",
+      "effort": "S",
+      "viewport": "390x844",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/contact-us-mobile-part1.png"
+    },
+    {
+      "id": "ADS-08",
+      "page": "/contact-us",
+      "title": "Mobile LCP 5.9 s on the planned paid landing page: a 202 KiB lazy-loaded hero SVG and 4 GSAP scripts load on a page that is mostly a form",
+      "severity": "high",
+      "category": "performance",
+      "evidence": "Lighthouse (pre-run) contact-us mobile: performance 67, FCP 2.3 s, LCP 5.9 s, Speed Index 3.7 s, TBT 330 ms, total 763 KiB, unused JavaScript 132 KiB; desktop 85 with LCP 1.3 s. Largest requests: 69455ccfe29d49a1cf6dcaad_Vector-2.svg 202 KiB (img.hero-bg.is-contact with loading=\"lazy\" although it is in the first viewport), gtag/js 194 KiB, webflow.schunk 89 KiB + 52 KiB, jQuery 31 KiB, gsap.min.js 28 KiB plus SplitText, TextPlugin and ScrollTrigger. Zero rel=preload hints. Search clicks cost £2.25 on average (£2.72 on mobile), so each abandoned slow load is expensive.",
+      "recommendation": "On the Contact page only: remove loading=\"lazy\" from img.hero-bg.is-contact and add fetchpriority=\"high\" (or move the pattern to a CSS background with a preload); export Vector-2.svg optimised (SVGO) or replace it with a lighter CSS pattern, target under 40 KiB; move the GSAP, SplitText, TextPlugin and ScrollTrigger script tags from site-wide head code to the pages that animate, or load them with defer; keep GA4 but load it after the page is interactive. Target mobile LCP under 3 s before the Search restart.",
+      "effort": "M",
+      "viewport": "mobile (Lighthouse emulated)",
+      "screenshot": ""
+    },
+    {
+      "id": "ADS-09",
+      "page": "Google Ads",
+      "title": "Conversion tracking depends entirely on GA4 import, has 2 primary actions that can double count, and the Google Ads tag is on no page",
+      "severity": "high",
+      "category": "data",
+      "evidence": "conversion_action list (6): Roscap (web) generate_lead (SUBMIT_LEAD_FORM, ENABLED, primary, ONE_PER_CLICK, 90d); Contact Us (GOOGLE_ANALYTICS_4_CUSTOM, CONTACT, ENABLED, primary, MANY_PER_CLICK, 90d); Roscap (web) purchase and roscap.co.uk (web) purchase (GA4 purchase, HIDDEN); Roscap (web) qualify_lead and close_convert_lead (HIDDEN). customer_conversion_tracking_setting_conversion_tracking_status CONVERSION_TRACKING_MANAGED_BY_SELF, id 220059096840; enhanced_conversions_for_leads_enabled null. The account's Google tag is AW-18338258070, but grep of all pre-fetched live pages finds no AW- id; the only gtag loaded on /contact-us and / is G-H8HS2R6NLS. No gtag('consent') call found in the homepage HTML.",
+      "recommendation": "Keep generate_lead as the single primary action; set Contact Us to secondary (or delete it) unless it measures something other than the same form submit, otherwise one submission will count twice and inflate the restart's conversion rate. Add gtag('config','AW-18338258070') to the existing GA4 gtag snippet in Webflow site settings so enhanced conversions for leads and call reporting become possible, and once the approved consent banner ships, add Consent Mode defaults ahead of the tag so Ads can model consented conversions. Hide the two purchase actions from reports.",
+      "effort": "M",
+      "viewport": "n/a",
+      "screenshot": ""
+    },
+    {
+      "id": "ADS-10",
+      "page": "Google Ads",
+      "title": "PMax URL expansion sent paid impressions to /insights and /privacy-policy, and the 4 /contact-us clicks cost £5.63 each",
+      "severity": "medium",
+      "category": "conversion",
+      "evidence": "expanded_final_url rows: www.roscap.co.uk/insights 64 impressions, 2 clicks, £0.17; www.roscap.co.uk/privacy-policy 2 impressions, 0 clicks; www.roscap.co.uk/contact-us 133 impressions, 4 clicks, £22.53 (CPC £5.63, 11.6% of all spend for 0.9% of clicks). These www URLs were chosen by Google's final URL expansion, not set by the advertiser (asset group final URL is the root only).",
+      "recommendation": "For the Search restart set final URLs explicitly and add sitelinks only to /our-services, /track-record and /about-us. If PMax is ever reused, turn off final URL expansion or exclude /privacy-policy, /cookie-policy, /website-terms-of-use, /disclaimer, /accessibility-statement, /compliance-governance and /insights as URL exclusions.",
+      "effort": "S",
+      "viewport": "n/a",
+      "screenshot": ""
+    },
+    {
+      "id": "ADS-11",
+      "page": "/contact-us",
+      "title": "Timescale promises in ad copy and in the landing page FAQ",
+      "severity": "medium",
+      "category": "compliance",
+      "evidence": "Asset group description (ENABLED copy): Detailed terms in 24 hours. Access to whole UK market plus international lenders. (a REMOVED duplicate without the full stop also exists). /contact-us FAQ (live/text/contact-us.txt line 28): Roscap can secure bridging loans in as little as 5–10 working days, subject to valuation and legal readiness. Development finance and commercial mortgages typically complete within 6–8 weeks. CONTEXT hard rule 1 asks to flag promises of timescales. The ad line is unconditional; the FAQ lines are caveated but still specific.",
+      "recommendation": "Rewrite the Search ad descriptions without a timescale (for example Indicative terms from a panel of UK and international lenders) and soften the FAQ to lender-dependent language (Bridging can complete quickly where valuation and legals are ready; timings depend on the lender). Replace whole UK market with a verifiable statement of the lender types Roscap works with. Pass to the copy and compliance auditors for the final wording.",
+      "effort": "S",
+      "viewport": "n/a",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/contact-us-mobile-part1.png"
+    },
+    {
+      "id": "ADS-12",
+      "page": "/",
+      "title": "The homepage, which received 430 paid clicks, weighs 9,793 KiB with a 5.8 s mobile LCP",
+      "severity": "medium",
+      "category": "performance",
+      "evidence": "Lighthouse (pre-run) home mobile: performance 66, LCP 5.8 s, TBT 300 ms, total 9,793 KiB; desktop 87, LCP 2.0 s. 350 of 436 paid clicks were mobile and 430 of 436 landed here. GA4 (setup log) recorded 1 form submit from 415 paid sessions.",
+      "recommendation": "Covered in detail by the performance auditor; from the paid side the rule is simple: no paid traffic to the homepage until it is under 3 MB and LCP under 3 s on mobile. Land on /contact-us as planned.",
+      "effort": "L",
+      "viewport": "mobile (Lighthouse emulated)",
+      "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/home-mobile-part1.png"
+    },
+    {
+      "id": "ADS-13",
+      "page": "Google Ads",
+      "title": "PMax asset group used AI-generated images and shows the logo and business-name links as REMOVED",
+      "severity": "low",
+      "category": "visual",
+      "evidence": "asset_group_asset rows: 11 image assets, 8 named Generated image - 2026-07-28 ... and 3 named Website image - 2026-07-20 ...; LOGO asset_group_asset_primary_status REMOVED; BUSINESS_NAME Roscap REMOVED; 1 YOUTUBE_VIDEO asset (NOT_ELIGIBLE, no name, consistent with an auto-generated video); campaign_brand_guidelines_enabled True.",
+      "recommendation": "Search ads do not use images, so this does not block the restart. If Display or PMax is reused, upload the brand logo and the approved photography (teal and cream, Boska headings) instead of Google-generated images, and opt out of auto-generated video.",
+      "effort": "S",
+      "viewport": "n/a",
+      "screenshot": ""
+    }
+  ],
+  "opportunities": [
+    {
+      "page": "/contact-us",
+      "title": "Paid-search hero variant",
+      "description": "Keep one page but make the hero do two jobs: H1 naming bridging and development finance, the existing sentence as sub-line, email and (unhidden) phone beside it, and move the FAQ about how quickly Roscap can arrange finance to sit directly under the form so the proof is visible before the fold ends on mobile.",
+      "effort": "S"
+    },
+    {
+      "page": "/contact-us",
+      "title": "Proof strip above the form",
+      "description": "The homepage already shows 60+ projects funded, £120m+ completed transactions and 25+ years combined experience (rendered in shots/ads/home-mobile-part1.png). Repeating these three figures in a single line between the H1 and the form on /contact-us gives paid visitors the trust signal they currently only get by leaving the page.",
+      "effort": "S"
+    },
+    {
+      "page": "Google Ads",
+      "title": "Verify generate_lead end to end before spend resumes",
+      "description": "Submit a test on the staging site (roscap-site.webflow.io), confirm the event in GA4 DebugView, confirm /contact-us-success is reached (it returns 200 live), then check the Google Ads conversion action status moves from No recent conversions to Recording. Include the gclid test so attribution is proven.",
+      "effort": "S"
+    },
+    {
+      "page": "Google Ads",
+      "title": "Weekly Windsor pull for the restart",
+      "description": "A fixed read-only pull of campaign, date, ad_network_type, device, expanded_final_url, search_term, clicks, cost, conversions over the last 7 days would show within the first week whether /contact-us converts paid search; the same fields were validated in this audit.",
+      "effort": "S"
+    },
+    {
+      "page": "Google Ads",
+      "title": "Call reporting once the number is visible",
+      "description": "Add a call asset using the +44 7850 number and a call conversion action (60-second minimum) so phone enquiries from Search, which lead forms miss, are counted against spend.",
+      "effort": "S"
+    },
+    {
+      "page": "Google Ads",
+      "title": "Sitelinks to proof pages",
+      "description": "Sitelinks to /track-record, /our-services and /about-us give searchers who are not ready to enquire a next step that stays on brand, and they lift Search CTR without new pages.",
+      "effort": "S"
+    }
+  ],
+  "screenshots": [
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/contact-us-mobile-part1.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/contact-us-mobile-part2.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/contact-us-mobile.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/home-mobile-part1.png",
+    "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/home-mobile.png"
+  ],
+  "data": "## Source and method\n\nWindsor.ai MCP, connector google_ads, account 443-916-9682 (Roscap). Field ids validated with get_fields (2,550 fields). Read-only: get_connectors, get_fields, get_options, get_data only. GA4 is not connected in Windsor (get_connectors lists google_ads only), so GA4 landing-page figures quoted here come from the setup log. Currency GBP, time zone Europe/London.\n\n## Date ranges tried\n\n| Range | Result |\n|---|---|\n| 2024-11-01 to 2025-10-31 (prior 12 months) | 0 rows |\n| 2025-11-01 to 2026-10-31 (last 12 months) | 12 active dates, all 2026-07-29 to 2026-08-10 |\n| 2026-08-02 to 2026-10-31 (last 90 days) | 8 rows, 2026-08-03 to 2026-08-10, nothing after |\n| last_7d | 0 rows |\n\nAccount has therefore been inactive since 10 Aug 2026 (12 weeks at 31 Oct 2026). The setup-log figures (about £197, 13.9k impressions, 444 clicks) are 2% above the API figures (£193.42, 13,749, 436); API figures are used throughout.\n\n## Campaign and account settings\n\n| Setting | Value |\n|---|---|\n| Campaign | Bridging Finance Broker, id 24071655090, PERFORMANCE_MAX |\n| start_date / end_date | 2026-07-28 / none |\n| Status | PAUSED (primary status PAUSED; reasons CAMPAIGN_PAUSED) |\n| Bidding | MAXIMIZE_CONVERSIONS (no target CPA), system status PAUSED |\n| Daily budget | £18.60, STANDARD delivery, payment mode CLICKS |\n| Networks | google_search true, search_network true, content_network true, youtube false (PMax serves YouTube regardless) |\n| Geo | PRESENCE_OR_INTEREST positive, PRESENCE negative; country breakdown shows United Kingdom only |\n| Asset group | Asset Group 1, ENABLED, primary status NOT_ELIGIBLE, final URL https://roscap.co.uk |\n| Brand guidelines | enabled |\n| Auto-tagging | enabled |\n| Conversion tracking | CONVERSION_TRACKING_MANAGED_BY_SELF, id 220059096840; enhanced conversions for leads null |\n| Google tag per account | AW-18338258070 (not present on any live page; only G-H8HS2R6NLS loads) |\n| Optimisation score | 0 (paused) |\n\n## Daily performance (all rows returned)\n\n| Date | Impr | Clicks | Cost £ | CTR | CPC £ | Conv |\n|---|---|---|---|---|---|---|\n| 2026-07-29 | 11 | 3 | 0.46 | 27.3% | 0.15 | 0 |\n| 2026-07-30 | 1,063 | 27 | 13.33 | 2.5% | 0.49 | 0 |\n| 2026-07-31 | 3,693 | 106 | 37.03 | 2.9% | 0.35 | 0 |\n| 2026-08-01 | 930 | 18 | 4.42 | 1.9% | 0.25 | 0 |\n| 2026-08-03 | 1,371 | 46 | 11.11 | 3.4% | 0.24 | 0 |\n| 2026-08-04 | 1,219 | 76 | 37.53 | 6.2% | 0.49 | 0 |\n| 2026-08-05 | 1,451 | 73 | 32.78 | 5.0% | 0.45 | 0 |\n| 2026-08-06 | 592 | 30 | 22.73 | 5.1% | 0.76 | 0 |\n| 2026-08-07 | 765 | 31 | 17.08 | 4.1% | 0.55 | 0 |\n| 2026-08-08 | 2,274 | 25 | 16.03 | 1.1% | 0.64 | 0 |\n| 2026-08-09 | 344 | 0 | 0.41 | 0% | n/a | 0 |\n| 2026-08-10 | 36 | 1 | 0.52 | 2.8% | 0.52 | 0 |\n| Total | 13,749 | 436 | 193.42 | 3.17% | 0.44 | 0 |\n\nview_through_conversions 0, all_conversions 0, conversion_rate 0 on every row. 31 Jul and 4 Aug spent about 2x the daily budget (allowed by Google). Spend collapsed to under £1 a day on 9 and 10 Aug, consistent with the reported payment failure.\n\n## By network\n\n| ad_network_type | Impr | Clicks | Cost £ | CTR | CPC £ | Share of clicks | Share of cost |\n|---|---|---|---|---|---|---|---|\n| CONTENT (Display) | 6,487 | 277 | 95.37 | 4.27% | 0.34 | 63.5% | 49.3% |\n| YOUTUBE | 5,114 | 70 | 6.42 | 1.37% | 0.09 | 16.1% | 3.3% |\n| DISCOVER | 1,516 | 55 | 22.96 | 3.63% | 0.42 | 12.6% | 11.9% |\n| SEARCH | 587 | 30 | 67.47 | 5.11% | 2.25 | 6.9% | 34.9% |\n| SEARCH_PARTNERS | 45 | 4 | 1.21 | 8.89% | 0.30 | 0.9% | 0.6% |\n\nNon-search total: 402 clicks (92.2%), £124.75 (64.5%).\n\n## By device\n\n| Device | Impr | Clicks | Cost £ | CTR | CPC £ | Share of clicks |\n|---|---|---|---|---|---|---|\n| MOBILE | 10,150 | 350 | 140.56 | 3.45% | 0.40 | 80.3% |\n| TABLET | 2,282 | 65 | 22.29 | 2.85% | 0.34 | 14.9% |\n| DESKTOP | 1,232 | 21 | 30.38 | 1.70% | 1.45 | 4.8% |\n| CONNECTED_TV | 85 | 0 | 0.19 | 0% | n/a | 0% |\n\n## Network x device (rows with 10 or more clicks)\n\n| Network | Device | Impr | Clicks | Cost £ | CPC £ |\n|---|---|---|---|---|---|\n| CONTENT | MOBILE | 5,584 | 230 | 75.07 | 0.33 |\n| YOUTUBE | MOBILE | 2,869 | 53 | 4.71 | 0.09 |\n| DISCOVER | MOBILE | 1,372 | 49 | 21.56 | 0.44 |\n| CONTENT | TABLET | 821 | 46 | 19.99 | 0.43 |\n| SEARCH | DESKTOP | 291 | 16 | 29.46 | 1.84 |\n| SEARCH | MOBILE | 294 | 14 | 38.01 | 2.72 |\n| YOUTUBE | TABLET | 1,315 | 13 | 0.91 | 0.07 |\n\n## Landing pages (expanded_final_url, grouped by path)\n\n| Landing path | Impr | Clicks | Cost £ | CPC £ | Share of clicks | Share of cost |\n|---|---|---|---|---|---|---|\n| Homepage (roscap.co.uk root, http and https, with and without gad params) | 13,552 | 430 | 170.73 | 0.40 | 98.6% | 88.3% |\n| /contact-us (www) | 133 | 4 | 22.53 | 5.63 | 0.9% | 11.6% |\n| /insights (www) | 64 | 2 | 0.17 | 0.08 | 0.5% | 0.1% |\n| /privacy-policy (www) | 2 | 0 | 0.00 | n/a | 0% | 0% |\n\nThe landing-page report sums to 13,751 impressions against 13,749 in the campaign report (report-level difference of 2); clicks and cost reconcile exactly. Sub-splits: URLs beginning http:// 3,084 impressions, 108 clicks, £48.65 (24.8% of clicks); URLs containing ://www. 199 impressions, 6 clicks, £22.70 (these are the URL-expansion pages). Redirect check via sandbox proxy: https://roscap.co.uk 301 to https://www.roscap.co.uk/ (0.46 s); www root and /contact-us 200; /contact-us-success 200; plain http not testable (proxy 405). The gad_campaignid values in landing URLs (24071700873, 24076677998, 24071700714) do not equal the campaign id 24071655090. GA4 (setup log, not re-verified here): 405 of 415 paid sessions landed on the homepage, 1 form submit.\n\n## Keywords, search terms, placements\n\nkeyword_text, search_term, search_term_match_type, search_term_view_status and group_placement_view_* all return null for this campaign (Performance Max exposes none of them through the API), so there is no keyword or search-term table. The restart will be the first time search-term data exists.\n\n## Conversion actions (6)\n\n| Name | Type | Category | Origin | Status | Primary | Counting | Lookback |\n|---|---|---|---|---|---|---|---|\n| Roscap (web) generate_lead | UNKNOWN (GA4 import) | SUBMIT_LEAD_FORM | WEBSITE | ENABLED | yes | ONE_PER_CLICK | 90d |\n| Contact Us | GOOGLE_ANALYTICS_4_CUSTOM | CONTACT | WEBSITE | ENABLED | yes | MANY_PER_CLICK | 90d |\n| Roscap (web) purchase | GOOGLE_ANALYTICS_4_PURCHASE | PURCHASE | WEBSITE | HIDDEN | no | MANY_PER_CLICK | 90d |\n| roscap.co.uk (web) purchase | GOOGLE_ANALYTICS_4_PURCHASE | PURCHASE | WEBSITE | HIDDEN | no | MANY_PER_CLICK | 90d |\n| Roscap (web) qualify_lead | UNKNOWN | QUALIFIED_LEAD | WEBSITE | HIDDEN | no | MANY_PER_CLICK | 90d |\n| Roscap (web) close_convert_lead | UNKNOWN | CONVERTED_LEAD | WEBSITE | HIDDEN | no | MANY_PER_CLICK | 90d |\n\nThe conversion_action_name x conversions pull for Nov 2025 to Oct 2026 returned 0 rows: no action has ever recorded a conversion. No PHONE_CALL action exists.\n\n## Asset group copy (Asset Group 1)\n\n| Field | Text | Status |\n|---|---|---|\n| HEADLINE | Bridging Finance Broker | NOT_ELIGIBLE (paused) |\n| HEADLINE | Development Finance Broker | NOT_ELIGIBLE |\n| HEADLINE | Property Funding | NOT_ELIGIBLE |\n| HEADLINE | Contact Roscap today | NOT_ELIGIBLE |\n| HEADLINE | Real Estate Capital | NOT_ELIGIBLE |\n| LONG_HEADLINE | Bridging Finance Broker | NOT_ELIGIBLE |\n| DESCRIPTION | Bridging & Development Finance from £500k to over £100m | NOT_ELIGIBLE |\n| DESCRIPTION | Detailed terms in 24 hours. Access to whole UK market plus international lenders. | NOT_ELIGIBLE (a duplicate without full stop is REMOVED) |\n| BUSINESS_NAME | Roscap | REMOVED |\n| LOGO | Website image - 2026-07-20 20:09:26.png | REMOVED |\n| Images | 8 Generated image - 2026-07-28 ... files, 3 Website image ... files (square, landscape, portrait) | NOT_ELIGIBLE |\n| YOUTUBE_VIDEO | unnamed | NOT_ELIGIBLE |\n\n## Day of week (12 active days only, each weekday appears 1 or 2 times)\n\n| Day | Impr | Clicks | Cost £ |\n|---|---|---|---|\n| Friday | 4,458 | 137 | 54.11 |\n| Saturday | 3,204 | 43 | 20.45 |\n| Thursday | 1,655 | 57 | 36.06 |\n| Wednesday | 1,462 | 76 | 33.24 |\n| Monday | 1,407 | 47 | 11.63 |\n| Tuesday | 1,219 | 76 | 37.53 |\n| Sunday | 344 | 0 | 0.41 |\n\nToo few days to support day-parting decisions.\n\n## Live /contact-us facts used for recommendations (checked 31 Oct 2026)\n\n| Item | Value |\n|---|---|\n| Form | form#wf-form-Contact-Form, method get, redirect /contact-us-success (200) |\n| Fields | name (text), email (email), Phone (tel), Subject (tel, required), Message (textarea); 0 label elements; placeholders only |\n| Submit | value Submit, class button golden contact |\n| Direct contact | mailto:info@roscap.co.uk visible; tel:+447850522789 has class hide (display none at 390 and 1440 px); Instagram @roscap.uk visible |\n| Anti-spam | no reCAPTCHA or Turnstile |\n| Tags | gtag G-H8HS2R6NLS only; no AW- tag; no gtag('consent') call found |\n| Scripts | jQuery 3.5.1, 3 Webflow chunks, gsap.min.js, SplitText, TextPlugin, ScrollTrigger (GSAP 3.15.0) |\n| Lighthouse mobile | perf 67, FCP 2.3 s, LCP 5.9 s, TBT 330 ms, 763 KiB, unused JS 132 KiB, 0 preloads; largest asset Vector-2.svg 202 KiB (img.hero-bg.is-contact, loading=lazy) |\n| Lighthouse desktop | perf 85, LCP 1.3 s |\n| FAQ copy with bridging | lines 26 to 34 of live/text/contact-us.txt name bridging loans, development finance, lender types |\n\n## Assumptions and limits\n\n- No live form was submitted; markup and computed styles were inspected only.\n- GA4 figures (415 paid sessions, 405 homepage landings, 1 form submit) are quoted from the setup log; GA4 is not connected in Windsor and was not re-queried.\n- Plain http redirect hops could not be measured because the sandbox proxy refuses http; https non-www to www 301 was verified.\n- Whether the Contact Us GA4 custom event fires on the same form submit as generate_lead could not be determined from Google Ads data; the double-count risk is stated as a risk to verify.\n- Scripts and notes: /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/work/ads/telcheck.js; screenshots in /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/ads/."
+}

@@ -1,0 +1,375 @@
+{
+ "scope": "Our Services (/our-services) and Track Record (/track-record) on www.roscap.co.uk, audited 31 Oct 2026 at 1440x900, 1024x768 and 390x844 (mobile emulation, DPR 2): rendering, console and network, axe-core, keyboard, imagery, copy, UX and IA, motion, SEO signals, plus a deal inventory compared with the owner's deals.json.",
+ "summary": "Both pages are visually coherent with the brand and load with no console errors, but each has one structural weakness. Our Services reads well until the Equity and Co-Investment intro, where a sentence is printed twice, and its centrepiece, The Capital Stack, is a flat SVG with every label outlined to paths and alt=\"\", so the page's key diagram is invisible to assistive technology and to Google; rebuilding it as HTML layers is the right base for the approved scroll animation and fixes legibility at 358 px. The Our Process highlight dims inactive steps to 30% (1.84:1 and 2.33:1 contrast) and, like every other interaction on these pages, ignores prefers-reduced-motion. Nothing on the page explains why Google reported it unknown: title, description, canonical, sitemap, robots and rendering are all correct, so the fix is Search Console plus a more descriptive h1. Track Record is the heaviest page on the site (13.4 MB desktop, 7.0 MB mobile) because a 6.5 MB map SVG is fetched from an S3 bucket and the 22 deal photos are 0.5 to 1 MB PNGs served at full size to every device; the photos are also stretched because object-fit sits on the wrapper rather than the image. The data layer needs tidying: map popups claim 52 UK deals against 16 listed, labels vary (Bridge Loan versus Bridging Loan), there are no dates, filters or links, and the two synced carousels end on an empty slot. The 22 live deals match the owner's deals.json exactly in amounts, products, assets and capital sources, differing only in order and metric formatting. Site-wide items confirmed here: GA4 sets cookies before consent with no banner, and the footer and nav icons lack accessible names.",
+ "strengths": [
+  "Clear, calm information architecture on Our Services: capital stack, debt, equity, asset classes, process, CTA, with consistent tag-plus-italic-heading rhythm and the brand palette (cream #FFFCF5, teal #043435, gold #E1C979) applied faithfully at every viewport.",
+  "Copy is specific and free of FCA-implying language; the footer disclaimer is present on both pages and the debt and equity explanations are accurate and concise (one line per product).",
+  "Zero console errors or warnings on either page; Our Services is light (609 to 679 KiB) with WebP hero variants and SVG icons.",
+  "Track Record presents real, specific deal data (LTC, LTV, pricing, capital source) in a consistent 4-row card that is readable on mobile at 16 px, and the 22 deals agree exactly with the owner's dataset.",
+  "The Our Process layout (numbered rail plus cards) and the hover-lift cards are tasteful; Swiper's accessibility module gives the arrows proper roles and labels and the synced carousels work with swipe on touch.",
+  "Technical SEO basics are in place on both pages: descriptive titles, 150-character descriptions, self canonicals, clean 301s for URL variants, staging blocked and canonicalised."
+ ],
+ "findings": [
+  {
+   "id": "OS-01",
+   "page": "/our-services",
+   "title": "Duplicated sentence in the Equity and Co-Investment intro",
+   "severity": "high",
+   "category": "copy",
+   "evidence": "section.section (5th) > .content-wrap.is-large > p.text-size-smedium renders: \"We raise and structure equity for developers, sponsors, and family offices seeking joint ventures, preferred equity, or direct co-investment.We raise and structure equity for developers, sponsors, and family offices seeking joint venture, preferred equity, or direct co-investment.\" The sentence appears twice with no space after the first full stop and with \"joint ventures\" in the first copy and \"joint venture\" in the second. Visible at all 3 viewports (our-services-1440-part1.png, our-services-390-part3.png).",
+   "recommendation": "In the Designer, open the Equity and Co-Investment paragraph and delete the second sentence so the paragraph reads: \"We raise and structure equity for developers, sponsors and family offices seeking joint ventures, preferred equity or direct co-investment.\" Keep the following paragraph about the investor base unchanged.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1440-part1.png"
+  },
+  {
+   "id": "OS-02",
+   "page": "/our-services",
+   "title": "The Capital Stack is an outlined SVG with no accessible text and no real text for search",
+   "severity": "high",
+   "category": "a11y",
+   "evidence": "img.wwa-image src=694792bf5c2413d44a03ecf9_Group%201597880904.svg (37.7 KB, viewBox 0 0 660 664), alt=\"\", loading=\"lazy\", no width/height attributes (Lighthouse unsized-images). The SVG contains 0 <text> elements: every label (The Capital Stack, Common Equity, Preferred Equity, Mezzanine Debt, Senior Debt, Equity, Debt, High risk High return, Low risk Low return) is outlined to <path>. Screen readers get nothing for the page's key diagram and Google cannot read the layer names. Rendered 641x645 at 1440 and 358x360 at 390, where the small axis labels scale to roughly 7 to 9 px (our-services-390-part1.png).",
+   "recommendation": "Rebuild the stack as HTML in the same grid cell (replace img.wwa-image with a div.stack containing 4 layer divs with real text, two bracket labels and the risk/return axis as CSS borders or a tiny inline SVG with aria-hidden). This is also the natural base for the approved scroll-build animation: each layer is a DOM element you can reveal with CSS animation-timeline: view() and a GSAP ScrollTrigger fallback, and labels stay crisp at 358 px wide. Until then, set alt=\"Diagram of the capital stack: Common Equity and Preferred Equity (equity, higher risk and return) above Mezzanine Debt and Senior Debt (debt, lower risk and return)\" and add width=660 height=664.",
+   "effort": "M",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/capital-stack-svg.png"
+  },
+  {
+   "id": "OS-03",
+   "page": "/our-services",
+   "title": "Process steps outside the scroll highlight fail contrast (1.84:1 and 2.33:1) and the effect ignores reduced motion",
+   "severity": "high",
+   "category": "a11y",
+   "evidence": "Webflow interaction sets inline styles on inactive steps: h3.process-title style=\"color: rgba(225, 201, 121, 0.3)\" and p.process-text style=\"color: rgba(255, 255, 255, 0.3)\". axe at 1440: 14 color-contrast violations, e.g. #w-node-_0ea84c3d-07fc-f06d-c764-e2833f9349e1-91518a84 > .process-card-textdiv > .process-title contrast 1.84 (#586f57 on #1d4849, 40 px) and .process-text contrast 2.33 (#617f80 on #1d4849, 18 px). Only the 2 to 3 steps near the viewport centre are at full colour (our-services-process-inview.png); a full-page capture shows all 6 dimmed (our-services-1440-part2.png). With prefers-reduced-motion: reduce emulated, the sampled step opacities were identical (0.65 to 1.0 while scrolling), so the preference is not honoured. site.css contains no prefers-reduced-motion rule.",
+   "recommendation": "Keep the highlight but raise the inactive state so it still passes: no lower than 60% opacity for p.process-text (about 4.8:1 on #1d4849) and h3.process-title (about 3.2:1 at 40 px, passes the 3:1 large-text threshold). In the interaction settings tick Webflow's reduced-motion option, or add a Custom Code rule: @media (prefers-reduced-motion: reduce) { .process-title, .process-text { color: inherit !important; opacity: 1 !important } }.",
+   "effort": "S",
+   "viewport": "1440, 1024",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-process-inview.png"
+  },
+  {
+   "id": "OS-04",
+   "page": "/our-services",
+   "title": "Stretch-senior is promised in copy and used on Track Record but is missing from the stack and the cards",
+   "severity": "medium",
+   "category": "copy",
+   "evidence": "Real Estate Debt Advisory paragraph: \"We advise on and arrange senior, stretch-senior, and mezzanine debt\". The Capital Stack has 4 layers only (Common Equity, Preferred Equity, Mezzanine Debt, Senior Debt) and the 4 debt cards are Development Finance, Bridging Finance, Commercial and BTL Mortgages, Mezzanine Finance. Track Record lists a £11.0m London deal with Product \"Stretch Senior\" (88% LTC, 11% p.a. blended). Mapping: Senior Debt covers Development, Bridging and Commercial and BTL Mortgages; Mezzanine Debt covers Mezzanine Finance; Preferred Equity covers the Preferred Equity card; Common Equity covers Joint Venture Equity; Corporate Capital Raising sits outside the stack.",
+   "recommendation": "When the stack is rebuilt, add a one-line caption under each layer that names the products it covers (Senior Debt: development finance, bridging, commercial and BTL mortgages; Mezzanine Debt: mezzanine and stretch-senior; Preferred Equity; Common Equity: joint venture equity). Either add \"stretch-senior\" to the Mezzanine Finance card copy (\"Subordinated or stretch-senior capital to enhance leverage...\") or remove the word from the intro so the three elements agree. The 4-layer order already decided by Edu is not affected.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1440-part0.png"
+  },
+  {
+   "id": "OS-05",
+   "page": "/our-services",
+   "title": "Mobile service cards are 40% empty space and the page runs to 11,582 px",
+   "severity": "medium",
+   "category": "ux",
+   "evidence": "At 390 px .rs-cover-card-og has row-gap: 140px between the icon and the title (measured gapIconToText 140 px); card heights 350, 352, 369, 344, 297, 275, 297 px for text of 2 to 3 lines each (our-services-390-part2.png). The asset-class grid collapses to a single 358 px column (grid-template-columns: 358px) with 8 cells of 146 px each (1,168 px for 8 words). Total page height 11,582 px at 390x844, about 14 screens.",
+   "recommendation": "Add a 479 px breakpoint override on .rs-cover-card-og: row-gap 1.5rem and padding 24px 20px, so each card is about 180 px. Set .assets-card-grid to 2 columns at 479 px (icons and labels fit comfortably) and drop the right border on even cells. Expected saving: roughly 2,000 px of scroll with no content change.",
+   "effort": "S",
+   "viewport": "390",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-390-part2.png"
+  },
+  {
+   "id": "OS-06",
+   "page": "/our-services",
+   "title": "Hero image is lazy-loaded although it is the first thing painted",
+   "severity": "medium",
+   "category": "performance",
+   "evidence": "img.hero-bg (69478faacbf872e9874d5c4c_our services bg.webp, srcset 500 to 2160w; 1600w variant 92 KB served at 1440, 800w 30 KB at 390) carries loading=\"lazy\" while positioned absolutely behind the h1 in section.is-header. The same pattern exists on /track-record (6947c2131b782b6ff11cdd4a_tr-hero.webp, 128 KB original). Lighthouse mobile LCP: 4.8 s (/our-services), 4.2 s (/track-record). The hero h1 and paragraph also start at inline opacity:0 and are revealed by a Webflow interaction about 0.9 s after navigation on a fast connection.",
+   "recommendation": "In the image settings for the hero background on both pages set Load to \"Eager\" (removes loading=lazy) and, via the page head code, add <link rel=\"preload\" as=\"image\" imagesrcset=... imagesizes=\"100vw\"> for the hero. Change the hero heading interaction so the h1 initial state is opacity 1 (animate only the paragraph), keeping the text visible before JavaScript runs.",
+   "effort": "S",
+   "viewport": "390",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-390-part0.png"
+  },
+  {
+   "id": "OS-07",
+   "page": "/our-services",
+   "title": "Debt cards cramp at 1024 and card titles misalign",
+   "severity": "low",
+   "category": "visual",
+   "evidence": "At 1024 px .rs-covers-card-wrap keeps 4 columns of about 190 px; \"Commercial and BTL Mortgages\" wraps to 3 lines and the 4 h3 baselines sit at different heights because .rs-cover-card-og uses justify-content: space-between with the icon pinned top (our-services-1024-part1.png). At 1440 the Mezzanine Finance title also sits higher than its neighbours (our-services-1440-part1.png). .rs-cover-card-og:hover applies translate(0,-4px) and a gold box-shadow with no transition property, so the lift snaps.",
+   "recommendation": "At the 991 px breakpoint set .rs-covers-card-wrap to 2 columns. Give .rs-para-wrap-og a min-height (two title lines) or align titles with a fixed top margin instead of space-between. Add transition: transform .2s ease, box-shadow .2s ease to .rs-cover-card-og.",
+   "effort": "S",
+   "viewport": "1024",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1024-part1.png"
+  },
+  {
+   "id": "OS-08",
+   "page": "/our-services",
+   "title": "Small copy issues in the services and process copy",
+   "severity": "low",
+   "category": "copy",
+   "evidence": "\"...seeking exposure to UK, Europe, and North America real estate\" (should be UK, European and North American real estate). Step 6: \"Finalise offer and intimately manage the transaction\" (\"intimately\" reads oddly). Step titles mix sentence case and title case: \"Initial review\", \"Capital markets\", \"Review offers\" versus \"Deal Closing\". Oxford commas throughout and an em dash in the closing line of the equity cards (between \"investor\" and \"ensuring\"). The nav button says \"Speak to Us\" on desktop and \"Speak with us\" on the mobile menu while both page buttons say \"Get in Touch\", 3 labels for one destination (/contact-us).",
+   "recommendation": "Edit: \"exposure to UK, European and North American real estate\"; \"Finalise the offer and manage the transaction closely through application, due diligence and completion\"; make all 6 step titles sentence case (\"Deal closing\"). Pick one CTA label for the nav and the in-page buttons (suggest \"Speak to us\" everywhere, since Google Ads will land on /contact-us).",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1440-part2.png"
+  },
+  {
+   "id": "OS-09",
+   "page": "/our-services",
+   "title": "Commercial and BTL Mortgages card could read as regulated mortgage advice",
+   "severity": "low",
+   "category": "compliance",
+   "evidence": "Card copy: \"Commercial and BTL Mortgages. Income-based term lending for stabilised assets.\" and the section heading \"Real Estate Debt Advisory\" with \"We advise on and arrange...\". No FCA-authorisation wording was found on either page and the footer disclaimer is present on both. Consumer buy-to-let can be a regulated activity, so an unqualified BTL mention next to \"advise\" is the one place a reader could infer regulated mortgage advice.",
+   "recommendation": "Change the card line to \"Income-based term lending for stabilised investment assets, for companies, professional landlords and investors.\" Keep the footer disclaimer as is.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1440-part1.png"
+  },
+  {
+   "id": "OS-10",
+   "page": "/our-services",
+   "title": "Nothing on the page explains \"unknown to Google\"; h1 and title do not reinforce each other",
+   "severity": "medium",
+   "category": "seo",
+   "evidence": "Verified: HTTP 200, <title>Development Finance, Bridging Loans &amp; Debt Advisory | Roscap</title> (61 characters), meta description 150 characters, self-referencing canonical https://www.roscap.co.uk/our-services, no robots meta, no X-Robots-Tag header, listed in /sitemap.xml, robots.txt is only the Sitemap line, /our-services/ and roscap.co.uk/our-services 301 to the canonical, staging roscap-site.webflow.io has robots Disallow: / and canonicalises to www, content is server-rendered (644 words), nav and footer link to it on every page and the Home page body links \"Explore Our Services\" twice. Cloudflare served the HTML from cache with age 791089 s (about 9 days). No JSON-LD on the page. The h1 is the generic \"Our Services\" and /services returns 404.",
+   "recommendation": "Treat it as a crawl-queue issue rather than an on-page block: in Search Console run URL Inspection on https://www.roscap.co.uk/our-services, Request indexing, and confirm the sitemap is submitted and the Cloudflare cache is purged after publishing. On the page, make the h1 descriptive and consistent with the title, for example \"Real estate debt and equity advisory\" with \"Our Services\" as the small tag above it, and add a 301 from /services to /our-services if that URL was ever shared. Optional: add Service JSON-LD in the page head listing the 7 services.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1440-part0.png"
+  },
+  {
+   "id": "OS-11",
+   "page": "/our-services",
+   "title": "CTA pattern: two identical \"Get in Touch\" buttons and no path to proof",
+   "severity": "low",
+   "category": "conversion",
+   "evidence": "The only in-body links are 2x a.button.golden \"Get in Touch\" (118x41 px) to /contact-us, one in the Our Process left column and one in the shared bottom banner; the page never links to /track-record or to a specific service enquiry. Buttons pass contrast (#E1C979 on #043435 background in the banner) and have visible default focus rings. Given the decision to carry no form, phone or email here, the buttons are the whole conversion path.",
+   "recommendation": "Keep both buttons but differentiate them: the process-section button becomes \"Discuss a transaction\" and the banner keeps \"Speak to us\"; add a quiet text link \"See completed transactions\" under the closing line of the debt cards (h3 \"Debt can be structured...\") pointing to /track-record. Optionally append ?topic=debt or ?topic=equity to the two buttons so the contact form can pre-select the subject.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1440-part3.png"
+  },
+  {
+   "id": "TR-01",
+   "page": "/track-record",
+   "title": "Deal photographs are stretched: object-fit is on the wrapper, not the image",
+   "severity": "high",
+   "category": "visual",
+   "evidence": "img.image inside .st-thumbnail-wrap has computed object-fit: fill, width 100%, height 380px; .st-thumbnail-wrap carries object-fit: cover which has no effect on a div. Lighthouse image-aspect-ratio fails on 10 images: desktop displayed 592x380 (1.56) versus actual 765x594 (1.29) for mayfair.png and rome.png and 660x482 (1.37) for the others; mobile displayed 360x380 (0.95) versus 1.29 to 1.37, so photos are compressed to about 70% of their natural width (windows visibly elongated in track-record-390-slider-swiped.png).",
+   "recommendation": "Move object-fit: cover (and object-position: center) from .st-thumbnail-wrap to .image, keep height 380px (or 23.75rem) and set width 100%. No image re-export needed.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-390-slider-swiped.png"
+  },
+  {
+   "id": "TR-02",
+   "page": "/track-record",
+   "title": "Deal images are 1 MB PNGs served at full size to every device (6.3 MB)",
+   "severity": "high",
+   "category": "performance",
+   "evidence": "Lighthouse network: 22 deal PNGs in the 69453ab474ca25afbfe0f630 asset folder, the 10 heaviest 491 to 1,024 KiB each (mayfair.png 1,024 KiB, rome.png 854, manchester.png 697, birminghha.png 636, ssssshefield.png 625, cannes.png 566, dublin.png 547, buckinghamshire.png 526, bathuk.png 491, Mask group (1)-p-800.png 204). Natural size 705x515 or 705x547 rendered 614x380 at 1440 and 338x380 at 390. srcset offers only 500w and 660w/765w and sizes=\"(max-width: 479px) 96vw...49vw\", so a 2x phone (749 px) and the desktop (705 px) both pick the original file: images total 6,302 KiB desktop and 6,386 KiB mobile. All deal images are lazy-loaded and have alt=\"\". The hero (tr-hero.webp) and all other site imagery are WebP.",
+   "recommendation": "Re-export the 22 photos as WebP at 1,240 px wide (2x the 614 px slot) through the Webflow asset compressor (typically under 150 KB each at quality 80, an estimate to confirm on export) and replace the PNGs; Webflow will regenerate the srcset. Add descriptive alt text from the card data (\"Kensington townhouses, £27.5m development finance\"). Expected saving: about 5 MB on both desktop and mobile.",
+   "effort": "M",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-1440-part1.png"
+  },
+  {
+   "id": "TR-03",
+   "page": "/track-record",
+   "title": "A 6.5 MB map SVG is fetched from an S3 bucket on every desktop visit, with no caching or fallback",
+   "severity": "high",
+   "category": "performance",
+   "evidence": "Inline script (window.innerWidth >= 1200) fetches https://roscap.s3.us-east-1.amazonaws.com/mapwithireee.svg and injects it into #svg-map-container. Response: 6,659,741 bytes, Content-Type image/svg+xml, no Cache-Control header, Last-Modified 14 Jan 2026, served from us-east-1 without a CDN. The file has 274 paths, 46 of them with path data longer than 20,000 characters (over-detailed country outlines). It is 6,504 KiB of the 13,390 KiB desktop total (Lighthouse). If the fetch fails the 70vh .svg-mapp stays empty with no fallback. Below 1200 px the page uses the static mapp.png instead (p-800 variant 55 KiB) with pins baked in.",
+   "recommendation": "Replace with a simplified SVG (Mapshaper or SVGO at 1 to 2 decimal precision, target under 150 KB) uploaded to Webflow assets and embedded inline via an Embed element so it needs no fetch and is cached by Webflow's CDN. If an external file must stay, set Cache-Control: public, max-age=31536000 on the object and put it behind CloudFront. Keep mapp.png as the fallback and for small screens.",
+   "effort": "M",
+   "viewport": "1440",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-1440-part0.png"
+  },
+  {
+   "id": "TR-04",
+   "page": "/track-record",
+   "title": "Map hover counts (52 UK deals, 61 total) contradict the 22 transactions listed",
+   "severity": "high",
+   "category": "data",
+   "evidence": "SVG popups revealed on hover (desktop only): popup-uk \"52 DEALS\", popup-france \"2 DEALS\", popup-ireland \"2 DEALS\", popup-italy \"2 DEALS\", popup-spain \"1 DEALS\", popup-albania \"1 DEALS\", popup-usa \"1 DEALS\" (61 in total). The Selected Transactions list below shows 22 deals: 16 UK, 1 each for Ireland, Spain, Italy, France, USA and Albania. The heading says \"Selected Transactions\", but the 52 figure is unsubstantiated on the page and \"1 DEALS\" is a grammar error. The popups are not reachable by keyboard or touch (pointer hover only, pointerleave hides them).",
+   "recommendation": "Either make the counts match the list (16, 1, 1, 1, 1, 1, 1) or, if 52 UK deals is the real figure Clemente can stand behind, state it in copy (\"52 UK transactions completed; 16 shown below\") so the map and list agree. Fix the singular (\"1 deal\"). Render the counts as always-visible pin labels rather than hover popups so they work on touch and keyboard.",
+   "effort": "S",
+   "viewport": "1440",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-map-hover-uk2.png"
+  },
+  {
+   "id": "TR-05",
+   "page": "/track-record",
+   "title": "Carousels end on an empty slot and split the deals into two arbitrary halves",
+   "severity": "medium",
+   "category": "ux",
+   "evidence": "Two Swiper 12 instances (.swiper-1 and .swiper-2, 11 deals each, loop: true, slidesPerView 2 and slidesPerGroup 2 from 992 px) are synced via controller. With 11 slides and groups of 2, Swiper inserts a .swiper-slide-blank (aria-label \"12 / 12\") in each: on the 6th page Surrey (and Tirana below) sit alone with an empty right-hand slot (track-record-slider-lastpage.png). The second carousel's controls are hidden (.swiper-button-wrap.is-st.hide), so it can only be driven by the first. Order is neither by size nor by date, and the two sliders are separated only by the first slider's controls, which visually attach to the wrong group. Mobile shows 1 per view with 11 dots.",
+   "recommendation": "Short term: set loopAddBlankSlides: false and slidesPerGroup: 1 (or make the counts even) and show one shared control bar between the two rows. Better: merge into a single list or 3-column grid sorted by amount, with 3 filter chips (Debt, Equity, Bridging), which removes the Swiper dependency (38 KB) and the sync code.",
+   "effort": "M",
+   "viewport": "1440",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-slider-lastpage.png"
+  },
+  {
+   "id": "TR-06",
+   "page": "/track-record",
+   "title": "Slider semantics: role=list with group children and 6 unnamed focusable dots",
+   "severity": "medium",
+   "category": "a11y",
+   "evidence": "axe critical aria-required-children x2: #swiper-wrapper-... role=\"list\" (Webflow w-dyn-items) contains Swiper slides with role=\"group\" aria-label=\"1 / 12\". Pagination: 6 span.swiper-dot elements with tabindex=\"0\" but no role or aria-label (rendered by the custom renderBullet). Arrows are fine (Swiper adds role=button, tabindex=0, aria-label Previous/Next slide). Arrow keys do not move the slider (keyboard module not enabled); Enter on the arrows works. Focus ring on slider controls is the global 2 px #4d65ff outline.",
+   "recommendation": "In the Swiper config add a11y: { slideRole: 'listitem' } or remove role=\"list\" from the wrapper; render bullets as <button class=\"swiper-dot\" aria-label=\"Go to deals 3 and 4\"> and enable keyboard: { enabled: true }. Change the focus outline colour on .slider-arrow and .swiper-dot to the brand teal (#043435) with 2 px offset.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-1440-part1.png"
+  },
+  {
+   "id": "TR-07",
+   "page": "/track-record",
+   "title": "Product and metric labels are inconsistent across the 22 cards",
+   "severity": "medium",
+   "category": "data",
+   "evidence": "Product values: \"Bridge Loan\" (Rome) versus \"Bridging Loan\" (Dublin, Buckinghamshire) plus \"Acquisition Bridge\", \"Commercial Bridge\", \"Refurbishment Bridge\", \"Residential Bridge\"; \"Mezzanine Loan\" (Florida) versus \"Development Finance + Mezzanine\" (Bath); \"Stretch Senior\" (no \"Debt\"). Metrics formats: \"8.5% p.a.\", \"1.00% pcm\", \"SONIA + 4.15%\", \"12% IRR\", \"11% p.a. blended\", \"100% cash\". Amounts: \"£11.0m\" with a decimal but \"€7m\", \"€3m\", \"€16m\" without. Dublin uses a hyphen (\"Residential - 52 Apartments\") where all other cards use an en dash. The same variants exist in the owner's deals.json, so the source data needs fixing, not just the page.",
+   "recommendation": "Agree a controlled vocabulary: Product in {Development Finance, Bridging Loan, Commercial Mortgage, BTL Mortgage, Mezzanine Loan, Stretch Senior Loan, Preferred Equity, Corporate Advisory} with the sub-type moved to Asset Class or a note (\"Bridging Loan (refurbishment)\"). Standardise metrics as \"LTC 70% · LTV 58% · 8.5% p.a.\" and amounts to one decimal (\"€7.0m\"). Replace the hyphen in the Dublin card with an en dash.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-1440-part1.png"
+  },
+  {
+   "id": "TR-08",
+   "page": "/track-record",
+   "title": "Tirana chrome ore mine disposal sits oddly in a real estate track record",
+   "severity": "medium",
+   "category": "copy",
+   "evidence": "Card 22: \"Tirana, Albania | €16m | Product: Disposal | Key Metrics: 100% cash │ No deferred consideration | Asset Class: Chrome Ore Mine | Capital: Asian Conglomerate\". It is the largest euro deal shown, it is M&A rather than real estate financing, and the page intro promises \"development, investment, and structured finance mandates\" in real estate. Albania is also highlighted on the map because of it.",
+   "recommendation": "Ask Clemente whether to keep it. If kept, label it clearly as corporate advisory (Product \"Corporate disposal (M&A advisory)\") and move it to the end under a short sub-heading \"Corporate advisory\", so the real estate story stays clean; if removed, drop Albania from the map and the popup.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-1440-part1.png"
+  },
+  {
+   "id": "TR-09",
+   "page": "/track-record",
+   "title": "Historic deal rates shown without context",
+   "severity": "medium",
+   "category": "compliance",
+   "evidence": "16 of 22 cards publish pricing: \"8.5% p.a.\", \"8.95% p.a.\", \"1.00% pcm\", \"0.90% pcm\", \"SONIA + 4.15%\", \"12.5% p.a. blended\", \"4.95% p.a.\". These are facts about completed deals, which is fine, but with no dates and no caveat a prospect can read them as today's achievable pricing (the hard rule on promising rates). No FCA-related wording appears on the page; the footer disclaimer is present.",
+   "recommendation": "Add one line under the Selected Transactions intro: \"Terms shown relate to completed transactions and are not indicative of pricing currently available.\" Add the completion year to each card (new data field) so the rates are read in context.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-1440-part1.png"
+  },
+  {
+   "id": "TR-10",
+   "page": "/track-record",
+   "title": "Deals have no detail, date, filter or sort, and 44 h2s flatten the outline",
+   "severity": "medium",
+   "category": "ux",
+   "evidence": "Each card is a static div: no link, no completion date, no role (arranged versus advised), no filter or sort controls; the only in-body link on the page is the banner's \"Get in Touch\". Every card uses two h2 elements (city and amount), giving the document 47 h2s under one h1. Meta description says \"in the UK and Europe\" while the page includes a Florida (USA) deal and the copy says \"UK, Europe, and North America\". Cards are hand-built Designer content (no CMS collection), so each addition is manual.",
+   "recommendation": "Create a Transactions CMS collection (city, country, amount, currency, product, asset class, capital source, metrics, year, image) and bind the cards to it; use h3 for the city and a div for the amount. Add the year to each card and extend the meta description to \"...in the UK, Europe and North America\". Filters and sorting (Webflow native or Finsweet attributes) then become possible without code.",
+   "effort": "M",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-1440-part1.png"
+  },
+  {
+   "id": "TR-11",
+   "page": "/track-record",
+   "title": "Swiper is loaded unpinned from jsDelivr without integrity hashes",
+   "severity": "low",
+   "category": "technical",
+   "evidence": "<link href=\"https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css\"> and <script src=\"https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js\"> resolve to the latest 12.x on every deploy, with no SRI attribute. 38 KB JS of which Lighthouse estimates 23 KB unused. Swiper is also loaded on the Home page footer code (per CONTEXT), so the library is now in two places.",
+   "recommendation": "Pin to an exact version (for example swiper@12.0.3) with integrity and crossorigin attributes, or host the two files as Webflow assets. If TR-05 moves to a grid, remove Swiper from this page entirely.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": ""
+  },
+  {
+   "id": "TR-12",
+   "page": "/track-record",
+   "title": "Decorative-only alt text on 22 meaningful deal photos and the hero",
+   "severity": "low",
+   "category": "a11y",
+   "evidence": "All 22 .st-thumbnail-wrap img elements and img.hero-bg have alt=\"\" (checked in DOM at 1440 and 390). The photos carry meaning (the asset financed) and the Leeds card correctly shows a church (file named liverpoool.png) so the content is right, only the labelling is missing.",
+   "recommendation": "Give each deal image a short alt built from the card (\"Church-to-residential conversion, Leeds\"). Keep alt=\"\" for the hero background, which is decorative.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": ""
+  },
+  {
+   "id": "SH-01",
+   "page": "/our-services, /track-record",
+   "title": "GA4 loads and sets cookies before any consent; no banner present",
+   "severity": "critical",
+   "category": "compliance",
+   "evidence": "Both pages load https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS in <head> with gtag('config') inline; requests to analytics.google.com/g/collect and stats.g.doubleclick.net fire on load, and the cookie jar after loading contained _ga and _ga_H8HS2R6NLS (domain .roscap.co.uk) plus Cloudflare's _cfuvid. No element matching cookie, consent or banner classes exists in the DOM (only the CTA .ab-banner-head-wrap matched), and no banner is visible in any screenshot. Verified on 31 Oct 2026 at 1440, 1024 and 390.",
+   "recommendation": "Site-wide item for the compliance auditor: implement the approved in-house banner with Google Consent Mode v2 defaults set to denied before gtag loads, or delay gtag until consent. Noted here because both audited pages carry the tag.",
+   "effort": "M",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1440-part0.png"
+  },
+  {
+   "id": "SH-02",
+   "page": "/our-services, /track-record",
+   "title": "Footer and nav controls without accessible names (axe critical and serious)",
+   "severity": "medium",
+   "category": "a11y",
+   "evidence": "axe on both pages: input-button-name critical on input.footer-submit (type=submit, value=\"\", arrow background image); link-name serious on a.nav_brand-2 (logo img alt=\"\"), the 3 a.social-link icons (mailto, LinkedIn, Instagram) and, on mobile, a.nav_button-2 (hamburger, href=\"#\"). Footer copyright and disclaimer text #8d8d8d on #FFFCF5 measures 3.23:1 at 14 px (serious). No <main> landmark, so axe reports 7 to 20 region violations per page.",
+   "recommendation": "Set the logo image alt to \"Roscap home\", add aria-label to the 3 social links and the hamburger, give the subscribe button value=\"Subscribe\" with the arrow as a CSS background, darken .text-color-grey2 to #6b6b6b (4.6:1), and wrap .main-wrapper in a <main> (set the tag in the Designer element settings).",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": ""
+  }
+ ],
+ "opportunities": [
+  {
+   "page": "/our-services",
+   "title": "Capital Stack scroll build (approved) as real HTML layers",
+   "description": "Replace img.wwa-image in the right cell of .two-col-grid with a div.stack of 4 layer divs (Common Equity #043435, Preferred Equity #044446, Mezzanine Debt #E1C979, Senior Debt #FFEBAA) plus two bracket labels and the risk/return axis. Reveal the layers in the decided order (Common Equity first) as the block scrolls through the viewport using CSS animation-timeline: view() with @supports, a GSAP ScrollTrigger fallback (GSAP is already loaded by Webflow on this page), and no scroll-jacking. Under prefers-reduced-motion show the finished stack. Add a 1-line caption under each layer naming the products it covers, which also fixes OS-02 and OS-04 and keeps labels legible at 358 px.",
+   "effort": "M"
+  },
+  {
+   "page": "/our-services",
+   "title": "Layer to card wayfinding",
+   "description": "Make each stack layer a link that smooth-scrolls to its card group (Senior Debt to the Roscap's experience covers band, Preferred and Common Equity to the Roscap provides access to band) and highlight the matching card border for 1.5 s on arrival. Small, meaningful, no library needed.",
+   "effort": "S"
+  },
+  {
+   "page": "/our-services",
+   "title": "Process line that fills with scroll",
+   "description": "The .process-line elements (1 px gradient, 92 px) already exist between the numbered steps. Animate their height or background-size from 0 to 100% with animation-timeline: view() as each step enters, and keep the existing colour highlight at a 60% floor (OS-03). This gives the Our Process section a sense of progression without new assets.",
+   "effort": "S"
+  },
+  {
+   "page": "/our-services",
+   "title": "Quiet proof link under the debt cards",
+   "description": "Under h3 \"Debt can be structured to suit each stage of a project...\" add a text link \"See completed transactions\" to /track-record, in gold on the green band. The page currently has no path from services to evidence.",
+   "effort": "S"
+  },
+  {
+   "page": "/track-record",
+   "title": "Summary strip computed from the listed deals",
+   "description": "Directly under the Selected Transactions intro add a 3-figure strip: \"22 transactions · 7 countries · £108m, €37m and $4m arranged\" (totals of the amounts shown: £108.0m, €37.1m, $3.8m), set in Boska with Switzer labels, plus the historic-terms note from TR-09. Numbers come from the page itself; update when deals change (or bind to the CMS).",
+   "effort": "S"
+  },
+  {
+   "page": "/track-record",
+   "title": "Single sorted deal list with 3 filter chips",
+   "description": "Replace the two synced carousels with one 3-column grid (1 column at 390) sorted by amount, with chips Debt / Equity / Bridging and a region toggle UK / Europe / North America, using Webflow CMS filtering or Finsweet attributes. This removes Swiper, the blank slide, the hidden second control bar and the 44 h2s in one change, and can share the visual language of the approved homepage deal list.",
+   "effort": "M"
+  },
+  {
+   "page": "/track-record",
+   "title": "Lightweight map with pins that match the list",
+   "description": "Simplified inline SVG (under 150 KB) hosted on Webflow, countries filled #043435, pins as <a> or <button> elements with visible counts that equal the listed deals per country, focusable and tappable, with the static PNG kept for under 992 px. Saves about 6.4 MB on desktop.",
+   "effort": "M"
+  },
+  {
+   "page": "/track-record",
+   "title": "Transactions CMS collection",
+   "description": "Model the 22 deals as CMS items (fields in TR-10) so labels are picked from option fields (fixing TR-07), images get alt text from a field, and new deals need no Designer work. The owner's deals.json already has the shape, including lat/lon for the map.",
+   "effort": "M"
+  }
+ ],
+ "screenshots": [
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-1440-part0.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/capital-stack-svg.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-process-inview.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/our-services-390-part2.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-1440-part1.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-slider-lastpage.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-map-hover-uk2.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/services-track/track-record-390-slider-swiped.png"
+ ],
+ "data": "## Our Services: page structure (1440)\n1. Hero `section.section.is-header.is-center`: h1 \"Our Services\" (Boska italic), 3 short paragraphs, background `our services bg.webp` (vintage timber house under construction) with `.hero-bg-overlay.is-green` (#043435 at 60%). Hero image loading=lazy; h1 and paragraph start at inline opacity:0 and fade in via Webflow interaction.\n2. \"Our expertise\" tag, h2 \"Capital Raising Across the Real Estate Spectrum\", 3 paragraphs | right column: The Capital Stack SVG. Thin divider.\n3. \"Debt Funding\" tag, h2 \"Real Estate Debt Advisory\", 2 centred paragraphs.\n4. Green band: h2 \"Roscap's experience covers:\" + 4 cards (icon, h3, 1 line): Development Finance, Bridging Finance, Commercial and BTL Mortgages, Mezzanine Finance; closing h3 line \"Debt can be structured to suit each stage of a project, from site acquisition to stabilisation.\"\n5. \"Equity Funding\" tag, h2 \"Equity and Co-Investment\", 2 paragraphs (first contains the duplicated sentence).\n6. Green band: h2 \"Roscap provides access to:\" + 3 cards: Preferred Equity, Joint Venture Equity, Corporate Capital Raising; closing h3 line about transparency and alignment.\n7. \"Asset Classes\" tag, h2 \"Real Estate Asset Classes\", 2 paragraphs; 4x2 icon grid: Residential, Hotels, Industrial & Logistics, Offices, Retail, Social Housing & Care, Student Accommodation, Land.\n8. Green: \"Our Process\" tag, h2 \"A Structured Approach to Every Transaction\", paragraph, button \"Get in Touch\" | 6 numbered steps (Initial review, Engagement, Capital markets, Review offers, Negotiation, Deal Closing) with scroll-linked colour highlight.\n9. Shared CTA banner \"Let's discuss your next transaction\" + \"Get in Touch\". 10. Footer (subscribe form, legal links, FCA disclaimer).\nHeading outline: 1 h1, 8 h2, 15 h3 (2 of the h3s are closing sentences, not headings). 644 words. Page height 8,710 px (1440), 8,947 (1024), 11,582 to 11,798 (390).\n\n## The Capital Stack graphic (as live)\n- Asset `694792bf5c2413d44a03ecf9_Group 1597880904.svg`, 37.7 KB, viewBox 0 0 660 664, `<img class=\"wwa-image\" loading=\"lazy\" alt=\"\">`, rendered 641x645 (1440), 358x360 (390). 0 `<text>` elements (all labels outlined). Fills used: #FFF8E6, #FFD87C, #043435, #044446, #E1C979, #FFEBAA, #282828.\n- Container: rounded rectangle (6 px radius), fill #FFF8E6 (pale cream), 1 px stroke #FFD87C. Title \"The Capital Stack\" centred near the top in dark teal.\n- Four equal-height full-width bars, top to bottom: (1) \"Common Equity\", fill #043435, white label; (2) \"Preferred Equity\", fill #044446, white label; (3) \"Mezzanine Debt\", fill #E1C979 (gold), dark label; (4) \"Senior Debt\", fill #FFEBAA (pale yellow), dark label. Small gaps between bars.\n- Left of the bars: two thin vertical double-headed arrows with rotated labels, \"Equity\" spanning bars 1 to 2 and \"Debt\" spanning bars 3 to 4.\n- Right of the bars: one vertical double-headed arrow with \"High risk, High return\" at the top (beside Common Equity) and \"Low risk, Low return\" at the bottom (beside Senior Debt), small dark grey text.\n- Layer to card mapping: Senior Debt covers Development Finance, Bridging Finance, Commercial and BTL Mortgages; Mezzanine Debt covers Mezzanine Finance; Preferred Equity covers the Preferred Equity card; Common Equity covers Joint Venture Equity. Corporate Capital Raising has no layer. Stretch-senior (named in copy and on Track Record) has no layer or card.\n\n## Track Record: page structure (1440)\n1. Hero: h1 \"Track Record\", 3 paragraphs, background `tr-hero.webp` (horse-racing photo, 128 KB) with green overlay.\n2. \"Geographic Reach\" tag, h2 \"Our Transaction Footprint\", 1 paragraph.\n3. Map: at >= 1200 px an inline SVG (6.5 MB, fetched from S3) of North America and Europe with USA, UK, Ireland, France, Spain, Italy and Albania filled #034C4F and hover pins/popups with deal counts; below 1200 px the static `mapp.png` (2084x909, p-800 variant 55 KiB) with pins baked in and no counts.\n4. \"Portfolio Overview\" tag, h2 \"Selected Transactions\", 2 paragraphs.\n5. Two synced Swiper carousels (11 deals each plus a blank slide), 2 per view from 992 px, 1 per view below; arrows and 6 dots (11 on mobile) only under the first. Card: image 380 px tall, h2 city | h2 amount, 4 rows (Product, Key Metrics, Asset Class, Capital). No links, dates, filters or sorting.\n6. Shared CTA banner. 7. Footer. 819 words, 47 h2s. Heights: 5,332 px (1440), 5,266 (1024), 4,986 (390).\n\n## Track Record inventory (22 deals as rendered, in page order; slider 1 = 1 to 11, slider 2 = 12 to 22)\n| # | Location | Amount | Product | Asset class | Capital | Key metrics | Image file |\n|---|---|---|---|---|---|---|---|\n| 1 | Kensington, London | £27.5m | Development Finance | Residential – 14 Townhouses | Institutional Private Credit Fund | 70% LTC │ 58% LTV │ 8.5% p.a. | mayfair.png (1,024 KiB) |\n| 2 | Sheffield, UK | £19.8m | Development Finance + Preferred Equity | Residential – 101-Unit BTR Scheme | Institutional Private Credit Fund + Private Equity | 90% LTC │ 75% LTV | ssssshefield.png (625 KiB) |\n| 3 | London, UK | £11.0m | Stretch Senior | Office-to-Residential Conversion | Private Credit Fund + Mezz Fund | 88% LTC │ 75% LTV │ 11% p.a. blended | Mask group (1)-p-800.png (204 KiB) |\n| 4 | Dublin, Ireland | €6.5m | Bridging Loan | Residential - 52 Apartments | European Debt Fund | 70% LTV │ 9.9% p.a. | dublin.png (547 KiB) |\n| 5 | Bath, UK | £2.1m | Development Finance + Mezzanine | Residential | Challenger Bank + Family Office | 95% LTC │ 12.5% p.a. blended | bathuk.png (491 KiB) |\n| 6 | Bradford, UK | £1.5m | Development Finance | Residential & Office | Private Credit Fund | 75% LTC │ 62.5% LTV │ 8.25% p.a. | bradforduk.png |\n| 7 | Marbella, Spain | €3m | Acquisition Bridge | Luxury Villas | European Private Lender | 65% LTV │ 10.5% p.a. | marbella.png |\n| 8 | Wakefield, UK | £4.2m | Commercial Bridge | Social Housing | Specialist Bridge Lender | 70% LTV │ 1.00% pcm | wakefield.png |\n| 9 | Huddersfield, UK | £2.9m | Commercial Mortgage | Industrial / Logistics | Challenger Bank | 65% LTV │ 6.70% p.a. | huddersfield.png |\n| 10 | Bristol, UK | £3.6m | Refurbishment Bridge | Boutique Hotel | Private Lender | 73% LTC │ 1.05% pcm | bristol.png |\n| 11 | Surrey, UK | £2.3m | Residential Bridge | Detached House | Private Lender | 65% LTV │ 0.90% pcm | surreyuk.png |\n| 12 | Rome, Italy | €4.6m | Bridge Loan | Hotel Resort | European Private Lender | 68% LTV │ 12% IRR | rome.png (854 KiB) |\n| 13 | Birmingham, UK | £8.3m | Development Finance | Residential – 61 Apartments | Challenger Bank | 72% LTC │ 64% LTV │ 8.95% p.a. | birminghha.png (636 KiB) |\n| 14 | Cannes, France | €7m | Commercial Mortgage | High-Street Retail | European Bank | 60% LTV │ 4.95% p.a. | cannes.png (566 KiB) |\n| 15 | Manchester, UK | £2.7m | Commercial Mortgage | Mixed-Use | Challenger Bank | 65% LTV │ 6.90% p.a. | manchester.png (697 KiB) |\n| 16 | Buckinghamshire, UK | £3.4m | Bridging Loan | Residential | Private Lender | 70% LTV │ 0.95% pcm | buckinghamshire.png (526 KiB) |\n| 17 | Florida, USA | $3.8m | Mezzanine Loan | Residential – Multifamily | US Family Office | 82% LTC │ 14% IRR | florida.png |\n| 18 | Edinburgh, UK | £5.9m | Development Finance | Student Accommodation | Private Credit Fund | 70% LTC │ 60% LTV │ 9.10% p.a. | edinburgh.png |\n| 19 | Liverpool, UK | £4.8m | Development Finance | Residential – 42-Unit BTR Scheme | Challenger Bank | 70% LTC │ 60% LTV │ SONIA + 4.15% | liverpooluk.png |\n| 20 | Leeds, UK | £6.2m | Development Finance | Church-to-Residential Conversion – 24 Apartments | Specialist Development Lender | 74% LTC │ 63% LTV │ 8.75% p.a. | liverpoool.png (shows a church, content correct) |\n| 21 | Nottingham, UK | £1.8m | BTL Mortgage Refinance | HMO Portfolio | Challenger Bank | 70% LTV │ 6.40% p.a. | nottinghan.png |\n| 22 | Tirana, Albania | €16m | Disposal | Chrome Ore Mine | Asian Conglomerate | 100% cash │ No deferred consideration | tirana.png |\n\nCounts: 22 deals; 7 countries (United Kingdom 16, Ireland 1, Spain 1, Italy 1, France 1, United States 1, Albania 1); currencies £ x16 (total £108.0m), € x5 (€37.1m), $ x1 ($3.8m). Product label variants: 14 distinct strings. Capital-source variants: 13. Images: all PNG, natural 705x515 or 705x547 (p-800 for London), lazy-loaded, alt=\"\". Map popups claim 61 deals (UK 52, France 2, Ireland 2, Italy 2, Spain 1, Albania 1, USA 1).\n\n## Comparison with the owner's concept data (scratchpad/assets/deals.json, 22 entries)\n- Same 22 locations, same amounts, same products, same asset classes and same capital sources (0 differences), with one formatting difference: Dublin asset uses an en dash in deals.json and a hyphen on the live page.\n- Metric labels differ in form only: deals.json pairs values with labels (\"8.5%\" + \"Rate p.a.\", \"11%\" + \"Blended p.a.\", \"1.00%\" + \"Rate pcm\", \"None\" + \"Deferred consideration\") while the live page concatenates (\"8.5% p.a.\", \"11% p.a. blended\", \"1.00% pcm\", \"No deferred consideration\").\n- Order differs: deals.json is region then amount descending (UK 16, then Europe, then USA); the live page order is arbitrary (Kensington, Sheffield, London, Dublin, Bath, Bradford, Marbella, Wakefield...).\n- deals.json adds region (uk/europe/usa), lat/lon for every deal and a photo flag for 3 deals only (Kensington k, Sheffield s, Rome r); the live page has photos for all 22.\n- The label inconsistencies (Bridge Loan vs Bridging Loan, Mezzanine Loan vs + Mezzanine, Stretch Senior) are present in both sources.\n\n## Heaviest resources (Lighthouse desktop, Track Record 13,390 KiB total; mobile 7,001 KiB)\nmapwithireee.svg 6,504 KiB (desktop only, fetch from S3) · mayfair.png 1,024 · rome.png 854 · manchester.png 697 · birminghha.png 636 · ssssshefield.png 625 · cannes.png 566 · dublin.png 547 · buckinghamshire.png 526 · bathuk.png 491 · Mask group (1)-p-800.png 204 · gtag.js 195 · tr-hero.webp 128 · webflow.schunk 89 + 53 · swiper-bundle.min.js 38. Rendered size of every deal image: 614x380 (1440), 456x380 (1024), 338x380 (390). Our Services totals: 679 KiB desktop, 609 KiB mobile (largest items gtag.js 195 KiB, hero webp 92/30 KiB).\n\n## Technical observations\n- Console: 0 errors, 0 warnings on both pages at all viewports. 1 failed request per load: analytics.google.com/g/collect ERR_ABORTED (beacon aborted, harmless).\n- Third-party hosts: cdn.prod.website-files.com (Webflow assets, GSAP 3.15 core + SplitText + TextPlugin + ScrollTrigger loaded by Webflow for its interactions), d3e54v103j8qbb.cloudfront.net (Webflow jQuery 3.5.1), www.googletagmanager.com, analytics.google.com, stats.g.doubleclick.net (GA4 G-H8HS2R6NLS, before consent), cdn.jsdelivr.net (Swiper 12, Track Record only), roscap.s3.us-east-1.amazonaws.com (map SVG, Track Record >= 1200 only).\n- Motion present: Webflow interactions fade/slide sections in on scroll (inline opacity/transform styles), hero text fade-in, nav CTA dot pulse (scale 0.46 to 0.97), process-step colour highlight, card hover lift (no transition), Swiper 600 ms slide. No CSS keyframes except a spinner. No prefers-reduced-motion handling anywhere; emulating reduce changed nothing measurable.\n- Keyboard: logical order; links show browser default focus rings; Webflow global rule gives tabindex elements a 2 px #4d65ff outline; no skip link; Swiper arrows operable with Enter; dots focusable but unnamed; arrow keys do nothing.\n- SEO: both pages have title, description, self canonical, h1, no noindex, no X-Robots-Tag, in sitemap; staging domain disallowed and canonicalised. No JSON-LD on either page. Track Record meta description omits North America.\n- 1024 viewport: Track Record uses the static PNG map (SVG only from 1200 px); full-page screenshots at 1024 show sections faded because the scroll-fade interactions had not played, viewport screenshots are normal.\n\n## Assumptions and limits\n- Lighthouse figures are from the pre-run JSON (not re-run). Resource sizes come from Lighthouse network records and HEAD requests; transferSize from Playwright resource timing was 0 for cross-origin assets (no Timing-Allow-Origin).\n- WebP savings in TR-02 are an estimate to confirm on export. The 52 UK deals claim could be true; it is flagged because the page does not substantiate it.\n- No forms were submitted and nothing was changed on the site; GA cookie evidence comes from the Playwright cookie jar after a normal page load.\n- Scripts and raw outputs: /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/work/services-track/ (shots.js, probe.js, kbd.js, rm.js, extra.js, hero.js; probe.json, kbd.json, extra.json, live-deals.json)."
+}

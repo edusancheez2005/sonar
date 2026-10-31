@@ -1,0 +1,292 @@
+{
+ "scope": "Homepage concept files: F deal list (approved, deep build-readiness review with Playwright at 1440x900, 1024x768 and 390x844 touch, keyboard-only, hover, tap, prefers-reduced-motion, axe-core, CDP CPU metrics), the approved odometer Current market rates panel (same file), D fanned deck and E swipe deck (brief, 1440 and 390), plus the earlier concept video (options A, B, C and rates options 1 and 2) from the contact sheets.",
+ "summary": "Concept F is close to build-ready: it renders without console errors at all 3 widths, has no horizontal overflow, zero layout shift from the odometer, a working roving-tabindex keyboard model with a visible gold focus ring, and a sensible static state under prefers-reduced-motion (no canvas, no clip, final digits, hero video removed). The blocking issues are data and semantics rather than design: the rates chips say Held with invented decision dates that the live feed cannot supply (the feed gives change, change_basis, changed_on and as_of only), the Updated date and EURIBOR bps are hard-coded, and there is no stale or error state. The odometer re-rolls from 0.00 on every re-entry and, on phones, the true value is visible for a moment before it snaps to 0.00 and rolls; the wave canvas redraws at 60 fps while visible and costs about 30 percent of a core on the desktop run. On phones the tabpanel is moved inside the tablist, which axe flags as critical (aria-required-children); the inactive amounts fail contrast at 2.98:1; at 1024 px the list column is too narrow (rows 116 px vs 81 px, names wrapping) and the EURIBOR chip wraps under its number while the other 2 do not. The mock also ships Lenis smooth scrolling with 4 non-passive window listeners and a second copy of GSAP and ScrollTrigger, which the live Home already loads; production should drop Lenis and reuse the site's GSAP. D is the most delightful but pins the page for 1,040 px of scroll (scroll-jacking) and reads one deal at a time; E keeps the page free and has a good swipe affordance (arrows, dots, hint) but its deck is small, clipped at the right edge and still the least clear deal story. Worth borrowing: D and E's info sheet with large metric tiles, B's dark fourth card for the full record, and the rate ladder's idea of showing the previous level.",
+ "strengths": [
+  "F deal list: 0 console errors, 0 page errors, 0 px horizontal overflow at 1440, 1024 and 390; CLS 0.0086 at 1440 (all from the concept badge), 0 from the odometer roll (rate-val rects identical before and after).",
+  "F keyboard model is correct: roving tabindex (only the active row is tabbable), ArrowUp/Down/Left/Right move and select with wrap-around, Enter and Space work (native button), Tab from a row goes straight to the View all CTA, Shift+Tab returns to the active row; focus ring is the 2 px gold outline with 3 px offset (dl-kbd-focus-1440.png).",
+  "F mobile accordion: the details pane opens directly under the tapped row, the tapped row is held in place while the pane moves (0 px per-frame change of the row position for an unobstructed tap), then a 0.9 s smooth scroll brings the row under the nav (final row top 76 px with 64 px nav); the end state is clear (dl-tap-row3-390.png).",
+  "Odometer accessibility is right: the real value sits in a visually hidden span (sr: 3.75, 3.75-4.00, 2.618) and the rolling strips are aria-hidden, so the 0.00 start state never reaches screen readers; innerText reads 3.75 %.",
+  "prefers-reduced-motion is respected across the board: 0 canvas draws, clip-path none, strips at final digits, chips visible, rows at opacity 1, hero video element removed, Lenis not started (rates-rm-390.png, dl-rm-1440.png).",
+  "Wave canvas is gated by IntersectionObserver: 1 to 2 draws per 3 s while off-screen versus 180 on-screen, so it does not burn CPU below the fold.",
+  "Progressive enhancement: the full markup (values, 5 rows, first deal pane) is server-rendered, so a GSAP or script failure still shows a complete static module.",
+  "Visual quality is high and on brand at 1440 and 390: the panel, chips, Boska numerals and the list with its gold active bar read as premium and restrained (rates-settled-1440.png, dl-initial-1440.png, rates-settled-390.png).",
+  "D and E: 0 console errors, 0 horizontal overflow at both widths; cards are real buttons with full aria-labels; the info sheet with large metric tiles is the clearest presentation of terms in any concept."
+ ],
+ "findings": [
+  {
+   "id": "CP-01",
+   "page": "/ (concept F)",
+   "title": "Rates chips use Held and decision dates the live feed cannot provide",
+   "severity": "high",
+   "category": "data",
+   "evidence": "Mock markup (F file lines 499, 504, 509): chip Held with sub-line 17 Sep 2026 decision (BoE), Held with 28 Oct 2026 decision (Fed), Down 2.0 bps with 27 Oct 2026 fixing (EURIBOR); heading line Updated 28 Oct 2026. Live feed fetched 31 Oct 2026 01:04Z has only: updated/updated_display (31 October 2026), per rate value, display, change (-0.25 BoE, +0.25 Fed, +0.025 EURIBOR), change_display, change_basis (size of the last decision; move since previous fixing), as_of, changed_on (2025-12-18, 2026-09-17, 2026-10-29), stale. There is no meeting-date field and no held flag, so Held and the 17 Sep and 28 Oct dates cannot be rendered; the mock's EURIBOR value 2.618 is also already behind the feed (2.643). The earlier concept video used feed-compatible copy: Cut 25 bps at the 18 Dec 2025 decision, Raised 25 bps at the 17 Sep 2026 decision, Down 2.8 bps since the 26 Oct fixing (video/sheet_03.png).",
+   "recommendation": "Bind the chip to the feed fields: direction word from the sign of change (Cut or Raised for BoE and Fed, Up or Down for EURIBOR, Unchanged when change is 0), size as Math.round(Math.abs(change)*100) bps, sub-line 'at the ' + changed_on + ' decision' for BoE and Fed and 'since the ' + as_of + ' fixing' for EURIBOR, dates formatted with Intl.DateTimeFormat('en-GB', {day:'numeric', month:'short', year:'numeric'}). Derive Updated from the updated ISO timestamp with the same formatter (not from updated_display, which is the long month). Format the value from value with toFixed(2) (BoE), range_low and range_high with an en dash (Fed) and toFixed(3) (EURIBOR) rather than parsing display. If the owner wants Held, add last_meeting and held fields to the GitHub Action first.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-settled-1440.png"
+  },
+  {
+   "id": "CP-02",
+   "page": "/ (concept F)",
+   "title": "Mobile: tabpanel is moved inside the tablist (axe critical aria-required-children)",
+   "severity": "high",
+   "category": "a11y",
+   "evidence": "At 390 px the script appends #dl-pane (role=tabpanel, aria-live=polite) into the tapped row's li inside ul.dl-list[role=tablist] (place() in initDealList, lines 869-881). axe-core at 390: critical aria-required-children on .dl-list, 'Element has children which are not allowed: [role=tabpanel]'. Not flagged at 1440 or 1024 where the pane sits outside the list. The DOM move also forces the scroll compensation hack (lenis.scrollTo immediate) and an ST.refresh() on every tap.",
+   "recommendation": "Below 860 px switch to disclosure semantics instead of tabs: remove role=tablist from the ul and role=tab from the rows, give each row aria-expanded and aria-controls=dl-pane, give the pane role=region with aria-labelledby set to the active row's id. Better still, stop moving the node: make .dl a grid on mobile with the li wrappers display:contents and place the pane with grid-row set from a CSS variable (style='--row: 3'), so the tablist stays valid, no scroll compensation is needed and ST.refresh() goes away. In Webflow set display:contents on .w-dyn-list and .w-dyn-items via the custom CSS.",
+   "effort": "M",
+   "viewport": "390",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-tap-row3-390.png"
+  },
+  {
+   "id": "CP-03",
+   "page": "/ (concept F)",
+   "title": "Odometer re-rolls from 0.00 on every re-entry and shows a value-to-zero snap on phones",
+   "severity": "high",
+   "category": "motion",
+   "evidence": "motionRates uses ST.create({start:'top 72%', onEnter: roll, onEnterBack: roll}) with no once flag (line 817), so scrolling back up past the panel rolls all 3 numbers from 0.00 again; 300 ms after re-entry at 1440 the strips read 1,1,0 / 0,0,0,0,0,0 / 2,6,3,8 and the Fed value shows 0.00-0.00 (rates-reenter-300ms-1440.png). buildOdo also pre-sets the strips to the final digits, so when the panel peeks in from the bottom the true value is visible, then snaps to 0.00 at 72 percent and rolls: at 390 the frame with panel top at 74 percent shows 3.75 and the Held chip (rates-seq-74-390.png) and the frame at 70 percent shows 0.0 with the chip at opacity 0 (rates-seq-70-390.png, moveOpacity 1 then 0). The chips' fromTo(autoAlpha 0, delay 1.1) also hides already-visible chips for 1.1 s.",
+   "recommendation": "Roll once: once:true on the trigger (remove onEnterBack). When motion is on, set each strip to its data-from digit and the chips to autoAlpha 0 inside buildOdo (before the panel can be seen) so the first visible state is the start state, and move the trigger to top 85% so the roll starts before the numbers are in view. Keep reduced motion as it is (final digits set immediately).",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-reenter-300ms-1440.png"
+  },
+  {
+   "id": "CP-04",
+   "page": "/ (concept F)",
+   "title": "Wave canvas redraws at 60 fps with a per-frame CSS mask: about 30 percent of a core while the panel is visible",
+   "severity": "high",
+   "category": "performance",
+   "evidence": "Canvas draw counter: 180 frames per 3 s while the panel is in view (167 at 1024), 1 to 2 while off-screen. CDP Performance.getMetrics over 3 s with the panel in view and no input at 1440: TaskDuration 0.902 s (ScriptDuration 0.142 s) versus 0.248 s (0.011 s) with the panel off-screen; 1024: 0.539 s vs 0.218 s; 390 at dpr 2: 0.698 s vs 0.206 s. Each frame strokes about 47 polylines of 100 points (lines = ceil((H - slope*W + 60)/15), x step 12) on a full-panel canvas that also carries a CSS mask-image gradient, so the compositor re-masks the canvas every frame. The hero video was off-screen in both measurements.",
+   "recommendation": "Keep the IO gating and add a frame cap (draw every other ticker tick, 30 fps, or 24 fps), double the x step to 24 and the line gap to 20, bake the left-to-right fade into the canvas with a one-off destination-in gradient instead of mask-image, and stop drawing after about 6 s without pointer or scroll activity (resume on pointermove or scroll). Draw at dpr 1 on phones. Also skip the canvas entirely under prefers-reduced-motion (already the case) and on save-data.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-pointer-1440.png"
+  },
+  {
+   "id": "CP-05",
+   "page": "/ (concept F)",
+   "title": "Mock ships Lenis smooth scroll and a second GSAP plus ScrollTrigger; the live Home already loads GSAP 3.15 and ScrollTrigger",
+   "severity": "high",
+   "category": "technical",
+   "evidence": "Inline libraries in the F file: GSAP 72,935 bytes, ScrollTrigger 44,583, Lenis 1.3.26 18,730. Listener probe at 390: Lenis registers wheel, touchstart, touchmove and touchend on window with passive:false (4 non-passive scroll-blocking listeners) although syncTouch is off, so on phones it adds latency and does nothing useful; it is also used for the programmatic scrolls (lenis.scrollTo in place() and select()). Live Home script tags already include cdn.prod.website-files.com/gsap/3.15.0/gsap.min.js, SplitText, TextPlugin, ScrollTrigger.min.js and swiper@12. CONTEXT performance rule: homepage 9.8 MB, no scroll-jacking, pages must get lighter.",
+   "recommendation": "Do not ship Lenis. Use native scrolling, keep ScrollTrigger (already loaded) for the panel scrub and the once-only reveals, and use window.scrollTo({top, behavior:'smooth'}) for the mobile row scroll (it already has that fallback branch). Reuse the site's GSAP and ScrollTrigger instances (do not add a second copy). Prefer CSS scroll-driven animation (animation-timeline: view()) for the panel reveal with the ScrollTrigger path as fallback, per the CONTEXT rule.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-initial-1440.png"
+  },
+  {
+   "id": "CP-06",
+   "page": "/ (concept F)",
+   "title": "Inactive deal amounts fail contrast at 2.98:1 (axe serious)",
+   "severity": "medium",
+   "category": "a11y",
+   "evidence": "axe color-contrast at 1440, 1024 and 390: button[data-k] > .dl-amt, foreground #829895 on #FFFCF5, ratio 2.98 (large text needs 3:1); caused by .dl-amt opacity .5 on the teal #043435. The mock's Asset Classes slider tab (button[data-i=1], 2.31:1) is the live site's existing pattern and is noted for completeness.",
+   "recommendation": "Raise .dl-amt resting opacity to .62 (renders #63807E, 4.17:1) or .6 (#688482, 3.93:1); keep opacity 1 on hover and active. For the slider tab, use opacity .55 or a solid #5C7A78.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-initial-1440.png"
+  },
+  {
+   "id": "CP-07",
+   "page": "/ (concept F)",
+   "title": "1024 px: list column too narrow and EURIBOR chip wraps under its number",
+   "severity": "medium",
+   "category": "visual",
+   "evidence": "At 1024x768 the .dl grid (5fr/7fr) leaves the list 374 px wide and the meta column 134 px: Kensington, London wraps to 2 lines, Development Finance to 2, Development Finance + Preferred Equity to 3, so row heights are 116 px versus 81 px at 1440 and the rows look uneven (dl-initial-1024.png); the stress name Development Finance + Mezzanine + Preferred Equity reaches 4 lines and a 146 px row (dl-longname-1024.png). Rates panel at 1024: the EURIBOR .rate-line is 97 px tall because the Down 2.0 bps chip wraps under the value while BoE and Fed keep their chips beside the value (48 px), rates-settled-1024.png.",
+   "recommendation": "Add a breakpoint at max-width 1100 px: .dl columns 1fr/1fr, hide .dl-n (as already done under 560 px), amount column 96 px, row padding 16 px. In the rates panel at 1100 px and below put the chip and sub-line under the value for all 3 columns (make .rate-line a 1-column grid) so the 3 columns stay consistent, or shorten the chip to the bps figure with the direction icon only.",
+   "effort": "S",
+   "viewport": "1024",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-initial-1024.png"
+  },
+  {
+   "id": "CP-08",
+   "page": "/ (concept F)",
+   "title": "Rates panel has no loading, stale or error state for the feed",
+   "severity": "high",
+   "category": "data",
+   "evidence": "The feed publishes stale:[] and a per-rate stale boolean and is refreshed about every 3 h by GitHub Actions; the panel shows a gold pulsing dot (.motion .upd i pulse 2.2 s infinite) next to Updated, which implies live data, and all values are static text in the Designer. The live Home footer script already fills #baserate-boe/fed/euribor and #changerate-* from the same feed, so a fetch failure would leave whatever was last published in Webflow with the current date missing.",
+   "recommendation": "Define 3 states in the build: loading (Designer values shown without the roll, dot hidden), live (roll once when data arrives and the panel is in view), stale or error (show 'as of ' + as_of per rate, no pulse, sources line unchanged). Keep the ids baserate-boe, baserate-fed, baserate-euribor and changerate-* on the new elements so the existing footer script keeps working, then call buildOdo and roll only after the fetch resolves. Limit the pulse to 3 cycles or remove it.",
+   "effort": "M",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-settled-390.png"
+  },
+  {
+   "id": "CP-09",
+   "page": "/ (concept F)",
+   "title": "Hover selects a deal after 110 ms, so moving the mouse to the CTA changes the selection and the live region",
+   "severity": "medium",
+   "category": "ux",
+   "evidence": "pointerenter handler selects after 110 ms (line 904). Hovering row 2 for 400 ms selects it (hoverSelects 1). Sweeping the pointer from row 2 down to the View all button ends with row 5 selected (afterSweepToCta 4) and aria-selected plus tabindex rewritten; because #dl-pane is aria-live=polite, every hover is also announced to screen reader users who use a mouse.",
+   "recommendation": "Treat hover as preview only: raise the delay to about 180 ms, update the photo and facts on hover but change aria-selected, tabindex and the gold bar only on click or keyboard; on pointerleave of the list return the preview to the selected row after a short delay. Remove aria-live from the tabpanel (tab semantics already convey the change).",
+   "effort": "S",
+   "viewport": "1440, 1024",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-sweep-cta-1440.png"
+  },
+  {
+   "id": "CP-10",
+   "page": "/ (concept F)",
+   "title": "Tabs and panel are not wired together and 4 hidden photos stay exposed to assistive tech",
+   "severity": "medium",
+   "category": "a11y",
+   "evidence": "No row has aria-controls (tabsWithControls 0), #dl-pane has no aria-labelledby (null). The pane holds 5 span[role=img] with aria-label; 4 are at opacity 0 but not aria-hidden, so a screen reader reads 5 images (exposedImgs list). Row names are good: 01 £27.5m Kensington, London DEVELOPMENT FINANCE.",
+   "recommendation": "Give each row an id and aria-controls='dl-pane'; set aria-labelledby on the pane to the active row id in select(); toggle aria-hidden='true' on inactive photos (or use one img and swap src and alt). In Webflow these are custom attributes on the collection item and the pane.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-initial-390.png"
+  },
+  {
+   "id": "CP-11",
+   "page": "/ (concept F)",
+   "title": "Default tap highlight flashes light blue across the whole row on Android",
+   "severity": "low",
+   "category": "visual",
+   "evidence": "Frame 160 ms after tapping row 5 at 390 shows the full 350x81 px row filled with the browser's default -webkit-tap-highlight-color (tap-trace-row5-160ms.png). grep: 0 occurrences of tap-highlight or touch-action in the F CSS.",
+   "recommendation": "Add -webkit-tap-highlight-color: transparent to .dl-row and .dl-go and rely on the row's own :active state (for example background rgba(4,52,53,.06)).",
+   "effort": "S",
+   "viewport": "390",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/tap-trace-row5-160ms.png"
+  },
+  {
+   "id": "CP-12",
+   "page": "/ (concept F)",
+   "title": "Mobile: tapping the open row does nothing although the chevron turns into a collapse arrow",
+   "severity": "low",
+   "category": "ux",
+   "evidence": "On phones the active row's .dl-go icon rotates to point up (CSS line 244), but select() returns early when the same row is tapped (tapSameRow: scrollY, row top, pane and asset unchanged).",
+   "recommendation": "Either allow collapse (aria-expanded=false, pane hidden, arrow back to down) or keep a static right arrow on the active row so the affordance matches behaviour.",
+   "effort": "S",
+   "viewport": "390",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-tap-row3-390.png"
+  },
+  {
+   "id": "CP-13",
+   "page": "/ (concept F)",
+   "title": "Clip-path scrub repaints a masked canvas panel on every scroll frame",
+   "severity": "medium",
+   "category": "performance",
+   "evidence": "G.fromTo(panel, {clipPath:'inset(7% 5% 7% 5% round 36px)'}, {clipPath:'inset(0% 0% 0% 0% round 8px)', scrub:0.6}) (lines 810-811) animates clip-path on .rates-panel, which contains the masked 60 fps canvas; clip-path changes are paint-invalidating on a non-composited element, and the panel also has overflow hidden and border-radius. Headless runs cannot measure jank, so this is a risk flag rather than a measured stall.",
+   "recommendation": "Animate transform: scale(0.94) to scale(1) with will-change: transform and a border-radius transition instead of clip-path, or express it as a CSS scroll-driven animation (animation-timeline: view(); animation-range: entry 0% entry 70%) with the GSAP scrub only as fallback for browsers without it.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-seq-80-1440.png"
+  },
+  {
+   "id": "CP-14",
+   "page": "/ (concept F)",
+   "title": "Deal count, featured deals and facts are hard-coded; no CMS binding yet",
+   "severity": "medium",
+   "category": "technical",
+   "evidence": "The 5 rows and the pane are static HTML plus an inline deals JSON (22 records, 7,180 bytes) parsed into DEALS; the CTA says View all 22 transactions; the live /track-record is static Designer content and the site has no transactions collection (CONTEXT).",
+   "recommendation": "Create a Transactions CMS collection (Location, Country, Region option, Amount display text, Amount value number for sorting, Product, Asset, Capital, Terms text or up to 3 value/label pairs, Photo, Featured switch, Featured order number). Render the rows with a Collection List filtered Featured = yes, sorted by Featured order, limit 5; bind data-asset, data-capital, data-terms and data-photo custom attributes on each item for the pane script. Make the CTA copy View all transactions or set the number from the collection count with a hidden Collection List. Re-point /track-record at the same collection later.",
+   "effort": "M",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-initial-1440.png"
+  },
+  {
+   "id": "CP-15",
+   "page": "/ (concept F)",
+   "title": "Photos are base64 CSS background spans, not images",
+   "severity": "medium",
+   "category": "performance",
+   "evidence": "5 deal photos are inline webp (34 to 96 KB each, 19 inline images totalling about 1.1 MB in the file) painted as background-image on span.ph[role=img]; fonts (5 woff2, 115 KB) and the 1.55 MB hero video are also inline. Fine for a mock, not for production (homepage already 9.8 MB).",
+   "recommendation": "In Webflow use CMS images as img elements with alt, srcset and loading=lazy (first photo eager with fetchpriority=high), fixed 4:3 box as now so there is no layout shift; use the site's hosted fonts and the existing hosted hero video and poster.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-initial-390.png"
+  },
+  {
+   "id": "CP-16",
+   "page": "/ (concept F)",
+   "title": "Roll origin is inconsistent: BoE and Fed roll from 0.00, EURIBOR from its previous fixing",
+   "severity": "low",
+   "category": "motion",
+   "evidence": "data-from='0.00' (BoE), '0.00-0.00' (Fed) and '2.638' (EURIBOR) on the .num spans (lines 498, 503, 508). The video described the odometer as 'each rate rolls from its previous level to today's' (sheet_03.png).",
+   "recommendation": "Roll every rate from value minus change (the previous level the feed implies), which gives the motion a meaning, is shorter and more restrained, and matches the concept video.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-roll-350ms-1440.png"
+  },
+  {
+   "id": "CP-17",
+   "page": "/ (concept F)",
+   "title": "Custom code size and placement for Webflow",
+   "severity": "medium",
+   "category": "technical",
+   "evidence": "New code measured from the F file: rates CSS 4,379 chars, track record CSS 3,660, odometer JS 1,610, rates motion JS 2,715, deal list JS 3,691, total 16,055 unminified; that exceeds a single 10,000-char page head or footer slot and would need splitting or an Embed (50,000 limit) as stated in the brief.",
+   "recommendation": "Host one minified module (about 6 to 7 KB) on the same GitHub Pages site as the rates feed (edusancheez2005.github.io/roscap-rates/) with a version query string and load it with one defer script tag in the Home page footer code, keeping the CSS in the site-wide head or an Embed in the section. Do not paste the libraries into Webflow; GSAP and ScrollTrigger are already loaded.",
+   "effort": "S",
+   "viewport": "all",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-settled-1440.png"
+  },
+  {
+   "id": "CP-18",
+   "page": "/ (concept D)",
+   "title": "Concept D pins the page for about 1,040 px of scrolling (scroll-jacking)",
+   "severity": "high",
+   "category": "motion",
+   "evidence": "ScrollTrigger pin:true with end '+=' + (n-1)*260 for 5 cards; at 1440 a .pin-spacer of 1,820 px is created and the Track Record section measures 2,436 px versus 1,192 px for E and about 1,000 px for F. Card selection is driven by scroll progress; clicking a card scrolls the page to that progress point. CONTEXT rule: no scroll-jacking.",
+   "recommendation": "Not approved; if any of D is reused, take the info sheet and the fanned card look without the pin (use E's free-scrolling interaction or F's list).",
+   "effort": "M",
+   "viewport": "1440",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/D-tr-700-1440.png"
+  },
+  {
+   "id": "CP-19",
+   "page": "/ (concept E)",
+   "title": "Concept E: deck is small, clipped at the right edge and hijacks horizontal wheel input",
+   "severity": "medium",
+   "category": "ux",
+   "evidence": "At 1440 the 200x264 px cards occupy a 640 px tall stage with the fifth card cut off by the mask at the container edge (E-tr-300-1440.png); the wheel handler preventDefaults horizontal trackpad deltas and shift+wheel over the deck; under 700 px both D and E fall back to the same horizontal snap scroller with the sheet below (E-tr-450-390.png, D-tr-450-390.png).",
+   "recommendation": "Not approved; keep the affordance pattern (prev/next arrows, dots with aria-current, a one-time hint that fades) for any future horizontal scroller.",
+   "effort": "M",
+   "viewport": "1440, 390",
+   "screenshot": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/E-tr-300-1440.png"
+  }
+ ],
+ "opportunities": [
+  {
+   "page": "/ (concept F)",
+   "title": "Borrow the info sheet's metric tiles for the Terms cell",
+   "description": "D and E show terms as 3 large value/label tiles (70% LTC, 58% LTV, 8.5% Rate p.a.) which read faster than F's single Terms string '70% LTC · 58% LTV · 8.5% p.a.'. Render the facts card as Asset, Capital and up to 3 metric tiles from the CMS pairs; the card already has a 3-column grid.",
+   "effort": "S"
+  },
+  {
+   "page": "/ (concept F)",
+   "title": "Use B's dark fourth card as the View all treatment",
+   "description": "Video option B ends with a teal card reading 22 transactions across 7 countries with the View all button (sheet_01.png). In F the plain button leaves about 130 px of empty space under the list at 1440; a teal tile with the count and country spread (from the CMS) would fill it and sell the breadth of the record.",
+   "effort": "S"
+  },
+  {
+   "page": "/ (concept F)",
+   "title": "Show the previous level in the rates panel",
+   "description": "The rate ladder (video option 2) marked the previous level with a hollow dot. In the odometer panel the same information can be a quiet 'from 4.00%' or 'prev. 2.618%' line derived from value minus change, consistent with rolling from the previous level (CP-16).",
+   "effort": "S"
+  },
+  {
+   "page": "/ (concept F)",
+   "title": "Mobile pane via grid placement instead of DOM moves",
+   "description": "Placing the pane with grid-row from a CSS variable (li wrappers display:contents) removes the scroll compensation, the ST.refresh() per tap and the ARIA violation in one change, and makes the Webflow Collection List structure usable without JavaScript re-parenting.",
+   "effort": "M"
+  },
+  {
+   "page": "/track-record",
+   "title": "Bind the live Track Record page to the new Transactions collection",
+   "description": "Once the collection exists for the homepage module, the static /track-record cards can be rebuilt as a Collection List with the same fields, so deals are maintained once.",
+   "effort": "M"
+  }
+ ],
+ "screenshots": [
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-settled-1440.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-seq-74-390.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-seq-70-390.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-reenter-300ms-1440.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/rates-settled-1024.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-initial-1440.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-initial-1024.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-tap-row3-390.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/tap-trace-row5-160ms.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/dl-kbd-focus-1440.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/D-tr-700-1440.png",
+  "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/concepts/E-tr-300-1440.png"
+ ],
+ "data": "## Comparison (1 = poor, 5 = best; Ease of build: 5 = simplest to build in Webflow)\n\n| Concept | Deal story clarity | Delight | Brand fit, restraint | Mobile | Accessibility | Ease of build | Notes |\n|---|---|---|---|---|---|---|---|\n| F deal list (approved) | 5 | 3 | 5 | 4 | 4 after CP-02, CP-06, CP-09, CP-10 | 4 | 5 deals visible at once with amounts, places and products; one photo and facts; no pin |\n| D fanned deck | 3 | 5 | 3 | 3 | 2 | 2 | Pinned 1,040 px scroll; one deal at a time; strong info sheet |\n| E swipe deck | 3 | 4 | 3 | 3 | 3 | 2 | Free scrolling; arrows, dots, hint; small clipped deck; wheel hijack |\n| A dealt pile (video only) | 2 | 4 | 2 | not shown | 2 | 2 | Cards dealt off a pile as you scroll; terms only on the top card |\n| B sideways gallery (video only) | 4 | 3 | 4 | 3 | 3 | 3 | Ends in a 4-card line with a dark full-record card: worth keeping |\n| C zoom window (video only) | 3 | 4 | 3 | 4 | 3 | 3 | Full-bleed photos with number overlays; heavy on images |\n| Rates 1 odometer panel (approved) | 4 | 4 | 5 | 5 | 4 | 4 | One column on phones; chips beside values |\n| Rates 2 rate ladder (video only) | 5 | 3 | 4 | 2 | 3 | 3 | Comparative scale and previous-level marks; cramped on phones |\n\nA, B, C and the ladder are judged from the contact sheets (video/sheet_01.png to sheet_03.png); they were not rendered.\n\n## F MUST-FIX (each with evidence in the findings)\n\n1. CP-01 Rates chip copy and dates must come from the feed fields (change, changed_on, as_of, updated); Held and the 17 Sep and 28 Oct 2026 decision dates cannot be rendered from the feed. Evidence: feed JSON 31 Oct 2026, mock lines 493 to 509, video sheet_03 copy.\n2. CP-02 Mobile tabpanel inside tablist: axe critical aria-required-children on .dl-list at 390. Evidence: f-results.json axe 390.\n3. CP-03 Odometer rolls on every re-entry (onEnterBack) and shows value then 0.00 then roll on phones. Evidence: rates-reenter-300ms-1440.png, rates-seq-74-390.png, rates-seq-70-390.png, strip positions 300 ms after re-entry.\n4. CP-04 Wave canvas 60 fps while visible: TaskDuration 0.90 s per 3 s at 1440 vs 0.25 s off-screen; 180 draws per 3 s. Evidence: CDP metrics and clearRect counter.\n5. CP-05 Drop Lenis (4 non-passive window listeners, 18.7 KB) and do not ship a second GSAP and ScrollTrigger; Home already loads gsap 3.15.0, ScrollTrigger, SplitText, TextPlugin, Swiper 12. Evidence: listener probe, live index.html script tags.\n6. CP-06 .dl-amt contrast 2.98:1 (axe serious at all widths); opacity .62 gives 4.17:1.\n7. CP-07 1024 px layout: list rows 116 px with wrapped names; EURIBOR chip wraps under the value (97 px line) while the other 2 do not. Evidence: dl-initial-1024.png, rates-settled-1024.png.\n8. CP-08 Loading, stale and error states for the feed; pulse implies live data. Evidence: feed stale fields, .upd pulse infinite.\n\n## F SHOULD-FIX\n\n1. CP-09 Hover selects after 110 ms and sweeping to the CTA leaves row 5 selected; make hover preview-only and lengthen the delay.\n2. CP-10 Add aria-controls and aria-labelledby; aria-hidden on the 4 inactive photos; drop aria-live on the tabpanel.\n3. CP-11 Transparent tap highlight on .dl-row (light-blue flash across the row on tap, tap-trace-row5-160ms.png).\n4. CP-12 Open row tap does nothing although the arrow points up; allow collapse or keep the arrow static.\n5. CP-13 Replace the clip-path scrub with transform scale or a CSS scroll-driven animation with ScrollTrigger fallback.\n6. CP-14 CMS binding for deals and the View all count.\n7. CP-15 Photos as img elements with alt, srcset and lazy loading; hosted fonts and video.\n8. CP-16 Roll every rate from value minus change, not from 0.00.\n9. CP-17 Host one minified module (about 6 to 7 KB) externally; 16,055 chars unminified exceeds a 10,000-char page slot.\n10. Low: 16 Tab presses to reach the first deal row from the top of the page (nav 7 links, hero CTA, slider tabs and arrows); a skip link at site level would help every module.\n\n## Rates panel: mock copy versus what the feed provides (fetched 31 Oct 2026 01:04Z)\n\n| Element | Mock (F) | Feed field | Feed value now | Renderable? |\n|---|---|---|---|---|\n| Updated 28 Oct 2026 | hard-coded | updated (ISO) or updated_display | 2026-10-31T01:04:21Z, 31 October 2026 | yes, format en-GB short month |\n| BoE 3.75 | hard-coded | rates.boe.value, display | 3.75, 3.75% | yes |\n| BoE chip Held, 17 Sep 2026 decision | hard-coded | change -0.25, change_basis size of the last decision, changed_on 2025-12-18 | Cut 25 bps at the 18 Dec 2025 decision | Held and 17 Sep not available |\n| Fed 3.75 to 4.00 | hard-coded | range_low 3.75, range_high 4.0, display 3.75% - 4.00% | 3.75 to 4.00 | yes, join with an en dash |\n| Fed chip Held, 28 Oct 2026 decision | hard-coded | change +0.25, changed_on 2026-09-17 | Raised 25 bps at the 17 Sep 2026 decision | Held and 28 Oct not available |\n| EURIBOR 2.618 | hard-coded | value 2.643, display 2.643% | 2.643 | yes, toFixed(3) |\n| EURIBOR chip Down 2.0 bps, 27 Oct 2026 fixing | hard-coded | change +0.025, change_basis move since previous fixing, as_of 2026-10-29 | Up 2.5 bps since the 29 Oct 2026 fixing | yes, bps = change x 100 |\n| data-from roll origin | 0.00, 0.00 to 0.00, 2.638 | value minus change | 4.00, 3.50 to 3.75, 2.618 | yes |\n| stale state | none | stale (array and per rate boolean) | [] and false | needs a design |\n\n## Webflow mapping for F\n\n- Rates panel: Section > Container > Div .rates-panel with Heading (h2 Current market rates), Text (Updated), 3 Div .rate blocks each with Text elements carrying the existing ids baserate-boe, baserate-fed, baserate-euribor and changerate-boe, changerate-fed, changerate-euribor (so the footer script that has filled section.is-baserate since 17 Oct 2026 keeps working), Text for the sub-line, Text for sources; one HTML Embed for the canvas. Custom code: odometer builder, roll-once trigger, capped canvas, reveal. Sequence: fetch, write text, build strips, roll if in view.\n- Deal list: Collection List bound to a new Transactions collection (fields listed in CP-14), filter Featured = yes, sort Featured order, limit 5. Webflow cannot output a button element, so the row is a Div with custom attributes role=tab (desktop) or aria-expanded (mobile), tabindex and an id; the script must handle Enter and Space because a Div has no native activation. Custom attributes on the item bound to CMS fields carry data-asset, data-capital, data-terms and data-photo for the pane.\n- Pane: static Div outside the list (photo box 4:3 with 5 img from a second Collection List with the same filter, or one img swapped by the script; facts dl). CTA: Button linked to /track-record.\n- Code size: 16,055 chars of new CSS and JS unminified (rates CSS 4,379, track record CSS 3,660, odometer JS 1,610, rates motion JS 2,715, deal list JS 3,691). Page head and footer slots are 10,000 chars each and an Embed is 50,000 (limits as given in the brief), so either one Embed in the section or, preferably, one minified external module on the roscap-rates GitHub Pages origin with a version query string, loaded with defer from the page footer. No Lenis. GSAP 3.15 and ScrollTrigger are already on the page.\n- Inline base64 in the mock: 19 images (about 1.1 MB), 5 woff2 fonts (115 KB), hero video 1.55 MB; production uses Webflow-hosted assets; the file is 3.9 MB for that reason only.\n\n## D fanned deck (1440 and 390)\n\n- Strength: the info sheet (product, amount, place, 3 metric tiles, Asset and Capital rows, 02 / 05 counter) is the clearest terms layout of all concepts; it animates in with a short stagger.\n- Strength: the fanned cards with the gold ring on the active card and dimming of the others look premium and clearly show which deal is open (D-tr-700-1440.png, D-tr-1500-1440.png).\n- Problem: pin:true holds the page for 1,040 px (pin-spacer 1,820 px at 1440; section 2,436 px tall); this is scroll-jacking under the CONTEXT rules and makes the section slow to pass for anyone not interested.\n- Problem: only one deal is legible at a time; the other cards show an amount and a city only, so the breadth of the record is weaker than F's list.\n- Problem: selection is driven by scroll progress, so keyboard users cannot step through deals except by scrolling; clicking a card scrolls the page.\n- Mobile (<700 px): falls back to a horizontal snap scroller of cards with the sheet below (D-tr-450-390.png, identical to E); no hint or arrows on D at this width.\n- 0 console errors, 0 overflow at both widths.\n\n## E swipe deck (1440 and 390)\n\n- Strength: the page scroll is never held; the deck moves only sideways by drag, swipe, arrows, dots or arrow keys; the wheel group has tabindex, role=group and aria-roledescription=carousel.\n- Strength: clear affordance, prev and next arrows, dots with aria-current and a one-time hint 'Swipe, drag or use the arrows' that fades after first use (E-tr-300-1440.png).\n- Problem: cards are 200 x 264 px in a 540 to 640 px stage, so a lot of empty cream; the fifth card is cut off by the edge mask.\n- Problem: horizontal wheel and shift plus wheel over the deck are preventDefaulted, which surprises trackpad users scrolling the page.\n- Problem: like D, one deal legible at a time; the deal story is the least clear of the 3 files.\n- Mobile: same horizontal snap scroller plus sheet as D; swipe works (sheet changes to Sheffield, 02 after a swipe).\n- 0 console errors, 0 overflow at both widths.\n\n## Video concepts A, B, C and the rate ladder (from contact sheets only)\n\n- A dealt pile: cards dealt off a pile as you scroll with a Keep scrolling cue; dramatic but terms only on the top card and almost certainly pinned; nothing to keep beyond the card face design.\n- B sideways gallery: deals come out one at a time then line up as 4 cards, the fourth a dark teal card 'The full record: 22 transactions across 7 countries' with the View all button. Keep the dark fourth card idea for F's CTA.\n- C zoom window: each deal opens out to full width as it scrolls into view, big photography with amount overlays and a 01 / 03 counter; the most cinematic, but it needs strong photos for every featured deal and overlays reduce legibility; the counter and overlay type treatment could inform F's photo box.\n- Rates 1 odometer panel (chosen): the video version's chips (Cut 25 bps at the 18 Dec 2025 decision, Raised 25 bps at the 17 Sep 2026 decision, Down 2.8 bps since the 26 Oct fixing) are feed-compatible and should replace F's Held chips.\n- Rates 2 rate ladder: all 3 rates on one 2.0 to 4.5 percent scale with hollow marks for the previous level and a 'Worth noticing' line; keep the previous-level idea; the insight line would need a CMS field (no invented facts).\n\n## Measurements\n\n| Check | 1440x900 | 1024x768 | 390x844 touch |\n|---|---|---|---|\n| Console or page errors | 0 | 0 | 0 |\n| Horizontal overflow | 0 px | 0 px | 0 px |\n| CLS total | 0.0086 (concept badge) | 0.0048 (badge) | 0 |\n| Odometer rect change after roll | none | none | none |\n| Canvas draws per 3 s on-screen / off-screen | 180 / 1 | 167 / 2 | 180 / 1 |\n| TaskDuration per 3 s on-screen / off-screen | 0.902 s / 0.248 s | 0.539 s / 0.218 s | 0.698 s / 0.206 s |\n| ScriptDuration per 3 s on-screen / off-screen | 0.142 s / 0.011 s | 0.125 s / 0.008 s | 0.032 s / 0.006 s |\n| List width / row height | 506 px / 81 px | 374 px / 116 px | 350 px / 81 px |\n| Tabs to first deal row | 16 | 16 | n/a |\n| axe serious or critical | color-contrast (5 nodes), listitem (4, existing slider) | same | plus aria-required-children (critical) on .dl-list |\n\nMobile tap trace (row 5, unobstructed): tapped row position changed 0 px in the frame the pane moved; smooth scroll from 5952 to 6114 over about 0.9 s; final row top 76 px under a 64 px nav; pane 156 to 639 px. The 381 px one-frame jump recorded on row 3 was Playwright scrolling the row to centre because the mock's fixed concept badge covered the tap point; it is not a page behaviour.\n\n## Assumptions and limits\n\n- Webflow custom code limits (10,000 chars per page head or footer, 50,000 per Embed) are taken from the brief, not re-verified.\n- Headless Chromium cannot measure scroll jank, so CP-13 is a risk flag based on the property animated, not a measured stall.\n- CPU figures are from a desktop container; a phone would be slower in absolute terms, the ratio on-screen versus off-screen is the evidence.\n- A, B, C and the rate ladder were judged from the 3 contact sheets, not re-rendered.\n- The listitem and aria-allowed-role axe results and the slider tab contrast belong to the mock's copy of the existing Asset Classes slider, not to F."
+}
