@@ -1,6 +1,6 @@
 # roscap.co.uk website audit
 
-Date: 31 October 2026. Prepared for Edu (Roscap SEO and web programme) and Clemente. Status: DRAFT SKELETON, findings being consolidated.
+Date: 31 October 2026. Prepared for Edu (Roscap SEO and web programme) and Clemente. Status: complete; verification of the Home and About findings (batch 6) is noted inline where still pending.
 
 ## 0. Standing rules applied to this work
 
@@ -27,7 +27,75 @@ Eight auditors worked in parallel (home and about; services and track record; pa
 
 ## 3. Findings (prioritised)
 
-Pending consolidation.
+158 findings were recorded by the eight auditors (after verification: 7 critical, 41 high, 81 medium, 29 low) plus 51 enhancement opportunities. Every critical and high finding was handed to an independent verifier whose brief was to refute it; 62 were checked, none was refuted, 24 had their severity or detail corrected and those corrections are applied below. The full list with evidence for every item is in `audit/FINDINGS-DETAIL.md`; the raw auditor files are in `audit/data/`. Overlapping findings from different auditors are merged here under one heading.
+
+### 3.1 Fix this week (small effort, high value)
+
+| # | Finding | Evidence (verified) | Fix in Webflow | Effort |
+|---|---|---|---|---|
+| 1 | **Analytics runs before consent and the Cookie Policy describes a banner that does not exist.** gtag.js (G-H8HS2R6NLS) loads in the head of all 25 pages with no consent default; analytics.google.com and doubleclick collect hits fire on first paint; _ga and _ga_H8HS2R6NLS cookies are set for about 13 months; /contact-us-success also sets _gcl_au and fires 3 generate_lead conversion pings on any direct load. The Cookie Policy says non-essential cookies are used "only where you have provided consent via our cookie banner" and refers to a footer preference link; neither exists. For compliance review under UK GDPR and PECR; it also gates the Google Ads restart (Google's EU User Consent Policy names the UK) | 20 fresh contexts, no interaction, cookies and requests captured (TS-17, PC-02, IL-01, SH-01, HA-03) | Build the in-house banner Clemente approved with Consent Mode v2 defaults set before gtag, equal Accept and Reject, a footer "Cookie preferences" link; update the Cookie and Privacy policies to name GA4 and Google Ads | M |
+| 2 | **The Partner Program enquiry form cannot be sent on desktop or tablet.** The real submit button has class `formbuttonhide-desktop` (display none at 992 px and above); the visible gold "Submit" is an anchor with `fs-mirrorclick-element="trigger"` that needs Finsweet Attributes, which /partner-program does not load (zero event listeners on the link). The blog post template has the same dead pattern | CDP getEventListeners, computed styles at 1440 and 1024 (PC-01) | Show the native submit button and delete the mirror-click link on both the partner page and the Blogs template | S |
+| 3 | **Contact page form basics.** The required Subject field is `type="tel"` (numeric keypad on phones, which carry 95 percent of past paid clicks); no form on the site has a `<label>` (placeholders at 2.85:1); no autocomplete; Phone is required but Message optional; the footer newsletter submit has `value=""` (axe critical) and no label; the tel link exists but is hidden by the `hide` class at every width | live DOM at 390 and 1440 (ADS-05, PC-07, ADS-06, HA-06) | Field settings: Subject to Plain text (or the enquiry-type select in the prototype); add labels; autocomplete; make Phone optional; name the newsletter button; unhide the phone number if Clemente agrees | S |
+| 4 | **About Us team dialog is a keyboard trap.** Opening a "Read more" by keyboard cycles focus between two links, Escape does nothing, the close control is an unlabelled image, ids are duplicated | keyboard run (HA-04, verification pending) | Add role="dialog", a labelled close button, Escape to close, focus return; or replace with an inline expand | M |
+| 5 | **Production script served from a CodeSandbox preview.** /insights and /about-us load `https://jj59l3.csb.app/script.js` (1.5 KB, no SRI, no-store). It targets elements that exist only on Home, so it is dead code on both pages | runtime check (IL-13, HA-05) | Delete the script tag from both pages; drop Swiper from Insights too | S |
+| 6 | **Home hero downloads two videos and hides its headline until the video paints.** A custom-code embed pulls a 6.77 MB MP4 from S3 (HTTP/1.1, no cache header, no poster) in full on desktop and mobile; a hidden Webflow background video (`.hero-bg.hide`) still downloads a further 1.55 MB; the hero section has a transparent background, so the white H1 sits on cream and is invisible until the first frame (and the H1 starts at opacity 0 until IX2 runs). 8.1 MB of the 9.8 MB page | network capture, screenshot with video blocked (TS-01, HA-01, HA-02, TS-05) | Delete the hidden video element; one 720p loop under 1.5 MB on Webflow assets with a WebP poster; teal background on the hero section; no autoplay on phones or under reduced motion; preload the poster | M |
+
+### 3.2 Page weight and speed (the mobile scores)
+
+| Finding | Evidence | Fix | Effort |
+|---|---|---|---|
+| Track Record is 13.4 MB on desktop and 7.0 MB on mobile: a 6.66 MB uncompressed map SVG fetched from S3 on desktop (274 paths, 841k coordinates, no Cache-Control, re-downloaded on every visit) and 22 deal PNGs of 0.5 to 1.05 MB served at full size to phones because the only srcset variant is 500w | network capture, SVG download (TS-02, TR-02, TR-03) | Simplify the map geometry (1-decimal rounding alone gives 4.8 MB, 1.2 MB gzipped) and host it on Webflow, or replace with a light inline SVG with pins; re-export deal photos as WebP at 2x display size, under 150 KB | M |
+| Deal photographs are visibly stretched: `object-fit: cover` sits on the wrapper and the img is `fill` at 614x380 against 765x594 natural | computed styles (TR-01) | Move object-fit to the image | S |
+| Insights is 12.4 MB: two stacked full-bleed hero images (a 1.55 MB PNG covering an unused AVIF), the same PNG again as the first card with no srcset, and 1 MB 1600 px PNG covers chosen for 400 px cards by `sizes="100vw"` | network capture (IL-04, TS-03) | One hero image; thumbnail field with responsive variants; correct sizes attribute | M |
+| GSAP and three plugins load on all 25 pages from the site footer, Swiper on 5, gtag 195 KB in the head: 424 to 495 KB of JS per page, TBT 280 to 820 ms on mobile, 0.7 to 2.1 s render-blocking | Lighthouse and network (TS-04) | Move GSAP and Swiper to page-level footer code on the pages that use them (Home, Services, Track Record), load deferred | M |
+| Every image on the site is `loading="lazy"`, including the hero LCP image on 7 pages; lcp-discovery fails on 15 of 18 Lighthouse runs | Lighthouse JSON (TS-05, HA-09) | Hero images Eager with fetchpriority high | S |
+| /contact-us (the paid landing page): mobile 67, LCP 5.9 s on a 203 KB lazy-loaded decorative SVG, 435 KB of JS it does not use | Lighthouse and network (TS-06, ADS-08) | Eager or smaller hero graphic; no GSAP on this page; see the Speak to Us prototype | M |
+
+### 3.3 Claims, wording and legal pages (for Clemente and compliance review)
+
+No page states or implies that Roscap is FCA authorised, and the footer disclaimer is present on all 25 URLs. The items below are for review, not findings of breach.
+
+| Finding | Where | Suggested handling |
+|---|---|---|
+| "Join hundreds of current partners" beside 8 logos; "commissions in perpetuity"; brochure terms and conditions quote a 25 percent introductory fee then 10 percent in perpetuity with exclusivity | /partner-program and the brochure PDF (PC-04) | Confirm or remove the count; move fee terms to the partner agreement; the prototype uses neutral wording marked for confirmation |
+| Brochure describes Roscap as "a real estate private equity and debt firm" and quotes "Interest Rate: Starting from 4% p.a." and "Loan-to-Value Ratio: Up to 90%"; the page says "minimal work" | brochure PDF, /partner-program (PC-05) | Reissue the brochure (it is also 9.2 MB with no text layer, 85 percent zero padding, and its "download gate" is cosmetic because the PDF URL is in the page source) |
+| Lender-style wording: "private investment firm", "co-investing", "our portfolio", "projects funded", "we fund", "underwrite", "apply for property finance through Roscap"; Home promises "ensuring every client ... secures" | Home, /contact-us FAQ, /our-services (HA-17, PC-11, IL-12) | A regulatory adviser should look at the cluster; the FAQ timescales ("5 to 10 working days", "6 to 8 weeks") are for Clemente to stand behind or soften |
+| Privacy Policy is undated, has no registered office, ICO number, named processors or retention periods; info@ links are `href="#"` on 4 legal pages | /privacy-policy and 3 others (IL-02) | Complete the policy; fix the links |
+| Accessibility Statement claims contrast, clear labels, link text and WCAG 2.1 AA that the pages do not meet (26 contrast failures on Insights, unnamed icon links, placeholder-only forms, no main landmark) | /accessibility-statement (IL-03) | Restate as partially conformant with a dated list of known issues; fix the cheap ones |
+| Euribor shown on a commercial site: EMMI says delayed data is free only for non-commercial use and a licence is mandatory for commercial use; the live card credits a third-party scraper and omits the trademark notice | Home rates panel (DR-01) | Licence and attribute EMMI, swap the card for the ECB deposit facility rate, or link out |
+| Live rates tooltips misdescribe the numbers (the Dec 2025 cut is called "the last Bank of England decision"; the Fed date is FRED's effective date; the Euribor tooltip names the current fixing as the previous one) | Home rates panel (DR-02) | Wording fixed in the prototype; apply to the live footer script |
+| Feed printed "400.00% - 400.00%" for about 12 hours on 21 Oct 2026 after FRED returned HTML; nothing validates values | roscap-rates feed and Home (DR-03) | Range, format and date validation in fetch_rates.py and in the page script (done in the prototype) |
+| Copy errors: the Equity paragraph on Our Services repeats its sentence; "Head of Southern Europe" vs "Head of Western Europe"; the Manchester case study (£2.665m bridging loan) does not match the Track Record's Manchester card (£2.7m commercial mortgage); map popups claim 52 UK deals against 16 listed | /our-services, /about-us, /track-record (OS-01, HA-19, DR-11, TR-04) | Edit; reconcile the Manchester figures with Clemente |
+
+### 3.4 Content and trust
+
+- About Us is thin on trust signals: no founding year, office or company number, two team members without photos, no mention of the 2026 National Property Awards finalist places (HA-18, verification pending). A facts strip and one team-card pattern would fix it.
+- Partner Program reads as dry for measurable reasons: a 900 px hero carrying a 57-word paragraph with no CTA, four 312x394 icon cards that are mostly empty, six steps in a carousel that shows three, no imagery or proof below the fold, and the generic contact form (PC-03). The prototype addresses each.
+- Home offers one generic CTA path ("Explore Our Services") with no step for investors or introducers (HA-21). Paid traffic landed almost entirely on this page (98.6 percent of clicks) with a hero that never mentions bridging or development finance (ADS-02).
+- Insights article template: body text runs 1308 px wide at 16 px (about 164 characters a line), H2 and H3 share one size, no author, read time or related posts, Article schema without dates or image, no Open Graph image anywhere on the site (IL-05, IL-06, TS-07).
+- The Capital Stack on Our Services is an outlined SVG with no text layer and empty alt, so the page's central diagram is invisible to assistive technology and to search, and its labels render at 7 to 9 px on phones (OS-02). The capital stack prototype replaces it with real HTML layers.
+- Track Record presents 22 deals in two synced carousels with controls only on the first, ending on an empty slot, with no dates, filters, sorting or links; labels vary ("Bridge Loan" vs "Bridging Loan") (TR-05 to TR-10). A Transactions CMS collection with Finsweet List Filter is the structural fix and would also feed the approved homepage module.
+- The 404 page is Webflow's unbranded default with no navigation (PC-19).
+
+### 3.5 Google Ads (read-only, account 443-916-9682)
+
+- One Performance Max campaign ran 29 Jul to 10 Aug 2026 and has been paused since: £193.42, 13,749 impressions, 436 clicks, 0 conversions. 92 percent of clicks came from Display, YouTube and Discover, 95 percent from mobile or tablet; Search was 34 clicks at £2.25 each (ADS-01, ADS-03).
+- 98.6 percent of clicks landed on the homepage via the non-www final URL (one 301; attribution parameters survive) (ADS-02, ADS-04).
+- Conversion tracking is entirely GA4-imported, with two primary actions that can double count; no Google Ads tag is on any page; the actions were created after the campaign stopped, so the zero conversions is a tracking gap rather than evidence about the site. The tracking id in the account is 238397354910; one auditor's suggested tag id was wrong and must not be used (ADS-09, corrected on verification).
+- Before any restart landing on /contact-us: the consent banner (3.1.1), the contact form fixes (3.1.3), the hidden phone number, and a verified generate_lead that fires once per enquiry.
+
+### 3.6 Restrained enhancements worth doing (from the auditors' opportunity lists)
+
+1. Audience strip under the Home hero: three quiet links, "Raising capital for a project", "Deploying capital", "Introducing a client".
+2. Counters as a reveal rather than a count-up, with the real figures in the HTML (today the HTML says "0+").
+3. Static two-column grid for Asset Classes and Sources of Capital at desktop instead of the slider.
+4. A facts strip on About Us (founded, London, Roscap Limited 13536901, awards finalist 2026) and one team-card pattern for all four people.
+5. Track Record: one sorted grid with three filter chips and a summary strip computed from the listed deals (22 transactions, 7 countries, £108m, €37m and $4m), plus a 23rd card for the Manchester case study.
+6. Our Services: layer-to-card wayfinding from the capital stack, the process line filling with scroll, and a "See completed transactions" link under the debt cards.
+7. Contents list on long guides; related posts and breadcrumbs on the blog template; a default Open Graph image.
+8. Branded 404 with navigation.
+9. Footer newsletter: visible label, named button, one-line privacy note.
+10. Site-wide: per-image weight budget in the Asset manager (photos under 150 KB, SVGs under 50 KB, video under 1.5 MB with poster) and a reduced-motion rule for every Webflow interaction.
 
 ## 4. Lighthouse baseline (31 October 2026, Lighthouse 13.6, throttled mobile and desktop presets)
 
@@ -125,4 +193,9 @@ Open items for the owner on the prototypes are listed in each HANDOFF.md under "
 
 ## 7. Blocked or not done
 
-Pending.
+- No form was submitted and nothing was changed on the live site, in Webflow, GitHub, Google Ads or GA4. The partner form defect (3.1.2) was established from markup, computed styles and event listeners, not by submitting.
+- Some auditors could not reach primary sources directly from this environment (bankofengland.co.uk, federalreserve.gov, emmi-benchmarks.eu, fred.stlouisfed.org, euribor-rates.eu, the PageSpeed Insights API quota); those facts were corroborated through web search results, pre-fetched copies and the feed's own history, and are marked as such in `audit/data/`. Nothing was routed through archives or proxy services.
+- Search Console and GA4 were not queried (not connected in this session); indexing statements come from the setup log.
+- Lighthouse was run once per page and device from this container; scores vary by run (the homepage scored 55 and 66 on mobile in two runs). The byte weights do not vary.
+- The 2026 to 2027 EMMI fee schedule could not be read; the licence figures quoted are from the 2021 to 2022 and 2024 to 2025 schedules.
+- Webflow's official statement on whether `window.gsap` is exposed to custom code could not be found; the prototypes do not depend on it.
