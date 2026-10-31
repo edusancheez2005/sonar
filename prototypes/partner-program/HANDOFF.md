@@ -10,27 +10,33 @@ Brand tokens used: cream `#FFFCF5`, cream deep `#FFF8E6`, teal `#043435`, teal d
 |---|---------|---------------|-----------------------------------------------|
 | 1 | Hero, split: copy left on teal, image right, "Who we work with" strip across the bottom | Designer-native. Section > Grid (7fr / 5fr, min-height 100svh). Image: `who-we-are-columns.webp` (already in Assets), cover, object-position 70% 50%, two overlay divs (teal at 55% with blend mode Color; gradient left to right). Strip is a second grid row spanning both columns | `p-hero`, `p-hero-copy`, `p-hero-h` (H1), `p-hero-p`, `p-hero-cta`, `p-hero-media`, `who`, `who-h` (H2), `who-list` |
 | 2 | Why partner with Roscap: centred header, 4 benefit columns with 2px gold top rule, two CTAs | Designer-native. Reuse existing `section`, `container`, `button golden`. The 4 icons are the existing `pr-icon` SVGs | `sec-head`, `why-grid` (4 cols, 2 at tablet, 1 at mobile), `why`, `why-icon`, `why-cta` |
-| 3 | How the partner program works: teal band, sticky left column (tag, H2, lead, 6-item step indicator, brochure link), vertical 6-step timeline right, one visual card per step | Designer-native layout + custom code for the reveal. Sticky: position sticky, top = nav height + 2rem (Designer supports this). Step cards are plain divs (no images). Reveal and indicator: Embed CSS + JS below | `how`, `how-grid`, `how-aside`, `how-nav`, `steps`, `step`, `step-seg`, `step-dot`, `step-copy`, `step-num`, `vis`, `vis-card` |
+| 3 | How the Partner Program works: teal band, sticky left column (tag, H2, lead, 6-item step indicator, brochure link), vertical 6-step timeline right, one visual card per step | Designer-native layout + custom code for the reveal. Sticky: position sticky, top = nav height + 2rem (Designer supports this). The sticky column is 740px tall, so on viewports under 820px high the CSS below tightens it (smaller top offset and gaps) to keep the brochure link visible; verified at 1280x720 and 1024x768. Step cards are plain divs (no images). Reveal and indicator: Embed CSS + JS below | `how`, `how-grid`, `how-aside`, `how-nav`, `steps`, `step`, `step-seg`, `step-dot`, `step-copy`, `step-num`, `vis`, `vis-card` |
 | 4 | Trust: "Firms that introduce clients to Roscap" + "What you can expect" list left, logo grid right (4 x 2, hairlines, caption only where evident from the logo) | Designer-native. Existing 8 logo assets | `trust-grid`, `trust-copy`, `expect-h`, `expect`, `logos` |
 | 5 | Partner form card (teal, wave texture at 22% opacity) | Designer-native Form Block. See section 3 | `pform-wrap` (reuse `contact-banner-wrap` styling), `pform`, `pf`, `pf-check`, `pf-privacy`, `pform-done` (`w-form-done`), `pform-fail` (`w-form-fail`) |
 | 6 | Footer | Existing symbol, unchanged. Disclaimer text unchanged | |
 
 Remove from the current page: the 6-card slider (`section-copy-me-join`, `joinslidersliddd`), the brochure pop-up form (`leadgen-popup-overlay`, form with PDF redirect) and the hidden `section bg-green hide` timeline (`pr-timeline-wrap`). The generic contact form at the bottom is replaced by the partner form.
 
-Heading order: one H1 (hero). H2: Who we work with (visually small), Why partner with Roscap, How the partner program works, Firms that introduce clients to Roscap, form heading. H3: the 4 benefits, the 6 steps, "What you can expect". Footer column titles are H3 (currently H4 on the live site, which trips axe heading-order).
+Heading order: one H1 (hero). The live page currently has 3 H1 elements ("Partner Program", "How Our Partner Program Works", "Fill the form to download our brochure"); only the hero keeps an H1. H2: Who we work with (visually small), Why partner with Roscap, How the Partner Program works, Firms that introduce clients to Roscap, form heading. H3: the 4 benefits, the 6 steps, "What you can expect". The footer symbol is unchanged: its column titles are plain `<strong>` text on the live site, which does not affect heading order (the prototype marks them H3 only so its own outline validates).
 
 ## 2. Motion: what goes where
 
 Designer Interactions panel (native, GSAP-based):
-- Section reveals (`.rv` in the prototype): "Scroll into view" trigger, fade + move up 22px, 0.9s, play once. Tick the interaction's reduced-motion option.
+- Section reveals (`.rv` in the prototype): "Scroll into view" trigger, fade + move up 22px, 0.9s, play once. Turn on the Reduce motion setting in the Interactions panel settings so every interaction is skipped for visitors with the OS "reduce motion" preference; confirm on staging with the preference enabled.
 - Hero entrance: "Page load" trigger, staggered fade on tag, H1, paragraph, CTAs (0.08s stagger), image scale 1.05 to 1 over 1.8s.
 - The step indicator highlight can be done in the panel with "While scrolling in view" per step, but the JS below is simpler and keeps the active state in sync with the CSS reveal.
 
-Custom code (page settings > head, limit 50,000 characters each for head and footer; the whole block below is under 3,000):
+Custom code (page settings: CSS in the head slot, JS in the footer slot; Webflow allows 50,000 characters per slot. The CSS block below is about 2,600 characters and the JS block about 1,700, so both fit alongside anything already in the page slots):
 - Timeline reveal uses CSS scroll-driven animations (`animation-timeline: view()`) inside `@supports`, with an IntersectionObserver fallback for Safari and Firefox. No library. No scroll-jacking. Every step is fully visible once it is 55% inside the viewport, so nothing is hidden behind scrolling tricks.
 - Under `prefers-reduced-motion: reduce` nothing animates and everything is visible. Without JS everything is visible.
 
 ### CSS to paste (page head, inside `<style>`)
+
+Put this one line in the head slot first, before the `<style>`, so the `js` class exists before the page is first styled (otherwise the step start states transition from visible to hidden on a mid-page reload):
+
+```html
+<script>document.documentElement.classList.add('js')</script>
+```
 
 ```css
 [hidden]{display:none !important}
@@ -66,8 +72,11 @@ html{scroll-padding-top:calc(72px + 1rem)}
 @keyframes step-in{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 @keyframes seg-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @keyframes dot-in{from{transform:scale(0)}to{transform:scale(1)}}
+@media (min-width:992px) and (max-height:820px){.p-hero-copy{padding-top:calc(72px + 2.25rem);padding-bottom:3.5rem;gap:1.5rem}.how-aside{top:calc(72px + .75rem)}.how-aside-in{gap:16px}.how-nav{margin-top:8px}.how-nav a{min-height:42px}}
 @media (max-width:991px){.how-aside{position:static}.how-nav{display:none}}
 ```
+
+The `max-height` rule cannot be set in the Designer (it only offers width breakpoints), which is why it lives in the Embed.
 
 ### JS to paste (page footer, before `</body>`, inside `<script>`)
 
@@ -130,7 +139,7 @@ Every item below is marked in the prototype source with `<!-- CONFIRM WITH CLEME
 | "Join hundreds of current partners" | Quantitative claim; owner unsure it is accurate | Removed | Keep removed, or "Join the firms already introducing clients to Roscap" |
 | "Earn an additional recurring revenue stream with minimal work" | Reads as an income promise; "recurring" and "minimal work" are not defensible | "A referral fee on completed transactions. Paid when a transaction you introduced completes, on the terms set out in the partner agreement." Flagged COMPLIANCE REVIEW | "Referral fees on transactions that complete, as agreed in writing" |
 | "receive commissions in perpetuity" | Absolute claim; owner unsure | "If Roscap goes on to complete subsequent transactions with the same client, you receive a referral fee on those as well, as set out in the partner agreement." | "Fees on repeat transactions for the period set out in the partner agreement" |
-| "Exclusively refer clients to Roscap" | Programme condition; must match the agreement | "you introduce them to Roscap on an exclusive basis" | Drop "exclusive" if the agreement does not require it |
+| "Exclusively refer clients to Roscap" | Partner Program condition; must match the agreement | "you introduce them to Roscap on an exclusive basis" | Drop "exclusive" if the agreement does not require it |
 | "Upon deal completion, receive your referral commissions" | Timing and basis of payment | "Once the transaction completes, the referral fee is calculated and paid on the terms set out in the partner agreement." | Add "within [n] days of completion" only if that is contractual |
 | New: "followed by the partner agreement" (step 01) and "Fee terms are set out in writing before the first introduction" | Assumes a written agreement exists for every partner | As stated | "Terms are confirmed in writing" |
 | New: "Every introduction is handled in confidence" | Commitment not stated on the live site | As stated | Remove the line |
@@ -145,9 +154,12 @@ Compliance flag for the whole page: introductions and referral fees sit close to
 
 ## 5. Reduced motion and mobile
 
-- Reduced motion: hero, section reveals and timeline are static and fully visible (verified with emulated `prefers-reduced-motion: reduce`: all step opacities 1, no running animations). Tick the reduced-motion option on every Designer interaction.
+- Reduced motion: hero, section reveals and timeline are static and fully visible (verified with emulated `prefers-reduced-motion: reduce`: all step opacities 1, no running animations, transition durations 0s). Turn on Reduce motion in the Interactions panel settings.
+- Fallback path (browsers without `animation-timeline`, which means Safari and Firefox at the time of writing): verified by forcing the `@supports not` branch in Chromium; steps fade in via IntersectionObserver, the indicator follows, and cumulative layout shift stays at 0 on both paths.
+- Short desktop viewports (1366x768, 1280x720, 1024x768): the sticky column fits with room to spare and the hero copy is tightened so the "Who we work with" strip reaches the fold.
 - Mobile (390): hero stacks image (46svh, max 420px) above copy; "Who we work with" shows the 6 professions in 2 columns without descriptors; benefits stack; the step indicator is hidden and the aside is static; each step shows copy then its visual card at full width; logos 2 columns; form single column with full-width button. No horizontal overflow (scrollWidth 390).
-- Tap targets: all new controls are at least 44px tall (links, checkbox label, contact links). Shared nav links (desktop only) and footer links come from site components; footer links are set to 44px rows on mobile in this page's CSS and should be fixed site-wide.
+- Tap targets: all new controls are at least 44px tall (links, checkbox label, contact links); the brochure checkbox itself is 24 x 24px (WCAG 2.5.8 minimum) inside a 44px label row. Shared nav links (desktop only) and footer links come from site components; footer links are set to 44px rows on mobile in this page's CSS and should be fixed site-wide.
+- Contrast (measured): dimmed indicator labels 5.6:1 and numbers 5.3:1 on teal, gold-ink labels 5.7:1 on cream, grey body 5.7:1 on cream, textarea placeholder 4.8:1 on white. Plain gold text is never used on cream (1.6:1).
 
 ## 6. Performance
 
@@ -155,7 +167,7 @@ Compliance flag for the whole page: introductions and referral fees sit close to
 - Hero image: existing `who-we-are-columns.webp` (90 KB, 660 x 646), `fetchpriority="high"`, explicit width/height. Serve a 1320px version for retina if available.
 - Everything below the fold is `loading="lazy"` with width/height set (icons, logos, wave texture).
 - Wave texture re-encoded at 900px, 6 KB. Logos: 8 files, 143 KB total; ask the firms for SVG or transparent PNG at 2x where the current files are soft (RYRE, Capio).
-- Bundled prototype: 641,274 bytes including all fonts and images (limit 1.5 MB).
+- Bundled prototype: 642,308 bytes including all fonts and images (limit 1.5 MB). About 28 KB of that is the home hero poster referenced by the shared base stylesheet, which this page never displays; it does not apply to the Webflow build.
 - No video on this page.
 
 ## 7. Assumptions
@@ -164,7 +176,9 @@ Compliance flag for the whole page: introductions and referral fees sit close to
 - Brochure delivery is manual (or via the notification workflow) rather than an instant PDF download, because the current PDF redirect bypasses the form confirmation and leaks the file URL. If instant download is wanted, keep the checkbox and redirect only brochure requests to the PDF via a small custom script.
 - Logos stay as a static grid (no marquee). If a marquee is added later: CSS only, pause on hover and focus, a visible pause button (WCAG 2.2.2), static under reduced motion.
 - The contact email and phone shown in the form card are the ones on the live Contact page.
-- Social URLs are the ones in the live footer code.
+- Social URLs are the ones in the live footer code. The live footer also carries a mailto icon; the prototype footer is a shared approximation and the live symbol is used as is.
+- Spelling: "Partner Program" is kept as the established page name (nav label, URL, live H1) and is treated as a proper noun in body copy, so the US spelling appears nowhere else. If Clemente prefers "Partner Programme", change the nav label, hero tag, H2 and step 01 together; the URL slug stays `/partner-program`.
+- The prototype file carries `<meta name="robots" content="noindex">` for local use only. Do not add it to the Webflow page.
 
 ## 8. QA checklist (staging)
 
@@ -178,4 +192,6 @@ Compliance flag for the whole page: introductions and referral fees sit close to
 - [ ] axe DevTools: 0 serious or critical issues.
 - [ ] 390px width: no horizontal scroll; tap targets 44px.
 - [ ] Lighthouse mobile: LCP element is the hero image or H1; no layout shift from images without dimensions.
+- [ ] 1280x720 and 1024x768: the sticky step indicator and brochure link stay fully visible while the timeline scrolls.
+- [ ] Page settings: indexable (no noindex), title "Partner Program | Roscap", meta description set, canonical to the live URL.
 - [ ] All CONFIRM items in section 4 signed off by Clemente before publishing.

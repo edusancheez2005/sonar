@@ -1,0 +1,60 @@
+{
+  "verdict": "ship",
+  "score_out_of_10": 8.5,
+  "fixed": [
+    "Sticky step indicator clipped on short laptops: the sticky column measured 740px tall, so at 1280x720 the brochure link was cut off by 20px and at 1024x768 by 1px (shots/qa-partner/checks/aside-1280x720.png). Added @media (min-width:992px) and (max-height:820px) in partner.css that lowers the sticky offset to nav + .75rem, tightens gaps and row heights, and trims the hero copy padding so the 'Who we work with' strip reaches the fold at 1366x768 (strip top 731px, was 791px). After: 54px spare at 1280x720, 73px at 1024x768, 102px at 1366x768 (shots/qa-partner/after/aside-*.png). Same rule added to the HANDOFF embed CSS.",
+    "Contrast: dimmed indicator step numbers (.how-nav a span, gold at 65% opacity on teal) measured 4.35:1 at 15px; raised to 75% opacity, now 5.3:1. Dimmed labels were already 5.6:1.",
+    "Contrast: textarea placeholder #8d8d8d on white measured 3.32:1; changed to #6e737c (4.77:1).",
+    "Brochure checkbox enlarged from 22px to 24px (WCAG 2.5.8 minimum target) inside its 44px label row; verified 24x24 at 390 and operable with Space.",
+    "Mobile hero (390): a 72px decorative gold rule (.p-hero-copy::before) sat directly under the already-underlined 'How it works' link, reading as a duplicated line (shots/qa-partner/baseline/mobile-full-c-1.png). Hidden below 992px and hero bottom padding reduced from 4.5rem to 3.25rem.",
+    "Illustration cards: pending progress ring (1.3:1) and fee-flow dots (1.8:1) were too faint on cream; borders and dots raised to rgba(4,52,53,.32) and .42. Cards are aria-hidden so this is legibility, not a WCAG failure.",
+    "Reveal start states: the 'js' class was added at the end of the body, so in the IntersectionObserver fallback the steps transitioned from opacity 1 to 0 after first style resolution (measured 0.01 at 700ms after load). A one-line head script now sets the class before the stylesheets; fallback initial opacity is exactly 0 and a #step-3 hash load reveals the step within 1s. Added to HANDOFF head code.",
+    "Copy: 'Partner Program' is the established page name (nav, URL, live H1), so it is now treated as a proper noun in the H2, indicator item 01 and step 01 heading; the US spelling no longer appears as a common noun. Source comment 'the three lines below' corrected to '4 lines' with a digit; 'programme' markers aligned.",
+    "Removed 3 unreferenced files from proto/partner-program/img (golden-arrow.svg, live-hero-bigben.webp, live-steps-bg.webp; 234 KB) so the source folder only holds assets the page uses. Bundle unaffected.",
+    "HANDOFF.md accuracy: removed the false statement that live footer titles are H4 (they are <strong> text; live page has 3 H1s, noted); fixed 'the whole block below is under 3,000' (CSS 2,567 and JS 1,664 characters, each slot limit 50,000); clarified head vs footer slots; reworded the Webflow reduced-motion step as the Interactions panel setting; added fallback, short-viewport and contrast verification notes, the 24px checkbox, the Program/Programme decision for Clemente, a warning not to carry the prototype's noindex into Webflow, 2 QA checklist items (short viewports; indexable page settings) and the current bundle size with the 28 KB unused-poster explanation. No em dashes or exclamation marks in prose."
+  ],
+  "open": [
+    {
+      "issue": "Content sign-off gate: 7 CONFIRM WITH CLEMENTE markers and 1 COMPLIANCE REVIEW marker remain in index.html (over £120m, written partner agreement, exclusivity, fee basis and timing, repeat-transaction fees, 4 'What you can expect' commitments, logo captions). The wording is safe and each has an alternative in HANDOFF section 4, but the page must not publish until they are confirmed.",
+      "evidence": "grep 'CONFIRM WITH CLEMENTE' proto/partner-program/index.html = 7; '£120m' verified present on live About Us (live/text/about-us.txt line 21: 'successfully arrange over £120m in real estate financing'); HANDOFF.md section 4 claims table.",
+      "severity": "medium"
+    },
+    {
+      "issue": "Hero photo is the same asset as the Home and About 'Who we are' image (Royal Exchange statue), so the Partner page does not get its own visual identity, and the 660x646 file is upscaled to roughly 600x780 by object-fit cover at 1440x900 (2.4x on retina), so it is soft. Consider a distinct crop or a 1320px export; HANDOFF already asks for the larger version.",
+      "evidence": "proto/shared/img/who-we-are-columns.webp 660x646, 92,742 bytes; .p-hero-media column 5fr of 1440 with hero height 900 (shots/qa-partner/baseline/desktop-fold.png).",
+      "severity": "low"
+    },
+    {
+      "issue": "Between 992 and 1180px the step grid is tight: at 1024x768 the step copy column is about 290px wide, so step 3's heading wraps to 4 lines and the visual card is squeezed to 16rem. Readable, but the rhythm is better from 1180px up. Option: switch the step to a single column (copy above card) below 1180px instead of 992px.",
+      "evidence": "shots/qa-partner/after/aside-1024x768.png; partner.css @media (max-width:1180px) .step{grid-template-columns:minmax(0,1fr) minmax(0,16rem)}",
+      "severity": "low"
+    },
+    {
+      "issue": "Prototype footer is a shared approximation, not the live symbol: live has 3 social icons (mailto:info@roscap.co.uk, LinkedIn, Instagram) and the newsletter placeholder 'Email Address'; prototype shows 2 icons and 'Enter your email'. No build impact because HANDOFF reuses the existing footer symbol unchanged, but reviewers comparing side by side will see the difference.",
+      "evidence": "live/html/partner-program.html hrefs: mailto:info@roscap.co.uk, linkedin.com/company/roscap/, instagram.com/roscap.uk; proto/shared/footer.html has 2 anchors.",
+      "severity": "low"
+    },
+    {
+      "issue": "Shared site components miss 44px targets on desktop pointer: nav links 21px tall, 'Speak to Us' CTA 37px, mobile logo link 123x34. Site-wide, not Partner-page specific; mobile menu items are 44px or more.",
+      "evidence": "shots/qa-partner/after/report.json tapTargets: nav-link h=21 (6), nav-cta h=37; mobileTapTargets nav-brand 123x34.",
+      "severity": "low"
+    },
+    {
+      "issue": "Bundle carries about 28 KB of the Home hero poster (base.css .hero background inlined by inline.py although .hero is not on this page). Prototype-only; nothing for Webflow.",
+      "evidence": "Bundle data-URI breakdown: image/jpeg 27,948 base64 chars; base.css line 85 .hero{background:url(img/hero-poster.jpg)}.",
+      "severity": "low"
+    },
+    {
+      "issue": "Spelling decision for Clemente: the page keeps the US 'Program' because it is the live product name and URL; British 'Programme' would require changing the nav label, hero tag, H2 and step 01 together. Documented in HANDOFF section 7.",
+      "evidence": "Live nav and H1 'Partner Program'; URL /partner-program; CONTEXT rule 5 (British English).",
+      "severity": "low"
+    }
+  ],
+  "verification": {
+    "console_errors": 0,
+    "axe_serious_critical": 0,
+    "mobile_scroll_width": 390,
+    "bundle_bytes": 642308
+  },
+  "notes": "Method: Playwright Chromium (Firefox and WebKit are not installed), axe-core 0 violations of any impact at 1440x900 and 390x844 after the fixes; keyboard pass from the top: nav, hero CTAs, Why CTAs, 6 indicator links (Enter scrolls each step to 88px below the nav, aria-current=step follows), brochure link, email, phone, then Full name to Submit with the honeypot skipped; focus rings visible on teal and cream (shots/qa-partner/after/focus-hownav.png, focus-checkbox.png); mock submit moves focus to the status block in view (form-done.png). Motion: native scroll-driven path verified in Chromium; fallback path forced by rewriting the @supports conditions in work/qa-partner/fallback-copy.html (steps 1 to 4 revealed at mid-scroll, segments scaleY 0 for unrevealed steps, indicator at 03, all visible after a full scroll); prefers-reduced-motion and no-JS leave everything visible with 0s transitions; no scroll-jacking (native scroll, smooth only via CSS scroll-behavior); CLS 0.000 across 3 desktop runs and on mobile, both paths; all 16 images carry width and height, hero fetchpriority=high, 14 below-fold images lazy. Contrast table measured in Python: every text pair is 4.8:1 or better after fixes; gold on cream is never used for text. Design: side by side with the live page (shots/qa-partner/live-1440.png, live-390.png vs baseline/desktop-full.png, mobile-full.png) the prototype is simpler and more purposeful: one H1 instead of 3, a qualifying 'Who we work with' strip, 4 benefit columns on the site's gold top-rule pattern, a 6-step timeline with small cream cards in place of the imageless carousel, one labelled form in place of a popup plus generic contact form. Type scale, gold accents and Boska italic headings read as Roscap; the step cards are legible at 390 and restrained. Hero at 1024x768 and 1366x768 fits with the strip reaching the fold. Live page compared read-only, no forms submitted. Scripts: work/qa-partner/qa-checks.js, qa-checks2.js, final-verify.js; reports under shots/qa-partner/{baseline,checks,after}/."
+}
