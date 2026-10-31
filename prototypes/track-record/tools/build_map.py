@@ -112,7 +112,7 @@ defs = ('<linearGradient id="fp-gold" x1="0" y1="0" x2="0" y2="1"><stop stop-col
 s = s.replace('<defs>', '<defs>' + defs, 1)
 # 8. pins layer on top: one <use> per country, scaled to the live pin size, inner group animates
 scale_ref = pins['uk']['h']
-layer = '<g class="fp-pins">'
+layer = '<g class="fp-pins" opacity="0">'  # hidden in the file itself; the page shows one pin at a time, on hover
 for c in ACTIVE:
     p = pins[c]; k = round(p['h'] / scale_ref, 3)
     layer += ('<g class="fp-pin" data-c="%s" data-x="%s" data-top="%s" transform="translate(%s %s) scale(%s)">'

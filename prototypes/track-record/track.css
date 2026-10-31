@@ -39,33 +39,48 @@ h1,h2,h3{font-family:var(--f-display);font-weight:700}
 .hero-bg-overlay{position:absolute;inset:0;z-index:2;width:100%;height:100%;background-color:rgba(4,52,53,.6)}
 
 /* ===================== FOOTPRINT MAP BLOCK START (CHANGED; paste-ready, see HANDOFF.md section 1) =====================
-   Same map as live (same outlines, colours, labels and gold pins), redrawn from the live file at under a pixel of tolerance:
-   165 KB instead of 6.66 MB, so it can show on every screen size instead of a flat picture on phones and tablets.
+   The live map as it looks today (teal countries and their names, nothing on top at rest), redrawn from the live file at under
+   a pixel of tolerance: 166 KB instead of 6.66 MB, so it shows on every screen size instead of a flat picture on phones.
    Entrance, once, when a third of the map is on screen: the seven countries turn from grey to teal one after another
-   (United Kingdom first, then Ireland, France, Spain, Italy, Albania and, across the Atlantic, the USA), each pin lands as its
-   country fills, and its line in the list underneath lights up at the same moment. About 1.9 s in all.
-   After that: hovering a country or a line of the list, tapping either, or tabbing to the list shows the live gold "Deals" label
-   over the pin and gently dims the other countries. Without JS the static map shows (noscript), and the list is always there. */
+   (United Kingdom first, then Ireland, France, Spain, Italy, Albania and, across the Atlantic, the USA) and each line of the
+   list underneath appears with its country. About 1.9 s in all.
+   Hover a country (or tap it, or tab to its line in the list): as on live, its gold Roscap pin and its "Deals" label appear,
+   but smoothly. The country brightens a touch, the pin drops in and settles with a faint gold ripple at its point, and the
+   label rises in just after it. Moving to another country, the label glides across while the pins hand over; moving off,
+   both fade away quickly. Without JS the static map shows (noscript), with no pins, and the list is always there. */
 .section.fp-section{padding-bottom:6.25rem}
 .fp{display:flex;flex-direction:column;align-items:center;gap:2.25rem}
 .fp-map{position:relative;width:100%;max-width:1389px;aspect-ratio:1389/606}
 .fp-map .fp-svg{display:block;width:100%;height:auto;overflow:visible}
 .fp-svg .fp-lab{font-family:var(--f-body)}
-.fp-c,.fp-pin,.fp-lab-a{cursor:pointer}
-.fp-pin-i{transform-box:fill-box;transform-origin:50% 100%;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
-.fp-ring{fill:none;stroke:#e1c979;stroke-width:1.6;opacity:0;transform-box:fill-box;transform-origin:50% 50%}
-.fp-c .fp-t{transition:fill .3s ease,fill-opacity .3s ease}
+.fp-c,.fp-lab-a{cursor:pointer}
+.fp-c .fp-t{transition:fill .35s ease}
 .fp-lab-a{transition:opacity .3s ease}
 
-/* the live gold label, one element that glides from country to country */
-.fp-pop{position:absolute;left:0;top:0;z-index:2;display:flex;align-items:center;gap:14px;padding:9px 14px 9px 14px;border-radius:4px;
+/* pins: the map file keeps them hidden (so the no-JS picture has none); the page shows one at a time, on hover */
+.fp-svg .fp-pins{opacity:1}
+.fp-pin{pointer-events:none}
+.fp-pin.is-on{pointer-events:visiblePainted;cursor:pointer}
+.fp-pin-i{transform-box:fill-box;transform-origin:50% 100%;opacity:0;transform:translateY(-18px) scale(.6);
+  transition:opacity .16s ease,transform .2s cubic-bezier(.4,0,1,1)}
+.fp-pin.is-on .fp-pin-i{opacity:1;transform:none;transition:opacity .2s ease,transform .6s cubic-bezier(.3,1.42,.55,1)}
+.fp-ring{fill:none;stroke:#e1c979;stroke-width:1.6;opacity:0;transform-box:fill-box;transform-origin:50% 50%}
+.fp-pin.is-on .fp-ring{animation:fp-ring .95s cubic-bezier(.22,1,.36,1) .3s 1 both}
+@keyframes fp-ring{0%{opacity:.85;transform:scale(.35)}100%{opacity:0;transform:scale(2.6)}}
+.fp .fp-c.is-on .fp-t,.fp.fp-armed.is-in .fp-c.is-on .fp-t{fill:#0b5d60}
+
+/* the live gold "Deals" label: one element that rises in over the pin and glides from country to country */
+.fp-pop{position:absolute;left:0;top:0;z-index:2;display:flex;align-items:center;gap:14px;padding:9px 14px;border-radius:4px;
   background:linear-gradient(#ffebaa,#e1c979);color:var(--teal);font:500 .8125rem/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
-  box-shadow:0 8px 22px rgba(4,52,53,.16);pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 12px)) translateY(8px);
-  transition:opacity .2s ease,transform .32s cubic-bezier(.22,1,.36,1),left .38s cubic-bezier(.22,1,.36,1),top .38s cubic-bezier(.22,1,.36,1)}
+  box-shadow:0 10px 24px -6px rgba(4,52,53,.28);pointer-events:none;opacity:0;transform-origin:50% 100%;
+  transform:translate(-50%,calc(-100% - 14px)) translateY(10px) scale(.94);
+  transition:opacity .16s ease,transform .2s ease,left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}
 .fp-pop::after{content:"";position:absolute;left:50%;bottom:-5px;width:11px;height:11px;background:#e2ca7b;transform:translateX(-50%) rotate(45deg)}
 .fp-pop-v{padding-left:14px;border-left:1px solid rgba(4,52,53,.28);color:#282828;font-size:1rem;letter-spacing:0}
-.fp-pop.is-on{opacity:1;transform:translate(-50%,calc(-100% - 12px))}
-.fp-pop.no-glide{transition:opacity .2s ease,transform .32s cubic-bezier(.22,1,.36,1)}
+.fp-pop.is-on{opacity:1;transform:translate(-50%,calc(-100% - 14px));
+  transition:opacity .3s ease .12s,transform .5s cubic-bezier(.22,1,.36,1) .12s,left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}
+.fp-pop.is-on.is-moving{transition:opacity .2s ease,transform .45s cubic-bezier(.22,1,.36,1),left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}
+.fp-pop.no-glide{transition:opacity .3s ease .12s,transform .5s cubic-bezier(.22,1,.36,1) .12s}
 
 /* the list under the map: every country and its figure, always visible; also the keyboard and touch way into the map */
 .fp-list{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;max-width:1200px;margin:0;padding:0;list-style:none}
@@ -77,33 +92,26 @@ h1,h2,h3{font-family:var(--f-display);font-weight:700}
 .fp-chip:hover,.fp-chip.is-on{background-color:var(--teal);border-color:var(--teal);color:#fff}
 .fp-chip:hover .fp-chip-n,.fp-chip.is-on .fp-chip-n{color:var(--gold)}
 
-/* one country in focus: the others step back */
-.fp.has-on .fp-c:not(.is-on) .fp-t{fill-opacity:.38}
-.fp.has-on .fp-lab-a:not(.is-on){opacity:.55}
-.fp.has-on .fp-pin:not(.is-on) .fp-pin-i{opacity:.5}
-.fp .fp-pin.is-on .fp-pin-i{transform:translateY(-3px) scale(1.12)}
-
 /* entrance: armed by track.js only when motion is allowed, played once when a third of the map is visible.
-   --d is each country's start (0, 150, 300 ... ms), set by track.js on the country, its label, its pin and its list line. */
+   --d is each country's start (0, 150, 300 ... ms), set by track.js on the country, its label and its list line. */
 @media (prefers-reduced-motion:no-preference){
   .fp.fp-armed .fp-c .fp-t{fill:#ededed}
   .fp.fp-armed .fp-lab-a{opacity:0}
-  .fp.fp-armed .fp-pin-i{opacity:0;transform:translateY(-22px)}
   .fp.fp-armed .fp-chip{opacity:0;transform:translateY(10px)}
   .fp.fp-armed.is-in .fp-c .fp-t{fill:#034c4f;transition:fill .75s cubic-bezier(.22,.61,.36,1) var(--d,0ms)}
   .fp.fp-armed.is-in .fp-lab-a{opacity:1;transition:opacity .45s ease calc(var(--d,0ms) + 380ms)}
-  .fp.fp-armed.is-in .fp-pin-i{opacity:1;transform:none;transition:transform .6s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 200ms),opacity .3s ease calc(var(--d,0ms) + 200ms)}
-  .fp.fp-armed.is-in .fp-ring{animation:fp-ring 1s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 620ms) 1 both}
   .fp.fp-armed.is-in .fp-chip{opacity:1;transform:none;transition:background-color .25s ease,border-color .25s ease,color .25s ease,opacity .5s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 250ms),transform .5s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 250ms)}
   /* once the entrance is over (track.js adds .fp-done), hover and focus react at once, without the entrance delays */
-  .fp.fp-armed.is-in.fp-done .fp-c .fp-t{transition:fill .3s ease,fill-opacity .3s ease}
+  .fp.fp-armed.is-in.fp-done .fp-c .fp-t{transition:fill .35s ease}
   .fp.fp-armed.is-in.fp-done .fp-lab-a{transition:opacity .3s ease}
-  .fp.fp-armed.is-in.fp-done .fp-pin-i{transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
   .fp.fp-armed.is-in.fp-done .fp-chip{transition:background-color .25s ease,border-color .25s ease,color .25s ease}
 }
-@keyframes fp-ring{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(2.4)}}
+/* reduced motion: the pin and the label simply fade in and out, in place */
 @media (prefers-reduced-motion:reduce){
-  .fp-pop,.fp-pin-i,.fp-c .fp-t,.fp-chip{transition:none}
+  .fp-pin-i,.fp-pin.is-on .fp-pin-i{transform:none;transition:opacity .15s linear}
+  .fp-pin.is-on .fp-ring{animation:none}
+  .fp-pop,.fp-pop.is-on,.fp-pop.is-on.is-moving,.fp-pop.no-glide{transform:translate(-50%,calc(-100% - 14px));transition:opacity .15s linear}
+  .fp-c .fp-t,.fp-chip{transition:none}
 }
 @media (max-width:767px){
   .fp{gap:1.75rem}

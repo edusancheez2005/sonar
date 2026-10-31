@@ -32,17 +32,27 @@
       on = c;
       $$('.is-on', fp).forEach(function (el) { if (el !== pop) el.classList.remove('is-on'); });
       fp.classList.toggle('has-on', !!c);
-      if (!c) { pop.classList.remove('is-on'); return; }
+      if (!c) { pop.classList.remove('is-on', 'is-moving'); return; }
+      /* the country, its name, its pin (hidden until now) and its line in the list */
       $$('[data-c="' + c + '"]', fp).forEach(function (el) { el.classList.add('is-on'); });
       var p = pins[c];
       if (!p) return;
       var glide = pop.classList.contains('is-on');
-      pop.classList.toggle('no-glide', !glide); /* first appearance: rise in place; afterwards glide between countries */
+      pop.classList.toggle('no-glide', !glide);  /* first appearance: rise in over the pin, just after it lands */
+      pop.classList.toggle('is-moving', glide);  /* already showing: glide across to the next country */
       pop.style.left = (p.x / W * 100) + '%';
       pop.style.top = (p.top / H * 100) + '%';
       popV.textContent = chipOf(c).getAttribute('data-n');
       void pop.offsetWidth;
       pop.classList.add('is-on');
+    }
+    /* pointer hover: going from one country to the next across a border or a strip of sea, the label glides across
+       instead of blinking off; it only goes once the pointer has been off every country for 160 ms */
+    var hideT = null;
+    function hoverTo(c) {
+      clearTimeout(hideT);
+      if (c) show(c);
+      else hideT = setTimeout(function () { show(pinned); }, 160);
     }
     function pin(c) {
       pinned = c;
@@ -60,9 +70,9 @@
     /* the list works on its own (keyboard, touch, mouse), with or without the map */
     chips.forEach(function (b) {
       var c = b.getAttribute('data-c');
-      b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') show(c); });
-      b.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') show(pinned); });
-      b.addEventListener('focus', function () { start(); show(c); });
+      b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') hoverTo(c); });
+      b.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hoverTo(null); });
+      b.addEventListener('focus', function () { start(); clearTimeout(hideT); show(c); });
       b.addEventListener('blur', function () { show(pinned); });
       b.addEventListener('click', function (e) {
         pin(pinned === c ? null : c);
@@ -86,9 +96,9 @@
       svg.addEventListener('pointermove', function (e) {
         if (e.pointerType !== 'mouse') return;
         var g = e.target.closest ? e.target.closest('[data-c]') : null; /* a country, its label or its pin */
-        show(g ? g.getAttribute('data-c') : pinned);
+        hoverTo(g ? g.getAttribute('data-c') : null);
       });
-      svg.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') show(pinned); });
+      svg.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hoverTo(null); });
       svg.addEventListener('click', function (e) {
         var g = e.target.closest ? e.target.closest('[data-c]') : null;
         var c = g ? g.getAttribute('data-c') : null;
