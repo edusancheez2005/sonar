@@ -6,7 +6,7 @@ Static HTML prototypes for roscap.co.uk, built with the site's own colours, type
 |---|---|---|
 | Speak to us (contact page) | `speak-to-us/` | Ready for review |
 | Our Services capital stack (scroll animation) | `our-services-capital-stack/` | Ready for review |
-| Home: Track Record deal list (concept F) and market-rates panel, build-ready | `homepage-track-record-and-rates/` | In progress |
+| Home: Track Record deal list (concept F) and market-rates panel, build-ready | `homepage-track-record-and-rates/` | Ready for review |
 | Partner Program | `partner-program/` | Ready for review |
 
 `shared/` holds the brand tokens and base styles rebuilt from the live stylesheet (base.css), the shared nav and footer markup, fonts (Boska, Switzer), images taken from the owner's concept files, and the small shared script (nav, reveals, mock forms). Forms in the prototypes are switched off; nothing is sent anywhere.

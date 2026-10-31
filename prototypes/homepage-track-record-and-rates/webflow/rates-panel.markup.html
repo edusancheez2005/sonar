@@ -1,0 +1,54 @@
+<!-- Reference structure for the Designer (section.is-baserate). Keep the ids; classes map to the CSS in home-head.html.
+     The <canvas class="waves"> can be omitted: rates.js creates it when missing. The static texts are the Designer placeholders. -->
+  <!-- market rates: odometer panel. Static values below are the Designer placeholders; rates.js replaces them from the feed.
+       Market data is shown for information only; nothing here is advice. -->
+  <section class="rates-sec" aria-labelledby="rates-h">
+    <div class="pg"><div class="container">
+      <div class="rates-panel" id="rates-panel" data-feed="https://edusancheez2005.github.io/roscap-rates/rates.json">
+        <canvas class="waves" aria-hidden="true"></canvas>
+        <div class="rates-content">
+          <div class="rates-head">
+            <h2 class="rates-h" id="rates-h">Current market rates</h2>
+            <p class="upd" id="rates-updated"><i aria-hidden="true"></i><span class="upd-t">Checked 31 October 2026</span></p>
+          </div>
+          <ul class="rate-list">
+            <li class="rate" data-rate="boe">
+              <p class="rate-name">Bank of England<span>Base rate</span></p>
+              <div class="rate-line">
+                <p class="rate-val"><span class="num" id="baserate-boe" data-from="0.00">3.75</span><span class="unit">%</span></p>
+                <p class="rate-move">
+                  <span class="chip" id="changerate-boe"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 2h10L5 9z"/></svg><span class="chip-t">Cut 25 bps</span></span>
+                  <span class="rate-date" id="changedate-boe">since 18 Dec 2025</span>
+                  <span class="rate-asof" id="asof-boe">As of 31 Oct 2026</span>
+                </p>
+              </div>
+            </li>
+            <li class="rate" data-rate="fed">
+              <p class="rate-name">US Federal Reserve<span>Fed funds target range</span></p>
+              <div class="rate-line">
+                <p class="rate-val is-range"><span class="num" id="baserate-fed" data-from="0.00–0.00">3.75–4.00</span><span class="unit">%</span></p>
+                <p class="rate-move">
+                  <span class="chip" id="changerate-fed"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 8h10L5 1z"/></svg><span class="chip-t">Raised 25 bps</span></span>
+                  <span class="rate-date" id="changedate-fed">since 17 Sep 2026</span>
+                  <span class="rate-asof" id="asof-fed">As of 30 Oct 2026</span>
+                </p>
+              </div>
+            </li>
+            <li class="rate" data-rate="euribor">
+              <p class="rate-name">EURIBOR<span>3-month</span></p>
+              <div class="rate-line">
+                <p class="rate-val"><span class="num" id="baserate-euribor" data-from="0.000">2.643</span><span class="unit">%</span></p>
+                <p class="rate-move">
+                  <span class="chip" id="changerate-euribor"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 8h10L5 1z"/></svg><span class="chip-t">Up 2.5 bps</span></span>
+                  <span class="rate-date" id="changedate-euribor">fixing of 29 Oct 2026</span>
+                  <span class="rate-asof" id="asof-euribor" hidden></span>
+                </p>
+              </div>
+            </li>
+          </ul>
+          <p class="rates-src">Sources: Bank of England · Federal Reserve via FRED · euribor-rates.eu.</p>
+        </div>
+      </div>
+    </div></div>
+  </section>
+

@@ -1,0 +1,177 @@
+/* Roscap homepage build: market-rates odometer panel + Track Record deal list (approved concept F),
+   plus the light page glue the shared base.css does not carry. No Lenis, no GSAP. */
+
+/* ---------- page glue ---------- */
+@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth}}
+.sec,.rates-sec,.contact-sec{scroll-margin-top:calc(var(--nav-h) + 8px)}
+.hero-video{opacity:0;transition:opacity 1.2s ease}
+.hero-video.is-playing{opacity:1}
+.points{padding:0;margin:4px 0 0;list-style:none}
+.stat-num{display:inline-flex;align-items:baseline}
+.foot-col .foot-h{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:6px}
+/* slider: each panel is a div holding a real list; inactive tabs use a solid muted teal (4.8:1 on cream) instead of opacity */
+.asl-slide{display:block}
+.asl-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.asl-tab{opacity:1;color:#4F7879;transition:color .35s ease,font-size .35s var(--ease)}
+.asl-tab:hover{opacity:1;color:var(--teal)}
+.asl-tab.is-active{opacity:1;color:var(--teal)}
+.asl-slide.is-in .asl-card{animation:card-in .6s var(--ease) both}
+.asl-slide.is-in .asl-card:nth-child(2){animation-delay:.07s}
+.asl-slide.is-in .asl-card:nth-child(3){animation-delay:.14s}
+.asl-slide.is-in .asl-card:nth-child(4){animation-delay:.21s}
+@keyframes card-in{from{opacity:0;transform:translateY(14px)}}
+@media (max-width:767px){.asl-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- market rates: odometer panel ---------- */
+.rates-sec{padding-block:0}
+.rates-panel{position:relative;overflow:hidden;background:var(--teal);color:var(--cream);border-radius:8px}
+.waves{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.rates-content{position:relative;padding:clamp(24px,4vw,52px);display:grid;gap:clamp(24px,3.2vw,38px)}
+.rates-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 40px;flex-wrap:wrap}
+.rates-h{font:italic 500 clamp(32px,3.8vw,48px)/1.06 var(--f-display);color:var(--cream)}
+.upd{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--cream-dim)}
+.upd[hidden]{display:none}
+.js .upd:not(.is-live){display:none} /* loading and error states: the check date is only claimed once the feed validated */
+.js .num:not(.is-built){visibility:hidden} /* the start digits are set before the number is shown, so the true value never flashes */
+.upd i{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(225,201,121,.6)}100%{box-shadow:0 0 0 11px rgba(225,201,121,0)}}
+.rate-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.32fr) minmax(0,1fr);border-top:1px solid var(--line-dark)}
+.rate{padding:26px clamp(16px,2.4vw,34px) 4px;display:flex;flex-direction:column;gap:18px;border-left:1px solid var(--line-dark);min-width:0;container-type:inline-size}
+.rate:first-child{padding-left:0;border-left:0}
+.rate:last-child{padding-right:0}
+.rate-name{display:grid;gap:3px;font-size:12px;font-weight:500;letter-spacing:.11em;text-transform:uppercase;color:var(--gold)}
+.rate-name span{font-size:14px;font-weight:400;letter-spacing:.01em;text-transform:none;color:var(--cream-dim)}
+.rate-line{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap}
+.rate-val{display:flex;align-items:baseline;font:500 clamp(34px,16.5cqi,64px)/1 var(--f-display);color:var(--cream);letter-spacing:-.01em;white-space:nowrap}
+.rate-val .unit{font-size:.5em;margin-left:.08em;color:var(--cream-dim)}
+.rate-val.is-range{font-size:clamp(30px,11.2cqi,52px)}
+.rate-move{display:grid;gap:5px;justify-items:start;font-size:12px;line-height:1.25;color:var(--cream-dim);white-space:nowrap}
+.rate-move .chip{margin-bottom:2px;color:var(--cream);font-size:13px}
+.rate-move .chip[hidden]{display:none}
+.rate-date[hidden]{display:none}
+.rate-asof{font-size:11px;color:rgba(255,252,245,.62)}
+.rate-asof.is-stale{color:var(--gold)}
+.rate-asof[hidden]{display:none}
+.rates-src{font-size:12px;color:var(--cream-dim);border-top:1px solid var(--line-dark);padding-top:16px}
+
+@media (max-width:860px){
+  /* repeated from base.css so the cascade order (home.css after base.css) keeps the single-column layout */
+  .rates-head{align-items:flex-start}
+  .rate-list{grid-template-columns:minmax(0,1fr)}
+  .rate{padding:22px 0 20px;border-left:0}
+  .rate+.rate{border-top:1px solid var(--line-dark)}
+  .rate-val{font-size:clamp(40px,11vw,56px)}
+  .rate-val.is-range{font-size:clamp(34px,9vw,48px)}
+}
+
+/* odometer strips: CSS transitions driven by rates.js (duration and delay per column) */
+.odo-strip{transition:transform var(--odo-dur,1.6s) cubic-bezier(.16,1,.3,1) var(--odo-delay,0s)}
+.odo-strip.no-anim{transition:none}
+
+/* ---------- track record ---------- */
+.tr-sec{overflow-x:clip}
+.tr-head{display:grid;justify-items:center;text-align:center;gap:28px;max-width:873px;margin:0 auto clamp(44px,5vw,72px)}
+.tr-h{font-size:clamp(2.5rem,4.3vw,3.75rem);line-height:1.12}
+.tr-head .para{max-width:760px}
+
+/* deal list with preview (option F) */
+.dl{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-rows:auto 1fr;gap:28px clamp(28px,4.5vw,72px);align-items:start}
+.dl-list{grid-column:1;grid-row:1;border-bottom:1px solid var(--line)}
+.dl-row{position:relative;display:grid;grid-template-columns:30px minmax(96px,clamp(110px,10vw,150px)) minmax(0,1fr) 34px;align-items:center;gap:14px;width:100%;min-height:72px;padding:20px 6px 20px 18px;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;color:var(--ink);transition:background-color .3s;-webkit-tap-highlight-color:transparent}
+.dl-row::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:2px;background:var(--gold);transform:scaleY(0);transition:transform .4s var(--ease)}
+@media (hover:hover){.dl-row:hover{background:rgba(4,52,53,.035)}}
+.dl-row.is-active{background:var(--paper)}
+.dl-row.is-active::before{transform:none}
+.dl-row:focus-visible{outline-offset:-3px;z-index:1}
+.dl-n{font:500 13px/1 var(--f-body);color:var(--grey);font-variant-numeric:tabular-nums}
+.dl-amt{font:500 clamp(28px,2.6vw,38px)/1 var(--f-display);color:#4F7879;transition:color .3s;white-space:nowrap}
+.dl-meta{display:grid;gap:4px;min-width:0}
+.dl-meta b{font-weight:500;font-size:16px;line-height:1.3}
+.dl-meta span{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);line-height:1.35}
+.dl-row.is-active .dl-amt{color:var(--teal)}
+@media (hover:hover){.dl-row:hover .dl-amt{color:var(--teal)}}
+.dl-go{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--teal);opacity:0;transform:translateX(-6px);transition:opacity .3s,transform .35s var(--ease)}
+.dl-go svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dl-row.is-active .dl-go{opacity:1;transform:none}
+.dl-cta{grid-column:1;grid-row:2}
+.dl-pane{grid-column:2;grid-row:1 / span 2;display:grid;gap:14px;min-width:0}
+.dl-pane:focus-visible{outline-offset:6px;border-radius:8px}
+.dl-photo{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--teal);margin:0}
+.dl-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .55s ease,transform 1.4s var(--ease)}
+.dl-img.is-on{opacity:1;transform:none}
+.dl-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 24px;padding:18px 22px;background:var(--paper);border-radius:8px;box-shadow:0 20px 40px -32px rgba(4,52,53,.45)}
+.dl-facts div{display:grid;gap:6px;align-content:start;min-width:0}
+.dl-facts dt{font-size:10.5px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--grey)}
+.dl-facts dd{font-size:14.5px;line-height:1.4}
+@keyframes facts-in{from{opacity:0;transform:translateY(6px)}}
+.dl-pane.is-swap .dl-facts dd{animation:facts-in .4s var(--ease) both}
+.dl-pane.is-swap .dl-facts div:nth-child(2) dd{animation-delay:.04s}
+.dl-pane.is-swap .dl-facts div:nth-child(3) dd{animation-delay:.08s}
+@media (max-width:859px){
+  .dl{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:0}
+  .dl-list{display:contents}
+  .dl-item:last-child:not(.has-pane) .dl-row{border-bottom:1px solid var(--line)}
+  .dl-pane{grid-column:auto;grid-row:auto;padding:2px 0 22px}
+  .dl-pane.is-last{border-bottom:1px solid var(--line)}
+  .dl-pane[hidden]{display:none}
+  .dl-cta{grid-row:auto;margin-top:28px}
+  .dl-go{opacity:.55;transform:none;background:transparent;color:var(--teal);border:1px solid var(--line)}
+  .dl-go svg{transform:rotate(90deg);transition:transform .35s var(--ease)}
+  .dl-row.is-active .dl-go{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .dl-row.is-active .dl-go svg{transform:rotate(-90deg)}
+}
+@media (min-width:860px) and (max-width:1180px){
+  .dl{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .dl-row{grid-template-columns:22px minmax(84px,104px) minmax(0,1fr) 32px;gap:12px;padding:16px 6px 16px 14px}
+  .dl-amt{font-size:26px}
+  .dl-meta b{font-size:15px}
+  .rate-line{flex-direction:column;align-items:flex-start;gap:12px}
+  .rate{padding-bottom:0}
+}
+@media (max-width:767px){
+  .asl-arrow{width:44px;height:44px}
+  .tr-h{font-size:2.4rem}
+}
+@media (max-width:560px){
+  .dl-row{grid-template-columns:minmax(84px,auto) minmax(0,1fr) 34px;padding-left:14px;gap:12px}
+  .dl-n{display:none}
+  .dl-facts{grid-template-columns:minmax(0,1fr);gap:12px;padding:16px 18px}
+}
+
+/* ---------- motion: CSS scroll-driven where supported, IntersectionObserver fallback otherwise ---------- */
+@keyframes reveal-up{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes panel-clip{from{clip-path:inset(7% 5% 7% 5% round 36px)}to{clip-path:inset(0 0 0 0 round 8px)}}
+@keyframes hero-in{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: no-preference){
+  .js .hero-in > *{animation:hero-in 1.1s var(--ease) both;animation-delay:.15s}
+  .js .hero-in > :nth-child(2){animation-delay:.27s}
+  .js .hero-in > :nth-child(3){animation-delay:.39s}
+  .js .rates-panel.is-on .upd.is-live i{animation:pulse 2.2s ease-out 3}
+  .js .rates-panel.is-armed .rate-move{opacity:0;transform:translateX(-10px)}
+  .js .rates-panel.is-rolled .rate-move{opacity:1;transform:none;transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:calc(1.1s + var(--i,0) * .14s)}
+  @supports (animation-timeline: view()){
+    .js [data-reveal]{animation:reveal-up linear both;animation-timeline:view();animation-range:entry 5% entry 45%}
+    .js .dl-item{animation:reveal-up linear both;animation-timeline:view();animation-range:entry 0% entry 90%}
+    .js .rates-panel{animation:panel-clip linear both;animation-timeline:view();animation-range:cover 0 cover 420px}
+  }
+  @supports not (animation-timeline: view()){
+    .js [data-reveal],.js .dl-item{opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+    .js [data-reveal].is-vis,.js .dl-item.is-vis{opacity:1;transform:none}
+    .js .dl-item:nth-child(2){transition-delay:.07s}
+    .js .dl-item:nth-child(3){transition-delay:.14s}
+    .js .dl-item:nth-child(4){transition-delay:.21s}
+    .js .dl-item:nth-child(5){transition-delay:.28s}
+    .js .rates-panel{clip-path:inset(7% 5% 7% 5% round 36px);transition:clip-path 1s var(--ease)}
+    .js .rates-panel.is-vis{clip-path:inset(0 0 0 0 round 8px)}
+  }
+}
+@media (prefers-reduced-motion: reduce){
+  .odo-strip,.dl-img,.dl-row,.dl-row::before,.dl-go,.dl-go svg,.asl-track,.hero-video{transition:none}
+  .dl-pane.is-swap .dl-facts dd,.asl-slide.is-in .asl-card{animation:none}
+}
+
+/* ---------- prototype label ---------- */
+.proto-label{position:fixed;right:16px;bottom:16px;z-index:70;padding:9px 14px;border-radius:999px;background:rgba(18,22,29,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font-size:12px;line-height:1;letter-spacing:.02em;box-shadow:0 12px 30px -12px rgba(0,0,0,.55);max-width:calc(100vw - 32px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .3s ease}
+.proto-label b{font-weight:500;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;font-size:10.5px;margin-right:8px}
+.menu-open .proto-label{opacity:0;pointer-events:none}
+@media (max-width:479px){.proto-label{right:50%;transform:translateX(50%);bottom:10px;font-size:11px}}

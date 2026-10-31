@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Roscap homepage prototype: Track record and market rates</title>
+<meta name="description" content="Build-ready prototype of the Roscap homepage with the market-rates odometer panel and the Track Record deal list.">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="home.css">
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="nav-in">
+    <a class="nav-brand" href="https://www.roscap.co.uk/" aria-label="Roscap home"><img src="../shared/img/logo-nav.svg" alt="Roscap" width="148" height="41"></a>
+    <nav class="nav-menu" id="nav-menu" aria-label="Main">
+      <div class="nav-links">
+        <a class="nav-link is-current" href="https://www.roscap.co.uk/" aria-current="page">Home</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/about-us">About Us</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/our-services">Our Services</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/track-record">Track Record</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/partner-program">Partner Program</a>
+        <a class="nav-link" href="https://www.roscap.co.uk/insights">Insights</a>
+      </div>
+      <a class="nav-cta" href="https://www.roscap.co.uk/contact-us"><i aria-hidden="true"></i>Speak to Us</a>
+    </nav>
+    <button class="nav-burger" type="button" aria-controls="nav-menu" aria-expanded="false" aria-label="Menu"><span></span></button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- hero: poster in the HTML, the video is a separate file that home.js loads after window load on wide screens only -->
+  <section class="hero" aria-labelledby="hero-h">
+    <video class="hero-video" id="hero-video" muted loop playsinline preload="none" poster="../shared/img/hero-poster.jpg" data-src="hero.mp4" aria-hidden="true" tabindex="-1"></video>
+    <div class="hero-in">
+      <h1 id="hero-h">Real Estate Capital. <span class="gold-text">Redefined.</span></h1>
+      <p class="hero-p">Roscap is a specialist real estate capital advisory and private investment firm connecting developers and investors with tailored debt and equity solutions across the UK, Europe and North America.</p>
+      <a class="sbtn" href="#what-we-do">Explore Our Services</a>
+    </div>
+  </section>
+
+  <!-- who we are -->
+  <section class="sec" id="who-we-are" aria-labelledby="wwa-h">
+    <div class="pg"><div class="container">
+      <div class="split">
+        <div class="stack" data-reveal>
+          <p class="tag">Who We Are</p>
+          <h2 class="h2" id="wwa-h">A Real Estate Capital Advisory Built on Long-Term Relationships</h2>
+          <span class="gdiv" aria-hidden="true"></span>
+          <div class="para">
+            <p>Roscap is a specialist intermediary between capital and opportunity. We advise and arrange financing for developers, investors and family offices, working with a carefully selected network of capital providers.</p>
+            <p>With up-to-date knowledge of the real estate finance market, our team provides advice shaped by current conditions, so that each client secures the most suitable form of capital.</p>
+          </div>
+        </div>
+        <img class="wwa-img" src="../shared/img/who-we-are-columns.webp" alt="Classical stone columns and a lamp post outside a historic City of London building" width="660" height="646" loading="lazy" decoding="async" data-reveal>
+      </div>
+      <ul class="stats">
+        <li class="stat" data-reveal><span class="stat-num"><span data-count="60">60</span>+</span><span class="stat-label">Projects funded</span></li>
+        <li class="stat" data-reveal><span class="stat-num">£<span data-count="120">120</span>m+</span><span class="stat-label">In completed transactions</span></li>
+        <li class="stat" data-reveal><span class="stat-num"><span data-count="25">25</span>+</span><span class="stat-label">Years of combined experience</span></li>
+      </ul>
+    </div></div>
+  </section>
+
+  <!-- what we do -->
+  <section class="sec" id="what-we-do" aria-labelledby="wwd-h">
+    <div class="pg"><div class="container">
+      <div class="split">
+        <img class="wwd-img" src="../shared/img/what-we-do-thames.webp" alt="Aerial view of the Thames, Tower Bridge and Canary Wharf at dusk" width="990" height="969" loading="lazy" decoding="async" data-reveal>
+        <div class="stack" data-reveal>
+          <p class="tag">What We Do</p>
+          <h2 class="h2" id="wwd-h">Capital Raising For Every Stage of a Real Estate Project's Lifecycle</h2>
+          <span class="gdiv" aria-hidden="true"></span>
+          <p class="para">We arrange finance across every layer of the capital stack, from senior and stretch-senior debt through mezzanine finance to equity.</p>
+          <ol class="points">
+            <li class="point"><b aria-hidden="true">1</b>Pre-planning sites</li>
+            <li class="point"><b aria-hidden="true">2</b>Site acquisitions</li>
+            <li class="point"><b aria-hidden="true">3</b>Developments &amp; conversions</li>
+            <li class="point"><b aria-hidden="true">4</b>Renovation projects</li>
+            <li class="point"><b aria-hidden="true">5</b>Pre-stabilised but completed assets</li>
+            <li class="point"><b aria-hidden="true">6</b>Income-producing investments</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="asl" id="asl" data-reveal>
+        <div class="asl-head">
+          <div class="asl-tabs" role="tablist" aria-label="Asset classes and sources of capital">
+            <button class="asl-tab is-active" type="button" role="tab" id="asl-tab-0" aria-selected="true" aria-controls="asl-slide-0" tabindex="0">Asset Classes</button>
+            <button class="asl-tab" type="button" role="tab" id="asl-tab-1" aria-selected="false" aria-controls="asl-slide-1" tabindex="-1">Sources of Capital</button>
+          </div>
+          <div class="asl-arrows">
+            <button class="asl-arrow" type="button" data-dir="-1" aria-label="Previous" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+            <button class="asl-arrow" type="button" data-dir="1" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+        <div class="asl-view">
+          <div class="asl-track" id="asl-track">
+            <div class="asl-slide" role="tabpanel" id="asl-slide-0" aria-labelledby="asl-tab-0"><ul class="asl-cards">
+              <li class="asl-card"><img src="../shared/img/icon-residential.svg" alt="" width="61" height="56" loading="lazy"><p>Residential</p></li>
+              <li class="asl-card"><img src="../shared/img/icon-industrial.svg" alt="" width="61" height="56" loading="lazy"><p>Industrial &amp; Logistics</p></li>
+              <li class="asl-card"><img src="../shared/img/icon-social-housing.svg" alt="" width="61" height="56" loading="lazy"><p>Social Housing &amp; Care</p></li>
+              <li class="asl-card"><img src="../shared/img/icon-commercial.svg" alt="" width="61" height="56" loading="lazy"><p>Commercial</p></li>
+            </ul></div>
+            <div class="asl-slide" role="tabpanel" id="asl-slide-1" aria-labelledby="asl-tab-1" aria-hidden="true" inert><ul class="asl-cards">
+              <li class="asl-card"><img src="../shared/img/icon-banks.svg" alt="" width="61" height="56" loading="lazy"><p>Commercial Banks</p></li>
+              <li class="asl-card"><img src="../shared/img/icon-funds.svg" alt="" width="61" height="56" loading="lazy"><p>Funds</p></li>
+              <li class="asl-card"><img src="../shared/img/icon-family-offices.svg" alt="" width="61" height="56" loading="lazy"><p>Family Offices</p></li>
+              <li class="asl-card"><img src="../shared/img/icon-investment-banks.svg" alt="" width="61" height="56" loading="lazy"><p>Investment Banks</p></li>
+            </ul></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- market rates: odometer panel. Static values below are the Designer placeholders; rates.js replaces them from the feed.
+       Market data is shown for information only; nothing here is advice. -->
+  <section class="rates-sec" aria-labelledby="rates-h">
+    <div class="pg"><div class="container">
+      <div class="rates-panel" id="rates-panel" data-feed="https://edusancheez2005.github.io/roscap-rates/rates.json">
+        <canvas class="waves" aria-hidden="true"></canvas>
+        <div class="rates-content">
+          <div class="rates-head">
+            <h2 class="rates-h" id="rates-h">Current market rates</h2>
+            <p class="upd" id="rates-updated"><i aria-hidden="true"></i><span class="upd-t">Checked 31 October 2026</span></p>
+          </div>
+          <ul class="rate-list">
+            <li class="rate" data-rate="boe">
+              <p class="rate-name">Bank of England<span>Base rate</span></p>
+              <div class="rate-line">
+                <p class="rate-val"><span class="num" id="baserate-boe" data-from="0.00">3.75</span><span class="unit">%</span></p>
+                <p class="rate-move">
+                  <span class="chip" id="changerate-boe"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 2h10L5 9z"/></svg><span class="chip-t">Cut 25 bps</span></span>
+                  <span class="rate-date" id="changedate-boe">since 18 Dec 2025</span>
+                  <span class="rate-asof" id="asof-boe">As of 31 Oct 2026</span>
+                </p>
+              </div>
+            </li>
+            <li class="rate" data-rate="fed">
+              <p class="rate-name">US Federal Reserve<span>Fed funds target range</span></p>
+              <div class="rate-line">
+                <p class="rate-val is-range"><span class="num" id="baserate-fed" data-from="0.00–0.00">3.75–4.00</span><span class="unit">%</span></p>
+                <p class="rate-move">
+                  <span class="chip" id="changerate-fed"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 8h10L5 1z"/></svg><span class="chip-t">Raised 25 bps</span></span>
+                  <span class="rate-date" id="changedate-fed">since 17 Sep 2026</span>
+                  <span class="rate-asof" id="asof-fed">As of 30 Oct 2026</span>
+                </p>
+              </div>
+            </li>
+            <li class="rate" data-rate="euribor">
+              <p class="rate-name">EURIBOR<span>3-month</span></p>
+              <div class="rate-line">
+                <p class="rate-val"><span class="num" id="baserate-euribor" data-from="0.000">2.643</span><span class="unit">%</span></p>
+                <p class="rate-move">
+                  <span class="chip" id="changerate-euribor"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 8h10L5 1z"/></svg><span class="chip-t">Up 2.5 bps</span></span>
+                  <span class="rate-date" id="changedate-euribor">fixing of 29 Oct 2026</span>
+                  <span class="rate-asof" id="asof-euribor" hidden></span>
+                </p>
+              </div>
+            </li>
+          </ul>
+          <p class="rates-src">Sources: Bank of England · Federal Reserve via FRED · euribor-rates.eu.</p>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- track record: deal list with preview (option F). Rows are static HTML; Webflow outputs the same from a Collection List. -->
+  <section class="sec tr-sec" id="track-record" aria-labelledby="tr-h">
+    <div class="pg"><div class="container">
+      <div class="tr-head" data-reveal>
+        <p class="tag">Track Record</p>
+        <h2 class="h2 tr-h" id="tr-h">Experience across multiple Sectors and Markets</h2>
+        <span class="gdiv" aria-hidden="true"></span>
+        <p class="para">Our portfolio includes residential, commercial and mixed-use schemes across the UK, Europe and North America. Each transaction reflects our ability to navigate complexity and deliver results.</p>
+      </div>
+
+      <div class="dl" id="dl">
+        <ul class="dl-list" role="tablist" aria-label="Selected transactions" aria-orientation="vertical">
+          <li class="dl-item" role="presentation">
+            <button class="dl-row is-active" type="button" role="tab" id="dl-tab-1" aria-selected="true" aria-controls="dl-pane" tabindex="0"
+              data-name="Kensington, London" data-amount="£27.5m" data-product="Development Finance"
+              data-asset="Residential – 14 Townhouses" data-capital="Institutional Private Credit Fund" data-terms="70% LTC · 58% LTV · 8.5% p.a."
+              data-img="../shared/img/deal-kensington.webp" data-w="720" data-h="551"
+              data-alt="Terrace of white stucco and brick townhouses with black iron railings on a tree-lined Kensington street">
+              <span class="dl-n" aria-hidden="true">01</span><span class="dl-amt">£27.5m</span><span class="dl-meta"><b>Kensington, London</b><span>Development Finance</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-2" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Sheffield, UK" data-amount="£19.8m" data-product="Development Finance + Preferred Equity"
+              data-asset="Residential – 101-Unit BTR Scheme" data-capital="Institutional Private Credit Fund + Private Equity" data-terms="90% LTC · 75% LTV"
+              data-img="../shared/img/deal-sheffield.webp" data-w="628" data-h="450"
+              data-alt="Facade of a new multi-storey apartment block in pale grey brick with tall windows">
+              <span class="dl-n" aria-hidden="true">02</span><span class="dl-amt">£19.8m</span><span class="dl-meta"><b>Sheffield, UK</b><span>Development Finance + Preferred Equity</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-3" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Rome, Italy" data-amount="€4.6m" data-product="Bridge Loan"
+              data-asset="Hotel Resort" data-capital="European Private Lender" data-terms="68% LTV · 12% IRR"
+              data-img="../shared/img/deal-rome.webp" data-w="720" data-h="551"
+              data-alt="Resort hotel with a dark glass tower and terracotta wings behind palm trees and a swimming pool lined with yellow sun loungers">
+              <span class="dl-n" aria-hidden="true">03</span><span class="dl-amt">€4.6m</span><span class="dl-meta"><b>Rome, Italy</b><span>Bridge Loan</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-4" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="London, UK" data-amount="£11.0m" data-product="Stretch Senior"
+              data-asset="Office-to-Residential Conversion" data-capital="Private Credit Fund + Mezz Fund" data-terms="88% LTC · 75% LTV · 11% blended p.a."
+              data-img="../shared/img/deal-london.webp" data-w="720" data-h="515"
+              data-alt="Three-storey red brick office building with angled bay windows on a street corner">
+              <span class="dl-n" aria-hidden="true">04</span><span class="dl-amt">£11.0m</span><span class="dl-meta"><b>London, UK</b><span>Stretch Senior</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-5" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Birmingham, UK" data-amount="£8.3m" data-product="Development Finance"
+              data-asset="Residential – 61 Apartments" data-capital="Challenger Bank" data-terms="72% LTC · 64% LTV · 8.95% p.a."
+              data-img="../shared/img/deal-birmingham.webp" data-w="628" data-h="450"
+              data-alt="Red brick apartment blocks beside a canal with an orange steel footbridge">
+              <span class="dl-n" aria-hidden="true">05</span><span class="dl-amt">£8.3m</span><span class="dl-meta"><b>Birmingham, UK</b><span>Development Finance</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+        </ul>
+        <div class="dl-pane" id="dl-pane" role="tabpanel" aria-labelledby="dl-tab-1" tabindex="0">
+          <h3 class="sr dl-pane-h" aria-live="polite">Kensington, London, £27.5m, Development Finance</h3>
+          <figure class="dl-photo">
+            <img class="dl-img is-on" src="../shared/img/deal-kensington.webp" alt="Terrace of white stucco and brick townhouses with black iron railings on a tree-lined Kensington street" width="720" height="551" loading="lazy" decoding="async">
+          </figure>
+          <dl class="dl-facts">
+            <div><dt>Asset</dt><dd id="dl-asset">Residential – 14 Townhouses</dd></div>
+            <div><dt>Capital</dt><dd id="dl-cap">Institutional Private Credit Fund</dd></div>
+            <div><dt>Terms</dt><dd id="dl-terms">70% LTC · 58% LTV · 8.5% p.a.</dd></div>
+          </dl>
+        </div>
+        <a class="btn dl-cta" href="https://www.roscap.co.uk/track-record">View 22 selected transactions<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- contact -->
+  <section class="contact-sec" id="contact" aria-labelledby="contact-h">
+    <div class="pg"><div class="container">
+      <div class="subs" data-reveal>
+        <img class="subs-bg" src="../shared/img/contact-bg-1200.webp" alt="" width="1200" height="651" loading="lazy" decoding="async">
+        <div class="subs-grid">
+          <div class="subs-copy">
+            <p class="tag">Contact</p>
+            <h2 class="subs-h" id="contact-h">Let's discuss your next transaction, funding requirement, or investment opportunity.</h2>
+          </div>
+          <form class="form" data-mock novalidate aria-label="Contact form (switched off in this prototype)">
+            <input class="field" type="text" placeholder="Full name" aria-label="Full name" autocomplete="off">
+            <input class="field" type="email" placeholder="Email address" aria-label="Email address" autocomplete="off">
+            <input class="field" type="tel" placeholder="Phone number" aria-label="Phone number" autocomplete="off">
+            <input class="field" type="text" placeholder="Company" aria-label="Company" autocomplete="off">
+            <textarea class="field wide" placeholder="Tell us about your project" aria-label="Tell us about your project"></textarea>
+            <button class="sbtn" type="submit">Submit</button>
+            <p class="form-note" aria-live="polite"></p>
+          </form>
+        </div>
+      </div>
+    </div></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="pg"><div class="container">
+    <div class="foot-top">
+      <img class="foot-logo" src="../shared/img/logo-footer.svg" alt="Roscap" width="144" height="40">
+      <div class="social">
+        <a href="https://www.linkedin.com/company/roscap" aria-label="LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4V21H3V9.75zM9.5 9.75h3.8v1.6h.06c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.77 2.6 4.77 6V21h-4v-5.1c0-1.22-.02-2.78-1.7-2.78-1.7 0-1.96 1.33-1.96 2.7V21h-4V9.75z"/></svg></a>
+        <a href="https://www.instagram.com/roscap.uk" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7.3a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm4.9-8.95a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2zM12 2.5c-2.6 0-2.92.01-3.94.06-1.02.05-1.71.21-2.32.44a4.7 4.7 0 0 0-1.7 1.1 4.7 4.7 0 0 0-1.1 1.7c-.24.6-.4 1.3-.44 2.32C2.51 9.08 2.5 9.4 2.5 12s.01 2.92.06 3.94c.05 1.02.2 1.71.44 2.32.25.63.58 1.17 1.1 1.7.53.52 1.07.85 1.7 1.1.6.23 1.3.39 2.32.44 1.02.05 1.34.06 3.94.06s2.92-.01 3.94-.06c1.02-.05 1.71-.21 2.32-.44a4.7 4.7 0 0 0 1.7-1.1 4.7 4.7 0 0 0 1.1-1.7c.23-.6.39-1.3.44-2.32.05-1.02.06-1.34.06-3.94s-.01-2.92-.06-3.94c-.05-1.02-.21-1.71-.44-2.32a4.7 4.7 0 0 0-1.1-1.7 4.7 4.7 0 0 0-1.7-1.1c-.6-.23-1.3-.39-2.32-.44C14.92 2.51 14.6 2.5 12 2.5zm0 1.7c2.56 0 2.86.01 3.87.06.93.04 1.44.2 1.78.33.45.17.77.38 1.1.72.34.34.55.66.72 1.1.13.34.29.85.33 1.78.05 1.01.06 1.31.06 3.87s-.01 2.86-.06 3.87c-.04.93-.2 1.44-.33 1.78-.17.45-.38.77-.72 1.1-.33.34-.65.55-1.1.72-.34.13-.85.29-1.78.33-1.01.05-1.31.06-3.87.06s-2.86-.01-3.87-.06c-.93-.04-1.44-.2-1.78-.33a2.97 2.97 0 0 1-1.1-.72 2.97 2.97 0 0 1-.72-1.1c-.13-.34-.29-.85-.33-1.78-.05-1.01-.06-1.31-.06-3.87s.01-2.86.06-3.87c.04-.93.2-1.44.33-1.78.17-.45.38-.77.72-1.1.33-.34.65-.55 1.1-.72.34-.13.85-.29 1.78-.33 1.01-.05 1.31-.06 3.87-.06z"/></svg></a>
+      </div>
+    </div>
+    <div class="foot-mid">
+      <div class="foot-cols">
+        <div class="foot-col"><h3 class="foot-h">Quick Links</h3><a href="https://www.roscap.co.uk/about-us">About Us</a><a href="https://www.roscap.co.uk/our-services">Our Services</a><a href="https://www.roscap.co.uk/track-record">Track Record</a><a href="https://www.roscap.co.uk/partner-program">Partner Program</a><a href="https://www.roscap.co.uk/insights">Insights</a></div>
+        <div class="foot-col"><h3 class="foot-h">Legal</h3><a href="https://www.roscap.co.uk/privacy-policy">Privacy Policy</a><a href="https://www.roscap.co.uk/cookie-policy">Cookie Policy</a><a href="https://www.roscap.co.uk/website-terms-of-use">Terms of Use</a><a href="https://www.roscap.co.uk/disclaimer">Disclaimer</a><a href="https://www.roscap.co.uk/accessibility-statement">Accessibility</a></div>
+        <div class="foot-col"><h3 class="foot-h">Governance</h3><a href="https://www.roscap.co.uk/compliance-governance">Compliance &amp; Governance</a></div>
+      </div>
+      <div class="news">
+        <p>Sign up for new alerts and receive updates in your inbox.</p>
+        <form class="news-form" data-mock novalidate aria-label="Newsletter sign-up (switched off in this prototype)">
+          <input type="email" placeholder="Enter your email" aria-label="Email address" autocomplete="off">
+          <button type="submit" aria-label="Sign up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </form>
+        <p class="form-note" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="foot-tnc">
+      <p class="copy">© Roscap 2026 | Boutique Real Estate Capital Advisory</p>
+      <p>Roscap undertakes introductory activities and provides advisory services solely in relation to unregulated activities. Roscap does not carry on, nor does it hold itself out as carrying on, any activities which are regulated under the Financial Services and Markets Act 2000 (Regulated Activities) Order.</p>
+      <p>Roscap is not authorised or regulated by the Financial Conduct Authority. Accordingly, any services provided by Roscap are not covered by the Financial Services Compensation Scheme or the Financial Ombudsman Service.</p>
+    </div>
+  </div></div>
+</footer>
+
+<aside class="proto-label" aria-label="Prototype label"><b>Prototype</b>Home · Track record and market rates</aside>
+
+<script src="../shared/site.js"></script>
+<script src="home.js"></script>
+<script src="rates.js"></script>
+<script src="deal-list.js"></script>
+</body>
+</html>

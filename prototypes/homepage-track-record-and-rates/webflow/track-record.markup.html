@@ -1,0 +1,77 @@
+<!-- Reference structure for the Designer. The five <li> rows become Collection Items (Transactions, Featured = yes, sorted by Sort order, limit 5);
+     each data-* attribute is a custom attribute bound to a CMS field. Webflow outputs <div> not <button> for the rows: give the Div
+     role="tab" and tabindex="-1" (first item tabindex="0") as custom attributes; deal-list.js handles Enter and Space. -->
+  <!-- track record: deal list with preview (option F). Rows are static HTML; Webflow outputs the same from a Collection List. -->
+  <section class="sec tr-sec" id="track-record" aria-labelledby="tr-h">
+    <div class="pg"><div class="container">
+      <div class="tr-head" data-reveal>
+        <p class="tag">Track Record</p>
+        <h2 class="h2 tr-h" id="tr-h">Experience across multiple Sectors and Markets</h2>
+        <span class="gdiv" aria-hidden="true"></span>
+        <p class="para">Our portfolio includes residential, commercial and mixed-use schemes across the UK, Europe and North America. Each transaction reflects our ability to navigate complexity and deliver results.</p>
+      </div>
+
+      <div class="dl" id="dl">
+        <ul class="dl-list" role="tablist" aria-label="Selected transactions" aria-orientation="vertical">
+          <li class="dl-item" role="presentation">
+            <button class="dl-row is-active" type="button" role="tab" id="dl-tab-1" aria-selected="true" aria-controls="dl-pane" tabindex="0"
+              data-name="Kensington, London" data-amount="£27.5m" data-product="Development Finance"
+              data-asset="Residential – 14 Townhouses" data-capital="Institutional Private Credit Fund" data-terms="70% LTC · 58% LTV · 8.5% p.a."
+              data-img="https://cdn.prod.website-files.com/<site-id>/deal-kensington.webp" data-w="720" data-h="551"
+              data-alt="Terrace of white stucco and brick townhouses with black iron railings on a tree-lined Kensington street">
+              <span class="dl-n" aria-hidden="true">01</span><span class="dl-amt">£27.5m</span><span class="dl-meta"><b>Kensington, London</b><span>Development Finance</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-2" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Sheffield, UK" data-amount="£19.8m" data-product="Development Finance + Preferred Equity"
+              data-asset="Residential – 101-Unit BTR Scheme" data-capital="Institutional Private Credit Fund + Private Equity" data-terms="90% LTC · 75% LTV"
+              data-img="https://cdn.prod.website-files.com/<site-id>/deal-sheffield.webp" data-w="628" data-h="450"
+              data-alt="Facade of a new multi-storey apartment block in pale grey brick with tall windows">
+              <span class="dl-n" aria-hidden="true">02</span><span class="dl-amt">£19.8m</span><span class="dl-meta"><b>Sheffield, UK</b><span>Development Finance + Preferred Equity</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-3" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Rome, Italy" data-amount="€4.6m" data-product="Bridge Loan"
+              data-asset="Hotel Resort" data-capital="European Private Lender" data-terms="68% LTV · 12% IRR"
+              data-img="https://cdn.prod.website-files.com/<site-id>/deal-rome.webp" data-w="720" data-h="551"
+              data-alt="Resort hotel with a dark glass tower and terracotta wings behind palm trees and a swimming pool lined with yellow sun loungers">
+              <span class="dl-n" aria-hidden="true">03</span><span class="dl-amt">€4.6m</span><span class="dl-meta"><b>Rome, Italy</b><span>Bridge Loan</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-4" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="London, UK" data-amount="£11.0m" data-product="Stretch Senior"
+              data-asset="Office-to-Residential Conversion" data-capital="Private Credit Fund + Mezz Fund" data-terms="88% LTC · 75% LTV · 11% blended p.a."
+              data-img="https://cdn.prod.website-files.com/<site-id>/deal-london.webp" data-w="720" data-h="515"
+              data-alt="Three-storey red brick office building with angled bay windows on a street corner">
+              <span class="dl-n" aria-hidden="true">04</span><span class="dl-amt">£11.0m</span><span class="dl-meta"><b>London, UK</b><span>Stretch Senior</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-5" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Birmingham, UK" data-amount="£8.3m" data-product="Development Finance"
+              data-asset="Residential – 61 Apartments" data-capital="Challenger Bank" data-terms="72% LTC · 64% LTV · 8.95% p.a."
+              data-img="https://cdn.prod.website-files.com/<site-id>/deal-birmingham.webp" data-w="628" data-h="450"
+              data-alt="Red brick apartment blocks beside a canal with an orange steel footbridge">
+              <span class="dl-n" aria-hidden="true">05</span><span class="dl-amt">£8.3m</span><span class="dl-meta"><b>Birmingham, UK</b><span>Development Finance</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+        </ul>
+        <div class="dl-pane" id="dl-pane" role="tabpanel" aria-labelledby="dl-tab-1" tabindex="0">
+          <h3 class="sr dl-pane-h" aria-live="polite">Kensington, London, £27.5m, Development Finance</h3>
+          <figure class="dl-photo">
+            <img class="dl-img is-on" src="https://cdn.prod.website-files.com/<site-id>/deal-kensington.webp" alt="Terrace of white stucco and brick townhouses with black iron railings on a tree-lined Kensington street" width="720" height="551" loading="lazy" decoding="async">
+          </figure>
+          <dl class="dl-facts">
+            <div><dt>Asset</dt><dd id="dl-asset">Residential – 14 Townhouses</dd></div>
+            <div><dt>Capital</dt><dd id="dl-cap">Institutional Private Credit Fund</dd></div>
+            <div><dt>Terms</dt><dd id="dl-terms">70% LTC · 58% LTV · 8.5% p.a.</dd></div>
+          </dl>
+        </div>
+        <a class="btn dl-cta" href="https://www.roscap.co.uk/track-record">View 22 selected transactions<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div></div>
+  </section>
+
