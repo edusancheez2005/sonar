@@ -2,7 +2,7 @@
    From 860px up the rows are tabs (role="tablist"/"tab", aria-selected, roving tabindex, arrow keys) and the
    pane is the tabpanel; hovering a row only previews it, clicking selects it. Up to 859px the list is an
    accordion: the pane sits under the open row (CSS order, no DOM move), rows are aria-expanded buttons
-   controlling a region, and tapping the open row closes it.
+   (Div rows get role="button") controlling a region, and tapping the open row closes it.
    Rows carry the pane fields as data attributes (data-name, data-amount, data-product, data-asset, data-capital,
    data-terms, data-img, data-alt, data-w, data-h) so a Webflow Collection List can output them; rows may be
    <button> or <div role="tab" tabindex> (Enter and Space are handled here for non-buttons). */
@@ -64,7 +64,8 @@
         r.removeAttribute('aria-expanded');
         r.tabIndex = k === cur ? 0 : -1;
       } else {
-        r.removeAttribute('role');
+        /* a <button> keeps its native role; a Webflow Div needs role="button" so aria-expanded is valid */
+        if (r.tagName === 'BUTTON') r.removeAttribute('role'); else r.setAttribute('role', 'button');
         r.removeAttribute('aria-selected');
         r.setAttribute('aria-expanded', k === cur && open ? 'true' : 'false');
         r.tabIndex = 0;
@@ -80,7 +81,7 @@
     if (tabs) list.setAttribute('aria-orientation', 'vertical'); else list.removeAttribute('aria-orientation');
     rows.forEach(function (r) { r.parentNode.setAttribute('role', tabs ? 'presentation' : 'listitem'); });
     pane.setAttribute('role', tabs ? 'tabpanel' : 'region');
-    if (tabs) { open = true; if (shown !== cur) { shown = cur; render(cur, false); } }
+    if (tabs) { open = true; if (shown !== cur) { shown = cur; render(cur, false, true); } }
     syncRows();
   }
 
@@ -113,14 +114,17 @@
     if (next.decode) next.decode().then(show, show); else if (next.complete) show(); else { next.onload = show; next.onerror = show; }
   }
 
-  /* fills the pane from row i */
-  function render(i, animate) {
+  /* fills the pane from row i; the pane label and the polite live heading change only on a selection
+     (announce = true), never on a hover preview, so screen readers are not read every row the mouse passes */
+  function render(i, animate, announce) {
     var row = rows[i];
-    pane.setAttribute('aria-labelledby', row.id);
     if (out.asset) out.asset.textContent = attr(row, 'asset');
     if (out.capital) out.capital.textContent = attr(row, 'capital');
     if (out.terms) out.terms.textContent = attr(row, 'terms');
-    if (heading) heading.textContent = [attr(row, 'name'), attr(row, 'amount'), attr(row, 'product')].filter(Boolean).join(', ');
+    if (announce) {
+      pane.setAttribute('aria-labelledby', row.id);
+      if (heading) heading.textContent = [attr(row, 'name'), attr(row, 'amount'), attr(row, 'product')].filter(Boolean).join(', ');
+    }
     swapImage(row);
     if (animate && !reduce) { pane.classList.remove('is-swap'); void pane.offsetWidth; pane.classList.add('is-swap'); }
   }
@@ -128,7 +132,7 @@
   function preview(i) {
     if (!tabsMode() || i === shown) return;
     shown = i;
-    render(i, true);
+    render(i, true, false);
     syncRows();
   }
   function select(i, opts) {
@@ -139,7 +143,7 @@
     var changed = i !== shown || !open;
     var before = row.getBoundingClientRect().top;
     cur = i; shown = i; open = true;
-    render(i, changed);
+    render(i, changed, true);
     syncRows();
     if (!tabs) {
       /* the pane may have closed above this row: keep the row where the finger is, then bring it up with its photo */

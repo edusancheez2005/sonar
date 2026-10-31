@@ -104,7 +104,7 @@
 @media (hover:hover){.dl-row:hover{background:rgba(4,52,53,.035)}}
 .dl-row.is-active{background:var(--paper)}
 .dl-row.is-active::before{transform:none}
-.dl-row:focus-visible{outline-offset:-3px;z-index:1}
+.dl-row:focus-visible{outline-color:var(--teal);outline-offset:-3px;z-index:1} /* teal ring: gold is 1.6:1 on cream */
 .dl-n{font:500 13px/1 var(--f-body);color:var(--grey);font-variant-numeric:tabular-nums}
 .dl-amt{font:500 clamp(28px,2.6vw,38px)/1 var(--f-display);color:#4F7879;transition:color .3s;white-space:nowrap}
 .dl-meta{display:grid;gap:4px;min-width:0}
@@ -117,7 +117,7 @@
 .dl-row.is-active .dl-go{opacity:1;transform:none}
 .dl-cta{grid-column:1;grid-row:2}
 .dl-pane{grid-column:2;grid-row:1 / span 2;display:grid;gap:14px;min-width:0}
-.dl-pane:focus-visible{outline-offset:6px;border-radius:8px}
+.dl-pane:focus-visible{outline-color:var(--teal);outline-offset:6px;border-radius:8px}
 .dl-photo{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--teal);margin:0}
 .dl-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .55s ease,transform 1.4s var(--ease)}
 .dl-img.is-on{opacity:1;transform:none}

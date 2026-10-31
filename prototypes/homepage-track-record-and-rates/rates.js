@@ -8,7 +8,7 @@
      #changerate-{key}       the movement chip ("Cut 25 bps", "Raised 25 bps", "Up 2.5 bps")
      #changedate-{key}       the line under the chip ("since 18 Dec 2025", "fixing of 29 Oct 2026")
      #asof-{key}             the data date ("As of 31 Oct 2026"; "Last data 21 Oct 2026, awaiting update" when stale)
-     #rates-updated          "Checked 31 October 2026" (the feed's check time); shown only once the feed validated
+     #rates-updated          "Checked 31 Oct 2026" (the feed's check time); shown only once the feed validated
    key = boe | fed | euribor
    #rates-panel carries data-state = loading | live | stale | error for styling hooks. */
 (function () {
@@ -215,7 +215,10 @@
     var upd = $('rates-updated');
     if (upd) {
       var label = upd.querySelector('.upd-t') || upd;
-      if (ok && typeof d.updated_display === 'string' && RE_LONG_DATE.test(d.updated_display)) { label.textContent = 'Checked ' + d.updated_display; upd.hidden = false; upd.classList.add('is-live'); }
+      /* the check time: "31 Oct 2026" from the ISO `updated` stamp (same date style as the rate lines), else updated_display */
+      var checked = typeof d.updated === 'string' ? fmtDate(d.updated.slice(0, 10)) : '';
+      if (!checked && typeof d.updated_display === 'string' && RE_LONG_DATE.test(d.updated_display)) checked = d.updated_display;
+      if (ok && checked) { label.textContent = 'Checked ' + checked; upd.hidden = false; upd.classList.add('is-live'); }
       else { upd.hidden = true; upd.classList.remove('is-live'); }
     }
     var anyStale = KEYS.some(function (k) { return views[k] && views[k].stale; });

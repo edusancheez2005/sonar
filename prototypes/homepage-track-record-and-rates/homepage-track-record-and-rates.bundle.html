@@ -348,7 +348,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
 @media (hover:hover){.dl-row:hover{background:rgba(4,52,53,.035)}}
 .dl-row.is-active{background:var(--paper)}
 .dl-row.is-active::before{transform:none}
-.dl-row:focus-visible{outline-offset:-3px;z-index:1}
+.dl-row:focus-visible{outline-color:var(--teal);outline-offset:-3px;z-index:1} /* teal ring: gold is 1.6:1 on cream */
 .dl-n{font:500 13px/1 var(--f-body);color:var(--grey);font-variant-numeric:tabular-nums}
 .dl-amt{font:500 clamp(28px,2.6vw,38px)/1 var(--f-display);color:#4F7879;transition:color .3s;white-space:nowrap}
 .dl-meta{display:grid;gap:4px;min-width:0}
@@ -361,7 +361,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
 .dl-row.is-active .dl-go{opacity:1;transform:none}
 .dl-cta{grid-column:1;grid-row:2}
 .dl-pane{grid-column:2;grid-row:1 / span 2;display:grid;gap:14px;min-width:0}
-.dl-pane:focus-visible{outline-offset:6px;border-radius:8px}
+.dl-pane:focus-visible{outline-color:var(--teal);outline-offset:6px;border-radius:8px}
 .dl-photo{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--teal);margin:0}
 .dl-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .55s ease,transform 1.4s var(--ease)}
 .dl-img.is-on{opacity:1;transform:none}
@@ -560,7 +560,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
         <div class="rates-content">
           <div class="rates-head">
             <h2 class="rates-h" id="rates-h">Current market rates</h2>
-            <p class="upd" id="rates-updated"><i aria-hidden="true"></i><span class="upd-t">Checked 31 October 2026</span></p>
+            <p class="upd" id="rates-updated"><i aria-hidden="true"></i><span class="upd-t">Checked 31 Oct 2026</span></p>
           </div>
           <ul class="rate-list">
             <li class="rate" data-rate="boe">
@@ -913,7 +913,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
      #changerate-{key}       the movement chip ("Cut 25 bps", "Raised 25 bps", "Up 2.5 bps")
      #changedate-{key}       the line under the chip ("since 18 Dec 2025", "fixing of 29 Oct 2026")
      #asof-{key}             the data date ("As of 31 Oct 2026"; "Last data 21 Oct 2026, awaiting update" when stale)
-     #rates-updated          "Checked 31 October 2026" (the feed's check time); shown only once the feed validated
+     #rates-updated          "Checked 31 Oct 2026" (the feed's check time); shown only once the feed validated
    key = boe | fed | euribor
    #rates-panel carries data-state = loading | live | stale | error for styling hooks. */
 (function () {
@@ -1120,7 +1120,10 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
     var upd = $('rates-updated');
     if (upd) {
       var label = upd.querySelector('.upd-t') || upd;
-      if (ok && typeof d.updated_display === 'string' && RE_LONG_DATE.test(d.updated_display)) { label.textContent = 'Checked ' + d.updated_display; upd.hidden = false; upd.classList.add('is-live'); }
+      /* the check time: "31 Oct 2026" from the ISO `updated` stamp (same date style as the rate lines), else updated_display */
+      var checked = typeof d.updated === 'string' ? fmtDate(d.updated.slice(0, 10)) : '';
+      if (!checked && typeof d.updated_display === 'string' && RE_LONG_DATE.test(d.updated_display)) checked = d.updated_display;
+      if (ok && checked) { label.textContent = 'Checked ' + checked; upd.hidden = false; upd.classList.add('is-live'); }
       else { upd.hidden = true; upd.classList.remove('is-live'); }
     }
     var anyStale = KEYS.some(function (k) { return views[k] && views[k].stale; });
@@ -1252,7 +1255,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
    From 860px up the rows are tabs (role="tablist"/"tab", aria-selected, roving tabindex, arrow keys) and the
    pane is the tabpanel; hovering a row only previews it, clicking selects it. Up to 859px the list is an
    accordion: the pane sits under the open row (CSS order, no DOM move), rows are aria-expanded buttons
-   controlling a region, and tapping the open row closes it.
+   (Div rows get role="button") controlling a region, and tapping the open row closes it.
    Rows carry the pane fields as data attributes (data-name, data-amount, data-product, data-asset, data-capital,
    data-terms, data-img, data-alt, data-w, data-h) so a Webflow Collection List can output them; rows may be
    <button> or <div role="tab" tabindex> (Enter and Space are handled here for non-buttons). */
@@ -1314,7 +1317,8 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
         r.removeAttribute('aria-expanded');
         r.tabIndex = k === cur ? 0 : -1;
       } else {
-        r.removeAttribute('role');
+        /* a <button> keeps its native role; a Webflow Div needs role="button" so aria-expanded is valid */
+        if (r.tagName === 'BUTTON') r.removeAttribute('role'); else r.setAttribute('role', 'button');
         r.removeAttribute('aria-selected');
         r.setAttribute('aria-expanded', k === cur && open ? 'true' : 'false');
         r.tabIndex = 0;
@@ -1330,7 +1334,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
     if (tabs) list.setAttribute('aria-orientation', 'vertical'); else list.removeAttribute('aria-orientation');
     rows.forEach(function (r) { r.parentNode.setAttribute('role', tabs ? 'presentation' : 'listitem'); });
     pane.setAttribute('role', tabs ? 'tabpanel' : 'region');
-    if (tabs) { open = true; if (shown !== cur) { shown = cur; render(cur, false); } }
+    if (tabs) { open = true; if (shown !== cur) { shown = cur; render(cur, false, true); } }
     syncRows();
   }
 
@@ -1363,14 +1367,17 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
     if (next.decode) next.decode().then(show, show); else if (next.complete) show(); else { next.onload = show; next.onerror = show; }
   }
 
-  /* fills the pane from row i */
-  function render(i, animate) {
+  /* fills the pane from row i; the pane label and the polite live heading change only on a selection
+     (announce = true), never on a hover preview, so screen readers are not read every row the mouse passes */
+  function render(i, animate, announce) {
     var row = rows[i];
-    pane.setAttribute('aria-labelledby', row.id);
     if (out.asset) out.asset.textContent = attr(row, 'asset');
     if (out.capital) out.capital.textContent = attr(row, 'capital');
     if (out.terms) out.terms.textContent = attr(row, 'terms');
-    if (heading) heading.textContent = [attr(row, 'name'), attr(row, 'amount'), attr(row, 'product')].filter(Boolean).join(', ');
+    if (announce) {
+      pane.setAttribute('aria-labelledby', row.id);
+      if (heading) heading.textContent = [attr(row, 'name'), attr(row, 'amount'), attr(row, 'product')].filter(Boolean).join(', ');
+    }
     swapImage(row);
     if (animate && !reduce) { pane.classList.remove('is-swap'); void pane.offsetWidth; pane.classList.add('is-swap'); }
   }
@@ -1378,7 +1385,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
   function preview(i) {
     if (!tabsMode() || i === shown) return;
     shown = i;
-    render(i, true);
+    render(i, true, false);
     syncRows();
   }
   function select(i, opts) {
@@ -1389,7 +1396,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
     var changed = i !== shown || !open;
     var before = row.getBoundingClientRect().top;
     cur = i; shown = i; open = true;
-    render(i, changed);
+    render(i, changed, true);
     syncRows();
     if (!tabs) {
       /* the pane may have closed above this row: keep the row where the finger is, then bring it up with its photo */

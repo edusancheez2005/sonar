@@ -1,0 +1,315 @@
+{
+ "verdict": "ship",
+ "score_out_of_10": 9,
+ "must_fix_resolved": [
+  "CP-01",
+  "CP-02",
+  "CP-03",
+  "CP-04",
+  "CP-05",
+  "CP-06",
+  "CP-07",
+  "CP-08",
+  "CP-09",
+  "CP-10",
+  "CP-11",
+  "CP-12",
+  "CP-13",
+  "CP-14",
+  "CP-15",
+  "CP-17"
+ ],
+ "must_fix_open": [],
+ "must_fix_partial": [
+  "CP-16"
+ ],
+ "not_applicable": [
+  "CP-18",
+  "CP-19"
+ ],
+ "fixed": [
+  "deal-list.js: in the accordion mode (<=859 px) a non-button row now gets role=\"button\" instead of losing its role; a Div-row copy of the bundle (what Webflow outputs) went from 1 critical axe violation (aria-allowed-attr on 5 rows at 390) to 0. Also mirrored in webflow/home-footer.html and HANDOFF.md.",
+  "deal-list.js: the polite live heading (h3.sr.dl-pane-h) and the pane's aria-labelledby now change only on a selection (click, tap, keyboard); hover previews update photo and facts only. Before: hovering row 2 rewrote the heading to \"Sheffield, UK, ...\" and every hover was announced (residual of CP-09). Verified: dlHover.heading stays \"Kensington, London, GBP 27.5m, Development Finance\" while the pane shows Sheffield.",
+  "home.css + webflow/home-head.html: focus ring on .dl-row and .dl-pane is teal (outline-color: var(--teal)); the site-wide gold ring is 1.6:1 against cream (#E1C979 on #FFFCF5) so it was barely visible on the rows. Measured after the fix: rgb(4,52,53) 2px on the focused row; gold stays on the dark panel and buttons.",
+  "rates.js: the check line is now \"Checked 31 Oct 2026\" (date part of the ISO `updated` stamp formatted like the rate dates, updated_display as fallback) instead of \"Checked 31 October 2026\", which was the only long-month date in the panel and did not match the approved concept's \"28 Oct 2026\" style. Placeholders in index.html and webflow/rates-panel.markup.html updated to match.",
+  "HANDOFF.md: Checked-date description, Div-row role note, live-region behaviour, focus-ring colour in the QA list, axe note for Div rows, a line telling Shikhar to check the character limit his Designer shows on the page footer field before pasting (hosted-file option if it is 10,000), and the refreshed file sizes (head 12,745 chars, footer 27,951 chars, bundle 1,439,547 bytes).",
+  "Re-bundled dist/homepage-track-record-and-rates.html with tools/inline.py and re-ran the full QA script (shots/qa-home/qa-report.json): 0 page errors, axe 0 violations at 1440 and 390 for both button rows and Div rows."
+ ],
+ "open": [
+  {
+   "issue": "CP-16 (should-fix, low) only partly applied: the odometer rolls from 0.00 by default; rolling from the previous level (value minus change) is available as data-roll-from=\"previous\" on #rates-panel but is not the default, to keep the approved look and avoid showing an out-of-date figure as the start state.",
+   "evidence": "rates.js line 26 ROLL_FROM; HANDOFF.md section 6; shots/qa-home/proto-rates-before-1440.png shows 0.00, 0.00 to 0.00 and 0.000 as the start digits.",
+   "severity": "low"
+  },
+  {
+   "issue": "Hover previews can change the pane height (a fact wrapping to 2 lines) and move the contact section below by a few pixels; CLS 0.0009 per preview, 0.0062 for the whole desktop session, within the 0.1 budget. A min-height on .dl-facts dd would remove it but changes the approved card proportions, so left as is.",
+   "evidence": "qa-report.json checks.cls.entries: 6 layout-shift entries with source 'contact' during hover and keyboard tests at 1440; mobile CLS 0.",
+   "severity": "low"
+  },
+  {
+   "issue": "Copy: the Track Record paragraph drops the live page's Oxford comma (\"residential, commercial and mixed-use\" vs live \"residential, commercial, and mixed-use\") although HANDOFF says copy follows the live site. Either is acceptable British usage; confirm which Edu wants.",
+   "evidence": "index.html line 179 vs live/text/index.txt line 73.",
+   "severity": "low"
+  },
+  {
+   "issue": "EURIBOR licensing (EMMI) is still an open business question, correctly flagged in HANDOFF.md section 6; it cannot be resolved in code.",
+   "evidence": "HANDOFF.md section 6, bullet 3.",
+   "severity": "low"
+  },
+  {
+   "issue": "Webflow custom-code limit: the handoff states 50,000 characters per slot as given in the brief; Webflow's page-level footer field has historically been 10,000 characters, and the footer paste is 27,951 characters. A sentence was added telling Shikhar to check the limit shown in his Designer and use the hosted-file option if needed, but the limit itself was not verified here (read-only session).",
+   "evidence": "HANDOFF.md section 2, 'Designer-native' paragraph.",
+   "severity": "low"
+  },
+  {
+   "issue": "The 'View 22 selected transactions' count is static text; it must be kept in step with the CMS or bound to a site field (already noted in HANDOFF section 6).",
+   "evidence": "index.html line 241; HANDOFF.md section 2 and 6.",
+   "severity": "low"
+  }
+ ],
+ "verification": {
+  "console_errors": 0,
+  "axe_serious_critical": 0,
+  "mobile_scroll_width": 390,
+  "bundle_bytes": 1439547,
+  "raf_offscreen_per_s": 0,
+  "detail": {
+   "axe_runs": {
+    "desktop-1440": 0,
+    "mobile-390": 0,
+    "div-rows-1440": 0,
+    "div-rows-390": 0
+   },
+   "console_note": "The feed-blocked run logs the browser's own net::ERR_FAILED line plus the page's intentional console.warn; the corrupt-feed run logs one console.warn. No page errors in any of the 15 contexts.",
+   "odometer": {
+    "start_digits_before_roll": "000 / 000000 / 0000",
+    "frames_with_true_value_before_roll_1440": 0,
+    "frames_with_true_value_before_roll_390": 0,
+    "sr_text_zero_frames": 0,
+    "re_roll_on_re_entry": false,
+    "reduced_motion_final_digits_before_scroll": "375 375400 2643",
+    "sr_values": [
+     "3.75",
+     "3.75 to 4.00",
+     "2.643"
+    ],
+    "visual_digits_aria_hidden": true
+   },
+   "feed_labels_live": {
+    "boe": [
+     "Cut 25 bps",
+     "since 18 Dec 2025",
+     "As of 31 Oct 2026"
+    ],
+    "fed": [
+     "Raised 25 bps",
+     "since 17 Sep 2026",
+     "As of 30 Oct 2026"
+    ],
+    "euribor": [
+     "Up 2.5 bps",
+     "fixing of 29 Oct 2026"
+    ],
+    "checked": "Checked 31 Oct 2026"
+   },
+   "feed_blocked": {
+    "placeholders_kept": true,
+    "checked_hidden": true,
+    "state": "error"
+   },
+   "feed_corrupt": {
+    "fed_400_display_rejected_placeholder_kept": true,
+    "html_in_changed_on_not_injected": true,
+    "checked_hidden": true,
+    "boe_stale_line": "Last data 10 Oct 2026, awaiting update [stale]",
+    "state": "error"
+   },
+   "feed_stale_flag": {
+    "euribor_line": "Last data 29 Oct 2026, awaiting update [stale]",
+    "checked_visible": true,
+    "state": "stale"
+   },
+   "raf": {
+    "top_of_page": 0,
+    "panel_on_screen_first_8s": 60,
+    "panel_on_screen_after_8s_idle": 0,
+    "pointer_moving": 60,
+    "after_scrolling_away": 0,
+    "panel_just_below_fold": 0,
+    "mobile_on_screen": 0,
+    "reduced_motion": 0
+   },
+   "libs": {
+    "gsap": false,
+    "ScrollTrigger": false,
+    "Lenis": false,
+    "Swiper": false
+   },
+   "css_scroll_timeline_supported_in_test_browser": true,
+   "video": {
+    "desktop_requests_after_load": [
+     "rates.json",
+     "hero.mp4"
+    ],
+    "mobile_mp4_requests": 0,
+    "mobile_video_element": "removed",
+    "reduced_motion_video": false
+   },
+   "cls": {
+    "desktop_total": 0.0062,
+    "mobile_total": 0
+   },
+   "deal_list_desktop": {
+    "list_role": "tablist",
+    "orientation": "vertical",
+    "rows": "tab,tab,tab,tab,tab",
+    "controls": "dl-pane x5",
+    "pane": "tabpanel",
+    "hover_changes_selection": false,
+    "hover_changes_live_heading": false,
+    "sweep_to_cta_selected": "dl-tab-1",
+    "arrow_down_x2": "false,false,true,false,false",
+    "end": "false,false,false,false,true",
+    "home": "true,false,false,false,false",
+    "arrow_up_wrap": "false,false,false,false,true",
+    "space": "true,false,false,false,false",
+    "focus_outline_row": "rgb(4, 52, 53) 2px",
+    "inactive_amount_color": "rgb(79, 120, 121)",
+    "inactive_amount_contrast_on_cream": "4.77:1 (computed, #4F7879 on #FFFCF5)",
+    "images": [
+     {
+      "alt": "",
+      "w": 709,
+      "h": 532,
+      "on": true,
+      "hidden": "true",
+      "lazy": "auto",
+      "decoding": "async"
+     },
+     {
+      "alt": "Resort hotel with a dark glass",
+      "w": 709,
+      "h": 532,
+      "on": true,
+      "hidden": null,
+      "lazy": "auto",
+      "decoding": "async"
+     }
+    ],
+    "cta": "View 22 selected transactions"
+   },
+   "deal_list_mobile": {
+    "list_role": "list",
+    "li_roles": "listitem x5",
+    "rows_expanded": "true,false,false,false,false",
+    "pane_role": "region",
+    "pane_inside_list": false,
+    "tap_row3": {
+     "expanded": "false,false,true,false,false",
+     "row_top_px": 92,
+     "nav_h": 64,
+     "pane_below_row": true
+    },
+    "tap_again_closes": true,
+    "tap_targets": [
+     "nav-burger:40x40",
+     "asl-arrow:44x44",
+     "asl-arrow:44x44",
+     "dl-row:350x81",
+     "dl-row:350x95",
+     "dl-row:350x81",
+     "dl-row:350x81",
+     "dl-row:350x81",
+     "A:28x28",
+     "A:28x28",
+     "BUTTON:40x40"
+    ]
+   },
+   "div_rows_webflow_variant": {
+    "desktop_roles": "tab,tab,tab,tab,tab",
+    "enter_selects": "false,true,false,false,false",
+    "space_selects": "false,false,true,false,false",
+    "mobile_roles": "button,button,button,button,button",
+    "mobile_enter_opens": "false,true,false,false,false",
+    "mobile_space_closes": "false,false,false,false,false",
+    "axe_1440": 0,
+    "axe_390": 0
+   },
+   "layout_1024": {
+    "columns_px": {
+     "list": 449,
+     "pane": 449,
+     "metaLines": [
+      1,
+      1,
+      1,
+      1,
+      1
+     ]
+    },
+    "row_heights": [
+     72,
+     86,
+     72,
+     72,
+     72
+    ],
+    "rate_lines": [
+     {
+      "stacked": true,
+      "lineH": 118
+     },
+     {
+      "stacked": true,
+      "lineH": 112
+     },
+     {
+      "stacked": true,
+      "lineH": 99
+     }
+    ]
+   },
+   "fidelity_vs_concept_1440": {
+    "concept": {
+     "dlRowHeights": [
+      81,
+      95,
+      81,
+      81,
+      81
+     ],
+     "listW": 506,
+     "paneW": 709,
+     "panelH": 410,
+     "amtFont": "37.44px",
+     "hFont": "48px",
+     "valFont": "52.8335px"
+    },
+    "prototype": {
+     "dlRowHeights": [
+      81,
+      95,
+      81,
+      81,
+      81
+     ],
+     "listW": 506,
+     "paneW": 709,
+     "panelH": 424,
+     "amtFont": "37.44px",
+     "hFont": "48px",
+     "valFont": "52.8335px"
+    },
+    "note": "identical row heights, column widths and type sizes; panel 14 px taller for the As-of line"
+   },
+   "copy": {
+    "em_dashes": 0,
+    "exclamation_marks": 0,
+    "held_or_decision_words": 0,
+    "footer_disclaimer_matches_live": true,
+    "euribor_licence_note_in_handoff": true
+   }
+  }
+ },
+ "notes": "Reviewed the bundle at 1440, 1024 and 390 (touch), with reduced motion, with the live feed, with the feed blocked, with a corrupt payload (Fed 400.00% - 400.00%, HTML in changed_on, HTML in the EURIBOR display, stale BoE) and with a stale flag only, plus a Div-row copy of the bundle to mirror Webflow output. Screenshots: shots/qa-home/ (concept-* are the approved F file rendered at the same positions for side-by-side). Script: work/qa-home/qa.js; raw results: shots/qa-home/qa-report.json. Fidelity: the prototype matches concept F to the pixel in geometry and type; visible differences are the intended fixes (feed-derived chips and dates, As-of lines, Checked line, solid #4F7879 inactive amounts, 'View 22 selected transactions'). Full-page screenshots show the reveal sections blank; that is a Playwright fullPage artefact with CSS scroll-driven animations (viewport screenshots of the same sections render correctly, see proto-who-we-are-1440.png and proto-what-we-do-1440.png). The wave canvas runs 60 rAF callbacks per second (30 draws) for 8 s after the panel enters the viewport on fine pointers and while the pointer moves, then stops; 0 off-screen, 0 on coarse pointers, 0 under reduced motion. The 'Checked' line is hidden until the feed validates, so there is no layout shift from it in the viewport. shared/site.js still carries the concept-era GSAP and Lenis glue behind feature checks; nothing loads those libraries and the Webflow paste files do not include site.js. Existing live copy 'our team provides advice shaped by current conditions' (Who We Are) is outside the two modules and is general advisory wording, noted for the copy audit rather than this build. Handoff checks passed: addressed to Shikhar, baserate-*/changerate-* ids kept, Transactions collection with fields, Div rows with role and tabindex plus Enter and Space handling, 50,000-character limits stated, staging-first, 10-point QA list, no em dashes, footer carries the live two-paragraph disclaimer verbatim."
+}
