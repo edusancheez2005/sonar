@@ -57,7 +57,6 @@ ol{list-style:none;margin:0;padding:0}
 .pr-para-wrap{display:flex;flex-direction:column;gap:16px}
 
 /* ---------- how it works (from prototype v1, unchanged) ---------- */
-.tag.on-dark{color:#fff}
 .h2.on-dark{color:#fff}
 .p-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;color:#fff;font-size:15px;font-weight:500;border-bottom:1px solid rgba(225,201,121,.65);transition:border-color .2s,color .2s}
 .p-link:hover{border-color:var(--gold)}
@@ -71,20 +70,17 @@ ol{list-style:none;margin:0;padding:0}
 .how-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(3rem,7vw,7.5rem);align-items:start}
 .how-aside{position:sticky;top:calc(var(--nav-h) + 2rem);align-self:start}
 .how-aside-in{display:flex;flex-direction:column;align-items:flex-start;gap:22px}
-.how-lead{font-weight:300;font-size:1.125rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:30rem}
 .how-nav{width:100%;max-width:24rem;margin-top:14px;border-top:1px solid var(--line-dark)}
 .how-nav li{border-bottom:1px solid var(--line-dark)}
-.how-nav a{display:flex;align-items:center;gap:16px;min-height:46px;padding:4px 2px;font-size:15px;color:rgba(255,255,255,.58);transition:color .3s}
+.how-nav a{display:flex;align-items:baseline;gap:16px;min-height:46px;padding:11px 2px;font-size:15px;line-height:1.45;color:rgba(255,255,255,.58);transition:color .3s} /* live step titles are long: they wrap, numbers stay on the first line */
 .how-nav a span{font:400 .9375rem/1 var(--f-display);color:var(--gold);opacity:.75;width:1.9em;flex:none;letter-spacing:.04em;transition:opacity .3s} /* .75 keeps the dimmed numbers at 5.3:1 on teal (.65 measured 4.35:1) */
 .how-nav a:hover{color:#fff}
 .how-nav li.is-active a{color:#fff}
 .how-nav li.is-active a span{opacity:1}
-.how-nav li.is-active a::after{content:"";margin-left:auto;width:22px;height:1px;background:var(--gold)}
-.how-brochure{font-size:15px;color:rgba(255,255,255,.72);margin-top:8px}
-.how-brochure .p-link{min-height:44px}
+.how-nav li.is-active a::after{content:"";flex:none;align-self:center;margin-left:auto;width:22px;height:1px;background:var(--gold)}
 
 .steps{position:relative;display:grid;padding-top:8px}
-.step{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,19rem);gap:2.5rem;align-items:center;padding:2.5rem 0 2.5rem 3.25rem}
+.step{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,19rem);gap:2.5rem;align-items:start;padding:2.5rem 0 2.5rem 3.25rem} /* top-aligned: the step number sits level with its dot */
 .step:first-child{padding-top:.5rem}
 .step:last-child{padding-bottom:.5rem}
 .step-seg{position:absolute;left:11px;top:0;bottom:0;width:1px;background:linear-gradient(180deg,rgba(225,201,121,.55),rgba(225,201,121,.55));transform-origin:top}
@@ -96,42 +92,35 @@ ol{list-style:none;margin:0;padding:0}
 .step-copy{display:flex;flex-direction:column;gap:12px;min-width:0}
 .step-num{font:400 .9375rem/1 var(--f-display);color:var(--gold);letter-spacing:.06em}
 .step h3{font:italic 500 1.75rem/1.25 var(--f-display);color:#fff;text-wrap:balance}
-.step-copy p:not(.step-num){font-weight:300;font-size:1.0625rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:34rem}
 
 /* step visuals: small brand cards built from CSS, no figures */
 .vis{min-width:0}
 .vis-card{background:var(--cream);color:var(--teal);border-radius:10px;padding:20px 22px 22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 30px 50px -36px rgba(0,0,0,.6)}
 .vis-k{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);line-height:1.3}
-.vis-t{font:italic 500 1.125rem/1.3 var(--f-display);color:var(--teal);margin-top:-6px}
 .vis-lines{display:grid;gap:7px;margin-top:2px}
 .vis-lines i{display:block;height:6px;width:var(--w,80%);border-radius:3px;background:rgba(4,52,53,.12)}
-.vis-row{display:flex;justify-content:space-between;gap:12px;margin-top:4px}
-.vis-row.small{font-size:12px;color:var(--grey);border-top:1px solid var(--line);padding-top:10px}
-.vis-sig{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--grey);flex:1}
-.vis-sig b{display:block;height:1px;background:var(--teal);opacity:.55;width:100%}
 .vis-chip{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 11px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--teal)}
 .vis-chip.ok{border-color:transparent;background:var(--gold);color:var(--ink)}
 .vis-chip svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .vis-path{display:flex;align-items:center;gap:10px;margin-top:2px}
 .vis-node{flex:1;text-align:center;padding:10px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-weight:500}
 .vis-node.is-teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.vis-join{display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:var(--gold)}
+.vis-join svg{width:12px;height:12px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.vis-msg{display:flex;align-items:center;gap:10px}
+.vis-msg b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;font:italic 500 13px/26px var(--f-display);text-align:center}
+.vis-msg .vis-lines{flex:1;margin-top:0;gap:6px}
+.vis-track{position:relative;display:flex;justify-content:space-between;margin-top:6px;padding:0 2px}
+.vis-track::before{content:"";position:absolute;left:8px;right:8px;top:50%;height:1px;background:rgba(4,52,53,.2)}
+.vis-track i{position:relative;width:14px;height:14px;border-radius:50%;border:1px solid rgba(4,52,53,.32);background:var(--cream)}
+.vis-track i.done{background:var(--teal);border-color:var(--teal)}
+.vis-track i.now{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px rgba(225,201,121,.3)}
 .vis-arrow{width:34px;height:12px;fill:none;stroke:var(--gold-ink);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.vis-dl{display:grid;gap:6px;margin:0}
-.vis-dl div{display:flex;justify-content:space-between;gap:12px;font-size:13px;border-bottom:1px solid var(--line);padding-bottom:6px}
-.vis-dl dt{color:var(--grey)}
-.vis-dl dd{margin:0;font-weight:500}
 .vis-stack{display:grid;gap:6px;margin-top:2px}
 .vis-stack span{display:flex;align-items:center;padding:0 12px;border-radius:4px;font-size:12.5px;font-weight:500;letter-spacing:.02em}
 .vis-stack .l1{height:46px;background:var(--teal);color:#fff}
 .vis-stack .l2{height:30px;background:rgba(4,52,53,.14);color:var(--teal)}
 .vis-stack .l3{height:24px;background:var(--gold);color:var(--ink)}
-.vis-checks{display:grid;gap:9px;margin-top:2px}
-.vis-checks li{position:relative;display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--grey)}
-.vis-checks li::before{content:"";width:16px;height:16px;border-radius:50%;border:1px solid rgba(4,52,53,.32);flex:none;background:center/9px no-repeat}
-.vis-checks li.done{color:var(--teal)}
-.vis-checks li.done::before{background-color:var(--teal);border-color:var(--teal);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.5l2.3 2.3L9.6 4'/%3E%3C/svg%3E")}
-.vis-checks li.now{color:var(--teal);font-weight:500}
-.vis-checks li.now::before{border-color:var(--gold);background-color:var(--gold);box-shadow:inset 0 0 0 3px var(--cream)}
 .vis-flow{display:grid;margin-top:2px}
 .vis-flow li{position:relative;display:flex;align-items:flex-start;gap:12px;padding:0 0 14px 0;font-size:13.5px;color:var(--teal)}
 .vis-flow li:last-child{padding-bottom:0}
@@ -142,6 +131,7 @@ ol{list-style:none;margin:0;padding:0}
 .vis-flow li.gold b{background:var(--gold);box-shadow:0 0 0 3px rgba(225,201,121,.3)}
 .vis-seq{display:grid;gap:8px;margin-top:2px}
 .vis-seq li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+.vis-seq li.more{opacity:.4;border-style:dashed}
 .vis-seq em{font-style:normal;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:var(--gold);padding:3px 8px;border-radius:999px}
 
 /* scroll-driven reveal: native where supported */
@@ -202,7 +192,8 @@ ol{list-style:none;margin:0;padding:0}
    Combo classes on the live elements: .assets-card-content-wrap.marquee, .container.marquee-viewport, .assets-card-grid.marquee-group,
    plus a new .marquee-track between them and a second, aria-hidden copy of the grid. Everything that moves sits inside
    prefers-reduced-motion:no-preference, so with reduced motion the untouched live 4 x 2 grid shows (second copy and button hidden).
-   Slow loop (45s at 1440 = 8 tiles x 327px), edge fade, pauses on hover, on focus inside the strip and with the toggle (WCAG 2.2.2). */
+   Slow loop (45s at 1440 = 8 tiles x 327px), edge fade. No pause button (owner's choice): the strip pauses on hover, and it is focusable,
+   so it pauses while it has keyboard focus or after a tap (WCAG 2.2.2); reduced motion shows the static grid. */
 .marquee{--tile:327px;--loop:45s;--fade:clamp(32px,8%,128px)}
 @keyframes marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
 @media (prefers-reduced-motion:no-preference){
@@ -212,22 +203,13 @@ ol{list-style:none;margin:0;padding:0}
   .marquee .marquee-group{display:flex;flex:none;overflow:visible}
   .marquee .marquee-group .assets-card-new{flex:none;width:var(--tile);height:var(--tile);aspect-ratio:auto;padding-top:0;padding-bottom:0;border-style:solid;border-color:rgba(40,40,40,.2);border-width:0 0 0 1px}
   .marquee .assets-mid-divider{display:none}
-  .marquee:hover .marquee-track,.marquee:focus-within .marquee-track,.marquee.is-paused .marquee-track{animation-play-state:paused}
-  /* an explicit press of "play" wins over hover/focus until the pointer and focus have left the strip (see the JS) */
-  .marquee.is-playing:not(.is-paused) .marquee-track{animation-play-state:running}
-  html.js .marquee .marquee-toggle{display:grid}
+  .marquee:hover .marquee-track,.marquee:focus-within .marquee-track{animation-play-state:paused}
 }
 @media (prefers-reduced-motion:reduce){.marquee .marquee-group[aria-hidden="true"]{display:none}}
-/* pause/play toggle: quiet teal outline on cream, 44px target, just below the strip on the right; only shown when JS runs and motion is allowed */
-.marquee-toggle{display:none;position:absolute;right:max(16px,calc((100% - 1380px) / 2 + 2.25rem));top:calc(100% + 12px);bottom:auto;z-index:2;width:44px;height:44px;place-items:center;padding:0;border:1px solid #043435;border-radius:50%;background-color:#FFFCF5;color:#043435;cursor:pointer;transition:background-color .2s,color .2s}
-.marquee-toggle:hover{background-color:#043435;color:#FFFCF5}
-.marquee-toggle:focus-visible{outline:2px solid #043435;outline-offset:3px}
-.marquee-toggle svg{display:block;width:16px;height:16px;fill:currentColor}
-.marquee-toggle .i-play,.marquee-toggle[aria-pressed="true"] .i-pause{display:none}
-.marquee-toggle[aria-pressed="true"] .i-play{display:block}
+.marquee .marquee-viewport:focus{outline:none} /* the mask would clip an outline here, so the ring goes on the wrapper */
+.marquee:has(.marquee-viewport:focus-visible){outline:2px solid #043435;outline-offset:4px}
 @media (max-width:991px){.marquee{--tile:240px;--loop:34s}}
-@media (max-width:767px){.marquee{--tile:200px;--loop:30s;--fade:64px}.marquee-toggle{right:16px}}
-@media (max-width:767px) and (prefers-reduced-motion:no-preference){html.js .assets-card-content-wrap.marquee{margin-bottom:44px}} /* room for the pause button below the strip */
+@media (max-width:767px){.marquee{--tile:200px;--loop:30s;--fade:64px}}
 /* ---------- MARQUEE BLOCK END ---------- */
 
 /* ---------- contact block (unchanged look) ---------- */

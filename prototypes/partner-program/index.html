@@ -39,7 +39,7 @@
       <div class="heading-wrap is-center">
         <div class="hero-heading-wrap is-center is-large">
           <h1 id="hero-h"><em>Partner Program</em></h1>
-          <!-- CONFIRM WITH CLEMENTE: "Join hundreds of current partners" is unconfirmed. Kept verbatim as live because the owner asked to keep the wording -->
+          <!-- NOTE: kept verbatim as live at the owner's request -->
           <p class="text-size-smedium">As a professional in the real estate industry, you already interact with clients and projects daily. Our program allows you to maximise your client relationships.<br><br>Through the program, you will be able to offer enhanced value in addition to your core services.<br><br>Join hundreds of current partners who are successfully working with Roscap to support their client’s capital requirements.</p>
         </div>
       </div>
@@ -72,7 +72,7 @@
           </div>
           <div class="pr-cards">
             <img class="pr-icon" src="img/icon-revenue.svg" alt="" width="81" height="83" loading="lazy">
-            <!-- CONFIRM WITH CLEMENTE: "recurring" and "minimal work" stay as live because the owner asked to keep the wording; still an open question in the audit -->
+            <!-- NOTE: kept verbatim as live at the owner's request -->
             <div class="pr-para-wrap"><p class="text-size-large text-weight-light">Earn an additional recurring revenue stream with minimal work</p></div>
           </div>
           <div class="pr-cards">
@@ -89,25 +89,24 @@
     </div>
   </section>
 
-  <!-- ============ HOW IT WORKS: CHANGED vs live. Replaces the 6-card carousel; section from prototype v1, unchanged apart from the brochure link ============ -->
+  <!-- ============ HOW IT WORKS: CHANGED vs live. The 6-card carousel becomes a vertical timeline.
+       The heading and the six step titles are the live wording, verbatim. Nothing else is written here:
+       the small cards beside each step are decorative (aria-hidden) and only reuse words already on the live site. ============ -->
   <section class="how pg" id="how-it-works" aria-labelledby="how-h">
     <div class="container how-grid">
       <aside class="how-aside">
         <div class="how-aside-in">
-          <p class="tag on-dark">How it works</p>
-          <h2 class="h2 on-dark" id="how-h">How the Partner Program works</h2>
-          <p class="how-lead">6 steps, from the first conversation to completed transactions. You are kept informed at each one.</p>
+          <h2 class="h2 on-dark" id="how-h">How Our Partner Program Works</h2>
           <nav class="how-nav" aria-label="Steps">
             <ol>
-              <li><a href="#step-1"><span>01</span>Join the Partner Program</a></li>
-              <li><a href="#step-2"><span>02</span>Introduce your clients</a></li>
-              <li><a href="#step-3"><span>03</span>We arrange the capital</a></li>
-              <li><a href="#step-4"><span>04</span>Regular progress updates</a></li>
-              <li><a href="#step-5"><span>05</span>Referral fee on completion</a></li>
-              <li><a href="#step-6"><span>06</span>Further transactions</a></li>
+              <li><a href="#step-1"><span>01</span>Join the Program</a></li>
+              <li><a href="#step-2"><span>02</span>Exclusively refer clients to Roscap</a></li>
+              <li><a href="#step-3"><span>03</span>We work with clients to provide capital solutions</a></li>
+              <li><a href="#step-4"><span>04</span>Receive regular progress updates from Roscap</a></li>
+              <li><a href="#step-5"><span>05</span>Upon deal completion, receive your referral commissions</a></li>
+              <li><a href="#step-6"><span>06</span>As Roscap completes subsequent deals with the client, receive commissions in perpetuity</a></li>
             </ol>
           </nav>
-          <p class="how-brochure">Prefer to read it first? <a class="p-link" href="#brochure">Download our brochure</a></p>
         </div>
       </aside>
 
@@ -117,20 +116,16 @@
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">01</p>
-            <h3>Join the Partner Program</h3>
-            <!-- CONFIRM WITH CLEMENTE: onboarding includes a written partner agreement -->
-            <p>A short conversation about your firm and the clients you work with, followed by the partner agreement.</p>
+            <h3>Join the Program</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Partner agreement</p>
-              <p class="vis-t">Roscap and your firm</p>
-              <div class="vis-lines"><i style="--w:92%"></i><i style="--w:78%"></i><i style="--w:64%"></i></div>
-              <div class="vis-row">
-                <span class="vis-sig"><b></b>Your firm</span>
-                <span class="vis-sig"><b></b>Roscap</span>
+              <p class="vis-k">Partner Program</p>
+              <div class="vis-path">
+                <span class="vis-node">Partner</span>
+                <span class="vis-join"><svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.3 2.3L9.6 4"/></svg></span>
+                <span class="vis-node is-teal">Roscap</span>
               </div>
-              <span class="vis-chip ok"><svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.3 2.3L9.6 4"/></svg>Agreed</span>
             </div>
           </div>
         </li>
@@ -139,23 +134,17 @@
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">02</p>
-            <h3>Introduce your clients to Roscap</h3>
-            <!-- CONFIRM WITH CLEMENTE: exclusivity is a Partner Program condition on the live page ("Exclusively refer clients to Roscap"); confidentiality of introductions -->
-            <p>When a client needs real estate finance, you introduce them to Roscap on an exclusive basis. Every introduction is handled in confidence.</p>
+            <h3>Exclusively refer clients to Roscap</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Introduction</p>
+              <p class="vis-k">Referral</p>
               <div class="vis-path">
-                <span class="vis-node">Your firm</span>
+                <span class="vis-node">Client</span>
                 <svg class="vis-arrow" viewBox="0 0 40 12"><path d="M0 6h38M32 1l6 5-6 5"/></svg>
                 <span class="vis-node is-teal">Roscap</span>
               </div>
-              <dl class="vis-dl">
-                <div><dt>Client</dt><dd>Confidential</dd></div>
-                <div><dt>Requirement</dt><dd>Development finance</dd></div>
-              </dl>
-              <span class="vis-chip">Received</span>
+              <span class="vis-chip ok">Exclusive</span>
             </div>
           </div>
         </li>
@@ -164,19 +153,16 @@
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">03</p>
-            <h3>We work with your client on the capital solution</h3>
-            <p>Roscap reviews the transaction, prepares the materials and approaches suitable lenders and investors.</p>
+            <h3>We work with clients to provide capital solutions</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Capital structure</p>
-              <p class="vis-t">Illustrative, not a quotation</p>
+              <p class="vis-k">Capital solutions</p>
               <div class="vis-stack">
                 <span class="l1">Senior debt</span>
                 <span class="l2">Mezzanine</span>
                 <span class="l3">Equity</span>
               </div>
-              <div class="vis-row small"><span>Lenders approached</span><span>Terms under review</span></div>
             </div>
           </div>
         </li>
@@ -185,19 +171,14 @@
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">04</p>
-            <h3>You receive regular progress updates</h3>
-            <p>From terms to completion, you hear from us at each stage, so you are never out of the loop with your client.</p>
+            <h3>Receive regular progress updates from Roscap</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Progress update</p>
-              <p class="vis-t">For your records</p>
-              <ul class="vis-checks">
-                <li class="done">Terms issued</li>
-                <li class="done">Credit approved</li>
-                <li class="now">Legal documentation</li>
-                <li>Completion</li>
-              </ul>
+              <p class="vis-k">Progress updates</p>
+              <div class="vis-msg"><b>R</b><span class="vis-lines"><i style="--w:92%"></i><i style="--w:64%"></i></span></div>
+              <div class="vis-msg"><b>R</b><span class="vis-lines"><i style="--w:80%"></i><i style="--w:48%"></i></span></div>
+              <div class="vis-track"><i class="done"></i><i class="done"></i><i class="now"></i><i></i></div>
             </div>
           </div>
         </li>
@@ -206,17 +187,14 @@
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">05</p>
-            <h3>On completion, your referral fee is paid</h3>
-            <!-- CONFIRM WITH CLEMENTE: fee basis and payment timing as set out in the partner agreement -->
-            <p>Once the transaction completes, the referral fee is calculated and paid on the terms set out in the partner agreement.</p>
+            <h3>Upon deal completion, receive your referral commissions</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Referral fee</p>
+              <p class="vis-k">Referral commissions</p>
               <ul class="vis-flow">
-                <li><b></b>Transaction completes</li>
-                <li><b></b>Fee calculated per the partner agreement</li>
-                <li class="gold"><b></b>Paid to your firm</li>
+                <li><b></b>Deal completion</li>
+                <li class="gold"><b></b>Referral commission</li>
               </ul>
             </div>
           </div>
@@ -226,18 +204,16 @@
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">06</p>
-            <h3>Further transactions, further fees</h3>
-            <!-- CONFIRM WITH CLEMENTE: live page says "commissions in perpetuity"; wording below avoids the absolute claim and defers to the agreement -->
-            <p>If Roscap goes on to complete subsequent transactions with the same client, you receive a referral fee on those as well, as set out in the partner agreement.</p>
+            <h3>As Roscap completes subsequent deals with the client, receive commissions in perpetuity</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Ongoing relationship</p>
-              <p class="vis-t">One client, several transactions</p>
+              <p class="vis-k">Subsequent deals</p>
               <ul class="vis-seq">
-                <li><span>Transaction 1</span><em>Fee</em></li>
-                <li><span>Transaction 2</span><em>Fee</em></li>
-                <li><span>Transaction 3</span><em>Fee</em></li>
+                <li><span>Deal 1</span><em>Commission</em></li>
+                <li><span>Deal 2</span><em>Commission</em></li>
+                <li><span>Deal 3</span><em>Commission</em></li>
+                <li class="more"><span>Deal 4</span><em>Commission</em></li>
               </ul>
             </div>
           </div>
@@ -247,7 +223,7 @@
     </div>
 
     <!-- Live closing line of the How it works band, verbatim. On live the Download button opens the existing brochure form (pop-up);
-         the prototype links straight to the live PDF. The sticky "Download our brochure" link above points here (#brochure). -->
+         the prototype links straight to the live PDF. -->
     <div class="how-more" id="brochure">
       <div class="white-divider horiz" aria-hidden="true"></div>
       <div class="partner-div botoom">
@@ -268,12 +244,12 @@
     </div>
   </section>
 
-  <!-- ============ OUR PARTNERS: live tiles. CHANGED vs live: slow CSS marquee with a pause button; the untouched live grid under reduced motion.
+  <!-- ============ OUR PARTNERS: live tiles. CHANGED vs live: slow CSS marquee that pauses on hover, keyboard focus or tap; the untouched live grid under reduced motion.
        Structure = live structure + combo classes: .assets-card-content-wrap.marquee > .container.marquee-viewport (.wf-container here)
        > .marquee-track (new) > .assets-card-grid.marquee-group (live grid) + a second aria-hidden copy of it ============ -->
   <section class="section pt-0">
     <div class="assets-card-content-wrap marquee" data-marquee>
-      <div class="wf-container marquee-viewport">
+      <div class="wf-container marquee-viewport" tabindex="0" role="region" aria-label="Partner logos">
         <div class="marquee-track">
           <div class="assets-card-grid marquee-group" role="list" aria-labelledby="partners-h">
             <div class="assets-card-new" role="listitem"><img class="asset-image" src="img/logo-revere.webp" alt="Revere" width="409" height="45" loading="lazy"></div>
@@ -299,10 +275,6 @@
         </div>
       </div>
       <div class="assets-mid-divider hide-mobile-landscape" aria-hidden="true"></div>
-      <button class="marquee-toggle" type="button" aria-pressed="false" aria-label="Pause partner logos">
-        <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 3h2.25v10H4.5zM9.25 3h2.25v10H9.25z"/></svg>
-        <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 2.75v10.5L13.25 8z"/></svg>
-      </button>
     </div>
   </section>
 

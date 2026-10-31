@@ -37,9 +37,8 @@ html.rc-dialog-open .proto-label{display:none}
 .demo ol li{color:var(--grey);overflow-wrap:anywhere}
 .demo ol li.is-update{color:var(--teal)}
 .demo-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-.demo-row .btn{min-height:44px;font-size:14px;border:1px solid var(--teal);cursor:pointer}
-.demo-row .btn.ghost{background:transparent;color:var(--teal)}
-.demo-row .btn.ghost:hover{background:rgba(4,52,53,.07)}
+.demo-row .btn{min-height:44px;font-size:14px;border:1px solid var(--gold);cursor:pointer}
+.demo-row .btn.gold:hover{background:#D3BD72;border-color:#D3BD72}
 .demo-note{margin-top:14px;font-size:13px;color:var(--grey)}
 @media (max-width:860px){.demo-grid{grid-template-columns:minmax(0,1fr)}}
 </style>
@@ -220,9 +219,9 @@ window.__rcLog = [];
         </div>
       </div>
       <div class="demo-row">
-        <button class="btn ghost" type="button" data-rc="open">Open preferences</button>
-        <button class="btn ghost" type="button" id="demo-reset">Reset choice</button>
-        <button class="btn ghost" type="button" id="demo-bump">Simulate policy update</button>
+        <button class="btn gold" type="button" data-rc="open">Open preferences</button>
+        <button class="btn gold" type="button" id="demo-reset">Reset choice</button>
+        <button class="btn gold" type="button" id="demo-bump">Simulate policy update</button>
       </div>
       <p class="demo-note" id="demo-note">Reset clears the cookie and the localStorage mirror and shows the banner again. Simulate policy update rewrites the stored choice with an older version number and reloads: the banner must ask again.</p>
     </div></div>

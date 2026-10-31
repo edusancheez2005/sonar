@@ -11,10 +11,10 @@ Folder: `prototypes/cookie-consent/` in this repository. Open `cookie-consent.bu
 | File | What it is | Where it goes |
 |---|---|---|
 | webflow/site-head.html | Consent Mode v2 default, a loader that fetches gtag.js only after a visitor allows analytics or marketing (basic consent mode), stored-choice replay, GA4 and Google Ads config (3,099 characters) | Site settings > Custom code > Head code, first script in the slot |
-| webflow/site-footer.html | Banner and dialog markup, inline CSS and JS (16,086 characters, limit 50,000) | Site settings > Custom code > Footer code |
+| webflow/site-footer.html | Banner and dialog markup, inline CSS and JS (16,277 characters, limit 50,000) | Site settings > Custom code > Footer code |
 | webflow/footer-link-note.md | The "Cookie preferences" footer link: element, class, attribute | Footer Symbol, Legal column |
 | webflow/cookie-policy-wording.md | Replacement Cookie Policy and Privacy Policy text with the cookie table | Rich text on /cookie-policy and /privacy-policy, after compliance review |
-| consent.css, consent.js | The unbundled source of the CSS and JS inside site-footer.html (5,260 + 6,799 bytes, 12,059 total) | Reference only; edit these and rebuild if anything changes |
+| consent.css, consent.js | The unbundled source of the CSS and JS inside site-footer.html (5,452 + 6,800 bytes, 12,252 total) | Reference only; edit these and rebuild if anything changes |
 | index.html | Demo page (homepage stand-in) with a prototype-only state panel | Not for Webflow |
 | cookie-consent.bundle.html | Single-file bundle of the demo for review in any browser | Not for Webflow |
 
@@ -94,16 +94,17 @@ Why basic rather than advanced: in advanced mode gtag.js loads for everyone and 
 To switch to advanced mode later (only if the budget grows past the modelling threshold and the reviewer agrees): call `w.rcTags({analytics: true, marketing: true})` unconditionally at the end of the head snippet instead of only for a stored choice; the consent default keeps cookies off until a grant.
 
 ## 8. Accessibility and quality results (prototype bundle, Playwright, Chromium)
-- 72 automated checks, 0 failed (includes basic-mode checks: no loader and no config before a choice or after Reject; analytics-only loads GA4 without Google Ads; Accept all configures Google Ads once) (Playwright run in the build environment).
+- 72 automated checks, 0 failed (includes basic-mode checks: no loader and no config before a choice or after Reject; analytics-only loads GA4 without Google Ads; Accept all configures Google Ads once) (results: `audit/qa/cookie-consent-verify.json`).
 - axe-core 4.10: 0 violations of any impact at 1440x900 and 390x844, banner state and dialog state.
 - 0 console errors; 0 third-party requests from the banner, dialog or demo page.
 - Tab order: skip link, then banner. Dialog: focus moves to the dialog, Tab and Shift+Tab are trapped, Escape closes without saving and restores focus, the rest of the page is inert while the dialog is open.
 - Banner does not take focus on load; position fixed, so no layout shift; one 450 ms rise only when the visitor allows motion; no transition under prefers-reduced-motion.
-- Contrast: teal #043435 text and buttons on cream #FFFCF5 (about 12:1), white on teal (about 12:1), grey #4F5B5B body text on cream (about 7:1). Gold is not used on cream. Switch "off" state is an outlined teal track so the control itself meets 3:1.
+- Look (31 October, owner feedback): the buttons are the site's gold buttons, #E1C979 with dark #12161D text (about 10:1), a shade darker on hover (#D3BD72) and nothing else changes on hover. Accept all and Reject non-essential are identical in the banner. In the dialog, Save choices is gold, and Accept all and Reject non-essential are both outlined in teal and take a faint gold tint on hover. A switch that is on shows a gold track with the teal knob on the right.
+- Contrast: teal #043435 text on cream #FFFCF5 (about 12:1), dark text on gold (about 10:1), grey #4F5B5B body text on cream (about 7:1). Gold is never used for text on cream (1.6:1). The switch keeps its 2px teal outline in both states, so the control itself meets 3:1.
 - Tap targets: all banner and dialog controls at least 44 px tall (buttons 46 px, switches 60 x 44 px, close 44 x 44 px).
 - No horizontal overflow at 390 px; dialog fits a 390 x 844 screen without inner scrolling.
 - Cookie behaviour (over http://localhost because file:// cannot set cookies): nothing stored before a choice; after Accept the cookie holds `{"version":1,"analytics":true,"marketing":true,"timestamp":"..."}`, Path=/, SameSite=Lax, about 180 days, with a matching localStorage mirror; Reject stores both false; reset removes it; a stale version re-asks; _ga and _gcl_au are removed on reject. Secure is added when the page is served over https (production and staging both are).
-- Size: consent.css 5,260 bytes + consent.js 6,799 bytes = 12,059 bytes (11.8 KiB) unminified; head snippet 3,099 characters; demo bundle 253,171 bytes (fonts and images included).
+- Size: consent.css 5,452 bytes + consent.js 6,800 bytes = 12,252 bytes (12.0 KiB) unminified; head snippet 3,099 characters; demo bundle 253,388 bytes (fonts and images included).
 
 ## 9. Assumptions (log)
 1. The GA4 ID is added through the Head code slot today, not through Integrations. Step 0 covers both cases; the Integrations caveat is the reason the snippet cannot simply be appended.

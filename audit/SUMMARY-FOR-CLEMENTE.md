@@ -1,37 +1,36 @@
-# Roscap website review: the one-page summary
+# Message for Clemente
 
-Date: 31 October 2026. Prepared by Edu with Claude. Nothing on the live site has been changed. Everything below is either a finding with evidence or a prototype you can open in a browser.
+Hi Clemente,
 
-## The short version
+I've gone through the whole website and this is what I found.
 
-The site looks and feels right. The design is calm, consistent and premium, and nothing on it claims that Roscap is FCA authorised. The problems are underneath: the pages are far heavier than they need to be, a handful of things are broken for visitors, the legal pages describe a cookie banner that does not exist, and a few numbers and phrases need your sign-off. All of it is fixable in Webflow without touching the design.
+**1. The Partner Program form does not send from a computer.**
+On a desktop or laptop, pressing Submit on the Partner Program page does nothing, because the button depends on a script that page never loads. On phones it works. So anyone filling it in on a computer cannot send it, and we would never know they tried. The form at the bottom of the blog posts has the same problem. It is a small fix for Shikhar, and the new Partner Program design already has it working.
 
-## Five things to fix first
+**2. Euribor on the homepage needs a licence.**
+The homepage shows the 3-month Euribor rate next to the Bank of England and Fed rates. The organisation that publishes Euribor (EMMI) says that showing it on a commercial website needs a paid licence; the free version is for non-commercial use only. The risk is low: if they ever noticed, the most likely outcome is a request to take a licence or take it down. Three options:
+- take the licence (about 1,000 euros a year per website at the last price we could find);
+- swap it for the European Central Bank's deposit rate, which is free to show and an official rate like the other two;
+- remove it.
 
-1. The Partner Program form cannot be sent on a desktop or tablet. The visible Submit button depends on a script that page never loads. The same pattern is on every blog post. Fix: show the real button. Ten minutes of work, and the Partner Program prototype already shows it working.
-2. There is no cookie banner, but Google Analytics starts measuring the moment anyone arrives, and the Cookie Policy says consent is collected "via our cookie banner". This is the item with legal exposure under UK rules and it also blocks the Google Ads restart. Fix: the in-house banner you approved in September, plus matching wording in the Cookie and Privacy policies. The banner is now built (see below).
-3. The homepage downloads two videos, 8 MB in total, on every phone, and until the video appears the headline is white on cream and invisible. Fix: one compressed video with a still image behind it, no autoplay on phones. The Track Record page has the same problem with a 6.5 MB map and 22 oversized photos.
-4. On the contact page the phone number is hidden by a styling class, the "Subject" box is typed as a telephone field (phones show a number keypad), and no field has a label. Google Ads will land on this page. Fix: three small changes; the Speak to Us prototype shows the result.
-5. On the About Us page, opening a team member's profile with the keyboard traps the visitor; Escape does nothing and there is no labelled close button. Fix: standard dialog behaviour.
+The swap is the easiest.
 
-## Decisions only you can make
+**3. The Manchester deal is described two different ways.**
+On the Track Record page it is a £2.7m commercial mortgage (65% LTV, 6.90%). The case study in Insights describes a £2.665m bridging loan in Burnage, Manchester, with Recognise Bank at 65% LTV. It looks like the same deal, so one of the two needs correcting. Which is right?
 
-- Partner Program claims: "Join hundreds of current partners" (8 logos are shown), "commissions in perpetuity" and "recurring revenue stream with minimal work". Keep, reword or remove. The Partner Program prototype keeps today's wording until you decide. The brochure also quotes "Interest Rate: Starting from 4% p.a." and "Loan-to-Value up to 90%", which belong in a partner agreement rather than marketing.
-- Contact page promises: "bridging loans in as little as 5 to 10 working days" and "6 to 8 weeks" for development finance. Keep only if you are happy to be held to them.
-- Euribor on the homepage: the organisation that publishes Euribor says showing it on a commercial website needs a licence. Options: take the licence (about 1,000 euros a year at the last published price), swap that card for the ECB rate, or link out.
-- Wording that reads like a lender or investor rather than an intermediary: "private investment firm", "co-investing", "our portfolio", "projects funded", "we fund", "underwrite", "apply for finance through Roscap". None says FCA authorised, but a regulatory adviser should look at the cluster.
-- Two small facts: Mowgli is "Head of Southern Europe" in one place and "Head of Western Europe" in another; the Manchester case study (£2.665m bridging loan) does not match the Manchester card on the Track Record page (£2.7m commercial mortgage).
+**4. The site needs a cookie banner.**
+Google Analytics starts tracking every visitor as soon as they arrive, without asking, and the Cookie Policy already says we collect consent "via our cookie banner", which does not exist yet. This is the one item with legal exposure under UK rules, and Google Ads should not restart until it is fixed. The banner is designed and ready: visitors get "Accept all" and "Reject non-essential" side by side, in the site's gold, and nothing goes to Google until they say yes. The updated Cookie and Privacy Policy wording is ready too; whoever handles compliance should read it before it goes live.
 
-## What you approved, and where it stands
+**5. The phone number is hidden on the contact page.**
+The Speak to Us page already has the phone number, but a style setting hides it, so visitors only see the email and Instagram. The new design shows email, phone, WhatsApp and Instagram under the heading. One question: is +44 7850 522789 on WhatsApp? If not, we leave WhatsApp out. While we are there, the Subject box brings up a number keypad on phones; that gets fixed too.
 
-- Market rates panel (odometer) and the Track Record "deal list": both are good. The build-ready version fixes the things that would have gone wrong in production: the "Held" labels and dates that the live data cannot actually supply, a phone-layout accessibility error, a wave animation that was burning a third of a processor core, and a missing "data unavailable" state. One incident is worth knowing about: on 21 October the live rates widget showed "400.00%" for several hours after a data outage. The new version checks every number before showing it.
-- Our Services capital stack: now builds layer by layer as you scroll, in the same order as today's graphic, with no libraries and a plain static version for anyone who prefers reduced motion. Open `prototypes/our-services-capital-stack/our-services-capital-stack.bundle.html`.
-- Partner Program: the page stays as it is today, with three improvements: the four "Why partner" cards lose their empty space, the six steps of "How it works" become a clear vertical timeline instead of a carousel, and the partner logos move slowly side to side. The contact form's Submit button, which does not work on computers today, is fixed.
-- Speak to Us: the page stays as it is today, with email, phone, WhatsApp and Instagram listed under the heading and a shorter FAQ.
-- Cookie banner: built and ready for Shikhar. Visitors choose Accept or Reject with equal weight, and nothing is sent to Google until they say yes. The new Cookie and Privacy Policy wording should be read by whoever handles compliance before it goes live.
+**6. The new designs, in short.**
+- Homepage: the same panther video, but much lighter to load and sharper, with a small pause button. The market rates panel with rolling numbers, and the list of selected transactions, with a new "All transactions" row that opens a picture grid of all 22 deals.
+- Our Services: the page stays as it is; the capital stack graphic now builds up layer by layer as you scroll.
+- Partner Program: the same page and the same wording. The "Why partner" cards lose their empty space, the six steps become a clear timeline instead of a slider, the partner logos glide slowly across, and the form works on computers.
+- Speak to Us: the same page, with the four ways to contact us under the heading and a shorter FAQ.
+- Cookie banner: as in point 4.
 
-## What happens next
+Nothing on the live site has been changed. Each design comes with step-by-step notes for Shikhar, and everything goes to the staging site first for us to check before it is published.
 
-Shikhar receives a handoff note for each prototype (Webflow structure, code to paste, a test checklist). Everything goes to the staging site first. Google Ads should not restart until the cookie banner and the contact-page fixes are live.
-
-The full report with evidence for every finding is `audit/REPORT.md`.
+Edu

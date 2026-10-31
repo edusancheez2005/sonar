@@ -1,0 +1,374 @@
+{
+  "errors": [],
+  "checks": {
+    "1440 heading is live": {
+      "pass": true,
+      "detail": "How Our Partner Program Works"
+    },
+    "1440 step titles verbatim": {
+      "pass": true,
+      "detail": [
+        "Join the Program",
+        "Exclusively refer clients to Roscap",
+        "We work with clients to provide capital solutions",
+        "Receive regular progress updates from Roscap",
+        "Upon deal completion, receive your referral commissions",
+        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+      ]
+    },
+    "1440 step nav verbatim": {
+      "pass": true,
+      "detail": [
+        "Join the Program",
+        "Exclusively refer clients to Roscap",
+        "We work with clients to provide capital solutions",
+        "Receive regular progress updates from Roscap",
+        "Upon deal completion, receive your referral commissions",
+        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+      ]
+    },
+    "1440 removed elements absent": {
+      "pass": true,
+      "detail": []
+    },
+    "1440 card words only from live": {
+      "pass": true,
+      "detail": [
+        "Partner Program",
+        "Partner",
+        "Roscap",
+        "Referral",
+        "Client",
+        "Roscap",
+        "Exclusive",
+        "Capital solutions",
+        "Senior debt",
+        "Mezzanine",
+        "Equity",
+        "Progress updates",
+        "R",
+        "R",
+        "Referral commissions",
+        "Deal completion",
+        "Referral commission",
+        "Subsequent deals",
+        "Deal 1",
+        "Commission",
+        "Deal 2",
+        "Commission",
+        "Deal 3",
+        "Commission",
+        "Deal 4",
+        "Commission"
+      ]
+    },
+    "1440 cards aria-hidden": {
+      "pass": true
+    },
+    "1440 section text all live": {
+      "pass": true,
+      "detail": []
+    },
+    "1440 no horizontal scroll": {
+      "pass": true,
+      "detail": 1440
+    },
+    "1440 sticky aside fits 720": {
+      "pass": true,
+      "detail": {
+        "pos": "sticky",
+        "h": 462
+      }
+    },
+    "1440 marquee moves, pauses on hover and focus": {
+      "pass": true,
+      "detail": {
+        "idleMoving": true,
+        "hoverMoving": false,
+        "afterHoverMoving": true,
+        "tabHops": 1,
+        "focusReached": true,
+        "focusMoving": false,
+        "ring": "solid 2px rgb(4, 52, 53)",
+        "afterBlurMoving": true
+      }
+    },
+    "1440 axe 0 violations": {
+      "pass": true,
+      "detail": []
+    },
+    "390 heading is live": {
+      "pass": true,
+      "detail": "How Our Partner Program Works"
+    },
+    "390 step titles verbatim": {
+      "pass": true,
+      "detail": [
+        "Join the Program",
+        "Exclusively refer clients to Roscap",
+        "We work with clients to provide capital solutions",
+        "Receive regular progress updates from Roscap",
+        "Upon deal completion, receive your referral commissions",
+        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+      ]
+    },
+    "390 step nav verbatim": {
+      "pass": true,
+      "detail": [
+        "Join the Program",
+        "Exclusively refer clients to Roscap",
+        "We work with clients to provide capital solutions",
+        "Receive regular progress updates from Roscap",
+        "Upon deal completion, receive your referral commissions",
+        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+      ]
+    },
+    "390 removed elements absent": {
+      "pass": true,
+      "detail": []
+    },
+    "390 card words only from live": {
+      "pass": true,
+      "detail": [
+        "Partner Program",
+        "Partner",
+        "Roscap",
+        "Referral",
+        "Client",
+        "Roscap",
+        "Exclusive",
+        "Capital solutions",
+        "Senior debt",
+        "Mezzanine",
+        "Equity",
+        "Progress updates",
+        "R",
+        "R",
+        "Referral commissions",
+        "Deal completion",
+        "Referral commission",
+        "Subsequent deals",
+        "Deal 1",
+        "Commission",
+        "Deal 2",
+        "Commission",
+        "Deal 3",
+        "Commission",
+        "Deal 4",
+        "Commission"
+      ]
+    },
+    "390 cards aria-hidden": {
+      "pass": true
+    },
+    "390 section text all live": {
+      "pass": true,
+      "detail": []
+    },
+    "390 no horizontal scroll": {
+      "pass": true,
+      "detail": 390
+    },
+    "390 marquee moves, tap pauses": {
+      "pass": true,
+      "detail": {
+        "idleMoving": true,
+        "tapMoving": false,
+        "afterBlurMoving": true
+      }
+    },
+    "390 axe 0 violations": {
+      "pass": true,
+      "detail": []
+    },
+    "1440-reduce heading is live": {
+      "pass": true,
+      "detail": "How Our Partner Program Works"
+    },
+    "1440-reduce step titles verbatim": {
+      "pass": true,
+      "detail": [
+        "Join the Program",
+        "Exclusively refer clients to Roscap",
+        "We work with clients to provide capital solutions",
+        "Receive regular progress updates from Roscap",
+        "Upon deal completion, receive your referral commissions",
+        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+      ]
+    },
+    "1440-reduce step nav verbatim": {
+      "pass": true,
+      "detail": [
+        "Join the Program",
+        "Exclusively refer clients to Roscap",
+        "We work with clients to provide capital solutions",
+        "Receive regular progress updates from Roscap",
+        "Upon deal completion, receive your referral commissions",
+        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+      ]
+    },
+    "1440-reduce removed elements absent": {
+      "pass": true,
+      "detail": []
+    },
+    "1440-reduce card words only from live": {
+      "pass": true,
+      "detail": [
+        "Partner Program",
+        "Partner",
+        "Roscap",
+        "Referral",
+        "Client",
+        "Roscap",
+        "Exclusive",
+        "Capital solutions",
+        "Senior debt",
+        "Mezzanine",
+        "Equity",
+        "Progress updates",
+        "R",
+        "R",
+        "Referral commissions",
+        "Deal completion",
+        "Referral commission",
+        "Subsequent deals",
+        "Deal 1",
+        "Commission",
+        "Deal 2",
+        "Commission",
+        "Deal 3",
+        "Commission",
+        "Deal 4",
+        "Commission"
+      ]
+    },
+    "1440-reduce cards aria-hidden": {
+      "pass": true
+    },
+    "1440-reduce section text all live": {
+      "pass": true,
+      "detail": []
+    },
+    "1440-reduce no horizontal scroll": {
+      "pass": true,
+      "detail": 1440
+    },
+    "1440-reduce sticky aside fits 720": {
+      "pass": true,
+      "detail": {
+        "pos": "sticky",
+        "h": 462
+      }
+    },
+    "1440-reduce logos static grid": {
+      "pass": true,
+      "detail": {
+        "idleMoving": false,
+        "grid": [
+          "grid",
+          "none"
+        ]
+      }
+    },
+    "1440-reduce axe 0 violations": {
+      "pass": true,
+      "detail": []
+    },
+    "390-reduce heading is live": {
+      "pass": true,
+      "detail": "How Our Partner Program Works"
+    },
+    "390-reduce step titles verbatim": {
+      "pass": true,
+      "detail": [
+        "Join the Program",
+        "Exclusively refer clients to Roscap",
+        "We work with clients to provide capital solutions",
+        "Receive regular progress updates from Roscap",
+        "Upon deal completion, receive your referral commissions",
+        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+      ]
+    },
+    "390-reduce step nav verbatim": {
+      "pass": true,
+      "detail": [
+        "Join the Program",
+        "Exclusively refer clients to Roscap",
+        "We work with clients to provide capital solutions",
+        "Receive regular progress updates from Roscap",
+        "Upon deal completion, receive your referral commissions",
+        "As Roscap completes subsequent deals with the client, receive commissions in perpetuity"
+      ]
+    },
+    "390-reduce removed elements absent": {
+      "pass": true,
+      "detail": []
+    },
+    "390-reduce card words only from live": {
+      "pass": true,
+      "detail": [
+        "Partner Program",
+        "Partner",
+        "Roscap",
+        "Referral",
+        "Client",
+        "Roscap",
+        "Exclusive",
+        "Capital solutions",
+        "Senior debt",
+        "Mezzanine",
+        "Equity",
+        "Progress updates",
+        "R",
+        "R",
+        "Referral commissions",
+        "Deal completion",
+        "Referral commission",
+        "Subsequent deals",
+        "Deal 1",
+        "Commission",
+        "Deal 2",
+        "Commission",
+        "Deal 3",
+        "Commission",
+        "Deal 4",
+        "Commission"
+      ]
+    },
+    "390-reduce cards aria-hidden": {
+      "pass": true
+    },
+    "390-reduce section text all live": {
+      "pass": true,
+      "detail": []
+    },
+    "390-reduce no horizontal scroll": {
+      "pass": true,
+      "detail": 390
+    },
+    "390-reduce logos static grid": {
+      "pass": true,
+      "detail": {
+        "idleMoving": false,
+        "grid": [
+          "grid",
+          "none"
+        ]
+      }
+    },
+    "390-reduce axe 0 violations": {
+      "pass": true,
+      "detail": []
+    },
+    "1280x720 aside fully visible, indicator follows": {
+      "pass": true,
+      "detail": {
+        "top": 84,
+        "bottom": 547,
+        "vh": 720,
+        "active": "04Receive regular progress updates from Roscap"
+      }
+    }
+  },
+  "allPass": true
+}

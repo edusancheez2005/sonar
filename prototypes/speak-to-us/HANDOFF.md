@@ -1,7 +1,7 @@
 # Speak to us v2 (/contact-us): handoff for Shikhar
 
-Prototype, one file you can open in a browser: `proto/dist/speak-to-us-v2.html`.
-Source: `proto/speak-to-us-v2/` (`index.html`, `speak.css`, `speak.js`, `img/`).
+Prototype, one file you can open in a browser: `speak-to-us.bundle.html`.
+Source: `prototypes/speak-to-us/` (`index.html`, `speak.css`, `speak.js`, `img/`).
 Build on staging (roscap-site.webflow.io) first, check it with the list in section 7, then publish to www.roscap.co.uk.
 
 The owner prefers the current page to the earlier redesign, so this version keeps the live page exactly as it is and makes three changes only. Nothing else on the page moves.
@@ -10,7 +10,7 @@ The owner prefers the current page to the earlier redesign, so this version keep
 
 | Area | Live today | Change |
 | --- | --- | --- |
-| Contact line under the heading | `div.c-social-wrap`: email and Instagram links on one line. A phone link is on the page but hidden (combo class `hide`). | A vertical list of 4 rows in this order: Email, Call, WhatsApp, Instagram. The phone number becomes visible. WhatsApp is new. |
+| Contact line under the heading | `div.c-social-wrap`: email and Instagram links on one line. A phone link is on the page but hidden (combo class `hide`). | The same line in the same live style (gold line icon, white Switzer 500), now with all four contacts two by two: email, phone, WhatsApp, Instagram; text 16 px instead of 14 px. The phone number becomes visible. WhatsApp is new. |
 | FAQs | Heading "FAQs" plus 5 large Webflow Dropdowns (`.faqs-acc`, white cards, 22px questions) | Same heading, untouched. The 5 Dropdowns become one compact accordion (native `details` and `summary`, one answer open at a time). Copy unchanged. FAQPage JSON-LD added to the page head. |
 | Contact form | Placeholder-only fields, no labels, Subject set to the Phone text type (`type="tel"`), no autocomplete | Invisible fixes only: visually hidden labels, Subject as plain text, autocomplete on Name, Email and Phone, an off-screen honeypot. |
 
@@ -18,76 +18,36 @@ Unchanged: the section and its wave background, the heading text and style, the 
 
 Live values measured with Playwright at 1440px and 390px wide on 31 Oct 2026 and matched in the prototype: heading Boska 500 at 40px/52px (24px/31.2px under 768px), left column 524px wide, 51px padding and 51px margin around the divider line (32px under 480px), inputs 72px tall with 24px padding and Switzer Light 18px (50px tall, 10px left padding and 16px under 480px), Message 136px tall, Submit 84 by 41px with a 28px top margin.
 
-## 2. Change 1: contact rows
+## 2. Change 1: the four contacts, in the live style
 
-Where: inside `.contact-hero-left`, directly below `.contact-heading-wrap` (heading and divider stay as they are), in the place of `div.c-social-wrap`. On tablet and phone the rows sit under the heading and above the form, as the email line does today (the form block already has `order: 9999` under 992px).
+Where: inside `.contact-hero-left`, below the heading and divider, exactly where `div.c-social-wrap` sits today. The look stays the live one (gold line icon, white Switzer 500 text); the changes are that it now holds all four contacts, slightly larger (16 px text and 24 px icons instead of 14 px and 22 to 24 px), arranged two by two because four items do not fit on one line in that column.
 
-Structure and classes:
-
-```
-ul.rail                      list without bullets, aria-label "Direct contact"
-  li                         one per row; 1px rgba(255,252,245,.09) line between rows
-    a.rail-a                 the whole row is the link; min-height 52px; grid 40px / 1fr / 18px, gap 14px,
-                             padding 6px 12px with margin 0 -12px so the icons line up with the heading
-      span.rail-i            40px circle, 1px border rgba(225,201,121,.45), gold line icon (inline SVG, 18px)
-      span.rail-t
-        span.rail-k          label: Switzer 500, 11px, uppercase, letter-spacing .1em, gold #E1C979
-        span.rail-v          value: Switzer 400, 16px, white
-      span.rail-go           arrow, rgba(255,252,245,.55)
-```
-
-| Label | Value shown | Link |
-| --- | --- | --- |
-| Email | info@roscap.co.uk | `mailto:info@roscap.co.uk` |
-| Call | +44 7850 522789 | `tel:+447850522789` |
-| WhatsApp | Message the team | `https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement.` (new tab) |
+| Item | Text shown | Link |
+|---|---|---|
+| Email | info@roscap.co.uk | `mailto:info@roscap.co.uk` (as live) |
+| Phone | +44 7850 522789 | `tel:+447850522789`. This link already exists on live (`a.c-social-card.hide`) and is hidden by the `hide` combo class: remove `hide` and space the number |
+| WhatsApp | WhatsApp | `https://wa.me/447850522789?text=...` (new tab). Confirm with Clemente that the number is on WhatsApp |
 | Instagram | @roscap.uk | `https://www.instagram.com/roscap.uk/` (new tab, as live) |
 
 Steps in Webflow (on /contact-us only):
 
-1. Select `div.c-social-wrap` inside `.contact-hero-left` and delete it from this page. It holds the email link, the hidden phone link and the Instagram link; all three come back in the new list. Do not edit the `.c-social-wrap` or `.c-social-card` classes themselves, in case another page (for example /contact-us-success) uses them.
-2. Unhide the phone link. On live it is `a.c-social-card.hide` (href `tel:+447850522789`, text "+447850522789"), hidden by the `hide` combo class (`display: none`). In the new list it is the Call row: same href, visible, with the number spaced as "+44 7850 522789" so it is easier to read. If you rebuild the rows natively, reuse that link block: remove the `hide` combo class, give it the class `rail-a` and change the text.
-3. Drop a Code Embed where `.c-social-wrap` was and paste the markup below (the exact prototype markup, 2,668 characters).
-4. Paste the CSS block from section 5 into the page head code.
+1. In `div.c-social-wrap`, remove the `hide` class from the phone card and change its text to "+44 7850 522789".
+2. Duplicate the phone card for WhatsApp: href `https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement.`, open in new tab, WhatsApp icon (the SVG below), text "WhatsApp". Order: email, phone, WhatsApp, Instagram.
+3. Add the combo class `is-four` to `c-social-wrap` and paste the CSS from section 5 (it sets the two-by-two grid, 16 px text, 24 px icons, gold icon colour and a quiet gold underline on hover). Native Designer settings are equally fine: Grid 2 columns (auto width), gaps 12 px by 40 px (8 px by 28 px on mobile), text 16 px / 24 px weight 500.
 
-Native alternative: the same structure maps to List (Unstyled) > List Item > Link Block, with Div or Text blocks for `rail-i`, `rail-t`, `rail-k`, `rail-v` and `rail-go`. The icons use `currentColor` so the hover colour change works, which means each SVG needs its own small Code Embed rather than an Image element. Keep the class names and the CSS block applies unchanged.
+Markup as in the prototype (for reference or for an Embed):
 
 ```html
-<ul class="rail" aria-label="Direct contact">
-  <li>
-    <a class="rail-a" href="mailto:info@roscap.co.uk">
-      <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
-      <span class="rail-t"><span class="rail-k">Email</span> <span class="rail-v">info@roscap.co.uk</span></span>
-      <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-    </a>
-  </li>
-  <li>
-    <!-- The live page already has this link (a.c-social-card.hide, tel:+447850522789). Unhide it and show the number spaced. -->
-    <a class="rail-a" href="tel:+447850522789">
-      <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
-      <span class="rail-t"><span class="rail-k">Call</span> <span class="rail-v">+44 7850 522789</span></span>
-      <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-    </a>
-  </li>
-  <li>
-    <!-- CONFIRM WITH CLEMENTE: +44 7850 522789 is on WhatsApp. If it is not, delete this row. -->
-    <a class="rail-a" href="https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement." target="_blank" rel="noopener">
-      <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z"/><path d="M9.2 8.4c.2-.4.5-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2 0 .4-.1.6l-.5.6c-.1.2-.2.3 0 .5a7 7 0 0 0 3.1 2.8c.2.1.4.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.2.4.4a2.6 2.6 0 0 1-1.7 2.1c-.6.2-1.3.2-2.9-.5a9.7 9.7 0 0 1-4.3-3.9c-.9-1.4-1-2.5-.7-3.3.2-.4.4-.8.5-1.1z"/></svg></span>
-      <span class="rail-t"><span class="rail-k">WhatsApp</span> <span class="rail-v">Message the team</span></span>
-      <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-    </a>
-  </li>
-  <li>
-    <a class="rail-a" href="https://www.instagram.com/roscap.uk/" target="_blank" rel="noopener">
-      <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="3.9"/><circle class="dot" cx="17.1" cy="6.9" r=".6"/></svg></span>
-      <span class="rail-t"><span class="rail-k">Instagram</span> <span class="rail-v">@roscap.uk</span></span>
-      <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-    </a>
-  </li>
-</ul>
+<!-- CHANGED: the live .c-social-wrap (email and Instagram on one line; the phone link exists but is hidden by class "hide")
+               now carries all four contacts in the same style: gold line icon, white Switzer 500, a little larger, two by two. -->
+          <ul class="c-social-wrap is-four" aria-label="Direct contact">
+            <li><a class="c-social-card" href="mailto:info@roscap.co.uk"><svg class="c-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/></svg><span>info@roscap.co.uk</span></a></li>
+            <li><a class="c-social-card" href="tel:+447850522789"><svg class="c-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span>+44 7850 522789</span></a></li>
+            <!-- CONFIRM WITH CLEMENTE: +44 7850 522789 is on WhatsApp. If it is not, delete this item. -->
+            <li><a class="c-social-card" href="https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement." target="_blank" rel="noopener"><svg class="c-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z"/><path d="M9 8.6c.3-.5.6-.5.9-.5h.4c.2 0 .4.1.5.4l.7 1.7c.1.2 0 .4-.1.6l-.5.6c-.1.2-.1.3 0 .5.6 1 1.4 1.8 2.4 2.4.2.1.4.1.5 0l.6-.6c.2-.2.4-.2.6-.1l1.7.8c.3.1.4.3.4.5v.4c0 .3-.1.6-.5.9-.5.4-1.2.6-1.9.5-1.6-.3-3-1.2-4.2-2.4S8.6 11.5 8.3 9.9c-.1-.5.1-1 .7-1.3z"/></svg><span>WhatsApp</span></a></li>
+            <li><a class="c-social-card" href="https://www.instagram.com/roscap.uk/" target="_blank" rel="noopener"><svg class="c-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="3.9"/><circle class="dot" cx="17.1" cy="6.9" r=".7"/></svg><span>@roscap.uk</span></a></li>
+          </ul>
 ```
-
-Behaviour: on hover the row gets a faint tint, the icon circle fills gold and the arrow brightens and moves 3px; keyboard focus draws a 2px gold ring around the row; with reduced motion all transitions are off.
 
 ## 3. Change 2: FAQ accordion
 
@@ -151,29 +111,25 @@ Webflow allows up to 50,000 characters in each custom code slot: site head, site
 | --- | --- | --- |
 | Page settings > Custom code > Head code | CSS block in `<style>` plus the FAQPage JSON-LD | 6,129 |
 | Page settings > Custom code > Footer code | FAQ fallback and honeypot guard in `<script>` | 745 |
-| Code Embed in `.contact-hero-left` | rows markup (section 2) | 2,668 |
+| Code Embed in `.contact-hero-left` (only if not built natively) | contact markup (section 2) | 1,681 |
 | Code Embed in `.faqs-wrap` | accordion markup (section 3) | 2,693 |
 
-Head code, part 1: CSS (identical to part C of `proto/speak-to-us-v2/speak.css`; plain values, no prototype variables).
+Head code, part 1: CSS (identical to part C of `speak.css`; plain values, no prototype variables).
 
 ```html
 <style>
-/* Contact rows: ul.rail replaces div.c-social-wrap inside .contact-hero-left */
-.rail{display:grid;margin:0;padding:0;list-style:none}
-.rail li{margin:0;padding:0}
-.rail li+li{border-top:1px solid rgba(255,252,245,.09)}
-.rail-a{display:grid;grid-template-columns:40px minmax(0,1fr) 18px;align-items:center;gap:14px;min-height:52px;padding:6px 12px;margin:0 -12px;border-radius:8px;color:#fff;text-decoration:none;transition:background-color .25s}
-.rail-a:hover{background-color:rgba(255,252,245,.06)}
-.rail-a:focus-visible{outline:2px solid #E1C979;outline-offset:0}
-.rail-i{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid rgba(225,201,121,.45);color:#E1C979;transition:background-color .25s,color .25s}
-.rail-a:hover .rail-i{background-color:#E1C979;color:#043435}
-.rail-i svg,.rail-go svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.rail-i .dot{fill:currentColor;stroke:none}
-.rail-t{display:grid;gap:1px;min-width:0}
-.rail-k{font-size:11px;font-weight:500;line-height:1.3;letter-spacing:.1em;text-transform:uppercase;color:#E1C979}
-.rail-v{font-size:16px;line-height:1.35;color:#fff;overflow-wrap:anywhere}
-.rail-go{color:rgba(255,252,245,.55);transition:color .25s,transform .25s cubic-bezier(.22,.61,.36,1)}
-.rail-a:hover .rail-go{color:#fff;transform:translateX(3px)}
+/* Contact details: the live .c-social-wrap look (gold line icons, white Switzer 500) with all four contacts,
+   a little larger than live (16 px text, 24 px icons), two by two. Replaces the one-line email and Instagram row. */
+.c-social-wrap.is-four{display:grid;grid-template-columns:repeat(2,max-content);gap:12px 40px;margin:0;padding:0;list-style:none}
+.c-social-wrap.is-four li{margin:0;padding:0}
+.c-social-card{display:inline-flex;align-items:center;gap:10px;min-height:32px;color:#fff;text-decoration:none;font:500 16px/24px Switzer,Arial,sans-serif}
+.c-social-card .c-ico{display:block;flex:none;width:24px;height:24px;fill:none;stroke:#E1C979;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.c-social-card .c-ico .dot{fill:#E1C979;stroke:none}
+.c-social-card span{text-decoration:underline;text-decoration-color:transparent;text-underline-offset:5px;transition:text-decoration-color .2s}
+.c-social-card:hover span{text-decoration-color:rgba(225,201,121,.8)}
+.c-social-card:focus-visible{outline:2px solid #E1C979;outline-offset:4px;border-radius:2px}
+@media (max-width:767px){.c-social-wrap.is-four{gap:8px 28px}}
+@media (max-width:379px){.c-social-wrap.is-four{grid-template-columns:max-content}}
 /* FAQ accordion: div.acc replaces div.faqs-content-wrap (the 5 dropdowns) under the "FAQs" heading */
 .acc{max-width:56rem;margin:55px auto 0;border-bottom:1px solid rgba(4,52,53,.14);text-align:left}
 .acc details{border-top:1px solid rgba(4,52,53,.14)}
@@ -195,8 +151,7 @@ Head code, part 1: CSS (identical to part C of `proto/speak-to-us-v2/speak.css`;
 .input-field.height-135{resize:vertical}
 .button.golden.contact:hover{border:0;box-shadow:inset 0 0 0 1px #E1C979}
 @media (prefers-reduced-motion:reduce){
-  .rail-a,.rail-i,.rail-go,.acc summary,.acc summary svg{transition:none}
-  .rail-a:hover .rail-go{transform:none}
+  .c-social-card span,.acc summary,.acc summary svg{transition:none}
 }
 @media (max-width:767px){
   .acc summary{font-size:17px;min-height:60px;padding:18px 2px}
@@ -292,12 +247,12 @@ document.addEventListener('submit', function (e) {
 
 ## 7. QA checklist (staging first, then live)
 
-- [ ] 1440px: heading, divider and form exactly where they were; the 4 rows under the divider; the hero is still one screen tall (the last row ends at about the height of the Submit button).
-- [ ] 390px phone: order is heading, divider, 4 rows, form; no sideways scrolling; every row at least 44px tall (they are 52px).
+- [ ] 1440px: heading, divider and form exactly where they were; the four contacts under the divider, two by two, starting where the live email line starts; the hero is still one screen tall.
+- [ ] 390px phone: order is heading, divider, the four contacts (two by two; one column under 380 px), form; no sideways scrolling.
 - [ ] Each row opens the right thing: mail app; phone dialler; WhatsApp with the prefilled text (test on iOS and Android, and on desktop); Instagram in a new tab.
 - [ ] The old one-line email and Instagram links are gone from /contact-us only; other pages unchanged.
-- [ ] Keyboard: Tab reaches the 4 rows (gold ring), the 5 fields, Submit, then the 5 FAQ questions; the honeypot is skipped; Enter and Space open and close a question; opening one closes the one that was open.
-- [ ] Screen reader: each field announces its label (Name, Email, Phone, Subject, Message); rows read as "Email info@roscap.co.uk", "Call +44 7850 522789" and so on.
+- [ ] Keyboard: Tab reaches the four contacts (gold ring), the 5 fields, Submit, then the 5 FAQ questions; the honeypot is skipped; Enter and Space open and close a question; opening one closes the one that was open.
+- [ ] Screen reader: each field announces its label (Name, Email, Phone, Subject, Message); contacts read as "info@roscap.co.uk", "+44 7850 522789", "WhatsApp" and "@roscap.uk" inside the "Direct contact" list.
 - [ ] On a phone, Subject opens the normal keyboard, not the number pad; Name, Email and Phone offer autofill.
 - [ ] Empty submit is still blocked by the browser on Name, Email, Phone and Subject, as before.
 - [ ] A real test submission on staging lands on /contact-us-success, appears in Webflow Forms (with an empty `website` field), sends the notification email to info@roscap.co.uk, and the GA4 key event `generate_lead` still fires.
@@ -312,11 +267,11 @@ document.addEventListener('submit', function (e) {
 - Nav and footer are the shared prototype versions used by every prototype, not copies of the live symbols. Leave the live nav and footer as they are.
 - The hero background in the prototype is the live wave SVG with the three live overlay gradients baked in, re-encoded as two small WebP files (`img/hero-waves-desktop.webp` 17.7 KB, `img/hero-waves-mobile.webp` 7.7 KB) in place of the live 455 KB SVG and the three `.hero-bg-overlay` divs. Below the nav, the prototype hero matches the live render within 9 of 255 colour levels at both widths, apart from the new rows. Nothing to change in Webflow for this brief. Optional later: the live SVG (`img.hero-bg.is-contact`) is `loading="lazy"` although it is in the first screen; these WebP files could replace it and the overlay divs.
 - The prototype sends nothing. After a valid submit it shows the live "Thank you!" block in place of the form, as Webflow does. On live, the redirect to /contact-us-success normally fires first. For information only: the live success block (`.contact-us-ss`) is positioned absolutely, centred across both columns and 30% above the grid, so if the redirect ever failed it would cover part of the heading.
-- Form fields keep the live focus style (blue #3898ec border). The new rows and the FAQ questions have their own visible focus rings.
+- Form fields keep the live focus style (blue #3898ec border). The contacts and the FAQ questions have their own visible focus rings.
 
 ## 9. Visible differences from the live page
 
-1. Under the heading divider, 4 contact rows (Email, Call, WhatsApp, Instagram) replace the one-line email and Instagram links; the phone number is now visible.
+1. Under the heading divider, the live contact line now holds all four contacts (email, phone, WhatsApp, Instagram) two by two at 16 px, in the live style; the phone number is now visible.
 2. FAQs: a compact accordion with thin lines and 18px questions replaces the 5 large white cards with 22px questions. Same heading, same copy.
 3. Optional: hovering Submit no longer moves the hero 2px; the Message box resizes in height only.
 4. Prototype only, not part of the change: the shared nav and footer (logo and link positions, small gold capitals for the footer column headings, two social icons instead of three, a full stop at the end of the second disclaimer paragraph) and the "Prototype · Speak to us" label at the bottom right.
@@ -326,12 +281,12 @@ document.addEventListener('submit', function (e) {
 - Console: 0 errors or warnings, 0 page errors, 0 failed requests (1440px, 390px and reduced-motion runs).
 - axe-core: 0 serious and 0 critical at 1440px; 0 serious and 0 critical at 390px. No violations of any level in any of the 5 states checked (1440 default, 1440 FAQ open, 1440 success, 390 default, 390 FAQ open).
 - Overflow: scrollWidth 390 at a 390px viewport; no element past the right edge.
-- Layout at 1440px: hero 900px tall (live 900), heading at y 287 (live 287), inputs at y 287, 369, 451, 533 and 615 (live identical), Submit 84 by 41px at y 779 (live 84 by 41 at 779); rows at y 598, 651, 704 and 757, each 52px.
-- Layout at 390px: heading at y 100 (live 100); rows at y 290, 343, 396 and 449; form from y 525; inputs 50px and Message 136px as live; hero 1060px (live 873, the rows add 187px).
-- Keyboard (Tab from the top): skip link, logo, 6 nav links, Speak to Us, the 4 rows, Name, Email, Phone, Subject, Message, Submit, the 5 FAQ questions, footer. Honeypot skipped. Enter and Space toggle a question; opening one closes the other.
+- Layout at 1440px: hero 900px tall (live 900), heading at y 287 (live 287), inputs at y 287, 369, 451, 533 and 615 (live identical), Submit 84 by 41px at y 779 (live 84 by 41 at 779); contacts at y 598 (first row, as the live line) and 644, each 32px tall.
+- Layout at 390px: heading at y 100 (live 100); contacts at y 290 (as the live line) and 332; form from y 390; inputs 50px and Message 136px as live; hero 925px (live 873, the second contact row adds 52px).
+- Keyboard (Tab from the top): skip link, logo, 6 nav links, Speak to Us, the four contacts, Name, Email, Phone, Subject, Message, Submit, the 5 FAQ questions, footer. Honeypot skipped. Enter and Space toggle a question; opening one closes the other.
 - Form: empty submit is blocked by the browser and focus goes to Name (as live); a valid submit hides the form and shows "Thank you!" in place, with focus on it. Subject is `type="text"`.
-- Reduced motion: rows, arrows, chevrons and Submit have 0s transitions and no animation; the success block appears at once.
+- Reduced motion: contacts, chevrons and Submit have 0s transitions and no animation; the success block appears at once.
 - Copy: 0 em dashes in visible text (the one em dash in the bundle is in a code comment at the top of the shared `base.css`); the only exclamation mark is the live "Thank you!" in the success state; the FCA is mentioned only in the footer disclaimer saying Roscap is not authorised.
 - JSON-LD: parses as FAQPage with 5 questions; text identical to the visible FAQ.
-- Bundle `proto/dist/speak-to-us-v2.html`: 283,425 bytes, fonts, logos and both wave images inlined.
+- Bundle `speak-to-us.bundle.html`: 282,057 bytes, fonts, logos and both wave images inlined.
 

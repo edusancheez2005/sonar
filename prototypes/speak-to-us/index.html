@@ -83,7 +83,7 @@
 <main id="main" tabindex="-1">
 
   <!-- HERO: the live section (.section.is-header.is-contactus) rebuilt with the live values.
-       The only visible change is the contact list (ul.rail) that replaces the live .c-social-wrap line. -->
+       The only visible change is the contact line (.c-social-wrap): all four contacts, same live style, two by two. -->
   <section class="section is-header is-contactus" aria-labelledby="h1">
     <div class="container">
       <div class="contact-hero-grid">
@@ -92,38 +92,14 @@
             <h1 id="h1" class="heading-style-h2 text-weight-medium">Speak with our team to discuss your next transaction, funding requirement, or investment opportunity.</h1>
           </div>
 
-          <!-- NEW: replaces the live .c-social-wrap (email + Instagram on one line, phone link hidden by class "hide"). -->
-          <ul class="rail" aria-label="Direct contact">
-            <li>
-              <a class="rail-a" href="mailto:info@roscap.co.uk">
-                <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
-                <span class="rail-t"><span class="rail-k">Email</span> <span class="rail-v">info@roscap.co.uk</span></span>
-                <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-              </a>
-            </li>
-            <li>
-              <!-- The live page already has this link (a.c-social-card.hide, tel:+447850522789). Unhide it and show the number spaced. -->
-              <a class="rail-a" href="tel:+447850522789">
-                <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
-                <span class="rail-t"><span class="rail-k">Call</span> <span class="rail-v">+44 7850 522789</span></span>
-                <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-              </a>
-            </li>
-            <li>
-              <!-- CONFIRM WITH CLEMENTE: +44 7850 522789 is on WhatsApp. If it is not, delete this row. -->
-              <a class="rail-a" href="https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement." target="_blank" rel="noopener">
-                <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z"/><path d="M9.2 8.4c.2-.4.5-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2 0 .4-.1.6l-.5.6c-.1.2-.2.3 0 .5a7 7 0 0 0 3.1 2.8c.2.1.4.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.2.4.4a2.6 2.6 0 0 1-1.7 2.1c-.6.2-1.3.2-2.9-.5a9.7 9.7 0 0 1-4.3-3.9c-.9-1.4-1-2.5-.7-3.3.2-.4.4-.8.5-1.1z"/></svg></span>
-                <span class="rail-t"><span class="rail-k">WhatsApp</span> <span class="rail-v">Message the team</span></span>
-                <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-              </a>
-            </li>
-            <li>
-              <a class="rail-a" href="https://www.instagram.com/roscap.uk/" target="_blank" rel="noopener">
-                <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="3.9"/><circle class="dot" cx="17.1" cy="6.9" r=".6"/></svg></span>
-                <span class="rail-t"><span class="rail-k">Instagram</span> <span class="rail-v">@roscap.uk</span></span>
-                <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-              </a>
-            </li>
+          <!-- CHANGED: the live .c-social-wrap (email and Instagram on one line; the phone link exists but is hidden by class "hide")
+               now carries all four contacts in the same style: gold line icon, white Switzer 500, a little larger, two by two. -->
+          <ul class="c-social-wrap is-four" aria-label="Direct contact">
+            <li><a class="c-social-card" href="mailto:info@roscap.co.uk"><svg class="c-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/></svg><span>info@roscap.co.uk</span></a></li>
+            <li><a class="c-social-card" href="tel:+447850522789"><svg class="c-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span>+44 7850 522789</span></a></li>
+            <!-- CONFIRM WITH CLEMENTE: +44 7850 522789 is on WhatsApp. If it is not, delete this item. -->
+            <li><a class="c-social-card" href="https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement." target="_blank" rel="noopener"><svg class="c-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z"/><path d="M9 8.6c.3-.5.6-.5.9-.5h.4c.2 0 .4.1.5.4l.7 1.7c.1.2 0 .4-.1.6l-.5.6c-.1.2-.1.3 0 .5.6 1 1.4 1.8 2.4 2.4.2.1.4.1.5 0l.6-.6c.2-.2.4-.2.6-.1l1.7.8c.3.1.4.3.4.5v.4c0 .3-.1.6-.5.9-.5.4-1.2.6-1.9.5-1.6-.3-3-1.2-4.2-2.4S8.6 11.5 8.3 9.9c-.1-.5.1-1 .7-1.3z"/></svg><span>WhatsApp</span></a></li>
+            <li><a class="c-social-card" href="https://www.instagram.com/roscap.uk/" target="_blank" rel="noopener"><svg class="c-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="3.9"/><circle class="dot" cx="17.1" cy="6.9" r=".7"/></svg><span>@roscap.uk</span></a></li>
           </ul>
         </div>
 

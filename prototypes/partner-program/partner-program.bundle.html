@@ -324,7 +324,6 @@ ol{list-style:none;margin:0;padding:0}
 .pr-para-wrap{display:flex;flex-direction:column;gap:16px}
 
 /* ---------- how it works (from prototype v1, unchanged) ---------- */
-.tag.on-dark{color:#fff}
 .h2.on-dark{color:#fff}
 .p-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;color:#fff;font-size:15px;font-weight:500;border-bottom:1px solid rgba(225,201,121,.65);transition:border-color .2s,color .2s}
 .p-link:hover{border-color:var(--gold)}
@@ -338,20 +337,17 @@ ol{list-style:none;margin:0;padding:0}
 .how-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(3rem,7vw,7.5rem);align-items:start}
 .how-aside{position:sticky;top:calc(var(--nav-h) + 2rem);align-self:start}
 .how-aside-in{display:flex;flex-direction:column;align-items:flex-start;gap:22px}
-.how-lead{font-weight:300;font-size:1.125rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:30rem}
 .how-nav{width:100%;max-width:24rem;margin-top:14px;border-top:1px solid var(--line-dark)}
 .how-nav li{border-bottom:1px solid var(--line-dark)}
-.how-nav a{display:flex;align-items:center;gap:16px;min-height:46px;padding:4px 2px;font-size:15px;color:rgba(255,255,255,.58);transition:color .3s}
+.how-nav a{display:flex;align-items:baseline;gap:16px;min-height:46px;padding:11px 2px;font-size:15px;line-height:1.45;color:rgba(255,255,255,.58);transition:color .3s} /* live step titles are long: they wrap, numbers stay on the first line */
 .how-nav a span{font:400 .9375rem/1 var(--f-display);color:var(--gold);opacity:.75;width:1.9em;flex:none;letter-spacing:.04em;transition:opacity .3s} /* .75 keeps the dimmed numbers at 5.3:1 on teal (.65 measured 4.35:1) */
 .how-nav a:hover{color:#fff}
 .how-nav li.is-active a{color:#fff}
 .how-nav li.is-active a span{opacity:1}
-.how-nav li.is-active a::after{content:"";margin-left:auto;width:22px;height:1px;background:var(--gold)}
-.how-brochure{font-size:15px;color:rgba(255,255,255,.72);margin-top:8px}
-.how-brochure .p-link{min-height:44px}
+.how-nav li.is-active a::after{content:"";flex:none;align-self:center;margin-left:auto;width:22px;height:1px;background:var(--gold)}
 
 .steps{position:relative;display:grid;padding-top:8px}
-.step{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,19rem);gap:2.5rem;align-items:center;padding:2.5rem 0 2.5rem 3.25rem}
+.step{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,19rem);gap:2.5rem;align-items:start;padding:2.5rem 0 2.5rem 3.25rem} /* top-aligned: the step number sits level with its dot */
 .step:first-child{padding-top:.5rem}
 .step:last-child{padding-bottom:.5rem}
 .step-seg{position:absolute;left:11px;top:0;bottom:0;width:1px;background:linear-gradient(180deg,rgba(225,201,121,.55),rgba(225,201,121,.55));transform-origin:top}
@@ -363,42 +359,35 @@ ol{list-style:none;margin:0;padding:0}
 .step-copy{display:flex;flex-direction:column;gap:12px;min-width:0}
 .step-num{font:400 .9375rem/1 var(--f-display);color:var(--gold);letter-spacing:.06em}
 .step h3{font:italic 500 1.75rem/1.25 var(--f-display);color:#fff;text-wrap:balance}
-.step-copy p:not(.step-num){font-weight:300;font-size:1.0625rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:34rem}
 
 /* step visuals: small brand cards built from CSS, no figures */
 .vis{min-width:0}
 .vis-card{background:var(--cream);color:var(--teal);border-radius:10px;padding:20px 22px 22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 30px 50px -36px rgba(0,0,0,.6)}
 .vis-k{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);line-height:1.3}
-.vis-t{font:italic 500 1.125rem/1.3 var(--f-display);color:var(--teal);margin-top:-6px}
 .vis-lines{display:grid;gap:7px;margin-top:2px}
 .vis-lines i{display:block;height:6px;width:var(--w,80%);border-radius:3px;background:rgba(4,52,53,.12)}
-.vis-row{display:flex;justify-content:space-between;gap:12px;margin-top:4px}
-.vis-row.small{font-size:12px;color:var(--grey);border-top:1px solid var(--line);padding-top:10px}
-.vis-sig{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--grey);flex:1}
-.vis-sig b{display:block;height:1px;background:var(--teal);opacity:.55;width:100%}
 .vis-chip{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 11px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--teal)}
 .vis-chip.ok{border-color:transparent;background:var(--gold);color:var(--ink)}
 .vis-chip svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .vis-path{display:flex;align-items:center;gap:10px;margin-top:2px}
 .vis-node{flex:1;text-align:center;padding:10px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-weight:500}
 .vis-node.is-teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.vis-join{display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:var(--gold)}
+.vis-join svg{width:12px;height:12px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.vis-msg{display:flex;align-items:center;gap:10px}
+.vis-msg b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;font:italic 500 13px/26px var(--f-display);text-align:center}
+.vis-msg .vis-lines{flex:1;margin-top:0;gap:6px}
+.vis-track{position:relative;display:flex;justify-content:space-between;margin-top:6px;padding:0 2px}
+.vis-track::before{content:"";position:absolute;left:8px;right:8px;top:50%;height:1px;background:rgba(4,52,53,.2)}
+.vis-track i{position:relative;width:14px;height:14px;border-radius:50%;border:1px solid rgba(4,52,53,.32);background:var(--cream)}
+.vis-track i.done{background:var(--teal);border-color:var(--teal)}
+.vis-track i.now{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px rgba(225,201,121,.3)}
 .vis-arrow{width:34px;height:12px;fill:none;stroke:var(--gold-ink);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.vis-dl{display:grid;gap:6px;margin:0}
-.vis-dl div{display:flex;justify-content:space-between;gap:12px;font-size:13px;border-bottom:1px solid var(--line);padding-bottom:6px}
-.vis-dl dt{color:var(--grey)}
-.vis-dl dd{margin:0;font-weight:500}
 .vis-stack{display:grid;gap:6px;margin-top:2px}
 .vis-stack span{display:flex;align-items:center;padding:0 12px;border-radius:4px;font-size:12.5px;font-weight:500;letter-spacing:.02em}
 .vis-stack .l1{height:46px;background:var(--teal);color:#fff}
 .vis-stack .l2{height:30px;background:rgba(4,52,53,.14);color:var(--teal)}
 .vis-stack .l3{height:24px;background:var(--gold);color:var(--ink)}
-.vis-checks{display:grid;gap:9px;margin-top:2px}
-.vis-checks li{position:relative;display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--grey)}
-.vis-checks li::before{content:"";width:16px;height:16px;border-radius:50%;border:1px solid rgba(4,52,53,.32);flex:none;background:center/9px no-repeat}
-.vis-checks li.done{color:var(--teal)}
-.vis-checks li.done::before{background-color:var(--teal);border-color:var(--teal);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.5l2.3 2.3L9.6 4'/%3E%3C/svg%3E")}
-.vis-checks li.now{color:var(--teal);font-weight:500}
-.vis-checks li.now::before{border-color:var(--gold);background-color:var(--gold);box-shadow:inset 0 0 0 3px var(--cream)}
 .vis-flow{display:grid;margin-top:2px}
 .vis-flow li{position:relative;display:flex;align-items:flex-start;gap:12px;padding:0 0 14px 0;font-size:13.5px;color:var(--teal)}
 .vis-flow li:last-child{padding-bottom:0}
@@ -409,6 +398,7 @@ ol{list-style:none;margin:0;padding:0}
 .vis-flow li.gold b{background:var(--gold);box-shadow:0 0 0 3px rgba(225,201,121,.3)}
 .vis-seq{display:grid;gap:8px;margin-top:2px}
 .vis-seq li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+.vis-seq li.more{opacity:.4;border-style:dashed}
 .vis-seq em{font-style:normal;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:var(--gold);padding:3px 8px;border-radius:999px}
 
 /* scroll-driven reveal: native where supported */
@@ -469,7 +459,8 @@ ol{list-style:none;margin:0;padding:0}
    Combo classes on the live elements: .assets-card-content-wrap.marquee, .container.marquee-viewport, .assets-card-grid.marquee-group,
    plus a new .marquee-track between them and a second, aria-hidden copy of the grid. Everything that moves sits inside
    prefers-reduced-motion:no-preference, so with reduced motion the untouched live 4 x 2 grid shows (second copy and button hidden).
-   Slow loop (45s at 1440 = 8 tiles x 327px), edge fade, pauses on hover, on focus inside the strip and with the toggle (WCAG 2.2.2). */
+   Slow loop (45s at 1440 = 8 tiles x 327px), edge fade. No pause button (owner's choice): the strip pauses on hover, and it is focusable,
+   so it pauses while it has keyboard focus or after a tap (WCAG 2.2.2); reduced motion shows the static grid. */
 .marquee{--tile:327px;--loop:45s;--fade:clamp(32px,8%,128px)}
 @keyframes marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
 @media (prefers-reduced-motion:no-preference){
@@ -479,22 +470,13 @@ ol{list-style:none;margin:0;padding:0}
   .marquee .marquee-group{display:flex;flex:none;overflow:visible}
   .marquee .marquee-group .assets-card-new{flex:none;width:var(--tile);height:var(--tile);aspect-ratio:auto;padding-top:0;padding-bottom:0;border-style:solid;border-color:rgba(40,40,40,.2);border-width:0 0 0 1px}
   .marquee .assets-mid-divider{display:none}
-  .marquee:hover .marquee-track,.marquee:focus-within .marquee-track,.marquee.is-paused .marquee-track{animation-play-state:paused}
-  /* an explicit press of "play" wins over hover/focus until the pointer and focus have left the strip (see the JS) */
-  .marquee.is-playing:not(.is-paused) .marquee-track{animation-play-state:running}
-  html.js .marquee .marquee-toggle{display:grid}
+  .marquee:hover .marquee-track,.marquee:focus-within .marquee-track{animation-play-state:paused}
 }
 @media (prefers-reduced-motion:reduce){.marquee .marquee-group[aria-hidden="true"]{display:none}}
-/* pause/play toggle: quiet teal outline on cream, 44px target, just below the strip on the right; only shown when JS runs and motion is allowed */
-.marquee-toggle{display:none;position:absolute;right:max(16px,calc((100% - 1380px) / 2 + 2.25rem));top:calc(100% + 12px);bottom:auto;z-index:2;width:44px;height:44px;place-items:center;padding:0;border:1px solid #043435;border-radius:50%;background-color:#FFFCF5;color:#043435;cursor:pointer;transition:background-color .2s,color .2s}
-.marquee-toggle:hover{background-color:#043435;color:#FFFCF5}
-.marquee-toggle:focus-visible{outline:2px solid #043435;outline-offset:3px}
-.marquee-toggle svg{display:block;width:16px;height:16px;fill:currentColor}
-.marquee-toggle .i-play,.marquee-toggle[aria-pressed="true"] .i-pause{display:none}
-.marquee-toggle[aria-pressed="true"] .i-play{display:block}
+.marquee .marquee-viewport:focus{outline:none} /* the mask would clip an outline here, so the ring goes on the wrapper */
+.marquee:has(.marquee-viewport:focus-visible){outline:2px solid #043435;outline-offset:4px}
 @media (max-width:991px){.marquee{--tile:240px;--loop:34s}}
-@media (max-width:767px){.marquee{--tile:200px;--loop:30s;--fade:64px}.marquee-toggle{right:16px}}
-@media (max-width:767px) and (prefers-reduced-motion:no-preference){html.js .assets-card-content-wrap.marquee{margin-bottom:44px}} /* room for the pause button below the strip */
+@media (max-width:767px){.marquee{--tile:200px;--loop:30s;--fade:64px}}
 /* ---------- MARQUEE BLOCK END ---------- */
 
 /* ---------- contact block (unchanged look) ---------- */
@@ -635,7 +617,7 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
       <div class="heading-wrap is-center">
         <div class="hero-heading-wrap is-center is-large">
           <h1 id="hero-h"><em>Partner Program</em></h1>
-          <!-- CONFIRM WITH CLEMENTE: "Join hundreds of current partners" is unconfirmed. Kept verbatim as live because the owner asked to keep the wording -->
+          <!-- NOTE: kept verbatim as live at the owner's request -->
           <p class="text-size-smedium">As a professional in the real estate industry, you already interact with clients and projects daily. Our program allows you to maximise your client relationships.<br><br>Through the program, you will be able to offer enhanced value in addition to your core services.<br><br>Join hundreds of current partners who are successfully working with Roscap to support their client’s capital requirements.</p>
         </div>
       </div>
@@ -668,7 +650,7 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
           </div>
           <div class="pr-cards">
             <img class="pr-icon" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODEiIGhlaWdodD0iODMiIHZpZXdCb3g9IjAgMCA4MSA4MyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik03Ny40NTc1IDUyLjIwMDNMNzcuMjg1NiA1MS45OTI5Qzc2LjUwODMgNTEuMDY3IDc1LjIyMzEgNTAuODMyNiA3NC4xNjQ1IDUxLjQyMDRDNjYuMzkxMSA1NS43MTk1IDU3LjM2MzUgNjAuNzkwOCA1MS40NzM1IDYyLjczMUM0OS45MjI3IDYzLjI0MiA0OC4yNTg3IDYzLjU4MDEgNDYuNTQzOCA2My43MzM3QzQ1LjQxMSA2NS45NDI4IDQyLjgwOTQgNjYuOTg0IDQwLjMwMTcgNjYuNDY1M0MzNy42OTIzIDY1LjkyNzQgMzQuMTQxNSA2NS4wMDUzIDMxLjc4MjIgNjQuNzgyNUMyOS4zNzYgNjQuNTU1OSAyNi44NjAzIDY1LjE3ODIgMjQuNDE1IDY2LjA3MzRDMjMuNzUwOSA2Ni4zMTU1IDIzLjAxNjYgNjUuOTg1MSAyMi43NzA1IDY1LjMzOTZDMjIuNTI0NCA2NC42OTQyIDIyLjg2NDIgNjMuOTcxOSAyMy41MTY2IDYzLjcyOTlDMjYuMzI5MSA2Mi42OTI2IDI5LjIzMTQgNjIuMDMxNyAzMi4wMjQ0IDYyLjI5M0MzNC41NTU2IDYyLjUyNzQgMzguMDkwNyA2My40NDk1IDQwLjgxNzMgNjQuMDE4MUM0My41OTA3IDY0LjU5NDMgNDUuMzY4MSA2Mi4xNDcxIDQ0LjIyMzUgNjAuMDY4NkM0My44NjgxIDU5LjQxMTYgNDMuMjc0MyA1OC45MzE0IDQyLjU1OTQgNTguNzIwMUwyOS4xMzM1IDU0LjczOThDMjUuNzAzOCA1My43MjE3IDIzLjExNCA1NS4wMDExIDIwLjEwNjIgNTYuNDg0QzE3LjM4NzQgNTcuODI4NyAxNi41MjgxIDU4LjIyMDUgMTMuNTU1NCA1OC45NzM1Vjc2LjE1ODdDMTguMDEyNCA3Ni4xNjI2IDIzLjA4MjcgNzYuMjg5MyAyNy45MzA0IDc2Ljk3N0MzMi4yNTA3IDc3LjU5MTcgMzYuNzQyOSA3OS4xNzg1IDQwLjkyNjMgNzguODQ0MkM0NS45ODQ5IDc4LjQzNjkgNTEuMzk1MyA3NS4zNzUgNTYuNDk2MyA3Mi4xMjA5QzYzLjQzNzcgNjcuNjk4OCA3MS44NjMzIDYwLjU0NDggNzcuMjQ2MyA1NS41MTk5Qzc4LjE5MTYgNTQuNjM2MyA3OC4yODU2IDUzLjE4IDc3LjQ1NzUgNTIuMjAwM1pNMTEuMDE5NiA1Ny40OTQ1QzExLjAxOTYgNTYuOTkxMiAxMC42MDE2IDU2LjU4MDEgMTAuMDg5OSA1Ni41ODAxSDMuNDgwNTFDMi45Njg3OSA1Ni41ODAxIDIuNTUwODIgNTYuOTkxMiAyLjU1MDgyIDU3LjQ5NDVWNzkuMTYyNkMyLjU1MDgyIDc5LjY2NTkgMi45Njg3OSA4MC4wNzcgMy40ODA1MSA4MC4wNzdIMTAuMDg5OUMxMC42MDE2IDgwLjA3NyAxMS4wMTk2IDc5LjY2NTkgMTEuMDE5NiA3OS4xNjI2VjU3LjQ5NDVaTTE3LjYwMTYgNDIuMDQ2MkMxNy42MDE2IDMwLjc3NzkgMjYuOTI1OCAyMS42MTU0IDM4LjM3NDUgMjEuNjE1NEM0OS44MzE1IDIxLjYxNTQgNTkuMTQ3NSAzMC43ODIyIDU5LjE0NzUgNDIuMDQ2MkM1OS4xNDc1IDUwLjA3MiA1NC4zNjIzIDU3LjMwNjYgNDcuMDU3NSA2MC42MTAzQzQ2Ljg2MjIgNTkuMjg4NiA0Ni4xNTkxIDU4LjA4MjMgNDUuMDg4NyA1Ny4yNDQ3QzUxLjEyNzggNTQuNjU5MiA1NS4yMjE3IDQ4LjczMTEgNTUuMjIxNyA0Mi4wNDYzQzU1LjIyMTcgMzIuOTA2NCA0Ny42NzA5IDI1LjQ3NTggMzguMzc3NyAyNS40NzU4QzI5LjA5MjYgMjUuNDc1OCAyMS41MzM4IDMyLjkwOTkgMjEuNTMzOCA0Mi4wNDYzQzIxLjUzMzggNDUuNzA3NyAyMi43MTc0IDQ5LjE2MTUgMjQuOTIwNSA1Mi4wMTYzQzIzLjUzMzggNTIuMjQ2OCAyMi4yNTY0IDUyLjcxNTYgMjEuMDIyMSA1My4yNjg3QzE4Ljc4MzggNDkuOTM0IDE3LjYwMDIgNDYuMDc2NyAxNy42MDAyIDQyLjA0NjdMMTcuNjAxNiA0Mi4wNDYyWk0yOS44NzQ2IDUyLjMzODhDMjkuMzEyMSA1Mi4xNzM2IDI4Ljc3MyA1Mi4wNTQ1IDI4LjI1MzUgNTEuOTc3N0MyNS41NTgyIDQ5LjMyMjkgMjQuMDY5OSA0NS44MTUzIDI0LjA2OTkgNDIuMDQ2QzI0LjA2OTkgMzQuMjg5MiAzMC40ODc5IDI3Ljk3NjcgMzguMzc0OCAyNy45NzY3QzQ2LjI2MTggMjcuOTc2NyA1Mi42Nzk4IDM0LjI4ODkgNTIuNjc5OCA0Mi4wNDZDNTIuNjc5OCA0OC42Mzg3IDQ3Ljk4ODQgNTQuMzYyNyA0MS40ODg4IDU1Ljc4MUwyOS44NzQ2IDUyLjMzODhaTTc4Ljk5OTUgNTcuMzI5NEM3My41MjY4IDYyLjQ0MyA2NC45OTU1IDY5LjY4MTYgNTcuODkwNSA3NC4yMTQ2QzUyLjEzNjYgNzcuODg3NSA0NS45MjU1IDgxLjM4MzcgMzkuNzMwNSA4MS4zODM3QzM1LjU1MDggODEuMzgzNyAzMS42MjEyIDgwLjAxOTggMjcuNTcwNiA3OS40NDczQzIyLjg3OTIgNzguNzgyNiAxNy45Mzc4IDc4LjY1NTkgMTMuNTYyNiA3OC42NTJWNzkuMTU5MkMxMy41NjI2IDgxLjA0NTYgMTIuMDAwMSA4Mi41NzQ2IDEwLjA5MzggODIuNTc0NkgzLjQ4NDRDMS41NjY0IDgyLjU3NDYgMC4wMDM5MDUyOSA4MS4wNDE3IDAuMDAzOTA1MjkgNzkuMTU5MkwwIDU3LjQ5NUMwIDU1LjYxMjQgMS41NjI1IDU0LjA3OTUgMy40ODA0OSA1NC4wNzk1SDEwLjA4OTlDMTEuNjIxMSA1NC4wNzk1IDEyLjkyNTggNTUuMDY2OSAxMy4zODY4IDU2LjQyNjlDMTUuNjQwNyA1NS44NDY4IDE2LjYwOTUgNTUuNDA4NyAxOC43MTEgNTQuMzcxNUMxNi4zMTI2IDUwLjY5NDggMTUuMDU4NyA0Ni40NjQ4IDE1LjA1ODcgNDIuMDQ2OVY4LjgxNDVDMTUuMDU4NyA4LjEyMjk2IDE1LjYyOSA3LjU2MjA4IDE2LjMzMjEgNy41NjIwOEMxNy4wMjc0IDcuNTYyMDggMTcuNTk3NyA4LjEyMjk5IDE3LjU5NzcgOC44MTQ1VjMxLjYzNTNDMjEuNDY0OSAyNC4yMDUgMjkuMzIwNiAxOS4xMTExIDM4LjM3MDYgMTkuMTExMUM0Ny40MjE0IDE5LjExMTEgNTUuMjc2NiAyNC4yMDkzIDU5LjE0MzYgMzEuNjM1M1YxMy40MzIyQzU5LjE0MzYgMTIuNzQ0NSA1OS43MTM5IDEyLjE3OTcgNjAuNDE3IDEyLjE3OTdDNjEuMTIwMSAxMi4xNzk3IDYxLjY5MDQgMTIuNzQwNyA2MS42OTA0IDEzLjQzMjJWNDIuMDU0OEM2MS42Nzg3IDQ4LjY3NDQgNTguNzg0MiA1NC44MTggNTMuOTg3MyA1OS4wODE2QzU5LjQ4NzMgNTYuNzIyNyA2Ni41NzczIDUyLjc0MjUgNzIuOTEzMyA0OS4yNDI0Qzc1LjAzNDQgNDguMDY2OCA3Ny42OTg1IDQ4LjU1NDcgNzkuMjQ5MiA1MC40MDY1TDc5LjQyMSA1MC42MTRDODEuMDg5IDUyLjYwMDIgODAuOTA1OCA1NS41NTQ1IDc4Ljk5OTUgNTcuMzI5NFpNNDUuNzE3OCAxNS42ODY5QzQ2LjQyMDkgMTUuNjg2OSA0Ni45OTEyIDE1LjEyNiA0Ni45OTEyIDE0LjQzNDRWOC4wNDE1MkM0Ni45OTEyIDcuMzQ5OTggNDYuNDIwOSA2Ljc4OTEgNDUuNzE3OCA2Ljc4OTFDNDUuMDIyNSA2Ljc4OTEgNDQuNDUyMiA3LjM1MDAxIDQ0LjQ1MjIgOC4wNDE1MlYxNC40MzQ0QzQ0LjQ1MjIgMTUuMTI2IDQ1LjAyMjUgMTUuNjg2OSA0NS43MTc4IDE1LjY4NjlaTTI5Ljc0ODkgMTMuMzEyNUMyOS43NDg5IDE0LjAwNDEgMzAuMzE5MiAxNC41NjUgMzEuMDIyMyAxNC41NjVDMzEuNzI1NCAxNC41NjUgMzIuMjk1NiAxNC4wMDQgMzIuMjk1NiAxMy4zMTI1TDMyLjI5OTYgMS4yNDg1OUMzMi4yOTk2IDAuNTU3MDUxIDMxLjcyOTIgMCAzMS4wMjYyIDBDMzAuMzIzMSAwIDI5Ljc1MjggMC41NjA5MTYgMjkuNzUyOCAxLjI0ODU5TDI5Ljc0ODkgMTMuMzEyNVoiIGZpbGw9InVybCgjcGFpbnQwX2xpbmVhcl84OTJfNjk3MCkiLz4KPHBhdGggZD0iTTM1LjU0ODIgNDAuNjEwOEMzNS4yNzcgNDAuNjEwOCAzNS4wMTUzIDQwLjQ3ODYgMzQuODYyNCA0MC4yMzE2QzM0LjQwOTkgMzkuNTE0IDM0LjE3MTkgMzguNjg5NSAzNC4xNzE5IDM3LjgzODJDMzQuMTcxOSAzNS4zNDg3IDM2LjE5NzcgMzMuMzI2OCAzOC42OTE4IDMzLjMyNjhDNDEuMTg1OSAzMy4zMjY4IDQzLjIxMTcgMzUuMzQ4OCA0My4yMTE3IDM3LjgzODJDNDMuMjExNyAzOC4yODE5IDQyLjg0OTEgMzguNjQzOCA0Mi40MDQ1IDM4LjY0MzhDNDEuOTU5OSAzOC42NDM4IDQxLjU5NzMgMzguMjgxOSA0MS41OTczIDM3LjgzODJDNDEuNTk3MyAzNi4yMzk0IDQwLjI5MzUgMzQuOTM4IDM4LjY5MTcgMzQuOTM4QzM3LjA4OTkgMzQuOTM4IDM1Ljc4NjEgMzYuMjM5NCAzNS43ODYxIDM3LjgzODJDMzUuNzg2MSAzOC4zODU4IDM1LjkzOSAzOC45MTc2IDM2LjIyNiAzOS4zNzcxQzM2LjQ2NCAzOS43NTYzIDM2LjM0NzQgNDAuMjUyIDM1Ljk3MjEgNDAuNDg5NkMzNS44Mzk3IDQwLjU3NDYgMzUuNjg5OSA0MC42MTM5IDM1LjU0NDkgNDAuNjEzOUwzNS41NDgyIDQwLjYxMDhaIiBmaWxsPSJ1cmwoI3BhaW50MV9saW5lYXJfODkyXzY5NzApIi8+CjxwYXRoIGQ9Ik0zNC43MjYgNDkuMjQ4QzM0LjUwMDUgNDkuMjQ4IDM0LjI3ODIgNDkuMTU1MiAzNC4xMjA2IDQ4Ljk3NzNDMzMuODU0MSA0OC42NzUyIDMzLjg0OTQgNDguMjIzNiAzNC4xMTI3IDQ3LjkxODNDMzQuNjA5MyA0Ny4zMzc3IDM1Ljc2MzMgNDUuNzU0NyAzNS43NTg2IDQzLjU0MzlDMzUuNzU4NiA0Mi4wNTY5IDM1LjI0NjMgNDAuODgxNCAzNC44MTQzIDQwLjE2MDdDMzQuNTg4OCAzOS43Nzg0IDM0LjcxMzQgMzkuMjgyNyAzNS4wOTY1IDM5LjA1NzZDMzUuNDc5NiAzOC44MzI2IDM1Ljk3NjIgMzguOTU2OSAzNi4yMDE3IDM5LjMzOTNDMzYuNzM0NSA0MC4yMzMxIDM3LjM3MTUgNDEuNjkxOCAzNy4zNzE1IDQzLjU0NTNDMzcuMzcxNSA0NC43OSAzNy4wODkzIDQ1Ljg2OTUgMzYuNzE0IDQ2Ljc1MjNDMzcuMTQxMyA0Ni42Nzk5IDM3LjU3MDEgNDYuNjU5NCAzNy45OTQyIDQ2LjcwMDRDMzguNjcyMSA0Ni43NjQ5IDM5LjE0ODMgNDYuOTU4NCAzOS41Njc2IDQ3LjEzMTVDMzkuOTI3MSA0Ny4yNzYzIDQwLjIzNzcgNDcuNDA1MyA0MC42ODIyIDQ3LjQ2NTFDNDEuNTgyNSA0Ny41OTQxIDQyLjU3MSA0Ny4zODQ5IDQzLjYyMDkgNDYuODM3M0M0NC4wMTY3IDQ2LjYzMTEgNDQuNTA1NCA0Ni43ODUzIDQ0LjcxMDMgNDcuMTgwM0M0NC45MTY5IDQ3LjU3NTMgNDQuNzYyNCA0OC4wNjMxIDQ0LjM2NjYgNDguMjY3NkM0My4wMTA4IDQ4Ljk3MjYgNDEuNjkxMiA0OS4yMzg1IDQwLjQ1MiA0OS4wNjA3QzM5LjgxMDQgNDguOTY3OSAzOS4zNTc5IDQ4Ljc4MjIgMzguOTU5IDQ4LjYyMTdDMzguNTc5MSA0OC40NjkxIDM4LjI4MTEgNDguMzQzMiAzNy44NDEzIDQ4LjMwMzlDMzcuMDAyNSA0OC4yMjM2IDM2LjEwMjMgNDguNDk3NCAzNS4xNjkgNDkuMTE0MkMzNS4wMzE4IDQ5LjIwNzEgMzQuODc4OSA0OS4yNDY0IDM0LjcyMTIgNDkuMjQ2NEwzNC43MjYgNDkuMjQ4WiIgZmlsbD0idXJsKCNwYWludDJfbGluZWFyXzg5Ml82OTcwKSIvPgo8cGF0aCBkPSJNMzkuNDc4NiA0Mi41Nzc3SDMzLjkxNjZDMzMuNDcyIDQyLjU3NzcgMzMuMTA5NCA0Mi4yMTU3IDMzLjEwOTQgNDEuNzcyQzMzLjEwOTQgNDEuMzI4MiAzMy40NzIgNDAuOTY2MyAzMy45MTY2IDQwLjk2NjNIMzkuNDc4NkMzOS45MjMyIDQwLjk2NjMgNDAuMjg1OCA0MS4zMjgyIDQwLjI4NTggNDEuNzcyQzQwLjI4NTggNDIuMjE1NyAzOS45MjMyIDQyLjU3NzcgMzkuNDc4NiA0Mi41Nzc3WiIgZmlsbD0idXJsKCNwYWludDNfbGluZWFyXzg5Ml82OTcwKSIvPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJwYWludDBfbGluZWFyXzg5Ml82OTcwIiB4MT0iMCIgeTE9IjQxLjI4NzMiIHgyPSI5OC43NDQ2IiB5Mj0iNDEuMjg3MyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjRTFDOTc5Ii8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZGRUJBQSIvPgo8L2xpbmVhckdyYWRpZW50Pgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MV9saW5lYXJfODkyXzY5NzAiIHgxPSIzNC4xNzE5IiB5MT0iMzYuOTcwNCIgeDI9IjQ1LjI1MjIiIHkyPSIzNi45NzA0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiNFMUM5NzkiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkZFQkFBIi8+CjwvbGluZWFyR3JhZGllbnQ+CjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQyX2xpbmVhcl84OTJfNjk3MCIgeDE9IjMzLjkxOCIgeTE9IjQ0LjA5NjgiIHgyPSI0Ny4yNTg3IiB5Mj0iNDQuMDk2OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjRTFDOTc5Ii8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZGRUJBQSIvPgo8L2xpbmVhckdyYWRpZW50Pgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50M19saW5lYXJfODkyXzY5NzAiIHgxPSIzMy4xMDk0IiB5MT0iNDEuNzcyIiB4Mj0iNDEuOTA1NyIgeTI9IjQxLjc3MiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjRTFDOTc5Ii8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZGRUJBQSIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=" alt="" width="81" height="83" loading="lazy">
-            <!-- CONFIRM WITH CLEMENTE: "recurring" and "minimal work" stay as live because the owner asked to keep the wording; still an open question in the audit -->
+            <!-- NOTE: kept verbatim as live at the owner's request -->
             <div class="pr-para-wrap"><p class="text-size-large text-weight-light">Earn an additional recurring revenue stream with minimal work</p></div>
           </div>
           <div class="pr-cards">
@@ -685,25 +667,24 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
     </div>
   </section>
 
-  <!-- ============ HOW IT WORKS: CHANGED vs live. Replaces the 6-card carousel; section from prototype v1, unchanged apart from the brochure link ============ -->
+  <!-- ============ HOW IT WORKS: CHANGED vs live. The 6-card carousel becomes a vertical timeline.
+       The heading and the six step titles are the live wording, verbatim. Nothing else is written here:
+       the small cards beside each step are decorative (aria-hidden) and only reuse words already on the live site. ============ -->
   <section class="how pg" id="how-it-works" aria-labelledby="how-h">
     <div class="container how-grid">
       <aside class="how-aside">
         <div class="how-aside-in">
-          <p class="tag on-dark">How it works</p>
-          <h2 class="h2 on-dark" id="how-h">How the Partner Program works</h2>
-          <p class="how-lead">6 steps, from the first conversation to completed transactions. You are kept informed at each one.</p>
+          <h2 class="h2 on-dark" id="how-h">How Our Partner Program Works</h2>
           <nav class="how-nav" aria-label="Steps">
             <ol>
-              <li><a href="#step-1"><span>01</span>Join the Partner Program</a></li>
-              <li><a href="#step-2"><span>02</span>Introduce your clients</a></li>
-              <li><a href="#step-3"><span>03</span>We arrange the capital</a></li>
-              <li><a href="#step-4"><span>04</span>Regular progress updates</a></li>
-              <li><a href="#step-5"><span>05</span>Referral fee on completion</a></li>
-              <li><a href="#step-6"><span>06</span>Further transactions</a></li>
+              <li><a href="#step-1"><span>01</span>Join the Program</a></li>
+              <li><a href="#step-2"><span>02</span>Exclusively refer clients to Roscap</a></li>
+              <li><a href="#step-3"><span>03</span>We work with clients to provide capital solutions</a></li>
+              <li><a href="#step-4"><span>04</span>Receive regular progress updates from Roscap</a></li>
+              <li><a href="#step-5"><span>05</span>Upon deal completion, receive your referral commissions</a></li>
+              <li><a href="#step-6"><span>06</span>As Roscap completes subsequent deals with the client, receive commissions in perpetuity</a></li>
             </ol>
           </nav>
-          <p class="how-brochure">Prefer to read it first? <a class="p-link" href="#brochure">Download our brochure</a></p>
         </div>
       </aside>
 
@@ -713,20 +694,16 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">01</p>
-            <h3>Join the Partner Program</h3>
-            <!-- CONFIRM WITH CLEMENTE: onboarding includes a written partner agreement -->
-            <p>A short conversation about your firm and the clients you work with, followed by the partner agreement.</p>
+            <h3>Join the Program</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Partner agreement</p>
-              <p class="vis-t">Roscap and your firm</p>
-              <div class="vis-lines"><i style="--w:92%"></i><i style="--w:78%"></i><i style="--w:64%"></i></div>
-              <div class="vis-row">
-                <span class="vis-sig"><b></b>Your firm</span>
-                <span class="vis-sig"><b></b>Roscap</span>
+              <p class="vis-k">Partner Program</p>
+              <div class="vis-path">
+                <span class="vis-node">Partner</span>
+                <span class="vis-join"><svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.3 2.3L9.6 4"/></svg></span>
+                <span class="vis-node is-teal">Roscap</span>
               </div>
-              <span class="vis-chip ok"><svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.3 2.3L9.6 4"/></svg>Agreed</span>
             </div>
           </div>
         </li>
@@ -735,23 +712,17 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">02</p>
-            <h3>Introduce your clients to Roscap</h3>
-            <!-- CONFIRM WITH CLEMENTE: exclusivity is a Partner Program condition on the live page ("Exclusively refer clients to Roscap"); confidentiality of introductions -->
-            <p>When a client needs real estate finance, you introduce them to Roscap on an exclusive basis. Every introduction is handled in confidence.</p>
+            <h3>Exclusively refer clients to Roscap</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Introduction</p>
+              <p class="vis-k">Referral</p>
               <div class="vis-path">
-                <span class="vis-node">Your firm</span>
+                <span class="vis-node">Client</span>
                 <svg class="vis-arrow" viewBox="0 0 40 12"><path d="M0 6h38M32 1l6 5-6 5"/></svg>
                 <span class="vis-node is-teal">Roscap</span>
               </div>
-              <dl class="vis-dl">
-                <div><dt>Client</dt><dd>Confidential</dd></div>
-                <div><dt>Requirement</dt><dd>Development finance</dd></div>
-              </dl>
-              <span class="vis-chip">Received</span>
+              <span class="vis-chip ok">Exclusive</span>
             </div>
           </div>
         </li>
@@ -760,19 +731,16 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">03</p>
-            <h3>We work with your client on the capital solution</h3>
-            <p>Roscap reviews the transaction, prepares the materials and approaches suitable lenders and investors.</p>
+            <h3>We work with clients to provide capital solutions</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Capital structure</p>
-              <p class="vis-t">Illustrative, not a quotation</p>
+              <p class="vis-k">Capital solutions</p>
               <div class="vis-stack">
                 <span class="l1">Senior debt</span>
                 <span class="l2">Mezzanine</span>
                 <span class="l3">Equity</span>
               </div>
-              <div class="vis-row small"><span>Lenders approached</span><span>Terms under review</span></div>
             </div>
           </div>
         </li>
@@ -781,19 +749,14 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">04</p>
-            <h3>You receive regular progress updates</h3>
-            <p>From terms to completion, you hear from us at each stage, so you are never out of the loop with your client.</p>
+            <h3>Receive regular progress updates from Roscap</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Progress update</p>
-              <p class="vis-t">For your records</p>
-              <ul class="vis-checks">
-                <li class="done">Terms issued</li>
-                <li class="done">Credit approved</li>
-                <li class="now">Legal documentation</li>
-                <li>Completion</li>
-              </ul>
+              <p class="vis-k">Progress updates</p>
+              <div class="vis-msg"><b>R</b><span class="vis-lines"><i style="--w:92%"></i><i style="--w:64%"></i></span></div>
+              <div class="vis-msg"><b>R</b><span class="vis-lines"><i style="--w:80%"></i><i style="--w:48%"></i></span></div>
+              <div class="vis-track"><i class="done"></i><i class="done"></i><i class="now"></i><i></i></div>
             </div>
           </div>
         </li>
@@ -802,17 +765,14 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">05</p>
-            <h3>On completion, your referral fee is paid</h3>
-            <!-- CONFIRM WITH CLEMENTE: fee basis and payment timing as set out in the partner agreement -->
-            <p>Once the transaction completes, the referral fee is calculated and paid on the terms set out in the partner agreement.</p>
+            <h3>Upon deal completion, receive your referral commissions</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Referral fee</p>
+              <p class="vis-k">Referral commissions</p>
               <ul class="vis-flow">
-                <li><b></b>Transaction completes</li>
-                <li><b></b>Fee calculated per the partner agreement</li>
-                <li class="gold"><b></b>Paid to your firm</li>
+                <li><b></b>Deal completion</li>
+                <li class="gold"><b></b>Referral commission</li>
               </ul>
             </div>
           </div>
@@ -822,18 +782,16 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
           <span class="step-seg" aria-hidden="true"></span><span class="step-dot" aria-hidden="true"></span>
           <div class="step-copy">
             <p class="step-num" aria-hidden="true">06</p>
-            <h3>Further transactions, further fees</h3>
-            <!-- CONFIRM WITH CLEMENTE: live page says "commissions in perpetuity"; wording below avoids the absolute claim and defers to the agreement -->
-            <p>If Roscap goes on to complete subsequent transactions with the same client, you receive a referral fee on those as well, as set out in the partner agreement.</p>
+            <h3>As Roscap completes subsequent deals with the client, receive commissions in perpetuity</h3>
           </div>
           <div class="vis" aria-hidden="true">
             <div class="vis-card">
-              <p class="vis-k">Ongoing relationship</p>
-              <p class="vis-t">One client, several transactions</p>
+              <p class="vis-k">Subsequent deals</p>
               <ul class="vis-seq">
-                <li><span>Transaction 1</span><em>Fee</em></li>
-                <li><span>Transaction 2</span><em>Fee</em></li>
-                <li><span>Transaction 3</span><em>Fee</em></li>
+                <li><span>Deal 1</span><em>Commission</em></li>
+                <li><span>Deal 2</span><em>Commission</em></li>
+                <li><span>Deal 3</span><em>Commission</em></li>
+                <li class="more"><span>Deal 4</span><em>Commission</em></li>
               </ul>
             </div>
           </div>
@@ -843,7 +801,7 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
     </div>
 
     <!-- Live closing line of the How it works band, verbatim. On live the Download button opens the existing brochure form (pop-up);
-         the prototype links straight to the live PDF. The sticky "Download our brochure" link above points here (#brochure). -->
+         the prototype links straight to the live PDF. -->
     <div class="how-more" id="brochure">
       <div class="white-divider horiz" aria-hidden="true"></div>
       <div class="partner-div botoom">
@@ -864,12 +822,12 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
     </div>
   </section>
 
-  <!-- ============ OUR PARTNERS: live tiles. CHANGED vs live: slow CSS marquee with a pause button; the untouched live grid under reduced motion.
+  <!-- ============ OUR PARTNERS: live tiles. CHANGED vs live: slow CSS marquee that pauses on hover, keyboard focus or tap; the untouched live grid under reduced motion.
        Structure = live structure + combo classes: .assets-card-content-wrap.marquee > .container.marquee-viewport (.wf-container here)
        > .marquee-track (new) > .assets-card-grid.marquee-group (live grid) + a second aria-hidden copy of it ============ -->
   <section class="section pt-0">
     <div class="assets-card-content-wrap marquee" data-marquee>
-      <div class="wf-container marquee-viewport">
+      <div class="wf-container marquee-viewport" tabindex="0" role="region" aria-label="Partner logos">
         <div class="marquee-track">
           <div class="assets-card-grid marquee-group" role="list" aria-labelledby="partners-h">
             <div class="assets-card-new" role="listitem"><img class="asset-image" src="data:image/webp;base64,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" alt="Revere" width="409" height="45" loading="lazy"></div>
@@ -895,10 +853,6 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
         </div>
       </div>
       <div class="assets-mid-divider hide-mobile-landscape" aria-hidden="true"></div>
-      <button class="marquee-toggle" type="button" aria-pressed="false" aria-label="Pause partner logos">
-        <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 3h2.25v10H4.5zM9.25 3h2.25v10H9.25z"/></svg>
-        <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 2.75v10.5L13.25 8z"/></svg>
-      </button>
     </div>
   </section>
 
@@ -1047,7 +1001,7 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
 <script>
 /* Roscap prototype v2: Partner Program page behaviour. No libraries.
    Everything here is progressive enhancement: without JS the page is fully readable and the marquee still runs
-   (CSS only, pauses on hover); only the pause button needs JS, so it is shown only when JS runs. */
+   (CSS only, pauses on hover and focus). */
 (function () {
   var root = document.documentElement;
   root.classList.add('js');
@@ -1094,21 +1048,9 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
     setActive(steps[0].id);
   }
 
-  /* 3. Our Partners marquee: pause/play toggle (WCAG 2.2.2). CSS does the motion and the hover/focus pause.
-     aria-pressed="true" means paused. An explicit "play" overrides the hover/focus pause until pointer and focus leave. */
+  /* 3. Our Partners marquee: CSS does the motion and pauses it on hover and while the strip has focus (keyboard or tap).
+     No pause button (owner's choice). */
   var strip = $('[data-marquee]');
-  var toggle = strip && $('.marquee-toggle', strip);
-  if (toggle) {
-    toggle.addEventListener('click', function () {
-      var paused = toggle.getAttribute('aria-pressed') !== 'true';
-      toggle.setAttribute('aria-pressed', String(paused));
-      strip.classList.toggle('is-paused', paused);
-      strip.classList.toggle('is-playing', !paused);
-    });
-    var release = function () { strip.classList.remove('is-playing'); };
-    strip.addEventListener('mouseleave', function () { if (!strip.contains(document.activeElement)) release(); });
-    strip.addEventListener('focusout', function (e) { if (!strip.contains(e.relatedTarget) && !strip.matches(':hover')) release(); });
-  }
   /* logos stay lazy, but load all of them once the strip is within 800px of the viewport: native lazy loading never
      starts a logo that is still outside the strip's horizontal clip, so it would pop in while sliding into view */
   if (strip) {

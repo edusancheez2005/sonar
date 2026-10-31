@@ -1,6 +1,6 @@
 /* Roscap prototype v2: Partner Program page behaviour. No libraries.
    Everything here is progressive enhancement: without JS the page is fully readable and the marquee still runs
-   (CSS only, pauses on hover); only the pause button needs JS, so it is shown only when JS runs. */
+   (CSS only, pauses on hover and focus). */
 (function () {
   var root = document.documentElement;
   root.classList.add('js');
@@ -47,21 +47,9 @@
     setActive(steps[0].id);
   }
 
-  /* 3. Our Partners marquee: pause/play toggle (WCAG 2.2.2). CSS does the motion and the hover/focus pause.
-     aria-pressed="true" means paused. An explicit "play" overrides the hover/focus pause until pointer and focus leave. */
+  /* 3. Our Partners marquee: CSS does the motion and pauses it on hover and while the strip has focus (keyboard or tap).
+     No pause button (owner's choice). */
   var strip = $('[data-marquee]');
-  var toggle = strip && $('.marquee-toggle', strip);
-  if (toggle) {
-    toggle.addEventListener('click', function () {
-      var paused = toggle.getAttribute('aria-pressed') !== 'true';
-      toggle.setAttribute('aria-pressed', String(paused));
-      strip.classList.toggle('is-paused', paused);
-      strip.classList.toggle('is-playing', !paused);
-    });
-    var release = function () { strip.classList.remove('is-playing'); };
-    strip.addEventListener('mouseleave', function () { if (!strip.contains(document.activeElement)) release(); });
-    strip.addEventListener('focusout', function (e) { if (!strip.contains(e.relatedTarget) && !strip.matches(':hover')) release(); });
-  }
   /* logos stay lazy, but load all of them once the strip is within 800px of the viewport: native lazy loading never
      starts a logo that is still outside the strip's horizontal clip, so it would pop in while sliding into view */
   if (strip) {
