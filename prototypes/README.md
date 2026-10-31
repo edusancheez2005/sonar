@@ -4,10 +4,10 @@ Static HTML prototypes for roscap.co.uk, built with the site's own colours, type
 
 | Prototype | Folder | Status |
 |---|---|---|
-| Speak to us (contact page) | `speak-to-us/` | QA passed (ship, 8.5 of 10) |
+| Speak to us (contact page) | `speak-to-us/` | Revised after owner review: live page plus contact rows and a smaller FAQ |
 | Our Services capital stack (scroll animation) | `our-services-capital-stack/` | QA passed (ship, 8 of 10) |
 | Home: Track Record deal list (concept F) and market-rates panel, build-ready | `homepage-track-record-and-rates/` | QA passed (ship, 9 of 10) |
-| Partner Program | `partner-program/` | QA passed (ship, 8.5 of 10) |
+| Partner Program | `partner-program/` | Revised after owner review: live page plus tighter cards, the new How it works timeline and moving partner logos |
 | Cookie consent banner and preferences (site-wide) | `cookie-consent/` | Built and verified (72 checks); basic consent mode; policy wording for compliance review |
 
 `shared/` holds the brand tokens and base styles rebuilt from the live stylesheet (base.css), the shared nav and footer markup, fonts (Boska, Switzer), images taken from the owner's concept files, and the small shared script (nav, reveals, mock forms). Forms in the prototypes are switched off; nothing is sent anywhere.

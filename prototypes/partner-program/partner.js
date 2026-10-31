@@ -1,32 +1,31 @@
-/* Roscap prototype: Partner Program page behaviour.
-   No libraries. Everything here is progressive enhancement: without JS the page is fully readable and static. */
+/* Roscap prototype v2: Partner Program page behaviour. No libraries.
+   Everything here is progressive enhancement: without JS the page is fully readable and the marquee still runs
+   (CSS only, pauses on hover); only the pause button needs JS, so it is shown only when JS runs. */
 (function () {
   var root = document.documentElement;
   root.classList.add('js');
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasIO = 'IntersectionObserver' in window;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
-
-  /* hero entrance: one class on load; CSS does the rest (and nothing under reduced motion) */
-  var loaded = function () { root.classList.add('is-loaded'); };
-  if (document.readyState === 'complete') loaded(); else window.addEventListener('load', loaded);
-  setTimeout(loaded, 900); /* never wait on a slow image */
-
-  /* reveals: section blocks (.rv) and timeline steps (.step, fallback for browsers without scroll-driven animations) */
-  var revealables = $$('.rv').concat($$('.step'));
-  if (reduce || !('IntersectionObserver' in window)) {
-    revealables.forEach(function (el) { el.classList.add('is-in'); });
-  } else {
+  var revealOnce = function (els, opts) {
+    if (reduce || !hasIO) { els.forEach(function (el) { el.classList.add('is-in'); }); return; }
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
       });
-    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
-    revealables.forEach(function (el) { io.observe(el); });
-  }
+    }, opts);
+    els.forEach(function (el) { io.observe(el); });
+  };
 
-  /* sticky step indicator: highlight the step nearest the middle of the viewport */
+  /* 1. Live behaviour replica: each .section slides in once when it enters the viewport
+     (the live Webflow interaction on .section; nothing to build). CSS keeps it static under reduced motion. */
+  revealOnce($$('.section'), { threshold: 0 });
+
+  /* 2. How it works (from prototype v1): reveal fallback for browsers without scroll-driven animations,
+     and the sticky step indicator that highlights the step nearest the middle of the viewport. */
   var steps = $$('.step');
+  revealOnce(steps, { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
   var navItems = $$('.how-nav li');
   var setActive = function (id) {
     navItems.forEach(function (li) {
@@ -37,7 +36,7 @@
     });
   };
   if (steps.length && navItems.length) {
-    if ('IntersectionObserver' in window) {
+    if (hasIO) {
       var current = null;
       var io2 = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) { if (e.isIntersecting) current = e.target.id; });
@@ -48,36 +47,32 @@
     setActive(steps[0].id);
   }
 
-  /* brochure links: tick the checkbox, then let the anchor scroll to the form */
-  var brochure = $('#pf-brochure');
-  $$('[data-brochure]').forEach(function (a) {
-    a.addEventListener('click', function () {
-      if (brochure) brochure.checked = true;
+  /* 3. Our Partners marquee: pause/play toggle (WCAG 2.2.2). CSS does the motion and the hover/focus pause.
+     aria-pressed="true" means paused. An explicit "play" overrides the hover/focus pause until pointer and focus leave. */
+  var strip = $('[data-marquee]');
+  var toggle = strip && $('.marquee-toggle', strip);
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      var paused = toggle.getAttribute('aria-pressed') !== 'true';
+      toggle.setAttribute('aria-pressed', String(paused));
+      strip.classList.toggle('is-paused', paused);
+      strip.classList.toggle('is-playing', !paused);
     });
-  });
-
-  /* partner form: mock submit (data-mock). Validates with the browser, then shows the Webflow-style done state. */
-  var form = $('.pform');
-  if (form) {
-    var done = $('.pform-done');
-    var fail = $('.pform-fail');
-    var doneBrochure = $('.pform-done-brochure');
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        var bad = $(':invalid', form);
-        if (bad && bad.focus) bad.focus();
-        return;
-      }
-      /* honeypot filled: behave like success for the bot, send nothing */
-      var hp = $('#pf-website');
-      if (hp && hp.value) { form.reset(); return; }
-      if (fail) fail.hidden = true;
-      if (doneBrochure) doneBrochure.hidden = !(brochure && brochure.checked);
-      form.hidden = true;
-      if (done) { done.hidden = false; done.focus(); }
-    }, true);
+    var release = function () { strip.classList.remove('is-playing'); };
+    strip.addEventListener('mouseleave', function () { if (!strip.contains(document.activeElement)) release(); });
+    strip.addEventListener('focusout', function (e) { if (!strip.contains(e.relatedTarget) && !strip.matches(':hover')) release(); });
+  }
+  /* logos stay lazy, but load all of them once the strip is within 800px of the viewport: native lazy loading never
+     starts a logo that is still outside the strip's horizontal clip, so it would pop in while sliding into view */
+  if (strip) {
+    var logos = $$('img[loading="lazy"]', strip);
+    var eager = function () { logos.forEach(function (im) { im.loading = 'eager'; }); };
+    if (hasIO) {
+      var io3 = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) { eager(); io3.disconnect(); }
+      }, { rootMargin: '800px 0px' });
+      io3.observe(strip);
+    } else eager();
   }
 
   /* keep the nav solid when the page loads mid-way (site.js handles scroll) */

@@ -26,7 +26,9 @@ The site looks and feels right. The design is calm, consistent and premium, and 
 
 - Market rates panel (odometer) and the Track Record "deal list": both are good. The build-ready version fixes the things that would have gone wrong in production: the "Held" labels and dates that the live data cannot actually supply, a phone-layout accessibility error, a wave animation that was burning a third of a processor core, and a missing "data unavailable" state. One incident is worth knowing about: on 21 October the live rates widget showed "400.00%" for several hours after a data outage. The new version checks every number before showing it.
 - Our Services capital stack: now builds layer by layer as you scroll, in the same order as today's graphic, with no libraries and a plain static version for anyone who prefers reduced motion. Open `prototypes/our-services-capital-stack/our-services-capital-stack.bundle.html`.
-- Partner Program and Speak to Us: redesigned prototypes are ready to open in the same way. Anything we could not verify is marked "Confirm" rather than asserted.
+- Partner Program: the page stays as it is today, with three improvements: the four "Why partner" cards lose their empty space, the six steps of "How it works" become a clear vertical timeline instead of a carousel, and the partner logos move slowly side to side. The contact form's Submit button, which does not work on computers today, is fixed.
+- Speak to Us: the page stays as it is today, with email, phone, WhatsApp and Instagram listed under the heading and a shorter FAQ.
+- Cookie banner: built and ready for Shikhar. Visitors choose Accept or Reject with equal weight, and nothing is sent to Google until they say yes. The new Cookie and Privacy Policy wording should be read by whoever handles compliance before it goes live.
 
 ## What happens next
 

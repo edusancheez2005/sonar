@@ -1,67 +1,70 @@
-/* Roscap prototype: Partner Program page styles.
-   Builds on ../shared/base.css tokens. Motion: CSS scroll-driven (with @supports) + IO fallback; reduced motion = static. */
+/* Roscap prototype v2: Partner Program, rebuilt faithfully from the live page (www.roscap.co.uk/partner-program).
+   Values were measured on the live page with Playwright at 1440 and 390 and read from the live Webflow stylesheet.
+   Live Webflow class names are kept so the handoff maps 1:1. The one exception: live ".container" is ".wf-container" here,
+   because ../shared/base.css already owns ".container" (shared footer, How it works).
+   Changes vs live (everything else is a replica): Why cards spacing, How it works section (from prototype v1) with the live
+   brochure line, Partners marquee, invisible contact-form fixes. */
 
+/* ---------- page basics ---------- */
 html{scroll-padding-top:calc(var(--nav-h) + 1rem)}
+body.pp{text-rendering:auto} /* live renders with the browser default; ../shared/base.css sets optimizeLegibility */
 [hidden]{display:none !important}
 ol{list-style:none;margin:0;padding:0}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-.light :focus-visible{outline-color:var(--teal)}
+
+/* ---------- live replica: primitives ---------- */
+.wf-container{width:100%;max-width:1380px;margin-inline:auto;padding-inline:2.25rem}
+.section{position:relative;padding-block:6.25rem}
+.section.pt-0{padding-top:0}
+.flex-center{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:100px}
+.content-wrap{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:28px;max-width:790px;text-align:center}
+.content-wrap.is-large{max-width:873px}
+.heading-style-h1{font-family:var(--f-display);font-size:4rem;font-weight:500;line-height:1.3}
+.heading-style-h2{font-family:var(--f-display);font-size:2.5rem;font-style:italic;line-height:1.3}
+.heading-style-h2.text-weight-medium{font-style:normal;font-weight:500}
+.text-color-heading{color:var(--teal)}
+.text-color-black2{color:#282828}
+.text-color-golden{color:var(--gold)}
+.golden-divider{width:207px;height:2px;background:var(--gold)}
+.text-size-smedium{font-size:1.125rem;font-weight:400;line-height:1.55556}
+.text-size-smedium.text-weight-light{font-weight:300}
+.text-size-medium{font-size:1.25rem;font-weight:400;line-height:1.4}
+.text-size-large{font-size:1.375rem}
+.text-size-large.text-weight-light{font-weight:300;line-height:1.63636}
+.line-break-desktop{display:block}
+.button{-webkit-appearance:none;appearance:none;display:inline-block;background-color:#fff;color:var(--ink);text-align:center;border:0;border-radius:4px;padding:10px 20px;font:400 .875rem/1.5 var(--f-body);cursor:pointer;transition:all .2s}
+.button.golden{background-color:var(--gold)}
+.button.golden:hover{border:1px solid var(--gold);background-color:#fff;color:var(--ink)}
+
+/* ---------- hero (unchanged) ---------- */
+.section.is-header{display:flex;justify-content:center;align-items:center;min-height:100vh;padding-bottom:80px;color:#fff;isolation:isolate}
+.heading-wrap{position:relative;z-index:11;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:40px;text-align:center}
+.hero-heading-wrap{display:flex;flex-direction:column;gap:1.5rem;max-width:772px}
+.section.is-header h1{font-family:var(--f-display);font-size:4rem;font-weight:500;line-height:1}
+.hero-bg{position:absolute;inset:0;z-index:-1;width:100%;height:100vh;max-width:100%;object-fit:cover;border-radius:8px;pointer-events:none}
+.hero-bg-overlay{position:absolute;inset:0;z-index:2;background-color:rgba(4,52,53,.6)}
+
+/* ---------- why partner with us: cards ----------
+   CHANGED vs live (only this): live .pr-cards-grid has aspect-ratio 1361/394 + min-height 394px, .pr-cards has
+   justify-content:space-between and .pr-para-wrap has min-height 100px, which left about 150px of empty space between icon and text.
+   Now: no aspect-ratio/min-height on the grid, cards stack from the top with a 32px gap (28px on phones), text wrap has no min-height.
+   Equal heights per row come from the grid's default stretch. Width, radius, padding, colours, type and hover are as live. */
+.partnerctaa{display:flex;flex-direction:column;align-items:center;gap:6.25rem}
+.pr-cards-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;width:100%}
+.pr-cards{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:32px;padding:32px 28px;background-color:#fff;color:#282828;border:0 solid transparent;border-radius:6px;transition:all .2s cubic-bezier(.86,0,.07,1)}
+.pr-cards:hover{border:2px solid var(--gold)}
+.pr-icon{width:auto;height:83px;border-radius:8px}
+.pr-para-wrap{display:flex;flex-direction:column;gap:16px}
+
+/* ---------- how it works (from prototype v1, unchanged) ---------- */
 .tag.on-dark{color:#fff}
 .h2.on-dark{color:#fff}
-.sec-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px;margin-bottom:3.75rem}
-.sec-head .tag{margin-bottom:-2px}
-.sec-lead{max-width:44rem;margin-top:-4px}
 .p-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;color:#fff;font-size:15px;font-weight:500;border-bottom:1px solid rgba(225,201,121,.65);transition:border-color .2s,color .2s}
 .p-link:hover{border-color:var(--gold)}
 .p-link svg{width:16px;height:16px;fill:none;stroke:var(--gold);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s var(--ease)}
 .p-link:hover svg{transform:translateY(3px)}
 .p-link.dark{color:var(--teal);border-color:rgba(4,52,53,.35)}
 .p-link.dark:hover{border-color:var(--teal)}
-
-/* ---------- hero ---------- */
-.p-hero{position:relative;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);grid-template-rows:minmax(0,1fr) auto;min-height:100svh;background:var(--teal);color:#fff;isolation:isolate;overflow:hidden}
-.p-hero-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1.75rem;padding:calc(var(--nav-h) + 3.5rem) clamp(2rem,5vw,5rem) 4.5rem max(var(--gutter),env(safe-area-inset-left,0px));max-width:52rem;position:relative;z-index:1}
-.p-hero-copy::before{content:"";position:absolute;left:max(var(--gutter),env(safe-area-inset-left,0px));bottom:2.75rem;width:72px;height:2px;background:var(--gold);opacity:.9}
-/* who we work with: strip across the bottom of the hero */
-.who{grid-column:1/-1;position:relative;z-index:1;background:var(--teal-deep);border-top:1px solid var(--line-dark);padding-block:22px 26px}
-.who-in{display:flex;flex-direction:column;gap:16px}
-.who-h{display:flex;align-items:center;gap:14px;font:500 11.5px/1.4 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
-.who-h::after{content:"";flex:1;height:1px;background:var(--line-dark)}
-.who-list{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 1.25rem}
-.who-list li{display:flex;flex-direction:column;gap:4px;min-width:0;padding-left:1.1rem;border-left:1px solid var(--line-dark)}
-.who-list li:first-child{padding-left:0;border-left:0}
-.who-list b{font-weight:500;font-size:15px;line-height:1.3;color:#fff}
-.who-list span{font-weight:300;font-size:13px;line-height:1.45;color:rgba(255,255,255,.7)}
-.p-hero-tag{color:#fff}
-.p-hero-h{font:italic 500 clamp(2.6rem,4.6vw,4.1rem)/1.14 var(--f-display);text-wrap:balance;max-width:14ch}
-.p-hero-h .gold-text{display:inline}
-.p-hero-p{font-weight:300;font-size:1.125rem;line-height:1.65;color:rgba(255,255,255,.86);max-width:36rem}
-.p-hero-cta{display:flex;align-items:center;flex-wrap:wrap;gap:16px 28px;margin-top:.25rem}
-.p-hero-media{position:relative;min-height:100%}
-.p-hero-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:70% 50%}
-.p-hero-media::before{content:"";position:absolute;inset:0;background:var(--teal);mix-blend-mode:color;opacity:.55}
-.p-hero-media::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--teal) 0%,rgba(4,52,53,.72) 22%,rgba(4,52,53,.28) 60%,rgba(4,52,53,.42) 100%),linear-gradient(0deg,rgba(4,52,53,.5),rgba(4,52,53,0) 40%)}
-/* entrance (static under reduced motion) */
-@media (prefers-reduced-motion:no-preference){
-  html.js .who{opacity:0;transition:opacity 1s var(--ease) .35s}
-  html.js.is-loaded .who{opacity:1}
-  html.js .p-hero-copy>*{opacity:0;transform:translateY(18px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
-  html.js .p-hero-copy>*:nth-child(2){transition-delay:.08s}
-  html.js .p-hero-copy>*:nth-child(3){transition-delay:.16s}
-  html.js .p-hero-copy>*:nth-child(4){transition-delay:.24s}
-  html.js .p-hero-media img{transform:scale(1.05);transition:transform 1.8s var(--ease)}
-  html.js.is-loaded .p-hero-copy>*{opacity:1;transform:none}
-  html.js.is-loaded .p-hero-media img{transform:none}
-}
-
-/* ---------- why partner ---------- */
-.why-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 2.5rem}
-.why{position:relative;display:flex;flex-direction:column;gap:14px;padding:30px 0 10px;border-top:2px solid var(--gold);min-width:0}
-.why-icon{height:54px;width:auto;object-fit:contain;object-position:left center;margin-bottom:8px}
-.why h3{font:500 1.1875rem/1.3 var(--f-body);color:var(--teal);text-wrap:balance}
-.why p{font-weight:300;font-size:1rem;line-height:1.55;color:var(--grey)}
-.why-cta{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:16px 32px;margin-top:3.5rem}
-
 /* ---------- how it works ---------- */
 .how{position:relative;padding-block:6.25rem;background:var(--teal) url(img/texture-waves.webp) center/cover no-repeat;color:#fff;isolation:isolate}
 .how::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(4,52,53,.55),rgba(4,52,53,.85) 40%,rgba(4,52,53,.92))}
@@ -165,97 +168,125 @@ ol{list-style:none;margin:0;padding:0}
 @keyframes seg-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @keyframes dot-in{from{transform:scale(0)}to{transform:scale(1)}}
 
-/* ---------- trust ---------- */
-.trust-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(3rem,6vw,6rem);align-items:center}
-.trust-copy{display:flex;flex-direction:column;align-items:flex-start;gap:22px}
-.expect-h{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-top:18px}
-.expect{display:grid;width:100%;max-width:30rem;border-top:1px solid var(--line);margin-top:-8px}
-.expect li{position:relative;padding:14px 0 14px 26px;border-bottom:1px solid var(--line);font-size:1rem;line-height:1.5;color:var(--black2)}
-.expect li::before{content:"";position:absolute;left:2px;top:22px;width:8px;height:8px;border-radius:50%;background:var(--gold)}
-.logos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line)}
-.logos li{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:164px;padding:24px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center;min-width:0}
-.logos img{max-width:76%;max-height:48px;width:auto;height:auto;object-fit:contain}
-.logos li:nth-child(4) img,.logos li:nth-child(6) img,.logos li:nth-child(7) img{max-height:68px}
-.logos span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey);line-height:1.35}
+/* live closing line of the band ("For more information, download our brochure or contact us below." + Download), as live:
+   faint full-width rule (live .white-divider.horiz), 50px, line + 16px + button, 56px to the end of the band */
+.how-more{margin-top:4.5rem}
+.how-more .white-divider{height:1px;margin-inline:calc(-1 * max(var(--gutter),env(safe-area-inset-left,0px)));background-color:rgba(255,255,255,.2);opacity:.2}
+.partner-div.botoom{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:1rem;margin-top:50px}
 
-/* ---------- partner form ---------- */
-.pform-wrap{padding:64px 56px}
-.pform-wrap .subs-bg{width:100%;opacity:.22}
-.pform-lead{font-weight:300;font-size:1.0625rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:28rem;margin-top:-8px}
-.pform-contact{font-style:normal;display:flex;flex-direction:column;gap:0;font-size:15px;margin-top:-6px}
-.pform-contact a{display:inline-flex;align-items:center;min-height:44px;color:var(--gold);width:max-content}
-.pform-contact a:hover{text-decoration:underline;text-underline-offset:3px}
-.pform-block{min-width:0}
-.pform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 16px}
-.pform-req{grid-column:1/-1;font-size:13px;color:rgba(255,255,255,.72);margin-bottom:-4px}
-.pf{display:flex;flex-direction:column;gap:7px;min-width:0}
-.pf.wide,.pf-privacy{grid-column:1/-1}
-.pf label{font-size:14px;font-weight:500;color:#fff}
-.pf label small{font-weight:300;color:rgba(255,255,255,.72);font-size:13px}
-.pf abbr{text-decoration:none;color:var(--gold);margin-left:2px}
-.pf input,.pf select,.pf textarea{width:100%;height:54px;border:1px solid transparent;border-radius:6px;padding:0 16px;font:400 1rem/1.3 var(--f-body);color:var(--ink);background:#fff;transition:box-shadow .2s,border-color .2s}
-.pf textarea{height:auto;min-height:120px;padding:14px 16px;resize:vertical;line-height:1.5}
-.pf textarea::placeholder{color:#6e737c} /* 4.8:1 on white; #8d8d8d measured 3.3:1 */
-.pf select{appearance:none;-webkit-appearance:none;padding-right:44px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23043435' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center/18px}
-.pf select:invalid{color:#5a5f68}
-.pf input:focus-visible,.pf select:focus-visible,.pf textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.pf input:user-invalid,.pf select:user-invalid{border-color:#D86A5B;box-shadow:0 0 0 3px rgba(216,106,91,.25)}
-.pf-hp{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
-.pf-check{flex-direction:row;align-items:center;gap:12px;min-height:44px}
-.pf-check input{width:24px;height:24px;flex:none;accent-color:var(--gold);margin:0;cursor:pointer}
-.pf-check label{display:flex;align-items:center;min-height:44px;font-weight:400;font-size:15px;cursor:pointer}
-.pf-privacy{font-size:13px;line-height:1.5;color:rgba(255,255,255,.72)}
-.pf-privacy a{color:#fff;text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:2px 0}
-.pf-actions{align-items:flex-start;margin-top:4px}
-.pf-actions .sbtn{min-width:200px;padding:16px 32px}
-.pform-done,.pform-fail{border-radius:10px;padding:28px 28px 30px;display:grid;gap:10px;line-height:1.55}
-.pform-done{background:var(--cream);color:var(--teal)}
-.pform-done .vis-k{margin-bottom:2px}
-.pform-done .pform-mock{font-size:13px;color:var(--grey);border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
-.pform-fail{background:#fff;color:#7a2a20;border:1px solid #D86A5B}
-.pform-fail a{text-decoration:underline;text-underline-offset:3px}
-
-/* ---------- generic reveal for section blocks ---------- */
-@media (prefers-reduced-motion:no-preference){
-  html.js .rv{opacity:0;transform:translateY(22px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
-  html.js .rv.is-in{opacity:1;transform:none}
+/* ---------- our partners: logo tiles, live replica (.container = .wf-container here). Under reduced motion this is exactly what shows ---------- */
+.assets-card-content-wrap{position:relative;width:100%;border-top:1px solid rgba(40,40,40,.2);border-bottom:1px solid rgba(40,40,40,.2)}
+.assets-card-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.assets-card-new{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:28px;aspect-ratio:1;padding-top:3.375rem;padding-bottom:3.375rem;text-align:center;border-left:1px solid rgba(40,40,40,.2)}
+.assets-card-new.is-last{border-right-color:rgba(40,40,40,0)}
+.assets-card-new.lasst{border-right:1px solid rgba(40,40,40,.2)}
+.asset-image{width:auto;height:auto;max-width:204px;max-height:108px;object-fit:contain;border-radius:8px}
+.asset-image._2x2{width:150px;height:130px;max-height:none}
+.assets-mid-divider{position:absolute;top:50%;right:0;width:100%;height:1px;background-color:rgba(40,40,40,.2)}
+@media (max-width:991px){.asset-image{max-width:140px}.assets-card-new{aspect-ratio:auto}}
+@media (max-width:767px){
+  .assets-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .asset-image._2x2{height:140px}
+  .assets-card-new{border-bottom:1px solid rgba(40,40,40,.2);border-left-style:solid;border-right:1px solid rgba(40,40,40,.2)}
+  .hide-mobile-landscape{display:none}
+}
+@media (max-width:479px){
+  .assets-card-content-wrap{padding-left:1rem;padding-right:1rem}
+  .assets-card-grid{grid-template-columns:minmax(0,1fr);overflow:auto}
+  .asset-image._2x2{max-width:200px}
+  .assets-card-new{border-bottom-color:rgba(40,40,40,0)}
+  .assets-card-new.is-last{border-left-color:rgba(40,40,40,.2);border-right-color:rgba(40,40,40,.2)}
 }
 
-/* ---------- shared footer adjustments (heading level, tap areas) ---------- */
+/* ---------- our partners: CHANGED vs live. MARQUEE BLOCK START (paste-ready, see HANDOFF.md) ----------
+   Combo classes on the live elements: .assets-card-content-wrap.marquee, .container.marquee-viewport, .assets-card-grid.marquee-group,
+   plus a new .marquee-track between them and a second, aria-hidden copy of the grid. Everything that moves sits inside
+   prefers-reduced-motion:no-preference, so with reduced motion the untouched live 4 x 2 grid shows (second copy and button hidden).
+   Slow loop (45s at 1440 = 8 tiles x 327px), edge fade, pauses on hover, on focus inside the strip and with the toggle (WCAG 2.2.2). */
+.marquee{--tile:327px;--loop:45s;--fade:clamp(32px,8%,128px)}
+@keyframes marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@media (prefers-reduced-motion:no-preference){
+  .assets-card-content-wrap.marquee{padding-left:0;padding-right:0}
+  .marquee .marquee-viewport{max-width:calc(var(--tile) * 8);padding-left:0;padding-right:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--fade),#000 calc(100% - var(--fade)),transparent);mask-image:linear-gradient(90deg,transparent,#000 var(--fade),#000 calc(100% - var(--fade)),transparent)}
+  .marquee .marquee-track{display:flex;width:max-content;animation:marquee var(--loop) linear infinite;will-change:transform}
+  .marquee .marquee-group{display:flex;flex:none;overflow:visible}
+  .marquee .marquee-group .assets-card-new{flex:none;width:var(--tile);height:var(--tile);aspect-ratio:auto;padding-top:0;padding-bottom:0;border-style:solid;border-color:rgba(40,40,40,.2);border-width:0 0 0 1px}
+  .marquee .assets-mid-divider{display:none}
+  .marquee:hover .marquee-track,.marquee:focus-within .marquee-track,.marquee.is-paused .marquee-track{animation-play-state:paused}
+  /* an explicit press of "play" wins over hover/focus until the pointer and focus have left the strip (see the JS) */
+  .marquee.is-playing:not(.is-paused) .marquee-track{animation-play-state:running}
+  html.js .marquee .marquee-toggle{display:grid}
+}
+@media (prefers-reduced-motion:reduce){.marquee .marquee-group[aria-hidden="true"]{display:none}}
+/* pause/play toggle: quiet teal outline on cream, 44px target, just below the strip on the right; only shown when JS runs and motion is allowed */
+.marquee-toggle{display:none;position:absolute;right:max(16px,calc((100% - 1380px) / 2 + 2.25rem));top:calc(100% + 12px);bottom:auto;z-index:2;width:44px;height:44px;place-items:center;padding:0;border:1px solid #043435;border-radius:50%;background-color:#FFFCF5;color:#043435;cursor:pointer;transition:background-color .2s,color .2s}
+.marquee-toggle:hover{background-color:#043435;color:#FFFCF5}
+.marquee-toggle:focus-visible{outline:2px solid #043435;outline-offset:3px}
+.marquee-toggle svg{display:block;width:16px;height:16px;fill:currentColor}
+.marquee-toggle .i-play,.marquee-toggle[aria-pressed="true"] .i-pause{display:none}
+.marquee-toggle[aria-pressed="true"] .i-play{display:block}
+@media (max-width:991px){.marquee{--tile:240px;--loop:34s}}
+@media (max-width:767px){.marquee{--tile:200px;--loop:30s;--fade:64px}.marquee-toggle{right:16px}}
+@media (max-width:767px) and (prefers-reduced-motion:no-preference){html.js .assets-card-content-wrap.marquee{margin-bottom:44px}} /* room for the pause button below the strip */
+/* ---------- MARQUEE BLOCK END ---------- */
+
+/* ---------- contact block (unchanged look) ---------- */
+.subscribe-form-wrap{position:relative;overflow:hidden;display:flex;gap:16px;padding:72px 44px;border-radius:12px;background-color:var(--teal);color:#fff}
+.subs-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:50px;width:90%}
+.subs-form-block{position:relative;z-index:5;min-width:0}
+.input-field{display:block;width:100%;height:72px;margin:0 0 10px;padding:24px;border:1px solid #ccc;border-radius:6px;background-color:#fff;color:var(--ink);font:300 1.125rem/1.42857 var(--f-body);vertical-align:middle}
+.input-field::placeholder{color:#999}
+.input-field:focus{border-color:#3898ec;outline:0}
+.input-field:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+textarea.input-field.height-135{height:136px;margin-bottom:0}
+.button.golden.formbuttonhide-desktop{display:none}
+.subs-form-block .form-note{min-height:0;margin:0;font-size:14px;line-height:1.5;color:#fff}
+.subs-form-block .form-note:not(:empty){margin-top:12px}
+.subs-detail-wrap{position:relative;z-index:5;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:40px;min-width:0}
+.contact-banner-wrap{display:flex;flex-direction:column;gap:40px}
+/* live wave texture: the live 684 KB SVG at 30% opacity, pre-composited on teal as a 47 KB WebP (1x) + 2x; same position and fit as live */
+.subscribe-form-wrap .subs-bg{position:absolute;top:0;right:0;bottom:auto;left:auto;z-index:auto;width:80%;height:100%;max-width:100%;object-fit:cover;opacity:1;border-radius:8px;pointer-events:none}
+.subs-circle-bg{position:absolute;inset:0;max-width:none;border-radius:8px;pointer-events:none}
+
+/* ---------- live behaviour replica: every .section slides in from the bottom once (live Webflow interaction "Slide in bottom",
+   100px, 1s, ease out). Prototype only, nothing to build: it already exists on live. Static under reduced motion. ---------- */
+@media (prefers-reduced-motion:no-preference){
+  html.js .section{opacity:0;transform:translateY(100px)}
+  html.js .section.is-in{opacity:1;transform:none;transition:opacity 1s cubic-bezier(.25,1,.5,1),transform 1s cubic-bezier(.25,1,.5,1)}
+}
+
+/* ---------- shared footer adjustments (heading level, tap areas) and prototype label, as prototype v1 ---------- */
 .foot-col h3{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:6px}
 .social a{position:relative}
 .social a::after{content:"";position:absolute;inset:-8px}
 
-/* ---------- prototype label ---------- */
 .proto-tag{position:fixed;right:14px;bottom:14px;z-index:60;background:var(--ink);color:#fff;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:9px 13px;border-radius:999px;opacity:.86;pointer-events:none}
 
-/* ---------- responsive ---------- */
-/* short laptops (1280x720, 1366x768, 1024x768): tighter hero so the "Who we work with" strip reaches the fold,
-   and a shorter sticky column so the brochure link is never clipped (measured 740px tall against a 720px viewport) */
+/* ---------- responsive (live breakpoints 991 / 767 / 479) ---------- */
+/* short laptops (1280x720, 1366x768, 1024x768): shorter sticky column so the brochure link is never clipped (from v1) */
 @media (min-width:992px) and (max-height:820px){
-  .p-hero-copy{padding-top:calc(var(--nav-h) + 2.25rem);padding-bottom:3.5rem;gap:1.5rem}
-  .p-hero-copy::before{bottom:2rem}
   .how-aside{top:calc(var(--nav-h) + .75rem)}
   .how-aside-in{gap:16px}
   .how-nav{margin-top:8px}
   .how-nav a{min-height:42px}
 }
 @media (max-width:1180px){
-  .why-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:2.5rem 2.5rem}
-  .why{padding-bottom:0}
   .step{grid-template-columns:minmax(0,1fr) minmax(0,16rem);gap:1.75rem}
 }
 @media (max-width:991px){
-  .p-hero{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;min-height:0}
-  .p-hero-media{order:-1;min-height:46svh;max-height:420px}
-  .p-hero-media img{position:absolute}
-  .p-hero-media::after{background:linear-gradient(180deg,rgba(4,52,53,.55) 0%,rgba(4,52,53,.15) 45%,var(--teal) 100%)}
-  .p-hero-copy{padding:1.5rem var(--gutter) 3.25rem;max-width:none;gap:1.5rem}
-  .p-hero-copy::before{display:none} /* the stacked CTA already carries a gold underline; a second rule read as a duplicate */
-  .who{padding-block:20px 24px}
-  .who-in{gap:14px}
-  .who-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem 1.5rem}
-  .who-list li:nth-child(4){padding-left:0;border-left:0}
+  .section{padding-block:4rem}
+  .heading-style-h1{font-size:3rem}
+  .line-break-desktop{display:inline}
+  .pr-cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .subscribe-form-wrap{padding-top:40px;padding-bottom:40px}
+  .subs-form-grid{display:flex;flex-direction:column;gap:24px;width:100%}
+  .subs-form-block{order:9999}
+  .subs-detail-wrap{gap:24px}
+  .contact-button-wrap{display:none}
+  .button.golden.formbuttonhide-desktop{display:block;margin-top:1rem}
+  .subscribe-form-wrap .subs-bg{height:70%}
+  .subs-circle-bg{z-index:1;width:auto;height:90%;object-fit:cover}
+  /* how it works (v1) */
   .how{padding-block:4.5rem}
   .how-grid{grid-template-columns:minmax(0,1fr);gap:3rem}
   .how-aside{position:static}
@@ -263,22 +294,18 @@ ol{list-style:none;margin:0;padding:0}
   .steps{padding-top:0}
   .step{grid-template-columns:minmax(0,1fr);gap:1.5rem;align-items:start;padding:2rem 0 2rem 2.75rem}
   .step .vis{max-width:26rem}
-  .trust-grid{grid-template-columns:minmax(0,1fr);gap:2.75rem}
-  .pform-wrap{padding:44px 32px}
-  .logos li{min-height:132px}
 }
 @media (max-width:767px){
-  .sec-head{align-items:flex-start;text-align:left;margin-bottom:2.5rem;gap:18px}
-  .sec-head .gdiv{align-self:flex-start}
-  .why-grid{grid-template-columns:minmax(0,1fr);gap:1.75rem}
-  .why{padding-top:22px;gap:10px}
-  .why-icon{height:46px;margin-bottom:2px}
-  .why-cta{justify-content:flex-start;margin-top:2.5rem}
-  .who-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1.25rem}
-  .who-list li{padding:11px 0;border-left:0;border-bottom:1px solid var(--line-dark)}
-  .who-list li:nth-child(4),.who-list li:first-child{padding-left:0}
-  .who-list li:nth-last-child(-n+2){border-bottom:0}
-  .who-list span{display:none}
+  .section{padding-block:3.25rem}
+  .section.pt-0{padding-bottom:2rem}
+  .section.is-header h1{font-size:2.5rem}
+  .heading-style-h1{font-size:2.5rem}
+  .heading-style-h2.text-weight-medium{font-size:1.5rem}
+  .text-size-large{font-size:1.25rem}
+  .flex-center{gap:3.125rem}
+  .how-more{margin-top:3rem}
+  .partner-div.botoom{text-align:center;padding-inline:1rem}
+  /* how it works (v1) */
   .how{padding-block:3.5rem}
   .how-grid{gap:2.25rem}
   .step{padding:1.5rem 0 1.5rem 2.25rem}
@@ -289,20 +316,24 @@ ol{list-style:none;margin:0;padding:0}
   .step:first-child .step-dot{top:calc(.5rem + 2px)}
   .step:first-child .step-seg{top:calc(.5rem + 10px)}
   .step:last-child .step-seg{height:calc(.5rem + 10px)}
-  .logos{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .logos li{min-height:116px;padding:18px 14px}
-  .logos img{max-width:80%;max-height:40px}
-  .logos li:nth-child(4) img,.logos li:nth-child(6) img,.logos li:nth-child(7) img{max-height:58px}
-  .pform-wrap{padding:36px 20px}
-  .pform{grid-template-columns:minmax(0,1fr);gap:16px}
+  /* shared footer tap areas and prototype label (v1) */
   .foot-col{gap:0}
   .foot-col a{display:flex;align-items:center;min-height:44px}
-  .pf-actions .sbtn{width:100%}
   .proto-tag{right:10px;bottom:10px;font-size:10px;padding:8px 11px}
 }
 @media (max-width:479px){
-  .p-hero-media{min-height:40svh}
-  .p-hero-h{font-size:2.35rem}
-  .p-hero-p{font-size:1rem}
-  .p-hero-cta .sbtn{width:100%}
+  .wf-container{padding-inline:16px}
+  .text-size-smedium{font-size:.875rem}
+  .text-size-smedium.text-weight-light.text-color-black2{font-size:1.125rem}
+  .text-size-medium{font-size:1.125rem}
+  .pr-cards-grid{grid-template-columns:minmax(0,1fr)}
+  .pr-cards{gap:28px}
+  .pr-icon{height:48px}
+  .subscribe-form-wrap{padding:24px 16px}
+  .input-field{height:50px;padding-left:10px;font-size:16px}
+  textarea.input-field.height-135{margin-bottom:10px}
+  .subs-form-grid{gap:32px}
+  .contact-banner-wrap{gap:24px}
 }
+/* end of the teal band: 56px under the Download button, as live (placed after the v1 padding-block rules on purpose) */
+.how{padding-bottom:3.5rem}
