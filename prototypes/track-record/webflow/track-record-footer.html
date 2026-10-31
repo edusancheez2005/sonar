@@ -1,0 +1,106 @@
+<!-- Roscap Track Record: Selected Transactions grid behaviour (page settings > Custom code > Before </body> tag),
+     in place of the two Swiper sliders. HANDOFF.md section 2. -->
+<script>
+(function(){var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var hasIO='IntersectionObserver' in window;var $=function(s,r){return(r||document).querySelector(s)};var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+  var deals = document.getElementById('deals');
+  if (deals) (function () {
+    var grid = $('.deal-grid', deals), cards = $$('.deal', grid), btns = $$('.deal-f', deals);
+    var more = $('.deal-more', deals), status = $('.deal-status', deals);
+    var phone = window.matchMedia('(max-width: 767px)');
+    var region = 'all', expanded = false, timer = null;
+    var motion = !reduce && hasIO && typeof Element.prototype.animate === 'function';
+    var limit = function () { return phone.matches ? 4 : 6; };
+    /* region from the CMS field if the item carries one (data-region), otherwise from the location line:
+       "..., UK" or "London" is UK, "..., USA" is North America, everything else is Europe */
+    cards.forEach(function (c) {
+      if (c.getAttribute('data-region')) return;
+      var loc = (($('.st-loc', c) || c).textContent || '').trim();
+      c.setAttribute('data-region', /(,\s*UK|London)$/.test(loc) ? 'uk' : /,\s*USA$/.test(loc) ? 'na' : 'europe');
+    });
+    var matches = function (c) { return region === 'all' || c.getAttribute('data-region') === region; };
+
+    function wanted() {
+      var n = 0, L = limit();
+      return cards.map(function (c) { var m = matches(c); if (m) n++; return m && (expanded || n <= L); });
+    }
+    function render() {
+      var w = wanted(), total = cards.filter(matches).length;
+      cards.forEach(function (c, i) { c.hidden = !w[i]; });
+      more.hidden = total <= limit();
+      more.textContent = expanded ? 'Show fewer' : 'View all transactions';
+      more.setAttribute('aria-expanded', String(expanded));
+    }
+    function announce() {
+      var shown = cards.filter(function (c) { return !c.hidden; }).length, total = cards.filter(matches).length;
+      status.textContent = shown + ' of ' + total + ' transactions shown';
+    }
+
+    /* cards that come into view together fade up one after another, 90 ms apart */
+    if (motion) {
+      deals.classList.add('deals-armed');
+      var rio = new IntersectionObserver(function (entries) {
+        entries.filter(function (e) { return e.isIntersecting; })
+          .map(function (e) { return e.target; })
+          .sort(function (a, b) { return cards.indexOf(a) - cards.indexOf(b); })
+          .forEach(function (c, i) { c.style.setProperty('--d', (i * 90) + 'ms'); c.classList.add('is-in'); rio.unobserve(c); });
+      }, { rootMargin: '0px 0px -6% 0px', threshold: 0.12 });
+      cards.forEach(function (c) { rio.observe(c); });
+    } else cards.forEach(function (c) { c.classList.add('is-in'); });
+
+    /* filter: the cards that stay glide to their new places, the new ones fade in (FLIP with the Web Animations API) */
+    function change(mutate) {
+      var before = new Map();
+      cards.forEach(function (c) { if (!c.hidden) before.set(c, c.getBoundingClientRect()); });
+      mutate();
+      var next = wanted();
+      var leaving = cards.filter(function (c, i) { return !c.hidden && !next[i]; });
+      var entering = cards.filter(function (c, i) { return c.hidden && next[i]; });
+      if (!motion) { render(); announce(); return; }
+      clearTimeout(timer);
+      cards.forEach(function (c) { c.getAnimations().forEach(function (a) { a.cancel(); }); });
+      var outs = leaving.map(function (c) {
+        return c.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.97)' }], { duration: 180, easing: 'ease-in', fill: 'forwards' });
+      });
+      timer = setTimeout(function () {
+        render();
+        outs.forEach(function (a) { a.cancel(); });
+        cards.forEach(function (c) {
+          if (c.hidden || !before.has(c)) return;
+          var a = before.get(c), b = c.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
+          if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+          c.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: 560, easing: 'cubic-bezier(.22,1,.36,1)' });
+        });
+        /* new cards already seen once fade up here; cards never seen yet are revealed by the scroll reveal above */
+        entering.filter(function (c) { return c.classList.contains('is-in'); }).forEach(function (c, i) {
+          c.animate([{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 560, delay: 90 + i * 60, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' });
+        });
+        announce();
+      }, leaving.length ? 180 : 0);
+    }
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var r = b.getAttribute('data-f');
+        if (r === region) return;
+        btns.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        change(function () { region = r; expanded = false; });
+      });
+    });
+
+    /* View all / Show fewer. Collapsing keeps the button where it was on screen, so the visitor is not left in the footer. */
+    more.addEventListener('click', function () {
+      if (!expanded) { expanded = true; render(); announce(); return; }
+      var y0 = more.getBoundingClientRect().top, root = document.documentElement;
+      root.style.overflowAnchor = 'none';
+      expanded = false; render(); announce();
+      window.scrollBy(0, more.getBoundingClientRect().top - y0);
+      root.style.overflowAnchor = '';
+    });
+    var onBp = function () { render(); };
+    if (phone.addEventListener) phone.addEventListener('change', onBp); else if (phone.addListener) phone.addListener(onBp);
+
+    render();
+    deals.classList.add('js-ready');
+  })();
+})();
+</script>

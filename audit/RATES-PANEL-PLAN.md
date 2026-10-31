@@ -31,12 +31,16 @@ Today the panel reads: Bank of England "Held, since the 18 Dec 2025 cut"; Fed "H
 4. Alert. Let the GitHub Action fail loudly (email from GitHub) when validation rejects a value, so it is fixed the same day.
 5. Euribor freshness. The fixing arrives one to two days late because it is scraped from a third-party web page. If Euribor stays, take it from a licensed source; if it is swapped (section 4), the ECB Data Portal publishes the deposit facility rate as data.
 
-## 4. Euribor decision (in the message to Clemente)
+## 4. Euribor: kept for now
 
-EMMI, which publishes Euribor, says showing it on a commercial website needs a licence; the free delayed data is for non-commercial use only, and "Euribor" is a registered trademark that must be marked. Options:
-- Swap the card for the ECB deposit facility rate: free to show with attribution, a policy rate like the other two, so the "Held / Cut / Raised" wording works the same way. Recommended.
+Decision of 31 October 2026: **keep Euribor on the panel for now** and revisit later. It is no longer a question for Clemente.
+
+The open point, for when it is revisited: EMMI, which publishes Euribor, says showing it on a commercial website needs a licence; the free delayed data is for non-commercial use only, and "Euribor" is a registered trademark that must be marked. The options then:
 - Keep Euribor and take EMMI's licence (about 1,000 euros a year per website at the last published price), credit EMMI and add the trademark notice.
+- Swap the card for the ECB deposit facility rate: free to show with attribution, a policy rate like the other two, so the "Held / Cut / Raised" wording works the same way.
 - Remove the third card.
+
+While Euribor stays, the freshness point in section 3 (item 5) still applies: the fixing arrives one to two days late because it is scraped from a third-party web page.
 
 ## 5. On the page
 
@@ -48,5 +52,5 @@ EMMI, which publishes Euribor, says showing it on a commercial website needs a l
 
 1. Ship the prototype's panel with the new wording (Shikhar, with the homepage handoff).
 2. Add validation and the alert to the feed (Edu, this week).
-3. Euribor: act on Clemente's answer.
+3. Euribor: kept for now; revisit the licence point (section 4) when convenient.
 4. Add the decision calendar and switch the wording to "Held at the <date> decision" (Edu, when convenient).

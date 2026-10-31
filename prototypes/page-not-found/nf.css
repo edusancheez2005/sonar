@@ -1,0 +1,52 @@
+/* Roscap prototype: the "page not found" (404) page. Live today: Webflow's default utility page (grey icon, no menu, no footer).
+   Proposed: the site's menu and footer around the live call-to-action panel (teal, gold waves), with the live 404 wording. */
+.wf-container{width:100%;max-width:1380px;margin-inline:auto;padding-inline:2.25rem}
+.nav.is-solid{background:var(--teal);padding-block:12px;box-shadow:0 12px 30px -20px rgba(0,0,0,.55)}
+.nf-section{padding-top:calc(var(--nav-h) + 3rem);padding-bottom:5rem}
+.nf-panel{position:relative;overflow:hidden;display:flex;justify-content:center;align-items:center;min-height:min(612px,calc(100svh - var(--nav-h) - 8rem));padding:72px 44px;border-radius:12px;background-color:var(--teal);color:#fff;isolation:isolate}
+.nf-waves{position:absolute;inset:0 0 auto auto;width:80%;height:100%;max-width:100%;object-fit:cover;border-radius:.5rem;pointer-events:none;z-index:-1}
+.nf-circles{position:absolute;inset:0;width:auto;max-width:none;height:100%;border-radius:.5rem;pointer-events:none;z-index:-1}
+.nf-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.25rem;max-width:34rem;text-align:center}
+.nf-code{font-family:var(--f-display);font-style:italic;font-weight:500;font-size:clamp(5.5rem,14vw,9.5rem);line-height:.9;letter-spacing:.01em;
+  background-image:linear-gradient(#ffebaa,#e1c979);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:var(--gold)}
+.nf-h{font-family:var(--f-display);font-weight:500;font-size:3rem;line-height:1.2;color:#fff}
+.nf-p{font-size:1.125rem;font-weight:300;line-height:1.55;color:rgba(255,255,255,.86)}
+.nf-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:1rem}
+.button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 22px;border:1px solid transparent;border-radius:4px;font:400 .875rem/1.5 var(--f-body);color:var(--ink);background:#fff;transition:all .2s}
+.button.golden{background-color:var(--gold)}
+.button.golden:hover{border-color:var(--gold);background-color:#fff;color:var(--ink)}
+.button.nf-ghost{background:transparent;border-color:rgba(255,255,255,.55);color:#fff}
+.button.nf-ghost:hover{border-color:var(--gold);color:var(--gold)}
+
+/* a quiet entrance, once: the panel settles and the figures rise in turn */
+@media (prefers-reduced-motion:no-preference){
+  .nf-panel{animation:nf-panel .9s cubic-bezier(.22,1,.36,1) both}
+  .nf-in>*{animation:nf-rise .8s cubic-bezier(.22,1,.36,1) both}
+  .nf-in>:nth-child(1){animation-delay:.15s}
+  .nf-in>:nth-child(2){animation-delay:.27s}
+  .nf-in>:nth-child(3){animation-delay:.36s}
+  .nf-in>:nth-child(4){animation-delay:.45s}
+}
+@keyframes nf-panel{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+@keyframes nf-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+.foot-col h3{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:6px}
+.social a{position:relative}
+.social a::after{content:"";position:absolute;inset:-8px}
+.proto-tag{position:fixed;right:14px;bottom:14px;z-index:60;background:var(--ink);color:#fff;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:9px 13px;border-radius:999px;opacity:.86;pointer-events:none}
+
+@media (max-width:767px){
+  .nf-section{padding-top:calc(var(--nav-h) + 1.5rem);padding-bottom:3rem}
+  .nf-panel{padding:56px 20px;min-height:0}
+  .nf-waves{height:70%}
+  .nf-circles{object-fit:cover;height:90%}
+  .nf-h{font-size:2.25rem}
+  .nf-p{font-size:1rem}
+  .foot-col{gap:0}
+  .foot-col a{display:flex;align-items:center;min-height:44px}
+  .proto-tag{right:10px;bottom:10px;font-size:10px;padding:8px 11px}
+}
+@media (max-width:479px){
+  .wf-container{padding-inline:16px}
+}
+.foot-col h2{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:6px}

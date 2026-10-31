@@ -1,8 +1,29 @@
 # Privacy Policy: what to add
 
-The live Privacy Policy (https://www.roscap.co.uk/privacy-policy) is sound in structure and already names the company number. It is missing the facts below. The company facts are taken from the public registers on 31 October 2026; the retention periods are proposals (common UK practice for an advisory business) to confirm with whoever handles compliance. This is a drafting aid, not legal advice.
+The finished text is ready: `prototypes/legal-pages/privacy-policy.html` (and the matching `cookie-policy.html`). Open it and press "Highlight what is new" to see every addition. Install steps: `prototypes/legal-pages/HANDOFF.md`. This is a drafting aid, not legal advice.
 
-## 1. Facts from the public registers
+## The list: what the live Privacy Policy is missing
+
+- [ ] **Registered office**: F17 Node Cowork, 1 Enterprise Road, Roundswell, Barnstaple, England, EX31 3YB.
+- [ ] **ICO registration number ZB399363**, and the statement that Roscap is the data controller.
+- [ ] **Last updated** date at the top.
+- [ ] **Working email link** (info@roscap.co.uk); today it points to "#".
+- [ ] **Partner Program**: the data held about partners and the clients they introduce, why (introductions, commission payments) and the lawful basis.
+- [ ] **Legitimate interests** named (running the business, relationships and records, security), with the right to object.
+- [ ] **Website analytics and Google Ads measurement**, only with cookie consent (Google Signals off, no personalised adverts).
+- [ ] **Named providers**: Webflow (hosting, forms), Cloudflare (security, the _cfuvid cookie), Amazon Web Services (website files, homepage video), jsDelivr (code libraries), GitHub (market rates feed), Microsoft 365 (email), Google (analytics and ads measurement, with consent).
+- [ ] **International transfers**: the safeguard for United States providers (UK Extension to the EU-US Data Privacy Framework where certified, otherwise the UK International Data Transfer Agreement or the UK Addendum).
+- [ ] **Retention periods**: enquiries 2 years; mandate and due diligence records 5 years after the deal or relationship ends; accounting and tax 6 years; contracts including Partner Program and commissions 6 years; marketing until unsubscribe; analytics 14 months; cookie choice 6 months.
+- [ ] **If someone does not provide data**: we may not be able to act for them.
+- [ ] **Automated decisions**: none with legal or similar effects.
+- [ ] **Opting out of marketing** by email.
+- [ ] **ICO complaints**: ico.org.uk/make-a-complaint, 0303 123 1113.
+- [ ] **Link to the Cookie Policy**.
+- [ ] **Headings**: one H1 and an H2 per section (today the title is an H3 and the sections are bold lines).
+
+Everything else in the live policy is kept word for word.
+
+## Facts used, and where they come from (checked 31 October 2026)
 
 | Item | Value | Source |
 |---|---|---|
@@ -11,48 +32,15 @@ The live Privacy Policy (https://www.roscap.co.uk/privacy-policy) is sound in st
 | Registered office | F17 Node Cowork, 1 Enterprise Road, Roundswell, Barnstaple, England, EX31 3YB | Companies House |
 | Incorporated | 29 July 2021 | Companies House |
 | ICO registration (data protection fee) | ZB399363, Tier 1, registered 4 October 2022, current until 3 October 2027 | ICO register |
+| Email provider | Microsoft 365 | the domain's public mail records (MX and SPF point to Microsoft) |
 
 Links: https://find-and-update.company-information.service.gov.uk/company/13536901 and https://ico.org.uk/ESDWebPages/Entry/ZB399363
 
-Note: the ICO entry still shows the old address (114 Westbourne Rd, Marsh, Huddersfield). Update it to the registered office through the ICO's online account so the two registers agree.
+The retention periods are the proposal for an advisory business of this kind; they are yours to set.
 
-## 2. Text to add
+## Also to do (in `TO-DO.md`)
 
-**Under "Who we are", replace the first line with:**
-
-Roscap Limited is a company registered in England and Wales (company number 13536901) with its registered office at F17 Node Cowork, 1 Enterprise Road, Roundswell, Barnstaple, England, EX31 3YB. We are the data controller for the personal data described in this policy and are registered with the Information Commissioner's Office (registration number ZB399363). You can contact us about this policy at info@roscap.co.uk.
-
-**At the top of the page:**
-
-Last updated: [the date it is published]
-
-**Under "Sharing and disclosures", after the list, add:**
-
-The service providers we use for our website include:
-- Webflow, Inc. (United States): website hosting, content management and website forms.
-- Cloudflare, Inc. (United States): security and delivery of the website on Webflow's behalf (it sets the strictly necessary _cfuvid cookie).
-- Amazon Web Services (United States): storage and delivery of website files, including the homepage video.
-- jsDelivr: delivery of some of the website's code libraries.
-- GitHub, Inc. (United States): hosting of the market rates data shown on our homepage.
-- Google Ireland Limited and Google LLC: Google Analytics and Google Ads conversion measurement, only if you agree to these cookies.
-- [Confirm and name] our email provider for info@roscap.co.uk, and the CRM, e-signature, data room and screening providers the policy already mentions in general terms.
-
-**Under "International transfers", add:**
-
-Where a provider is in the United States, we rely on the UK Extension to the EU-US Data Privacy Framework where the provider is certified, or on the UK International Data Transfer Addendum.
-
-**Under "Data retention", replace the paragraph with (proposed periods, confirm before publishing):**
-
-We keep personal data only for as long as we need it:
-- Enquiries that do not lead to a mandate: 2 years from our last contact.
-- Client, lender and investor records for a mandate, including due diligence records: 5 years after the transaction or the business relationship ends.
-- Accounting and tax records: 6 years from the end of the financial year they relate to.
-- Contracts, including partner (introducer) agreements and commission records: 6 years after the agreement ends.
-- Marketing and newsletter contacts: until you unsubscribe; we keep a short suppression record so we do not contact you again.
-- Website analytics (only with your consent): 14 months.
-- Your cookie choice: 6 months, after which we ask again.
-
-## 3. Small fixes on the legal pages
-
-- The email links on four legal pages point to "#" and go nowhere. Change them to mailto:info@roscap.co.uk.
-- Publish the new Cookie Policy wording from `prototypes/cookie-consent/webflow/cookie-policy-wording.md` at the same time as the cookie banner, so the two match.
+- The ICO entry still shows the old address (114 Westbourne Rd, Marsh, Huddersfield): update it so the two registers agree.
+- Set Google Analytics data retention to 14 months and check Google Signals is off, so the policies are true.
+- Publish the new Cookie Policy on the same day as the cookie banner.
+- Fix the "#" email links on Terms of Use, Disclaimer and Accessibility Statement too.

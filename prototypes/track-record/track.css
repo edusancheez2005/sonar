@@ -1,0 +1,240 @@
+/* Roscap prototype: Track Record, rebuilt from the live page (www.roscap.co.uk/track-record).
+   Live Webflow class names are kept so everything maps 1:1 to the Designer (live ".container" is ".wf-container" here,
+   because ../shared/base.css already owns ".container" for the shared footer).
+   Two designed changes, each in a marked block: the FOOTPRINT MAP and the SELECTED TRANSACTIONS grid. Everything else replicates live. */
+
+/* ---------- page basics ---------- */
+body.tr{text-rendering:auto}
+h1,h2,h3{font-family:var(--f-display);font-weight:700}
+
+/* ---------- live replica: primitives (values from the live Webflow stylesheet) ---------- */
+.wf-container{width:100%;max-width:1380px;margin-inline:auto;padding-inline:2.25rem}
+.section{position:relative;padding-top:6.25rem;padding-bottom:6.25rem}
+.section.pt-0{padding-top:0}
+.section.ctasection{padding-top:0;padding-bottom:6.25rem}
+.heading-style-h1{font-family:var(--f-display);font-size:4rem;font-weight:500;line-height:1.3}
+.text-weight-medium{font-weight:500}
+.text-weight-light{font-weight:300}
+.text-color-heading{color:var(--teal)}
+.text-color-black2{color:var(--black2)}
+.text-size-smedium{font-size:1.125rem;font-weight:400;line-height:1.55556}
+.text-size-smedium.text-weight-light{font-weight:300}
+.text-size-smedium.text-weight-light.text-color-black2{font-size:1.125rem} /* live combo class: keeps 18px on phones */
+.tag-wrap{border:1px solid var(--gold);border-radius:30px;padding:8px 20px}
+.golden-divider{width:207px;height:2px;background-color:var(--gold)}
+.flex-center{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:100px}
+.content-wrap{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:28px;max-width:790px;text-align:center}
+.content-wrap.is-large{max-width:873px}
+.button{display:inline-block;background-color:#fff;color:var(--ink);text-align:center;border:1px solid transparent;border-radius:4px;padding:10px 20px;font-family:var(--f-body);font-size:.875rem;line-height:1.5;cursor:pointer;transition:all .2s}
+.button.golden{background-color:var(--gold)}
+.button.golden:hover{border:1px solid var(--gold);background-color:#fff;color:var(--ink)}
+
+/* ---------- hero (as live) ---------- */
+.section.is-header{display:flex;justify-content:center;align-items:center;min-height:100vh;padding-bottom:80px;color:#fff;isolation:isolate}
+.heading-wrap{position:relative;z-index:10;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:40px}
+.heading-wrap.is-center{z-index:11;text-align:center;align-items:center}
+.hero-heading-wrap{display:flex;flex-direction:column;gap:24px;max-width:509px}
+.hero-heading-wrap.is-center{gap:1.5rem;max-width:730px}
+.hero-bg{position:absolute;inset:0;z-index:-1;width:100%;height:100vh;max-width:100%;object-fit:cover;border-radius:.5rem;pointer-events:none}
+.hero-bg-overlay{position:absolute;inset:0;z-index:2;width:100%;height:100%;background-color:rgba(4,52,53,.6)}
+
+/* ===================== FOOTPRINT MAP BLOCK START (CHANGED; paste-ready, see HANDOFF.md section 1) =====================
+   Same map as live (same outlines, colours, labels and gold pins), redrawn from the live file at under a pixel of tolerance:
+   165 KB instead of 6.66 MB, so it can show on every screen size instead of a flat picture on phones and tablets.
+   Entrance, once, when a third of the map is on screen: the seven countries turn from grey to teal one after another
+   (United Kingdom first, then Ireland, France, Spain, Italy, Albania and, across the Atlantic, the USA), each pin lands as its
+   country fills, and its line in the list underneath lights up at the same moment. About 1.9 s in all.
+   After that: hovering a country or a line of the list, tapping either, or tabbing to the list shows the live gold "Deals" label
+   over the pin and gently dims the other countries. Without JS the static map shows (noscript), and the list is always there. */
+.section.fp-section{padding-bottom:6.25rem}
+.fp{display:flex;flex-direction:column;align-items:center;gap:2.25rem}
+.fp-map{position:relative;width:100%;max-width:1389px;aspect-ratio:1389/606}
+.fp-map .fp-svg{display:block;width:100%;height:auto;overflow:visible}
+.fp-svg .fp-lab{font-family:var(--f-body)}
+.fp-c,.fp-pin,.fp-lab-a{cursor:pointer}
+.fp-pin-i{transform-box:fill-box;transform-origin:50% 100%;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
+.fp-ring{fill:none;stroke:#e1c979;stroke-width:1.6;opacity:0;transform-box:fill-box;transform-origin:50% 50%}
+.fp-c .fp-t{transition:fill .3s ease,fill-opacity .3s ease}
+.fp-lab-a{transition:opacity .3s ease}
+
+/* the live gold label, one element that glides from country to country */
+.fp-pop{position:absolute;left:0;top:0;z-index:2;display:flex;align-items:center;gap:14px;padding:9px 14px 9px 14px;border-radius:4px;
+  background:linear-gradient(#ffebaa,#e1c979);color:var(--teal);font:500 .8125rem/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
+  box-shadow:0 8px 22px rgba(4,52,53,.16);pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 12px)) translateY(8px);
+  transition:opacity .2s ease,transform .32s cubic-bezier(.22,1,.36,1),left .38s cubic-bezier(.22,1,.36,1),top .38s cubic-bezier(.22,1,.36,1)}
+.fp-pop::after{content:"";position:absolute;left:50%;bottom:-5px;width:11px;height:11px;background:#e2ca7b;transform:translateX(-50%) rotate(45deg)}
+.fp-pop-v{padding-left:14px;border-left:1px solid rgba(4,52,53,.28);color:#282828;font-size:1rem;letter-spacing:0}
+.fp-pop.is-on{opacity:1;transform:translate(-50%,calc(-100% - 12px))}
+.fp-pop.no-glide{transition:opacity .2s ease,transform .32s cubic-bezier(.22,1,.36,1)}
+
+/* the list under the map: every country and its figure, always visible; also the keyboard and touch way into the map */
+.fp-list{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;max-width:1200px;margin:0;padding:0;list-style:none}
+.fp-list li{margin:0;padding:0}
+.fp-chip{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:8px 18px;border:1px solid var(--gold);border-radius:999px;background:transparent;
+  color:var(--ink);font:400 .9375rem/1.2 var(--f-body);cursor:pointer;
+  transition:background-color .25s ease,border-color .25s ease,color .25s ease,opacity .5s cubic-bezier(.22,1,.36,1),transform .5s cubic-bezier(.22,1,.36,1)}
+.fp-chip-n{color:#56625f;font-size:.8125rem;transition:color .25s ease}
+.fp-chip:hover,.fp-chip.is-on{background-color:var(--teal);border-color:var(--teal);color:#fff}
+.fp-chip:hover .fp-chip-n,.fp-chip.is-on .fp-chip-n{color:var(--gold)}
+
+/* one country in focus: the others step back */
+.fp.has-on .fp-c:not(.is-on) .fp-t{fill-opacity:.38}
+.fp.has-on .fp-lab-a:not(.is-on){opacity:.55}
+.fp.has-on .fp-pin:not(.is-on) .fp-pin-i{opacity:.5}
+.fp .fp-pin.is-on .fp-pin-i{transform:translateY(-3px) scale(1.12)}
+
+/* entrance: armed by track.js only when motion is allowed, played once when a third of the map is visible.
+   --d is each country's start (0, 150, 300 ... ms), set by track.js on the country, its label, its pin and its list line. */
+@media (prefers-reduced-motion:no-preference){
+  .fp.fp-armed .fp-c .fp-t{fill:#ededed}
+  .fp.fp-armed .fp-lab-a{opacity:0}
+  .fp.fp-armed .fp-pin-i{opacity:0;transform:translateY(-22px)}
+  .fp.fp-armed .fp-chip{opacity:0;transform:translateY(10px)}
+  .fp.fp-armed.is-in .fp-c .fp-t{fill:#034c4f;transition:fill .75s cubic-bezier(.22,.61,.36,1) var(--d,0ms)}
+  .fp.fp-armed.is-in .fp-lab-a{opacity:1;transition:opacity .45s ease calc(var(--d,0ms) + 380ms)}
+  .fp.fp-armed.is-in .fp-pin-i{opacity:1;transform:none;transition:transform .6s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 200ms),opacity .3s ease calc(var(--d,0ms) + 200ms)}
+  .fp.fp-armed.is-in .fp-ring{animation:fp-ring 1s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 620ms) 1 both}
+  .fp.fp-armed.is-in .fp-chip{opacity:1;transform:none;transition:background-color .25s ease,border-color .25s ease,color .25s ease,opacity .5s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 250ms),transform .5s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 250ms)}
+  /* once the entrance is over (track.js adds .fp-done), hover and focus react at once, without the entrance delays */
+  .fp.fp-armed.is-in.fp-done .fp-c .fp-t{transition:fill .3s ease,fill-opacity .3s ease}
+  .fp.fp-armed.is-in.fp-done .fp-lab-a{transition:opacity .3s ease}
+  .fp.fp-armed.is-in.fp-done .fp-pin-i{transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
+  .fp.fp-armed.is-in.fp-done .fp-chip{transition:background-color .25s ease,border-color .25s ease,color .25s ease}
+}
+@keyframes fp-ring{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(2.4)}}
+@media (prefers-reduced-motion:reduce){
+  .fp-pop,.fp-pin-i,.fp-c .fp-t,.fp-chip{transition:none}
+}
+@media (max-width:767px){
+  .fp{gap:1.75rem}
+  .fp-svg .fp-lab{display:none}
+  .fp-pop{padding:7px 11px;gap:10px;font-size:.6875rem}
+  .fp-pop-v{padding-left:10px;font-size:.875rem}
+  .fp-list{gap:8px}
+  .fp-chip{padding:8px 14px;font-size:.875rem}
+}
+/* ===================== FOOTPRINT MAP BLOCK END ===================== */
+
+/* ===================== SELECTED TRANSACTIONS BLOCK START (CHANGED; paste-ready, see HANDOFF.md section 2) =====================
+   The two live sliders (two rows of two cards, arrows and dots) become one grid of the same 22 CMS cards, in the same card style.
+   Region filter (UK, Europe, North America: the three markets named in the live copy), six cards first (four on phones) and
+   "View all transactions" for the rest. Cards fade up in turn as they come into view, the photo settles from a slight zoom,
+   and when the filter changes the cards that stay glide to their new places while the new ones fade in.
+   On a computer, hovering a card zooms its photo a little and draws a gold line under the title. */
+.deals .section.deals-section{padding-bottom:6.25rem}
+.deals{display:flex;flex-direction:column;align-items:center;gap:2.75rem}
+.deals .deal-filter{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.deals .deal-f{min-height:44px;padding:8px 22px;border:1px solid var(--gold);border-radius:999px;background:transparent;color:var(--ink);font:400 .9375rem/1.2 var(--f-body);cursor:pointer;
+  transition:background-color .25s ease,border-color .25s ease,color .25s ease}
+.deals .deal-f:hover{border-color:var(--teal)}
+.deals .deal-f[aria-pressed="true"]{background-color:var(--teal);border-color:var(--teal);color:#fff}
+.deals .deal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3.5rem 2rem;width:100%}
+.deals .deal[hidden]{display:none}
+.deals .deal{min-width:0}
+.deals .st-card-wrap{height:100%}
+.deals .st-thumbnail-wrap{position:relative;overflow:hidden;height:auto;border-radius:.5rem;aspect-ratio:1.6/1;background:#ece8dc}
+.deals .st-thumbnail-wrap .image{display:block;width:100%;height:100%;object-fit:cover;
+  transition:transform 1.4s cubic-bezier(.22,1,.36,1) var(--d,0ms),scale .9s cubic-bezier(.22,1,.36,1)}
+.deals .st-card-detail-wrap{padding-top:1.5rem}
+.deals .st-price-wrap{display:flex;align-items:stretch;flex-wrap:wrap;column-gap:12px;row-gap:2px;color:var(--teal)}
+.deals .st-loc,.deals .st-amt{font-family:var(--f-display);font-size:1.75rem;font-weight:500;line-height:1.25;color:var(--teal)}
+.deals .green-divider{width:1px;background-color:rgba(4,52,53,.4)}
+.deals .st-features-wrap{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:.7rem;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid rgba(40,40,40,.2)}
+.deals .st-features-wrap::before{content:"";position:absolute;left:0;top:-1px;width:100%;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:0 50%;transition:transform .7s cubic-bezier(.22,1,.36,1)}
+.deals .st-features-card{display:grid;grid-template-columns:6.5rem minmax(0,1fr);gap:12px;font-size:.875rem;line-height:1.45}
+.deals .st-k{font-weight:500;color:var(--ink)}
+.deals .st-v{font-weight:300;color:var(--black2)}
+@media (hover:hover) and (pointer:fine){
+  .deals .st-card-wrap:hover .st-features-wrap::before{transform:none}
+}
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+  .deals .st-card-wrap:hover .image{scale:1.045}
+}
+@media (prefers-reduced-motion:reduce){
+  .deals .st-features-wrap::before,.deals .st-thumbnail-wrap .image{transition:none}
+}
+/* before track.js has run, show the first six (four on phones) so the page does not jump */
+html.w-mod-js .deals:not(.js-ready) .deal:nth-child(n+7){display:none}
+.deals .deal-status{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.deals .deal-more-wrap{display:flex;justify-content:center}
+.deals .deal-more{min-width:220px;min-height:44px}
+.deals .deal-more[hidden]{display:none}
+
+@media (prefers-reduced-motion:no-preference){
+  .deals-armed .deal:not(.is-in) .st-card-wrap{opacity:0;translate:0 32px}
+  .deals-armed .deal:not(.is-in) .image{transform:scale(1.08)}
+  .deals-armed .deal.is-in .st-card-wrap{opacity:1;translate:none;transition:opacity .8s cubic-bezier(.22,1,.36,1) var(--d,0ms),translate .9s cubic-bezier(.22,1,.36,1) var(--d,0ms)}
+}
+@media (max-width:991px){
+  .deals .deal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:3rem 1.5rem}
+}
+@media (max-width:767px){
+  .deals{gap:2rem}
+  .deals .deal-grid{grid-template-columns:minmax(0,1fr);gap:2.75rem}
+  html.w-mod-js .deals:not(.js-ready) .deal:nth-child(n+5){display:none}
+  .deals .st-loc,.deals .st-amt{font-size:1.5rem}
+}
+@media (max-width:479px){
+  .deals .deal-f{padding:8px 16px}
+  .deals .st-features-card{grid-template-columns:6rem minmax(0,1fr)}
+}
+/* ===================== SELECTED TRANSACTIONS BLOCK END ===================== */
+
+/* ---------- CTA (as live) ---------- */
+.subscribe-form-wrap{position:relative;overflow:hidden;display:flex;gap:16px;padding:72px 44px;border-radius:12px;background-color:var(--teal);color:#fff}
+.subscribe-form-wrap.is-about{justify-content:center;align-items:center;height:auto;min-height:612px}
+.subscribe-form-wrap .subs-bg{position:absolute;inset:0 0 auto auto;z-index:auto;width:80%;height:100%;max-width:100%;object-fit:cover;opacity:1;border-radius:.5rem;pointer-events:none}
+.subs-circle-bg{position:absolute;inset:0;width:auto;max-width:none;border-radius:.5rem;pointer-events:none}
+.ab-banner-head-wrap{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:40px;max-width:530px;text-align:center}
+.ab-banner-head-wrap .heading-style-h1{color:#fff}
+
+/* ---------- live behaviour replica (exists on live as a Webflow interaction; nothing to build):
+   every .section slides in once as it enters, 100 px and 1 s, ease out quart. The map and the deals grid hold still,
+   so their own entrances read clearly. Switched off under prefers-reduced-motion. ---------- */
+@media (prefers-reduced-motion:no-preference){
+  html.w-mod-js .section{opacity:0;translate:0 100px}
+  html.w-mod-js .section.is-in{opacity:1;translate:none;transition:opacity 1s cubic-bezier(.25,1,.5,1),translate 1s cubic-bezier(.25,1,.5,1)}
+  html.w-mod-js .section.fp-section,html.w-mod-js .section.deals-section{opacity:1;translate:none}
+}
+
+/* ---------- shared footer adjustments and prototype label, as the other prototypes ---------- */
+.foot-col h3{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:6px}
+.social a{position:relative}
+.social a::after{content:"";position:absolute;inset:-8px}
+.proto-tag{position:fixed;right:14px;bottom:14px;z-index:60;background:var(--ink);color:#fff;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:9px 13px;border-radius:999px;opacity:.86;pointer-events:none}
+
+/* ---------- responsive: live breakpoints 991 / 767 / 479 ---------- */
+@media (max-width:991px){
+  .heading-style-h1{font-size:3rem}
+  .section{padding-top:4rem;padding-bottom:4rem}
+  .section.pt-0{padding-top:0}
+  .section.is-header{padding-bottom:80px}
+  .section.ctasection{padding-top:0;padding-bottom:6.25rem}
+  .section.fp-section,.section.deals-section{padding-bottom:4rem}
+  .subscribe-form-wrap{padding-top:40px;padding-bottom:40px}
+  .subscribe-form-wrap .subs-bg{height:70%}
+  .subs-circle-bg{z-index:1;object-fit:cover;height:90%}
+}
+@media (max-width:767px){
+  .heading-style-h1{font-size:2.5rem}
+  .section{padding-top:3.25rem;padding-bottom:3.25rem}
+  .section.pt-0{padding-top:0;padding-bottom:2rem}
+  .section.ctasection{padding-bottom:3rem}
+  .section.fp-section,.section.deals-section{padding-bottom:3.25rem}
+  .flex-center{gap:3.125rem}
+  .subscribe-form-wrap.is-about{min-height:400px}
+  .foot-col{gap:0}
+  .foot-col a{display:flex;align-items:center;min-height:44px}
+  .proto-tag{right:10px;bottom:10px;font-size:10px;padding:8px 11px}
+}
+@media (max-width:479px){
+  .wf-container{padding-inline:16px}
+  .section{padding-top:3.25rem;padding-bottom:3.25rem}
+  .section.pt-0{padding-top:0}
+  .section.is-header{padding-bottom:80px}
+  .section.ctasection{padding-top:0;padding-bottom:2rem}
+  .text-size-smedium{font-size:.875rem}
+  .tag-wrap{padding-left:16px;padding-right:16px;font-size:.875rem}
+  .subscribe-form-wrap{padding:24px 16px}
+  .subscribe-form-wrap.is-about{padding-top:40px;padding-bottom:40px}
+}
