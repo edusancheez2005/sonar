@@ -1,0 +1,533 @@
+{
+  "results": [
+    {
+      "name": "first visit: banner visible",
+      "ok": true
+    },
+    {
+      "name": "first visit: nothing stored",
+      "ok": true
+    },
+    {
+      "name": "gtag log starts with consent default (all optional denied)",
+      "ok": true,
+      "detail": [
+        "consent",
+        "default",
+        {
+          "ad_storage": "denied",
+          "ad_user_data": "denied",
+          "ad_personalization": "denied",
+          "analytics_storage": "denied",
+          "functionality_storage": "granted",
+          "security_storage": "granted",
+          "wait_for_update": 500
+        }
+      ]
+    },
+    {
+      "name": "gtag log: set ads_data_redaction true and url_passthrough false",
+      "ok": true
+    },
+    {
+      "name": "gtag log: no consent update before a choice",
+      "ok": true,
+      "detail": [
+        "consent default",
+        "set ads_data_redaction",
+        "set url_passthrough"
+      ]
+    },
+    {
+      "name": "basic mode: no gtag.js loader and no config before a choice",
+      "ok": true,
+      "detail": [
+        "consent",
+        "set",
+        "set"
+      ]
+    },
+    {
+      "name": "banner bottom-left, max 440 wide",
+      "ok": true,
+      "detail": {
+        "x": 24,
+        "y": 564.953125,
+        "width": 440,
+        "height": 311.046875
+      }
+    },
+    {
+      "name": "banner is first in body after the skip link",
+      "ok": true
+    },
+    {
+      "name": "banner does not steal focus",
+      "ok": true
+    },
+    {
+      "name": "no horizontal overflow at 1440",
+      "ok": true
+    },
+    {
+      "name": "axe 1440 banner serious+critical = 0",
+      "ok": true,
+      "detail": {
+        "counts": {
+          "critical": 0,
+          "serious": 0,
+          "moderate": 0,
+          "minor": 0
+        },
+        "list": []
+      }
+    },
+    {
+      "name": "tab order: skip link, then banner (policy link, accept, reject, manage)",
+      "ok": true,
+      "detail": [
+        "a.skip \"Skip to content\"",
+        "a.rc-a \"Cookie Policy\"",
+        "button.rc-btn \"Accept all\"",
+        "button.rc-btn \"Reject non-essential\"",
+        "button.rc-text \"Manage preferences\""
+      ]
+    },
+    {
+      "name": "dialog opens from Manage preferences",
+      "ok": true
+    },
+    {
+      "name": "dialog receives focus",
+      "ok": true
+    },
+    {
+      "name": "banner hidden while dialog open",
+      "ok": true
+    },
+    {
+      "name": "page behind dialog is inert",
+      "ok": true
+    },
+    {
+      "name": "focus trap: 12 Tabs stay inside the dialog",
+      "ok": true
+    },
+    {
+      "name": "focus trap: Shift+Tab wraps and stays inside",
+      "ok": true
+    },
+    {
+      "name": "axe 1440 dialog serious+critical = 0",
+      "ok": true,
+      "detail": {
+        "counts": {
+          "critical": 0,
+          "serious": 0,
+          "moderate": 0,
+          "minor": 0
+        },
+        "list": []
+      }
+    },
+    {
+      "name": "dialog status before any choice",
+      "ok": true,
+      "detail": "Your choice: none saved yet. Optional cookies stay off until you choose."
+    },
+    {
+      "name": "Escape closes without saving: dialog hidden, banner back, nothing stored",
+      "ok": true
+    },
+    {
+      "name": "focus returns to Manage preferences",
+      "ok": true,
+      "detail": "button.rc-text \"Manage preferences\""
+    },
+    {
+      "name": "inert removed after close",
+      "ok": true
+    },
+    {
+      "name": "switch toggles with Space (aria-checked true)",
+      "ok": true
+    },
+    {
+      "name": "essential switch disabled and checked",
+      "ok": true
+    },
+    {
+      "name": "Save choices stores analytics on, marketing off, version 1, ISO timestamp",
+      "ok": true,
+      "detail": {
+        "version": 1,
+        "analytics": true,
+        "marketing": false,
+        "timestamp": "2026-10-31T12:47:23.766Z"
+      }
+    },
+    {
+      "name": "gtag update after save: analytics granted, ads denied",
+      "ok": true,
+      "detail": [
+        "consent",
+        "update",
+        {
+          "analytics_storage": "granted",
+          "ad_storage": "denied",
+          "ad_user_data": "denied",
+          "ad_personalization": "denied"
+        }
+      ]
+    },
+    {
+      "name": "basic mode after save (analytics only): gtag.js loads once, GA4 configured, Google Ads not configured",
+      "ok": true,
+      "detail": [
+        "(prototype) gtag.js for G-H8HS2R6NLS loads here, on the first yes (basic consent mode) ",
+        "config G-H8HS2R6NLS"
+      ]
+    },
+    {
+      "name": "live region announces",
+      "ok": true,
+      "detail": "Preferences saved: analytics on, marketing off."
+    },
+    {
+      "name": "banner and dialog gone after save",
+      "ok": true
+    },
+    {
+      "name": "footer link reopens dialog with current choice and date",
+      "ok": true,
+      "detail": "Your choice: analytics on, marketing off. Saved 31 October 2026."
+    },
+    {
+      "name": "reopened switches reflect stored choice",
+      "ok": true
+    },
+    {
+      "name": "url unchanged by footer link (no #hash jump)",
+      "ok": true
+    },
+    {
+      "name": "Escape after a stored choice: no banner",
+      "ok": true
+    },
+    {
+      "name": "focus returns to footer link",
+      "ok": true,
+      "detail": "a.cookie-preferences \"Cookie preferences\""
+    },
+    {
+      "name": "RoscapConsent.reset(): banner back, storage cleared",
+      "ok": true
+    },
+    {
+      "name": "reset sends a denied update",
+      "ok": true
+    },
+    {
+      "name": "Accept all: both true and roscap-consent event fired with the object",
+      "ok": true,
+      "detail": {
+        "ls": {
+          "version": 1,
+          "analytics": true,
+          "marketing": true,
+          "timestamp": "2026-10-31T12:47:25.462Z"
+        },
+        "evt": {
+          "version": 1,
+          "analytics": true,
+          "marketing": true,
+          "timestamp": "2026-10-31T12:47:25.462Z"
+        }
+      }
+    },
+    {
+      "name": "gtag update after accept: analytics, ad_storage, ad_user_data granted; personalization denied",
+      "ok": true,
+      "detail": [
+        "consent",
+        "update",
+        {
+          "analytics_storage": "granted",
+          "ad_storage": "granted",
+          "ad_user_data": "granted",
+          "ad_personalization": "denied"
+        }
+      ]
+    },
+    {
+      "name": "basic mode after accept: Google Ads configured once, loader still once",
+      "ok": true
+    },
+    {
+      "name": "reload with stored choice: no banner, update granted before gtag.js loader",
+      "ok": true,
+      "detail": {
+        "iUpd": 3,
+        "iLoad": 4
+      }
+    },
+    {
+      "name": "Reject non-essential: both false stored, update all denied, banner gone",
+      "ok": true,
+      "detail": {
+        "version": 1,
+        "analytics": false,
+        "marketing": false,
+        "timestamp": "2026-10-31T12:47:26.979Z"
+      }
+    },
+    {
+      "name": "reload after reject: no banner, update denied applied from storage",
+      "ok": true
+    },
+    {
+      "name": "basic mode after reject + reload: no gtag.js loader, no config",
+      "ok": true
+    },
+    {
+      "name": "version bump: banner re-asks, stale choice ignored, no update sent",
+      "ok": true
+    },
+    {
+      "name": "reduced motion: banner shown with no transition",
+      "ok": true,
+      "detail": {
+        "dur": "0s",
+        "opacity": "1",
+        "transform": "none"
+      }
+    },
+    {
+      "name": "reduced motion: dialog has no animation",
+      "ok": true,
+      "detail": "none"
+    },
+    {
+      "name": "390: banner visible",
+      "ok": true
+    },
+    {
+      "name": "390: banner is a full-width bottom sheet",
+      "ok": true,
+      "detail": {
+        "x": 0,
+        "y": 485.953125,
+        "width": 390,
+        "height": 358.046875
+      }
+    },
+    {
+      "name": "390: scrollWidth <= 390",
+      "ok": true,
+      "detail": 390
+    },
+    {
+      "name": "390: banner buttons >= 44px tall",
+      "ok": true,
+      "detail": [
+        {
+          "t": "Accept all",
+          "w": 348,
+          "h": 46
+        },
+        {
+          "t": "Reject non-essential",
+          "w": 348,
+          "h": 46
+        },
+        {
+          "t": "Manage preferences",
+          "w": 151,
+          "h": 44
+        }
+      ]
+    },
+    {
+      "name": "axe 390 banner serious+critical = 0",
+      "ok": true,
+      "detail": {
+        "counts": {
+          "critical": 0,
+          "serious": 0,
+          "moderate": 0,
+          "minor": 0
+        },
+        "list": []
+      }
+    },
+    {
+      "name": "390: dialog opens",
+      "ok": true
+    },
+    {
+      "name": "390: scrollWidth <= 390 with dialog",
+      "ok": true
+    },
+    {
+      "name": "390: dialog controls >= 44px",
+      "ok": true,
+      "detail": [
+        {
+          "t": "Close without saving",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "t": "switch",
+          "w": 60,
+          "h": 44
+        },
+        {
+          "t": "switch",
+          "w": 60,
+          "h": 44
+        },
+        {
+          "t": "switch",
+          "w": 60,
+          "h": 44
+        },
+        {
+          "t": "Save choices",
+          "w": 182,
+          "h": 46
+        },
+        {
+          "t": "Accept all",
+          "w": 158,
+          "h": 46
+        },
+        {
+          "t": "Reject non-essential",
+          "w": 350,
+          "h": 46
+        }
+      ]
+    },
+    {
+      "name": "390: dialog fits without inner scroll",
+      "ok": true,
+      "detail": {
+        "h": 781.09375,
+        "scroll": 781,
+        "client": 781
+      }
+    },
+    {
+      "name": "axe 390 dialog serious+critical = 0",
+      "ok": true,
+      "detail": {
+        "counts": {
+          "critical": 0,
+          "serious": 0,
+          "moderate": 0,
+          "minor": 0
+        },
+        "list": []
+      }
+    },
+    {
+      "name": "390: tap toggles marketing switch",
+      "ok": true
+    },
+    {
+      "name": "390: Accept all stores both true",
+      "ok": true
+    },
+    {
+      "name": "390: Reject stores both false",
+      "ok": true
+    },
+    {
+      "name": "390: footer link reopens dialog",
+      "ok": true
+    },
+    {
+      "name": "http: no roscap_consent cookie before a choice",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "http: cookie set after Accept (JSON version/analytics/marketing/timestamp, Path=/, SameSite=Lax, about 180 days)",
+      "ok": true,
+      "detail": {
+        "val": {
+          "version": 1,
+          "analytics": true,
+          "marketing": true,
+          "timestamp": "2026-10-31T12:47:34.645Z"
+        },
+        "path": "/",
+        "sameSite": "Lax",
+        "days": 180,
+        "secure": false
+      }
+    },
+    {
+      "name": "http: localStorage mirror matches cookie",
+      "ok": true
+    },
+    {
+      "name": "http: head snippet reads the cookie and updates before the loader",
+      "ok": true
+    },
+    {
+      "name": "http: reset removes the cookie",
+      "ok": true
+    },
+    {
+      "name": "http: Reject writes both false",
+      "ok": true,
+      "detail": {
+        "version": 1,
+        "analytics": false,
+        "marketing": false,
+        "timestamp": "2026-10-31T12:47:36.145Z"
+      }
+    },
+    {
+      "name": "http: _ga and _gcl_au removed when their category is rejected",
+      "ok": true,
+      "detail": [
+        "roscap_consent"
+      ]
+    },
+    {
+      "name": "http: stale cookie version re-asks",
+      "ok": true
+    },
+    {
+      "name": "zero console errors across all runs",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "no third-party requests from the bundle",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "CSS + JS under 12 KB unminified",
+      "ok": true,
+      "detail": {
+        "bundle": 253253,
+        "css": 5261,
+        "js": 6800,
+        "head": 3099
+      }
+    }
+  ],
+  "consoleErrors": [],
+  "externalRequests": [],
+  "bytes": {
+    "bundle": 253253,
+    "css": 5261,
+    "js": 6800,
+    "head": 3099
+  }
+}

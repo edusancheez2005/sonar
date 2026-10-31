@@ -1,0 +1,439 @@
+{
+ "console": [],
+ "pageErrors": [],
+ "requestFailed": [],
+ "title": "Contact Roscap - Real Estate Capital Advisory",
+ "h1": [
+  "Speak with our team to discuss your next transaction, funding requirement, or investment opportunity."
+ ],
+ "headings": [
+  "H1:Speak with our team to discuss your next transaction, funding requirement, or investment opportunity.",
+  "H2:FAQs",
+  "H3:Quick Links",
+  "H3:Legal",
+  "H3:Governance"
+ ],
+ "jsonld": [
+  {
+   "ok": true,
+   "type": "FAQPage",
+   "n": 5
+  }
+ ],
+ "schemaMatchesPage": true,
+ "text": {
+  "emDashInText": 0,
+  "emDashInHtml": 1,
+  "exclamationsInVisibleText": [],
+  "fcaMentions": 1
+ },
+ "d1440": {
+  "scrollWidth": 1440,
+  "section": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900
+  },
+  "grid": {
+   "x": 66,
+   "y": 287,
+   "w": 1308,
+   "h": 533
+  },
+  "left": {
+   "x": 66,
+   "y": 287,
+   "w": 524,
+   "h": 533
+  },
+  "headingWrap": {
+   "x": 66,
+   "y": 287,
+   "w": 524,
+   "h": 260
+  },
+  "h1": {
+   "x": 66,
+   "y": 287,
+   "w": 524,
+   "h": 208,
+   "font": "Boska 500 normal 40px/52px",
+   "color": "rgb(255, 255, 255)"
+  },
+  "rows": [
+   {
+    "x": 54,
+    "y": 598,
+    "w": 548,
+    "h": 52,
+    "href": "mailto:info@roscap.co.uk",
+    "text": "Email info@roscap.co.uk"
+   },
+   {
+    "x": 54,
+    "y": 651,
+    "w": 548,
+    "h": 52,
+    "href": "tel:+447850522789",
+    "text": "Call +44 7850 522789"
+   },
+   {
+    "x": 54,
+    "y": 704,
+    "w": 548,
+    "h": 52,
+    "href": "https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement.",
+    "text": "WhatsApp Message the team"
+   },
+   {
+    "x": 54,
+    "y": 757,
+    "w": 548,
+    "h": 52,
+    "href": "https://www.instagram.com/roscap.uk/",
+    "text": "Instagram @roscap.uk"
+   }
+  ],
+  "inputs": [
+   {
+    "id": "name",
+    "type": "text",
+    "x": 728,
+    "y": 287,
+    "w": 646,
+    "h": 72,
+    "font": "18px 300",
+    "pad": "24px",
+    "required": true,
+    "autocomplete": "name",
+    "label": "Name"
+   },
+   {
+    "id": "email",
+    "type": "email",
+    "x": 728,
+    "y": 369,
+    "w": 646,
+    "h": 72,
+    "font": "18px 300",
+    "pad": "24px",
+    "required": true,
+    "autocomplete": "email",
+    "label": "Email"
+   },
+   {
+    "id": "Phone",
+    "type": "tel",
+    "x": 728,
+    "y": 451,
+    "w": 646,
+    "h": 72,
+    "font": "18px 300",
+    "pad": "24px",
+    "required": true,
+    "autocomplete": "tel",
+    "label": "Phone"
+   },
+   {
+    "id": "Subject",
+    "type": "text",
+    "x": 728,
+    "y": 533,
+    "w": 646,
+    "h": 72,
+    "font": "18px 300",
+    "pad": "24px",
+    "required": true,
+    "autocomplete": null,
+    "label": "Subject"
+   },
+   {
+    "id": "Message",
+    "type": "textarea",
+    "x": 728,
+    "y": 615,
+    "w": 646,
+    "h": 136,
+    "font": "18px 300",
+    "pad": "24px",
+    "required": false,
+    "autocomplete": null,
+    "label": "Message"
+   }
+  ],
+  "submit": {
+   "x": 728,
+   "y": 779,
+   "w": 84,
+   "h": 41,
+   "bg": "rgb(225, 201, 121)"
+  },
+  "bgImage": "url(\"data:image/webp;base64,UklGRgZFAABX",
+  "bgSize": "cover",
+  "faq": {
+   "x": 0,
+   "y": 900,
+   "w": 1440,
+   "h": 690
+  },
+  "faqH": {
+   "x": 36,
+   "y": 1000,
+   "w": 1368,
+   "h": 83,
+   "font": "Boska italic 64px"
+  },
+  "acc": {
+   "x": 272,
+   "y": 1138,
+   "w": 896,
+   "h": 352
+  },
+  "summaries": [
+   69,
+   69,
+   69,
+   69,
+   69
+  ],
+  "honeypot": {
+   "x": -9272,
+   "w": 1,
+   "ariaHidden": "true",
+   "tabindex": "-1"
+  },
+  "docH": 2273
+ },
+ "axe1440": {
+  "all": [],
+  "serious": 0,
+  "critical": 0,
+  "moderate": 0,
+  "minor": 0
+ },
+ "tabOrder1440": [
+  "a.skip \"Skip to content\" h=48 outline=solid/2px/rgb(225, 201, 121)",
+  "a.nav-brand \"Roscap home\" h=40 outline=solid/2px/rgb(225, 201, 121)",
+  "a.nav-link \"Home\" h=45 outline=solid/2px/rgb(225, 201, 121)",
+  "a.nav-link \"About Us\" h=45 outline=solid/2px/rgb(225, 201, 121)",
+  "a.nav-link \"Our Services\" h=45 outline=solid/2px/rgb(225, 201, 121)",
+  "a.nav-link \"Track Record\" h=45 outline=solid/2px/rgb(225, 201, 121)",
+  "a.nav-link \"Partner Program\" h=45 outline=solid/2px/rgb(225, 201, 121)",
+  "a.nav-link \"Insights\" h=45 outline=solid/2px/rgb(225, 201, 121)",
+  "a.nav-cta \"Speak to Us\" h=44 outline=solid/2px/rgb(225, 201, 121)",
+  "a.rail-a \"Email info@roscap.co.uk\" h=52 outline=solid/2px/rgb(225, 201, 121)",
+  "a.rail-a \"Call +44 7850 522789\" h=52 outline=solid/2px/rgb(225, 201, 121)",
+  "a.rail-a \"WhatsApp Message the team\" h=52 outline=solid/2px/rgb(225, 201, 121)",
+  "a.rail-a \"Instagram @roscap.uk\" h=52 outline=solid/2px/rgb(225, 201, 121)",
+  "input#name.input-field \"Name\" h=72 outline=none/0px/rgb(18, 22, 29) border=rgb(56, 152, 236)",
+  "input#email.input-field \"Email\" h=72 outline=none/0px/rgb(18, 22, 29) border=rgb(56, 152, 236)",
+  "input#Phone.input-field \"Phone\" h=72 outline=none/0px/rgb(18, 22, 29) border=rgb(56, 152, 236)",
+  "input#Subject.input-field \"Subject\" h=72 outline=none/0px/rgb(18, 22, 29) border=rgb(56, 152, 236)",
+  "textarea#Message.input-field \"Message\" h=136 outline=none/0px/rgb(18, 22, 29) border=rgb(56, 152, 236)",
+  "input.button \"Submit\" h=41 outline=solid/2px/rgb(225, 201, 121)",
+  "summary \"What does Roscap do as a real estate capital adv\" h=69 outline=solid/2px/rgb(4, 52, 53)",
+  "summary \"How quickly can Roscap arrange development finan\" h=69 outline=solid/2px/rgb(4, 52, 53)",
+  "summary \"What types of projects and assets does Roscap fu\" h=69 outline=solid/2px/rgb(4, 52, 53)",
+  "summary \"What information do I need to apply for property\" h=69 outline=solid/2px/rgb(4, 52, 53)",
+  "summary \"Does Roscap work with both UK and international \" h=69 outline=solid/2px/rgb(4, 52, 53)",
+  "a \"LinkedIn\" h=36 outline=solid/2px/rgb(4, 52, 53)",
+  "a \"Instagram\" h=36 outline=solid/2px/rgb(4, 52, 53)",
+  "a \"About Us\" h=31 outline=solid/2px/rgb(4, 52, 53)",
+  "a \"Our Services\" h=31 outline=solid/2px/rgb(4, 52, 53)"
+ ],
+ "focusRowScrollY": 0,
+ "accordionKeyboard": {
+  "afterEnterOn2": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "afterSpaceOn4": [
+   false,
+   false,
+   false,
+   true,
+   false
+  ],
+  "exclusive": true
+ },
+ "accordionMouse": [
+  false,
+  false,
+  true,
+  false,
+  false
+ ],
+ "axe1440faqOpen": {
+  "all": [],
+  "serious": 0,
+  "critical": 0,
+  "moderate": 0,
+  "minor": 0
+ },
+ "emptySubmit": {
+  "formVisible": true,
+  "doneHidden": true,
+  "focused": "name",
+  "nameValid": false
+ },
+ "subjectKeyboard": {
+  "type": "text",
+  "inputmode": null
+ },
+ "success1440": {
+  "formHidden": true,
+  "doneVisible": true,
+  "text": "Thank you!",
+  "focused": "form-done",
+  "box": [
+   851,
+   298,
+   400,
+   400
+  ],
+  "sectionH": 900
+ },
+ "axe1440success": {
+  "all": [],
+  "serious": 0,
+  "critical": 0,
+  "moderate": 0,
+  "minor": 0
+ },
+ "m390": {
+  "scrollWidth": 390,
+  "clientWidth": 390,
+  "overflowing": [],
+  "h1": {
+   "x": 16,
+   "y": 100,
+   "w": 358,
+   "h": 125
+  },
+  "rows": [
+   {
+    "x": 4,
+    "y": 290,
+    "w": 382,
+    "h": 52
+   },
+   {
+    "x": 4,
+    "y": 343,
+    "w": 382,
+    "h": 52
+   },
+   {
+    "x": 4,
+    "y": 396,
+    "w": 382,
+    "h": 52
+   },
+   {
+    "x": 4,
+    "y": 449,
+    "w": 382,
+    "h": 52
+   }
+  ],
+  "form": {
+   "x": 16,
+   "y": 525,
+   "w": 358,
+   "h": 455
+  },
+  "inputs": [
+   {
+    "x": 16,
+    "y": 525,
+    "w": 358,
+    "h": 50
+   },
+   {
+    "x": 16,
+    "y": 585,
+    "w": 358,
+    "h": 50
+   },
+   {
+    "x": 16,
+    "y": 645,
+    "w": 358,
+    "h": 50
+   },
+   {
+    "x": 16,
+    "y": 705,
+    "w": 358,
+    "h": 50
+   },
+   {
+    "x": 16,
+    "y": 765,
+    "w": 358,
+    "h": 136
+   }
+  ],
+  "section": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 1060
+  },
+  "bgImage": "url(\"data:image/webp;base64,UklGRvgdAABX",
+  "bgSize": "100% auto",
+  "summaries": [
+   84,
+   107,
+   84,
+   84,
+   84
+  ],
+  "docH": 2852
+ },
+ "axe390": {
+  "all": [],
+  "serious": 0,
+  "critical": 0,
+  "moderate": 0,
+  "minor": 0
+ },
+ "accordion390": [
+  false,
+  true,
+  false,
+  false,
+  false
+ ],
+ "axe390faqOpen": {
+  "all": [],
+  "serious": 0,
+  "critical": 0,
+  "moderate": 0,
+  "minor": 0
+ },
+ "success390": {
+  "visible": true,
+  "box": [
+   16,
+   525,
+   358,
+   358
+  ]
+ },
+ "menu390": "true",
+ "reducedMotion": {
+  "matches": true,
+  "railA": "0s | none",
+  "railGo": "0s | none",
+  "chevron": "0s | none",
+  "answer": "0s | none",
+  "submit": "0s | none",
+  "successShownWithin150ms": true
+ },
+ "bundleBytes": 283425
+}

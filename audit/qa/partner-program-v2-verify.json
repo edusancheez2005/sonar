@@ -1,0 +1,564 @@
+{
+ "bundleBytes": 1114122,
+ "console": [],
+ "pageErrors": [],
+ "requestFailed": [],
+ "axe": {
+  "390": {
+   "counts": {},
+   "violations": [],
+   "incompleteIds": [
+    "color-contrast(12)"
+   ]
+  },
+  "1440": {
+   "counts": {},
+   "violations": [],
+   "incompleteIds": [
+    "color-contrast(31)"
+   ]
+  }
+ },
+ "overflow": {
+  "390": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "bodyScrollWidth": 390
+  },
+  "1440": {
+   "scrollWidth": 1440,
+   "clientWidth": 1440,
+   "bodyScrollWidth": 1440
+  }
+ },
+ "reduced": {
+  "390": {
+   "trackAnimation": "none",
+   "dupDisplay": "none",
+   "toggleDisplay": "none",
+   "gridColumns": 1,
+   "tile1": [
+    326,
+    124
+   ],
+   "midDivider": "none",
+   "stepOpacityMin": 1,
+   "stepTransforms": [
+    "none"
+   ],
+   "sectionOpacityMin": 1,
+   "runningAnimations": [],
+   "logosSection": {
+    "y": 6006.203125,
+    "h": 1482.125
+   },
+   "axeCounts": {}
+  },
+  "1440": {
+   "trackAnimation": "none",
+   "dupDisplay": "none",
+   "toggleDisplay": "none",
+   "gridColumns": 4,
+   "tile1": [
+    327,
+    327
+   ],
+   "midDivider": "block",
+   "stepOpacityMin": 1,
+   "stepTransforms": [
+    "none"
+   ],
+   "sectionOpacityMin": 1,
+   "runningAnimations": [],
+   "logosSection": {
+    "y": 4262.875,
+    "h": 756
+   },
+   "axeCounts": {}
+  }
+ },
+ "marquee": {
+  "390": {
+   "loopSeconds": "30s",
+   "tile": 200,
+   "groupWidth": 1600,
+   "running": {
+    "dx": -38.2,
+    "state": "running"
+   },
+   "focusWithin": {
+    "dx": 0,
+    "state": "paused"
+   },
+   "pressedAfterEnter": "true",
+   "toggledPausedAfterBlur": {
+    "dx": 0,
+    "state": "paused"
+   },
+   "pressedAfterSpace": "false",
+   "playWhileFocused": {
+    "dx": -36.4,
+    "state": "running"
+   },
+   "afterBlur": {
+    "dx": -37.3,
+    "state": "running"
+   },
+   "toggleBox": {
+    "w": 44,
+    "h": 44,
+    "rightGap": 10,
+    "bottomGap": 11,
+    "name": "Pause partner logos"
+   },
+   "a11y": {
+    "dupHidden": "true",
+    "firstAlts": [
+     "Revere",
+     "ANYO",
+     "Cambridge Finance",
+     "Capio Consult",
+     "Alliance Capital",
+     "Crown Investments",
+     "RYRE",
+     "Design Space 2"
+    ],
+    "dupAlts": "|||||||"
+   }
+  },
+  "1440": {
+   "loopSeconds": "45s",
+   "tile": 327,
+   "groupWidth": 2616,
+   "running": {
+    "dx": -40.7,
+    "state": "running"
+   },
+   "hover": {
+    "dx": 0,
+    "state": "paused"
+   },
+   "afterHover": {
+    "dx": -40.7,
+    "state": "running"
+   },
+   "focusWithin": {
+    "dx": 0,
+    "state": "paused"
+   },
+   "pressedAfterEnter": "true",
+   "toggledPausedAfterBlur": {
+    "dx": 0,
+    "state": "paused"
+   },
+   "pressedAfterSpace": "false",
+   "playWhileFocused": {
+    "dx": -39.7,
+    "state": "running"
+   },
+   "afterBlur": {
+    "dx": -40.7,
+    "state": "running"
+   },
+   "toggleBox": {
+    "w": 44,
+    "h": 44,
+    "rightGap": 66,
+    "bottomGap": 15,
+    "name": "Pause partner logos"
+   },
+   "a11y": {
+    "dupHidden": "true",
+    "firstAlts": [
+     "Revere",
+     "ANYO",
+     "Cambridge Finance",
+     "Capio Consult",
+     "Alliance Capital",
+     "Crown Investments",
+     "RYRE",
+     "Design Space 2"
+    ],
+    "dupAlts": "|||||||"
+   }
+  }
+ },
+ "keyboard": {
+  "390": {
+   "order": [
+    "#name",
+    "#email",
+    "#Phone",
+    "#Subject",
+    "#Message",
+    "input.button",
+    "a[LinkedIn]",
+    "a[Instagram]",
+    "a{About Us}",
+    "a{Our Services}",
+    "a{Track Record}",
+    "a{Partner Program}",
+    "a{Insights}",
+    "a{Privacy Policy}",
+    "a{Cookie Policy}",
+    "a{Terms of Use}",
+    "a{Disclaimer}",
+    "a{Accessibility}",
+    "a{Compliance & Governance}",
+    "input[Email address]",
+    "button[Sign up]",
+    "body",
+    "a.nav-brand[Roscap home]",
+    "a.nav-link{Home}",
+    "a.nav-link{About Us}",
+    "a.nav-link{Our Services}",
+    "a.nav-link{Track Record}",
+    "a.nav-link{Partner Program}",
+    "a.nav-link{Insights}",
+    "a.nav-cta{Speak to Us}",
+    "button.nav-burger[Menu]",
+    "a.button{Join The Program}",
+    "a.p-link{Download our brochure}",
+    "a.button{Download}",
+    "button.marquee-toggle[Pause partner logos]",
+    "#name",
+    "#email",
+    "#Phone",
+    "#Subject",
+    "#Message",
+    "input.button",
+    "a[LinkedIn]",
+    "a[Instagram]",
+    "a{About Us}",
+    "a{Our Services}",
+    "a{Track Record}",
+    "a{Partner Program}",
+    "a{Insights}",
+    "a{Privacy Policy}",
+    "a{Cookie Policy}",
+    "a{Terms of Use}",
+    "a{Disclaimer}",
+    "a{Accessibility}",
+    "a{Compliance & Governance}",
+    "input[Email address]",
+    "button[Sign up]",
+    "body",
+    "a.nav-brand[Roscap home]",
+    "a.nav-link{Home}",
+    "a.nav-link{About Us}",
+    "a.nav-link{Our Services}",
+    "a.nav-link{Track Record}",
+    "a.nav-link{Partner Program}",
+    "a.nav-link{Insights}",
+    "a.nav-cta{Speak to Us}",
+    "button.nav-burger[Menu]",
+    "a.button{Join The Program}",
+    "a.p-link{Download our brochure}",
+    "a.button{Download}",
+    "button.marquee-toggle[Pause partner logos]"
+   ],
+   "toggleAt": 34,
+   "nameAt": 0,
+   "messageAt": 4,
+   "deskSubmitAt": -1,
+   "mobileSubmitAt": 5
+  },
+  "1440": {
+   "order": [
+    "#name",
+    "#email",
+    "#Phone",
+    "#Subject",
+    "#Message",
+    "button.button{Submit}",
+    "a[LinkedIn]",
+    "a[Instagram]",
+    "a{About Us}",
+    "a{Our Services}",
+    "a{Track Record}",
+    "a{Partner Program}",
+    "a{Insights}",
+    "a{Privacy Policy}",
+    "a{Cookie Policy}",
+    "a{Terms of Use}",
+    "a{Disclaimer}",
+    "a{Accessibility}",
+    "a{Compliance & Governance}",
+    "input[Email address]",
+    "button[Sign up]",
+    "body",
+    "a.nav-brand[Roscap home]",
+    "a.nav-link{Home}",
+    "a.nav-link{About Us}",
+    "a.nav-link{Our Services}",
+    "a.nav-link{Track Record}",
+    "a.nav-link{Partner Program}",
+    "a.nav-link{Insights}",
+    "a.nav-cta{Speak to Us}",
+    "a.button{Join The Program}",
+    "a{01Join the Partner Progr}",
+    "a{02Introduce your clients}",
+    "a{03We arrange the capital}",
+    "a{04Regular progress updat}",
+    "a{05Referral fee on comple}",
+    "a{06Further transactions}",
+    "a.p-link{Download our brochure}",
+    "a.button{Download}",
+    "button.marquee-toggle[Pause partner logos]",
+    "#name",
+    "#email",
+    "#Phone",
+    "#Subject",
+    "#Message",
+    "button.button{Submit}",
+    "a[LinkedIn]",
+    "a[Instagram]",
+    "a{About Us}",
+    "a{Our Services}",
+    "a{Track Record}",
+    "a{Partner Program}",
+    "a{Insights}",
+    "a{Privacy Policy}",
+    "a{Cookie Policy}",
+    "a{Terms of Use}",
+    "a{Disclaimer}",
+    "a{Accessibility}",
+    "a{Compliance & Governance}",
+    "input[Email address]",
+    "button[Sign up]",
+    "body",
+    "a.nav-brand[Roscap home]",
+    "a.nav-link{Home}",
+    "a.nav-link{About Us}",
+    "a.nav-link{Our Services}",
+    "a.nav-link{Track Record}",
+    "a.nav-link{Partner Program}",
+    "a.nav-link{Insights}",
+    "a.nav-cta{Speak to Us}"
+   ],
+   "toggleAt": 39,
+   "nameAt": 0,
+   "messageAt": 4,
+   "deskSubmitAt": 5,
+   "mobileSubmitAt": -1
+  }
+ },
+ "form": {
+  "390": {
+   "fields": [
+    {
+     "id": "name",
+     "type": "text",
+     "label": "Name",
+     "placeholder": "Name",
+     "autocomplete": "name",
+     "required": true
+    },
+    {
+     "id": "email",
+     "type": "email",
+     "label": "Email",
+     "placeholder": "Email",
+     "autocomplete": "email",
+     "required": true
+    },
+    {
+     "id": "Phone",
+     "type": "tel",
+     "label": "Phone",
+     "placeholder": "Phone",
+     "autocomplete": "tel",
+     "required": true
+    },
+    {
+     "id": "Subject",
+     "type": "text",
+     "label": "Subject",
+     "placeholder": "Subject",
+     "autocomplete": null,
+     "required": true
+    },
+    {
+     "id": "Message",
+     "type": "textarea",
+     "label": "Message",
+     "placeholder": "Message",
+     "autocomplete": null,
+     "required": false
+    }
+   ],
+   "deskButton": {
+    "tag": "BUTTON",
+    "type": "submit",
+    "formAttr": "wf-form-Contact-Form",
+    "associated": true,
+    "visible": false
+   },
+   "mobileSubmitVisible": true,
+   "mock": true,
+   "emptySubmit": {
+    "note": "",
+    "focused": "name",
+    "valid": false
+   },
+   "validSubmit": "Forms are switched off in this prototype, so nothing was sent.",
+   "navigated": false
+  },
+  "1440": {
+   "fields": [
+    {
+     "id": "name",
+     "type": "text",
+     "label": "Name",
+     "placeholder": "Name",
+     "autocomplete": "name",
+     "required": true
+    },
+    {
+     "id": "email",
+     "type": "email",
+     "label": "Email",
+     "placeholder": "Email",
+     "autocomplete": "email",
+     "required": true
+    },
+    {
+     "id": "Phone",
+     "type": "tel",
+     "label": "Phone",
+     "placeholder": "Phone",
+     "autocomplete": "tel",
+     "required": true
+    },
+    {
+     "id": "Subject",
+     "type": "text",
+     "label": "Subject",
+     "placeholder": "Subject",
+     "autocomplete": null,
+     "required": true
+    },
+    {
+     "id": "Message",
+     "type": "textarea",
+     "label": "Message",
+     "placeholder": "Message",
+     "autocomplete": null,
+     "required": false
+    }
+   ],
+   "deskButton": {
+    "tag": "BUTTON",
+    "type": "submit",
+    "formAttr": "wf-form-Contact-Form",
+    "associated": true,
+    "visible": true
+   },
+   "mobileSubmitVisible": false,
+   "mock": true,
+   "emptySubmit": {
+    "note": "",
+    "focused": "name",
+    "valid": false
+   },
+   "validSubmit": "Forms are switched off in this prototype, so nothing was sent.",
+   "navigated": false
+  }
+ },
+ "images": {
+  "390": {
+   "total": 25,
+   "missingDims": [],
+   "hero": {
+    "loading": null,
+    "fetchpriority": "high",
+    "currentSrcIsData": true,
+    "naturalWidth": 390,
+    "srcsetCandidates": 2
+   },
+   "notLoaded": [],
+   "marqueeLogosLoaded": "16/16"
+  },
+  "1440": {
+   "total": 25,
+   "missingDims": [],
+   "hero": {
+    "loading": null,
+    "fetchpriority": "high",
+    "currentSrcIsData": true,
+    "naturalWidth": 1440,
+    "srcsetCandidates": 2
+   },
+   "notLoaded": [],
+   "marqueeLogosLoaded": "16/16"
+  }
+ },
+ "timeline": {
+  "390": [
+   {
+    "scrollY": 2829,
+    "stepOpacity": [
+     1,
+     1,
+     0,
+     0,
+     0,
+     0
+    ],
+    "activeIndicator": "02Introduce your clients"
+   },
+   {
+    "scrollY": 4009,
+    "stepOpacity": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     0
+    ],
+    "activeIndicator": "04Regular progress updates"
+   }
+  ],
+  "1440": [
+   {
+    "scrollY": 2085,
+    "stepOpacity": [
+     1,
+     1,
+     1,
+     0.93,
+     0,
+     0
+    ],
+    "activeIndicator": "03We arrange the capital"
+   },
+   {
+    "scrollY": 2875,
+    "stepOpacity": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "activeIndicator": "05Referral fee on completion"
+   }
+  ],
+  "1440-brochure": {
+   "linkText": "Download our brochure",
+   "href": "#brochure",
+   "targetExists": true,
+   "downloadHref": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/696691d0e9eef486af9a744b_Roscap%20Partner%20Program.pdf",
+   "closingLine": "For more information, download our brochure or contact us below."
+  },
+  "390-brochure": {
+   "linkText": "Download our brochure",
+   "href": "#brochure",
+   "targetExists": true,
+   "downloadHref": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/696691d0e9eef486af9a744b_Roscap%20Partner%20Program.pdf",
+   "closingLine": "For more information, download our brochure or contact us below."
+  }
+ }
+}

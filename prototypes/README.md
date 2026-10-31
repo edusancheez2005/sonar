@@ -14,4 +14,4 @@ Static HTML prototypes for roscap.co.uk, built with the site's own colours, type
 
 Rules every prototype follows: no copy that states or implies FCA authorisation; British English, digits for numbers, no em dashes, no exclamation marks; lighter than the live page it replaces; prefers-reduced-motion respected; no scroll-jacking; CSS scroll-driven animation first, GSAP only where needed, no Lenis.
 
-QA reports for each prototype are in `../audit/qa/`. Items marked CONFIRM in a prototype or its handoff need Clemente's sign-off before publishing.
+QA and verification reports are in `../audit/qa/` (the `-v1-superseded` files cover the first Partner Program and Speak to us versions, replaced after the owner's review). Items marked CONFIRM in a prototype or its handoff need Clemente's sign-off before publishing.
