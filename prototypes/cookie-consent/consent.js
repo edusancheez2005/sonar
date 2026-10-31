@@ -3,6 +3,7 @@
 (function (w, d) {
   var VERSION = 1; /* bump here and in site-head.html to ask everyone again */
   var NAME = 'roscap_consent', MAX_AGE = 15552000; /* 180 days */
+  var SEEN = 'roscap_consent_seen'; /* the banner shows on the first page of a visit only (owner's choice) */
   var $ = function (id) { return d.getElementById(id); };
   var banner = $('rc-banner'), modal = $('rc-modal'), dialog = $('rc-dialog'), live = $('rc-live');
   var swA = $('rc-sw-analytics'), swM = $('rc-sw-marketing'), status = $('rc-status');
@@ -13,6 +14,13 @@
     try { var o = JSON.parse(raw); if (o && o.version === VERSION && typeof o.analytics === 'boolean' && typeof o.marketing === 'boolean') return o; } catch (e) {}
     return null;
   }
+  function raw() {
+    var m = d.cookie.match(new RegExp('(?:^|; )' + NAME + '=([^;]*)'));
+    if (m) return decodeURIComponent(m[1]);
+    try { return localStorage.getItem(NAME); } catch (e) { return null; }
+  }
+  function seen() { try { return sessionStorage.getItem(SEEN) === String(VERSION); } catch (e) { return false; } }
+  function markSeen(on) { try { if (on) sessionStorage.setItem(SEEN, String(VERSION)); else sessionStorage.removeItem(SEEN); } catch (e) {} }
   function read() {
     var m = d.cookie.match(new RegExp('(?:^|; )' + NAME + '=([^;]*)')), c = m && parse(decodeURIComponent(m[1]));
     if (!c) try { c = parse(localStorage.getItem(NAME)); } catch (e) {}
@@ -92,6 +100,7 @@
     if (live) { live.textContent = ''; w.setTimeout(function () { live.textContent = 'Preferences saved: ' + words(c) + '.'; }, 50); }
   }
   function reset() {
+    markSeen(false);
     cookie(NAME, '', 0);
     try { localStorage.removeItem(NAME); } catch (e) {}
     apply({ analytics: false, marketing: false });
@@ -125,7 +134,11 @@
   if (modal !== banner.nextElementSibling) d.body.insertBefore(modal, banner.nextSibling);
 
   w.RoscapConsent = { open: openDialog, get: read, reset: reset, version: VERSION };
-  var stored = read();
+  /* first page of a visit: the banner. Later pages of the same visit: no banner if it was ignored (nothing optional runs without a yes;
+     the footer link opens the choices at any time). A choice saved under an older version always asks again. */
+  var stored = read(), stale = !stored && !!raw();
   render(stored);
-  if (stored) hideBanner(); else showBanner();
+  if (stored) hideBanner();
+  else if (seen() && !stale) hideBanner();
+  else { showBanner(); markSeen(true); }
 })(window, document);

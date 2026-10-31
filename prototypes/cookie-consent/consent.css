@@ -18,10 +18,13 @@
 .rc-text{display:inline-flex;align-items:center;min-height:44px;margin:4px 0 -8px -4px;padding:0 4px;border:0;background:none;color:var(--t);
   font-family:inherit;font-size:.9375rem;font-weight:500;line-height:1.2;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 
-.rc-banner{position:fixed;left:24px;bottom:24px;z-index:90;width:min(440px,calc(100% - 48px));padding:26px 28px 22px;background:var(--c);
+.rc-banner{position:fixed;right:24px;bottom:24px;z-index:90;width:min(384px,calc(100% - 48px));padding:20px 22px 16px;background:var(--c);font-size:14px;line-height:1.5;
   border:1px solid var(--l);border-radius:12px;box-shadow:0 30px 70px -30px rgba(4,52,53,.55)}
-.rc-banner p{margin-top:10px;color:var(--g)}
-.rc-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.rc-banner p{margin-top:8px;color:var(--g)}
+.rc-banner .rc-h{font-size:1.25rem}
+.rc-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.rc-banner .rc-btn{flex:1 1 120px;min-height:42px;padding:0 10px;font-size:.875rem;white-space:nowrap}
+.rc-banner .rc-text{font-size:.875rem;min-height:40px}
 
 .rc-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(4,52,53,.55);overflow:auto}
 .rc-dialog{width:min(560px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:30px 32px 28px;
@@ -61,7 +64,9 @@
 
 /* phones: bottom sheets */
 @media (max-width:767px){
-  .rc-banner{left:0;right:0;bottom:0;width:auto;border-radius:14px 14px 0 0;border-bottom:0;padding:22px 20px calc(18px + env(safe-area-inset-bottom,0px))}
+  .rc-banner{left:0;right:0;bottom:0;width:auto;border-radius:14px 14px 0 0;border-bottom:0;padding:16px 16px calc(10px + env(safe-area-inset-bottom,0px));font-size:13.5px}
+  .rc-banner .rc-h{font-size:1.15rem}
+  .rc-banner .rc-btn,.rc-banner .rc-text{min-height:44px}
   .rc-modal{place-items:end stretch;padding:0}
   .rc-dialog{width:100%;max-height:calc(100dvh - 24px);border-radius:14px 14px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0px))}
   .rc-dialog h2{font-size:1.5rem;padding-top:4px}
@@ -70,4 +75,4 @@
   .rc-cat{column-gap:12px;padding:12px 0 14px}
   .rc-desc{font-size:.8125rem}
 }
-@media (max-width:479px){.rc-row .rc-btn{flex-basis:100%}}
+@media (max-width:359px){.rc-row .rc-btn{flex-basis:100%}}

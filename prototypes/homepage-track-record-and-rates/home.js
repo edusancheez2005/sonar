@@ -6,40 +6,27 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
-  /* ---------- hero video: the panther clip on every screen size. Portrait phones get the 576 x 1078 crop, everything
-     else the 1280 px file. Starts straight after first paint at data-start (1.0 s, as the live embed's #t=1), pauses
-     off screen and with the pause button; a close-up still replaces it under reduced motion, Save-Data, or when the
-     browser refuses autoplay (for example iOS Low Power Mode). In the review bundle the two files travel inside the
-     page as data blocks (#hero-video-desktop-data, #hero-video-portrait-data); in Webflow they are plain URLs. ---------- */
+  /* ---------- hero video: exactly as live, the panther clip muted and looping from 1.0 s (the live embed's #t=1) on every screen.
+     Portrait phones get the portrait file of the same clip. In the review bundle the two files travel inside the page as data blocks
+     (#hero-video-desktop-data, #hero-video-portrait-data). If a browser refuses autoplay, the first frame stays on screen. ---------- */
   (function video() {
-    var hero = document.getElementById('hero'), v = document.getElementById('hero-video'), btn = document.getElementById('hero-pause');
+    var hero = document.getElementById('hero'), v = document.getElementById('hero-video');
     if (!hero || !v) return;
-    function still() { hero.classList.add('is-still'); if (v.parentNode) v.parentNode.removeChild(v); if (btn) btn.hidden = true; }
-    if (reduce || (navigator.connection && navigator.connection.saveData)) { still(); return; }
     var portrait = window.matchMedia('(max-width: 767px) and (orientation: portrait)').matches;
-    var startAt = parseFloat(v.getAttribute('data-start')) || 0, userPaused = false;
+    var startAt = parseFloat(v.getAttribute('data-start')) || 0;
     function embedded(id) {
       var el = document.getElementById(id); if (!el) return null;
       try { var bin = atob(el.textContent.trim()), n = bin.length, u = new Uint8Array(n); for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i); return URL.createObjectURL(new Blob([u], { type: 'video/mp4' })); } catch (e) { return null; }
     }
-    function play() { var p = v.play(); if (p && p.catch) p.catch(function (e) { if (e && e.name === 'NotAllowedError') still(); }); }
     function begin() {
       var blob = embedded(portrait ? 'hero-video-portrait-data' : 'hero-video-desktop-data');
       var chosen = v.querySelector(portrait ? 'source[media]' : 'source:not([media])');
       Array.prototype.slice.call(v.querySelectorAll('source')).forEach(function (s) { if (blob || s !== chosen) v.removeChild(s); });
       if (blob) v.src = blob; else if (chosen) { chosen.removeAttribute('media'); chosen.src = chosen.getAttribute('data-src'); }
       v.addEventListener('loadedmetadata', function () { if (startAt && v.currentTime < startAt) { try { v.currentTime = startAt; } catch (e) {} } }, { once: true });
-      v.addEventListener('playing', function () { v.classList.add('is-playing'); if (btn) btn.hidden = false; }, { once: true });
+      v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true });
       v.load();
-      play();
-      if ('IntersectionObserver' in window) {
-        new IntersectionObserver(function (es) { if (!es[0].isIntersecting) v.pause(); else if (!userPaused && v.parentNode) play(); }).observe(hero);
-      }
-      if (btn) btn.addEventListener('click', function () {
-        userPaused = !userPaused;
-        btn.setAttribute('aria-pressed', String(userPaused));
-        if (userPaused) v.pause(); else play();
-      });
+      var pl = v.play(); if (pl && pl.catch) pl.catch(function () {});
     }
     requestAnimationFrame(function () { setTimeout(begin, 0); });
   })();
@@ -135,6 +122,18 @@
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) { var d = dx < 0 ? 1 : -1; go(idx + d, d); }
     });
     view.addEventListener('pointercancel', function () { x0 = y0 = null; });
+  })();
+
+  /* ---------- What We Do: the copy comes in once, in reading order, when it reaches the screen (see home.css). Nothing is hidden
+     unless this runs; reduced motion or no IntersectionObserver: no animation. ---------- */
+  (function whatWeDo() {
+    var wrap = document.querySelector('#what-we-do .grid-content-wrap');
+    if (!wrap || reduce || !('IntersectionObserver' in window)) return;
+    wrap.classList.add('wwd-anim');
+    var io = new IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) { wrap.classList.add('is-in'); io.disconnect(); }
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.15 });
+    io.observe(wrap);
   })();
 
   /* ---------- reveal fallback: only where CSS scroll-driven animations are missing ---------- */

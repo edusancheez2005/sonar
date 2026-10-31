@@ -284,10 +284,13 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
 .rc-text{display:inline-flex;align-items:center;min-height:44px;margin:4px 0 -8px -4px;padding:0 4px;border:0;background:none;color:var(--t);
   font-family:inherit;font-size:.9375rem;font-weight:500;line-height:1.2;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 
-.rc-banner{position:fixed;left:24px;bottom:24px;z-index:90;width:min(440px,calc(100% - 48px));padding:26px 28px 22px;background:var(--c);
+.rc-banner{position:fixed;right:24px;bottom:24px;z-index:90;width:min(384px,calc(100% - 48px));padding:20px 22px 16px;background:var(--c);font-size:14px;line-height:1.5;
   border:1px solid var(--l);border-radius:12px;box-shadow:0 30px 70px -30px rgba(4,52,53,.55)}
-.rc-banner p{margin-top:10px;color:var(--g)}
-.rc-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.rc-banner p{margin-top:8px;color:var(--g)}
+.rc-banner .rc-h{font-size:1.25rem}
+.rc-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.rc-banner .rc-btn{flex:1 1 120px;min-height:42px;padding:0 10px;font-size:.875rem;white-space:nowrap}
+.rc-banner .rc-text{font-size:.875rem;min-height:40px}
 
 .rc-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(4,52,53,.55);overflow:auto}
 .rc-dialog{width:min(560px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:30px 32px 28px;
@@ -327,7 +330,9 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
 
 /* phones: bottom sheets */
 @media (max-width:767px){
-  .rc-banner{left:0;right:0;bottom:0;width:auto;border-radius:14px 14px 0 0;border-bottom:0;padding:22px 20px calc(18px + env(safe-area-inset-bottom,0px))}
+  .rc-banner{left:0;right:0;bottom:0;width:auto;border-radius:14px 14px 0 0;border-bottom:0;padding:16px 16px calc(10px + env(safe-area-inset-bottom,0px));font-size:13.5px}
+  .rc-banner .rc-h{font-size:1.15rem}
+  .rc-banner .rc-btn,.rc-banner .rc-text{min-height:44px}
   .rc-modal{place-items:end stretch;padding:0}
   .rc-dialog{width:100%;max-height:calc(100dvh - 24px);border-radius:14px 14px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0px))}
   .rc-dialog h2{font-size:1.5rem;padding-top:4px}
@@ -336,7 +341,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
   .rc-cat{column-gap:12px;padding:12px 0 14px}
   .rc-desc{font-size:.8125rem}
 }
-@media (max-width:479px){.rc-row .rc-btn{flex-basis:100%}}
+@media (max-width:359px){.rc-row .rc-btn{flex-basis:100%}}
 
 </style>
 <style>
@@ -663,6 +668,7 @@ window.__rcLog = [];
 (function (w, d) {
   var VERSION = 1; /* bump here and in site-head.html to ask everyone again */
   var NAME = 'roscap_consent', MAX_AGE = 15552000; /* 180 days */
+  var SEEN = 'roscap_consent_seen'; /* the banner shows on the first page of a visit only (owner's choice) */
   var $ = function (id) { return d.getElementById(id); };
   var banner = $('rc-banner'), modal = $('rc-modal'), dialog = $('rc-dialog'), live = $('rc-live');
   var swA = $('rc-sw-analytics'), swM = $('rc-sw-marketing'), status = $('rc-status');
@@ -673,6 +679,13 @@ window.__rcLog = [];
     try { var o = JSON.parse(raw); if (o && o.version === VERSION && typeof o.analytics === 'boolean' && typeof o.marketing === 'boolean') return o; } catch (e) {}
     return null;
   }
+  function raw() {
+    var m = d.cookie.match(new RegExp('(?:^|; )' + NAME + '=([^;]*)'));
+    if (m) return decodeURIComponent(m[1]);
+    try { return localStorage.getItem(NAME); } catch (e) { return null; }
+  }
+  function seen() { try { return sessionStorage.getItem(SEEN) === String(VERSION); } catch (e) { return false; } }
+  function markSeen(on) { try { if (on) sessionStorage.setItem(SEEN, String(VERSION)); else sessionStorage.removeItem(SEEN); } catch (e) {} }
   function read() {
     var m = d.cookie.match(new RegExp('(?:^|; )' + NAME + '=([^;]*)')), c = m && parse(decodeURIComponent(m[1]));
     if (!c) try { c = parse(localStorage.getItem(NAME)); } catch (e) {}
@@ -752,6 +765,7 @@ window.__rcLog = [];
     if (live) { live.textContent = ''; w.setTimeout(function () { live.textContent = 'Preferences saved: ' + words(c) + '.'; }, 50); }
   }
   function reset() {
+    markSeen(false);
     cookie(NAME, '', 0);
     try { localStorage.removeItem(NAME); } catch (e) {}
     apply({ analytics: false, marketing: false });
@@ -785,9 +799,13 @@ window.__rcLog = [];
   if (modal !== banner.nextElementSibling) d.body.insertBefore(modal, banner.nextSibling);
 
   w.RoscapConsent = { open: openDialog, get: read, reset: reset, version: VERSION };
-  var stored = read();
+  /* first page of a visit: the banner. Later pages of the same visit: no banner if it was ignored (nothing optional runs without a yes;
+     the footer link opens the choices at any time). A choice saved under an older version always asks again. */
+  var stored = read(), stale = !stored && !!raw();
   render(stored);
-  if (stored) hideBanner(); else showBanner();
+  if (stored) hideBanner();
+  else if (seen() && !stale) hideBanner();
+  else { showBanner(); markSeen(true); }
 })(window, document);
 
 </script>

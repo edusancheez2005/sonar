@@ -21,20 +21,11 @@
 .hero--live .hero-p{font:400 18px/28px var(--f-body);color:#fff;margin:24px 0 0;max-width:none}
 .hero-btn{display:inline-flex;align-items:center;margin-top:40px;padding:10px 20px;border-radius:4px;background:var(--gold);color:var(--ink);font:400 14px/21px var(--f-body);transition:background-color .25s}
 .hero-btn:hover{background:#ecd894}
-/* pause control for the moving background (WCAG 2.2.2), level with the button; only shown once the video is playing */
-.hero-pause{position:absolute;right:max(16px,calc((100% - 1380px) / 2 + 36px));bottom:78px;z-index:2;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.45);border-radius:50%;background:rgba(2,37,38,.35);color:#fff;cursor:pointer;transition:background-color .2s,border-color .2s}
-.hero-pause:hover{background:rgba(2,37,38,.6);border-color:#fff}
-.hero-pause:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-.hero-pause[hidden]{display:none}
-.hero-pause svg{width:14px;height:14px;fill:currentColor}
-.hero-pause .i-play,.hero-pause[aria-pressed="true"] .i-pause{display:none}
-.hero-pause[aria-pressed="true"] .i-play{display:block}
 @media (max-width:767px){
   .hero.hero--live{padding:52px 0 80px}
   .hero-wrap{padding:0 16px}
   .hero--live h1{font-size:44px}
   .hero--live .hero-p{font-size:14px;line-height:1.5556}
-  .hero-pause{right:16px}
 }
 @media (max-width:767px) and (orientation:portrait){
   .hero.hero--live{background-image:url(media/hero-start-portrait.webp)}
@@ -120,6 +111,43 @@
   .lv .slider-header-wrap{flex-direction:column;justify-content:space-between;align-items:flex-start;gap:20px}
   .lv .slider-heading-container{gap:24px}
   .lv .slider-image,.lv .slider-image._2{width:24px;height:24px}
+}
+
+/* ---------- What We Do: more life, motion only (owner's request; layout and text exactly as live). ----------
+   The copy comes in once, in reading order (tag, heading, gold line, text, the six points with their numbers popping in, closing line);
+   the photograph settles from a slight zoom as it scrolls into view (CSS scroll-driven, nothing without support); the asset cards lift
+   a little on hover and their divider turns gold. All of it is off under reduced motion; without JS the copy is simply visible. */
+.lv .wwd-media{overflow:hidden;border-radius:.5rem;height:100%;max-height:40.375rem}
+.lv .wwd-media .wwa-image{height:100%}
+@media (prefers-reduced-motion:no-preference){
+  .wwd-anim > *,.wwd-anim .cards-num-item{opacity:0;translate:0 18px}
+  .wwd-anim .golden-divider{opacity:1;translate:none;scale:0 1;transform-origin:left center}
+  .wwd-anim .number-tag{scale:.55}
+  .wwd-anim.is-in > *,.wwd-anim.is-in .cards-num-item{opacity:1;translate:none;transition:opacity .8s cubic-bezier(.22,.61,.36,1),translate .8s cubic-bezier(.22,.61,.36,1)}
+  .wwd-anim.is-in .golden-divider{scale:1 1;transition:scale .9s cubic-bezier(.65,0,.35,1) .32s}
+  .wwd-anim.is-in .number-tag{scale:1;transition:scale .5s cubic-bezier(.34,1.56,.64,1)}
+  .wwd-anim.is-in > :nth-child(2){transition-delay:.08s}
+  .wwd-anim.is-in > :nth-child(4){transition-delay:.42s}
+  .wwd-anim.is-in > :nth-child(5){transition-delay:.5s}
+  .wwd-anim.is-in > :nth-child(6){transition-delay:1.05s}
+  .wwd-anim.is-in .cards-num-item:nth-child(1),.wwd-anim.is-in .cards-num-item:nth-child(1) .number-tag{transition-delay:.56s}
+  .wwd-anim.is-in .cards-num-item:nth-child(2),.wwd-anim.is-in .cards-num-item:nth-child(2) .number-tag{transition-delay:.63s}
+  .wwd-anim.is-in .cards-num-item:nth-child(3),.wwd-anim.is-in .cards-num-item:nth-child(3) .number-tag{transition-delay:.7s}
+  .wwd-anim.is-in .cards-num-item:nth-child(4),.wwd-anim.is-in .cards-num-item:nth-child(4) .number-tag{transition-delay:.77s}
+  .wwd-anim.is-in .cards-num-item:nth-child(5),.wwd-anim.is-in .cards-num-item:nth-child(5) .number-tag{transition-delay:.84s}
+  .wwd-anim.is-in .cards-num-item:nth-child(6),.wwd-anim.is-in .cards-num-item:nth-child(6) .number-tag{transition-delay:.91s}
+  @supports (animation-timeline: view()){
+    .lv .wwd-media .wwa-image{animation:wwd-settle linear both;animation-timeline:view();animation-range:entry 0% cover 50%}
+    @keyframes wwd-settle{from{scale:1.12;filter:saturate(.85)}to{scale:1;filter:none}}
+  }
+  .lv .slider-item{transition:translate .35s cubic-bezier(.22,.61,.36,1),box-shadow .35s cubic-bezier(.22,.61,.36,1)}
+  .lv .slide-grey-line,.lv .slider-image{transition:background-color .35s ease,translate .35s cubic-bezier(.22,.61,.36,1)}
+  @media (hover:hover){
+    .lv .slider-item:hover{translate:0 -3px;box-shadow:0 18px 30px -22px rgba(4,52,53,.65)}
+    .lv .slider-item:hover .slide-grey-line{background-color:rgba(225,201,121,.6)}
+    .lv .slider-item:hover .slider-image{translate:2px 0}
+    .lv .slider-heading:not(.is-active):hover{opacity:.8}
+  }
 }
 
 /* ---------- market rates: odometer panel ---------- */

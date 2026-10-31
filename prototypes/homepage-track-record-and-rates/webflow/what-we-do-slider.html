@@ -1,4 +1,6 @@
-<!-- Home: Asset Classes / Sources of Capital switch, and the counters (owner's request: keep both sections as they are, with a better transition).
+<!-- Home: What We Do entrance, the Asset Classes / Sources of Capital switch and the counters (owner's request: keep the sections as they are, with more life in the motion).
+     Designer, once: wrap the What We Do photograph (img.wwa-image._2) in a Div with the class wwd-media, and remove the Interactions
+     "fade in" on that photograph and on the What We Do heading (they would double the new entrance).
      Where: Page settings (Home) > Custom code > Before </body> tag. It works on the live markup as it is: .slider-wrap, .swiper.is-home,
      .swiper-wrapper.is-home > .swiper-slide, .slider-heading, .swiper-prev and .swiper-next. Nothing changes in the Designer.
      Remove from the Home custom code: "new Swiper('.slider-wrap .swiper', ...)", the HEADING SETUP / HEADING TRANSITION / CLICK HEADING /
@@ -14,11 +16,53 @@
 .slider-wrap .slider-heading.is-active{order:0;opacity:1}
 .slider-wrap .slider-heading:focus-visible,.slider-wrap .slider-arrow:focus-visible{outline:2px solid #043435;outline-offset:3px}
 .slider-wrap .slider-arrow{cursor:pointer}
+/* What We Do: the copy comes in once in reading order; the photograph settles from a slight zoom while it scrolls in; asset cards lift on hover */
+.wwd-media{overflow:hidden;border-radius:.5rem;height:100%;max-height:40.375rem}
+.wwd-media .wwa-image{height:100%}
+@media (prefers-reduced-motion:no-preference){
+  .wwd-anim > *,.wwd-anim .cards-num-item{opacity:0;translate:0 18px}
+  .wwd-anim .golden-divider{opacity:1;translate:none;scale:0 1;transform-origin:left center}
+  .wwd-anim .number-tag{scale:.55}
+  .wwd-anim.is-in > *,.wwd-anim.is-in .cards-num-item{opacity:1;translate:none;transition:opacity .8s cubic-bezier(.22,.61,.36,1),translate .8s cubic-bezier(.22,.61,.36,1)}
+  .wwd-anim.is-in .golden-divider{scale:1 1;transition:scale .9s cubic-bezier(.65,0,.35,1) .32s}
+  .wwd-anim.is-in .number-tag{scale:1;transition:scale .5s cubic-bezier(.34,1.56,.64,1)}
+  .wwd-anim.is-in > :nth-child(2){transition-delay:.08s}
+  .wwd-anim.is-in > :nth-child(4){transition-delay:.42s}
+  .wwd-anim.is-in > :nth-child(5){transition-delay:.5s}
+  .wwd-anim.is-in > :nth-child(6){transition-delay:1.05s}
+  .wwd-anim.is-in .cards-num-item:nth-child(1),.wwd-anim.is-in .cards-num-item:nth-child(1) .number-tag{transition-delay:.56s}
+  .wwd-anim.is-in .cards-num-item:nth-child(2),.wwd-anim.is-in .cards-num-item:nth-child(2) .number-tag{transition-delay:.63s}
+  .wwd-anim.is-in .cards-num-item:nth-child(3),.wwd-anim.is-in .cards-num-item:nth-child(3) .number-tag{transition-delay:.7s}
+  .wwd-anim.is-in .cards-num-item:nth-child(4),.wwd-anim.is-in .cards-num-item:nth-child(4) .number-tag{transition-delay:.77s}
+  .wwd-anim.is-in .cards-num-item:nth-child(5),.wwd-anim.is-in .cards-num-item:nth-child(5) .number-tag{transition-delay:.84s}
+  .wwd-anim.is-in .cards-num-item:nth-child(6),.wwd-anim.is-in .cards-num-item:nth-child(6) .number-tag{transition-delay:.91s}
+  @supports (animation-timeline: view()){
+    .wwd-media .wwa-image{animation:wwd-settle linear both;animation-timeline:view();animation-range:entry 0% cover 50%}
+    @keyframes wwd-settle{from{scale:1.12;filter:saturate(.85)}to{scale:1;filter:none}}
+  }
+  .slider-wrap .slider-item{transition:translate .35s cubic-bezier(.22,.61,.36,1),box-shadow .35s cubic-bezier(.22,.61,.36,1)}
+  .slider-wrap .slide-grey-line,.slider-wrap .slider-image{transition:background-color .35s ease,translate .35s cubic-bezier(.22,.61,.36,1)}
+  @media (hover:hover){
+    .slider-wrap .slider-item:hover{translate:0 -3px;box-shadow:0 18px 30px -22px rgba(4,52,53,.65)}
+    .slider-wrap .slider-item:hover .slide-grey-line{background-color:rgba(225,201,121,.6)}
+    .slider-wrap .slider-item:hover .slider-image{translate:2px 0}
+    .slider-wrap .slider-heading:not(.is-active):hover{opacity:.8}
+  }
+}
 </style>
 <script>
 (function () {
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  /* 0. What We Do: the copy comes in once, in reading order, when it reaches the screen (the bg-white section is What We Do on Home). */
+  (function () {
+    var wrap = document.querySelector('.section.bg-white .two-col-grid .grid-content-wrap');
+    if (!wrap || reduce || !('IntersectionObserver' in window)) return;
+    wrap.classList.add('wwd-anim');
+    var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { wrap.classList.add('is-in'); io.disconnect(); } }, { rootMargin: '0px 0px -12% 0px', threshold: 0.15 });
+    io.observe(wrap);
+  })();
 
   /* 1. Asset Classes / Sources of Capital. The arrows loop, the headings switch, a horizontal swipe switches on touch screens.
      The switch: the four cards slide 24 px and fade out while the new four slide in from the other side one after another

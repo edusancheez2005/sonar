@@ -5,8 +5,8 @@
    Elements (same ids the live Home footer script writes to):
      #rates-panel            the dark card (data-feed overrides the feed URL)
      #baserate-{key}         the number; data-from holds the digits the odometer rolls in from ("0.00")
-     #changerate-{key}       the movement chip ("Cut 25 bps", "Raised 25 bps", "Up 2.5 bps")
-     #changedate-{key}       the line under the chip ("since 18 Dec 2025", "fixing of 29 Oct 2026")
+     #changerate-{key}       the movement chip ("Held", "Cut 25 bps", "Raised 25 bps", "Up 2.5 bps")
+     #changedate-{key}       the line under the chip ("since the 18 Dec 2025 cut", "on 5 Nov 2026", "fixing of 29 Oct 2026")
      #asof-{key}             empty and hidden normally; "Last data 21 Oct 2026, awaiting update" only when that rate is stale
      #rates-updated          "Checked 31 Oct 2026" (the feed's check time); shown only once the feed validated
    key = boe | fed | euribor
@@ -193,10 +193,15 @@
     } else {
       /* change = size of the last move; changed_on = the date it took effect (FRED effective date for the Fed) */
       if (change === null || change === 0 || !isoParts(rate.changed_on)) return null;
-      view.chip = (change > 0 ? 'Raised ' : 'Cut ') + bps(change) + ' bps';
-      view.dir = change > 0 ? 1 : -1;
-      view.date = 'since ' + fmtDate(rate.changed_on);
-      view.asOfLine = ''; /* no separate data-date line: the 'since' date says it (owner's call, 31 Oct 2026) */
+      /* Wording that is true on every day (owner's check, 31 Oct 2026: "Cut 25 bps since 18 Dec 2025" read as if the latest decision
+         was a cut, while the Bank had held since). Within 30 days of a move: "Cut 25 bps" / "Raised 25 bps", "on <date>". After that the
+         rate has been held at every decision since: "Held", "since the <date> cut/rise". With decision dates in the feed this can name the
+         latest decision instead (see audit/RATES-PANEL-PLAN.md). */
+      var moved = (change > 0 ? 'Raised ' : 'Cut ') + bps(change) + ' bps', recent = daysOld(rate.changed_on) <= 30;
+      view.chip = recent ? moved : 'Held';
+      view.dir = recent ? (change > 0 ? 1 : -1) : 0;
+      view.date = recent ? 'on ' + fmtDate(rate.changed_on) : 'since the ' + fmtDate(rate.changed_on) + (change > 0 ? ' rise' : ' cut');
+      view.asOfLine = ''; /* no separate data-date line: the date line says it (owner's call, 31 Oct 2026) */
     }
     if (view.stale) view.asOfLine = 'Last data ' + fmtDate(asOf) + ', awaiting update';
     return view;
@@ -264,14 +269,14 @@
   }
   window.RoscapRates = { roll: arm, feed: feed, readRate: readRate };
 
-  /* ---------- gold wave lines: drawn once; animated only on fine-pointer devices while on screen ---------- */
+  /* ---------- gold wave lines: a slow ambient drift while the panel is on screen (desktop, motion allowed); they do not react to the
+     mouse (owner's feedback: the lines bending round the cursor looked off). Phones and reduced motion get the still drawing. ---------- */
   (function waves() {
     var c = panel.querySelector('canvas.waves');
     if (!c) { c = document.createElement('canvas'); c.className = 'waves'; c.setAttribute('aria-hidden', 'true'); panel.insertBefore(c, panel.firstChild); }
     var ctx = c.getContext && c.getContext('2d');
     if (!ctx) return;
     var dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, grad = null;
-    var m = { x: -1e4, y: -1e4, tx: -1e4, ty: -1e4, k: 0, tk: 0 };
     /* the edge fade (was a CSS mask) is baked into the stroke: transparent at the left, gold towards the right */
     function makeGrad() {
       var a = 105 * Math.PI / 180, dx = Math.sin(a), dy = -Math.cos(a);
@@ -294,7 +299,6 @@
         ctx.beginPath();
         for (var x = 0; x <= W + 12; x += 12) {
           var y = base + slope * x + Math.sin(x * 0.0062 + t * 0.00042 + i * 0.33) * 13 + Math.sin(x * 0.014 - t * 0.0003 + i * 0.11) * 5;
-          if (m.k > 0.01) { var dx = x - m.x, dy = y - m.y; var g = Math.exp(-(dx * dx) / 36000 - (dy * dy) / 14000) * m.k; y += (dy >= 0 ? 1 : -1) * g * 38; }
           if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
@@ -314,18 +318,14 @@
     size();
     if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(panel); else window.addEventListener('resize', onResize);
 
-    /* animation: fine pointers only, 30 fps, while on screen, and stops after 8 s without pointer movement */
-    var onScreen = false, running = false, lastDraw = 0, lastActive = 0, IDLE_MS = 8000, FRAME_MS = 1000 / 30;
+    /* animation: desktop only, 24 fps, only while on screen and while the tab is visible */
+    var onScreen = false, running = false, lastDraw = 0, FRAME_MS = 1000 / 24;
     function loop(now) {
-      if (!onScreen || !W || now - lastActive > IDLE_MS) { running = false; return; }
-      if (now - lastDraw >= FRAME_MS) {
-        lastDraw = now;
-        m.x += (m.tx - m.x) * 0.2; m.y += (m.ty - m.y) * 0.2; m.k += (m.tk - m.k) * 0.12;
-        draw(now);
-      }
+      if (!onScreen || !W || document.hidden) { running = false; return; }
+      if (now - lastDraw >= FRAME_MS) { lastDraw = now; draw(now); }
       requestAnimationFrame(loop);
     }
-    function start() { lastActive = performance.now(); if (running) return; running = true; requestAnimationFrame(loop); }
+    function start() { if (running) return; running = true; requestAnimationFrame(loop); }
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (es) {
         onScreen = es[0].isIntersecting;
@@ -333,13 +333,6 @@
         if (onScreen && motion && finePointer) start();
       }).observe(panel);
     } else { panel.classList.add('is-on'); }
-    if (!(motion && finePointer)) return;
-    panel.addEventListener('pointermove', function (e) {
-      var r = panel.getBoundingClientRect();
-      m.tx = e.clientX - r.left; m.ty = e.clientY - r.top; m.tk = 1;
-      if (m.x < -9e3) { m.x = m.tx; m.y = m.ty; }
-      if (onScreen) start();
-    });
-    panel.addEventListener('pointerleave', function () { m.tk = 0; });
+    if (motion && finePointer) document.addEventListener('visibilitychange', function () { if (!document.hidden && onScreen) start(); });
   })();
 })();

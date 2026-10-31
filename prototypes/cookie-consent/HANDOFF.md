@@ -11,10 +11,10 @@ Folder: `prototypes/cookie-consent/` in this repository. Open `cookie-consent.bu
 | File | What it is | Where it goes |
 |---|---|---|
 | webflow/site-head.html | Consent Mode v2 default, a loader that fetches gtag.js only after a visitor allows analytics or marketing (basic consent mode), stored-choice replay, GA4 and Google Ads config (3,099 characters) | Site settings > Custom code > Head code, first script in the slot |
-| webflow/site-footer.html | Banner and dialog markup, inline CSS and JS (16,150 characters, limit 50,000) | Site settings > Custom code > Footer code |
+| webflow/site-footer.html | Banner and dialog markup, inline CSS and JS (17,412 characters, limit 50,000) | Site settings > Custom code > Footer code |
 | webflow/footer-link-note.md | The "Cookie preferences" footer link: element, class, attribute | Footer Symbol, Legal column |
 | webflow/cookie-policy-wording.md | Replacement Cookie Policy and Privacy Policy text with the cookie table | Rich text on /cookie-policy and /privacy-policy, after compliance review |
-| consent.css, consent.js | The unbundled source of the CSS and JS inside site-footer.html (5,325 + 6,800 bytes, 12,125 total) | Reference only; edit these and rebuild if anything changes |
+| consent.css, consent.js | The unbundled source of the CSS and JS inside site-footer.html (5,643 + 7,744 bytes, 13,387 total) | Reference only; edit these and rebuild if anything changes |
 | index.html | Demo page (homepage stand-in) with a prototype-only state panel | Not for Webflow |
 | cookie-consent.bundle.html | Single-file bundle of the demo for review in any browser | Not for Webflow |
 
@@ -94,17 +94,19 @@ Why basic rather than advanced: in advanced mode gtag.js loads for everyone and 
 To switch to advanced mode later (only if the budget grows past the modelling threshold and the reviewer agrees): call `w.rcTags({analytics: true, marketing: true})` unconditionally at the end of the head snippet instead of only for a stored choice; the consent default keeps cookies off until a grant.
 
 ## 8. Accessibility and quality results (prototype bundle, Playwright, Chromium)
-- 72 automated checks, 0 failed (includes basic-mode checks: no loader and no config before a choice or after Reject; analytics-only loads GA4 without Google Ads; Accept all configures Google Ads once) (results: `audit/qa/cookie-consent-verify.json`).
+- 72 automated checks, 0 failed, plus 9 checks of the once-per-visit behaviour (first page shows it, the next page does not, a saved choice hides it, an old version asks again, a new visit asks again) (includes basic-mode checks: no loader and no config before a choice or after Reject; analytics-only loads GA4 without Google Ads; Accept all configures Google Ads once) (results: `audit/qa/cookie-consent-verify.json`).
 - axe-core 4.10: 0 violations of any impact at 1440x900 and 390x844, banner state and dialog state.
 - 0 console errors; 0 third-party requests from the banner, dialog or demo page.
 - Tab order: skip link, then banner. Dialog: focus moves to the dialog, Tab and Shift+Tab are trapped, Escape closes without saving and restores focus, the rest of the page is inert while the dialog is open.
 - Banner does not take focus on load; position fixed, so no layout shift; one 450 ms rise only when the visitor allows motion; no transition under prefers-reduced-motion.
+- Position and size (owner's feedback, 31 Oct): bottom right on desktop, 384 px wide and 24 px from the edges, so it never covers the hero heading (bottom left); on phones a compact bottom sheet with the two buttons side by side.
+- Shown once per visit (owner's choice): the banner appears on the first page a visitor opens. If they ignore it, it is not shown again on the following pages of that visit (a sessionStorage flag); nothing optional runs without a yes, the footer link opens the choices at any time, and the next visit asks again. A choice saved under an older version asks again straight away.
 - Contrast: teal #043435 text and buttons on cream #FFFCF5 (about 12:1), white on teal (about 12:1), grey #4F5B5B body text on cream (about 7:1). Gold is not used on cream. Switch "off" state is an outlined teal track so the control itself meets 3:1.
 - Hover (31 October, owner feedback): the solid teal buttons shift one shade lighter and the outlined buttons in the dialog take a faint teal tint; nothing else changes. This fixes a rule that made the outlined Accept all and Reject non-essential buttons turn into underlined links on hover. The owner tried an all-gold version and preferred this teal one.
 - Tap targets: all banner and dialog controls at least 44 px tall (buttons 46 px, switches 60 x 44 px, close 44 x 44 px).
 - No horizontal overflow at 390 px; dialog fits a 390 x 844 screen without inner scrolling.
 - Cookie behaviour (over http://localhost because file:// cannot set cookies): nothing stored before a choice; after Accept the cookie holds `{"version":1,"analytics":true,"marketing":true,"timestamp":"..."}`, Path=/, SameSite=Lax, about 180 days, with a matching localStorage mirror; Reject stores both false; reset removes it; a stale version re-asks; _ga and _gcl_au are removed on reject. Secure is added when the page is served over https (production and staging both are).
-- Size: consent.css 5,325 bytes + consent.js 6,800 bytes = 12,125 bytes (11.8 KiB) unminified; head snippet 3,099 characters; demo bundle 253,314 bytes (fonts and images included).
+- Size: consent.css 5,643 bytes + consent.js 7,744 bytes = 13,387 bytes (13.1 KiB) unminified; head snippet 3,099 characters; demo bundle 254,576 bytes (fonts and images included).
 
 ## 9. Assumptions (log)
 1. The GA4 ID is added through the Head code slot today, not through Integrations. Step 0 covers both cases; the Integrations caveat is the reason the snippet cannot simply be appended.
@@ -121,7 +123,7 @@ To switch to advanced mode later (only if the budget grows past the modelling th
 ## 10. QA checklist (tick before production publish)
 - [ ] Integrations GA ID removed; no other gtag.js loader anywhere (view source of Home, Contact, /contact-us-success, one blog post)
 - [ ] site-head.html is the first script in Head code; AW ID confirmed
-- [ ] site-footer.html in Footer code; banner shows on first visit on every template (Home, inner page, blog post, legal page, /contact-us-success)
+- [ ] site-footer.html in Footer code; on a first visit the banner shows on whichever page the visitor lands on (Home, inner page, blog post, legal page); ignored, it does not show again on the next pages of that visit; a new visit (new browser session) asks again
 - [ ] Footer link present on desktop and mobile, opens the dialog, keyboard accessible
 - [ ] Fresh incognito: only _cfuvid before a choice, and no request to any Google host until a choice is made
 - [ ] Accept all sets _ga and roscap_consent; Reject sets roscap_consent only; reload keeps the choice without showing the banner

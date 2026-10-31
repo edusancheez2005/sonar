@@ -48,13 +48,13 @@
       ]
     },
     {
-      "name": "banner bottom-left, max 440 wide",
+      "name": "banner bottom-right, max 360 wide",
       "ok": true,
       "detail": {
-        "x": 24,
-        "y": 564.953125,
-        "width": 440,
-        "height": 311.046875
+        "x": 1056,
+        "y": 609,
+        "width": 360,
+        "height": 267
       }
     },
     {
@@ -163,7 +163,7 @@
         "version": 1,
         "analytics": true,
         "marketing": false,
-        "timestamp": "2026-10-31T16:02:20.750Z"
+        "timestamp": "2026-10-31T17:15:50.828Z"
       }
     },
     {
@@ -235,13 +235,13 @@
           "version": 1,
           "analytics": true,
           "marketing": true,
-          "timestamp": "2026-10-31T16:02:22.430Z"
+          "timestamp": "2026-10-31T17:15:52.560Z"
         },
         "evt": {
           "version": 1,
           "analytics": true,
           "marketing": true,
-          "timestamp": "2026-10-31T16:02:22.430Z"
+          "timestamp": "2026-10-31T17:15:52.560Z"
         }
       }
     },
@@ -278,7 +278,7 @@
         "version": 1,
         "analytics": false,
         "marketing": false,
-        "timestamp": "2026-10-31T16:02:24.882Z"
+        "timestamp": "2026-10-31T17:15:54.944Z"
       }
     },
     {
@@ -316,9 +316,9 @@
       "ok": true,
       "detail": {
         "x": 0,
-        "y": 485.953125,
+        "y": 587.671875,
         "width": 390,
-        "height": 358.046875
+        "height": 256.328125
       }
     },
     {
@@ -332,17 +332,17 @@
       "detail": [
         {
           "t": "Accept all",
-          "w": 348,
-          "h": 46
+          "w": 174,
+          "h": 44
         },
         {
           "t": "Reject non-essential",
-          "w": 348,
-          "h": 46
+          "w": 174,
+          "h": 44
         },
         {
           "t": "Manage preferences",
-          "w": 151,
+          "w": 141,
           "h": 44
         }
       ]
@@ -460,7 +460,7 @@
           "version": 1,
           "analytics": true,
           "marketing": true,
-          "timestamp": "2026-10-31T16:02:32.582Z"
+          "timestamp": "2026-10-31T17:16:02.377Z"
         },
         "path": "/",
         "sameSite": "Lax",
@@ -487,7 +487,7 @@
         "version": 1,
         "analytics": false,
         "marketing": false,
-        "timestamp": "2026-10-31T16:02:34.080Z"
+        "timestamp": "2026-10-31T17:16:03.877Z"
       }
     },
     {
@@ -512,12 +512,12 @@
       "detail": []
     },
     {
-      "name": "CSS + JS under 12 KB unminified",
+      "name": "CSS + JS under 14 KB unminified",
       "ok": true,
       "detail": {
-        "bundle": 253314,
-        "css": 5325,
-        "js": 6800,
+        "bundle": 254576,
+        "css": 5643,
+        "js": 7744,
         "head": 3099
       }
     }
@@ -525,9 +525,9 @@
   "consoleErrors": [],
   "externalRequests": [],
   "bytes": {
-    "bundle": 253314,
-    "css": 5325,
-    "js": 6800,
+    "bundle": 254576,
+    "css": 5643,
+    "js": 7744,
     "head": 3099
   }
 }
