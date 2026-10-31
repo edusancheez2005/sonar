@@ -1,206 +1,337 @@
-# Speak to us (/contact-us): handoff for Shikhar
+# Speak to us v2 (/contact-us): handoff for Shikhar
 
-Prototype: `proto/dist/speak-to-us.html` (single file, open in a browser). Source: `proto/speak-to-us/` (index.html, speak.css, speak.js) on top of the shared scaffold in `proto/shared/`.
-Build on the staging site first (roscap-site.webflow.io), then publish to roscap.co.uk.
+Prototype, one file you can open in a browser: `proto/dist/speak-to-us-v2.html`.
+Source: `proto/speak-to-us-v2/` (`index.html`, `speak.css`, `speak.js`, `img/`).
+Build on staging (roscap-site.webflow.io) first, check it with the list in section 7, then publish to www.roscap.co.uk.
 
-## 1. What changes, in one screen
+The owner prefers the current page to the earlier redesign, so this version keeps the live page exactly as it is and makes three changes only. Nothing else on the page moves.
 
-| Area | Live today | Prototype |
+## 1. What changes versus live
+
+| Area | Live today | Change |
 | --- | --- | --- |
-| h1 | "Speak with our team to discuss your next transaction, funding requirement, or investment opportunity." | "Speak to us" plus one supporting line |
-| Direct contact | Email and Instagram shown; phone link present but hidden (class `hide`) | Three equal actions: Email, Call, WhatsApp, in a panel; response-time line (placeholder) and a Book a call link (placeholder) |
-| Form | Placeholder-only fields, no labels, Subject field is `type="tel"`, Name, Email, Phone and Subject required but Message not, no privacy line | Visible labels, correct types and autocomplete, Enquiry type select replaces Subject, only Name, Email, Message required, privacy line, announced errors, honeypot |
-| Beside the form | Nothing | "Useful to have to hand" checklist (from the FAQ answer) and a Recent transaction card linking to the Manchester case study |
-| FAQs | Webflow dropdowns, no schema | Same 5 Q&As verbatim, accessible accordion, FAQPage JSON-LD in the head |
-| Naming | Nav "Speak to Us", title "Contact Roscap - Real Estate Capital Advisory", h1 "Speak with our team" | "Speak to us" throughout, title "Speak to Us | Roscap" |
+| Contact line under the heading | `div.c-social-wrap`: email and Instagram links on one line. A phone link is on the page but hidden (combo class `hide`). | A vertical list of 4 rows in this order: Email, Call, WhatsApp, Instagram. The phone number becomes visible. WhatsApp is new. |
+| FAQs | Heading "FAQs" plus 5 large Webflow Dropdowns (`.faqs-acc`, white cards, 22px questions) | Same heading, untouched. The 5 Dropdowns become one compact accordion (native `details` and `summary`, one answer open at a time). Copy unchanged. FAQPage JSON-LD added to the page head. |
+| Contact form | Placeholder-only fields, no labels, Subject set to the Phone text type (`type="tel"`), no autocomplete | Invisible fixes only: visually hidden labels, Subject as plain text, autocomplete on Name, Email and Phone, an off-screen honeypot. |
 
-Keep the URL `/contact-us` (Google Ads lands here, GA4 key event fires on `/contact-us-success`). Do not create a new page.
+Unchanged: the section and its wave background, the heading text and style, the divider, the form look and spacing, the required fields, the "Submit" button, the success and error blocks, the redirect to `/contact-us-success`, the page title and description, the nav and the footer.
 
-Why it matters: this page converts landing sessions at about 7.5 percent while /our-services converts none, and 95 percent of past Ads clicks came from phones and tablets. On the live page the phone link is `display:none` at every width (class `hide`), so visitors see only email and Instagram; the form has no `<label>` elements, a generic "Submit" button, no reassurance line, and a Subject field typed as `tel`. The prototype fixes each of these.
+Live values measured with Playwright at 1440px and 390px wide on 31 Oct 2026 and matched in the prototype: heading Boska 500 at 40px/52px (24px/31.2px under 768px), left column 524px wide, 51px padding and 51px margin around the divider line (32px under 480px), inputs 72px tall with 24px padding and Switzer Light 18px (50px tall, 10px left padding and 16px under 480px), Message 136px tall, Submit 84 by 41px with a 28px top margin.
 
-## 2. Page settings
+## 2. Change 1: contact rows
 
-- Title: `Speak to Us | Roscap` (20 characters). Longer option if wanted: `Speak to Us | Roscap Real Estate Finance` (40 characters). Keep under 60.
-- Meta description: `Speak to Roscap about development finance, bridging loans, commercial mortgages, mezzanine or equity. Email, call or WhatsApp the team, or send a short enquiry.` (160 characters)
-- Open Graph title: same as the page title.
-- The prototype carries `<meta name="robots" content="noindex">` because it is a mock-up. Do not copy that to Webflow.
-- Nav CTA: keep "Speak to Us" (already matches). Footer and "Contact" labels elsewhere can stay.
+Where: inside `.contact-hero-left`, directly below `.contact-heading-wrap` (heading and divider stay as they are), in the place of `div.c-social-wrap`. On tablet and phone the rows sit under the heading and above the form, as the email line does today (the form block already has `order: 9999` under 992px).
 
-## 3. Webflow structure and classes
-
-Page order inside the Body: Navbar (existing symbol), `main` wrapper, Footer (existing symbol).
+Structure and classes:
 
 ```
-section.hero-c                      Section, background #043435, padding top nav + 5.5rem, bottom 5.5rem
-  div.container.hero-c-in           Grid 2 columns (1.05fr / 0.95fr), gap 4 to 6rem, align center; 1 column under 991px
-    div.hero-copy
-      h1                            "Speak to us" (Boska italic 500, clamp 3rem to 4.75rem; "us" in the gold gradient text style)
-      p.lead                        "Outline your transaction or funding requirement and one of the team will reply."
-    div.direct                      Panel: rgba(255,252,245,.05) fill, 1px rgba(225,201,121,.28) border, radius 14px, padding 8px
-      ul.rail > li > a.rail-a       3 link blocks, each min-height 72px, grid 44px / 1fr / 20px
-        span.rail-i                 44px circle, gold stroke icon (envelope, handset, WhatsApp)
-        span.rail-t > .k + .v       Label (11.5px uppercase gold) and value
-        span.rail-go                Arrow
-      div.direct-foot               Row: p.resp (response line with .confirm chip) and a.btn.ghost "Book a call"
-
-section.enq                         Cream section, padding 5.5rem / 5rem
-  div.container.enq-grid            Grid 7fr / 5fr, gap 2.5 to 5.5rem; 1 column under 991px
-    div.form-wrap
-      h2.h2                         "Send a message"
-      p.para.form-intro             "Share what you can. A few lines on the asset and the funding you need is enough to start."
-      ol.steps                      "What happens next": 3 numbered items in a row (1 column on phones), 14px grey, 26px teal number circles, 1px rules above and below
-                                    1 "You send a short note about the transaction." 2 "One of the team replies by email or phone, whichever you prefer." 3 "We tell you which lenders are likely to fit and what they will need to see."
-      Form Block (.w-form)          Native Webflow Form Block, see section 4
-    aside.side                      Sticky at nav + 28px on desktop; 2 columns at tablet, 1 column on phones
-      div.card.prep                 h3 "Useful to have to hand", intro, ul.checks (7 items)
-      article.card.deal             "Recent transaction" card, see section 6
-
-section.faq                         White section, 1px top border, padding 4.5rem / 6.5rem
-  div.container.faq-in              max-width 56rem
-    div.faq-head                    h2.h2 "Frequently asked questions" + div.gdiv (gold rule)
-    div.acc                         Accordion, see section 5
+ul.rail                      list without bullets, aria-label "Direct contact"
+  li                         one per row; 1px rgba(255,252,245,.09) line between rows
+    a.rail-a                 the whole row is the link; min-height 52px; grid 40px / 1fr / 18px, gap 14px,
+                             padding 6px 12px with margin 0 -12px so the icons line up with the heading
+      span.rail-i            40px circle, 1px border rgba(225,201,121,.45), gold line icon (inline SVG, 18px)
+      span.rail-t
+        span.rail-k          label: Switzer 500, 11px, uppercase, letter-spacing .1em, gold #E1C979
+        span.rail-v          value: Switzer 400, 16px, white
+      span.rail-go           arrow, rgba(255,252,245,.55)
 ```
 
-Fonts and colours are the live ones: Boska (display, italic 500), Switzer (body), cream #FFFCF5, teal #043435, gold #E1C979, gold text on cream #7A6318, grey #61656E. All values are in `proto/shared/base.css` and `proto/speak-to-us/speak.css`.
+| Label | Value shown | Link |
+| --- | --- | --- |
+| Email | info@roscap.co.uk | `mailto:info@roscap.co.uk` |
+| Call | +44 7850 522789 | `tel:+447850522789` |
+| WhatsApp | Message the team | `https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement.` (new tab) |
+| Instagram | @roscap.uk | `https://www.instagram.com/roscap.uk/` (new tab, as live) |
 
-Mobile order is the same as the DOM: heading, direct contact panel, form, checklist, transaction card, FAQs. The 3 direct actions sit above the fold on a 390px phone (the 3 rows end at about 475px; the panel including Book a call ends at about 580px on an 844px viewport).
+Steps in Webflow (on /contact-us only):
 
-## 4. Form specification
+1. Select `div.c-social-wrap` inside `.contact-hero-left` and delete it from this page. It holds the email link, the hidden phone link and the Instagram link; all three come back in the new list. Do not edit the `.c-social-wrap` or `.c-social-card` classes themselves, in case another page (for example /contact-us-success) uses them.
+2. Unhide the phone link. On live it is `a.c-social-card.hide` (href `tel:+447850522789`, text "+447850522789"), hidden by the `hide` combo class (`display: none`). In the new list it is the Call row: same href, visible, with the number spaced as "+44 7850 522789" so it is easier to read. If you rebuild the rows natively, reuse that link block: remove the `hide` combo class, give it the class `rail-a` and change the text.
+3. Drop a Code Embed where `.c-social-wrap` was and paste the markup below (the exact prototype markup, 2,668 characters).
+4. Paste the CSS block from section 5 into the page head code.
 
-Use the existing Webflow Form Block so submissions keep arriving in the Webflow Forms tab and the redirect keeps working. Form name: `Speak to Us` (data-name). Method: POST (Webflow default). Redirect URL: `/contact-us-success`.
+Native alternative: the same structure maps to List (Unstyled) > List Item > Link Block, with Div or Text blocks for `rail-i`, `rail-t`, `rail-k`, `rail-v` and `rail-go`. The icons use `currentColor` so the hover colour change works, which means each SVG needs its own small Code Embed rather than an Image element. Keep the class names and the CSS block applies unchanged.
 
-| Field label | `name` | Element | `type` | Required | `autocomplete` | `inputmode` | Hint (aria-describedby) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Name | `Name` | input | text | yes | `name` | | |
-| Email | `Email` | input | email | yes | `email` | `email` | |
-| Phone (optional) | `Phone` | input | tel | no | `tel` | `tel` | "Include the country code if you are outside the UK." |
-| Enquiry type (optional) | `Enquiry type` | select | | no | | | "Helps us route your enquiry to the right person." |
-| Message | `Message` | textarea, 5 rows, maxlength 5000 | | yes | | | "The asset, the amount and the timing, if you know them." |
-| (hidden) | `website` | input | text | no | `off` | | Honeypot, see below |
-
-Select options, in this order: `Please select` (empty value, default), `Development finance`, `Bridging finance`, `Commercial or BTL mortgage`, `Mezzanine or equity`, `Partner programme`, `Other`.
-
-Rules
-- Every field has a visible `<label for>` (Webflow: Label element, set "For" to the field ID). Keep placeholders empty.
-- Remove `required` from Phone and from the select. Remove the old Subject field.
-- Submit button text: `Send message`. Waiting text: `Please wait`. No exclamation marks anywhere on the page.
-- Privacy line under the button, 13px grey: "By sending this form you agree to our privacy policy. We use your details only to reply to your enquiry." Link `privacy policy` to `/privacy-policy`.
-- Success block (.w-form-done): "Thank you." (Boska italic) then "Your message has reached the team and one of us will come back to you." In practice the redirect to `/contact-us-success` fires first; the block is a fallback.
-- Error block (.w-form-fail): "Sorry, your message could not be sent. Please email info@roscap.co.uk or call +44 7850 522789." (both linked).
-- Field errors: a 13.5px line under the field in #9A2A20 with a red field border (#B3261E). Copy: "Please enter your name." / "Please enter an email address we can reply to." / "Please check the email address, for example name@company.co.uk." / "Please check the phone number, or leave it blank." / "Please tell us a little about your enquiry."
-- Form-level summary above the fields, `role="alert"`: "3 fields need attention: Name, Email and Message." Focus moves to the first invalid field.
-
-Honeypot
-- A visually hidden text input named `website` (wrapper `aria-hidden="true"`, input `tabindex="-1"`, `autocomplete="off"`, positioned off screen). People never see it; bots fill it.
-- Webflow does not filter on a honeypot server side. Two options: (a) the small script in section 7 refuses to submit when `website` has a value; (b) turn on Webflow's spam filtering in Site settings > Forms. Use both. Do not add reCAPTCHA; it adds a Google script and a visible badge.
-- Webflow form settings to check: notification email goes to info@roscap.co.uk; the form name in the dashboard reads "Speak to Us"; redirect `/contact-us-success` set on the form element (Settings panel, Redirect URL); `/contact-us-success` stays noindex and out of the sitemap (already the case).
-
-## 5. FAQ accordion and FAQPage schema
-
-Two ways to build it.
-
-1. Webflow native Dropdown (what the page uses today). Keeps the questions editable in the Designer and is keyboard operable out of the box (toggle is focusable, Enter and Space open it). Style it as in `speak.css` (.acc summary, .acc .ans): 1px dividers, 68px minimum row height, chevron rotating 180 degrees when open, answer in 1.0625rem Switzer 300 grey, max-width 68ch. Keep one answer open at a time if the Dropdown settings allow; otherwise independent is fine.
-2. HTML Embed with `<details name="faq"><summary>...</summary><div class="ans">...</div></details>` as in the prototype. Smaller and native, but the copy then lives in an embed, which is less convenient for editors.
-
-Recommendation: option 1 for editability, with the prototype styling. The copy is the live copy, verbatim, including the 5 questions and answers. Do not change the timing figures ("5–10 working days", "6–8 weeks") without Clemente's confirmation (section 8).
-
-Schema: paste the `<script type="application/ld+json">` block from `proto/speak-to-us/index.html` (the FAQPage object) into Page settings > Custom code > Head code for `/contact-us`. This is the same mechanism already used for the Article schema on the blog template, so nothing new is needed at site level. The visible text and the schema text must stay identical; if a FAQ is edited, edit both. Google limited FAQ rich results to authoritative government and health sites in August 2023, so this is hygiene for machine readers, not a ranking or rich-result play. Check it parses with the Schema Markup Validator (validator.schema.org) after publishing to staging.
-
-Webflow custom-code limits: 50,000 characters per box (site head, site footer, page head, page footer, and each Code Embed). The CSS in section 7 is about 13,000 characters and the JS about 5,500, so both fit in the page boxes with room to spare.
-
-## 6. Recent transaction card
-
-Facts taken from the live case study page on 31 Oct 2026 (https://www.roscap.co.uk/blogs/roscap-bridging-loan-manchester): £2.665m bridging loan, Burnage, Manchester, 65% LTV, 12-month facility, lender Recognise Bank, planning for 66 homes, refinance releasing capital for the next phase, article dated 01 Jul 2026. The card uses only those facts. No testimonials, no quote. Link text: "Read the case study". When a newer case study is published, swap the figures and the link; nothing else needs to change.
-
-## 7. CSS and JS to paste
-
-- CSS: all of `proto/speak-to-us/speak.css`, in Page settings > Custom code > Head code inside `<style>`, or recreated as Webflow classes. It depends on these custom properties from `proto/shared/base.css`: `--teal #043435`, `--teal-deep #022526`, `--gold #E1C979`, `--gold-ink #7A6318`, `--cream #FFFCF5`, `--cream-deep #FFF8E6`, `--paper #FFFFFF`, `--ink #12161D`, `--grey #61656E`, `--line rgba(4,52,53,.14)`, `--line-dark rgba(225,201,121,.3)`, `--ease cubic-bezier(.22,.61,.36,1)`, `--f-display` (Boska), `--f-body` (Switzer), `--nav-h 72px` (64px under 768px). Define them on `:root` in the site head code or replace each `var()` with its value.
-- The page also uses these classes that live in `base.css`, not in `speak.css`, so copy their rules too or map them to the existing Webflow classes: `.container` (max-width 80rem, centred), `.pg` (side padding 2.5rem, 2rem under 992px, 1.25rem under 768px), `.h2` (Boska italic 500, 2.5rem/1.3, teal; 2rem under 768px), `.gdiv` (207px by 2px gold rule), `.para` (Switzer 300, 1.125rem/1.6, grey), `.gold-text` (gold gradient text, as the live hero), `.sbtn` (gold button, ink text, radius 4px), `.btn` (teal button base, used by Book a call with the `.ghost` override), `.metrics` and `.metrics .v/.k` (3-column figure row in the transaction card), `.deal-product` (11.5px uppercase gold-ink label).
-- Focus rings: `base.css` sets a 2px gold outline on `:focus-visible`. `speak.css` switches it to teal inside the form section, the FAQ section and the footer, because gold on cream or white is only 1.6:1. Keep that rule.
-- JS: `proto/speak-to-us/speak.js`, in Page settings > Custom code > Footer code inside `<script>`, with one change. The prototype mocks submission; on Webflow the script must only stop the submit when a field is invalid, then let Webflow's own handler send the form and redirect. Replace the body of the submit listener with:
-
-```js
-form.addEventListener('submit', function (e) {
-  attempted = true;
-  var bad = validate();
-  var hp = form.querySelector('[name="website"]');
-  if (hp && hp.value) { e.preventDefault(); return; }   /* honeypot filled: drop silently */
-  if (!bad.length) { status.textContent = ''; status.classList.remove('is-on'); return; }  /* let Webflow submit */
-  e.preventDefault();
-  status.innerHTML = '';
-  var b = document.createElement('b');
-  b.textContent = bad.length === 1 ? '1 field needs attention: ' : bad.length + ' fields need attention: ';
-  status.appendChild(b);
-  status.appendChild(document.createTextNode(joinLabels(bad) + '.'));
-  status.classList.add('is-on');
-  var first = document.getElementById(bad[0].id);
-  first.focus({ preventScroll: true });
-  first.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
-});
+```html
+<ul class="rail" aria-label="Direct contact">
+  <li>
+    <a class="rail-a" href="mailto:info@roscap.co.uk">
+      <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
+      <span class="rail-t"><span class="rail-k">Email</span> <span class="rail-v">info@roscap.co.uk</span></span>
+      <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+  </li>
+  <li>
+    <!-- The live page already has this link (a.c-social-card.hide, tel:+447850522789). Unhide it and show the number spaced. -->
+    <a class="rail-a" href="tel:+447850522789">
+      <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
+      <span class="rail-t"><span class="rail-k">Call</span> <span class="rail-v">+44 7850 522789</span></span>
+      <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+  </li>
+  <li>
+    <!-- CONFIRM WITH CLEMENTE: +44 7850 522789 is on WhatsApp. If it is not, delete this row. -->
+    <a class="rail-a" href="https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement." target="_blank" rel="noopener">
+      <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z"/><path d="M9.2 8.4c.2-.4.5-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2 0 .4-.1.6l-.5.6c-.1.2-.2.3 0 .5a7 7 0 0 0 3.1 2.8c.2.1.4.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.2.4.4a2.6 2.6 0 0 1-1.7 2.1c-.6.2-1.3.2-2.9-.5a9.7 9.7 0 0 1-4.3-3.9c-.9-1.4-1-2.5-.7-3.3.2-.4.4-.8.5-1.1z"/></svg></span>
+      <span class="rail-t"><span class="rail-k">WhatsApp</span> <span class="rail-v">Message the team</span></span>
+      <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+  </li>
+  <li>
+    <a class="rail-a" href="https://www.instagram.com/roscap.uk/" target="_blank" rel="noopener">
+      <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="3.9"/><circle class="dot" cx="17.1" cy="6.9" r=".6"/></svg></span>
+      <span class="rail-t"><span class="rail-k">Instagram</span> <span class="rail-v">@roscap.uk</span></span>
+      <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+  </li>
+</ul>
 ```
 
-- Keep `novalidate` on the form so the browser's default bubbles do not fight the inline errors. Field IDs in the script: `f-name`, `f-email`, `f-phone`, `f-msg`; error IDs `e-name`, `e-email`, `e-phone`, `e-msg`; status `form-status`. Match them in Webflow or edit the script.
-- Reveal animation: the `.rv` blocks fade and rise once, 0.75s, driven by an IntersectionObserver that adds `.is-in`. It is wrapped in `@media (prefers-reduced-motion: no-preference)` and in `html.js`, so it is off for people who ask for less motion and when JavaScript fails. No GSAP, Lenis or other library is needed on this page.
+Behaviour: on hover the row gets a faint tint, the icon circle fills gold and the arrow brightens and moves 3px; keyboard focus draws a 2px gold ring around the row; with reduced motion all transitions are off.
 
-## 8. Confirm with Clemente before publishing
+## 3. Change 2: FAQ accordion
 
-1. WhatsApp: is +44 7850 522789 on WhatsApp (Business)? The link is `https://wa.me/447850522789?text=...` with a prefilled "Hello Roscap, I would like to discuss a funding requirement." If not, remove the third action and show Email and Call only.
-2. Phone visibility: the live page hides the phone link (class `hide`). The prototype shows it. Confirm the number can be public.
-3. Response time: "We reply within 1 working day." is a placeholder marked CONFIRM. Publish it only if the team will keep to it; otherwise remove the line.
-4. Book a call: choose a booking tool, or drop the button. The prototype links out (no script on the page). If a tool is adopted, prefer Cal.com: it can open as a click-to-load popup from a Code Embed, states that it sets no third-party cookies, and acts as processor under its DPA. Calendly sets cookies even with its banner hidden, so it would have to load only after consent. Either way, load nothing until the visitor clicks Book a call, and name the provider in the privacy policy.
-5. FAQ timing claims: "as little as 5–10 working days" for bridging and "within 6–8 weeks" for development finance and commercial mortgages. Both are in the visible copy and in the schema. Confirm they still hold.
-6. Enquiry type list: 6 options as in section 4. Confirm "Partner programme" belongs here, or route partners to /partner-program instead. Also confirm the wording "Commercial or BTL mortgage": consumer buy-to-let lending is a regulated activity, so Clemente may prefer "Commercial mortgage" on its own.
-7. Recent transaction card: confirm the Manchester case study is the one to feature and that the facts (section 6) may be repeated on this page.
+1. Keep `.heading-wrap.is-center` with `h2.heading-style-h1` "FAQs" exactly as it is (Boska italic, centred).
+2. Replace `div.faqs-content-wrap` (the 5 `.faqs-acc` Dropdowns) with one Code Embed containing the markup below (2,693 characters). The copy is the live copy, verbatim, including the en dashes in "5–10" and "6–8" and the missing full stop at the end of the fifth answer.
+3. Paste the CSS block and the footer script from section 5. `<details name="faq">` keeps one answer open at a time in current browsers; the script does the same in older ones.
+4. Paste the FAQPage JSON-LD from section 5 into the page head code. If an answer is ever edited, edit it in both places.
 
-## 9. SEO notes
+Look: a 56rem column centred under the heading, 55px below it (the live gap), thin rgba(4,52,53,.14) lines between rows, questions in Switzer 500 18px ink #12161D (17px under 768px), a teal chevron that turns when open, answers in Switzer 300 17px grey #61656E (16px under 768px) with at most 68 characters per line. Closed rows are 68px tall (60px under 768px). The section keeps the live `.section` padding and cream background. At 1440px the FAQ section goes from 1,012px to 690px tall.
 
-- Title and description in section 2. Keep `/contact-us` as the canonical URL; no redirect, no new slug.
-- FAQPage schema: optional and harmless. Google has not shown FAQ rich results for commercial sites since August 2023, so do not expect a search gain from it.
-- Colour: gold #E1C979 on cream is 1.6:1, so never use it for text on cream or white. Gold text appears only on teal (hero panel labels, Confirm chip); on cream the page uses gold-ink #7A6318 for small labels and keeps #E1C979 for decorative rules, borders and the button fill (with dark text).
-- One h1 ("Speak to us"), h2 for Send a message and Frequently asked questions, h3 inside the sidebar cards and the footer columns.
-- The Recent transaction card gives an internal link to the case study; the checklist repeats the FAQ answer in plain language, which is fine for search.
+```html
+<div class="acc">
+  <details name="faq">
+    <summary><span>What does Roscap do as a real estate capital advisory firm?</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+    <div class="ans"><p>Roscap sources and structures property finance, including development finance, bridging loans, commercial mortgages, mezzanine finance, and preferred equity. We work with UK and international lenders to secure competitive terms for residential, commercial, and mixed-use real estate projects.</p></div>
+  </details>
+  <details name="faq">
+    <summary><span>How quickly can Roscap arrange development finance or a bridging loan?</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+    <div class="ans"><p>For urgent acquisitions, Roscap can secure bridging loans in as little as 5–10 working days, subject to valuation and legal readiness. Development finance and commercial mortgages typically complete within 6–8 weeks, depending on lender due diligence and asset complexity.</p></div>
+  </details>
+  <details name="faq">
+    <summary><span>What types of projects and assets does Roscap fund?</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+    <div class="ans"><p>We arrange funding for residential developments, BTR schemes, commercial buildings, mixed-use projects, hotel and leisure assets, industrial/logistics units, and specialist sectors such as supported living and student accommodation. We also fund international projects through our global capital network.</p></div>
+  </details>
+  <details name="faq">
+    <summary><span>What information do I need to apply for property finance through Roscap?</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+    <div class="ans"><p>To underwrite a deal, we typically require a summary of the asset, development appraisals or financial models, borrower background, planning status, valuations, rent roll (for income assets), and exit strategy. Clear information helps us source faster, sharper terms from our lending partners.</p></div>
+  </details>
+  <details name="faq">
+    <summary><span>Does Roscap work with both UK and international lenders?</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+    <div class="ans"><p>Yes. Roscap works with UK challenger banks, private credit funds, family offices, specialist lenders, and institutional capital, alongside European and US investors. This global network enables us to structure bespoke, competitive finance for both UK and international real estate projects</p></div>
+  </details>
+</div>
+```
 
-## 10. Performance, reduced motion and mobile notes
+## 4. Change 3: invisible form fixes
 
-Performance (live page audit: mobile LCP 5.9 s, 764 KiB transferred)
-- The hero background SVG (`img.hero-bg.is-contact`, 202 KiB) is `loading="lazy"` while sitting in the first viewport, which delays LCP. Either load it eagerly (`loading="eager"`, `fetchpriority="high"`) or drop it. The prototype uses a CSS gradient with faint rings instead of an image, which costs nothing.
-- 4 GSAP files load on this page (gsap.min.js, ScrollTrigger, SplitText, TextPlugin, all 3.15.0 from the Webflow CDN) and nothing on it needs them. Remove them from `/contact-us` (page-level custom code, or exclude this page from the site-wide embed). The reveal in section 7 is plain CSS plus a 20-line IntersectionObserver.
-- Fonts: keep Boska 400/500 and Switzer 300/400/500 only, with `font-display: swap`.
-- Target after the change: under 300 KiB on first load and LCP under 2.5 s on a mid-range phone. The bundled prototype (fonts and logos inlined) is 261 KB.
+Nothing visible changes. The Form Block, its name ("Contact Form"), field names, placeholders, required fields (Name, Email, Phone and Subject required, Message optional, as live), the button text "Submit", the wait text "Please wait...", the redirect `/contact-us-success` and the success and error blocks all stay as they are.
 
-Reduced motion
-- All reveal and accordion animations are inside `prefers-reduced-motion: no-preference`. Verified with emulation: every block visible at load, transition duration 0s.
+| Field (ID) | Change |
+| --- | --- |
+| Name (`name`) | Hidden label "Name"; custom attribute `autocomplete` = `name` |
+| Email (`email`) | Hidden label "Email"; custom attribute `autocomplete` = `email` |
+| Phone (`Phone`) | Hidden label "Phone"; custom attribute `autocomplete` = `tel` |
+| Subject (`Subject`) | Hidden label "Subject"; Settings > Text type: Plain. Live uses the Phone type (`type="tel"`), so phones show a number pad for a free-text subject. |
+| Message (`Message`) | Hidden label "Message" |
 
-Mobile (390px, where most Ads traffic lands)
-- The 3 direct actions (Email, Call, WhatsApp) sit above the fold: the 3 rows end at about 475px and the whole panel, with Book a call, at about 580px on an 844px-tall viewport, before any scrolling.
-- No horizontal scroll; the Book a call button and the submit button go full width; the sidebar cards stack below the form; accordion rows are at least 60px tall.
-- Tap targets: rail rows 64 to 72px, buttons 44 to 56px, inputs 56px, accordion rows 60 to 68px, nav links padded to 45px, footer links padded to about 31px with 10px spacing (shared footer, visual unchanged). The footer links could be made 44px if the shared footer is reworked.
-- Phone keypad: Phone uses `type="tel"` with `inputmode="tel"`; Email uses `inputmode="email"`; the old Subject field (wrongly `type="tel"`) is gone.
+Hidden labels: add a Form Label directly above each field with the text in the table and the class `sr-only`. Link it to its field the way Webflow's accessibility guide describes: select the Label, Settings > Custom attributes, name `for`, value = the field ID (`name`, `email`, `Phone`, `Subject`, `Message`). The `sr-only` rule in the CSS block hides the label on screen and keeps it for screen readers. Keep the placeholders.
 
-## 11. Assumptions
+Honeypot: inside the form, add a Div with the class `hp` and the custom attribute `aria-hidden` = `true`. Inside it, a Form Label "Leave this field empty" (`for` = `website`) and a Text Field with name and ID `website`, not required, custom attributes `tabindex` = `-1` and `autocomplete` = `off`. The `.hp` rule moves it off screen, so people never see or reach it. Webflow does not act on a honeypot by itself, so the footer script stops the submission when the field has a value. Webflow also offers bot blocking and spam filtering in Site settings > Apps & Integrations > Cloudflare Turnstile spam protection; they apply to every form on the site and load a Cloudflare script, so check them against the cookie and privacy policies before switching them on.
 
-- No new photography; the hero uses a CSS gradient with faint concentric rings, in keeping with the line pattern on the live site. The 443 KB contact background image from the live site was not used, which keeps the page light.
-- "Speak to us" sentence case in the h1 and the page body; the nav keeps "Speak to Us" title case as on the live site.
-- Webflow field names: `Name`, `Email`, `Phone`, `Enquiry type`, `Message` so the notification emails read clearly.
-- The Instagram link moved out of the hero (it stays in the footer). Instagram is not a direct contact action.
-- The prototype footer carries the live two-paragraph disclaimer verbatim (the only change is a full stop at the end of the second paragraph, which the live page lacks). Keep it unchanged; it is the approved compliance text.
-- The fifth FAQ answer on the live page has no full stop at the end. Copied verbatim; add the full stop in both the page and the schema if you like.
+Optional and invisible (the last two rules before the media queries in the CSS block; delete them if not wanted):
+- The live Submit hover adds a 1px border, so the button grows from 84 by 41px to 86 by 43px and the whole hero moves up 2px while the pointer is on it (measured on live). The CSS draws the same gold line inside the button, so nothing moves.
+- On live the Message box can be dragged wider than its column (`resize: both`). The CSS limits resizing to height.
 
-## 12. QA checklist (staging, then live)
+## 5. Code to paste, and the 50,000 character limit
 
-- [ ] Title, description and canonical as in section 2; no `noindex` on `/contact-us`.
-- [ ] h1 reads "Speak to us"; only one h1 on the page.
-- [ ] Email, Call and WhatsApp links open the right app (test on iOS and Android). WhatsApp prefilled text appears.
-- [ ] Book a call link goes to the chosen booking page, or the button is removed.
-- [ ] Response-time line published only if confirmed.
-- [ ] Every field has a visible label; Phone and Enquiry type are optional; Subject field gone.
-- [ ] Submit with empty fields: summary and inline errors appear, focus moves to Name, screen reader announces the summary.
-- [ ] Valid submission on staging: lands on `/contact-us-success`; entry appears in Webflow Forms with the Enquiry type; notification email received at info@roscap.co.uk; GA4 key event recorded.
-- [ ] Honeypot filled (set the hidden field via dev tools): no submission.
-- [ ] FAQ: each row opens and closes with mouse, Enter and Space; chevron rotates; copy matches the schema.
-- [ ] Rich Results Test shows a valid FAQPage with 5 questions.
-- [ ] Phone (390px): no horizontal scroll; contact panel above the form; buttons full width.
-- [ ] Reduced motion (OS setting on): no fades or movement.
-- [ ] Lighthouse accessibility 100 or axe with no serious or critical issues; colour contrast AA on cream and teal.
-- [ ] No em dashes or exclamation marks in page copy.
-- [ ] Footer disclaimer unchanged from the approved text.
+Webflow allows up to 50,000 characters in each custom code slot: site head, site footer, page head, page footer and each Code Embed. Everything here goes on the /contact-us page only and uses a small part of each slot.
+
+| Slot | Content | Characters |
+| --- | --- | --- |
+| Page settings > Custom code > Head code | CSS block in `<style>` plus the FAQPage JSON-LD | 6,129 |
+| Page settings > Custom code > Footer code | FAQ fallback and honeypot guard in `<script>` | 745 |
+| Code Embed in `.contact-hero-left` | rows markup (section 2) | 2,668 |
+| Code Embed in `.faqs-wrap` | accordion markup (section 3) | 2,693 |
+
+Head code, part 1: CSS (identical to part C of `proto/speak-to-us-v2/speak.css`; plain values, no prototype variables).
+
+```html
+<style>
+/* Contact rows: ul.rail replaces div.c-social-wrap inside .contact-hero-left */
+.rail{display:grid;margin:0;padding:0;list-style:none}
+.rail li{margin:0;padding:0}
+.rail li+li{border-top:1px solid rgba(255,252,245,.09)}
+.rail-a{display:grid;grid-template-columns:40px minmax(0,1fr) 18px;align-items:center;gap:14px;min-height:52px;padding:6px 12px;margin:0 -12px;border-radius:8px;color:#fff;text-decoration:none;transition:background-color .25s}
+.rail-a:hover{background-color:rgba(255,252,245,.06)}
+.rail-a:focus-visible{outline:2px solid #E1C979;outline-offset:0}
+.rail-i{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid rgba(225,201,121,.45);color:#E1C979;transition:background-color .25s,color .25s}
+.rail-a:hover .rail-i{background-color:#E1C979;color:#043435}
+.rail-i svg,.rail-go svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.rail-i .dot{fill:currentColor;stroke:none}
+.rail-t{display:grid;gap:1px;min-width:0}
+.rail-k{font-size:11px;font-weight:500;line-height:1.3;letter-spacing:.1em;text-transform:uppercase;color:#E1C979}
+.rail-v{font-size:16px;line-height:1.35;color:#fff;overflow-wrap:anywhere}
+.rail-go{color:rgba(255,252,245,.55);transition:color .25s,transform .25s cubic-bezier(.22,.61,.36,1)}
+.rail-a:hover .rail-go{color:#fff;transform:translateX(3px)}
+/* FAQ accordion: div.acc replaces div.faqs-content-wrap (the 5 dropdowns) under the "FAQs" heading */
+.acc{max-width:56rem;margin:55px auto 0;border-bottom:1px solid rgba(4,52,53,.14);text-align:left}
+.acc details{border-top:1px solid rgba(4,52,53,.14)}
+.acc summary{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:68px;padding:22px 4px;cursor:pointer;list-style:none;font-size:18px;font-weight:500;line-height:1.4;color:#12161D;transition:color .2s}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary::marker{content:""}
+.acc summary:hover{color:#043435}
+.acc summary:focus-visible{outline:2px solid #043435;outline-offset:-2px;border-radius:4px}
+.acc summary svg{flex:none;width:22px;height:22px;fill:none;stroke:#043435;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s cubic-bezier(.22,.61,.36,1)}
+.acc details[open] summary svg{transform:rotate(180deg)}
+.acc .ans{max-width:68ch;padding:0 4px 26px}
+.acc .ans p{margin:0;font-size:17px;font-weight:300;line-height:1.65;color:#61656E}
+@media (prefers-reduced-motion:no-preference){.acc details[open] .ans{animation:accIn .4s cubic-bezier(.22,.61,.36,1)}}
+@keyframes accIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+/* Form helpers: visually hidden labels and the off-screen honeypot */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.hp{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+/* Optional, invisible: textarea resizes in height only; hover border drawn inside so the hero does not shift 2px */
+.input-field.height-135{resize:vertical}
+.button.golden.contact:hover{border:0;box-shadow:inset 0 0 0 1px #E1C979}
+@media (prefers-reduced-motion:reduce){
+  .rail-a,.rail-i,.rail-go,.acc summary,.acc summary svg{transition:none}
+  .rail-a:hover .rail-go{transform:none}
+}
+@media (max-width:767px){
+  .acc summary{font-size:17px;min-height:60px;padding:18px 2px}
+  .acc .ans{padding:0 2px 22px}
+  .acc .ans p{font-size:16px}
+}
+</style>
+```
+
+Head code, part 2: FAQPage JSON-LD (the same text as the visible FAQ, checked by script in the prototype). Google has not shown FAQ rich results for most commercial sites since 2023, so treat this as clean structured data for search engines and AI tools rather than a rich-result play. Check it with the Schema Markup Validator (validator.schema.org) on staging.
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What does Roscap do as a real estate capital advisory firm?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Roscap sources and structures property finance, including development finance, bridging loans, commercial mortgages, mezzanine finance, and preferred equity. We work with UK and international lenders to secure competitive terms for residential, commercial, and mixed-use real estate projects."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How quickly can Roscap arrange development finance or a bridging loan?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "For urgent acquisitions, Roscap can secure bridging loans in as little as 5–10 working days, subject to valuation and legal readiness. Development finance and commercial mortgages typically complete within 6–8 weeks, depending on lender due diligence and asset complexity."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What types of projects and assets does Roscap fund?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We arrange funding for residential developments, BTR schemes, commercial buildings, mixed-use projects, hotel and leisure assets, industrial/logistics units, and specialist sectors such as supported living and student accommodation. We also fund international projects through our global capital network."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What information do I need to apply for property finance through Roscap?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "To underwrite a deal, we typically require a summary of the asset, development appraisals or financial models, borrower background, planning status, valuations, rent roll (for income assets), and exit strategy. Clear information helps us source faster, sharper terms from our lending partners."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Roscap work with both UK and international lenders?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Roscap works with UK challenger banks, private credit funds, family offices, specialist lenders, and institutional capital, alongside European and US investors. This global network enables us to structure bespoke, competitive finance for both UK and international real estate projects"
+      }
+    }
+  ]
+}
+</script>
+```
+
+Footer code:
+
+```html
+<script>
+/* FAQ: one answer open at a time in browsers without <details name> support */
+(function () {
+  var items = [].slice.call(document.querySelectorAll('.acc details'));
+  items.forEach(function (d) {
+    d.addEventListener('toggle', function () {
+      if (!d.open) return;
+      items.forEach(function (o) { if (o !== d && o.open) o.open = false; });
+    });
+  });
+})();
+/* Honeypot: drop the contact form submission when the hidden "website" field is filled (bots) */
+document.addEventListener('submit', function (e) {
+  var f = e.target;
+  if (!f || f.id !== 'wf-form-Contact-Form') return;
+  var hp = f.querySelector('[name="website"]');
+  if (hp && hp.value) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
+</script>
+```
+
+## 6. Confirm with Clemente before publishing
+
+1. WhatsApp: is +44 7850 522789 on WhatsApp (or WhatsApp Business)? If not, delete the WhatsApp row (an HTML comment marks it in the prototype). The prefilled message is "Hello Roscap, I would like to discuss a funding requirement."
+2. Phone number in public: the live page already contains the number but hides it. The Call row shows it to everyone. Confirm it may be shown, and that someone answers it.
+3. FAQ timescales: "as little as 5–10 working days" (bridging) and "within 6–8 weeks" (development finance and commercial mortgages) are kept verbatim from live, in the visible answers and in the schema. They read as timescale promises; confirm they still hold.
+4. Success text: the live success block says "Thank you!", with an exclamation mark, which the house style avoids. It is kept as live because visitors normally land on /contact-us-success first. Change it only if Clemente wants to.
+
+## 7. QA checklist (staging first, then live)
+
+- [ ] 1440px: heading, divider and form exactly where they were; the 4 rows under the divider; the hero is still one screen tall (the last row ends at about the height of the Submit button).
+- [ ] 390px phone: order is heading, divider, 4 rows, form; no sideways scrolling; every row at least 44px tall (they are 52px).
+- [ ] Each row opens the right thing: mail app; phone dialler; WhatsApp with the prefilled text (test on iOS and Android, and on desktop); Instagram in a new tab.
+- [ ] The old one-line email and Instagram links are gone from /contact-us only; other pages unchanged.
+- [ ] Keyboard: Tab reaches the 4 rows (gold ring), the 5 fields, Submit, then the 5 FAQ questions; the honeypot is skipped; Enter and Space open and close a question; opening one closes the one that was open.
+- [ ] Screen reader: each field announces its label (Name, Email, Phone, Subject, Message); rows read as "Email info@roscap.co.uk", "Call +44 7850 522789" and so on.
+- [ ] On a phone, Subject opens the normal keyboard, not the number pad; Name, Email and Phone offer autofill.
+- [ ] Empty submit is still blocked by the browser on Name, Email, Phone and Subject, as before.
+- [ ] A real test submission on staging lands on /contact-us-success, appears in Webflow Forms (with an empty `website` field), sends the notification email to info@roscap.co.uk, and the GA4 key event `generate_lead` still fires.
+- [ ] Honeypot: type into the `website` field from dev tools and submit: nothing is sent and no entry appears in Forms.
+- [ ] FAQ: 5 questions, copy identical to before; one open at a time; chevron turns; with reduced motion switched on there is no animation.
+- [ ] Schema Markup Validator: one FAQPage with 5 questions, no errors.
+- [ ] axe or Lighthouse accessibility on /contact-us: no serious or critical issues.
+- [ ] No em dashes and no new exclamation marks in the page copy; footer disclaimer unchanged.
+
+## 8. What the prototype shows that is not a Webflow change
+
+- Nav and footer are the shared prototype versions used by every prototype, not copies of the live symbols. Leave the live nav and footer as they are.
+- The hero background in the prototype is the live wave SVG with the three live overlay gradients baked in, re-encoded as two small WebP files (`img/hero-waves-desktop.webp` 17.7 KB, `img/hero-waves-mobile.webp` 7.7 KB) in place of the live 455 KB SVG and the three `.hero-bg-overlay` divs. Below the nav, the prototype hero matches the live render within 9 of 255 colour levels at both widths, apart from the new rows. Nothing to change in Webflow for this brief. Optional later: the live SVG (`img.hero-bg.is-contact`) is `loading="lazy"` although it is in the first screen; these WebP files could replace it and the overlay divs.
+- The prototype sends nothing. After a valid submit it shows the live "Thank you!" block in place of the form, as Webflow does. On live, the redirect to /contact-us-success normally fires first. For information only: the live success block (`.contact-us-ss`) is positioned absolutely, centred across both columns and 30% above the grid, so if the redirect ever failed it would cover part of the heading.
+- Form fields keep the live focus style (blue #3898ec border). The new rows and the FAQ questions have their own visible focus rings.
+
+## 9. Visible differences from the live page
+
+1. Under the heading divider, 4 contact rows (Email, Call, WhatsApp, Instagram) replace the one-line email and Instagram links; the phone number is now visible.
+2. FAQs: a compact accordion with thin lines and 18px questions replaces the 5 large white cards with 22px questions. Same heading, same copy.
+3. Optional: hovering Submit no longer moves the hero 2px; the Message box resizes in height only.
+4. Prototype only, not part of the change: the shared nav and footer (logo and link positions, small gold capitals for the footer column headings, two social icons instead of three, a full stop at the end of the second disclaimer paragraph) and the "Prototype · Speak to us" label at the bottom right.
+
+## 10. Verification of the prototype (bundle, Chromium via Playwright, 31 Oct 2026)
+
+- Console: 0 errors or warnings, 0 page errors, 0 failed requests (1440px, 390px and reduced-motion runs).
+- axe-core: 0 serious and 0 critical at 1440px; 0 serious and 0 critical at 390px. No violations of any level in any of the 5 states checked (1440 default, 1440 FAQ open, 1440 success, 390 default, 390 FAQ open).
+- Overflow: scrollWidth 390 at a 390px viewport; no element past the right edge.
+- Layout at 1440px: hero 900px tall (live 900), heading at y 287 (live 287), inputs at y 287, 369, 451, 533 and 615 (live identical), Submit 84 by 41px at y 779 (live 84 by 41 at 779); rows at y 598, 651, 704 and 757, each 52px.
+- Layout at 390px: heading at y 100 (live 100); rows at y 290, 343, 396 and 449; form from y 525; inputs 50px and Message 136px as live; hero 1060px (live 873, the rows add 187px).
+- Keyboard (Tab from the top): skip link, logo, 6 nav links, Speak to Us, the 4 rows, Name, Email, Phone, Subject, Message, Submit, the 5 FAQ questions, footer. Honeypot skipped. Enter and Space toggle a question; opening one closes the other.
+- Form: empty submit is blocked by the browser and focus goes to Name (as live); a valid submit hides the form and shows "Thank you!" in place, with focus on it. Subject is `type="text"`.
+- Reduced motion: rows, arrows, chevrons and Submit have 0s transitions and no animation; the success block appears at once.
+- Copy: 0 em dashes in visible text (the one em dash in the bundle is in a code comment at the top of the shared `base.css`); the only exclamation mark is the live "Thank you!" in the success state; the FCA is mentioned only in the footer disclaimer saying Roscap is not authorised.
+- JSON-LD: parses as FAQPage with 5 questions; text identical to the visible FAQ.
+- Bundle `proto/dist/speak-to-us-v2.html`: 283,425 bytes, fonts, logos and both wave images inlined.
+
