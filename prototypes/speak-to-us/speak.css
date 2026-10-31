@@ -4,6 +4,8 @@
 .skip{position:absolute;left:16px;top:-100px;z-index:100;background:var(--gold);color:var(--ink);padding:12px 18px;border-radius:6px;font-weight:500}
 .skip:focus{top:16px}
 main:focus{outline:none}
+/* focus rings: gold on teal (base.css), teal on cream and white, where gold is only 1.6:1 against the background */
+.enq :not(.in):focus-visible,.faq :focus-visible,.foot :focus-visible{outline-color:var(--teal)}
 .nav-cta[aria-current]{border-color:var(--gold);color:var(--gold)}
 .nav-cta[aria-current] i{background:var(--gold)}
 /* tap targets: larger hit areas on shared nav/footer links without changing their look */
@@ -71,6 +73,8 @@ textarea.in{min-height:160px;padding:15px 16px;resize:vertical;line-height:1.5}
 .sel::after{content:"";position:absolute;right:16px;top:50%;width:9px;height:9px;border-right:1.6px solid var(--teal);border-bottom:1.6px solid var(--teal);transform:translateY(-70%) rotate(45deg);pointer-events:none}
 select.in{padding-right:44px;cursor:pointer}
 select.in:invalid,select.in option[value=""]{color:var(--grey)}
+select.in:has(option[value=""]:checked){color:var(--grey)} /* "Please select" reads as a prompt (grey 5.8:1 on white), chosen values in ink */
+select.in option{color:var(--ink)}
 .hint{font-size:13px;line-height:1.45;color:var(--grey)}
 .err{font-size:13.5px;line-height:1.45;color:#9A2A20;font-weight:500;display:flex;gap:6px;align-items:flex-start}
 .err[hidden]{display:none}
@@ -105,7 +109,7 @@ select.in:invalid,select.in option[value=""]{color:var(--grey)}
 .checks li::before{content:"";flex:none;width:18px;height:18px;margin-top:2px;border-radius:50%;border:1px solid var(--gold);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A6318' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center/11px no-repeat}
 .deal{background:var(--cream-deep);border-color:var(--line-dark)}
 .deal-fig{margin-top:14px;font:400 3rem/1 var(--f-display);color:var(--teal);letter-spacing:-.01em}
-.deal-h{font:400 1.0625rem/1.4 var(--f-body);color:var(--ink);margin-top:6px}
+.card .deal-h{font:400 1.0625rem/1.4 var(--f-body);color:var(--ink);margin-top:6px} /* .card .deal-h outranks .card h3 so the title stays in Switzer, not italic Boska */
 .deal .metrics{margin-top:18px;border-color:var(--line-dark)}
 .deal .metrics li+li{border-color:var(--line-dark)}
 .deal .metrics .v{font-size:17px}

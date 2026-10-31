@@ -1,0 +1,69 @@
+{
+  "verdict": "ship",
+  "score_out_of_10": 8.5,
+  "fixed": [
+    "speak.css: .deal-h was outranked by .card h3, so the transaction title rendered as italic Boska 26px instead of Switzer 17px (measured 26px/500 before, 17px/400 after); selector changed to .card .deal-h",
+    "speak.css: the select now shows 'Please select' in grey (#61656E on white, 5.84:1) via select.in:has(option[value=\"\"]:checked) and chosen values in ink; the old select.in:invalid rule never applied because the field is not required",
+    "speak.css: focus rings switched to teal inside .enq, .faq and .foot (gold #E1C979 on cream is 1.6:1, teal is 12.8:1); gold rings kept on the teal hero and nav; inputs keep the teal border plus gold ring",
+    "index.html: whitespace added between the label and value spans in the 3 contact rows and after the Confirm chip, so accessible names read 'Email info@roscap.co.uk' rather than 'Emailinfo@roscap.co.uk'",
+    "index.html: the Book a call placeholder comment now carries a [CONFIRM] marker and says to remove the button if no tool is chosen",
+    "HANDOFF.md section 1: live form facts corrected (Name, Email, Phone and Subject are required, Message is not; verified in live/html/contact-us.html)",
+    "HANDOFF.md section 2: meta description length corrected to 160 characters (was stated as 159)",
+    "HANDOFF.md sections 5 and 9: the claim 'Google removed FAQ rich results in May 2026' replaced with the verifiable August 2023 limitation to authoritative government and health sites",
+    "HANDOFF.md section 7: added the full list of base.css custom properties (15) and base.css classes (.container, .pg, .h2, .gdiv, .para, .gold-text, .sbtn, .btn, .metrics, .deal-product) the page depends on, with values, plus the focus-ring rule, so the paste works on Webflow",
+    "HANDOFF.md section 8 item 6: added a confirmation point on the 'Commercial or BTL mortgage' option (consumer buy-to-let is a regulated activity)",
+    "HANDOFF.md section 10: 764 KiB (Lighthouse summary) not 763; GSAP list corrected to gsap, ScrollTrigger, SplitText and TextPlugin 3.15.0 (there is no smooth-scroll script on the live page); mobile fold wording corrected (3 rows end at about 475px, the panel with Book a call at about 580px)",
+    "HANDOFF.md section 11: the stale note that the prototype footer used a shorter disclaimer replaced; the prototype carries the live two-paragraph disclaimer verbatim plus a closing full stop",
+    "HANDOFF.md: counts written as digits (3 actions, 6 options, 4 GSAP files)",
+    "Re-bundled with tools/inline.py: proto/dist/speak-to-us.html, 261,888 bytes"
+  ],
+  "open": [
+    {
+      "issue": "FAQ block is a centred 56rem column while every section above is left-aligned to the page gutter, so the 'Frequently asked questions' heading starts at x=273 at 1440 against x=80 for 'Send a message'. Either align .faq-in to the left gutter (margin-inline:0) or centre the heading as the live FAQs page does.",
+      "evidence": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/qa-speak/proto-full-1440-c0.png (compare heading left edges); speak.css .faq-in{max-width:56rem} inside .container (margin-inline:auto)",
+      "severity": "low"
+    },
+    {
+      "issue": "Radii vary across adjacent elements: contact panel 14px, cards 12px, success block 10px, contact rows 9px, inputs and status bar 6px, buttons 4px. Harmonising to 2 values (for example 12px containers, 6px controls) would read tighter.",
+      "evidence": "speak.css .direct 14px, .card 12px, .done 10px, .rail-a 9px, .in 6px, .fstat 6px; base.css .sbtn and .btn 4px",
+      "severity": "low"
+    },
+    {
+      "issue": "Hero copy (h1 and lead, the LCP candidates) sits inside a .rv reveal that starts at opacity 0 and fades over 0.75s after JavaScript runs, which delays the recorded LCP and the first readable frame. Consider exempting .hero-copy from the reveal or starting it at opacity .001.",
+      "evidence": "speak.css line 19 html.js .rv{opacity:0;...transition .75s}; index.html div.hero-copy.rv",
+      "severity": "low"
+    },
+    {
+      "issue": "Shared nav and footer tap targets are under 44px at 390: footer links 105x31 (10px gap), social icons 36x36, newsletter button 40x40, burger 40x40, logo link 34px tall. All meet WCAG 2.5.8 (24px) and the handoff already notes it; a footer rework would lift them to 44px.",
+      "evidence": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/qa-speak/qa.json mobile.smallTargets",
+      "severity": "low"
+    },
+    {
+      "issue": "Inline 'privacy policy' link under the submit button is 80x16 on phones. Exempt as inline text under WCAG 2.5.8 but easy to miss; padding-block 6px would help.",
+      "evidence": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/qa-speak/qa.json mobile.smallTargets a 'privacy policy' 80x16",
+      "severity": "low"
+    },
+    {
+      "issue": "3 unverified promises remain visible in the prototype, each marked and listed in HANDOFF section 8: 'We reply within 1 working day.' (CONFIRM chip), Book a call pointing at https://cal.com/roscap/intro (placeholder URL, will not resolve), and WhatsApp on +44 7850 522789. Do not show the booking link to Clemente as if it existed.",
+      "evidence": "index.html lines 110 to 122; HANDOFF.md section 8 items 1, 3 and 4",
+      "severity": "low"
+    },
+    {
+      "issue": "Business figures in HANDOFF section 1 ('converts landing sessions at about 7.5 percent', '95 percent of past Ads clicks came from phones and tablets') and the Cal.com privacy statements in section 8 come from other audit streams and were not re-verified in this review.",
+      "evidence": "HANDOFF.md section 1 paragraph 'Why it matters'; section 8 item 4",
+      "severity": "low"
+    },
+    {
+      "issue": "Desktop hero lead wraps to a 2-word last line ('will reply.') at 1440 despite text-wrap:pretty; shortening the sentence or widening max-width from 32ch to 34ch would avoid it.",
+      "evidence": "/tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/qa-speak/proto-fold-1440.png; speak.css .hero-c .lead{max-width:32ch}",
+      "severity": "low"
+    }
+  ],
+  "verification": {
+    "console_errors": 0,
+    "axe_serious_critical": 0,
+    "mobile_scroll_width": 390,
+    "bundle_bytes": 261888
+  },
+  "notes": "Checks run on the rebuilt bundle at 1440x900 and 390x844 (Playwright Chromium, axe-core): 0 console or page errors, 0 axe violations of any impact at either width (12 'incomplete' colour-contrast checks are the hero's gradient background; computed by hand the lowest pair there is gold #E1C979 on the blended teal #113E3F at 7.2:1, lead text 8.2:1); every real text pair on cream, white and the deep-cream card is at or above 5.47:1 (lowest: gold-ink #7A6318 label on #FFF8E6); the only placeholder on the page (footer newsletter) is 10.2:1 on teal; form inputs use visible labels, no placeholders. CLS 0 (390) and 0.0001 (1440); document scrollWidth equals viewport at both widths; no element overflows. Keyboard: 42 tab stops in DOM order, all with a visible 2px ring (gold on teal, teal on cream after the fix); accordion opens with Enter and Space and is exclusive via details name=faq (older browsers simply allow several open); empty submit produces a role=alert summary '3 fields need attention: Name, Email and Message.', inline errors linked by aria-describedby, aria-invalid set and focus moved to Name. Reduced motion: 7 of 7 reveal blocks opaque at load, transition 0s, no accordion animation. Performance: 3 script tags (FAQPage JSON-LD, shared/site.js, speak.js), no libraries (the words gsap and Lenis appear only as feature checks in site.js); 2 SVG logos with width and height, footer logo lazy; 5 woff2 fonts inlined; bundle 261,888 bytes. Copy: 0 em dashes and 0 exclamation marks in page copy and HANDOFF; en dashes in '5–10 working days' and '6–8 weeks' are the live FAQ copy verbatim; no advice or authorisation wording beyond the footer disclaimer, which is the live two-paragraph text; British spelling throughout (the only 'Program' is the live page name). Facts: the transaction card figures (£2.665m, 65% LTV, 12-month facility, Recognise Bank, Burnage, 66-home scheme, 01 Jul 2026) were re-verified against the live case study page; the 5 FAQ questions and answers match live/text/contact-us.txt character for character. Design: side-by-side renders at /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/qa-speak/sbs-1440-c0.png and sbs-390-c0.png, sbs-390-c1.png; the prototype reads as the same brand (teal hero, Boska italic, gold accents, cream body) with a clearer hierarchy and fewer competing elements than the live page; section rhythm is consistent (5.5rem desktop, 2.75 to 3.75rem phone), icons are centred in their 44px circles, the 3 numbered steps align to the field grid, the sidebar cards align to the form top. HANDOFF: addressed to Shikhar, staging-first on roscap-site.webflow.io, Webflow structure and classes, field spec table, JS to paste, 50,000-character custom-code limit, 7 points to confirm with Clemente, 16-item QA checklist, 0 em dashes."
+}

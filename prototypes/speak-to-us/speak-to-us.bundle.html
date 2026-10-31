@@ -270,6 +270,8 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
 .skip{position:absolute;left:16px;top:-100px;z-index:100;background:var(--gold);color:var(--ink);padding:12px 18px;border-radius:6px;font-weight:500}
 .skip:focus{top:16px}
 main:focus{outline:none}
+/* focus rings: gold on teal (base.css), teal on cream and white, where gold is only 1.6:1 against the background */
+.enq :not(.in):focus-visible,.faq :focus-visible,.foot :focus-visible{outline-color:var(--teal)}
 .nav-cta[aria-current]{border-color:var(--gold);color:var(--gold)}
 .nav-cta[aria-current] i{background:var(--gold)}
 /* tap targets: larger hit areas on shared nav/footer links without changing their look */
@@ -337,6 +339,8 @@ textarea.in{min-height:160px;padding:15px 16px;resize:vertical;line-height:1.5}
 .sel::after{content:"";position:absolute;right:16px;top:50%;width:9px;height:9px;border-right:1.6px solid var(--teal);border-bottom:1.6px solid var(--teal);transform:translateY(-70%) rotate(45deg);pointer-events:none}
 select.in{padding-right:44px;cursor:pointer}
 select.in:invalid,select.in option[value=""]{color:var(--grey)}
+select.in:has(option[value=""]:checked){color:var(--grey)} /* "Please select" reads as a prompt (grey 5.8:1 on white), chosen values in ink */
+select.in option{color:var(--ink)}
 .hint{font-size:13px;line-height:1.45;color:var(--grey)}
 .err{font-size:13.5px;line-height:1.45;color:#9A2A20;font-weight:500;display:flex;gap:6px;align-items:flex-start}
 .err[hidden]{display:none}
@@ -371,7 +375,7 @@ select.in:invalid,select.in option[value=""]{color:var(--grey)}
 .checks li::before{content:"";flex:none;width:18px;height:18px;margin-top:2px;border-radius:50%;border:1px solid var(--gold);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A6318' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center/11px no-repeat}
 .deal{background:var(--cream-deep);border-color:var(--line-dark)}
 .deal-fig{margin-top:14px;font:400 3rem/1 var(--f-display);color:var(--teal);letter-spacing:-.01em}
-.deal-h{font:400 1.0625rem/1.4 var(--f-body);color:var(--ink);margin-top:6px}
+.card .deal-h{font:400 1.0625rem/1.4 var(--f-body);color:var(--ink);margin-top:6px} /* .card .deal-h outranks .card h3 so the title stays in Switzer, not italic Boska */
 .deal .metrics{margin-top:18px;border-color:var(--line-dark)}
 .deal .metrics li+li{border-color:var(--line-dark)}
 .deal .metrics .v{font-size:17px}
@@ -518,14 +522,14 @@ select.in:invalid,select.in option[value=""]{color:var(--grey)}
           <li>
             <a class="rail-a" href="mailto:info@roscap.co.uk">
               <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
-              <span class="rail-t"><span class="k">Email</span><span class="v">info@roscap.co.uk</span></span>
+              <span class="rail-t"><span class="k">Email</span> <span class="v">info@roscap.co.uk</span></span>
               <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </a>
           </li>
           <li>
             <a class="rail-a" href="tel:+447850522789">
               <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
-              <span class="rail-t"><span class="k">Call</span><span class="v">+44 7850 522789</span></span>
+              <span class="rail-t"><span class="k">Call</span> <span class="v">+44 7850 522789</span></span>
               <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </a>
           </li>
@@ -533,15 +537,15 @@ select.in:invalid,select.in option[value=""]{color:var(--grey)}
             <!-- CONFIRM WITH CLEMENTE: number is on WhatsApp -->
             <a class="rail-a" href="https://wa.me/447850522789?text=Hello%20Roscap%2C%20I%20would%20like%20to%20discuss%20a%20funding%20requirement." rel="noopener">
               <span class="rail-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z"/><path d="M9.2 8.4c.2-.4.5-.4.7-.4h.5c.2 0 .4 0 .6.4l.8 1.9c.1.2 0 .4-.1.6l-.5.6c-.1.2-.2.3 0 .5a7 7 0 0 0 3.1 2.8c.2.1.4.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.2.4.4a2.6 2.6 0 0 1-1.7 2.1c-.6.2-1.3.2-2.9-.5a9.7 9.7 0 0 1-4.3-3.9c-.9-1.4-1-2.5-.7-3.3.2-.4.4-.8.5-1.1z"/></svg></span>
-              <span class="rail-t"><span class="k">WhatsApp</span><span class="v">Message the team</span></span>
+              <span class="rail-t"><span class="k">WhatsApp</span> <span class="v">Message the team</span></span>
               <span class="rail-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </a>
           </li>
         </ul>
         <div class="direct-foot">
           <!-- [CONFIRM] Response-time promise is a placeholder. Do not publish until Clemente confirms the commitment. -->
-          <p class="resp"><span class="confirm" title="Placeholder, to be confirmed">Confirm</span>We reply within 1 working day.</p>
-          <!-- [PLACEHOLDER] Booking link. Replace with the Cal.com or Calendly URL once chosen. Link only, no embedded script (see privacy note in HANDOFF.md). -->
+          <p class="resp"><span class="confirm" title="Placeholder, to be confirmed">Confirm</span> We reply within 1 working day.</p>
+          <!-- [CONFIRM] Booking link is a placeholder. Replace with the Cal.com or Calendly URL once Clemente chooses a tool, or remove the button. Link only, no embedded script (see privacy note in HANDOFF.md). -->
           <a class="btn ghost" href="https://cal.com/roscap/intro" data-placeholder="booking-link">Book a call<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
       </div>

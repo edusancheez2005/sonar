@@ -9,7 +9,7 @@ Build on the staging site first (roscap-site.webflow.io), then publish to roscap
 | --- | --- | --- |
 | h1 | "Speak with our team to discuss your next transaction, funding requirement, or investment opportunity." | "Speak to us" plus one supporting line |
 | Direct contact | Email and Instagram shown; phone link present but hidden (class `hide`) | Three equal actions: Email, Call, WhatsApp, in a panel; response-time line (placeholder) and a Book a call link (placeholder) |
-| Form | Placeholder-only fields, no labels, Subject field is `type="tel"`, all fields required, no privacy line | Visible labels, correct types and autocomplete, Enquiry type select replaces Subject, only Name, Email, Message required, privacy line, announced errors, honeypot |
+| Form | Placeholder-only fields, no labels, Subject field is `type="tel"`, Name, Email, Phone and Subject required but Message not, no privacy line | Visible labels, correct types and autocomplete, Enquiry type select replaces Subject, only Name, Email, Message required, privacy line, announced errors, honeypot |
 | Beside the form | Nothing | "Useful to have to hand" checklist (from the FAQ answer) and a Recent transaction card linking to the Manchester case study |
 | FAQs | Webflow dropdowns, no schema | Same 5 Q&As verbatim, accessible accordion, FAQPage JSON-LD in the head |
 | Naming | Nav "Speak to Us", title "Contact Roscap - Real Estate Capital Advisory", h1 "Speak with our team" | "Speak to us" throughout, title "Speak to Us | Roscap" |
@@ -21,7 +21,7 @@ Why it matters: this page converts landing sessions at about 7.5 percent while /
 ## 2. Page settings
 
 - Title: `Speak to Us | Roscap` (20 characters). Longer option if wanted: `Speak to Us | Roscap Real Estate Finance` (40 characters). Keep under 60.
-- Meta description: `Speak to Roscap about development finance, bridging loans, commercial mortgages, mezzanine or equity. Email, call or WhatsApp the team, or send a short enquiry.` (159 characters)
+- Meta description: `Speak to Roscap about development finance, bridging loans, commercial mortgages, mezzanine or equity. Email, call or WhatsApp the team, or send a short enquiry.` (160 characters)
 - Open Graph title: same as the page title.
 - The prototype carries `<meta name="robots" content="noindex">` because it is a mock-up. Do not copy that to Webflow.
 - Nav CTA: keep "Speak to Us" (already matches). Footer and "Contact" labels elsewhere can stay.
@@ -63,7 +63,7 @@ section.faq                         White section, 1px top border, padding 4.5re
 
 Fonts and colours are the live ones: Boska (display, italic 500), Switzer (body), cream #FFFCF5, teal #043435, gold #E1C979, gold text on cream #7A6318, grey #61656E. All values are in `proto/shared/base.css` and `proto/speak-to-us/speak.css`.
 
-Mobile order is the same as the DOM: heading, direct contact panel, form, checklist, transaction card, FAQs. The three direct actions sit above the fold on a 390px phone (panel ends at about 475px).
+Mobile order is the same as the DOM: heading, direct contact panel, form, checklist, transaction card, FAQs. The 3 direct actions sit above the fold on a 390px phone (the 3 rows end at about 475px; the panel including Book a call ends at about 580px on an 844px viewport).
 
 ## 4. Form specification
 
@@ -104,7 +104,7 @@ Two ways to build it.
 
 Recommendation: option 1 for editability, with the prototype styling. The copy is the live copy, verbatim, including the 5 questions and answers. Do not change the timing figures ("5–10 working days", "6–8 weeks") without Clemente's confirmation (section 8).
 
-Schema: paste the `<script type="application/ld+json">` block from `proto/speak-to-us/index.html` (the FAQPage object) into Page settings > Custom code > Head code for `/contact-us`. This is the same mechanism already used for the Article schema on the blog template, so nothing new is needed at site level. The visible text and the schema text must stay identical; if a FAQ is edited, edit both. Google removed FAQ rich results in May 2026, so this is hygiene for machine readers, not a ranking or rich-result play. Check it parses with the Schema Markup Validator (validator.schema.org) after publishing to staging.
+Schema: paste the `<script type="application/ld+json">` block from `proto/speak-to-us/index.html` (the FAQPage object) into Page settings > Custom code > Head code for `/contact-us`. This is the same mechanism already used for the Article schema on the blog template, so nothing new is needed at site level. The visible text and the schema text must stay identical; if a FAQ is edited, edit both. Google limited FAQ rich results to authoritative government and health sites in August 2023, so this is hygiene for machine readers, not a ranking or rich-result play. Check it parses with the Schema Markup Validator (validator.schema.org) after publishing to staging.
 
 Webflow custom-code limits: 50,000 characters per box (site head, site footer, page head, page footer, and each Code Embed). The CSS in section 7 is about 13,000 characters and the JS about 5,500, so both fit in the page boxes with room to spare.
 
@@ -114,7 +114,9 @@ Facts taken from the live case study page on 31 Oct 2026 (https://www.roscap.co.
 
 ## 7. CSS and JS to paste
 
-- CSS: all of `proto/speak-to-us/speak.css`, in Page settings > Custom code > Head code inside `<style>`, or recreated as Webflow classes. It only depends on the token names in `base.css` (`--teal`, `--gold`, `--cream`, `--line`, `--ease`, `--f-display`, `--f-body`, `--nav-h`); if the site does not define those variables, replace them with the hex values listed in section 3.
+- CSS: all of `proto/speak-to-us/speak.css`, in Page settings > Custom code > Head code inside `<style>`, or recreated as Webflow classes. It depends on these custom properties from `proto/shared/base.css`: `--teal #043435`, `--teal-deep #022526`, `--gold #E1C979`, `--gold-ink #7A6318`, `--cream #FFFCF5`, `--cream-deep #FFF8E6`, `--paper #FFFFFF`, `--ink #12161D`, `--grey #61656E`, `--line rgba(4,52,53,.14)`, `--line-dark rgba(225,201,121,.3)`, `--ease cubic-bezier(.22,.61,.36,1)`, `--f-display` (Boska), `--f-body` (Switzer), `--nav-h 72px` (64px under 768px). Define them on `:root` in the site head code or replace each `var()` with its value.
+- The page also uses these classes that live in `base.css`, not in `speak.css`, so copy their rules too or map them to the existing Webflow classes: `.container` (max-width 80rem, centred), `.pg` (side padding 2.5rem, 2rem under 992px, 1.25rem under 768px), `.h2` (Boska italic 500, 2.5rem/1.3, teal; 2rem under 768px), `.gdiv` (207px by 2px gold rule), `.para` (Switzer 300, 1.125rem/1.6, grey), `.gold-text` (gold gradient text, as the live hero), `.sbtn` (gold button, ink text, radius 4px), `.btn` (teal button base, used by Book a call with the `.ghost` override), `.metrics` and `.metrics .v/.k` (3-column figure row in the transaction card), `.deal-product` (11.5px uppercase gold-ink label).
+- Focus rings: `base.css` sets a 2px gold outline on `:focus-visible`. `speak.css` switches it to teal inside the form section, the FAQ section and the footer, because gold on cream or white is only 1.6:1. Keep that rule.
 - JS: `proto/speak-to-us/speak.js`, in Page settings > Custom code > Footer code inside `<script>`, with one change. The prototype mocks submission; on Webflow the script must only stop the submit when a field is invalid, then let Webflow's own handler send the form and redirect. Replace the body of the submit listener with:
 
 ```js
@@ -147,22 +149,22 @@ form.addEventListener('submit', function (e) {
 3. Response time: "We reply within 1 working day." is a placeholder marked CONFIRM. Publish it only if the team will keep to it; otherwise remove the line.
 4. Book a call: choose a booking tool, or drop the button. The prototype links out (no script on the page). If a tool is adopted, prefer Cal.com: it can open as a click-to-load popup from a Code Embed, states that it sets no third-party cookies, and acts as processor under its DPA. Calendly sets cookies even with its banner hidden, so it would have to load only after consent. Either way, load nothing until the visitor clicks Book a call, and name the provider in the privacy policy.
 5. FAQ timing claims: "as little as 5–10 working days" for bridging and "within 6–8 weeks" for development finance and commercial mortgages. Both are in the visible copy and in the schema. Confirm they still hold.
-6. Enquiry type list: six options as in section 4. Confirm "Partner programme" belongs here, or route partners to /partner-program instead.
+6. Enquiry type list: 6 options as in section 4. Confirm "Partner programme" belongs here, or route partners to /partner-program instead. Also confirm the wording "Commercial or BTL mortgage": consumer buy-to-let lending is a regulated activity, so Clemente may prefer "Commercial mortgage" on its own.
 7. Recent transaction card: confirm the Manchester case study is the one to feature and that the facts (section 6) may be repeated on this page.
 
 ## 9. SEO notes
 
 - Title and description in section 2. Keep `/contact-us` as the canonical URL; no redirect, no new slug.
-- FAQPage schema: optional and harmless. Google no longer shows FAQ rich results (removed May 2026), so do not expect a search gain from it.
+- FAQPage schema: optional and harmless. Google has not shown FAQ rich results for commercial sites since August 2023, so do not expect a search gain from it.
 - Colour: gold #E1C979 on cream is 1.6:1, so never use it for text on cream or white. Gold text appears only on teal (hero panel labels, Confirm chip); on cream the page uses gold-ink #7A6318 for small labels and keeps #E1C979 for decorative rules, borders and the button fill (with dark text).
 - One h1 ("Speak to us"), h2 for Send a message and Frequently asked questions, h3 inside the sidebar cards and the footer columns.
 - The Recent transaction card gives an internal link to the case study; the checklist repeats the FAQ answer in plain language, which is fine for search.
 
 ## 10. Performance, reduced motion and mobile notes
 
-Performance (live page audit: mobile LCP 5.9 s, 763 KiB transferred)
+Performance (live page audit: mobile LCP 5.9 s, 764 KiB transferred)
 - The hero background SVG (`img.hero-bg.is-contact`, 202 KiB) is `loading="lazy"` while sitting in the first viewport, which delays LCP. Either load it eagerly (`loading="eager"`, `fetchpriority="high"`) or drop it. The prototype uses a CSS gradient with faint rings instead of an image, which costs nothing.
-- Four GSAP scripts load on this page and nothing on it needs them. Remove GSAP, ScrollTrigger and the smooth-scroll script from `/contact-us` (page-level custom code, or exclude this page from the site-wide embed). The reveal in section 7 is plain CSS plus a 20-line IntersectionObserver.
+- 4 GSAP files load on this page (gsap.min.js, ScrollTrigger, SplitText, TextPlugin, all 3.15.0 from the Webflow CDN) and nothing on it needs them. Remove them from `/contact-us` (page-level custom code, or exclude this page from the site-wide embed). The reveal in section 7 is plain CSS plus a 20-line IntersectionObserver.
 - Fonts: keep Boska 400/500 and Switzer 300/400/500 only, with `font-display: swap`.
 - Target after the change: under 300 KiB on first load and LCP under 2.5 s on a mid-range phone. The bundled prototype (fonts and logos inlined) is 261 KB.
 
@@ -170,7 +172,7 @@ Reduced motion
 - All reveal and accordion animations are inside `prefers-reduced-motion: no-preference`. Verified with emulation: every block visible at load, transition duration 0s.
 
 Mobile (390px, where most Ads traffic lands)
-- The three direct actions (Email, Call, WhatsApp) sit above the fold: the panel ends at about 475px on an 844px-tall viewport, before any scrolling.
+- The 3 direct actions (Email, Call, WhatsApp) sit above the fold: the 3 rows end at about 475px and the whole panel, with Book a call, at about 580px on an 844px-tall viewport, before any scrolling.
 - No horizontal scroll; the Book a call button and the submit button go full width; the sidebar cards stack below the form; accordion rows are at least 60px tall.
 - Tap targets: rail rows 64 to 72px, buttons 44 to 56px, inputs 56px, accordion rows 60 to 68px, nav links padded to 45px, footer links padded to about 31px with 10px spacing (shared footer, visual unchanged). The footer links could be made 44px if the shared footer is reworked.
 - Phone keypad: Phone uses `type="tel"` with `inputmode="tel"`; Email uses `inputmode="email"`; the old Subject field (wrongly `type="tel"`) is gone.
@@ -181,7 +183,7 @@ Mobile (390px, where most Ads traffic lands)
 - "Speak to us" sentence case in the h1 and the page body; the nav keeps "Speak to Us" title case as on the live site.
 - Webflow field names: `Name`, `Email`, `Phone`, `Enquiry type`, `Message` so the notification emails read clearly.
 - The Instagram link moved out of the hero (it stays in the footer). Instagram is not a direct contact action.
-- The prototype footer uses the disclaimer text from `proto/shared/footer.html` (the shared scaffold). The live footer carries a longer two-paragraph version; keep whichever Compliance prefers.
+- The prototype footer carries the live two-paragraph disclaimer verbatim (the only change is a full stop at the end of the second paragraph, which the live page lacks). Keep it unchanged; it is the approved compliance text.
 - The fifth FAQ answer on the live page has no full stop at the end. Copied verbatim; add the full stop in both the page and the schema if you like.
 
 ## 12. QA checklist (staging, then live)
