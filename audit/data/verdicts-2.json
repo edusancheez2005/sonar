@@ -1,0 +1,70 @@
+{
+ "results": [
+  {
+   "id": "CP-04",
+   "verdict": "partly",
+   "corrected_severity": "medium",
+   "note": "Reproduced the mechanism, not the headline cost. Fresh Playwright run of the F file via file:// with CanvasRenderingContext2D.clearRect/stroke wrapped and CDP Performance.getMetrics over 3 s with no input. Panel centred in view: 1440x900 dpr1 = 181 clears and 8,145 strokes in 3 s (60 fps, 45 polylines of 108 points per frame, not 47 x 100), TaskDuration 0.432 s vs 0.159 s with the panel and hero both off-screen (ScriptDuration 0.137 vs 0.004 s): an extra 0.27 s per 3 s, about 9 percent of a core, not 30. 1024x768: 0.452 vs 0.206 s (8 percent). 390x844 dpr2 (canvas 700x1336): 156 clears, 8,268 strokes, TaskDuration 1.128 vs 0.290 s (28 percent), which is the only configuration where the 30 percent figure holds. rAF ran at 60 to 61 per second. Confirmed: IO gating works (0 draws off-screen), the canvas carries mask-image linear-gradient(105deg, transparent 18%, #000 72%), dpr capped at 2, draw runs every ticker tick while visible even with no pointer or scroll. Screenshots: /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/verify-2/F-panel-inview-1440.png and F-panel-offscreen-1440.png. The recommendation (frame cap, idle stop, bake the fade) stands; severity is medium because it only runs while the panel is on screen, does not touch load metrics, and the desktop cost is a third of what was claimed. It matters most on phones."
+  },
+  {
+   "id": "CP-05",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Measured the inline script blocks of the original F file: GSAP 72,927 bytes, ScrollTrigger 44,575, Lenis 1.3.26 18,722 (auditor's figures within 8 bytes, the difference is the tag boundary). Listener probe (EventTarget.addEventListener wrapped before load) at 390x844 with touch: Lenis registers wheel, touchstart, touchmove and touchend on window, all four with passive:false (stack points at the Lenis block, line 628); ScrollTrigger's own listeners are all passive:true. new Lenis({lerp:0.085, smoothWheel:true}) leaves syncTouch at its default false, so on phones the non-passive touch listeners add handler latency and never smooth anything. lenis.scrollTo is used in scrollToTarget (line 678), place (878) and select (897), each with a window.scrollTo fallback already present. Live index.html loads cdn.prod.website-files.com/gsap/3.15.0/gsap.min.js, SplitText, TextPlugin, ScrollTrigger.min.js and swiper@12, so the mock would ship a second GSAP and ScrollTrigger plus a smooth-scroll library the CONTEXT rule forbids. Severity high is fair under rule 4 (no scroll-jacking, pages must get lighter)."
+  },
+  {
+   "id": "CP-08",
+   "verdict": "partly",
+   "corrected_severity": "medium",
+   "note": "Facts check out: F markup has 'Updated 28 Oct 2026' and all values hard-coded (lines 493 to 509), fetch( occurs 0 times in D, E and F, .motion .upd i runs 'pulse 2.2s ease-out infinite' (line 178) next to Updated, the feed publishes stale:[] and per-rate stale booleans and the workflow runs at 47 past every 3 hours. Live footer script (index.html lines 490 to 541) fetches the feed, writes rate.display verbatim and only logs on .catch, so on failure the Designer text (2.642%, +0.006%) stays with no Updated line. But this is a design mock-up that was never going to fetch, and the live script already degrades to last-published text, so 'no loading, stale or error state' is a build-spec gap for the approved panel rather than something broken. Core is real (the pulsing dot implies live data from a 3-hourly feed; the three states should be specified before build); severity medium, not high."
+  },
+  {
+   "id": "CP-18",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Reproduced exactly at 1440x900 via file://: D creates one .pin-spacer of 1,820 px around .fd; ScrollTrigger.getAll() shows the pinned trigger start 4057, end 5097, span 1,040 px (code: end '+=' + (n-1)*260 with 5 cards, pin:true, anticipatePin:1, line 925 of D). #track-record measures 2,436 px in D against 1,192 px in E and 1,240 px in F (auditor said about 1,000 for F; minor). Mid-pin screenshot shows the card fan fixed at top 80 px while the page scrolls: /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/verify-2/D-pinned-mid-1440.png. CONTEXT rule 4 forbids scroll-jacking and D was not approved, so high is fair as a note on what not to reuse."
+  },
+  {
+   "id": "DR-01",
+   "verdict": "partly",
+   "corrected_severity": "high",
+   "note": "Facts reproduced: live card renders EURIBOR 3-Month 2.643% +0.025% on 31 Oct 2026 (screenshot /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/verify-2/live-rates-section-1440.png) and #baserate-euribor carries title 'Euribor 3-month daily fixing, via euribor-rates.eu'; fetch_rates.py scrapes the euribor-rates.eu HTML table (line 121); the feed README says 'The organisation that publishes Euribor states that redisplaying it on a commercial site needs a licence ... Roscap's call'. www.emmi-benchmarks.eu, www.euribor-rates.eu, bankofengland.co.uk and federalreserve.gov do not resolve from this session, so EMMI text was checked against the pre-fetched copies in scratchpad/fetched: FAQ says delayed data 'may solely be used for non-commercial purposes', site terms forbid reproducing or disseminating the data 'for any commercial reasons without prior signature of a License Agreement', and 'Euribor is a registered trademark ... All uses of this name must indicate that the index is a registered trademark'. Neither the live page nor any concept carries the trademark notice (grep 0). Corrections: the 2021 Pricing Policy text says 'The annual price per hosted website is 1.040 EUR', not 1,060 (the 1,060 figure comes from a 2021-2022 PDF I could not read; web search found no current per-website figure). The 2024-2025 fee schedule frames the Delayed Data licence as an Information Vendor licence at 17,700 EUR for distributing to clients and the per-website line is not in the text I have; Roscap is neither a vendor nor obtaining data from EMMI, and euribor-rates.eu's own terms could not be read. This is an IP and licensing exposure with an easy fix (ECB deposit rate or a licence), not something broken or a regulatory breach, so high rather than critical."
+  },
+  {
+   "id": "DR-02",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Fresh Playwright load of https://www.roscap.co.uk/ on 31 Oct 2026 about 01:50 UTC: #changerate-boe '-0.25%' title 'Change at the last Bank of England decision (18 December 2025)'; #changerate-fed '+0.25%' title 'Change at the last Federal Reserve decision (17 September 2026)'; #changerate-euribor '+0.025%' title 'Change since the previous daily fixing (29 October 2026)' with #baserate-euribor 2.643%. Feed history (read-only clone of edusancheez2005/roscap-rates): euribor as_of 2026-10-29 = 2.643, previous row as_of 2026-10-28 = 2.618, so 29 Oct is the current fixing, not the previous one; boe changed_on 2025-12-18 is the December cut; fed changed_on 2026-09-17 comes from FRED DFEDTARU's effective date (fetch_rates.py last_move). Web search: BoE held at 3.75% on 17 Sep 2026 by 6 to 3 (mtsinsights.com/summaries/10990, financecalendar.com, blog.orbitremit.com; official BoE site unreachable here), FOMC raised to 3.75 to 4.00% in the release dated 16 Sep 2026 (federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm in results) and held on 28 Oct 2026 by 10 to 2 (monetary20261028a.htm, admiralmarkets.com). Video frame sheet_03.png shows 'Raised 25 bps at the 17 Sep 2026 decision' and '2.638% Down 2.8 bps since the 26 Oct fixing'; feed row as_of 2026-10-26 = 2.638 with change -0.028 from the 23 Oct 2.666, so that copy has the same error. Numbers are right, descriptions are wrong; a '-0.25%' beside the BoE rate six weeks after a hold misleads an informed reader, so high is fair."
+  },
+  {
+   "id": "DR-03",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Read-only clone of the public repo: git show 84e9ded:rates.json (committed 2026-10-21T17:40:40Z) and 9d1bf7a (21:59:50Z) both have fed.display '400.00% - 400.00%', change_display '0.00%', as_of and changed_on equal to '<link href=\"https://fonts.googleapis.com/css?family=Open+Sans:300', stale false and stale:[]. Previous good commit 924161f (12:26Z) and next good c9113bf (2026-10-22T05:23:52Z) have '3.75% - 4.00%', so the bad file was live for 11 h 43 min. Cause matches: fred_series() splits every line on commas and float()s the second token, so an HTML line containing 'Open+Sans:300,400' parsed as 400 and the stale fallback never fired. fetch_rates.py has no header check, no numeric range check and no date format check; the live footer script assigns rate.display and rate.change_display straight into textContent with no validation. Fair at high."
+  },
+  {
+   "id": "DR-06",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Concept F lines 499, 504 and 509 hard-code 'Held / 17 Sep 2026 decision', 'Held / 28 Oct 2026 decision' and 'Down 2.0 bps / 27 Oct 2026 fixing'; D (lines 496 to 506) and E (510 to 520) carry the same strings; grep -c 'fetch(' is 0 in all three. Current rates.json fields per rate: name, value, display, change, change_display, change_basis, as_of, changed_on, source, stale, fetched_at (fed adds range_low/high): no decision date, no outcome, no previous fixing date; fetch_rates.py line 139 sets euribor changed_on = as_of. With boe.changed_on 2025-12-18 and change -0.25 the only derivable BoE chip is 'Cut 25 bps, 18 Dec 2025'. One nuance: the Euribor chip is already derivable (feed row at 2026-10-27 had value 2.618, change -0.02, as_of 2026-10-27, matching the mock exactly); it is the BoE and Fed 'Held, <date> decision' chips that need the calendar and outcome fields. High is fair since the approved copy cannot be produced from the data source as it stands."
+  },
+  {
+   "id": "DR-07",
+   "verdict": "partly",
+   "corrected_severity": "medium",
+   "note": "Facts confirmed: 'View all 22 transactions' at F line 540, D line 539, E line 554, linking to /track-record; stat tile '<span data-count=\"60\">60</span>+ Projects funded' at F line 426 and data-count=\"60\" with 'Projects funded' in live index.html; live track-record.html has exactly 22 .st-card-wrap and reads 'Selected Transactions. The following examples highlight a selection of completed transactions arranged and advised by Roscap.' So 'all 22' does sit against '60+' and against the page's own 'selected' framing. But it is a one-word button label ('all'), the two figures measure different things (projects funded versus transactions showcased), and the fix is trivial; this is a copy inconsistency, not something that clearly damages trust. Medium, not high."
+  },
+  {
+   "id": "IL-01",
+   "verdict": "confirmed",
+   "corrected_severity": "critical",
+   "note": "Fresh Chromium context per page, no interaction, 1440x900, on /, /insights, /cookie-policy, /privacy-policy, /website-terms-of-use, /disclaimer, /accessibility-statement, /compliance-governance: cookies after load on every page = _cfuvid (.www.roscap.co.uk, session), _ga_H8HS2R6NLS and _ga (.roscap.co.uk, expiry about 13 months); 3 analytics requests per page including https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS, https://analytics.google.com/g/collect?v=2&tid=G-H8HS2R6NLS... and https://stats.g.doubleclick.net/g/collect..., so hits are sent before any choice. Inline gtag calls are only gtag('js', new Date()) and gtag('config','G-H8HS2R6NLS'); 0 gtag('consent') calls; 0 elements matching cookie/consent/fs-cc selectors; the only cookie-related footer link on any page is 'Cookie Policy' (/cookie-policy), no preferences link. Live cookie policy text quotes verified: 'Non-essential cookies are used only where you have provided consent via our cookie banner', 'Our cookie banner/preference centre provides the current cookie list, including provider, purpose, and duration', 'using the cookie preference link in the website footer (if enabled)'. Privacy policy: technical data collected '(subject to your cookie preferences)'. PECR consent gap plus a policy describing controls that do not exist; critical is fair."
+  },
+  {
+   "id": "IL-02",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Live /privacy-policy innerText is 891 words. No 'last updated' or effective date anywhere; the only date wording is 'We will post the updated version on our website with a revised effective date.' Controller identification is only 'Roscap Limited (company number 13536901)'; no UK postcode pattern and no 'registered office' string on any of the 8 pages captured, and the ICO appears only as 'the right to lodge a complaint with the Information Commissioner's Office (ICO)', no registration number. Processors: 'Service providers acting on our instructions (e.g. website hosting, IT support, CRM, analytics, secure data rooms, e-signature, and screening providers)' while GA4 (G-H8HS2R6NLS), Webflow and Cloudflare (_cfuvid) are observably in use. Retention: 'for as long as necessary for the purposes described' with no periods. The info@roscap.co.uk anchor has href=\"#\" on /privacy-policy, /website-terms-of-use, /disclaimer and /accessibility-statement (the footer's own link is a proper mailto). The Companies (Trading Disclosures) Regulations 2015 point about the registered office is correct. Screenshot: /tmp/claude-0/-home-user-sonar/6b47e843-950d-5a6c-8dda-ec854c8993c6/scratchpad/shots/verify-2/live-privacy-policy-1440.png. High is fair."
+  }
+ ]
+}

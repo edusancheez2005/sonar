@@ -1,0 +1,70 @@
+{
+  "results": [
+    {
+      "id": "ADS-01",
+      "verdict": "confirmed",
+      "corrected_severity": "high",
+      "note": "Re-pulled Windsor google_ads (account 443-916-9682) read-only. Date series 2024-11-01 to 2026-10-31 returns 12 rows, all between 2026-07-29 and 2026-08-10 with no 2026-08-02 row; last row 2026-08-10 = 36 impressions, 1 click, £0.52; conversions and all_conversions are 0 on every row; lifetime 13,749 impressions, 436 clicks, £193.42 matches the finding. Campaign 24071655090 Bridging Finance Broker: PERFORMANCE_MAX, campaign_status PAUSED, campaign_primary_status PAUSED, bidding MAXIMIZE_CONVERSIONS, budget 18.6, geo PRESENCE_OR_INTEREST; asset group primary status NOT_ELIGIBLE, reason CAMPAIGN_PAUSED. conversion_action_name x conversions over Jul to Oct 2026 returns 0 rows. Windsor exposes no campaign start date and no conversion-action creation date, so the 'conversion actions post-date the campaign' clause cannot be checked from the API; it is consistent with the setup log (GA4 generate_lead key event created 24 Aug 2026 and imported into Ads afterwards, campaign served 29 Jul to 10 Aug). Severity high is fair."
+    },
+    {
+      "id": "ADS-02",
+      "verdict": "confirmed",
+      "corrected_severity": "high",
+      "note": "expanded_final_url pull (2026-07-01 to 2026-10-31, 126 rows) totals 13,749 / 436 / £193.42. Filtered pulls: contains contact-us 133 impressions, 4 clicks, £22.53; contains insights 64 / 2 / £0.17; contains privacy 2 / 0 / £0; remainder (roscap.co.uk root variants) 13,550 / 430 / £170.72 = 98.6% of clicks and 88.3% of spend (the auditor's 13,552 impressions is off by 2, immaterial). Live homepage in Playwright at 390x844 and 1440x900: H1 'Real Estate Capital. Redefined.', the word bridging appears 0 times in body text, 'Bridge Loan' once and 'Development Finance' twice, all inside the deal list (text lines 77, 87, 97), not the hero; the only link above the fold at 390 is 'Explore Our Services -> /our-services' (at 1440 the nav SPEAK TO US is also visible). The GA4 figures (405 of 415 sessions, 0.24%) come from the setup log; GA4 is not connected in Windsor so they are unverified here but are not load-bearing."
+    },
+    {
+      "id": "ADS-03",
+      "verdict": "confirmed",
+      "corrected_severity": "high",
+      "note": "ad_network_type re-pull matches exactly: CONTENT 6,487 / 277 / £95.37 (CTR 4.27%, CPC £0.34), YOUTUBE 5,114 / 70 / £6.42 (CTR 1.37%, CPC £0.09), DISCOVER 1,516 / 55 / £22.96 (CPC £0.42), SEARCH 587 / 30 / £67.47 (CTR 5.11%, CPC £2.25), SEARCH_PARTNERS 45 / 4 / £1.21; non-search 402 clicks = 92.2%, £124.75 = 64.5%. device: MOBILE 10,150 / 350 / £140.56 (80.3% of clicks), TABLET 65 clicks, DESKTOP 21 clicks £30.38 (£1.45 CPC), CONNECTED_TV 85 impressions. network x device: CONTENT on MOBILE 230 clicks £75.07; SEARCH on MOBILE 14 clicks £38.01 (£2.72 CPC). search_term and keyword_text pulls both return 0 rows (the finding says null; same meaning). Campaign geo setting PRESENCE_OR_INTEREST confirmed."
+    },
+    {
+      "id": "ADS-04",
+      "verdict": "partly",
+      "corrected_severity": "medium",
+      "note": "Core reproduced: asset_group_final_urls = [\"https://roscap.co.uk\"]; curl https://roscap.co.uk returns 301 to https://www.roscap.co.uk/ and curl -L counts exactly 1 redirect; the 301 preserves the query string (gad_source, gad_campaignid and gbraid are carried into the Location header, tested on / and /contact-us), so attribution is intact. expanded_final_url rows containing http:// total 3,084 impressions, 108 clicks, £48.65 (24.8% of clicks), but that is how Google reports the URL and does not show users passed through an http hop; plain http is untestable from this sandbox (proxy 405). Measured cost over 3 runs: the apex leg needs its own TLS handshake (time_appconnect about 0.14 s, TTFB 0.25 to 0.30 s) before the www request (TTFB 0.12 to 0.31 s), so roughly 0.25 to 0.3 s per click, more on a mobile radio. The three gad_campaignid values differing from campaign_id are normal Performance Max reporting, not a defect. One edge 301 on a page whose simulated mobile LCP is 5.9 s is a real but modest loss; the fix (canonical www final URL) is correct and trivial, but high overstates it."
+    },
+    {
+      "id": "ADS-05",
+      "verdict": "partly",
+      "corrected_severity": "high",
+      "note": "Reproduced on the live page in Playwright at 390x844 (isMobile) and 1440x900: document.querySelector('#Subject') has type 'tel', no inputmode, required true; the live markup is exactly <input class=\"input-field w-input\" maxlength=\"256\" name=\"Subject\" data-name=\"Subject\" placeholder=\"Subject\" type=\"tel\" id=\"Subject\" required=\"\"/>. The other fields are name text, email email, Phone tel (correct), Message textarea (not required). Screenshot shots/verify-1/contact-form-390.png shows a normal-looking text box; the defect only appears with a device keyboard. On iOS type=tel brings up the digits-only phone pad with no letter switch, so the intended free-text entry fails for iOS users; Android phone layouts likewise lack letters (paste or voice remain). However the field accepts any non-empty value, so a visitor can enter digits and submit, desktop is unaffected and the form itself works; it does not block conversion. A serious conversion defect on the paid landing page, so high, but critical is inflated."
+    },
+    {
+      "id": "ADS-06",
+      "verdict": "partly",
+      "corrected_severity": "medium",
+      "note": "Mechanics confirmed: a[href=\"tel:+447850522789\"] carries classes 'c-social-card hide w-inline-block'; computed display none and a 0x0 box at 390x844 and 1440x900; the number appears nowhere in the rendered text; .c-social-wrap shows only info@roscap.co.uk and the @roscap.uk Instagram card (shots/verify-1/contact-390.png). conversion_action list has 6 website actions and none of a phone-call type. But 'hide' is Webflow's deliberate utility class, so this is a publishing choice (the owner may not want a public number) rather than a bug; the page still offers email and the form, and nothing in the data ties the missing number to lost paid conversions. Worth a decision from Clemente (publish the number or add a Book a call link) and a call asset if published, but medium rather than high."
+    },
+    {
+      "id": "ADS-08",
+      "verdict": "partly",
+      "corrected_severity": "high",
+      "note": "Metrics confirmed from the Lighthouse JSON (contact-us mobile, fetched 2026-10-31T01:02Z, simulated slow 4G, 4x CPU): performance 0.67, FCP 2.3 s, LCP 5.9 s, Speed Index 3.7 s, TBT 330 ms, total 764 KiB, unused JavaScript 132 KiB; desktop 0.85 with LCP 1.3 s. lcp-breakdown-insight names img.hero-bg (412x873, loading=lazy) as the LCP element (observed TTFB 417 ms, load delay 408 ms, load 105 ms, render delay 130 ms) and lcp-discovery-insight fails both 'fetchpriority=high should be applied' and 'LCP resources shouldn't use loading=lazy'; the HTML has 0 rel=preload (the server does send a 103 Early Hint preloading the CSS). Live DOM: Vector-2.svg is 202 KiB, loading=\"lazy\", no fetchpriority, bounding box top 0 height 873 at 390, so the lazy attribute on an in-viewport image is real. Two cause details are wrong or overstated. First, the four GSAP tags (gsap.min.js, SplitText, TextPlugin, ScrollTrigger) and jQuery plus the webflow chunks are synchronous scripts at the END of the body (character offsets 24,096 to 25,416 of 28,401; only gtag and Finsweet attributes sit in the head, both async), not site-wide head code, so they do not delay the first render of the hero; Lighthouse still lists them under render-blocking-insight (estimated savings 1,060 ms) because they are parser-blocking in the body, but their real cost is TBT and main-thread time (bootup 1.0 s, gtag 353 ms and webflow chunk 366 ms are the biggest), not LCP. Second, in my own Playwright Chromium run on the live page (390x844, 1.6 Mbps, 150 ms RTT, 4x CPU via CDP) the PerformanceObserver reported the H1 as the LCP element at 1,292 ms and never promoted the full-viewport SVG, so in current Chrome the SVG may not be the field LCP element and un-lazying it may move Speed Index more than LCP. The page is still slow on mobile for a paid landing page (score 67), so high stands; the fix list should say footer code rather than head code, and should lead with the lazy hero image, the 195 KiB gtag payload and the 132 KiB of unused JavaScript."
+    },
+    {
+      "id": "ADS-09",
+      "verdict": "partly",
+      "corrected_severity": "high",
+      "note": "Core confirmed by re-pull: 6 conversion actions, generate_lead (SUBMIT_LEAD_FORM, ENABLED, primary, ONE_PER_CLICK, 90 d), Contact Us (GOOGLE_ANALYTICS_4_CUSTOM, category CONTACT, ENABLED, primary, MANY_PER_CLICK, 90 d), two GA4 purchase actions HIDDEN, qualify_lead and close_convert_lead HIDDEN; conversion tracking status CONVERSION_TRACKING_MANAGED_BY_SELF; enhanced_conversions_for_leads_enabled null; no 'AW-' string in any pre-fetched page or in the live DOM of / and /contact-us (Playwright), only gtag G-H8HS2R6NLS; no gtag('consent') call and no cookie-banner element. Two details are wrong: both conversion_tracking_setting_conversion_tracking_id and customer_conversion_tracking_setting_conversion_tracking_id return 238397354910, not 220059096840, and no Windsor field exposes a Google tag id, so 'AW-18338258070' has no source in the data (the setup log only records 'no Google Ads (AW-) tag'). The recommendation to add gtag('config','AW-18338258070') must not be implemented as written; read the tag id from Google Ads > Tools > Data manager > Google tag (the conversion tracking id 238397354910 points to AW-238397354910, to be confirmed in the UI). Double-counting risk from two primary actions is plausible but whether 'Contact Us' fires on the same submit was not verifiable. Severity high stands."
+    },
+    {
+      "id": "CP-01",
+      "verdict": "confirmed",
+      "corrected_severity": "high",
+      "note": "F file lines 492 to 510 contain 'Updated 28 Oct 2026', BoE 3.75 with chip 'Held' and sub-line '17 Sep 2026 decision', Fed 3.75–4.00 'Held' '28 Oct 2026 decision', EURIBOR 2.618 'Down 2.0 bps' '27 Oct 2026 fixing' (rendered copy confirmed in shots/verify-1/rates-settled-1440.png). Live feed fetched 2026-10-31T01:44Z (updated 2026-10-31T01:04:21Z): boe value 3.75, change -0.25, changed_on 2025-12-18, as_of 2026-10-31; fed range 3.75 to 4.00, change +0.25, changed_on 2026-09-17, as_of 2026-10-30; euribor 2.643, change +0.025, changed_on 2026-10-29. The only fields are updated, updated_display, checked, stale, notes and per rate name, value, display, change, change_display, change_basis, as_of, changed_on, source, stale, fetched_at (fed also range_low, range_high). There is no meeting-date or held field, so 'Held' and the 17 Sep and 28 Oct dates cannot be rendered from the feed, and the mock's 2.618 is already behind the 2.643 fixing. The concept-video comparison was not checked; it is not needed for the verdict. High is fair for a rates panel on a finance site that would otherwise ship static or unsupported copy."
+    },
+    {
+      "id": "CP-02",
+      "verdict": "confirmed",
+      "corrected_severity": "high",
+      "note": "Rendered the F file via file:// in Playwright. At 390x844 (isMobile, hasTouch) #dl-pane (role=tabpanel, aria-live=polite) sits inside an li of ul.dl-list[role=tablist] before and after tapping row 3 (Rome, Bridge Loan); axe-core run on #track-record reports aria-required-children, impact critical, target .dl-list, 'Element has children which are not allowed: [role=tabpanel]'. At 1024x768 and 1440x900 the pane's parent is div.dl and the rule does not fire. Code matches: place() in initDealList appends the pane to rows[cur].parentNode when (max-width: 859px) matches, compensates with lenis.scrollTo immediate and calls ST.refresh(). Screenshot shots/verify-1/dl-tap-row3-390.png matches the auditor's. Separately, axe also reports color-contrast 2.98:1 on .dl-amt (#829895 on #FFFCF5) at all three widths, not part of this finding."
+    },
+    {
+      "id": "CP-03",
+      "verdict": "partly",
+      "corrected_severity": "medium",
+      "note": "Reproduced with gsap.getProperty on the odometer strips. At 1440x900: with the panel off screen the strips already show the final digits 3.75 / 3.75–4.00 / 2.618 and the chips are at opacity 1; 100 ms after the top-72% trigger every BoE and Fed strip is at 0 and EURIBOR at 2.638, chips at opacity 0 and visibility hidden; settled after 4 s. Scrolling to the top and back, 300 ms after re-entry the strips read 1.2,1.2,0 / 0,0,0,0,0,0 / 2,6,3,8 with chips hidden (shots/verify-1/rates-reenter-300ms-1440.png shows the Fed value as 0.00–0.00), and the same re-roll fires on re-entry from below (onEnterBack). At 390x844 the frame with the panel top at 74% shows 3.75 and the Held chip, and the frame at 70% shows 0.00 with the chip hidden (rates-seq-74-390.png, rates-seq-70-390.png), so the value-to-zero snap is real. Reduced motion shows final digits immediately. Mechanism matches the code (ST.create with onEnter and onEnterBack and no once; buildOdo presets final digits; fromTo on the chips with delay 1.1 renders the from state immediately). Severity: the values are correct at rest within about 2 s and nothing is misreported, so this is a noticeable motion polish issue (medium) rather than one that clearly hurts trust or accessibility; the once:true, start-state and earlier-trigger fixes are right."
+    }
+  ]
+}

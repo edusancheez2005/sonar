@@ -1,0 +1,70 @@
+{
+ "results": [
+  {
+   "id": "PC-06",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Reproduced from scratch. curl of the PDF: HTTP 200, content-length 9,211,904 bytes, last-modified 13 Jan 2026. pypdf: 5 pages of 1695x2400, producer and creator pdf-lib, 0 fonts, 0 extractable characters on every page, exactly one DCTDecode JPEG per page (191 to 407 KB, 1.55 MB in total). pdftotext/pdfinfo (poppler) cannot even open it ('Couldn't find trailer dictionary'). New detail that strengthens the finding: the last %%EOF is at byte 1,403,342 and the remaining 7,808,557 bytes (84.8% of the file) are zero padding, so the file is a corrupt or padded export; the real PDF is 1.4 MB. Playwright at 1440x900 and 390x844 (clicked Download, never Submit): .leadgen-popup-overlay goes from display none/opacity 0 to flex/1, position fixed; heading is <h1 class=heading-style-h2>Fill the form to download our brochure (third H1 on the page); form id wf-form-Contact-Form, data-name 'Contact Form', method get, data-redirect = the public CDN PDF URL (present in the static HTML, so the gate is bypassable); fields name/Company-Name/email/Phone all required, placeholder-only, 0 labels, no autocomplete, no privacy wording in the popup; duplicate ids wf-form-Contact-Form, name, email, Phone with the enquiry form (axe duplicate-id-active serious). No role=dialog or aria-modal on .leadgen-cont or the overlay; after opening, document.activeElement is still the Download link; one Tab lands on input#name; Escape leaves display flex; close control is <div class=leadgen-close-wrap> with no tabindex, role or aria-label and after clicking it focus falls to <body>; body and html overflow stay visible. Mobile card 358x590 at y=127 inside the 844 px viewport. The same-tab redirect was not exercised (no submission) but the form has no target attribute and Webflow's data-redirect uses location assignment, so the claim is reasonable. Severity high is fair: a 9.2 MB corrupt, image-only brochure behind a cosmetic gate with an inaccessible popup."
+  },
+  {
+   "id": "PC-07",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Reproduced on /contact-us, /partner-program and / at 1440x900 and 390x844, plus curl of /our-services and /track-record. <label> count is 0 on every page. Placeholder colour computed at runtime is rgb(153,153,153) on rgb(255,255,255) for every .input-field and .leadgen-input-field: 2.85:1, below 4.5:1 (footer newsletter placeholder is white on teal, 13.6:1, fine). input#Subject is type=tel at runtime on /contact-us at both viewports and type=text on / and /partner-program. 0 autocomplete attributes anywhere. Phone is required=true and Message (textarea) is required=false on all three contact forms. Footer <input type=submit class=footer-submit value=''> is flagged by axe input-button-name (critical) on every page tested; the footer email input also has no label. Partner page: axe duplicate-id-active (serious) for name, email, Phone and duplicate-id for wf-form-Contact-Form. Focus style on the contact inputs: outline none, border rgb(56,152,236), no box-shadow, as described. Severity high is fair: WCAG 1.3.1/3.3.2 label failures on every form plus an axe-critical nameless submit site-wide."
+  },
+  {
+   "id": "PC-11",
+   "verdict": "partly",
+   "corrected_severity": "medium",
+   "note": "Copy reproduced verbatim from fresh curl of /contact-us: 'What types of projects and assets does Roscap fund?', 'We also fund international projects through our global capital network.', 'What information do I need to apply for property finance through Roscap?', 'To underwrite a deal, we typically require ...', 'Roscap can secure bridging loans in as little as 5–10 working days, subject to valuation and legal readiness. Development finance and commercial mortgages typically complete within 6–8 weeks, depending on lender due diligence and asset complexity.', 'secure competitive terms'. The last answer ends '...international real estate projects</p>' with no full stop. The footer on the same page carries the introducer/not-authorised disclaimer. What is overstated is the severity: none of the quoted copy states or implies FCA authorisation; the timescales are hedged ('as little as', 'subject to valuation and legal readiness', 'typically', 'depending on'); the products named (development finance, acquisition bridging, commercial mortgages) are business lending outside the regulated perimeter, so the exposure is positioning and expectation-setting (an introducer describing itself as funding and underwriting, and quoting day counts) rather than a legal breach. Rewording to arranger language and softening the timescales is sensible; medium, not high."
+  },
+  {
+   "id": "OS-01",
+   "verdict": "partly",
+   "corrected_severity": "medium",
+   "note": "Reproduced exactly. In the fresh HTML the Equity and Co-Investment paragraph (section.section > .content-wrap.is-large > p.text-size-smedium) contains 'We raise and structure equity for developers, sponsors, and family offices seeking joint ventures, preferred equity, or direct co-investment.We raise and structure equity for developers, sponsors, and family offices seeking joint venture, preferred equity, or direct co-investment.' (2 occurrences in one <p>, no space after the first full stop, 'ventures' then 'venture'), rendered visible at 1440, 1024 and 390. The only correction is severity: it is a single-edit proofreading error with no conversion, legal, accessibility or performance impact; under the rubric a noticeable polish defect is medium, not high."
+  },
+  {
+   "id": "OS-02",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Reproduced. curl of 694792bf5c2413d44a03ecf9_Group%201597880904.svg: 37,670 bytes, image/svg+xml, root viewBox 0 0 660 664, 13 <path> elements and 0 <text>, <tspan>, <title>, <desc> or aria attributes; every label is outlined. img.wwa-image has alt='' and no role/aria-label, loading=lazy, no width/height attributes; rendered 641x645 at 1440 and 358x360 at 390. Checked for a text equivalent: 'Common Equity', 'Senior Debt', 'Capital Stack', 'High risk' and 'Low risk' appear nowhere else in the page text (only 'Preferred Equity' and 'Mezzanine Finance' appear, in the services lists), so screen reader users get no version of the diagram: a genuine WCAG 1.1.1 failure on the page's key graphic. Glyph bounding boxes measured at 358 px wide: layer labels 7.1 to 9.4 px tall, title 12.2 px, consistent with the 'roughly 7 to 9 px' claim. Extra defect seen while verifying: at 1024x768 the image is forced to 463x741 by the grid cell with object-fit: cover, so the diagram is cropped on both sides (the Equity/Debt brackets are cut off and 'High risk, High return' / 'Low risk, Low return' are clipped). Severity high is fair."
+  },
+  {
+   "id": "OS-03",
+   "verdict": "partly",
+   "corrected_severity": "medium",
+   "note": "Reproduced the mechanics at 1440x900 and 1024x768: the Webflow interaction sets inline color rgba(225,201,121,0.3) on h3.process-title and rgba(255,255,255,0.3) on p.process-text for steps away from the viewport centre (0.392 on the next one), and axe color-contrast reports 1.84 (#586f57 on #1d4849, 40 px) for the title and 2.33 (#617f80 on #1d4849, 18 px) for the text on the dimmed cards, exactly the values claimed. With reducedMotion: 'reduce' emulated the sampled inline colours were identical (0.392 and 0.3), matchMedia confirmed the preference, Webflow IX2 reducedMotion was false, and neither the page nor site.css contains a prefers-reduced-motion rule. At 390 no inline styles are applied and nothing fails. Where I disagree is severity and one detail: the dimmed state is transient and tied to scroll position (at 1440x900 the 3 steps nearest the centre are at full contrast and each step reaches full contrast as the reader scrolls to it), so a sequential reader never meets failing text; the failure affects people who read ahead, zoom out or use tall viewports. The reduced-motion point is weak because the effect is a colour fade, not movement, so prefers-reduced-motion is not the natural control for it. Raising the inactive floor to about 60% as recommended is still right; medium."
+  },
+  {
+   "id": "TR-01",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Reproduced at 1440x900 (DPR 1) and 390x844 (DPR 3). All 22 img.image have computed object-fit: fill, CSS height 380px and width 100%; the parent .st-thumbnail-wrap has object-fit: cover, which does nothing on a div. Displayed 614x380 (ratio 1.62) at 1440 versus intrinsic 765x594 (1.29, mayfair and rome) and 660x482 (1.37, the rest); displayed 338x380 (0.89) at 390, so photos are squeezed to about 69% of their natural width. The squashing is plainly visible in the 390 screenshot (Kensington townhouses with elongated windows) and the 1440 screenshot shows horizontal stretching. The finding's 592x380 and 360x380 come from Lighthouse's own viewports; the defect is the same. Severity high is fair for every deal photo on the track record page being distorted."
+  },
+  {
+   "id": "TR-02",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Reproduced. The page has 22 img.image, all PNG in asset folder 69453ab474ca25afbfe0f630, each with alt='' and loading=lazy, srcset of 500w plus the original (one has 500/800/990) and sizes '(max-width: 479px) 96vw, (max-width: 767px) 97vw, (max-width: 991px) 48vw, (max-width: 1919px) 49vw, 50vw'. curl HEAD of the 22 originals: 501,723 to 1,047,471 bytes (mayfair 1,047,471; rome 873,729; Mask group 873,314; huddersfield 788,921; florida 724,139; manchester 712,908 ...), 14,189,640 bytes for the whole set. In a fresh Playwright load 10 of the 22 are fetched (the slider's other 12 only load when swiped): 6,308,570 bytes at 1440x900 and 6,973,827 bytes at 390x844 with DPR 3, where every one of the 10 resolved to the original file (for example mayfair.png 1,047,471 on mobile). This matches the 6.3 MB claim and the finding's per-file sizes within rounding. The hero is WebP. Severity high is fair."
+  },
+  {
+   "id": "TR-03",
+   "verdict": "confirmed",
+   "corrected_severity": "high",
+   "note": "Reproduced. curl of https://roscap.s3.us-east-1.amazonaws.com/mapwithireee.svg: HTTP 200, Server AmazonS3, Content-Type image/svg+xml, Content-Length 6,659,741, Last-Modified 14 Jan 2026, no Cache-Control, no Expires, no CDN headers. The file has 274 <path> elements, 46 with path data longer than 20,000 characters (the largest is 1,526,700 characters; path data totals 6.63 MB of the 6.66 MB). The inline script fetches it only when window.innerWidth >= 1200, has no try/catch and no fallback, and injects it into #svg-map-container inside .svg-mapp (630 px tall at 1440, hidden at 390 where mapp-p-1600.png renders at 390x170 instead). Live run at 1440 confirmed the 6,659,741-byte response. Repeat-visit test via CDP in the same browser context (track-record, our-services, track-record again): the second visit downloaded the SVG again (status 200, fromDiskCache false), so 'on every desktop visit' holds even for returning visitors in Chromium. Severity high is fair."
+  },
+  {
+   "id": "TR-04",
+   "verdict": "partly",
+   "corrected_severity": "medium",
+   "note": "Numbers reproduced. In the SVG source, g#popup-uk reads '52 DEALS', popup-france '2 DEALS', popup-ireland '2 DEALS', popup-italy '2 DEALS', popup-spain '1 DEALS', popup-albania '1 DEALS', popup-usa '1 DEALS' (61). Live at 1440 each popup gains .is-visible on pointermove over its country and the UK screenshot shows the 'DEALS 52' bubble; pins and popups are hidden with opacity 0 and pointer-events none by page CSS, revealed only by the pointermove handler and hidden again on pointerleave; the SVG contains 0 focusable elements, and at 390 the SVG is not loaded at all (static PNG), so the counts are unreachable by keyboard or touch. The list has 22 cards: 16 UK (Kensington, Sheffield, London, Bath, Bradford, Wakefield, Huddersfield, Bristol, Surrey, Birmingham, Manchester, Buckinghamshire, Edinburgh, Liverpool, Leeds, Nottingham) and 1 each for Dublin, Marbella, Rome, Cannes, Florida, Tirana. 'DEALS' is not pluralised correctly for the three '1 DEALS' popups. What is overstated: 'contradict'. The section is headed 'Selected Transactions' and introduced as 'a selection of completed transactions', so 52 versus 16 is a subset, not a contradiction. The real issues are an unsubstantiated numeric claim (52) that Clemente must stand behind, exposed only through a desktop hover, plus the singular error. Medium rather than high."
+  },
+  {
+   "id": "SH-01",
+   "verdict": "confirmed",
+   "corrected_severity": "critical",
+   "note": "Reproduced on /our-services at 1440x900, 1024x768, 390x844 (and with reduced motion) and on /track-record at 1440 and 390, fresh contexts each time. Every page's <head> loads https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS and calls gtag('config','G-H8HS2R6NLS') with no gtag('consent','default') (dataLayer contains 0 consent entries). On load, requests fire to analytics.google.com/g/collect and stats.g.doubleclick.net/g/collect, and the cookie jar holds _ga and _ga_H8HS2R6NLS on .roscap.co.uk plus Cloudflare's _cfuvid (strictly necessary). The only element matching cookie/consent/banner selectors is div.ab-banner-head-wrap, a CTA; no consent UI exists in the DOM or screenshots. curl of /, /contact-us and /partner-program shows the same head tag and no consent code. Analytics cookies set without consent is a PECR regulation 6 breach for a UK site; critical is fair."
+  }
+ ]
+}
