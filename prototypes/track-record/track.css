@@ -42,12 +42,13 @@ h1,h2,h3{font-family:var(--f-display);font-weight:700}
    The live map as it looks today (teal countries and their names, nothing on top at rest), redrawn from the live file at under
    a pixel of tolerance: 166 KB instead of 6.66 MB, so it shows on every screen size instead of a flat picture on phones.
    Entrance, once, when a third of the map is on screen: the seven countries turn from grey to teal one after another
-   (United Kingdom first, then Ireland, France, Spain, Italy, Albania and, across the Atlantic, the USA) and each line of the
-   list underneath appears with its country. About 1.9 s in all.
-   Hover a country (or tap it, or tab to its line in the list): as on live, its gold Roscap pin and its "Deals" label appear,
+   (United Kingdom first, then Ireland, France, Spain, Italy, Albania and, across the Atlantic, the USA), each name
+   fading in after its country. About 1.9 s in all.
+   Hover a country (or tap it on a phone): as on live, its gold Roscap pin and its "Deals" label appear,
    but smoothly. The country brightens a touch, the pin drops in and settles with a faint gold ripple at its point, and the
    label rises in just after it. Moving to another country, the label glides across while the pins hand over; moving off,
-   both fade away quickly. Without JS the static map shows (noscript), with no pins, and the list is always there. */
+   both fade away quickly. Without JS the static map shows (noscript), with no pins. Nothing is listed under the map; the
+   figures are in a list that only screen readers read. */
 .section.fp-section{padding-bottom:6.25rem}
 .fp{display:flex;flex-direction:column;align-items:center;gap:2.25rem}
 .fp-map{position:relative;width:100%;max-width:1389px;aspect-ratio:1389/606}
@@ -82,44 +83,32 @@ h1,h2,h3{font-family:var(--f-display);font-weight:700}
 .fp-pop.is-on.is-moving{transition:opacity .2s ease,transform .45s cubic-bezier(.22,1,.36,1),left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}
 .fp-pop.no-glide{transition:opacity .3s ease .12s,transform .5s cubic-bezier(.22,1,.36,1) .12s}
 
-/* the list under the map: every country and its figure, always visible; also the keyboard and touch way into the map */
-.fp-list{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;max-width:1200px;margin:0;padding:0;list-style:none}
-.fp-list li{margin:0;padding:0}
-.fp-chip{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:8px 18px;border:1px solid var(--gold);border-radius:999px;background:transparent;
-  color:var(--ink);font:400 .9375rem/1.2 var(--f-body);cursor:pointer;
-  transition:background-color .25s ease,border-color .25s ease,color .25s ease,opacity .5s cubic-bezier(.22,1,.36,1),transform .5s cubic-bezier(.22,1,.36,1)}
-.fp-chip-n{color:#56625f;font-size:.8125rem;transition:color .25s ease}
-.fp-chip:hover,.fp-chip.is-on{background-color:var(--teal);border-color:var(--teal);color:#fff}
-.fp-chip:hover .fp-chip-n,.fp-chip.is-on .fp-chip-n{color:var(--gold)}
+/* the figures for screen readers (the map is a picture to them); not shown on screen */
+.fp-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;list-style:none}
 
 /* entrance: armed by track.js only when motion is allowed, played once when a third of the map is visible.
-   --d is each country's start (0, 150, 300 ... ms), set by track.js on the country, its label and its list line. */
+   --d is each country's start (0, 150, 300 ... ms), set by track.js on the country and its name. */
 @media (prefers-reduced-motion:no-preference){
   .fp.fp-armed .fp-c .fp-t{fill:#ededed}
   .fp.fp-armed .fp-lab-a{opacity:0}
-  .fp.fp-armed .fp-chip{opacity:0;transform:translateY(10px)}
   .fp.fp-armed.is-in .fp-c .fp-t{fill:#034c4f;transition:fill .75s cubic-bezier(.22,.61,.36,1) var(--d,0ms)}
   .fp.fp-armed.is-in .fp-lab-a{opacity:1;transition:opacity .45s ease calc(var(--d,0ms) + 380ms)}
-  .fp.fp-armed.is-in .fp-chip{opacity:1;transform:none;transition:background-color .25s ease,border-color .25s ease,color .25s ease,opacity .5s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 250ms),transform .5s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 250ms)}
   /* once the entrance is over (track.js adds .fp-done), hover and focus react at once, without the entrance delays */
   .fp.fp-armed.is-in.fp-done .fp-c .fp-t{transition:fill .35s ease}
   .fp.fp-armed.is-in.fp-done .fp-lab-a{transition:opacity .3s ease}
-  .fp.fp-armed.is-in.fp-done .fp-chip{transition:background-color .25s ease,border-color .25s ease,color .25s ease}
 }
 /* reduced motion: the pin and the label simply fade in and out, in place */
 @media (prefers-reduced-motion:reduce){
   .fp-pin-i,.fp-pin.is-on .fp-pin-i{transform:none;transition:opacity .15s linear}
   .fp-pin.is-on .fp-ring{animation:none}
   .fp-pop,.fp-pop.is-on,.fp-pop.is-on.is-moving,.fp-pop.no-glide{transform:translate(-50%,calc(-100% - 14px));transition:opacity .15s linear}
-  .fp-c .fp-t,.fp-chip{transition:none}
+  .fp-c .fp-t{transition:none}
 }
 @media (max-width:767px){
   .fp{gap:1.75rem}
   .fp-svg .fp-lab{display:none}
   .fp-pop{padding:7px 11px;gap:10px;font-size:.6875rem}
   .fp-pop-v{padding-left:10px;font-size:.875rem}
-  .fp-list{gap:8px}
-  .fp-chip{padding:8px 14px;font-size:.875rem}
 }
 /* ===================== FOOTPRINT MAP BLOCK END ===================== */
 

@@ -10,7 +10,7 @@ Copy rule note: in the live hero, "mixed-use schemes" is followed by a long dash
 
 | | Live today | Proposed |
 |---|---|---|
-| Map | 6.66 MB drawing, loaded on computers only; a flat picture on phones and tablets; the pin and figure blink on only when the mouse is over a country | The same map at 166 KB (about 45 KB as Webflow sends it), on every screen, looking as it does today with nothing on top at rest; the countries light up in turn as it comes into view; every country's figure is listed under the map; hover, tap or keyboard brings in the country's gold Roscap pin and its "Deals" label smoothly |
+| Map | 6.66 MB drawing, loaded on computers only; a flat picture on phones and tablets; the pin and figure blink on only when the mouse is over a country | The same map at 166 KB (about 45 KB as Webflow sends it), on every screen, looking as it does today with nothing on top at rest; the countries light up in turn as it comes into view; hover or tap brings in the country's gold Roscap pin and its "Deals" label smoothly; nothing listed under the map |
 | Deals | Two sliders with arrows and dots, four cards at a time | One grid of the same 22 cards: UK / Europe / North America filter, six cards first and "View all transactions", cards fade up as they appear |
 | Page weight at 1440 (whole page scrolled) | 12.8 MB | 0.6 MB |
 | Page weight at 390 | 6.4 MB | 0.5 MB |
@@ -21,10 +21,10 @@ The live figures were measured on the live page; the prototype figures with ever
 
 ### What it does
 - Same outlines, colours and labels as the live map, and the same look at rest: teal countries and their names, with no pins on top. The file was redrawn from the live one with every point kept within half a pixel, so it looks the same and weighs 97% less.
-- Entrance, once, when a third of the map is on screen: the United Kingdom fills from grey to teal, then Ireland, France, Spain, Italy, Albania and, after a short pause for the Atlantic, the USA (150 ms apart). Each country's line in the list underneath appears with it. About 1.9 s in all.
-- The list under the map shows every country and its figure at all times: United Kingdom 52 deals, Ireland 2 deals, France 2 deals, Spain 1 deal, Italy 2 deals, Albania 1 deal, USA 1 deal. These are the live map's figures (the live label reads "Deals | 1"; the list reads "1 deal").
-- Hover a country (or its name) or a line of the list: as on live, the country's gold Roscap pin and its "Deals" label appear, but smoothly instead of blinking on. The country brightens a touch, the pin drops in and settles with a faint gold ripple at its point, and the label rises in just after it (about 0.4 s in all). Moving to another country, the label glides across while the pins hand over (crossing a border or a strip of sea does not make it blink off: it waits 160 ms before going); moving off the map, both fade away in about 0.2 s. Tap does the same on phones (tap again to clear). Keyboard: Tab through the list; Enter keeps a country selected; Escape clears.
-- Reduced motion: the pin and the label simply fade in and out, in place, and the finished map shows at once. Without JavaScript the static map shows (noscript), with no pins, and the list is still there.
+- Entrance, once, when a third of the map is on screen: the United Kingdom fills from grey to teal, then Ireland, France, Spain, Italy, Albania and, after a short pause for the Atlantic, the USA (150 ms apart), each name fading in after its country. About 1.9 s in all.
+- Nothing is listed under the map (owner's decision). The live map's figures (United Kingdom 52, Ireland 2, France 2, Spain 1, Italy 2, Albania 1, USA 1) sit in a short list that only screen readers read, because the map itself is a picture to them; the gold label takes its number from that list.
+- Hover a country (or its name): as on live, the country's gold Roscap pin and its "Deals" label appear, but smoothly instead of blinking on. The country brightens a touch, the pin drops in and settles with a faint gold ripple at its point, and the label rises in just after it (about 0.4 s in all). Moving to another country, the label glides across while the pins hand over (crossing a border or a strip of sea does not make it blink off: it waits 160 ms before going); moving off the map, both fade away in about 0.2 s. Tap does the same on phones (tap again to clear). On a computer a click keeps the country shown after the pointer leaves, and Escape clears it.
+- Reduced motion: the pin and the label simply fade in and out, in place, and the finished map shows at once. Without JavaScript the static map shows (noscript), with no pins.
 - The map is fetched when it is about a screen away, not with the page.
 
 ### Install (Designer, Track Record page)
@@ -33,7 +33,7 @@ The live figures were measured on the live page; the prototype figures with ever
 3. In the same section add a Div with the live class `container`, and inside it a Code Embed. Paste `webflow/footprint-map-embed.html` (12.6 KB) and replace the two `REPLACE-WITH-UPLOADED-footprint-map.svg` URLs with the asset URL from step 1.
 4. Page settings > Custom code > Inside head: delete the old map styles (`svg path { pointer-events: all; cursor: pointer; }` and the `[id^="pin-"]` rules). The first one gives every drawing on the page a hand cursor.
 5. Optional: remove the "slide in" interaction from this section so the map's own entrance reads cleanly (the prototype holds this section still).
-6. Figures: each line of the list carries its figure twice, `data-n="52"` (the gold label) and the visible "52 deals". Change both if a figure changes. **Before publishing, confirm the UK figure** (question 3 in the message to Clemente: the map says 52, the list below shows 16 UK deals).
+6. Figures: each country's line in the screen-reader list (`ul.fp-sr` in the embed) carries its figure twice, `data-n="52"` (what the gold label shows) and the text "United Kingdom: 52 deals". Change both if a figure changes. **Before publishing, confirm the UK figure** (question 3 in the message to Clemente: the map says 52, the deals below show 16 UK deals).
 
 ## 2. Selected Transactions
 
@@ -58,12 +58,12 @@ The live figures were measured on the live page; the prototype figures with ever
 5. Optional: remove the "slide in" interaction from this section (the prototype holds it still so the cards' own entrance reads cleanly).
 
 ## 3. Checks run (all pass)
-- Prototype, 31 checks: no pins on the map at rest; hovering each country shows its label and only its own pin; moving onto a pin keeps its country; a quick pass over a grey country keeps the label, a longer stay hides it; label hides when the pointer leaves; keyboard (Tab, Enter, Escape); phone tap and second tap; tap targets at least 44 px; four cards first on phones and 22 after "View all"; no sideways scrolling at 390; reduced motion (no pins at rest either); no JavaScript; axe-core 4.10: 0 violations; no console errors.
+- Prototype, 31 checks: no pins on the map at rest; hovering each country shows its label and only its own pin; moving onto a pin keeps its country; a quick pass over a grey country keeps the label, a longer stay hides it; label hides when the pointer leaves; nothing shown under the map while screen readers get all seven figures; a click keeps a country shown and Escape clears it; phone tap and second tap; tap targets at least 44 px; four cards first on phones and 22 after "View all"; no sideways scrolling at 390; reduced motion (no pins at rest either); no JavaScript; axe-core 4.10: 0 violations; no console errors.
 - Staging simulation: the saved live page with these files applied as above (live stylesheet, Webflow Collection markup, old map styles and Swiper removed): no errors; regions read from the location lines (16 UK, 5 Europe, 1 North America); three columns at 1440, one at 390; map fetched, entrance played, no pins at rest, Italy's pin and label on hover.
 
 ## 4. Test on staging
 - [ ] Scroll to the map slowly: the countries light up one after another; scroll back up and down: no replay.
-- [ ] At rest the map has no pins on it. Hover the UK: its pin drops in, then the label rises in. Move to France: the label glides across and the pins hand over; the list line lights up.
-- [ ] Phone: the map shows (not a flat picture); tap "Italy 2 deals" in the list: Italy and its label show; tap again: cleared.
+- [ ] At rest the map has no pins on it. Hover the UK: its pin drops in, then the label rises in. Move to France: the label glides across and the pins hand over. Nothing shows under the map.
+- [ ] Phone: the map shows (not a flat picture); tap Italy: its pin and label show; tap again: cleared.
 - [ ] Deals: six cards, filter Europe: five cards glide in; North America: one card; All: six again; "View all transactions": 22; "Show fewer": six, and the button is still under your finger.
 - [ ] No hand cursor over grey countries.

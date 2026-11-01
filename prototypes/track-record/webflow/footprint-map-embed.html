@@ -1,23 +1,24 @@
 <!-- Roscap Track Record: footprint map. Replaces the "svg-mapp" embed and the "map-mobile" image. HANDOFF.md section 1.
      Upload footprint-map.svg to Assets and put its URL in the two places marked REPLACE. -->
-<style>.section.fp-section{padding-bottom:6.25rem}.fp{display:flex;flex-direction:column;align-items:center;gap:2.25rem}.fp-map{position:relative;width:100%;max-width:1389px;aspect-ratio:1389/606}.fp-map .fp-svg{display:block;width:100%;height:auto;overflow:visible}.fp-svg .fp-lab{font-family:Switzer,Arial,sans-serif}.fp-c,.fp-lab-a{cursor:pointer}.fp-c .fp-t{transition:fill .35s ease}.fp-lab-a{transition:opacity .3s ease}.fp-svg .fp-pins{opacity:1}.fp-pin{pointer-events:none}.fp-pin.is-on{pointer-events:visiblePainted;cursor:pointer}.fp-pin-i{transform-box:fill-box;transform-origin:50% 100%;opacity:0;transform:translateY(-18px) scale(.6);transition:opacity .16s ease,transform .2s cubic-bezier(.4,0,1,1)}.fp-pin.is-on .fp-pin-i{opacity:1;transform:none;transition:opacity .2s ease,transform .6s cubic-bezier(.3,1.42,.55,1)}.fp-ring{fill:none;stroke:#e1c979;stroke-width:1.6;opacity:0;transform-box:fill-box;transform-origin:50% 50%}.fp-pin.is-on .fp-ring{animation:fp-ring .95s cubic-bezier(.22,1,.36,1) .3s 1 both}@keyframes fp-ring{0%{opacity:.85;transform:scale(.35)}100%{opacity:0;transform:scale(2.6)}}.fp .fp-c.is-on .fp-t,.fp.fp-armed.is-in .fp-c.is-on .fp-t{fill:#0b5d60}.fp-pop{position:absolute;left:0;top:0;z-index:2;display:flex;align-items:center;gap:14px;padding:9px 14px;border-radius:4px;background:linear-gradient(#ffebaa,#e1c979);color:var(--_colors---green,#043435);font:500 .8125rem/1 Switzer,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;box-shadow:0 10px 24px -6px rgba(4,52,53,.28);pointer-events:none;opacity:0;transform-origin:50% 100%;transform:translate(-50%,calc(-100% - 14px)) translateY(10px) scale(.94);transition:opacity .16s ease,transform .2s ease,left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}.fp-pop::after{content:"";position:absolute;left:50%;bottom:-5px;width:11px;height:11px;background:#e2ca7b;transform:translateX(-50%) rotate(45deg)}.fp-pop-v{padding-left:14px;border-left:1px solid rgba(4,52,53,.28);color:#282828;font-size:1rem;letter-spacing:0}.fp-pop.is-on{opacity:1;transform:translate(-50%,calc(-100% - 14px));transition:opacity .3s ease .12s,transform .5s cubic-bezier(.22,1,.36,1) .12s,left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}.fp-pop.is-on.is-moving{transition:opacity .2s ease,transform .45s cubic-bezier(.22,1,.36,1),left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}.fp-pop.no-glide{transition:opacity .3s ease .12s,transform .5s cubic-bezier(.22,1,.36,1) .12s}.fp-list{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;max-width:1200px;margin:0;padding:0;list-style:none}.fp-list li{margin:0;padding:0}.fp-chip{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:8px 18px;border:1px solid var(--_colors---golden,#e1c979);border-radius:999px;background:transparent;color:var(--_colors---black,#12161d);font:400 .9375rem/1.2 Switzer,Arial,sans-serif;cursor:pointer;transition:background-color .25s ease,border-color .25s ease,color .25s ease,opacity .5s cubic-bezier(.22,1,.36,1),transform .5s cubic-bezier(.22,1,.36,1)}.fp-chip-n{color:#56625f;font-size:.8125rem;transition:color .25s ease}.fp-chip:hover,.fp-chip.is-on{background-color:var(--_colors---green,#043435);border-color:var(--_colors---green,#043435);color:#fff}.fp-chip:hover .fp-chip-n,.fp-chip.is-on .fp-chip-n{color:var(--_colors---golden,#e1c979)}@media (prefers-reduced-motion:no-preference){.fp.fp-armed .fp-c .fp-t{fill:#ededed}.fp.fp-armed .fp-lab-a{opacity:0}.fp.fp-armed .fp-chip{opacity:0;transform:translateY(10px)}.fp.fp-armed.is-in .fp-c .fp-t{fill:#034c4f;transition:fill .75s cubic-bezier(.22,.61,.36,1) var(--d,0ms)}.fp.fp-armed.is-in .fp-lab-a{opacity:1;transition:opacity .45s ease calc(var(--d,0ms) + 380ms)}.fp.fp-armed.is-in .fp-chip{opacity:1;transform:none;transition:background-color .25s ease,border-color .25s ease,color .25s ease,opacity .5s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 250ms),transform .5s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 250ms)}.fp.fp-armed.is-in.fp-done .fp-c .fp-t{transition:fill .35s ease}.fp.fp-armed.is-in.fp-done .fp-lab-a{transition:opacity .3s ease}.fp.fp-armed.is-in.fp-done .fp-chip{transition:background-color .25s ease,border-color .25s ease,color .25s ease}}@media (prefers-reduced-motion:reduce){.fp-pin-i,.fp-pin.is-on .fp-pin-i{transform:none;transition:opacity .15s linear}.fp-pin.is-on .fp-ring{animation:none}.fp-pop,.fp-pop.is-on,.fp-pop.is-on.is-moving,.fp-pop.no-glide{transform:translate(-50%,calc(-100% - 14px));transition:opacity .15s linear}.fp-c .fp-t,.fp-chip{transition:none}}@media (max-width:767px){.fp{gap:1.75rem}.fp-svg .fp-lab{display:none}.fp-pop{padding:7px 11px;gap:10px;font-size:.6875rem}.fp-pop-v{padding-left:10px;font-size:.875rem}.fp-list{gap:8px}.fp-chip{padding:8px 14px;font-size:.875rem}}</style>
+<style>.section.fp-section{padding-bottom:6.25rem}.fp{display:flex;flex-direction:column;align-items:center;gap:2.25rem}.fp-map{position:relative;width:100%;max-width:1389px;aspect-ratio:1389/606}.fp-map .fp-svg{display:block;width:100%;height:auto;overflow:visible}.fp-svg .fp-lab{font-family:Switzer,Arial,sans-serif}.fp-c,.fp-lab-a{cursor:pointer}.fp-c .fp-t{transition:fill .35s ease}.fp-lab-a{transition:opacity .3s ease}.fp-svg .fp-pins{opacity:1}.fp-pin{pointer-events:none}.fp-pin.is-on{pointer-events:visiblePainted;cursor:pointer}.fp-pin-i{transform-box:fill-box;transform-origin:50% 100%;opacity:0;transform:translateY(-18px) scale(.6);transition:opacity .16s ease,transform .2s cubic-bezier(.4,0,1,1)}.fp-pin.is-on .fp-pin-i{opacity:1;transform:none;transition:opacity .2s ease,transform .6s cubic-bezier(.3,1.42,.55,1)}.fp-ring{fill:none;stroke:#e1c979;stroke-width:1.6;opacity:0;transform-box:fill-box;transform-origin:50% 50%}.fp-pin.is-on .fp-ring{animation:fp-ring .95s cubic-bezier(.22,1,.36,1) .3s 1 both}@keyframes fp-ring{0%{opacity:.85;transform:scale(.35)}100%{opacity:0;transform:scale(2.6)}}.fp .fp-c.is-on .fp-t,.fp.fp-armed.is-in .fp-c.is-on .fp-t{fill:#0b5d60}.fp-pop{position:absolute;left:0;top:0;z-index:2;display:flex;align-items:center;gap:14px;padding:9px 14px;border-radius:4px;background:linear-gradient(#ffebaa,#e1c979);color:var(--_colors---green,#043435);font:500 .8125rem/1 Switzer,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;box-shadow:0 10px 24px -6px rgba(4,52,53,.28);pointer-events:none;opacity:0;transform-origin:50% 100%;transform:translate(-50%,calc(-100% - 14px)) translateY(10px) scale(.94);transition:opacity .16s ease,transform .2s ease,left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}.fp-pop::after{content:"";position:absolute;left:50%;bottom:-5px;width:11px;height:11px;background:#e2ca7b;transform:translateX(-50%) rotate(45deg)}.fp-pop-v{padding-left:14px;border-left:1px solid rgba(4,52,53,.28);color:#282828;font-size:1rem;letter-spacing:0}.fp-pop.is-on{opacity:1;transform:translate(-50%,calc(-100% - 14px));transition:opacity .3s ease .12s,transform .5s cubic-bezier(.22,1,.36,1) .12s,left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}.fp-pop.is-on.is-moving{transition:opacity .2s ease,transform .45s cubic-bezier(.22,1,.36,1),left .45s cubic-bezier(.22,1,.36,1),top .45s cubic-bezier(.22,1,.36,1)}.fp-pop.no-glide{transition:opacity .3s ease .12s,transform .5s cubic-bezier(.22,1,.36,1) .12s}.fp-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;list-style:none}@media (prefers-reduced-motion:no-preference){.fp.fp-armed .fp-c .fp-t{fill:#ededed}.fp.fp-armed .fp-lab-a{opacity:0}.fp.fp-armed.is-in .fp-c .fp-t{fill:#034c4f;transition:fill .75s cubic-bezier(.22,.61,.36,1) var(--d,0ms)}.fp.fp-armed.is-in .fp-lab-a{opacity:1;transition:opacity .45s ease calc(var(--d,0ms) + 380ms)}.fp.fp-armed.is-in.fp-done .fp-c .fp-t{transition:fill .35s ease}.fp.fp-armed.is-in.fp-done .fp-lab-a{transition:opacity .3s ease}}@media (prefers-reduced-motion:reduce){.fp-pin-i,.fp-pin.is-on .fp-pin-i{transform:none;transition:opacity .15s linear}.fp-pin.is-on .fp-ring{animation:none}.fp-pop,.fp-pop.is-on,.fp-pop.is-on.is-moving,.fp-pop.no-glide{transform:translate(-50%,calc(-100% - 14px));transition:opacity .15s linear}.fp-c .fp-t{transition:none}}@media (max-width:767px){.fp{gap:1.75rem}.fp-svg .fp-lab{display:none}.fp-pop{padding:7px 11px;gap:10px;font-size:.6875rem}.fp-pop-v{padding-left:10px;font-size:.875rem}}</style>
 <div class="fp" id="footprint">
 <div class="fp-map" data-img="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/REPLACE-WITH-UPLOADED-footprint-map.svg">
 <noscript><img class="fp-svg" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/REPLACE-WITH-UPLOADED-footprint-map.svg" width="1389" height="606" alt=""></noscript>
 <div class="fp-pop" aria-hidden="true"><span class="fp-pop-k">Deals</span><span class="fp-pop-v"></span></div>
 </div>
-<ul class="fp-list" aria-label="Transactions by country"><li><button class="fp-chip" type="button" data-c="uk" data-n="52" aria-pressed="false"><span class="fp-chip-c">United Kingdom</span><span class="fp-chip-n">52 deals</span></button></li><li><button class="fp-chip" type="button" data-c="ireland" data-n="2" aria-pressed="false"><span class="fp-chip-c">Ireland</span><span class="fp-chip-n">2 deals</span></button></li><li><button class="fp-chip" type="button" data-c="france" data-n="2" aria-pressed="false"><span class="fp-chip-c">France</span><span class="fp-chip-n">2 deals</span></button></li><li><button class="fp-chip" type="button" data-c="spain" data-n="1" aria-pressed="false"><span class="fp-chip-c">Spain</span><span class="fp-chip-n">1 deal</span></button></li><li><button class="fp-chip" type="button" data-c="italy" data-n="2" aria-pressed="false"><span class="fp-chip-c">Italy</span><span class="fp-chip-n">2 deals</span></button></li><li><button class="fp-chip" type="button" data-c="albania" data-n="1" aria-pressed="false"><span class="fp-chip-c">Albania</span><span class="fp-chip-n">1 deal</span></button></li><li><button class="fp-chip" type="button" data-c="usa" data-n="1" aria-pressed="false"><span class="fp-chip-c">USA</span><span class="fp-chip-n">1 deal</span></button></li></ul>
+<ul class="fp-sr" aria-label="Transactions by country"><li data-c="uk" data-n="52">United Kingdom: 52 deals</li><li data-c="ireland" data-n="2">Ireland: 2 deals</li><li data-c="france" data-n="2">France: 2 deals</li><li data-c="spain" data-n="1">Spain: 1 deal</li><li data-c="italy" data-n="2">Italy: 2 deals</li><li data-c="albania" data-n="1">Albania: 1 deal</li><li data-c="usa" data-n="1">USA: 1 deal</li></ul>
 </div>
 <script>
 (function(){var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var hasIO='IntersectionObserver' in window;var $=function(s,r){return(r||document).querySelector(s)};var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
   var fp = document.getElementById('footprint');
   if (fp) (function () {
     var box = $('.fp-map', fp), pop = $('.fp-pop', fp), popV = $('.fp-pop-v', fp);
-    var chips = $$('.fp-chip', fp);
-    var ORDER = chips.map(function (c) { return c.getAttribute('data-c'); }); /* the list order is the entrance order */
+    /* the figures live in a list that only screen readers get (the map is a picture to them); its order is the entrance order */
+    var items = $$('.fp-sr li', fp);
+    var ORDER = items.map(function (li) { return li.getAttribute('data-c'); });
     var STEP = 150, ATLANTIC = 250;  /* ms between countries; the USA waits a little longer, it is across the Atlantic */
     var svg = null, W = 1389, H = 606, pins = {}, on = null, pinned = null, started = false;
-    var chipOf = function (c) { return $('.fp-chip[data-c="' + c + '"]', fp); };
+    var itemOf = function (c) { return $('.fp-sr li[data-c="' + c + '"]', fp); };
 
     function show(c) {
       if (c === on) return;
@@ -25,7 +26,7 @@
       $$('.is-on', fp).forEach(function (el) { if (el !== pop) el.classList.remove('is-on'); });
       fp.classList.toggle('has-on', !!c);
       if (!c) { pop.classList.remove('is-on', 'is-moving'); return; }
-      /* the country, its name, its pin (hidden until now) and its line in the list */
+      /* the country, its name and its pin (hidden until now) */
       $$('[data-c="' + c + '"]', fp).forEach(function (el) { el.classList.add('is-on'); });
       var p = pins[c];
       if (!p) return;
@@ -34,7 +35,7 @@
       pop.classList.toggle('is-moving', glide);  /* already showing: glide across to the next country */
       pop.style.left = (p.x / W * 100) + '%';
       pop.style.top = (p.top / H * 100) + '%';
-      popV.textContent = chipOf(c).getAttribute('data-n');
+      popV.textContent = itemOf(c).getAttribute('data-n');
       void pop.offsetWidth;
       pop.classList.add('is-on');
     }
@@ -46,9 +47,8 @@
       if (c) show(c);
       else hideT = setTimeout(function () { show(pinned); }, 160);
     }
-    function pin(c) {
+    function pin(c) {  /* tap or click: the country stays shown until tapped again, another is tapped, or Escape */
       pinned = c;
-      chips.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-c') === c)); });
       show(c);
     }
     function start() {
@@ -59,19 +59,6 @@
       setTimeout(function () { fp.classList.add('fp-done'); }, total);
     }
 
-    /* the list works on its own (keyboard, touch, mouse), with or without the map */
-    chips.forEach(function (b) {
-      var c = b.getAttribute('data-c');
-      b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') hoverTo(c); });
-      b.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hoverTo(null); });
-      b.addEventListener('focus', function () { start(); clearTimeout(hideT); show(c); });
-      b.addEventListener('blur', function () { show(pinned); });
-      b.addEventListener('click', function (e) {
-        pin(pinned === c ? null : c);
-        /* unpinned with the keyboard or the mouse: the country stays shown while the chip has focus or the pointer */
-        if (pinned === null && (e.detail === 0 || e.pointerType === 'mouse')) show(c);
-      });
-    });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && (pinned || on)) { pin(null); } });
 
     function setup() {

@@ -21,11 +21,12 @@
   var fp = document.getElementById('footprint');
   if (fp) (function () {
     var box = $('.fp-map', fp), pop = $('.fp-pop', fp), popV = $('.fp-pop-v', fp);
-    var chips = $$('.fp-chip', fp);
-    var ORDER = chips.map(function (c) { return c.getAttribute('data-c'); }); /* the list order is the entrance order */
+    /* the figures live in a list that only screen readers get (the map is a picture to them); its order is the entrance order */
+    var items = $$('.fp-sr li', fp);
+    var ORDER = items.map(function (li) { return li.getAttribute('data-c'); });
     var STEP = 150, ATLANTIC = 250;  /* ms between countries; the USA waits a little longer, it is across the Atlantic */
     var svg = null, W = 1389, H = 606, pins = {}, on = null, pinned = null, started = false;
-    var chipOf = function (c) { return $('.fp-chip[data-c="' + c + '"]', fp); };
+    var itemOf = function (c) { return $('.fp-sr li[data-c="' + c + '"]', fp); };
 
     function show(c) {
       if (c === on) return;
@@ -33,7 +34,7 @@
       $$('.is-on', fp).forEach(function (el) { if (el !== pop) el.classList.remove('is-on'); });
       fp.classList.toggle('has-on', !!c);
       if (!c) { pop.classList.remove('is-on', 'is-moving'); return; }
-      /* the country, its name, its pin (hidden until now) and its line in the list */
+      /* the country, its name and its pin (hidden until now) */
       $$('[data-c="' + c + '"]', fp).forEach(function (el) { el.classList.add('is-on'); });
       var p = pins[c];
       if (!p) return;
@@ -42,7 +43,7 @@
       pop.classList.toggle('is-moving', glide);  /* already showing: glide across to the next country */
       pop.style.left = (p.x / W * 100) + '%';
       pop.style.top = (p.top / H * 100) + '%';
-      popV.textContent = chipOf(c).getAttribute('data-n');
+      popV.textContent = itemOf(c).getAttribute('data-n');
       void pop.offsetWidth;
       pop.classList.add('is-on');
     }
@@ -54,9 +55,8 @@
       if (c) show(c);
       else hideT = setTimeout(function () { show(pinned); }, 160);
     }
-    function pin(c) {
+    function pin(c) {  /* tap or click: the country stays shown until tapped again, another is tapped, or Escape */
       pinned = c;
-      chips.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-c') === c)); });
       show(c);
     }
     function start() {
@@ -67,19 +67,6 @@
       setTimeout(function () { fp.classList.add('fp-done'); }, total);
     }
 
-    /* the list works on its own (keyboard, touch, mouse), with or without the map */
-    chips.forEach(function (b) {
-      var c = b.getAttribute('data-c');
-      b.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') hoverTo(c); });
-      b.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hoverTo(null); });
-      b.addEventListener('focus', function () { start(); clearTimeout(hideT); show(c); });
-      b.addEventListener('blur', function () { show(pinned); });
-      b.addEventListener('click', function (e) {
-        pin(pinned === c ? null : c);
-        /* unpinned with the keyboard or the mouse: the country stays shown while the chip has focus or the pointer */
-        if (pinned === null && (e.detail === 0 || e.pointerType === 'mouse')) show(c);
-      });
-    });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && (pinned || on)) { pin(null); } });
 
     function setup() {

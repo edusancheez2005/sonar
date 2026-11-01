@@ -61,8 +61,8 @@
   </section>
 
   <!-- ============ MAP (CHANGED, see HANDOFF.md section 1): the same map, 97% lighter, on every screen size, with nothing on top at rest.
-       The seven countries light up one after another, each country's figure is listed under the map, and hovering, tapping or
-       tabbing to a country brings in its gold Roscap pin and its live "Deals" label, smoothly. ============ -->
+       The seven countries light up one after another, and hovering or tapping a country brings in its gold Roscap pin and its
+       live "Deals" label, smoothly. The figures are also in a list that only screen readers read (nothing shows under the map). ============ -->
   <section class="section pt-0 fp-section">
     <div class="wf-container">
       <div class="fp" id="footprint">
@@ -70,7 +70,7 @@
           <noscript><img class="fp-svg" src="img/footprint-map.svg" width="1389" height="606" alt=""></noscript>
           <div class="fp-pop" aria-hidden="true"><span class="fp-pop-k">Deals</span><span class="fp-pop-v"></span></div>
         </div>
-        <ul class="fp-list" aria-label="Transactions by country"><li><button class="fp-chip" type="button" data-c="uk" data-n="52" aria-pressed="false"><span class="fp-chip-c">United Kingdom</span><span class="fp-chip-n">52 deals</span></button></li><li><button class="fp-chip" type="button" data-c="ireland" data-n="2" aria-pressed="false"><span class="fp-chip-c">Ireland</span><span class="fp-chip-n">2 deals</span></button></li><li><button class="fp-chip" type="button" data-c="france" data-n="2" aria-pressed="false"><span class="fp-chip-c">France</span><span class="fp-chip-n">2 deals</span></button></li><li><button class="fp-chip" type="button" data-c="spain" data-n="1" aria-pressed="false"><span class="fp-chip-c">Spain</span><span class="fp-chip-n">1 deal</span></button></li><li><button class="fp-chip" type="button" data-c="italy" data-n="2" aria-pressed="false"><span class="fp-chip-c">Italy</span><span class="fp-chip-n">2 deals</span></button></li><li><button class="fp-chip" type="button" data-c="albania" data-n="1" aria-pressed="false"><span class="fp-chip-c">Albania</span><span class="fp-chip-n">1 deal</span></button></li><li><button class="fp-chip" type="button" data-c="usa" data-n="1" aria-pressed="false"><span class="fp-chip-c">USA</span><span class="fp-chip-n">1 deal</span></button></li></ul>
+        <ul class="fp-sr" aria-label="Transactions by country"><li data-c="uk" data-n="52">United Kingdom: 52 deals</li><li data-c="ireland" data-n="2">Ireland: 2 deals</li><li data-c="france" data-n="2">France: 2 deals</li><li data-c="spain" data-n="1">Spain: 1 deal</li><li data-c="italy" data-n="2">Italy: 2 deals</li><li data-c="albania" data-n="1">Albania: 1 deal</li><li data-c="usa" data-n="1">USA: 1 deal</li></ul>
       </div>
     </div>
   </section>
