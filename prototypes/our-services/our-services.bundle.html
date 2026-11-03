@@ -36,6 +36,7 @@
   --ease:cubic-bezier(.22,.61,.36,1);
   --gutter:2.5rem;
   --nav-h:72px;
+  --nav-b:85px; /* bottom of the nav bar */
   color-scheme:light;
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -63,40 +64,58 @@ button,input,textarea{font:inherit;color:inherit}
 .sbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--gold);color:var(--ink);border:1px solid var(--gold);border-radius:4px;padding:14px 28px;font-size:15px;font-weight:500;line-height:1.2;cursor:pointer;transition:background-color .2s,color .2s}
 .sbtn:hover{background:#fff}
 
-/* ---------- nav ---------- */
-.nav{position:fixed;inset:0 0 auto;z-index:50;padding:16px max(var(--gutter),env(safe-area-inset-left,0px));transition:background-color .35s ease,padding .35s ease,box-shadow .35s ease}
-.nav.is-scrolled{background:var(--teal);padding-block:12px;box-shadow:0 12px 30px -20px rgba(0,0,0,.55)}
-.nav-in{display:flex;align-items:center;justify-content:space-between;gap:24px}
-.nav-brand{position:relative;z-index:2;display:block}
-.nav-brand img{height:40px;width:auto}
-.nav-menu{display:flex;align-items:center;gap:2.25rem}
-.nav-links{display:flex;align-items:center;gap:2.25rem}
-.nav-link{font-size:.875rem;color:#fff;opacity:.62;transition:opacity .2s}
-.nav-link:hover{opacity:1}
-.nav-link.is-current{color:var(--gold);opacity:1}
-.nav-cta{display:inline-flex;align-items:center;gap:.5rem;height:2.3rem;padding:0 1rem;border:1px solid rgba(226,236,226,.5);border-radius:.375rem;color:rgba(255,255,255,.78);text-transform:uppercase;font-size:.75rem;letter-spacing:.06em;white-space:nowrap;transition:color .3s,border-color .3s}
+/* ---------- nav ----------
+   As live (measured on roscap.co.uk): a rounded bar inset from the edges; light glass at the top of the page,
+   solid teal once the page has scrolled 80% of the screen height (site.js), always solid with .is-solid. */
+.nav{position:fixed;inset:0 0 auto;z-index:50;padding:16px max(64px,env(safe-area-inset-right,0px)) 0 max(64px,env(safe-area-inset-left,0px));pointer-events:none}
+.nav-in{position:relative;display:flex;align-items:center;justify-content:space-between;max-width:1440px;margin:0 auto;padding:16px 40px;border-radius:12px;background-color:rgba(4,52,53,.1);transition:background-color .3s;pointer-events:auto}
+.nav.is-scrolled .nav-in,.nav.is-solid .nav-in{background-color:var(--teal)}
+.nav-brand{position:relative;z-index:2;display:block;flex:none}
+.nav-brand img{display:block;width:128px;height:auto}
+.nav-menu{display:flex;align-items:center;flex:1 1 auto;min-width:0}
+.nav-links{display:flex;align-items:center;gap:24px;margin:0 auto}
+.nav-link{font-size:.875rem;line-height:1.3125rem;color:#fff}
+.nav-link.is-current{color:#C9A24D}
+.nav-cta{flex:none;display:inline-flex;align-items:center;gap:.5rem;height:2.3rem;padding:0 1rem;border:1px solid rgba(226,236,226,.5);border-radius:.375rem;color:rgba(255,255,255,.7);text-transform:uppercase;font-size:.75rem;line-height:1.25rem;white-space:nowrap;transition:color .5s,border-color .5s}
 .nav-cta:hover{color:#fff;border-color:#fff}
-.nav-cta i{width:4px;height:4px;border-radius:50%;background:#fff}
+.nav-cta i{order:1;flex:none;width:4px;height:4px;border-radius:50%;background:#fff}
+@media (prefers-reduced-motion:no-preference){.nav-cta i{animation:nav-dot 1.2s infinite}}
+@keyframes nav-dot{0%{transform:scale(1);animation-timing-function:linear}45%{transform:scale(.1);animation-timing-function:ease-in}100%{transform:scale(1)}}
 .nav-burger{display:none}
 /* computer: scrolling down fades the page links out (the logo and Speak to Us stay), scrolling up brings them back, as on the live site.
    A fade, not a movement, so it is kept for reduced motion too; keyboard focus brings the links back. */
 @media (min-width:992px){
+  .nav-in{-webkit-backdrop-filter:blur(50px);backdrop-filter:blur(50px)}
   .nav-links{transition:opacity .3s ease-in-out}
   .nav.links-away .nav-links{opacity:0;pointer-events:none}
   .nav.links-away .nav-links:focus-within{opacity:1;pointer-events:auto}
 }
+@media (min-width:992px) and (max-width:1023px){.nav-links{gap:18px}}
 @media (max-width:991px){
-  .nav-menu{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:2rem;background:var(--teal);padding:104px max(var(--gutter),env(safe-area-inset-left,0px)) 40px;transform:translateY(-102%);transition:transform .55s var(--ease);overflow:auto}
+  .nav{padding:16px max(32px,env(safe-area-inset-right,0px)) 0 max(32px,env(safe-area-inset-left,0px))}
+  .nav-in{min-height:88px;padding:16px 64px 16px 28px}
+  .nav-menu{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:2rem;background:var(--teal);padding:136px 60px 40px;transform:translateY(-102%);transition:transform .55s var(--ease);overflow:auto}
   .nav.is-open .nav-menu{transform:none}
-  .nav-links{flex-direction:column;align-items:flex-start;gap:1rem}
+  .nav-links{flex-direction:column;align-items:flex-start;gap:1rem;margin:0}
   .nav-link{font:500 2.25rem/1.15 var(--f-display);opacity:.75}
+  .nav-link:hover,.nav-link.is-current{opacity:1}
   .nav-cta{width:100%;justify-content:center;height:3.25rem;font-size:.875rem}
-  .nav-burger{position:relative;z-index:2;display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid rgba(255,255,255,.85);border-radius:.375rem;background:transparent;cursor:pointer}
-  .nav-burger span,.nav-burger span::before{display:block;width:16px;height:1.5px;background:#fff;transition:transform .35s var(--ease)}
-  .nav-burger span{position:relative;transform:translateY(-3px)}
-  .nav-burger span::before{content:"";position:absolute;left:0;top:6px}
-  .nav.is-open .nav-burger span{transform:translateY(0) rotate(45deg)}
-  .nav.is-open .nav-burger span::before{transform:translateY(-6px) rotate(-90deg)}
+  .nav-burger{position:relative;z-index:2;display:grid;place-items:center;width:42px;height:42px;padding:0;border:1px solid #fff;border-radius:6px;background:transparent;cursor:pointer}
+  /* three lines, as the live menu button */
+  .nav-burger span,.nav-burger span::before,.nav-burger span::after{display:block;width:17px;height:1.5px;border-radius:1px;background:#fff}
+  .nav-burger span{position:relative;transition:background-color .2s}
+  .nav-burger span::before,.nav-burger span::after{content:"";position:absolute;left:0;transition:transform .35s var(--ease)}
+  .nav-burger span::before{top:-5px}
+  .nav-burger span::after{top:5px}
+  .nav.is-open .nav-burger span{background-color:transparent}
+  .nav.is-open .nav-burger span::before{transform:translateY(5px) rotate(45deg)}
+  .nav.is-open .nav-burger span::after{transform:translateY(-5px) rotate(-45deg)}
+}
+@media (max-width:767px){
+  .nav{padding:16px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+  .nav-in{min-height:82px;padding:16px 44px 16px 28px}
+  .nav-menu{padding:124px 44px 40px}
+  .nav-brand img{width:112px}
 }
 
 /* ---------- hero ---------- */
@@ -212,6 +231,7 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
 .foot-tnc .copy{color:var(--black2);font-size:.875rem}
 
 /* ---------- responsive (nav/hero/footer) ---------- */
+@media (min-width:768px) and (max-width:991px){:root{--nav-b:104px}}
 @media (max-width:991px){
   :root{--gutter:2rem}
   .sec{padding-block:4rem}
@@ -238,11 +258,10 @@ textarea.field{height:136px;padding:22px 24px;resize:none;line-height:1.45}
   .rate-val.is-range{font-size:clamp(34px,9vw,48px)}
 }
 @media (max-width:767px){
-  :root{--gutter:1.25rem;--nav-h:64px}
+  :root{--gutter:1.25rem;--nav-h:64px;--nav-b:98px}
   .sec{padding-block:3.25rem}
   .h2{font-size:2rem}
   .tr-h{font-size:2.4rem}
-  .nav-brand img{height:34px}
   .asl-head{flex-direction:column;align-items:flex-start;margin-bottom:28px}
   .asl-tab{font-size:1.25rem}
   .asl-tab.is-active{font-size:1.875rem}
@@ -890,8 +909,10 @@ h1,h2,h3{font-family:var(--f-display);font-weight:700}
   /* nav: solid once scrolled, burger menu on small screens */
   if (nav) {
     var burger = $('.nav-burger', nav);
-    var setScrolled = function () { nav.classList.toggle('is-scrolled', window.scrollY > 40); };
+    /* solid once the page has scrolled 80% of the screen height, as live (.is-solid pages are always solid) */
+    var setScrolled = function () { nav.classList.toggle('is-scrolled', window.scrollY >= window.innerHeight * 0.8); };
     window.addEventListener('scroll', setScrolled, { passive: true });
+    window.addEventListener('resize', setScrolled);
     setScrolled();
     /* computer, as on the live site: scrolling down fades the page links out (the logo and Speak to Us stay), scrolling up brings them back */
     var wide = window.matchMedia('(min-width: 992px)');

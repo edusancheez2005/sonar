@@ -1,7 +1,6 @@
 /* Roscap prototype: the "page not found" (404) page. Live today: Webflow's default utility page (grey icon, no menu, no footer).
    Proposed: the site's menu and footer around the live call-to-action panel (teal, gold waves), with the live 404 wording. */
 .wf-container{width:100%;max-width:1380px;margin-inline:auto;padding-inline:2.25rem}
-.nav.is-solid{background:var(--teal);padding-block:12px;box-shadow:0 12px 30px -20px rgba(0,0,0,.55)}
 .nf-section{padding-top:calc(var(--nav-h) + 3rem);padding-bottom:5rem}
 .nf-panel{position:relative;overflow:hidden;display:flex;justify-content:center;align-items:center;min-height:min(612px,calc(100svh - var(--nav-h) - 8rem));padding:72px 44px;border-radius:12px;background-color:var(--teal);color:#fff;isolation:isolate}
 .nf-waves{position:absolute;inset:0 0 auto auto;width:80%;height:100%;max-width:100%;object-fit:cover;border-radius:.5rem;pointer-events:none;z-index:-1}
@@ -36,7 +35,7 @@
 .proto-tag{position:fixed;right:14px;bottom:14px;z-index:60;background:var(--ink);color:#fff;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:9px 13px;border-radius:999px;opacity:.86;pointer-events:none}
 
 @media (max-width:767px){
-  .nf-section{padding-top:calc(var(--nav-h) + 1.5rem);padding-bottom:3rem}
+  .nf-section{padding-top:calc(var(--nav-b) + 1.5rem);padding-bottom:3rem}
   .nf-panel{padding:56px 20px;min-height:0}
   .nf-waves{height:70%}
   .nf-circles{object-fit:cover;height:90%}

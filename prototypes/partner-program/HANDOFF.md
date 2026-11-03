@@ -487,7 +487,7 @@ Everything a visitor reads on this page is the live wording; the owner asked to 
 
 ## 9. Prototype-only differences (ignore when building)
 
-- Nav and footer are the shared prototype versions, not the live symbols (live nav is a floating translucent bar; the live footer has a mail icon and a different layout). Nothing changes in the live symbols.
+- Nav and footer are the shared prototype versions, not the live symbols. The nav copies the live one (the floating bar, glass at the top, solid once scrolled); the live footer has a mail icon and a different layout. Nothing changes in the live symbols.
 - On a 1x 390px screen the prototype's hero photo looks sharper (it serves the 800w file, live picks its 500w file). Phones with 2x or 3x screens get the 1080w or 1600w file on live, so real visitors see the same.
 - The live "slide in from the bottom" interaction on every section is re-created in the prototype's CSS and JS so the page feels the same; on live it already exists in Interactions, nothing to build.
 - The contact texture is the pre-composited raster mentioned in section 8.

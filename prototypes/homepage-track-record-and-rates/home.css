@@ -3,7 +3,7 @@
 
 /* ---------- page glue ---------- */
 @media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth}}
-.sec,.rates-sec,.section{scroll-margin-top:calc(var(--nav-h) + 8px)}
+.sec,.rates-sec,.section{scroll-margin-top:calc(var(--nav-b) + 8px)}
 .hero-video{opacity:0;transition:opacity 1.2s ease}
 .hero-video.is-playing{opacity:1}
 

@@ -106,7 +106,7 @@ To switch to advanced mode later (only if the budget grows past the modelling th
 - Tap targets: all banner and dialog controls at least 44 px tall (buttons 46 px, switches 60 x 44 px, close 44 x 44 px).
 - No horizontal overflow at 390 px; dialog fits a 390 x 844 screen without inner scrolling.
 - Cookie behaviour (over http://localhost because file:// cannot set cookies): nothing stored before a choice; after Accept the cookie holds `{"version":1,"analytics":true,"marketing":true,"timestamp":"..."}`, Path=/, SameSite=Lax, about 180 days, with a matching localStorage mirror; Reject stores both false; reset removes it; a stale version re-asks; _ga and _gcl_au are removed on reject. Secure is added when the page is served over https (production and staging both are).
-- Size: consent.css 5,643 bytes + consent.js 7,744 bytes = 13,387 bytes (13.1 KiB) unminified; head snippet 3,099 characters; demo bundle 255,849 bytes (fonts and images included).
+- Size: consent.css 5,643 bytes + consent.js 7,744 bytes = 13,387 bytes (13.1 KiB) unminified; head snippet 3,099 characters; demo bundle 257,558 bytes (fonts and images included).
 
 ## 9. Assumptions (log)
 1. The GA4 ID is added through the Head code slot today, not through Integrations. Step 0 covers both cases; the Integrations caveat is the reason the snippet cannot simply be appended.

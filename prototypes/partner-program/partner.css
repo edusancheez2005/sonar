@@ -6,7 +6,7 @@
    brochure line, Partners marquee, invisible contact-form fixes. */
 
 /* ---------- page basics ---------- */
-html{scroll-padding-top:calc(var(--nav-h) + 1rem)}
+html{scroll-padding-top:calc(var(--nav-b) + 1rem)}
 body.pp{text-rendering:auto} /* live renders with the browser default; ../shared/base.css sets optimizeLegibility */
 [hidden]{display:none !important}
 ol{list-style:none;margin:0;padding:0}

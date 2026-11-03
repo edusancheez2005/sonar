@@ -274,7 +274,7 @@ document.addEventListener('submit', function (e) {
 1. Under the heading divider, the live contact line now holds all four contacts (email, phone, WhatsApp, Instagram) two by two at 16 px, in the live style; the phone number is now visible.
 2. FAQs: a compact accordion with thin lines and 18px questions replaces the 5 large white cards with 22px questions. Same heading, same copy.
 3. Optional: hovering Submit no longer moves the hero 2px; the Message box resizes in height only.
-4. Prototype only, not part of the change: the shared nav and footer (logo and link positions, small gold capitals for the footer column headings, two social icons instead of three, a full stop at the end of the second disclaimer paragraph) and the "Prototype · Speak to us" label at the bottom right.
+4. Prototype only, not part of the change: the shared footer (small gold capitals for the footer column headings, two social icons instead of three, a full stop at the end of the second disclaimer paragraph) and the "Prototype · Speak to us" label at the bottom right.
 
 ## 10. Verification of the prototype (bundle, Chromium via Playwright, 31 Oct 2026)
 
@@ -288,5 +288,5 @@ document.addEventListener('submit', function (e) {
 - Reduced motion: contacts, chevrons and Submit have 0s transitions and no animation; the success block appears at once.
 - Copy: 0 em dashes in visible text (the one em dash in the bundle is in a code comment at the top of the shared `base.css`); the only exclamation mark is the live "Thank you!" in the success state; the FCA is mentioned only in the footer disclaimer saying Roscap is not authorised.
 - JSON-LD: parses as FAQPage with 5 questions; text identical to the visible FAQ.
-- Bundle `speak-to-us.bundle.html`: 283,308 bytes, fonts, logos and both wave images inlined.
+- Bundle `speak-to-us.bundle.html`: 285,017 bytes, fonts, logos and both wave images inlined.
 

@@ -27,8 +27,10 @@
   /* nav: solid once scrolled, burger menu on small screens */
   if (nav) {
     var burger = $('.nav-burger', nav);
-    var setScrolled = function () { nav.classList.toggle('is-scrolled', window.scrollY > 40); };
+    /* solid once the page has scrolled 80% of the screen height, as live (.is-solid pages are always solid) */
+    var setScrolled = function () { nav.classList.toggle('is-scrolled', window.scrollY >= window.innerHeight * 0.8); };
     window.addEventListener('scroll', setScrolled, { passive: true });
+    window.addEventListener('resize', setScrolled);
     setScrolled();
     /* computer, as on the live site: scrolling down fades the page links out (the logo and Speak to Us stay), scrolling up brings them back */
     var wide = window.matchMedia('(min-width: 992px)');

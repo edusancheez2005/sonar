@@ -8,8 +8,7 @@
 .skip:focus{top:16px}
 main:focus{outline:none}
 .foot :focus-visible{outline-color:var(--teal)} /* gold rings are 1.6:1 on cream, teal is 12:1 */
-.nav-link{padding-block:12px}
-.nav-cta{min-height:44px}
+@media (max-width:991px){.nav-link{padding-block:12px}.nav-cta{min-height:44px}}
 .foot-col .foot-h{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin:0 0 6px}
 .foot-col a{padding-block:5px;margin-block:-3px}
 .social a{width:36px;height:36px}
