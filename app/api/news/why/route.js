@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 
 /**
  * POST /api/news/why
@@ -26,6 +27,41 @@ function trimCache() {
   if (oldest) cache.delete(oldest[0])
 }
 
+// Shared copy behind the per-instance cache: one app_cache row holding the
+// newest explanations, so each story is billed once, not once per instance.
+const SHARED_KEY = 'news_why_cache'
+const SHARED_MAX = 100
+
+async function readShared() {
+  try {
+    const { data } = await supabaseAdminFresh
+      .from('app_cache')
+      .select('value')
+      .eq('key', SHARED_KEY)
+      .maybeSingle()
+    const entries = data?.value?.entries
+    return entries && typeof entries === 'object' ? entries : {}
+  } catch {
+    return {}
+  }
+}
+
+async function writeShared(entries) {
+  const newest = Object.entries(entries)
+    .sort((a, b) => b[1].at - a[1].at)
+    .slice(0, SHARED_MAX)
+  try {
+    await supabaseAdminFresh
+      .from('app_cache')
+      .upsert(
+        { key: SHARED_KEY, value: { entries: Object.fromEntries(newest) }, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      )
+  } catch {
+    /* best-effort */
+  }
+}
+
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}))
@@ -46,6 +82,13 @@ export async function POST(req) {
     const hit = cache.get(cacheKey)
     if (hit && Date.now() - hit.at < TTL) {
       return NextResponse.json({ why: hit.why, cached: true })
+    }
+    const shared = await readShared()
+    const sharedHit = shared[cacheKey]
+    if (sharedHit && Date.now() - sharedHit.at < TTL) {
+      cache.set(cacheKey, sharedHit)
+      trimCache()
+      return NextResponse.json({ why: sharedHit.why, cached: true })
     }
 
     const xaiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY
@@ -95,8 +138,11 @@ export async function POST(req) {
     if (why.length > 360) why = why.slice(0, 357).trimEnd() + '…'
 
     if (why) {
-      cache.set(cacheKey, { why, at: Date.now() })
+      const entry = { why, at: Date.now() }
+      cache.set(cacheKey, entry)
       trimCache()
+      shared[cacheKey] = entry
+      await writeShared(shared)
     }
     return NextResponse.json({ why })
   } catch (e) {

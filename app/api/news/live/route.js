@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 
 /**
  * GET /api/news/live
@@ -150,6 +151,52 @@ async function pickBreaking(candidates) {
   }
 }
 
+// The pick is shared by every instance and visitor (app_cache) and re-asked
+// only when the candidate headlines changed, at most every 15 min. Until
+// 2026-11-03 each instance re-asked Grok on every poll: its 5-min cache TTL
+// equalled the page's 5-min poll interval, so one open /news tab missed on
+// every poll — 288 Grok calls a day per tab, each new pick also flipping the
+// hero and costing a /api/news/why call.
+const PICK_CACHE_KEY = 'news_breaking_pick'
+const PICK_MIN_INTERVAL_MS = 15 * 60 * 1000
+
+async function readPick() {
+  try {
+    const { data } = await supabaseAdminFresh
+      .from('app_cache')
+      .select('value')
+      .eq('key', PICK_CACHE_KEY)
+      .maybeSingle()
+    return data?.value || null
+  } catch {
+    return null
+  }
+}
+
+async function getBreakingPick(candidates) {
+  const key = candidates.map((a) => a.url).join('|')
+  const prev = await readPick()
+  if (prev && (prev.key === key || Date.now() - Date.parse(prev.at) < PICK_MIN_INTERVAL_MS)) {
+    return prev.url ? { url: prev.url, reason: prev.reason || '' } : null
+  }
+  const pick = await pickBreaking(candidates)
+  // Recorded even when the pick failed, so a broken model call isn't retried on every poll.
+  const next = {
+    key,
+    url: pick?.url ?? prev?.url ?? null,
+    reason: pick ? pick.reason : prev?.reason || '',
+    at: new Date().toISOString(),
+  }
+  try {
+    await supabaseAdminFresh
+      .from('app_cache')
+      .upsert({ key: PICK_CACHE_KEY, value: next, updated_at: next.at }, { onConflict: 'key' })
+  } catch {
+    /* best-effort: the next poll just asks again */
+  }
+  return next.url ? { url: next.url, reason: next.reason } : null
+}
+
 export async function GET() {
   if (cache && Date.now() - cacheAt < TTL) {
     return NextResponse.json(cache)
@@ -190,7 +237,7 @@ export async function GET() {
     const top = articles.slice(0, 80)
     // ORCA picks the most important breaking story among the freshest candidates.
     try {
-      const pick = await pickBreaking(top.slice(0, 14))
+      const pick = await getBreakingPick(top.slice(0, 14))
       if (pick) {
         const target = top.find((a) => a.url === pick.url)
         if (target) {
