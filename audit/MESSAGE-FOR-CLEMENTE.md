@@ -2,7 +2,7 @@
 
 Hi Clemente,
 
-I've been through the whole website and prepared a new version of the main pages. Nothing is live yet: it goes on the staging site first, so you can check it before anything changes. I've attached the review file (open it in a browser and click through the pages) and a short video comparing today's site with the new version.
+I've been through the whole website and prepared a new version of the main pages. Nothing is live yet: it goes on the staging site first, so you can check it before anything changes. The attached video shows today's site and the new version side by side, page by page, and there are a few screenshots below.
 
 ## What I've changed
 
@@ -11,7 +11,8 @@ I've been through the whole website and prepared a new version of the main pages
 - **Track Record:** the map lights up country by country and now works on phones too; the deals become one grid you can filter by UK, Europe and North America, instead of the two sliders. The page also loads far faster: 12.8 MB today, under 1 MB in the new version.
 - **Partner Program:** a clearer "How it works", moving partner logos, and a form that works on computers.
 - **Speak to Us:** email, phone and WhatsApp (see question 4) under the heading, a shorter FAQ and form fixes.
-- **Cookie banner**, which the law requires before Google Analytics can run, with an updated Privacy Policy and Cookie Policy.
+- **Cookie banner**, which the law requires before Google Analytics can run.
+- **Privacy Policy and Cookie Policy:** made more robust. They were missing a few things the law asks for, such as the registered office, the ICO registration number, how long data is kept and the list of cookies the site uses.
 - **A proper "page not found" page** with our menu and footer, instead of Webflow's default.
 
 ![Picture 1: Track Record deals, today and new](evidence/before-after-track-record-deals.jpg)
