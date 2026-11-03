@@ -1,0 +1,264 @@
+/* Roscap prototype v2: Our Services, rebuilt faithfully from the live page (www.roscap.co.uk/our-services).
+   Values come from the live Webflow stylesheet and from computed styles measured with Playwright at 1440 and 390.
+   Live Webflow class names are kept so everything maps 1:1 to the Designer. One rename: live ".container" is ".wf-container"
+   here, because ../shared/base.css already owns ".container" (shared footer).
+   The ONLY designed change is the capital stack (CAPITAL STACK block below). Everything else replicates live. */
+
+/* ---------- page basics ---------- */
+body.os{text-rendering:auto} /* live renders with the browser default; ../shared/base.css sets optimizeLegibility */
+h1,h2,h3{font-family:var(--f-display);font-weight:700}
+
+/* ---------- live replica: primitives ---------- */
+.wf-container{width:100%;max-width:1380px;margin-inline:auto;padding-inline:2.25rem}
+.section{position:relative;padding-top:6.25rem;padding-bottom:6.25rem}
+.section.pt-0{padding-top:0}
+.section.bg-green{color:#fff;background-color:#043335;background-image:linear-gradient(#033234,#063538)}
+.section.pt-0.is-green{background-color:var(--teal);margin-bottom:6.25rem;padding-top:7.5rem}
+.section.ctasection{padding-top:0;padding-bottom:6.25rem}
+
+.heading-style-h1{font-family:var(--f-display);font-size:4rem;font-weight:500;line-height:1.3}
+.heading-style-h1.text-weight-medium.text-color-white.text-style-italic{font-size:3.75rem}
+.heading-style-h2{font-size:2.5rem;font-style:italic;line-height:1.3}
+.heading-style-h2.text-weight-medium{font-style:normal}
+.heading-style-h3{font-size:1.75rem;font-weight:500;line-height:1.2}
+.heading-style-h3.text-color-golden{font-size:1.75rem}
+.text-weight-medium{font-weight:500}
+.text-weight-light{font-weight:300}
+.text-style-italic{font-style:italic}
+.text-align-center{text-align:center}
+.text-color-heading{color:var(--teal)}
+.text-color-black2{color:var(--black2)}
+.text-color-golden{color:var(--gold)}
+.text-color-white{color:#fff}
+.text-color-yellow{-webkit-text-fill-color:transparent;background-image:linear-gradient(#e1c979,#ffebaa);-webkit-background-clip:text;background-clip:text}
+.text-size-smedium{font-size:1.125rem;font-weight:400;line-height:1.55556}
+.text-size-smedium.text-weight-light{font-weight:300}
+.text-size-smedium.text-weight-light.text-color-black2{font-size:1.125rem}
+.text-size-medium{font-size:1.25rem;font-weight:400;line-height:1.4}
+
+.tag-wrap{border:1px solid var(--gold);border-radius:30px;padding:8px 20px}
+.golden-divider{width:207px;height:2px;background-color:var(--gold)}
+.black-divider{width:1px;background-color:#000}
+.black-divider.horiz{width:100%;height:1px;opacity:.2}
+.black-divider.horiz._100px{margin-top:100px}
+.flex-center{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:100px}
+.flex-center.gap-50{gap:50px}
+.content-wrap{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:28px;max-width:790px;text-align:center}
+.content-wrap.is-large{max-width:873px}
+.button{display:inline-block;background-color:#fff;color:var(--ink);text-align:center;border-radius:4px;padding:10px 20px;font-family:var(--f-body);font-size:.875rem;line-height:1.5;transition:all .2s}
+.button.golden{background-color:var(--gold)}
+.button.golden:hover{border:1px solid var(--gold);background-color:#fff;color:var(--ink)}
+
+/* ---------- hero (as live) ---------- */
+.section.is-header{display:flex;justify-content:center;align-items:center;min-height:100vh;padding-bottom:80px;color:#fff;isolation:isolate}
+.heading-wrap{position:relative;z-index:10;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:40px}
+.heading-wrap.is-center{z-index:11;text-align:center;align-items:center}
+.hero-heading-wrap{display:flex;flex-direction:column;gap:24px;max-width:509px}
+.hero-heading-wrap.is-center{gap:1.5rem;max-width:730px}
+.hero-bg{position:absolute;inset:0;z-index:-1;width:100%;height:100vh;max-width:100%;object-fit:cover;border-radius:.5rem;pointer-events:none}
+.hero-bg-overlay{position:absolute;inset:0;z-index:2;width:100%;height:100%;background-color:rgba(4,52,53,.6)}
+
+/* ---------- our expertise (left column as live) ---------- */
+.two-col-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.grid-content-wrap{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:28px}
+.grid-content-wrap.is-small{max-width:90%}
+.para-wrap{max-width:96%;font-weight:300}
+
+/* ===================== CAPITAL STACK BLOCK START (the one change; paste-ready, see HANDOFF.md) =====================
+   Replaces the live image img.wwa-image (Group 1597880904.svg) in the Our expertise two-column grid.
+   The SVG copies the live image geometry (viewBox 660 x 664, same rects, colours, arrows) with real Switzer text fitted to the
+   live outlines, so it scales exactly like the image did (641 x 645 at 1440, 358 x 360 at 390).
+   Build: the four layers drop into place one after another from the bottom up, Senior Debt first and Common Equity last
+   (340 ms each, 240 ms apart), then the Debt and Equity brackets and the risk/return axis draw in from their centres and their
+   arrowheads and labels fade in. About 1.8 s, once.
+   Trigger: services.js marks the card .cs-armed, then adds .is-in once 40% of it is visible (IntersectionObserver), so it plays once,
+   when the visitor can see it. (A pure-CSS gate was tried and dropped: browsers ignore a custom property set by one animation when it
+   is used in another animation's properties.) Without JS, without IntersectionObserver or with prefers-reduced-motion: reduce, the
+   card is never armed and the complete stack shows, static. Webflow alternative: an Interactions "scroll into view" trigger
+   (play once) with the same order and timings does the same job without this code. */
+.cstack{width:100%}
+.cstack-svg{display:block;width:100%;height:auto;border-radius:.5rem;overflow:hidden}
+.cstack text{font-family:var(--f-body);font-size:18px;font-weight:400}
+.cstack .cs-title{font-size:24px}
+.cstack .cs-note{font-size:14px;font-weight:300}
+.cstack .cs-line{transform-box:fill-box;transform-origin:50% 50%}
+
+@keyframes cs-drop{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:none}}
+@keyframes cs-draw{from{transform:scaleY(0)}to{transform:none}}
+@keyframes cs-fade{from{opacity:0}to{opacity:1}}
+
+@media (prefers-reduced-motion:no-preference){
+  /* armed, not yet in view: everything waits at its start */
+  .cstack.cs-armed:not(.is-in) .cs-layer,.cstack.cs-armed:not(.is-in) .cs-head,.cstack.cs-armed:not(.is-in) .cs-note{opacity:0}
+  .cstack.cs-armed:not(.is-in) .cs-line{transform:scaleY(0)}
+  /* in view: the build, once. Bottom up: Senior Debt is the foundation, Common Equity goes on last */
+  .cstack.is-in .cs-layer{animation:cs-drop 340ms cubic-bezier(.22,.61,.36,1) both}
+  .cstack.is-in .cs-l4{animation-delay:0ms}
+  .cstack.is-in .cs-l3{animation-delay:240ms}
+  .cstack.is-in .cs-l2{animation-delay:480ms}
+  .cstack.is-in .cs-l1{animation-delay:720ms}
+  /* then the Debt bracket, the Equity bracket and the risk/return axis, with their arrowheads and labels */
+  .cstack.is-in .cs-line{animation:cs-draw 480ms cubic-bezier(.65,0,.35,1) 1060ms both}
+  .cstack.is-in .cs-head,.cstack.is-in .cs-note{animation:cs-fade 260ms ease-out 1460ms both}
+  .cstack.is-in .cs-g1 .cs-line{animation-delay:1140ms}
+  .cstack.is-in .cs-g1 .cs-head,.cstack.is-in .cs-g1 .cs-note{animation-delay:1540ms}
+  .cstack.is-in .cs-g3 .cs-line{animation-delay:1220ms}
+  .cstack.is-in .cs-g3 .cs-head,.cstack.is-in .cs-g3 .cs-note{animation-delay:1620ms}
+}
+/* ===================== CAPITAL STACK BLOCK END ===================== */
+
+/* ---------- debt and equity cards (as live) ---------- */
+.rs-covers-card-wrap{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;width:100%;aspect-ratio:1340/394}
+.rs-covers-card-wrap.three-col{grid-template-columns:1fr 1fr 1fr}
+.rs-cover-card-og{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:8.75rem;padding:32px 28px;background-color:#044446;border-radius:6px}
+.rs-cover-card-og:hover{transform:translate(0,-4px);box-shadow:1px 2px 5px 1px #e1c97980}
+.rs-card-image{border-radius:.5rem}
+.rs-para-wrap-og{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:1rem;height:100%}
+
+/* ---------- asset classes grid (as live) ---------- */
+.assets-card-content-wrap{position:relative;width:100%;border-top:1px solid #28282833;border-bottom:1px solid #28282833}
+.assets-card-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr}
+.assets-card{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:28px;padding-top:54px;padding-bottom:54px;text-align:center;border-right:1px solid #28282833}
+.assets-card.right-br-none{border-right-color:#28282800}
+.assets-icon{width:61px;height:56px;object-fit:contain;border-radius:.5rem}
+.assets-mid-divider{position:absolute;inset:50% 0 auto auto;width:100%;height:1px;background-color:#28282833}
+
+/* ---------- our process (as live) ---------- */
+.process-wrap{display:grid;grid-template-columns:1fr 1fr;gap:110px}
+.process-top{position:sticky;top:20vh;display:flex;flex-direction:column;gap:1.75rem}
+.tag-wrap.process{display:flex;justify-content:center;align-items:center;flex:none;width:130px;padding-right:18px;color:#fff}
+.process-item{display:grid;grid-template-columns:40px 1fr;gap:32px;margin-bottom:20px}
+.process-step{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px}
+.process-line{width:1px;height:92px;background-image:linear-gradient(#d0bfa280,#d0bfa280 0%,#d0bba200 101%)}
+.process-card-textdiv{display:flex;flex-direction:column;gap:1.25rem}
+/* The values below are the live "in focus" state that the live Webflow scroll interaction (a-20, 768px and up) gives each step once it is
+   35% through the viewport; the scroll-linked dim-to-focus itself is replicated further down. */
+.process-number{display:flex;justify-content:center;align-items:center;width:40px;height:40px;border:1.5px solid #ffffff1a;border-radius:100px;background-color:#ffffff1a;color:var(--gold);font-weight:500}
+.process-card{display:flex;justify-content:flex-start;align-items:center;height:13.875rem;padding:20px 20px 20px 1.625rem;background-color:#ffffff1a;border:1.5px solid rgba(225,201,121,.5);border-radius:12px}
+.process-title{margin:0;padding-top:0;font-size:2.5rem;font-weight:500;line-height:1.2em;color:var(--gold)}
+.process-text{font-size:1.125rem;color:#fff}
+
+/* ---------- CTA (as live) ---------- */
+.subscribe-form-wrap{position:relative;overflow:hidden;display:flex;gap:16px;padding:72px 44px;border-radius:12px;background-color:var(--teal);color:#fff}
+.subscribe-form-wrap.is-about{justify-content:center;align-items:center;height:auto;min-height:612px}
+/* live wave texture: the live 684 KB SVG at 30% opacity, pre-composited on teal (47 KB WebP, 101 KB at 2x); same box and fit as live */
+.subscribe-form-wrap .subs-bg{position:absolute;inset:0 0 auto auto;z-index:auto;width:80%;height:100%;max-width:100%;object-fit:cover;opacity:1;border-radius:.5rem;pointer-events:none}
+.subs-circle-bg{position:absolute;inset:0;width:auto;max-width:none;border-radius:.5rem;pointer-events:none} /* width auto: the live image has no width attribute */
+.ab-banner-head-wrap{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:40px;max-width:530px;text-align:center}
+.ab-banner-head-wrap .heading-style-h1{color:#fff}
+
+/* ---------- live behaviour replicas (prototype only, nothing to build: these already exist on live as Webflow interactions).
+   Each one is time-based, plays once, and is switched off entirely under prefers-reduced-motion. ---------- */
+@media (prefers-reduced-motion:no-preference){
+  /* "Slide in bottom" on every .section and at 15% offset on the process heading, text and button:
+     opacity 0 and 100px down, to 1 and 0 over 1 s, ease out quart. "translate" is used so it never fights a hover transform. */
+  html.w-mod-js .section,html.w-mod-js .ix-15{opacity:0;translate:0 100px}
+  html.w-mod-js .section.is-in,html.w-mod-js .ix-15.is-in{opacity:1;translate:none;transition:opacity 1s cubic-bezier(.25,1,.5,1),translate 1s cubic-bezier(.25,1,.5,1)}
+  /* ASSET CLASSES TRANSITION (CHANGED vs live, owner's request: same section, better transition). Live drops each icon 100 px while
+     the whole grid section also slides 100 px. Here the grid and its lines stay put and the eight cards fade up 24 px one after another
+     (70 ms apart, icon then label), as they come into view. services.js marks the grid .as-armed (so nothing is ever hidden unless
+     the script runs), sets --d per card and adds .is-in. */
+  html.w-mod-js .section.icon-grid{opacity:1;translate:none}
+  .as-armed .assets-card:not(.is-in) .assets-icon,.as-armed .assets-card:not(.is-in) p{opacity:0;translate:0 24px}
+  .as-armed .assets-card.is-in .assets-icon,.as-armed .assets-card.is-in p{opacity:1;translate:none}
+  .as-armed .assets-card.is-in .assets-icon{transition:opacity .7s cubic-bezier(.25,1,.5,1) var(--d,0ms),translate .7s cubic-bezier(.25,1,.5,1) var(--d,0ms),scale .3s cubic-bezier(.6,.04,.98,.335)}
+  .as-armed .assets-card.is-in p{transition:opacity .7s cubic-bezier(.25,1,.5,1) calc(var(--d,0ms) + 80ms),translate .7s cubic-bezier(.25,1,.5,1) calc(var(--d,0ms) + 80ms)}
+  /* asset card hover (as live a-16 / a-17): icon scales to 1.25 in 300 ms, out-cubic on the way in, in-circ on the way out */
+  .assets-icon{transition:scale .3s cubic-bezier(.6,.04,.98,.335)}
+  .assets-card:hover .assets-icon,.as-armed .assets-card.is-in:hover .assets-icon{scale:1.25;transition:opacity .7s cubic-bezier(.25,1,.5,1) var(--d,0ms),translate .7s cubic-bezier(.25,1,.5,1) var(--d,0ms),scale .3s cubic-bezier(.215,.61,.355,1)}
+}
+/* process steps (live a-20, 768px and up): each step sits dim while it is low in the viewport and comes into focus between 15% and 35%
+   of its pass through the viewport. Scroll-linked, so CSS scroll-driven animation; the default (no support, reduced motion, phones,
+   before a step enters) is the in-focus look above. */
+@supports (animation-timeline: view()){
+  @media (min-width:768px) and (prefers-reduced-motion:no-preference){
+    .process-item{view-timeline-name:--pstep}
+    .process-number,.process-card,.process-title,.process-text,.process-line{animation-timeline:--pstep;animation-range:cover 0% cover 100%;animation-fill-mode:forwards;animation-duration:auto;animation-timing-function:linear}
+    .process-number{animation-name:ps-num}
+    .process-card{animation-name:ps-card}
+    .process-title{animation-name:ps-title}
+    .process-text{animation-name:ps-text}
+    .process-line{animation-name:ps-line}
+  }
+}
+@keyframes ps-num{0%,15%{color:rgba(225,201,121,.5)}35%,100%{color:#e1c979}}
+@keyframes ps-card{0%,15%{border-color:rgba(225,201,121,.3)}35%,100%{border-color:rgba(225,201,121,.5)}}
+@keyframes ps-title{0%,15%{color:rgba(225,201,121,.3)}35%,100%{color:#e1c979}}
+@keyframes ps-text{0%,15%{color:rgba(255,255,255,.3)}35%,100%{color:#fff}}
+@keyframes ps-line{0%,15%{opacity:.75}35%,100%{opacity:1}}
+
+/* ---------- shared footer adjustments (heading level, tap areas) and prototype label, as the other v2 prototypes ---------- */
+.foot-col h3{font:500 11.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:6px}
+.social a{position:relative}
+.social a::after{content:"";position:absolute;inset:-8px}
+.proto-tag{position:fixed;right:14px;bottom:14px;z-index:60;background:var(--ink);color:#fff;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:9px 13px;border-radius:999px;opacity:.86;pointer-events:none}
+
+/* ---------- responsive: live breakpoints 991 / 767 / 479 ---------- */
+@media (max-width:991px){
+  .heading-style-h1{font-size:3rem}
+  .heading-style-h1.text-weight-medium.text-color-white.text-style-italic{font-size:3.75rem}
+  .section{padding-top:4rem;padding-bottom:4rem}
+  .section.pt-0{padding-top:0}
+  .section.is-header{padding-bottom:80px}
+  .section.pt-0.is-green{padding-top:7.5rem}
+  .section.ctasection{padding-top:0;padding-bottom:6.25rem}
+  .two-col-grid{grid-template-columns:1fr}
+  .grid-content-wrap.is-small{max-width:none}
+  .subscribe-form-wrap{padding-top:40px;padding-bottom:40px}
+  .subscribe-form-wrap .subs-bg{height:70%}
+  .subs-circle-bg{z-index:1;object-fit:cover;height:90%}
+  .rs-covers-card-wrap,.rs-covers-card-wrap.three-col{grid-template-columns:1fr 1fr}
+  .assets-card-grid{width:100%}
+  .assets-card{gap:0;justify-content:flex-start;align-items:center;padding-top:2rem;padding-bottom:2rem}
+  .assets-icon{width:3.8125rem;height:3.5rem}
+  .process-wrap{gap:40px}
+  .process-title{padding-top:0;font-size:20px}
+}
+@media (max-width:767px){
+  .hide-mobile-landscape{display:none}
+  .heading-style-h1{font-size:2.5rem}
+  .heading-style-h2{font-size:2rem}
+  .heading-style-h2.text-weight-medium{font-size:1.5rem}
+  .heading-style-h3{font-size:1.5rem}
+  .section{padding-top:3.25rem;padding-bottom:3.25rem}
+  .section.pt-0{padding-top:0;padding-bottom:2rem}
+  .section.pt-0.is-green{padding-top:6.25rem}
+  .section.pt-0.icon-grid{padding-bottom:0}
+  .section.ctasection{padding-bottom:3rem}
+  .flex-center{gap:3.125rem}
+  .subscribe-form-wrap.is-about{min-height:400px}
+  .assets-card-grid{grid-template-columns:1fr 1fr}
+  .assets-card{border-bottom:1px solid #28282833;justify-content:center;align-items:center}
+  .assets-card.right-br-none{border-right-color:#28282833}
+  .process-wrap{grid-template-columns:1fr}
+  .process-number{background-color:var(--teal);color:var(--gold)}
+  .process-card{background-color:#044446;border-width:1px;border-color:#e1c97980;justify-content:flex-start;align-items:flex-start;height:11rem}
+  .process-title{color:var(--gold)}
+  .process-text{color:#fff}
+  .process-card-textdiv{gap:.75rem}
+  .foot-col{gap:0}
+  .foot-col a{display:flex;align-items:center;min-height:44px}
+  .proto-tag{right:10px;bottom:10px;font-size:10px;padding:8px 11px}
+}
+@media (max-width:479px){
+  .wf-container{padding-inline:16px}
+  .section{padding-top:3.25rem;padding-bottom:3.25rem}
+  .section.pt-0{padding-top:0}
+  .section.is-header{padding-bottom:80px}
+  .section.pt-0.is-green{padding-top:3.25rem}
+  .section.ctasection{padding-top:0;padding-bottom:2rem}
+  .text-size-smedium{font-size:.875rem}
+  .text-size-medium{font-size:1.125rem}
+  .tag-wrap{padding-left:16px;padding-right:16px;font-size:.875rem}
+  .black-divider.horiz._100px{margin-top:3.5rem}
+  .subscribe-form-wrap{padding:24px 16px}
+  .subscribe-form-wrap.is-about{padding-top:40px;padding-bottom:40px}
+  .rs-covers-card-wrap,.rs-covers-card-wrap.three-col{grid-template-columns:1fr}
+  .assets-card-content-wrap{padding-left:1rem;padding-right:1rem}
+  .assets-card-grid{grid-template-columns:1fr;overflow:auto}
+  .assets-card{gap:1rem;border-right-style:none;flex:none;padding-top:2rem;padding-bottom:2rem}
+  .assets-icon{width:2.5rem;height:2.5rem}
+  .process-item{display:flex;justify-content:flex-start;align-items:flex-start}
+  .process-card{justify-content:flex-start;align-items:flex-start;height:auto}
+  .process-top{top:auto}
+}

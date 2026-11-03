@@ -1,0 +1,154 @@
+/* Our Services motion demos. Four restrained options for the two card sections ("Roscap's experience covers" and
+   "Roscap provides access to"), applied to both so they can be judged together, and one Our Process alternative.
+   Nothing here is on the website or in the video. All motion is off under prefers-reduced-motion. */
+
+/* ---------- demo chrome ---------- */
+.demo-bar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 16px;background:#12161d;color:#fff}
+.demo-brand{display:flex;flex-direction:column;gap:2px;margin-right:auto;line-height:1.2}
+.demo-brand .demo-h1{margin:0;font:500 15px/1.2 var(--f-body);color:#fff}
+.demo-brand span{font-size:12px;color:rgba(255,255,255,.7)}
+.demo-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.demo-tabs button,.demo-replay{min-height:40px;padding:0 14px;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:transparent;color:#fff;font:500 13px/1 var(--f-body);cursor:pointer;transition:background-color .2s,border-color .2s,color .2s}
+.demo-tabs button:hover{border-color:#fff}
+.demo-tabs button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#12161d}
+.demo-replay{border-color:var(--gold);color:var(--gold)}
+.demo-replay:hover{background:rgba(225,201,121,.12)}
+.demo-note{margin:0;padding:12px 16px;background:#fff8e6;border-bottom:1px solid rgba(4,52,53,.12);color:#3a3f45;font-size:14.5px;line-height:1.55;text-align:center}
+.demo-divider{max-width:46rem;margin:0 auto;padding:4.5rem 1.25rem 2.5rem;text-align:center}
+.demo-kicker{font:500 12px/1.3 var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:#7a6318}
+.demo-sub{margin-top:.7rem;color:#3a3f45;font-size:15px;line-height:1.6}
+
+/* ---------- the cards: hover as live, made smooth ---------- */
+.rs-cover-card-og{position:relative;isolation:isolate;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s ease}
+
+/* the gold Roscap R, used by option 3 only */
+.sig{display:none}
+[data-opt="3"] .sig{display:block;width:40px;height:50px;margin-bottom:-24px}
+.sig-svg{display:block;width:100%;height:100%;overflow:visible}
+.sig-svg path{fill:#e1c979;stroke:#e1c979;stroke-width:.45}
+
+@keyframes d-rise{from{opacity:0;translate:0 22px}to{opacity:1;translate:none}}
+@keyframes d-soft{from{opacity:0;translate:0 10px;filter:blur(6px)}to{opacity:1;translate:none;filter:blur(0)}}
+@keyframes d-wipe{from{opacity:.2;clip-path:inset(100% 0 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+@keyframes d-draw{to{stroke-dashoffset:0}}
+@keyframes d-fill{to{fill-opacity:1}}
+@keyframes d-scroll{from{opacity:0;translate:0 56px;scale:.97}to{opacity:1;translate:none;scale:1}}
+@property --beam{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes d-beam{0%{--beam:0deg;opacity:0}8%{opacity:1}86%{opacity:1}100%{--beam:360deg;opacity:0}}
+
+@media (prefers-reduced-motion:no-preference){
+  /* armed by demo.js: everything waits until it comes into view */
+  .cards.armed :is(.sig,.cover-h,.cover-end,.rs-cover-card-og):not(.is-in){opacity:0}
+
+  /* 1. IN TURN (also option 2 where the browser cannot tie animation to scrolling): the heading, then each card one after
+     another; inside a card the icon, the title and the line arrive in that order, each sharpening from a soft blur */
+  :is([data-opt="1"],[data-opt="2"]) .cards.armed :is(.cover-h,.cover-end).is-in{animation:d-soft .8s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  :is([data-opt="1"],[data-opt="2"]) .cards.armed .rs-cover-card-og.is-in{animation:d-rise .8s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  :is([data-opt="1"],[data-opt="2"]) .cards.armed .rs-cover-card-og.is-in .rs-card-image{animation:d-soft .7s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 140ms) both}
+  :is([data-opt="1"],[data-opt="2"]) .cards.armed .rs-cover-card-og.is-in h3{animation:d-soft .7s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 240ms) both}
+  :is([data-opt="1"],[data-opt="2"]) .cards.armed .rs-cover-card-og.is-in p{animation:d-soft .7s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 340ms) both}
+
+  /* 3. SIGNATURE: the gold Roscap R draws itself above the first heading, then the cards arrive in turn and each icon is
+     revealed from the bottom up. The second section repeats the cards without the R, so the R happens once. */
+  [data-opt="3"] .cards.armed .sig.is-in path{fill-opacity:0;stroke-dasharray:1;stroke-dashoffset:1;
+    animation:d-draw 1.15s cubic-bezier(.65,0,.35,1) var(--d,0ms) forwards,d-fill .6s ease calc(var(--d,0ms) + 850ms) forwards}
+  [data-opt="3"] .cards.armed .sig.is-in path:nth-child(2){animation-delay:calc(var(--d,0ms) + 140ms),calc(var(--d,0ms) + 950ms)}
+  [data-opt="3"] .cards.armed .sig.is-in path:nth-child(3){animation-delay:calc(var(--d,0ms) + 260ms),calc(var(--d,0ms) + 1050ms)}
+  [data-opt="3"] .cards.armed :is(.cover-h,.cover-end).is-in{animation:d-soft .8s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  [data-opt="3"] .cards.armed .rs-cover-card-og.is-in{animation:d-rise .8s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  [data-opt="3"] .cards.armed .rs-cover-card-og.is-in .rs-card-image{animation:d-wipe .9s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 120ms) both}
+  [data-opt="3"] .cards.armed .rs-cover-card-og.is-in h3{animation:d-soft .7s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 300ms) both}
+  [data-opt="3"] .cards.armed .rs-cover-card-og.is-in p{animation:d-soft .7s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 400ms) both}
+
+  /* 4. LIGHT PASS: the cards arrive in turn, then a thin gold light runs once around each card's edge, handing over from
+     card to card; on a computer a soft glow follows the pointer over a card */
+  [data-opt="4"] .cards.armed :is(.cover-h,.cover-end).is-in{animation:d-soft .7s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  [data-opt="4"] .cards.armed .rs-cover-card-og.is-in{animation:d-rise .7s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  [data-opt="4"] .cards.armed .rs-cover-card-og.is-in::before{animation:d-beam 1.9s cubic-bezier(.45,0,.2,1) var(--b,600ms) 1 both}
+}
+[data-opt="4"] .rs-cover-card-og::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;opacity:0;
+  background:conic-gradient(from var(--beam),rgba(225,201,121,0) 0deg 290deg,rgba(255,235,170,.9) 345deg,rgba(225,201,121,0) 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+  [data-opt="4"] .rs-cover-card-og::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s ease;
+    background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),rgba(225,201,121,.16),rgba(225,201,121,0) 70%)}
+  [data-opt="4"] .rs-cover-card-og:hover::after{opacity:1}
+}
+
+/* 2. WITH THE SCROLL: the cards are tied to scrolling; they come in one by one as you scroll down (left to right on a computer)
+   and go back if you scroll up. Browsers without scroll-linked animation fall back to option 1. */
+@supports (animation-timeline: view()){
+  @media (prefers-reduced-motion:no-preference){
+    [data-opt="2"] :is(.cover-h,.cover-end,.rs-cover-card-og){animation:d-scroll linear both;animation-timeline:view()}
+    [data-opt="2"] :is(.cover-h,.cover-end){animation-range:cover 0% cover 22%}
+    [data-opt="2"] .rs-covers-card-wrap .rs-cover-card-og:nth-child(1){animation-range:cover 2% cover 24%}
+    [data-opt="2"] .rs-covers-card-wrap .rs-cover-card-og:nth-child(2){animation-range:cover 9% cover 31%}
+    [data-opt="2"] .rs-covers-card-wrap .rs-cover-card-og:nth-child(3){animation-range:cover 16% cover 38%}
+    [data-opt="2"] .rs-covers-card-wrap .rs-cover-card-og:nth-child(4){animation-range:cover 23% cover 45%}
+  }
+  @media (max-width:991px) and (prefers-reduced-motion:no-preference){
+    [data-opt="2"] .rs-covers-card-wrap .rs-cover-card-og:nth-child(odd){animation-range:cover 2% cover 26%}
+    [data-opt="2"] .rs-covers-card-wrap .rs-cover-card-og:nth-child(even){animation-range:cover 10% cover 34%}
+  }
+  @media (max-width:479px) and (prefers-reduced-motion:no-preference){
+    [data-opt="2"] .rs-covers-card-wrap .rs-cover-card-og:nth-child(n){animation-range:cover 0% cover 30%}
+  }
+}
+
+/* ---------- Our Process: another shape (a row of steps that fills left to right) ---------- */
+.pa{padding-top:6.5rem;padding-bottom:6.5rem}
+.pa-head{display:flex;flex-direction:column;align-items:center;gap:1.75rem;max-width:48rem;margin:0 auto;text-align:center}
+.pa-row{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1.5rem;margin:4.5rem 0 0;padding:0;list-style:none}
+.pa-row::before,.pa-row::after{content:"";position:absolute;left:calc((100% - 7.5rem) / 12);right:calc((100% - 7.5rem) / 12);top:20px;height:1px}
+.pa-row::before{background:rgba(225,201,121,.22)}
+.pa-row::after{background:linear-gradient(90deg,#e1c979,#ffebaa);transform-origin:0 50%}
+.pa-step{position:relative;display:flex;flex-direction:column;align-items:center;gap:.9rem;text-align:center}
+.pa-n{position:relative;z-index:1;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1.5px solid #e1c979;background:#e1c979;color:#043435;font-weight:500;
+  transition:background-color .5s ease,color .5s ease,border-color .5s ease}
+.pa-t{font:500 1.375rem/1.25 var(--f-display);color:#e1c979;transition:color .5s ease}
+.pa-p{font-size:.9375rem;font-weight:300;line-height:1.55;color:rgba(255,255,255,.82);transition:color .5s ease}
+.pa-cta{display:flex;justify-content:center;margin-top:3.5rem}
+/* time-based version (tablets, phones, browsers without scroll timelines): the line runs once and the steps light in turn */
+.pa-row.pa-armed::after{transform:scaleX(0);transition:transform 2.4s cubic-bezier(.45,0,.2,1) .2s}
+.pa-row.pa-armed.pa-play::after{transform:scaleX(1)}
+.pa-row.pa-armed .pa-step:not(.is-on) .pa-n{background:#043435;color:#e1c979;border-color:rgba(225,201,121,.5)}
+.pa-row.pa-armed .pa-step:not(.is-on) .pa-t{color:rgba(225,201,121,.72)}
+.pa-row.pa-armed .pa-step:not(.is-on) .pa-p{color:rgba(255,255,255,.66)}
+/* scroll-linked version (computers): the gold line fills with your scrolling and each step lights as the line reaches it */
+@keyframes pa-fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes pa-n{from{background-color:#043435;color:#e1c979;border-color:rgba(225,201,121,.5)}to{background-color:#e1c979;color:#043435;border-color:#e1c979}}
+@keyframes pa-t{from{color:rgba(225,201,121,.72)}to{color:#e1c979}}
+@keyframes pa-p{from{color:rgba(255,255,255,.66)}to{color:rgba(255,255,255,.82)}}
+@supports (animation-timeline: view()){
+  @media (min-width:992px) and (prefers-reduced-motion:no-preference){
+    .pa-row{view-timeline-name:--pa}
+    .pa-row::after{animation:pa-fill linear both;animation-timeline:--pa;animation-range:cover 30% cover 62%}
+    .pa-n{animation:pa-n linear both;animation-timeline:--pa}
+    .pa-t{animation:pa-t linear both;animation-timeline:--pa}
+    .pa-p{animation:pa-p linear both;animation-timeline:--pa}
+    .pa-step:nth-child(1) :is(.pa-n,.pa-t,.pa-p){animation-range:cover 29% cover 31%}
+    .pa-step:nth-child(2) :is(.pa-n,.pa-t,.pa-p){animation-range:cover 35.4% cover 37.4%}
+    .pa-step:nth-child(3) :is(.pa-n,.pa-t,.pa-p){animation-range:cover 41.8% cover 43.8%}
+    .pa-step:nth-child(4) :is(.pa-n,.pa-t,.pa-p){animation-range:cover 48.2% cover 50.2%}
+    .pa-step:nth-child(5) :is(.pa-n,.pa-t,.pa-p){animation-range:cover 54.6% cover 56.6%}
+    .pa-step:nth-child(6) :is(.pa-n,.pa-t,.pa-p){animation-range:cover 61% cover 63%}
+  }
+}
+@media (max-width:991px){
+  .pa-row{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:2.75rem}
+  .pa-row::before,.pa-row::after{display:none}
+}
+/* phones: the six steps sit side by side and you swipe through them (the Partner timeline is a vertical list) */
+@media (max-width:767px){
+  .pa{padding-top:4rem;padding-bottom:4rem}
+  .pa-scroll{margin-top:2.5rem;margin-inline:-16px;padding:0 16px 10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .pa-scroll::-webkit-scrollbar{display:none}
+  .pa-scroll:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+  .pa-row{display:flex;gap:12px;margin:0;width:max-content}
+  .pa-step{flex:0 0 auto;width:min(78vw,320px);scroll-snap-align:start;align-items:flex-start;text-align:left;padding:20px;border:1px solid rgba(225,201,121,.35);border-radius:12px;background:#044446}
+  .pa-t{font-size:1.25rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .pa-n,.pa-t,.pa-p,.rs-cover-card-og{transition:none}
+}
