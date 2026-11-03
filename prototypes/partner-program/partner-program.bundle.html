@@ -78,6 +78,13 @@ button,input,textarea{font:inherit;color:inherit}
 .nav-cta:hover{color:#fff;border-color:#fff}
 .nav-cta i{width:4px;height:4px;border-radius:50%;background:#fff}
 .nav-burger{display:none}
+/* computer: scrolling down fades the page links out (the logo and Speak to Us stay), scrolling up brings them back, as on the live site.
+   A fade, not a movement, so it is kept for reduced motion too; keyboard focus brings the links back. */
+@media (min-width:992px){
+  .nav-links{transition:opacity .3s ease-in-out}
+  .nav.links-away .nav-links{opacity:0;pointer-events:none}
+  .nav.links-away .nav-links:focus-within{opacity:1;pointer-events:auto}
+}
 @media (max-width:991px){
   .nav-menu{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:2rem;background:var(--teal);padding:104px max(var(--gutter),env(safe-area-inset-left,0px)) 40px;transform:translateY(-102%);transition:transform .55s var(--ease);overflow:auto}
   .nav.is-open .nav-menu{transform:none}
@@ -979,6 +986,19 @@ textarea.input-field.height-135{height:136px;margin-bottom:0}
     var setScrolled = function () { nav.classList.toggle('is-scrolled', window.scrollY > 40); };
     window.addEventListener('scroll', setScrolled, { passive: true });
     setScrolled();
+    /* computer, as on the live site: scrolling down fades the page links out (the logo and Speak to Us stay), scrolling up brings them back */
+    var wide = window.matchMedia('(min-width: 992px)');
+    var lastY = window.scrollY;
+    var setLinks = function () {
+      var y = window.scrollY, dy = y - lastY;
+      if (!wide.matches || y <= 0) { nav.classList.remove('links-away'); lastY = y; return; }
+      if (Math.abs(dy) < 3) return;
+      nav.classList.toggle('links-away', dy > 0);
+      lastY = y;
+    };
+    window.addEventListener('scroll', setLinks, { passive: true });
+    var offWide = function () { if (!wide.matches) nav.classList.remove('links-away'); };
+    if (wide.addEventListener) wide.addEventListener('change', offWide); else if (wide.addListener) wide.addListener(offWide);
     if (burger) burger.addEventListener('click', function () {
       var open = !nav.classList.contains('is-open');
       nav.classList.toggle('is-open', open);

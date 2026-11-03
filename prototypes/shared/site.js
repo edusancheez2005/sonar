@@ -30,6 +30,19 @@
     var setScrolled = function () { nav.classList.toggle('is-scrolled', window.scrollY > 40); };
     window.addEventListener('scroll', setScrolled, { passive: true });
     setScrolled();
+    /* computer, as on the live site: scrolling down fades the page links out (the logo and Speak to Us stay), scrolling up brings them back */
+    var wide = window.matchMedia('(min-width: 992px)');
+    var lastY = window.scrollY;
+    var setLinks = function () {
+      var y = window.scrollY, dy = y - lastY;
+      if (!wide.matches || y <= 0) { nav.classList.remove('links-away'); lastY = y; return; }
+      if (Math.abs(dy) < 3) return;
+      nav.classList.toggle('links-away', dy > 0);
+      lastY = y;
+    };
+    window.addEventListener('scroll', setLinks, { passive: true });
+    var offWide = function () { if (!wide.matches) nav.classList.remove('links-away'); };
+    if (wide.addEventListener) wide.addEventListener('change', offWide); else if (wide.addListener) wide.addListener(offWide);
     if (burger) burger.addEventListener('click', function () {
       var open = !nav.classList.contains('is-open');
       nav.classList.toggle('is-open', open);

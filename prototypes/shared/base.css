@@ -67,6 +67,13 @@ button,input,textarea{font:inherit;color:inherit}
 .nav-cta:hover{color:#fff;border-color:#fff}
 .nav-cta i{width:4px;height:4px;border-radius:50%;background:#fff}
 .nav-burger{display:none}
+/* computer: scrolling down fades the page links out (the logo and Speak to Us stay), scrolling up brings them back, as on the live site.
+   A fade, not a movement, so it is kept for reduced motion too; keyboard focus brings the links back. */
+@media (min-width:992px){
+  .nav-links{transition:opacity .3s ease-in-out}
+  .nav.links-away .nav-links{opacity:0;pointer-events:none}
+  .nav.links-away .nav-links:focus-within{opacity:1;pointer-events:auto}
+}
 @media (max-width:991px){
   .nav-menu{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:2rem;background:var(--teal);padding:104px max(var(--gutter),env(safe-area-inset-left,0px)) 40px;transform:translateY(-102%);transition:transform .55s var(--ease);overflow:auto}
   .nav.is-open .nav-menu{transform:none}

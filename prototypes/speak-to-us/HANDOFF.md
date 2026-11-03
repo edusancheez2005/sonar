@@ -288,5 +288,5 @@ document.addEventListener('submit', function (e) {
 - Reduced motion: contacts, chevrons and Submit have 0s transitions and no animation; the success block appears at once.
 - Copy: 0 em dashes in visible text (the one em dash in the bundle is in a code comment at the top of the shared `base.css`); the only exclamation mark is the live "Thank you!" in the success state; the FCA is mentioned only in the footer disclaimer saying Roscap is not authorised.
 - JSON-LD: parses as FAQPage with 5 questions; text identical to the visible FAQ.
-- Bundle `speak-to-us.bundle.html`: 282,057 bytes, fonts, logos and both wave images inlined.
+- Bundle `speak-to-us.bundle.html`: 283,308 bytes, fonts, logos and both wave images inlined.
 

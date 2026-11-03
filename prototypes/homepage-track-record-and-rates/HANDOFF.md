@@ -127,7 +127,7 @@ What changes for the visitor:
 
 ## 4. Performance notes
 
-- Prototype bundle: 1,439,547 bytes as one file including base64 fonts (115 KB raw) and all images (about 600 KB raw). Source files: index.html 24 KB, home.css 12.5 KB, rates.js 17.8 KB, deal-list.js 10.0 KB, home.js 4.9 KB. No Lenis (18.8 KB), no extra GSAP or ScrollTrigger (117 KB); the live page keeps its own GSAP 3.15 for Swiper headings.
+- Prototype bundle: 4,951,495 bytes as one file. Most of it is there only so the single file works offline: the two hero clips (2,194,824 bytes, base64) and the fonts and images, all inlined. Webflow keeps serving the live clip and the site's own fonts. Source files: index.html 36.5 KB, home.css 27.9 KB, rates.js 17.8 KB, deal-list.js 14.0 KB, home.js 9.7 KB. No Lenis (18.8 KB), no extra GSAP or ScrollTrigger (117 KB); the live page keeps its own GSAP 3.15 for Swiper headings.
 - Images: every below-the-fold image has `width`, `height`, `loading="lazy"` and `decoding="async"`; deal photos are 628 to 720 px wide WebP (34 to 96 KB each); the contact background was resized to 1200 px (116 KB instead of 443 KB). Replace the 893 KB PNG on the live page with the CMS WebP variant.
 - Motion: reveals and the panel clip use CSS scroll-driven animations (`animation-timeline: view()`) behind `@supports`, with an IntersectionObserver fallback that adds `.is-vis`; the odometer is CSS transitions; the stats count-up is a 2 s requestAnimationFrame; the wave canvas runs only on screen, on fine pointers, at 30 fps, and idles after 8 s. Measured: 0 requestAnimationFrame callbacks per second with the panel off screen or just below the fold, 60 with it on screen (30 draws).
 
