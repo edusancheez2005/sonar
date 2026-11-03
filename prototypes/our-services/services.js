@@ -45,4 +45,30 @@
     }, { threshold: [0, 0.4, 0.6] });
     csio.observe(cs);
   }
+
+  /* 4. SERVICE CARDS (paste-ready, see HANDOFF.md section 4): the Roscap R draws itself, then the heading and the cards arrive in
+     turn (elements that come into view together are timed in page order). Without IntersectionObserver or with reduced motion
+     nothing is armed, so everything simply shows. */
+  var sets = $$('.svc-cards');
+  if (sets.length && !reduce && hasIO) {
+    sets.forEach(function (s) { s.classList.add('svc-armed'); });
+    var targets = $$('.svc-cards .svc-sig, .svc-cards .cover-h, .svc-cards .rs-cover-card-og, .svc-cards .cover-end');
+    var sio = new IntersectionObserver(function (entries) {
+      var t = 0;
+      entries.filter(function (e) { return e.isIntersecting; })
+        .map(function (e) { return e.target; })
+        .sort(function (a, b) { return targets.indexOf(a) - targets.indexOf(b); })
+        .forEach(function (el) {
+          var d = t;
+          if (el.classList.contains('svc-sig')) t += 1150;            /* the R takes about 1.2 s to draw and fill */
+          else if (el.classList.contains('cover-h')) t += 260;
+          else if (el.classList.contains('rs-cover-card-og')) t += 160;
+          else d = t + 300;                                            /* the closing line comes after the cards */
+          el.style.setProperty('--d', d + 'ms');
+          el.classList.add('is-in');
+          sio.unobserve(el);
+        });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.25 });
+    targets.forEach(function (el) { sio.observe(el); });
+  }
 })();

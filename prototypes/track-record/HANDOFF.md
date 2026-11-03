@@ -33,7 +33,7 @@ The live figures were measured on the live page; the prototype figures with ever
 3. In the same section add a Div with the live class `container`, and inside it a Code Embed. Paste `webflow/footprint-map-embed.html` (12.6 KB) and replace the two `REPLACE-WITH-UPLOADED-footprint-map.svg` URLs with the asset URL from step 1.
 4. Page settings > Custom code > Inside head: delete the old map styles (`svg path { pointer-events: all; cursor: pointer; }` and the `[id^="pin-"]` rules). The first one gives every drawing on the page a hand cursor.
 5. Optional: remove the "slide in" interaction from this section so the map's own entrance reads cleanly (the prototype holds this section still).
-6. Figures: each country's line in the screen-reader list (`ul.fp-sr` in the embed) carries its figure twice, `data-n="52"` (what the gold label shows) and the text "United Kingdom: 52 deals". Change both if a figure changes. **Before publishing, confirm the UK figure** (question 3 in the message to Clemente: the map says 52, the deals below show 16 UK deals).
+6. Figures: each country's line in the screen-reader list (`ul.fp-sr` in the embed) carries its figure twice, `data-n="52"` (what the gold label shows) and the text "United Kingdom: 52 deals". Change both if a figure changes. The figures are the live map's and stay as they are (owner, 3 November: the 22 deals listed below the map are a selection, so the map's totals are higher).
 
 ## 2. Selected Transactions
 

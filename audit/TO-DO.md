@@ -1,20 +1,16 @@
 # To do (Edu): after the review of 31 October 2026
 
-Everything that is left, in order. The message for Clemente only carries his four questions; everything else is here. Every design has a `HANDOFF.md` in its folder under `prototypes/` with the exact Webflow steps. Rule for all of it: Webflow staging first, check, then publish.
+Everything that is left, in order. The message for Clemente only carries his three questions; everything else is here. Every design has a `HANDOFF.md` in its folder under `prototypes/` with the exact Webflow steps. Rule for all of it: Webflow staging first, check, then publish.
 
 ## 1. Send to Clemente (today)
 
 1. The message: `audit/MESSAGE-FOR-CLEMENTE.md` (or the "Copy message" button in the review file).
-2. Attach the eight pictures in `audit/evidence/` (numbered in the message as Picture 1 to 8):
-   - Picture 1 `before-after-track-record-deals.jpg`
-   - Picture 2 `before-after-track-record-map-phone.jpg`
-   - Picture 3 `before-after-page-not-found.jpg`
-   - Picture 4 `mowgli-about-us.png`
-   - Picture 5 `manchester-track-record-card.png`
-   - Picture 6 `manchester-case-study.png`
-   - Picture 7 `track-record-map-52-deals.png`
-   - Picture 8 `equity-our-services.png`
-3. Attach the review file `prototypes/roscap-website-review.html` and the video `prototypes/roscap-before-after.mp4`.
+2. Attach the four pictures in `audit/evidence/` (numbered in the message as Picture 1 to 4):
+   - Picture 1 `mowgli-about-us.png`
+   - Picture 2 `manchester-track-record-card.png`
+   - Picture 3 `manchester-case-study.png`
+   - Picture 4 `equity-our-services.png`
+3. Attach the video `prototypes/roscap-before-after.mp4`. Keep the review file (`prototypes/roscap-website-review.html`) for when he wants to click through the pages; email often blocks large HTML attachments.
 
 ## 2. Legal: cookies and privacy (this week; the site is exposed until these are done)
 
@@ -60,7 +56,7 @@ Everything that is left, in order. The message for Clemente only carries his fou
 ## 5. Designs to ship (staging first, then publish)
 
 16. **Home**: market rates panel wording, selected transactions with "All transactions", What We Do motion, smoother Asset Classes / Sources of Capital switch. `prototypes/homepage-track-record-and-rates/`
-17. **Our Services**: the capital stack builds when it comes into view; Asset Classes entrance. `prototypes/our-services/`
+17. **Our Services**: the capital stack builds when it comes into view; Asset Classes entrance; the two card sections arrive in turn with the gold Roscap R (owner's choice, option 3 of the motion demos). Our Process stays as live. `prototypes/our-services/`
 18. **Track Record** (new): the light map that lights up country by country, on every screen size; the deals grid with the region filter. Upload the 22 WebP photos to the CMS items. `prototypes/track-record/`
 19. **Partner Program**: Why cards, How it works timeline, moving partner logos, working form. `prototypes/partner-program/`
 20. **Speak to Us**: the contacts under the heading, shorter FAQ, form fixes. `prototypes/speak-to-us/`
@@ -70,9 +66,8 @@ Everything that is left, in order. The message for Clemente only carries his fou
 
 22. Mowgli's title on About Us (card or bio).
 23. Manchester: the Track Record card and the case study (product and amount).
-24. The UK figure on the Track Record map: change it in the map list (`data-n` and the visible "52 deals") before the new map goes live.
-25. WhatsApp on Speak to Us: keep the link or remove it.
+24. WhatsApp on Speak to Us: keep the link or remove it.
 
 ## 7. Nice to have
 
-26. Insights articles: shorter lines on a computer (about 70 characters), an author and a date, and a preview picture when a link is shared on LinkedIn or WhatsApp.
+25. Insights articles: shorter lines on a computer (about 70 characters), an author and a date, and a preview picture when a link is shared on LinkedIn or WhatsApp.
