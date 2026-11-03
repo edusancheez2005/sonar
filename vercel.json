@@ -78,7 +78,7 @@
     },
     {
       "path": "/api/cron/refresh-macro",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 */12 * * *"
     },
     {
       "path": "/api/cron/cache-derivatives",
@@ -126,7 +126,7 @@
     },
     {
       "path": "/api/cron/precompute-orca-first-answer",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 */2 * * *"
     },
     {
       "path": "/api/cron/precompute-token-flows",

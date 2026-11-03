@@ -1,10 +1,11 @@
 /**
- * Cron: precompute-orca-first-answer (every 15 min)
+ * Cron: precompute-orca-first-answer (every 2 h)
  * =============================================================================
  * Recomputes the answer to FIRST_QUESTION through the real ORCA pipeline and
  * stores it in app_cache (lib/orca/first-answer.ts). The chat route serves it
- * to any market-wide 24h whale question while it is < 20 min old, so a new
- * account's first screen streams in ~1s instead of waiting ~10s on the writer.
+ * to any market-wide 24h whale question while it is < FIRST_ANSWER_MAX_AGE_MS
+ * old, so a new account's first screen streams in ~1s instead of waiting ~10s
+ * on the writer.
  */
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'

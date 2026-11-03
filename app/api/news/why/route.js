@@ -54,7 +54,8 @@ export async function POST(req) {
     let model
     if (xaiKey) {
       ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
-      model = process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3' // grok-3-fast retired from xAI docs
+      // Non-reasoning: two grounded sentences don't need grok-4.3's billed reasoning.
+      model = process.env.GROK_BACKGROUND_MODEL || 'grok-4.20-0309-non-reasoning'
     } else if (openaiKey) {
       ai = new OpenAI({ apiKey: openaiKey })
       model = 'gpt-4o-mini'

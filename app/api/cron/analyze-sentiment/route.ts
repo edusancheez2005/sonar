@@ -17,8 +17,10 @@ const getAIClient = () => {
   }
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 }
+// Non-reasoning: same per-token price as grok-4.3, which always reasons and
+// bills those tokens as output — scoring headlines doesn't need it.
 const AI_MODEL = process.env.XAI_API_KEY
-  ? process.env.ORCA_GROK_MINI_MODEL || 'grok-4.3' // grok-4-fast-* retired from xAI docs
+  ? process.env.GROK_BACKGROUND_MODEL || 'grok-4.20-0309-non-reasoning'
   : 'gpt-4o-mini'
 
 const BATCH_SIZE = 20 // Process 20 articles at a time

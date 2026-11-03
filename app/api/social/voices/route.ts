@@ -13,18 +13,35 @@
  * For political figures (Trump/Powell/Bessent/SEC) who don't appear in
  * crypto-focused LunarCrush data, we use the xAI Responses API
  * (`/v1/responses` with the `web_search` tool — the new, supported endpoint).
+ *
+ * Each political generation is a paid Grok web search, so the result lives
+ * in one shared app_cache row and is regenerated in the background at most
+ * every 12 h. Until 2026-11-03 every cold instance and every CDN region's
+ * 30-min revalidation paid for a fresh search, and a 22 s cap cut off
+ * searches that routinely take 30-90 s.
  */
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { waitUntil } from '@vercel/functions'
+import { supabaseAdminFresh } from '@/app/lib/supabaseAdmin'
 
 export const dynamic = 'force-dynamic'
+// Room for the background political refresh (Grok web search, 30-90 s).
+export const maxDuration = 120
 
 let cachedResult: any = null
 let cachedAt = 0
 const CACHE_VERSION = 'v7-fix-url-column-2026-05-04'
 let cachedVersion = ''
 const CACHE_TTL = 30 * 60 * 1000 // 30 min
+
+// Political voices: one shared app_cache row for every instance and region.
+const POLITICAL_CACHE_KEY = 'political_voices_v1'
+const POLITICAL_TTL_MS = 12 * 60 * 60 * 1000
+// After a failed or empty generation, wait this long before paying for another.
+const POLITICAL_RETRY_MS = 60 * 60 * 1000
+let politicalInFlight: Promise<any[]> | null = null
 
 // LunarCrush handles → display metadata.  Order = display priority.
 const CRYPTO_VOICES: Array<{ handle: string; name: string; role: string }> = [
@@ -184,13 +201,15 @@ Rules:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // Flagship (not mini): this call drives the web_search agentic tool.
-        // grok-4-fast-* IDs are retired from xAI's current docs.
-        model: process.env.ORCA_GROK_MODEL || 'grok-4.5',
+        // grok-4.3, as for macro factors (lib/social/macroFactors.ts): about
+        // half the flagship's token price; a reasoning model keeps quotes grounded.
+        model: process.env.GROK_BACKGROUND_SEARCH_MODEL || 'grok-4.3',
         input: prompt,
         tools: [{ type: 'web_search' }],
       }),
-      signal: AbortSignal.timeout(22_000),
+      // Runs in the background (getPoliticalVoices), so it can take the
+      // 30-90 s a flagship web search needs instead of being cut off at 22 s.
+      signal: AbortSignal.timeout(100_000),
     })
     if (!resp.ok) {
       console.warn('[voices] xAI responses non-OK:', resp.status, await resp.text().catch(() => ''))
@@ -218,10 +237,75 @@ Rules:
   }
 }
 
+interface PoliticalCache {
+  voices: any[]
+  generated_at: string | null
+  attempted_at: string | null
+}
+
+async function readPoliticalCache(): Promise<PoliticalCache | null> {
+  try {
+    const { data } = await supabaseAdminFresh
+      .from('app_cache')
+      .select('value')
+      .eq('key', POLITICAL_CACHE_KEY)
+      .maybeSingle()
+    const v = data?.value as PoliticalCache | undefined
+    return v && Array.isArray(v.voices) ? v : null
+  } catch {
+    return null
+  }
+}
+
+async function writePoliticalCache(value: PoliticalCache): Promise<void> {
+  const { error } = await supabaseAdminFresh
+    .from('app_cache')
+    .upsert({ key: POLITICAL_CACHE_KEY, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+  if (error) throw new Error(error.message)
+}
+
+/** One paid Grok search; keeps the last good voices when it comes back empty. */
+async function regeneratePoliticalVoices(prev: PoliticalCache | null): Promise<any[]> {
+  const attemptedAt = new Date().toISOString()
+  // Claim the run first so other instances reading the row don't start the same search.
+  await writePoliticalCache({ voices: prev?.voices ?? [], generated_at: prev?.generated_at ?? null, attempted_at: attemptedAt })
+  const fresh = await fetchPoliticalVoicesFromGrok()
+  if (fresh.length === 0) return prev?.voices ?? []
+  await writePoliticalCache({ voices: fresh, generated_at: new Date().toISOString(), attempted_at: attemptedAt })
+  return fresh
+}
+
+/**
+ * Political voices from the shared row. Only `force` (cron-authorised
+ * ?refresh=1) waits on Grok; otherwise a due row is served as-is and
+ * regenerated in the background, single-flight per instance.
+ */
+async function getPoliticalVoices(force: boolean): Promise<any[]> {
+  const cached = await readPoliticalCache()
+  if (force) return regeneratePoliticalVoices(cached)
+  const now = Date.now()
+  const generatedAt = Date.parse(cached?.generated_at ?? '') || 0
+  const attemptedAt = Date.parse(cached?.attempted_at ?? '') || 0
+  const due = now - generatedAt >= POLITICAL_TTL_MS && now - attemptedAt >= POLITICAL_RETRY_MS
+  if (due && !politicalInFlight) {
+    politicalInFlight = regeneratePoliticalVoices(cached).finally(() => { politicalInFlight = null })
+    const silenced = politicalInFlight.catch((e) => console.warn('[voices] political refresh failed:', e?.message || e))
+    try {
+      waitUntil(silenced)
+    } catch {
+      // non-Vercel runtime (tests, plain node): best-effort fire-and-forget
+    }
+  }
+  return cached?.voices ?? []
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
+    // ?refresh=1 forces a paid Grok search, so it needs the cron secret.
+    const cronSecret = process.env.CRON_SECRET
     const forceRefresh = url.searchParams.get('refresh') === '1'
+      && !!cronSecret && request.headers.get('authorization') === `Bearer ${cronSecret}`
 
     if (!forceRefresh && cachedResult && cachedVersion === CACHE_VERSION && (Date.now() - cachedAt) < CACHE_TTL) {
       return NextResponse.json(cachedResult, {
@@ -231,7 +315,7 @@ export async function GET(request: Request) {
 
     const [cryptoRes, political] = await Promise.all([
       fetchCryptoVoicesFromDB().catch(e => { console.warn('[voices] crypto db failed:', e?.message); return { voices: [], debug: { error: String(e?.message || e) } } }),
-      fetchPoliticalVoicesFromGrok().catch(e => { console.warn('[voices] political failed:', e?.message); return [] }),
+      getPoliticalVoices(forceRefresh).catch(e => { console.warn('[voices] political failed:', e?.message); return [] }),
     ])
     const crypto = cryptoRes.voices
 

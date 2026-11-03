@@ -9,7 +9,9 @@ export const maxDuration = 120
 /**
  * Regenerates the macro-factors read and stores it in the shared app_cache
  * row, so user requests to /api/social/macro are always instant cache hits.
- * Scheduled every 6h in vercel.json (data freshness window is 12h).
+ * Scheduled every 12h in vercel.json (data freshness window is 13h, see
+ * CACHE_TTL in lib/social/macroFactors.ts). Was every 6h until 2026-11-03;
+ * each run is a paid Grok web search.
  */
 export async function GET(req) {
   const auth = req.headers.get('authorization') || ''

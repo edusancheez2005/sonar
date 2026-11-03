@@ -117,7 +117,8 @@ export async function GET(req) {
     const ai = new OpenAI({ apiKey: xaiKey, baseURL: 'https://api.x.ai/v1' })
 
     const completion = await ai.chat.completions.create({
-      model: 'grok-4.20-0309-reasoning',
+      // Non-reasoning variant: same per-token price, no billed reasoning tokens.
+      model: process.env.GROK_BACKGROUND_MODEL || 'grok-4.20-0309-non-reasoning',
       messages: [
         {
           role: 'system',

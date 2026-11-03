@@ -86,7 +86,9 @@ const SUPABASE_SERVICE_ROLE =
   process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const CACHE_VERSION = 'v4-cg-global-2026-07-12'
-const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
+// One hour past the 12-hourly refresh-macro cron, so a read just before the
+// cron lands doesn't start a second paid Grok regeneration.
+const CACHE_TTL = 13 * 60 * 60 * 1000 // 13 hours
 
 // Last good result in this instance: a FALLBACK when regeneration fails, never
 // served ahead of the shared app_cache row (that copy kept a 12 h-old badge
@@ -316,9 +318,10 @@ Rules:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // Flagship (not mini): drives the web_search agentic tool.
-        // grok-4-fast-* IDs are retired from xAI's current docs.
-        model: process.env.ORCA_GROK_MODEL || 'grok-4.5',
+        // grok-4.3 (was the grok-4.5 flagship until 2026-11-03): about half the
+        // token price, and it already runs ORCA's live event lookups. Keep a
+        // reasoning model here — web search needs it to stay grounded.
+        model: process.env.GROK_BACKGROUND_SEARCH_MODEL || 'grok-4.3',
         input: prompt,
         tools: [{ type: 'web_search' }],
       }),

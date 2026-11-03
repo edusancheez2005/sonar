@@ -4,11 +4,14 @@
  * Every new account is greeted by ORCA answering FIRST_QUESTION ("In plain
  * English, what have crypto whales been doing in the last 24 hours?"). Even
  * with the deterministic fast path the writer model needs 7-10s before its
- * first token, so a cron recomputes this one answer every 15 minutes and the
- * chat route serves it from app_cache when the question matches — the first
+ * first token, so a cron recomputes these answers every 2 hours and the
+ * chat route serves them from app_cache when the question matches — the first
  * screen streams in ~1s instead of ~10s. The cached text is a real ORCA
  * answer (same tool, renderer and guardrails); it carries its own
  * "as of HH:MM UTC" line and is never served older than MAX_AGE.
+ *
+ * 2026-11-03: the cron ran every 15 min (288 paid Grok writer calls a day).
+ * Every 2 h keeps the instant first screen at 1/8 of the cost.
  */
 import type OpenAI from 'openai'
 import { runOrchestrator } from './orchestrator/runOrchestrator'
@@ -28,7 +31,8 @@ export const FIRST_ANSWER_CACHE_KEY = 'orca_first_answer_24h'
 export function firstAnswerCacheKey(window: CachedWindow): string {
   return `orca_first_answer_${window}`
 }
-export const FIRST_ANSWER_MAX_AGE_MS = 20 * 60 * 1000
+// The cron runs every 2 h; the extra 15 min covers a late or slow run.
+export const FIRST_ANSWER_MAX_AGE_MS = 135 * 60 * 1000
 /** Synthetic user for the precompute run (no user tools are involved). */
 const SERVICE_USER_ID = '00000000-0000-0000-0000-000000000000'
 

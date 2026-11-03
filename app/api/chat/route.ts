@@ -1477,7 +1477,7 @@ export async function POST(request: Request) {
 
                 // Precomputed first answer (lib/orca/first-answer.ts): the
                 // market-wide 24h whale question is served from app_cache when
-                // a fresh copy (< 20 min) exists — ~1s instead of ~10s.
+                // a fresh copy (< FIRST_ANSWER_MAX_AGE_MS) exists — ~1s instead of ~10s.
                 let cachedOut: OrchestratorOutput | null = null
                 const cachedWindow = fastPath ? cachedAnswerWindow(fastPath) : null
                 if (cachedWindow && process.env.ORCA_FIRST_ANSWER_CACHE !== 'false') {
