@@ -1,0 +1,170 @@
+<title>Sonar · Content Pack — 07 Nov 2026</title>
+<style>
+  @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(__ANTON__) format('woff2');}
+  :root{
+    --bg0:#070b12; --bg1:#0a1120; --card:#0e1622; --card2:#0b131e;
+    --ink:#e9f0f7; --muted:#8595a8; --faint:#5c6b7e;
+    --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.13);
+    --green:#00e08a; --cyan:#3bc9ee; --red:#ff5b6b; --amber:#ffb43d;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --disp:'Anton',"Arial Narrow","Helvetica Neue Condensed",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;} body{margin:0;}
+  .app{background:radial-gradient(1100px 640px at 50% -12%,#0d1b30 0%,transparent 60%),linear-gradient(180deg,var(--bg0),var(--bg1) 60%,var(--bg0));
+    color:var(--ink);font-family:var(--sans);min-height:100vh;padding:clamp(1.1rem,3vw,2.4rem) 1.1rem 5rem;}
+  .wrap{max-width:32rem;margin:0 auto;}
+  .brandbar{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:1.1rem;border-bottom:1px solid var(--line);margin-bottom:1.6rem;}
+  .brandbar img{height:1.1rem;} .brandbar .sp{flex:1;}
+  h1.title{font-size:clamp(1.5rem,4.6vw,2rem);line-height:1.1;margin:0 0 .5rem;letter-spacing:-.02em;}
+  .sub{color:var(--muted);font-size:1rem;margin:0 0 1.1rem;}
+  .carousel{margin:0 0 3.4rem;}
+  .chead{display:flex;align-items:baseline;gap:.6rem;margin:0 0 1rem;}
+  .cnum{font-family:var(--mono);font-size:.74rem;color:var(--green);border:1px solid var(--line2);border-radius:6px;padding:.16rem .5rem;letter-spacing:.05em;}
+  .ctitle{font-size:1.02rem;font-weight:600;} .ctitle span{color:var(--muted);font-weight:400;}
+  .slides{display:flex;flex-direction:column;gap:.9rem;}
+  .slide{container-type:inline-size;position:relative;width:100%;max-width:29rem;margin:0 auto;aspect-ratio:4/5;border-radius:16px;overflow:hidden;background:#080b11;border:1px solid var(--line2);box-shadow:0 18px 46px -20px rgba(0,0,0,.8);isolation:isolate;}
+  .pad{position:absolute;inset:0;z-index:2;padding:7cqw;display:flex;flex-direction:column;}
+  .grid::before{content:"";position:absolute;inset:0;z-index:0;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:8cqw 8cqw;
+    -webkit-mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);mask-image:radial-gradient(120cqw 90cqw at 70% 0%,#000 0%,transparent 75%);}
+  .photo{background-size:cover;background-position:center top;}
+  .photo::after{content:"";position:absolute;inset:0;z-index:1;
+    background:linear-gradient(180deg,rgba(4,7,12,.5) 0%,rgba(4,7,12,.06) 20%,rgba(4,7,12,.06) 40%,rgba(4,7,12,.72) 62%,rgba(4,7,12,.985) 86%,#04070c 100%);}
+  .srow{display:flex;align-items:center;gap:2.2cqw;font-family:var(--mono);font-size:2.9cqw;letter-spacing:.14em;text-transform:uppercase;color:#b9c6d4;}
+  .logoimg{height:5.4cqw;width:auto;display:block;filter:drop-shadow(0 1cqw 2cqw rgba(0,0,0,.65));}
+  .spacer{flex:1;}
+  .kick{display:inline-flex;align-items:center;gap:1.6cqw;}
+  .kick i{width:1.8cqw;height:1.8cqw;border-radius:50%;background:var(--red);font-style:normal;box-shadow:0 0 0 1.1cqw rgba(255,91,107,.22);}
+  .newsrow{display:flex;align-items:center;gap:3cqw;margin:0 0 4.2cqw;}
+  .newsrow .r{flex:1;height:1px;background:rgba(255,255,255,.26);}
+  .newsbadge{font-family:var(--mono);font-weight:700;font-size:3.1cqw;letter-spacing:.2em;background:var(--cyan);color:#04121a;padding:1.1cqw 3.2cqw;border-radius:1cqw;}
+  .big{font-family:var(--disp);font-weight:400;text-transform:uppercase;font-size:13.2cqw;line-height:1.06;letter-spacing:.012em;margin:0;color:#fff;text-shadow:0 2cqw 7cqw rgba(0,0,0,.8);text-wrap:balance;text-align:center;}
+  .big.sm{font-size:11cqw;}
+  .hl-c{color:var(--cyan);font-style:normal;} .hl-g{color:var(--green);font-style:normal;} .hl-r{color:var(--red);font-style:normal;} .hl-a{color:var(--amber);font-style:normal;}
+  .statline{font-family:var(--mono);font-size:2.9cqw;letter-spacing:.14em;color:#cfe0f4;text-transform:uppercase;text-align:center;margin:3.4cqw 0 0;text-shadow:0 1cqw 4cqw rgba(0,0,0,.9);}
+  .foot{display:flex;align-items:center;gap:2cqw;font-family:var(--mono);font-size:2.6cqw;letter-spacing:.1em;color:#93a4b6;text-transform:uppercase;margin-top:4.6cqw;}
+  .foot .sp{flex:1;}
+  .qzone{position:relative;margin-top:5cqw;}
+  .qcard{background:rgba(10,16,24,.88);border:1px solid var(--line2);border-radius:4.4cqw;padding:4.4cqw 4.6cqw;width:100%;box-shadow:0 8cqw 22cqw -8cqw rgba(0,0,0,.7);}
+  .qtop{display:flex;align-items:center;gap:2.6cqw;}
+  .qcoin{width:8.4cqw;height:8.4cqw;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:4.6cqw;color:#0a0e14;background:#f7931a;}
+  .qname{font-weight:800;font-size:3.9cqw;color:#fff;line-height:1;}
+  .qsub{font-family:var(--mono);font-size:2.5cqw;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:.6cqw;}
+  .qlive{margin-left:auto;font-family:var(--mono);font-size:2.5cqw;color:var(--green);display:flex;align-items:center;gap:1.3cqw;letter-spacing:.1em;text-transform:uppercase;}
+  .qlive i{width:1.7cqw;height:1.7cqw;border-radius:50%;background:var(--green);box-shadow:0 0 0 1cqw rgba(0,224,138,.25);}
+  .qprice{font-size:8cqw;font-weight:800;letter-spacing:-.02em;color:#fff;margin:2.4cqw 0 .8cqw;font-variant-numeric:tabular-nums;}
+  .qchg{font-family:var(--mono);font-size:2.9cqw;color:var(--green);letter-spacing:.02em;}
+  .qchg.dn{color:var(--red);}
+  .qchart{height:17cqw;margin:2.4cqw 0 2.4cqw;}
+  .qchart canvas{width:100%;height:100%;display:block;}
+  .qpills{display:flex;gap:1.4cqw;}
+  .pill{font-family:var(--mono);font-size:2.3cqw;color:var(--faint);padding:.9cqw 2.4cqw;border-radius:1.5cqw;letter-spacing:.06em;}
+  .pill.on{background:rgba(0,224,138,.16);color:var(--green);}
+
+  /* day-12 scoreboard */
+  .score{background:var(--card);border:1px solid var(--line2);border-radius:4cqw;overflow:hidden;margin-top:4.6cqw;}
+  .shead{font-family:var(--mono);font-size:2.7cqw;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);padding:3.2cqw 4.4cqw;border-bottom:1px solid var(--line);}
+  .srow2{display:flex;justify-content:space-between;align-items:baseline;padding:3.4cqw 4.4cqw;border-bottom:1px solid var(--line);font-family:var(--mono);}
+  .srow2:last-child{border-bottom:none;}
+  .srow2 .k{font-size:2.8cqw;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+  .srow2 .v{font-size:4cqw;font-weight:800;color:#fff;}
+  .srow2 .v.r{color:var(--red);} .srow2 .v.c{color:var(--cyan);} .srow2 .v.g{color:var(--green);}
+
+  .caption{margin-top:1.2rem;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;}
+  .caption .cap-h{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .6rem;}
+  .caption pre{margin:0;white-space:pre-wrap;font-family:var(--sans);font-size:.9rem;line-height:1.5;color:#cdd8e3;}
+  .tag{color:var(--cyan);}
+  footer{margin-top:2rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--faint);font-family:var(--mono);font-size:.74rem;}
+  @media (max-width:520px){ .slide{max-width:100%;} }
+</style>
+
+<div class="app"><div class="wrap">
+  <div class="brandbar"><img src="__LOGO__" alt="Sonar"><span class="sp"></span><span>Content pack · 07 Nov 2026</span></div>
+  <h1 class="title">Saturday pack — WHALES BOUGHT THE LOW</h1>
+  <p class="sub">Resuming after a 3-month gap (last run 05 Aug 2026). Slots: A The Tape (midday, ~12:00) · B Nightcap (evening, ~21:00). Reel (~20:00): news-explainer, Orca on the week. Numbers verified 07 Nov ~06:27 UTC.</p>
+
+  <!-- ═══════ A · The Tape (midday · divergence receipts) ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">A</span><span class="ctitle">The Tape <span>· divergence receipts · ~12:00</span></span></div>
+    <div class="slides">
+      <div class="slide grid" style="background:#04070c">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span><span class="kick"><i></i>On-chain</span></div>
+          <div class="score">
+            <div class="shead">BITCOIN'S WEEK · WHALES VS. THE TICKER</div>
+            <div class="srow2"><span class="k">7D high · Nov 4</span><span class="v g">$81,004</span></div>
+            <div class="srow2"><span class="k">7D low · Nov 6</span><span class="v r">$74,921</span></div>
+            <div class="srow2"><span class="k">Now · +0.6% 24h</span><span class="v g">$75,966</span></div>
+            <div class="srow2"><span class="k">BTC bought · 4 wallets</span><span class="v g">+$243.1M</span></div>
+            <div class="srow2"><span class="k">XRP sold · 2 wallets</span><span class="v r">−$74.9M</span></div>
+          </div>
+          <span class="spacer"></span>
+          <h2 class="big sm" style="font-size:9cqw">BITCOIN HIT THE LOW. <em class="hl-g">WHALES BOUGHT ANYWAY</em>.</h2>
+          <div class="foot"><span>Source: CoinGecko BTC/USD · Sonar whale leaderboard · 07 Nov 06:27 UTC</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>Bitcoin whales just bought $243M at the week's low — right as Congress flipped blue.
+
+BTC fell from a 7-day high of $81,004 (Nov 4) to a low of $74,921 (Nov 6) as an AI-stock selloff and the Democratic sweep of Congress (bad news for the stalled CLARITY Act) spooked the broader market. While price sat near the lows, four separate wallets bought $243M combined in BTC alone — plus another $47M into ETH. Meanwhile XRP whales kept selling, −$75M across two wallets.
+
+Comment "WHALE" and Orca will DM you who's buying and who's bailing.
+
+Not financial advice.
+
+<span class="tag">#Bitcoin #WhaleAlert #CryptoNews #OnChain #SmartMoney #Sonar #BTC</span></pre></div>
+  </section>
+
+  <!-- ═══════ B · Nightcap (evening · cinematic object shot) ═══════ -->
+  <section class="carousel">
+    <div class="chead"><span class="cnum">B</span><span class="ctitle">Nightcap <span>· cinematic single · ~21:00</span></span></div>
+    <div class="slides">
+      <div class="slide photo" style="background-image:url(__WHALEOCEAN__);">
+        <div class="pad">
+          <div class="srow"><img class="logoimg" src="__LOGO__" alt="Sonar"><span class="spacer"></span></div>
+          <span class="spacer"></span>
+          <h2 class="big" style="font-size:10cqw">FOUR WALLETS BOUGHT <em class="hl-c">$243M</em> AT THE WEEK'S LOW.</h2>
+          <p class="statline">bitcoin −1.4% this week · whales didn't care</p>
+          <div class="foot"><span>@sonartracker</span><span class="sp"></span><span>sonartracker.io</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><p class="cap-h">Caption — tap to copy</p><pre>This week, in one sentence: Bitcoin went $77K → $81K → $75K, Congress flipped blue, and the whales kept buying.
+
+Four wallets bought $243M in BTC right at the week's low. That's the whole post.
+
+Comment "WHALE" and Orca will DM you the full tape.
+
+Not financial advice.
+
+<span class="tag">#CryptoMemes #Bitcoin #WhaleAlert #CryptoNews #OnChain #Sonar</span></pre></div>
+  </section>
+
+  <footer>Sonar Tracker · 07 Nov 2026 · numbers verified ~06:27 UTC (CoinGecko BTC/USD OHLC — Binance public API returned HTTP 451/geo-restricted from this session, substituted per data-integrity fallback · Sonar whale leaderboard api/whales/leaderboard + api/social/macro)</footer>
+</div></div>
+
+<script>
+__DATA__
+function fit(cv){const box=cv.parentElement.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  if(box.width<4||box.height<4)return null;cv.width=Math.round(box.width*dpr);cv.height=Math.round(box.height*dpr);
+  cv.style.width=box.width+'px';cv.style.height=box.height+'px';return dpr;}
+function mini(id,data){
+  const cv=document.getElementById(id);if(!cv)return;const dpr=fit(cv);if(!dpr)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,p=3*dpr;
+  const ys=data.map(d=>d[3]);let lo=Math.min(...ys),hi=Math.max(...ys);const r=(hi-lo)||1;lo-=r*0.12;hi+=r*0.12;
+  const up=ys[ys.length-1]>=ys[0];const col=up?'#00e08a':'#ff5b6b';const colA=up?'rgba(0,224,138,':'rgba(255,91,107,';
+  const X=i=>p+i/(data.length-1)*(W-2*p),Y=v=>p+(1-(v-lo)/(hi-lo))*(H-2*p);
+  ctx.clearRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,colA+'0.32)');g.addColorStop(1,colA+'0)');
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.lineTo(X(ys.length-1),H);ctx.lineTo(X(0),H);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ys.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+  ctx.strokeStyle=col;ctx.lineWidth=2.4*dpr;ctx.lineJoin='round';ctx.stroke();
+  const lx=X(ys.length-1),ly=Y(ys[ys.length-1]);ctx.beginPath();ctx.arc(lx,ly,3.4*dpr,0,7);ctx.fillStyle=col;ctx.fill();
+  ctx.strokeStyle='#0a1018';ctx.lineWidth=2*dpr;ctx.stroke();
+}
+function drawAll(){ mini('qbtc',BTC.slice(-28)); }
+requestAnimationFrame(()=>requestAnimationFrame(drawAll));
+window.addEventListener('load',drawAll);window.addEventListener('resize',drawAll);
+</script>
