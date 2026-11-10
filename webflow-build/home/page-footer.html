@@ -166,17 +166,29 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
   })();
 })();
 
-/* 5. What We Do lifecycle (owner's review, 10 Nov 2026): the six stages take the lifecycle style in the page head (.lc). A tap or
-   click on a stage picks it out (pointing does it with a mouse, in CSS); a tap on another stage moves it, a second tap clears it. */
+/* 5. What We Do lifecycle (owner's review, 10 Nov 2026): the six stages take the lifecycle style in the page head (.lc), in two
+   columns that each stack on their own (1 to 3 and 4 to 6, .lc-col), so a name that runs to two lines never pushes the other
+   column's stages apart; --lc-i times the run in reading order. A tap or click on a stage picks it out (pointing does it with a
+   mouse, in CSS); a tap on another stage moves it, a second tap clears it. */
 (function () {
   var list = document.querySelector('.section.bg-white .two-col-grid .cards-points-wrapper');
   if (!list) return;
+  var items = [].slice.call(list.children).filter(function (x) { return x.classList.contains('cards-num-item'); });
+  if (!items.length) return;
   list.classList.add('lc');
+  var half = Math.ceil(items.length / 2);
+  [items.slice(0, half), items.slice(half)].forEach(function (group) {
+    if (!group.length) return;
+    var col = document.createElement('div'); col.className = 'lc-col';
+    group.forEach(function (it) { col.appendChild(it); });
+    list.appendChild(col);
+  });
+  items.forEach(function (it, i) { it.style.setProperty('--lc-i', i); });
   list.addEventListener('click', function (e) {
     var it = e.target.closest('.cards-num-item');
-    if (!it || it.parentNode !== list) return;
+    if (!it || !list.contains(it)) return;
     var was = it.classList.contains('is-on');
-    [].forEach.call(list.children, function (x) { x.classList.remove('is-on'); });
+    items.forEach(function (x) { x.classList.remove('is-on'); });
     if (!was) it.classList.add('is-on');
   });
 })();
