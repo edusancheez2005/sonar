@@ -1,0 +1,23 @@
+<!-- Roscap redesign, page not found (10 Nov 2026). Off unless the site switch shows the new design. Source: prototypes/page-not-found/nf.css -->
+<style id="rc-css-404" media="not all">
+/* clears the fixed nav and holds the section still; .section.ctasection is named so this beats the live ".section.ctasection{padding-top:0}" */
+.section.ctasection[data-nf=section]{padding-top:calc(85px + 3rem);opacity:1!important;transform:none!important}
+[data-nf=code]{font-family:Boska,Georgia,serif;font-style:italic;font-weight:500;font-size:clamp(5.5rem,14vw,9.5rem);line-height:.9;letter-spacing:.01em;margin:0;
+  background-image:linear-gradient(#ffebaa,#e1c979);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#e1c979}
+[data-nf=p]{font-size:1.125rem;font-weight:300;line-height:1.55;color:rgba(255,255,255,.86);margin:0;max-width:34rem;text-align:center}
+[data-nf=btns]{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:1rem}
+[data-nf=ghost]{background:transparent!important;border:1px solid rgba(255,255,255,.55)!important;color:#fff!important}
+[data-nf=ghost]:hover{border-color:#e1c979!important;color:#e1c979!important}
+@media (prefers-reduced-motion:no-preference){
+  [data-nf=panel]{animation:nf-panel .9s cubic-bezier(.22,1,.36,1) both}
+  [data-nf=panel] .ab-banner-head-wrap>*{animation:nf-rise .8s cubic-bezier(.22,1,.36,1) both}
+  [data-nf=panel] .ab-banner-head-wrap>:nth-child(1){animation-delay:.15s}
+  [data-nf=panel] .ab-banner-head-wrap>:nth-child(2){animation-delay:.27s}
+  [data-nf=panel] .ab-banner-head-wrap>:nth-child(3){animation-delay:.36s}
+  [data-nf=panel] .ab-banner-head-wrap>:nth-child(4){animation-delay:.45s}
+}
+@keyframes nf-panel{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+@keyframes nf-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@media (max-width:767px){.section.ctasection[data-nf=section]{padding-top:calc(98px + 1.5rem)}}
+</style>
+<script>if(document.documentElement.getAttribute('data-rc-view')==='new')document.getElementById('rc-css-404').media='all';</script>

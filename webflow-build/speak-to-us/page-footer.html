@@ -1,0 +1,44 @@
+<!-- Roscap redesign, Speak to Us (10 Nov 2026). Runs only when the site switch shows the new design. Source: prototypes/speak-to-us/HANDOFF.md sections 4 and 5 -->
+<script>
+if (document.documentElement.getAttribute('data-rc-view')==='new') {
+/* Invisible form fixes (HANDOFF.md section 4), made here so the live form stays untouched until go-live:
+   hidden labels, Subject as plain text, autocomplete on Name, Email and Phone, and the off-screen honeypot field. */
+(function () {
+  var form = document.getElementById('wf-form-Contact-Form');
+  if (!form) return;
+  [['name', 'Name', 'name'], ['email', 'Email', 'email'], ['Phone', 'Phone', 'tel'], ['Subject', 'Subject', ''], ['Message', 'Message', '']].forEach(function (f) {
+    var el = form.querySelector('#' + f[0]);
+    if (!el) return;
+    if (!form.querySelector('label[for="' + f[0] + '"]')) {
+      var l = document.createElement('label'); l.className = 'sr-only'; l.htmlFor = f[0]; l.textContent = f[1];
+      el.parentNode.insertBefore(l, el);
+    }
+    if (f[2]) el.setAttribute('autocomplete', f[2]);
+  });
+  var subj = form.querySelector('#Subject');
+  if (subj && subj.getAttribute('type') === 'tel') subj.setAttribute('type', 'text');
+  if (!form.querySelector('[name="website"]')) {
+    var hp = document.createElement('div'); hp.className = 'hp'; hp.setAttribute('aria-hidden', 'true');
+    hp.innerHTML = '<label for="website">Leave this field empty</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off">';
+    form.appendChild(hp);
+  }
+})();
+/* FAQ: one answer open at a time in browsers without <details name> support */
+(function () {
+  var items = [].slice.call(document.querySelectorAll('.acc details'));
+  items.forEach(function (d) {
+    d.addEventListener('toggle', function () {
+      if (!d.open) return;
+      items.forEach(function (o) { if (o !== d && o.open) o.open = false; });
+    });
+  });
+})();
+/* Honeypot: drop the contact form submission when the hidden "website" field is filled (bots) */
+document.addEventListener('submit', function (e) {
+  var f = e.target;
+  if (!f || f.id !== 'wf-form-Contact-Form') return;
+  var hp = f.querySelector('[name="website"]');
+  if (hp && hp.value) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
+}
+</script>
