@@ -275,6 +275,21 @@ fs-mirrorclick
 #dl img{display:block;max-width:100%}
 #dl button{font:inherit}
 #dl a{text-decoration:none}
+/* What We Do on phones (owner's review, 10 Nov 2026): the two headings become an even pair of tabs on one line, the one shown in ink
+   over a gold line and the other grey, in a fixed order; the arrows give way to the tabs and a swipe; the four cards sit two by two with
+   the icon above the name. The !important values hold the tabs still while the sets switch. Tablets and computers unchanged. */
+@media (max-width:767px){
+  .slider-wrap .slider-header-wrap{gap:0;margin-bottom:20px}
+  .slider-wrap .slider-heading-container{width:100%;gap:0;align-items:stretch;border-bottom:1px solid rgba(4,52,53,.14)}
+  .slider-wrap .slider-heading,.slider-wrap .slider-heading.is-active{order:0;flex:1 1 0;margin:0 0 -1px;padding:10px 0 12px;font-size:1.375rem;line-height:1.25;white-space:nowrap;border-bottom:2px solid transparent;transform:none!important}
+  .slider-wrap .slider-heading{opacity:.55!important}
+  .slider-wrap .slider-heading.is-active{opacity:1!important;border-bottom-color:#E1C979}
+  .slider-wrap .swiper-button-wrap{display:none}
+  .slider-wrap .slider-grid{grid-template-columns:1fr 1fr;gap:12px}
+  .slider-wrap .slider-item{padding:18px 16px 20px}
+  .slider-wrap .slider-inn-item{flex-direction:column;align-items:flex-start;gap:14px}
+  .slider-wrap .slide-grey-line{display:none}
+}
 </style>
 <script>if(document.documentElement.getAttribute('data-rc-view')==='new'){document.getElementById('rc-css-home').media='all';document.documentElement.classList.add('js');
 /* Who We Are photo (audit HA-10): the same picture as a 93 KB WebP instead of the 891 KB PNG, swapped as the page is parsed, before it can load */

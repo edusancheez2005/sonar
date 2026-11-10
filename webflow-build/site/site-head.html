@@ -2,6 +2,15 @@
      Add ?rc=old or ?rc=new to an address to switch the view for that browser tab. Go-live: LIVE=true. Roll back: LIVE=false, publish. -->
 <script>(function(){var LIVE=false,d=document.documentElement,v=(LIVE||/\.webflow\.(io|com)$/.test(location.hostname))?'new':'old',q=/[?&]rc=(new|old)(&|$)/.exec(location.search);try{if(q)sessionStorage.setItem('rc-view',q[1]);v=sessionStorage.getItem('rc-view')||v}catch(e){if(q)v=q[1]}d.setAttribute('data-rc-view',v)})();</script>
 <style>html:not([data-rc-view="new"]) [data-rc="new"],html[data-rc-view="new"] [data-rc="old"]{display:none!important}</style>
+<!-- Roscap redesign, the phone and tablet menu (owner's review, 10 Nov 2026), new view only: every link at one calm size with a fine
+     line between them, the page you are on in gold at the same size with a small gold dot (it was larger than the rest), a slimmer button -->
+<style>@media (max-width:991px){
+html[data-rc-view="new"] .nav_menu_2 .nav_menu_link-2,html[data-rc-view="new"] .nav_menu_2 .nav_menu_link-2.w--current{flex-direction:row;align-items:center;justify-content:space-between;width:100%;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.14);font-size:1.5rem;line-height:1.3}
+html[data-rc-view="new"] .nav_menu_2 .nav_menu_link-2 .nav-link-text{font-size:inherit;line-height:inherit}
+html[data-rc-view="new"] .nav_menu_2 .nav_menu_link-2.w--current,html[data-rc-view="new"] .nav_menu_2 .nav_menu_link-2.w--current .nav-link-text{color:#E1C979}
+html[data-rc-view="new"] .nav_menu_2 .nav_menu_link-2.w--current::after{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:#E1C979}
+html[data-rc-view="new"] .nav_menu_2 .navbar-cta-wrapper-button.navvmobbutton{padding:15px 16px}
+}</style>
 <!-- Google tag (gtag.js): today's tag, now run in the old view only. It is loaded from this script so that the new view can skip it;
      in the new view the consent code below loads it after a visitor says yes (prototypes/cookie-consent/HANDOFF.md, step 0). -->
 <script>if(document.documentElement.getAttribute('data-rc-view')!=='new'){(function(d){var s=d.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS';d.head.appendChild(s);})(document);

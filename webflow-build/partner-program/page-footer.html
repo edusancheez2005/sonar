@@ -50,6 +50,7 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
   var h = [].slice.call(document.querySelectorAll('h2')).filter(function (x) { return x.textContent.trim() === 'Our Partners'; })[0];
   if (h) h.id = 'partners-h';
   wrap.classList.add('marquee'); wrap.setAttribute('data-marquee', 'true');
+  var psec = wrap.closest('.section'); if (psec) psec.classList.add('partners-sec'); /* more room before the contact block (owner, 10 Nov 2026) */
   view.classList.add('marquee-viewport'); view.setAttribute('tabindex', '0'); view.setAttribute('role', 'region'); view.setAttribute('aria-label', 'Partner logos');
   var track = document.createElement('div'); track.className = 'marquee-track';
   grid.parentNode.insertBefore(track, grid); track.appendChild(grid);
@@ -125,6 +126,44 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
     } else eager();
   }
 
+})();
+
+/* 5. Why Partner With Us (owner's request, 10 Nov 2026): the Our Services entrance. The gold R (the logo's mark, the same paths
+   as on Our Services) is added above the heading; elements that come into view together are timed in page order. Without
+   IntersectionObserver or with reduced motion nothing is armed, so everything simply shows, the R included. */
+(function () {
+  var grid = document.querySelector('.pr-cards-grid');
+  var h = [].slice.call(document.querySelectorAll('h2')).filter(function (x) { return /Why Partner With Us/.test(x.textContent); })[0];
+  if (!grid || !h) return;
+  var sig = document.createElement('div'); sig.className = 'why-sig'; sig.setAttribute('aria-hidden', 'true');
+  sig.innerHTML = '<svg viewBox="-1 -1 34 43" aria-hidden="true" focusable="false"><path pathLength="1" d="M14.2936 19.3634C14.2936 19.3634 27.3969 16.1688 26.7929 8.11756C26.1889 0.0663373 16.8284 0 16.8284 0H0.76082C0.76082 1.02997 2.73347 1.86093 4.92609 1.86093C8.57113 1.86093 14.0597 1.833 14.8801 1.86791C15.9555 1.90981 20.7073 2.42654 21.6954 7.90808C22.6835 13.3896 16.1859 18.3823 14.2936 19.3739"/><path pathLength="1" d="M3.41779 27.5194C4.8852 27.5194 6.07477 26.3298 6.07477 24.8624C6.07477 23.395 4.8852 22.2055 3.41779 22.2055C1.95039 22.2055 0.76082 23.395 0.76082 24.8624C0.76082 26.3298 1.95039 27.5194 3.41779 27.5194Z"/><path pathLength="1" d="M0 17.9983C0.226943 18.0227 1.61304 18.4382 3.48095 19.0247C11.3436 21.4932 14.0216 26.5557 18.6582 33.3675C20.5121 36.0908 22.6524 40.4656 23.9686 40.4656C27.1284 40.4656 32.1281 40.5319 32.1281 40.5319C32.1281 39.488 29.6841 38.8316 28.7903 38.2869C26.238 36.7332 23.2215 32.5191 23.2215 32.5191C16.5319 23.8743 11.2564 17.9983 0.31772 17.9983H0Z"/></svg>';
+  h.parentNode.insertBefore(sig, h);
+  var secs = [h.closest('.section'), grid.closest('.section')].filter(Boolean);
+  secs.forEach(function (x) { x.classList.add('why-sec'); });
+  var head = [h, h.parentNode.querySelector('.golden-divider'), h.parentNode.querySelector('p')].filter(Boolean);
+  head.forEach(function (e) { e.classList.add('why-t'); });
+  var cta = grid.parentNode.querySelector('a.button');
+  if (cta) cta.classList.add('why-end');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+  secs.forEach(function (x) { x.classList.add('why-armed'); });
+  var targets = [sig].concat(head, [].slice.call(grid.querySelectorAll('.pr-cards')), cta ? [cta] : []);
+  var io = new IntersectionObserver(function (entries) {
+    var t = 0;
+    entries.filter(function (e) { return e.isIntersecting; })
+      .map(function (e) { return e.target; })
+      .sort(function (a, b) { return targets.indexOf(a) - targets.indexOf(b); })
+      .forEach(function (el) {
+        var d = t;
+        if (el === sig) t += 1150;                          /* the R takes about 1.2 s to draw and fill */
+        else if (el.classList.contains('why-t')) t += 200;
+        else if (el.classList.contains('pr-cards')) t += 160;
+        else d = t + 300;                                   /* Join The Program comes after the cards */
+        el.style.setProperty('--d', d + 'ms');
+        el.classList.add('is-in');
+        io.unobserve(el);
+      });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.25 });
+  targets.forEach(function (el) { io.observe(el); });
 })();
 }
 </script>

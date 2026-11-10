@@ -85,5 +85,10 @@
 @media (prefers-reduced-motion:no-preference){
   .section.svc-cards{opacity:1 !important;transform:none !important} /* overrides the page-wide section slide-in for the two card sections */
 }
+/* Roscap provides access to (owner's review, 10 Nov 2026): where the cards sit two by two (480 to 991 px: phones on their side,
+   larger phones, tablets), a last card on its own is centred under the others instead of leaving an empty space beside it */
+@media (min-width:480px) and (max-width:991px){
+  .rs-covers-card-wrap > .rs-cover-card-og:last-child:nth-child(odd){grid-column:1/-1;justify-self:center;width:calc((100% - 16px) / 2)}
+}
 </style>
 <script>if(document.documentElement.getAttribute('data-rc-view')==='new')document.getElementById('rc-css-services').media='all';</script>

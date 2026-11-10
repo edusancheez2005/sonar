@@ -5,18 +5,19 @@ fs-mirrorclick
 ></script>
 <!-- Roscap redesign, Speak to Us (10 Nov 2026). The CSS is off unless the site switch shows the new design. Source: prototypes/speak-to-us/HANDOFF.md section 5 -->
 <style id="rc-css-speak" media="not all">
-/* Contact details: the live .c-social-wrap look (gold line icons, white Switzer 500) with email, phone, WhatsApp
-   (number confirmed by the owner, 10 Nov 2026) and Instagram, a little larger than live (16 px text, 24 px icons), two by two. */
-.c-social-wrap.is-four{display:grid;grid-template-columns:repeat(2,max-content);gap:12px 40px;margin:0;padding:0;list-style:none}
-.c-social-wrap.is-four li{margin:0;padding:0}
+/* Contact details: the live .c-social-wrap look (gold line icons, white Switzer 500), a little larger than live (16 px text,
+   24 px icons): phone and email side by side, Instagram centred below them (owner, 10 Nov 2026: no WhatsApp, for a boutique feel). */
+.c-social-wrap.is-three{display:grid;grid-template-columns:repeat(2,max-content);gap:12px 40px;margin:0;padding:0;list-style:none}
+.c-social-wrap.is-three li{margin:0;padding:0}
+.c-social-wrap.is-three li:nth-child(3){grid-column:1/-1;justify-self:center}
 .c-social-card{display:inline-flex;align-items:center;gap:10px;min-height:32px;color:#fff;text-decoration:none;font:500 16px/24px Switzer,Arial,sans-serif}
 .c-social-card .c-ico{display:block;flex:none;width:24px;height:24px;fill:none;stroke:#E1C979;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .c-social-card .c-ico .dot{fill:#E1C979;stroke:none}
 .c-social-card span{text-decoration:underline;text-decoration-color:transparent;text-underline-offset:5px;transition:text-decoration-color .2s}
 .c-social-card:hover span{text-decoration-color:rgba(225,201,121,.8)}
 .c-social-card:focus-visible{outline:2px solid #E1C979;outline-offset:4px;border-radius:2px}
-@media (max-width:767px){.c-social-wrap.is-four{gap:8px 28px}}
-@media (max-width:379px){.c-social-wrap.is-four{grid-template-columns:max-content}}
+@media (max-width:767px){.c-social-wrap.is-three{gap:8px 28px}}
+@media (max-width:379px){.c-social-wrap.is-three{grid-template-columns:max-content}.c-social-wrap.is-three li:nth-child(3){justify-self:start}}
 /* FAQ accordion: div.acc replaces div.faqs-content-wrap (the 5 dropdowns) under the "FAQs" heading */
 .acc{max-width:56rem;margin:55px auto 0;border-bottom:1px solid rgba(4,52,53,.14);text-align:left}
 .acc details{border-top:1px solid rgba(4,52,53,.14)}

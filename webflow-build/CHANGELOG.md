@@ -62,7 +62,7 @@ Source: `prototypes/speak-to-us/` (HANDOFF.md sections 2 to 5).
 | What | Element | Change | Undo |
 |---|---|---|---|
 | Contact line `div.c-social-wrap` | `9fc0899f-113e-b6e9-897e-1ae465850469` | Attribute `data-rc="old"` | Remove the attribute |
-| New contact block after it | `2a8b0d69-7877-af04-7b98-8d93d1053575` (`data-rc="new"`), Code Embed `b29a7d7b-f1cb-806a-eaf2-baf28326fea4` | `speak-to-us/contacts-embed.html`: email, phone (now shown), WhatsApp (added in 11, once the owner confirmed the number) and Instagram, two by two | Delete the block |
+| New contact block after it | `2a8b0d69-7877-af04-7b98-8d93d1053575` (`data-rc="new"`), Code Embed `b29a7d7b-f1cb-806a-eaf2-baf28326fea4` | `speak-to-us/contacts-embed.html`: phone and email side by side, Instagram centred below them (WhatsApp was added in 11 and taken out again in 12, at the owner's request) | Delete the block |
 | FAQ dropdowns `div.faqs-content-wrap` | `e8b98bfe-13ab-a7ed-83e6-cf568ba0d48e` | Attribute `data-rc="old"` | Remove the attribute |
 | New FAQ block after it | `ddff09f2-493a-0441-98b6-8dcc3e075af6` (`data-rc="new"`), Code Embed `02ca1044-811e-a432-0c77-0c9677b34347` | `speak-to-us/faq-embed.html`: the compact accordion, live copy word for word | Delete the block |
 | Page head code | | Was the Finsweet Attributes tag only (`speak-to-us/page-head.before.html`). Now `speak-to-us/page-head.html`: the same tag, then `<style id="rc-css-speak" media="not all">` (new view only) and the FAQPage JSON-LD | Set it back to `page-head.before.html` |
@@ -198,6 +198,22 @@ Follow-up the same evening. The owner asked for no sources line at all, so the s
 
 Still to do before go-live (owner): an agreement that no one else publishes until go-live; check that the notification email for the test enquiry arrived; the "Last updated" date on both policies is 10 November 2026, so it needs changing only if go-live is on a later day.
 
+### 12. The owner's phone review, round 3 (10 Nov 2026)
+The owner went through staging on a phone and asked for these changes. Where a file had already changed in an earlier step, the version before this step is in git: `git show d1641a6:webflow-build/<file>`.
+
+| What | Where | Change | Undo |
+| --- | --- | --- | --- |
+| Why Partner With Us entrance | Partner Program page head and page footer (section 5 of the script) | The Our Services entrance: the gold R (the logo's mark, the same paths as on Our Services) draws itself above the heading and fills, then the heading, its gold line and the intro arrive, then the four cards one after another, then Join The Program. New view only; static under reduced motion. The site-wide section slide-in is held still on these two sections so they do not move twice | Delete section 5 of the footer script and the "Why Partner With Us" block in the head |
+| Logo in the How it works cards | Partner Program, Code Embed `12def11f-7e27-e4c0-a466-43ef1270c0c6`, and the page head | The two "Roscap" boxes (Join the Program, Referral) show the ROSCAP wordmark and the two circles in Progress updates show the gold R, both cut from the site logo file the menu bar already loads (`Logo.svg`), so they match the logo exactly and add no download | Paste back the earlier embed (`git show d1641a6:webflow-build/partner-program/how-embed.html`) and delete the `.vis-wm` and `.vis-r` rules |
+| Room before the contact block | Partner Program page head and page footer (one line in section 3) | The Our Partners section ends with 130 px (computers), 104 px (tablets) or 72 px (phones) instead of 100, 72 and 32 px | Delete the `.partners-sec` rules and the line that adds the class |
+| Contact details | Speak to Us, Code Embed `b29a7d7b-f1cb-806a-eaf2-baf28326fea4`, and the page head | No WhatsApp (owner: a boutique feel). Phone and email side by side, Instagram centred under them; on the narrowest phones the three stack | Paste back the earlier embed and head (`git show d1641a6:webflow-build/speak-to-us/contacts-embed.html` and `page-head.html`) |
+| Asset Classes and Sources of Capital on phones | Home page head | Up to 767 px: the two headings become an even pair of tabs on one line (the one shown in ink over a gold line, the other grey, in a fixed order), the arrows give way to the tabs and a swipe, and the four cards sit two by two with the icon above the name. Tablets and computers unchanged | Delete the "What We Do on phones" block at the end of the head CSS |
+| Phone and tablet menu | Site head (a small style block after the switch) | Every link at one size (24 px, was 32 px with the current page at 40 px) with a fine line between them; the page you are on in gold at the same size with a small gold dot; a slimmer Speak With Us button. New view only, scoped by the switch | Delete that style block and its comment |
+| Roscap provides access to | Our Services page head | Between 480 and 991 px, where the cards sit two by two, the third card is centred under the other two instead of leaving an empty space beside it | Delete the block at the end of the head CSS |
+| Two double spaces | The shared menu component (NAVV) and Home | "About  Us" (two non-breaking spaces; its hover copy also began with one) now reads "About Us" in both copies, like the other links; "Commercial  Banks" on Home reads "Commercial Banks". Text fixes, not behind the switch | In the Designer, put the old texts back: `About&nbsp;&nbsp;Us`, `&nbsp;About&nbsp;&nbsp;Us` and `Commercial&nbsp; Banks` |
+
+Checked on staging after one publish to the staging address only. Every file above is in the published pages byte for byte. Playwright, every non-GET and Google request cancelled, nothing typed or submitted: on a phone the tabs are 179 px each at 22 px, the arrows are hidden, the cards sit two by two and a tap on Sources of Capital shows Commercial Banks first; the old view and computers keep the live headings, arrows and rows. The menu links are all 24 px with Home in gold (the old view keeps 32 and 40 px). Our Services at 600 px: the third card sits centred (172 to 428 px of 36 to 564); 390 and 1440 unchanged. Partner Program: the R draws and fills, the cards arrive, both sections stay at full opacity (no double slide), the wordmark and the R show from the logo file, the gap before the contact block is 130 px at 1440 and 72 px at 390, and the brochure pop-up still opens with Full Name across both columns. Speak to Us: phone and email side by side, Instagram centred under them, no WhatsApp link. All 16 pages at 1440 and 390: no console errors, no sideways scrolling, no Google request before a choice. Live site: unchanged.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -213,6 +229,7 @@ Still to do before go-live (owner): an agreement that no one else publishes unti
 | 10 Nov 2026 | Staging only | The owner's review, round 2 (section 11) |
 | 10 Nov 2026 | Staging only | Round 2 follow-up: no rates sources line anywhere (section 11) |
 | 10 Nov 2026 | Staging only | The brochure pop-up form renamed "Brochure Form" (section 11) |
+| 10 Nov 2026 | Staging only | The owner's phone review, round 3 (section 12) |
 
 The live domains were last published on 17 Oct 2026, before this work started.
 

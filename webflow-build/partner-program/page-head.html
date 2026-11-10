@@ -209,5 +209,40 @@ html{scroll-padding-top:calc(85px + 1rem)} /* anchors (#step-n, #brochure) land 
 #brochure-name.w-node-f059f806-9b19-9127-825b-c2e3916b1055-6aca1cd0{grid-area:span 1/span 2/span 1/span 2}
 #brochure-email.w-node-f059f806-9b19-9127-825b-c2e3916b1056-6aca1cd0{grid-area:span 1/span 1/span 1/span 1}
 @media screen and (max-width:767px){#brochure-name.w-node-f059f806-9b19-9127-825b-c2e3916b1055-6aca1cd0{grid-area:span 1/span 1/span 1/span 1}}
+/* How it works: the Roscap boxes and the R circles show the logo itself (owner's request, 10 Nov 2026), cut from the site logo
+   file the menu bar already loads (Logo.svg, 148 x 41: the R mark at 0,0, 32.1 x 40.5; the wordmark at 44.3,14.1, 102.8 x 15.9) */
+.vis-wm{display:inline-block;vertical-align:middle;width:64px;height:10.21px;background:url("https://cdn.prod.website-files.com/693e84a885fe6122f0427916/693ea3ea963e71bdbee64cda_Logo.svg") no-repeat -27.23px -8.54px/91.61px 25.38px}
+.vis-msg b{display:grid;place-items:center}
+.vis-r{display:block;width:11.12px;height:14px;background:url("https://cdn.prod.website-files.com/693e84a885fe6122f0427916/693ea3ea963e71bdbee64cda_Logo.svg") no-repeat 0 0/50.78px 14.07px}
+/* Our Partners: more room between the logos and the contact block below (owner's review, 10 Nov 2026; live 100 px, 32 px on phones) */
+.section.partners-sec{padding-bottom:130px}
+@media (max-width:991px){.section.partners-sec{padding-bottom:104px}}
+@media (max-width:767px){.section.partners-sec{padding-bottom:72px}}
+/* Why Partner With Us: the Our Services entrance (owner's request, 10 Nov 2026). The gold R draws itself above the heading and
+   fills, then the heading, its gold line and the intro arrive, then the four cards one after another (icon revealed from the bottom
+   up, then its line), then Join The Program. Armed by the page footer script only (nothing is hidden without it); static and
+   complete under prefers-reduced-motion. Same timings as the Our Services cards. */
+.why-sig{width:40px;height:50px;margin:0 auto -14px}
+.why-sig svg{display:block;width:100%;height:100%;overflow:visible}
+.why-sig path{fill:#e1c979;stroke:#e1c979;stroke-width:.45}
+@keyframes why-rise{from{opacity:0;translate:0 22px}to{opacity:1;translate:none}}
+@keyframes why-soft{from{opacity:0;translate:0 10px;filter:blur(6px)}to{opacity:1;translate:none;filter:blur(0)}}
+@keyframes why-wipe{from{opacity:.2;clip-path:inset(100% 0 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+@keyframes why-line{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:none}}
+@keyframes why-draw{to{stroke-dashoffset:0}}
+@keyframes why-fill{to{fill-opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  .section.why-sec{opacity:1 !important;transform:none !important} /* the site-wide section slide-in would move these two sections a second time */
+  .why-armed :is(.why-sig,.why-t,.pr-cards,.why-end):not(.is-in){opacity:0}
+  .why-armed .why-sig.is-in path{fill-opacity:0;stroke-dasharray:1;stroke-dashoffset:1;
+    animation:why-draw 1.15s cubic-bezier(.65,0,.35,1) var(--d,0ms) forwards,why-fill .6s ease calc(var(--d,0ms) + 850ms) forwards}
+  .why-armed .why-sig.is-in path:nth-child(2){animation-delay:calc(var(--d,0ms) + 140ms),calc(var(--d,0ms) + 950ms)}
+  .why-armed .why-sig.is-in path:nth-child(3){animation-delay:calc(var(--d,0ms) + 260ms),calc(var(--d,0ms) + 1050ms)}
+  .why-armed .why-t.is-in,.why-armed .why-end.is-in{animation:why-soft .8s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  .why-armed .golden-divider.why-t.is-in{animation:why-line .7s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  .why-armed .pr-cards.is-in{animation:why-rise .8s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  .why-armed .pr-cards.is-in .pr-icon{animation:why-wipe .9s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 120ms) both}
+  .why-armed .pr-cards.is-in p{animation:why-soft .7s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 300ms) both}
+}
 </style>
 <script>if(document.documentElement.getAttribute('data-rc-view')==='new'){document.getElementById('rc-css-partner').media='all';document.documentElement.classList.add('js');}</script>
