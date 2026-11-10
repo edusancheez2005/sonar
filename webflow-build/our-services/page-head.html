@@ -1,0 +1,89 @@
+<!-- Roscap redesign, Our Services (10 Nov 2026). Off unless the site switch shows the new design. Source: prototypes/our-services/webflow/page-head.html -->
+<style id="rc-css-services" media="not all">
+/* ===================== CAPITAL STACK BLOCK START (the one change; paste-ready, see HANDOFF.md) =====================
+   Replaces the live image img.wwa-image (Group 1597880904.svg) in the Our expertise two-column grid.
+   The SVG copies the live image geometry (viewBox 660 x 664, same rects, colours, arrows) with real Switzer text fitted to the
+   live outlines, so it scales exactly like the image did (641 x 645 at 1440, 358 x 360 at 390).
+   Build: the four layers drop into place one after another from the bottom up, Senior Debt first and Common Equity last
+   (340 ms each, 240 ms apart), then the Debt and Equity brackets and the risk/return axis draw in from their centres and their
+   arrowheads and labels fade in. About 1.8 s, once.
+   Trigger: services.js marks the card .cs-armed, then adds .is-in once 40% of it is visible (IntersectionObserver), so it plays once,
+   when the visitor can see it. (A pure-CSS gate was tried and dropped: browsers ignore a custom property set by one animation when it
+   is used in another animation's properties.) Without JS, without IntersectionObserver or with prefers-reduced-motion: reduce, the
+   card is never armed and the complete stack shows, static. Webflow alternative: an Interactions "scroll into view" trigger
+   (play once) with the same order and timings does the same job without this code. */
+.cstack{width:100%}
+.cstack-svg{display:block;width:100%;height:auto;border-radius:.5rem;overflow:hidden}
+.cstack text{font-family:Switzer,Arial,sans-serif;font-size:18px;font-weight:400}
+.cstack .cs-title{font-size:24px}
+.cstack .cs-note{font-size:14px;font-weight:300}
+.cstack .cs-line{transform-box:fill-box;transform-origin:50% 50%}
+
+@keyframes cs-drop{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:none}}
+@keyframes cs-draw{from{transform:scaleY(0)}to{transform:none}}
+@keyframes cs-fade{from{opacity:0}to{opacity:1}}
+
+@media (prefers-reduced-motion:no-preference){
+  /* armed, not yet in view: everything waits at its start */
+  .cstack.cs-armed:not(.is-in) .cs-layer,.cstack.cs-armed:not(.is-in) .cs-head,.cstack.cs-armed:not(.is-in) .cs-note{opacity:0}
+  .cstack.cs-armed:not(.is-in) .cs-line{transform:scaleY(0)}
+  /* in view: the build, once. Bottom up: Senior Debt is the foundation, Common Equity goes on last */
+  .cstack.is-in .cs-layer{animation:cs-drop 340ms cubic-bezier(.22,.61,.36,1) both}
+  .cstack.is-in .cs-l4{animation-delay:0ms}
+  .cstack.is-in .cs-l3{animation-delay:240ms}
+  .cstack.is-in .cs-l2{animation-delay:480ms}
+  .cstack.is-in .cs-l1{animation-delay:720ms}
+  /* then the Debt bracket, the Equity bracket and the risk/return axis, with their arrowheads and labels */
+  .cstack.is-in .cs-line{animation:cs-draw 480ms cubic-bezier(.65,0,.35,1) 1060ms both}
+  .cstack.is-in .cs-head,.cstack.is-in .cs-note{animation:cs-fade 260ms ease-out 1460ms both}
+  .cstack.is-in .cs-g1 .cs-line{animation-delay:1140ms}
+  .cstack.is-in .cs-g1 .cs-head,.cstack.is-in .cs-g1 .cs-note{animation-delay:1540ms}
+  .cstack.is-in .cs-g3 .cs-line{animation-delay:1220ms}
+  .cstack.is-in .cs-g3 .cs-head,.cstack.is-in .cs-g3 .cs-note{animation-delay:1620ms}
+}
+/* ===================== CAPITAL STACK BLOCK END ===================== */
+
+/* ===================== ASSET CLASSES ENTRANCE (replaces the icons' "slide in" interaction; remove that interaction from Assets Icon
+   in the Interactions panel and keep the hover). The grid section and its lines stay still; the eight cards fade up 24 px one after
+   another (70 ms apart, icon then label) as they come into view. Nothing is hidden unless the footer script has armed the grid. */
+@media (prefers-reduced-motion:no-preference){
+  .section.icon-grid{opacity:1 !important;transform:none !important} /* overrides the page-wide section slide-in for this one section */
+  .as-armed .assets-card:not(.is-in) .assets-icon,.as-armed .assets-card:not(.is-in) p{opacity:0;translate:0 24px}
+  .as-armed .assets-card.is-in .assets-icon,.as-armed .assets-card.is-in p{opacity:1;translate:none}
+  .as-armed .assets-card.is-in .assets-icon{transition:opacity .7s cubic-bezier(.25,1,.5,1) var(--d,0ms),translate .7s cubic-bezier(.25,1,.5,1) var(--d,0ms)}
+  .as-armed .assets-card.is-in p{transition:opacity .7s cubic-bezier(.25,1,.5,1) calc(var(--d,0ms) + 80ms),translate .7s cubic-bezier(.25,1,.5,1) calc(var(--d,0ms) + 80ms)}
+}
+/* ===================== ASSET CLASSES ENTRANCE END ===================== */
+/* ===================== SERVICE CARDS BLOCK START (CHANGED; owner's choice, option 3 "Signature"; paste-ready, see HANDOFF.md section 4) =====================
+   The two card sections, "Roscap's experience covers" and "Roscap provides access to", as live (same cards, icons, wording, hover),
+   with an entrance. When the first comes into view, the gold Roscap R draws itself above its heading and fills, then the heading
+   arrives, then the cards one after another: each icon revealed from the bottom up, then its title and its line. The second section
+   has the same entrance without the R, so the R appears once. On phones each card arrives as you reach it. About 2.5 s for the first
+   section. Armed by the script only (nothing is hidden without it); static and complete under prefers-reduced-motion. */
+.svc-cards .rs-cover-card-og{position:relative;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s ease}
+.svc-sig{width:40px;height:50px;margin-bottom:-24px}
+.svc-sig svg{display:block;width:100%;height:100%;overflow:visible}
+.svc-sig path{fill:#e1c979;stroke:#e1c979;stroke-width:.45}
+@keyframes svc-rise{from{opacity:0;translate:0 22px}to{opacity:1;translate:none}}
+@keyframes svc-soft{from{opacity:0;translate:0 10px;filter:blur(6px)}to{opacity:1;translate:none;filter:blur(0)}}
+@keyframes svc-wipe{from{opacity:.2;clip-path:inset(100% 0 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+@keyframes svc-draw{to{stroke-dashoffset:0}}
+@keyframes svc-fill{to{fill-opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  .svc-cards.svc-armed :is(.svc-sig,.cover-h,.cover-end,.rs-cover-card-og):not(.is-in){opacity:0}
+  .svc-cards.svc-armed .svc-sig.is-in path{fill-opacity:0;stroke-dasharray:1;stroke-dashoffset:1;
+    animation:svc-draw 1.15s cubic-bezier(.65,0,.35,1) var(--d,0ms) forwards,svc-fill .6s ease calc(var(--d,0ms) + 850ms) forwards}
+  .svc-cards.svc-armed .svc-sig.is-in path:nth-child(2){animation-delay:calc(var(--d,0ms) + 140ms),calc(var(--d,0ms) + 950ms)}
+  .svc-cards.svc-armed .svc-sig.is-in path:nth-child(3){animation-delay:calc(var(--d,0ms) + 260ms),calc(var(--d,0ms) + 1050ms)}
+  .svc-cards.svc-armed :is(.cover-h,.cover-end).is-in{animation:svc-soft .8s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  .svc-cards.svc-armed .rs-cover-card-og.is-in{animation:svc-rise .8s cubic-bezier(.22,1,.36,1) var(--d,0ms) both}
+  .svc-cards.svc-armed .rs-cover-card-og.is-in .rs-card-image{animation:svc-wipe .9s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 120ms) both}
+  .svc-cards.svc-armed .rs-cover-card-og.is-in h3{animation:svc-soft .7s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 300ms) both}
+  .svc-cards.svc-armed .rs-cover-card-og.is-in p{animation:svc-soft .7s cubic-bezier(.22,1,.36,1) calc(var(--d,0ms) + 400ms) both}
+}
+/* ===================== SERVICE CARDS BLOCK END ===================== */
+@media (prefers-reduced-motion:no-preference){
+  .section.svc-cards{opacity:1 !important;transform:none !important} /* overrides the page-wide section slide-in for the two card sections */
+}
+</style>
+<script>if(document.documentElement.getAttribute('data-rc-view')==='new')document.getElementById('rc-css-services').media='all';</script>

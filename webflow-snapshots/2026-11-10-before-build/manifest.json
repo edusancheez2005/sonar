@@ -1,0 +1,392 @@
+{
+ "production/home.html": {
+  "url": "https://www.roscap.co.uk/",
+  "status": 200,
+  "bytes": 51645,
+  "sha256": "a59732e65954d7f032ec4640d7c4eca930acd18ed2795467aeb22b2e68d5a558",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/roscap-site.webflow.shared.e12c5bf0f.css": {
+  "url": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/css/roscap-site.webflow.shared.e12c5bf0f.css",
+  "status": 200,
+  "bytes": 163443,
+  "sha256": "2073dce464876c88ae1da8c4d74609e1e9ee9da5ac9326b4fc8a0f6f24e185d7"
+ },
+ "production/about-us.html": {
+  "url": "https://www.roscap.co.uk/about-us",
+  "status": 200,
+  "bytes": 42222,
+  "sha256": "f19115ccbf70a36d4dac4c82be6c169ce9a4c95483a4642f643322159f94c744",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/contact-us.html": {
+  "url": "https://www.roscap.co.uk/contact-us",
+  "status": 200,
+  "bytes": 28424,
+  "sha256": "df438b372a42319a970c694e0f9bc122d2f546574b506d3f4bea34950f40bc7f",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/insights.html": {
+  "url": "https://www.roscap.co.uk/insights",
+  "status": 200,
+  "bytes": 47431,
+  "sha256": "dbe2b61b0cb53798b0224a5208709217cf2085c6adc7df10ad3f2015b4b26969",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/our-services.html": {
+  "url": "https://www.roscap.co.uk/our-services",
+  "status": 200,
+  "bytes": 35226,
+  "sha256": "4ff611e0237cbc54101b730286bb1ea4800fb464f709ce8450662640804654a0",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/track-record.html": {
+  "url": "https://www.roscap.co.uk/track-record",
+  "status": 200,
+  "bytes": 68688,
+  "sha256": "04c9aadff5ef00ab53ee7850800081d95a05187b4e869018462a03e958ce3985",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/partner-program.html": {
+  "url": "https://www.roscap.co.uk/partner-program",
+  "status": 200,
+  "bytes": 40937,
+  "sha256": "ec8232a69b9fc608054ec294d58009f2edc0a9aca9013186f76d2bddfb999b8e",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/privacy-policy.html": {
+  "url": "https://www.roscap.co.uk/privacy-policy",
+  "status": 200,
+  "bytes": 26418,
+  "sha256": "9639c51a407e66e31190ec90cd26a6adc3f1455257db2968d8197d6afc907ec3",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/cookie-policy.html": {
+  "url": "https://www.roscap.co.uk/cookie-policy",
+  "status": 200,
+  "bytes": 22307,
+  "sha256": "7025f297fbdc996bd322e1699400914fdd5f28a5843bac0e416cd691e7d60a72",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/website-terms-of-use.html": {
+  "url": "https://www.roscap.co.uk/website-terms-of-use",
+  "status": 200,
+  "bytes": 23217,
+  "sha256": "212d04fa3a6877e029c3e8c70e404521ecb6761291b9bc2806ab9aba5d44cbd5",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/disclaimer.html": {
+  "url": "https://www.roscap.co.uk/disclaimer",
+  "status": 200,
+  "bytes": 22296,
+  "sha256": "09186ac8f9d8c29c99244f41e51eb11df545cefe6975013e5876b50587ebfdb8",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/accessibility-statement.html": {
+  "url": "https://www.roscap.co.uk/accessibility-statement",
+  "status": 200,
+  "bytes": 21579,
+  "sha256": "b5f2c2fe5b8f057ba7dc8320ca0376152a9e0522a990ef40da389df717da6500",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/compliance-governance.html": {
+  "url": "https://www.roscap.co.uk/compliance-governance",
+  "status": 200,
+  "bytes": 23021,
+  "sha256": "e186674e0861ab15ccf6e06aad99f4bdf8f5a91559d65d9ffa84267f3a891ed3",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__choosing-the-right-finance-structure-for-your-uk-property-project.html": {
+  "url": "https://www.roscap.co.uk/blogs/choosing-the-right-finance-structure-for-your-uk-property-project",
+  "status": 200,
+  "bytes": 35075,
+  "sha256": "81635c3e6f546ca4c4469eca67f036f070bd6d927e49217df2a20757c87f4913",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__development-exit-finance.html": {
+  "url": "https://www.roscap.co.uk/blogs/development-exit-finance",
+  "status": 200,
+  "bytes": 37158,
+  "sha256": "7e4cd29b2f1a39f2c40dd8e130ae0548c2b596f588818f75d083da46ecc41d27",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__financing-ai-data-centres.html": {
+  "url": "https://www.roscap.co.uk/blogs/financing-ai-data-centres",
+  "status": 200,
+  "bytes": 37439,
+  "sha256": "c7c22bbbb9a41e39e3e443936bc447d960c2a16ff8862209e91716d301784723",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__financing-social-housing.html": {
+  "url": "https://www.roscap.co.uk/blogs/financing-social-housing",
+  "status": 200,
+  "bytes": 37191,
+  "sha256": "e453a4aa2bd4f85ca23d6159ac2d47e9033c7b1b1c1b1ea822d068cfb9b0703a",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__hotel-financing-in-the-uk-a-practical-guide-for-investors-and-developers.html": {
+  "url": "https://www.roscap.co.uk/blogs/hotel-financing-in-the-uk-a-practical-guide-for-investors-and-developers",
+  "status": 200,
+  "bytes": 44638,
+  "sha256": "05b327bbaf65d42b9b229e76d2fc90e8b1892b0d710db8ccd3ee4073dc25ae6a",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__how-real-estate-debt-advisory-works-in-the-uk.html": {
+  "url": "https://www.roscap.co.uk/blogs/how-real-estate-debt-advisory-works-in-the-uk",
+  "status": 200,
+  "bytes": 36817,
+  "sha256": "9756de934cfb582ef8ae455df12c0bf645c056d0b7f893e1fa59b2a38e5958f8",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__property-portfolio-finance.html": {
+  "url": "https://www.roscap.co.uk/blogs/property-portfolio-finance",
+  "status": 200,
+  "bytes": 37285,
+  "sha256": "2132e3cfcc859454350c8ef60d613d379f130159049dafdd5fc59d8a308348a0",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__roscap-bridging-loan-manchester.html": {
+  "url": "https://www.roscap.co.uk/blogs/roscap-bridging-loan-manchester",
+  "status": 200,
+  "bytes": 34182,
+  "sha256": "13c9957c60356f3843b63a5774b0fbec277b9704009342cd0cc2965662594363",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__the-rise-of-private-credit-in-property-development.html": {
+  "url": "https://www.roscap.co.uk/blogs/the-rise-of-private-credit-in-property-development",
+  "status": 200,
+  "bytes": 35908,
+  "sha256": "067817d7760667c6f9d53350865d7af17ec3eb49585dde6bb05d144f5689b849",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__uk-buy-to-let-mortgages-for-overseas-borrowers-using-a-company-structure.html": {
+  "url": "https://www.roscap.co.uk/blogs/uk-buy-to-let-mortgages-for-overseas-borrowers-using-a-company-structure",
+  "status": 200,
+  "bytes": 46445,
+  "sha256": "8fa01dde95955837e39a6fa9ba5a7120dd6aba575a75bd51102a565e07c8b419",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__understanding-private-credit-in-the-uk-how-alternative-lending-is-reshaping-business-finance.html": {
+  "url": "https://www.roscap.co.uk/blogs/understanding-private-credit-in-the-uk-how-alternative-lending-is-reshaping-business-finance",
+  "status": 200,
+  "bytes": 36167,
+  "sha256": "cd8735b992e11a70f101f6514bdcd5f5b3511b6275291cab54f88c86bce9ece6",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/blogs__understanding-real-estate-finance-in-the-uk-a-guide-to-structured-and-alternative-funding.html": {
+  "url": "https://www.roscap.co.uk/blogs/understanding-real-estate-finance-in-the-uk-a-guide-to-structured-and-alternative-funding",
+  "status": 200,
+  "bytes": 35539,
+  "sha256": "2baa22728d0e104e9ebf5e82efa20628618e531461642e07549f0d96cb5b11f7",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/contact-us-success.html": {
+  "url": "https://www.roscap.co.uk/contact-us-success",
+  "status": 200,
+  "bytes": 21578,
+  "sha256": "838caeb9c430dc53a20ecb05ccaa9d2d3b4a86130440bd74fd6cf0229f07236d",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "production/this-page-does-not-exist.html": {
+  "url": "https://www.roscap.co.uk/this-page-does-not-exist",
+  "status": 404,
+  "bytes": 6327,
+  "sha256": "262e7303e1efc650a0a7277dcee99e090cd2cc387be2f2ecc797cdb4ba502d57",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/home.html": {
+  "url": "https://roscap-site.webflow.io/",
+  "status": 200,
+  "bytes": 51651,
+  "sha256": "a48cc957ef733e7b5aaa60359af04fd45bdf42b1e9cc261c4224fe2c3ff84cd8",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/roscap-site.webflow.shared.e12c5bf0f.css": {
+  "url": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/css/roscap-site.webflow.shared.e12c5bf0f.css",
+  "status": 200,
+  "bytes": 163443,
+  "sha256": "2073dce464876c88ae1da8c4d74609e1e9ee9da5ac9326b4fc8a0f6f24e185d7"
+ },
+ "staging/about-us.html": {
+  "url": "https://roscap-site.webflow.io/about-us",
+  "status": 200,
+  "bytes": 42228,
+  "sha256": "34726f3f7b89682837d2bfcfd8d8e3d7f699fa9d97a55e9b4944f0a71e81bace",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/contact-us.html": {
+  "url": "https://roscap-site.webflow.io/contact-us",
+  "status": 200,
+  "bytes": 28430,
+  "sha256": "6157f3a4cd723b0db1f8022fb664e5f9b274af90d08c3b0702f59eff10c3cdbf",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/insights.html": {
+  "url": "https://roscap-site.webflow.io/insights",
+  "status": 200,
+  "bytes": 47437,
+  "sha256": "54f379db2d91c628ff4cf84016de9f146d8a5a844b716e6e1cb2225391872c09",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/our-services.html": {
+  "url": "https://roscap-site.webflow.io/our-services",
+  "status": 200,
+  "bytes": 35232,
+  "sha256": "a9ac7dc9d36470a2e7bdadd4b6b0932b1a994d7c032fb56982a3a0b884dd2dc0",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/track-record.html": {
+  "url": "https://roscap-site.webflow.io/track-record",
+  "status": 200,
+  "bytes": 68694,
+  "sha256": "bf5f25a481926bc14d334dfc22c26bdee7a170dc701b44ed06b65b642305ffc3",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/partner-program.html": {
+  "url": "https://roscap-site.webflow.io/partner-program",
+  "status": 200,
+  "bytes": 40943,
+  "sha256": "3ca82b04dde4524315481b19ec6dd830065d789383cbc4dd6e9a7ddfada4bd5d",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/privacy-policy.html": {
+  "url": "https://roscap-site.webflow.io/privacy-policy",
+  "status": 200,
+  "bytes": 26424,
+  "sha256": "a539ece5efac5d6fec8d55daf1dd475f62dbdaaaa329203064dfd06a8e002085",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/cookie-policy.html": {
+  "url": "https://roscap-site.webflow.io/cookie-policy",
+  "status": 200,
+  "bytes": 22313,
+  "sha256": "539437d55bec3f1f4427916ea366167eda90bce74dde6c3c6c24b1308f344dd6",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/website-terms-of-use.html": {
+  "url": "https://roscap-site.webflow.io/website-terms-of-use",
+  "status": 200,
+  "bytes": 23223,
+  "sha256": "f4ed0cc84731ad5c646baaf649cc4c7b2e1f6514f7df467563aa8f6a72e8b0e8",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/disclaimer.html": {
+  "url": "https://roscap-site.webflow.io/disclaimer",
+  "status": 200,
+  "bytes": 22302,
+  "sha256": "bfc940ef64d45a6163c25ec3fa9efb282a296519bb8699c33196b480d1194eeb",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/accessibility-statement.html": {
+  "url": "https://roscap-site.webflow.io/accessibility-statement",
+  "status": 200,
+  "bytes": 21585,
+  "sha256": "1183b992c05235e82d61253244911dbec58e163399ae49a6a0520af4d4e341fb",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/compliance-governance.html": {
+  "url": "https://roscap-site.webflow.io/compliance-governance",
+  "status": 200,
+  "bytes": 23027,
+  "sha256": "c33bfd4483a6b14ca0cf032ce9ab5de70fe8752382a1407d17c4979203ee50b8",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__choosing-the-right-finance-structure-for-your-uk-property-project.html": {
+  "url": "https://roscap-site.webflow.io/blogs/choosing-the-right-finance-structure-for-your-uk-property-project",
+  "status": 200,
+  "bytes": 35081,
+  "sha256": "a5da48692be6dbec5f5de71e3696fda43c1567af6261d7c055f6e923f1c31fe4",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__development-exit-finance.html": {
+  "url": "https://roscap-site.webflow.io/blogs/development-exit-finance",
+  "status": 200,
+  "bytes": 37164,
+  "sha256": "fe281ad0bef1d01090e23aa625dacbab7555e34bb8e8f62262f3b1bd62e5a76f",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__financing-ai-data-centres.html": {
+  "url": "https://roscap-site.webflow.io/blogs/financing-ai-data-centres",
+  "status": 200,
+  "bytes": 37445,
+  "sha256": "27f0ec92b55e55c87c6d6f0a8efb649804a308e321af4e2c86b583aeef15194f",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__financing-social-housing.html": {
+  "url": "https://roscap-site.webflow.io/blogs/financing-social-housing",
+  "status": 200,
+  "bytes": 37197,
+  "sha256": "a3f7c94db1edb42d0dd50512463b0584063368134cc85f0a79ee30cc7c39f7c7",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__hotel-financing-in-the-uk-a-practical-guide-for-investors-and-developers.html": {
+  "url": "https://roscap-site.webflow.io/blogs/hotel-financing-in-the-uk-a-practical-guide-for-investors-and-developers",
+  "status": 200,
+  "bytes": 44644,
+  "sha256": "749cef05acd77ea84bd1656a416a6074c1b454a2ca1b23167e337aecf62ee4c2",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__how-real-estate-debt-advisory-works-in-the-uk.html": {
+  "url": "https://roscap-site.webflow.io/blogs/how-real-estate-debt-advisory-works-in-the-uk",
+  "status": 200,
+  "bytes": 36823,
+  "sha256": "b9e384cf6bf3502a1c115962bbba5558f5b52c7ec750657d97c642cdb22fe6d6",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__property-portfolio-finance.html": {
+  "url": "https://roscap-site.webflow.io/blogs/property-portfolio-finance",
+  "status": 200,
+  "bytes": 37291,
+  "sha256": "7ab8cd289c6db7d81ff5f8dca57441290dfda31f578a58805ab2273972f6bd20",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__roscap-bridging-loan-manchester.html": {
+  "url": "https://roscap-site.webflow.io/blogs/roscap-bridging-loan-manchester",
+  "status": 200,
+  "bytes": 34188,
+  "sha256": "7ab3b6f60e7f8113777e483417ff06d2994ab5511aa6bf5804dbb66eb4045a05",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__the-rise-of-private-credit-in-property-development.html": {
+  "url": "https://roscap-site.webflow.io/blogs/the-rise-of-private-credit-in-property-development",
+  "status": 200,
+  "bytes": 35914,
+  "sha256": "50ccebee9a4ef37c8e4ac86cbf5da3be4668bac1ea8424b245bd74f342ac1844",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__uk-buy-to-let-mortgages-for-overseas-borrowers-using-a-company-structure.html": {
+  "url": "https://roscap-site.webflow.io/blogs/uk-buy-to-let-mortgages-for-overseas-borrowers-using-a-company-structure",
+  "status": 200,
+  "bytes": 46451,
+  "sha256": "8586dbe26375575f4700d1f83388d542ad80c2339f7d8d5615a947d5f0a2f805",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__understanding-private-credit-in-the-uk-how-alternative-lending-is-reshaping-business-finance.html": {
+  "url": "https://roscap-site.webflow.io/blogs/understanding-private-credit-in-the-uk-how-alternative-lending-is-reshaping-business-finance",
+  "status": 200,
+  "bytes": 36173,
+  "sha256": "dcfdd92879f46d2c05b2118e584c0935182fae1fc93c7a6f6627f90de992204f",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/blogs__understanding-real-estate-finance-in-the-uk-a-guide-to-structured-and-alternative-funding.html": {
+  "url": "https://roscap-site.webflow.io/blogs/understanding-real-estate-finance-in-the-uk-a-guide-to-structured-and-alternative-funding",
+  "status": 200,
+  "bytes": 35545,
+  "sha256": "3f0ff85b14a54cbeaec6cce61bdb57a0f865392bbc1172ad39e176e50b7bc183",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/contact-us-success.html": {
+  "url": "https://roscap-site.webflow.io/contact-us-success",
+  "status": 200,
+  "bytes": 21584,
+  "sha256": "559e0ee5ee4f678ffa1335f3339d297db1d3c27f46764f5b97f1ab36c01d0840",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ },
+ "staging/this-page-does-not-exist.html": {
+  "url": "https://roscap-site.webflow.io/this-page-does-not-exist",
+  "status": 404,
+  "bytes": 6333,
+  "sha256": "e9e63ff6062e202cbbb6df7acf260dbeb069b0f27c72279f2dce64f1e7459c13",
+  "last_published": "Sat Oct 17 2026 14:14:25"
+ }
+}
