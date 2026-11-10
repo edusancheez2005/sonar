@@ -12,10 +12,11 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
   if (pop) document.body.appendChild(pop);
 })();
 
-/* 2. Forms (HANDOFF.md 5.2 to 5.4): both forms on this page render id "wf-form-Contact-Form" and the pop-up reuses the ids
-   name, email and Phone, so the pop-up's ids are renamed (its form name for submissions stays "Contact Form"). Then the contact
-   form gets hidden labels and autocomplete, and its desktop Submit, a link that relied on a script this page never loads,
-   becomes a real submit button tied to the form. */
+/* 2. Forms (HANDOFF.md 5.2 to 5.4): the pop-up reuses the contact form's field ids name, email and Phone, so they are renamed
+   here. The pop-up form is named "Brochure Form" in the Designer (it was "Contact Form", with the contact form's id, until the
+   owner's request of 10 Nov 2026); the id line below keeps it unique either way. Then the contact form gets hidden labels and
+   autocomplete, and its desktop Submit, a link that relied on a script this page never loads, becomes a real submit button
+   tied to the form. */
 (function () {
   var bro = document.querySelector('.leadgen-popup-overlay form');
   if (bro) {
