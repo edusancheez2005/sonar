@@ -1,0 +1,390 @@
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const navMenu = document.querySelector(".nav_menu_2");
+    const navbar = document.querySelector(".navbar");
+
+    if (!navMenu || !navbar) return;
+
+    navMenu.style.transition = "opacity 0.3s ease-in-out";
+
+    let lastScrollY = window.scrollY;
+    const SCROLL_THRESHOLD = window.innerHeight * 0.8;
+    const MOBILE_BREAKPOINT = 767;
+
+    /* ---------------------------------
+       Pages that allow scroll-based bg
+    ---------------------------------- */
+    const MOBILE_BG_SLUGS = [
+      "/",
+      "/about-us",
+      "/our-services",
+      "/track-record",
+      "/partner-program",
+      "/insights",
+      "/contact-us",
+      "/contact-us-success",
+      "compliance-governance"
+    ];
+
+    const normalizePath = (path) =>
+      path.replace(/\/$/, "") || "/";
+
+    const currentPath = normalizePath(window.location.pathname);
+    const allowScrollBg = MOBILE_BG_SLUGS.includes(currentPath);
+
+    // 🔒 Pages NOT in list are locked green everywhere
+    const isLockedGreenPage = !allowScrollBg;
+
+    /* ---------------------------------
+       INITIAL STATE
+    ---------------------------------- */
+    if (isLockedGreenPage) {
+      navbar.classList.add("is-scrolled");
+    }
+
+    window.addEventListener("scroll", function () {
+      const currentScrollY = window.scrollY;
+      const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+
+      /* -------------------------
+         Hide / Show on scroll
+         (DESKTOP ONLY)
+      -------------------------- */
+      if (!isMobile) {
+        if (currentScrollY > lastScrollY) {
+          navMenu.style.opacity = "0";
+          navMenu.style.pointerEvents = "none";
+        } else {
+          navMenu.style.opacity = "1";
+          navMenu.style.pointerEvents = "auto";
+        }
+      }
+
+      /* -------------------------
+         Background logic
+      -------------------------- */
+
+      // 🔒 Locked pages → always green
+      if (isLockedGreenPage) {
+        navbar.classList.add("is-scrolled");
+      }
+
+      // 🎯 Scroll-based pages → toggle on scroll
+      else {
+        if (currentScrollY >= SCROLL_THRESHOLD) {
+          navbar.classList.add("is-scrolled");
+        } else {
+          navbar.classList.remove("is-scrolled");
+        }
+      }
+
+      lastScrollY = currentScrollY;
+    });
+
+    /* -------------------------
+       Handle resize
+    -------------------------- */
+    window.addEventListener("resize", () => {
+      const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+
+      if (isMobile) {
+        navMenu.style.opacity = "1";
+        navMenu.style.pointerEvents = "auto";
+      }
+
+      if (isLockedGreenPage) {
+        navbar.classList.add("is-scrolled");
+      }
+    });
+  });
+</script>
+
+<!-- Roscap redesign: cookie banner and preferences dialog (prototypes/cookie-consent/webflow/site-footer.html), new view only.
+     In the old view the markup is hidden by the switch, its styles are off and its script does not run. -->
+<div data-rc="new">
+<section class="rc-banner" id="rc-banner" role="region" aria-label="Cookie consent" hidden>
+  <h2 class="rc-h">Cookies on this site</h2>
+  <p>We use essential cookies to run this site. If you agree, we also use Google Analytics to understand how the site is used, and Google Ads measurement to see which enquiries come from our adverts. Details are in our <a class="rc-a" href="/cookie-policy">Cookie Policy</a>.</p>
+  <div class="rc-row">
+    <button class="rc-btn" type="button" data-rc="accept">Accept all</button>
+    <button class="rc-btn" type="button" data-rc="reject">Reject non-essential</button>
+  </div>
+  <button class="rc-text" type="button" data-rc="open">Manage preferences</button>
+</section>
+
+<div class="rc-modal" id="rc-modal" hidden>
+  <div class="rc-dialog" id="rc-dialog" role="dialog" aria-modal="true" aria-labelledby="rc-dialog-h" aria-describedby="rc-dialog-p" tabindex="-1">
+    <div class="rc-top">
+      <h2 id="rc-dialog-h">Cookie preferences</h2>
+      <button class="rc-close" type="button" data-rc="close" aria-label="Close without saving"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <p class="rc-intro" id="rc-dialog-p">Choose which optional cookies we may use. You can change your choice at any time using the Cookie preferences link in the footer.</p>
+    <ul class="rc-cats">
+      <li class="rc-cat">
+        <span class="rc-name" id="rc-l-essential">Essential <small>Always on</small></span>
+        <p class="rc-desc" id="rc-d-essential">Needed for the site to work securely and to remember your cookie choice. Cloudflare security cookie (_cfuvid) and our roscap_consent cookie.</p>
+        <button class="rc-switch" type="button" role="switch" aria-checked="true" disabled aria-labelledby="rc-l-essential" aria-describedby="rc-d-essential"><i aria-hidden="true"></i></button>
+      </li>
+      <li class="rc-cat">
+        <span class="rc-name" id="rc-l-analytics">Analytics</span>
+        <p class="rc-desc" id="rc-d-analytics">Google Analytics 4 helps us understand how the site is used, for example which pages are read. Cookies _ga and _ga_H8HS2R6NLS, kept for up to 13 months.</p>
+        <button class="rc-switch" type="button" role="switch" aria-checked="false" id="rc-sw-analytics" data-rc="switch" aria-labelledby="rc-l-analytics" aria-describedby="rc-d-analytics"><i aria-hidden="true"></i></button>
+      </li>
+      <li class="rc-cat">
+        <span class="rc-name" id="rc-l-marketing">Marketing measurement</span>
+        <p class="rc-desc" id="rc-d-marketing">Google Ads conversion measurement tells us which enquiries came from our adverts. Cookies _gcl_au and _gcl_ls, kept for 90 days. No personalised advertising.</p>
+        <button class="rc-switch" type="button" role="switch" aria-checked="false" id="rc-sw-marketing" data-rc="switch" aria-labelledby="rc-l-marketing" aria-describedby="rc-d-marketing"><i aria-hidden="true"></i></button>
+      </li>
+    </ul>
+    <p class="rc-status" id="rc-status" aria-live="polite"></p>
+    <div class="rc-actions">
+      <button class="rc-btn" type="button" data-rc="save">Save choices</button>
+      <button class="rc-btn rc-outline" type="button" data-rc="accept">Accept all</button>
+      <button class="rc-btn rc-outline" type="button" data-rc="reject">Reject non-essential</button>
+    </div>
+    <p class="rc-foot">Read our <a class="rc-a" href="/cookie-policy">Cookie Policy</a> for the full list of cookies.</p>
+  </div>
+</div>
+<p class="rc-sr" id="rc-live" aria-live="polite"></p>
+</div>
+<style id="rc-css-consent" media="not all">
+/* Roscap cookie consent v1. Self-contained. Cream card, teal text and buttons, no gold on cream. */
+.rc-banner,.rc-modal{--c:#FFFCF5;--t:#043435;--t2:#0a4a4b;--g:#4F5B5B;--l:rgba(4,52,53,.16);
+  font:400 15px/1.55 "Switzer",Arial,sans-serif;color:#12161D;box-sizing:border-box}
+.rc-banner *,.rc-modal *{box-sizing:inherit;margin:0}
+.rc-banner[hidden],.rc-modal[hidden]{display:none}
+.rc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rc-h,.rc-dialog h2{font:italic 500 1.5rem/1.2 "Boska",Georgia,serif;color:var(--t)}
+.rc-a{color:var(--t);text-decoration:underline;text-underline-offset:3px}
+.rc-a:hover,.rc-text:hover{color:var(--t2)}
+.rc-banner :focus-visible,.rc-modal :focus-visible{outline:2px solid var(--t);outline-offset:3px}
+
+/* Accept all and Reject non-essential always share one style */
+.rc-btn{flex:1 1 150px;display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border:1px solid var(--t);border-radius:4px;
+  background:var(--t);color:#fff;font-family:inherit;font-size:.9375rem;font-weight:500;line-height:1.2;cursor:pointer;transition:background-color .2s,border-color .2s}
+.rc-btn:hover{background:var(--t2);border-color:var(--t2)}
+.rc-btn.rc-outline{background:transparent;color:var(--t)}
+.rc-btn.rc-outline:hover{background:rgba(4,52,53,.06)}
+.rc-text{display:inline-flex;align-items:center;min-height:44px;margin:4px 0 -8px -4px;padding:0 4px;border:0;background:none;color:var(--t);
+  font-family:inherit;font-size:.9375rem;font-weight:500;line-height:1.2;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+.rc-banner{position:fixed;right:24px;bottom:24px;z-index:90;width:min(384px,calc(100% - 48px));padding:20px 22px 16px;background:var(--c);font-size:14px;line-height:1.5;
+  border:1px solid var(--l);border-radius:12px;box-shadow:0 30px 70px -30px rgba(4,52,53,.55)}
+.rc-banner p{margin-top:8px;color:var(--g)}
+.rc-banner .rc-h{font-size:1.25rem}
+.rc-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.rc-banner .rc-btn{flex:1 1 120px;min-height:42px;padding:0 10px;font-size:.875rem;white-space:nowrap}
+.rc-banner .rc-text{font-size:.875rem;min-height:40px}
+
+.rc-modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;background:rgba(4,52,53,.55);overflow:auto}
+.rc-dialog{width:min(560px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:30px 32px 28px;
+  background:var(--c);border-radius:12px;box-shadow:0 40px 90px -30px rgba(2,37,38,.7)}
+.rc-dialog:focus{outline:none}
+.rc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.rc-dialog h2{font-size:1.75rem;padding-top:6px}
+.rc-close{flex:none;display:grid;place-items:center;width:44px;height:44px;margin:-6px -10px 0 0;padding:0;border:0;border-radius:50%;background:none;color:var(--t);cursor:pointer}
+.rc-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.rc-intro,.rc-status,.rc-foot{color:var(--g)}
+.rc-intro{margin-top:12px}
+.rc-cats{list-style:none;padding:0;margin-top:20px;border-top:1px solid var(--l)}
+.rc-cat{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name sw" "desc sw";column-gap:18px;align-items:center;padding:15px 0 17px;border-bottom:1px solid var(--l)}
+.rc-name{grid-area:name;font-size:1.0625rem;font-weight:500;line-height:1.3;color:var(--t)}
+.rc-name small{margin-left:8px;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--g)}
+.rc-desc{grid-area:desc;margin-top:4px;font-size:.875rem;line-height:1.5;color:var(--g)}
+.rc-switch{grid-area:sw;width:60px;height:44px;padding:8px 6px;border:0;background:none;cursor:pointer}
+.rc-switch i{position:relative;display:block;width:48px;height:28px;border:2px solid var(--t);border-radius:14px;transition:.2s}
+.rc-switch i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--t);transition:.2s}
+.rc-switch[aria-checked="true"] i{background:var(--t)}
+.rc-switch[aria-checked="true"] i::after{background:#fff;transform:translateX(20px)}
+.rc-switch:disabled{cursor:default}
+.rc-switch:disabled i{opacity:.5}
+.rc-status{margin-top:14px;font-size:.875rem}
+.rc-status b{font-weight:500;color:var(--t)}
+.rc-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.rc-actions .rc-btn{flex:1 1 auto;white-space:nowrap}
+.rc-foot{margin-top:16px;font-size:.875rem}
+
+/* one quiet rise, only for visitors who allow motion */
+@media (prefers-reduced-motion:no-preference){
+  .rc-banner{opacity:0;transform:translateY(12px);transition:opacity .45s cubic-bezier(.22,.61,.36,1),transform .45s cubic-bezier(.22,.61,.36,1)}
+  .rc-banner.rc-in{opacity:1;transform:none}
+  .rc-dialog{animation:rc-pop .3s cubic-bezier(.22,.61,.36,1)}
+  @keyframes rc-pop{from{opacity:0;transform:translateY(8px)}}
+}
+
+/* phones: bottom sheets */
+@media (max-width:767px){
+  .rc-banner{left:0;right:0;bottom:0;width:auto;border-radius:14px 14px 0 0;border-bottom:0;padding:16px 16px calc(10px + env(safe-area-inset-bottom,0px));font-size:13.5px}
+  .rc-banner .rc-h{font-size:1.15rem}
+  .rc-banner .rc-btn,.rc-banner .rc-text{min-height:44px}
+  .rc-modal{place-items:end stretch;padding:0}
+  .rc-dialog{width:100%;max-height:calc(100dvh - 24px);border-radius:14px 14px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0px))}
+  .rc-dialog h2{font-size:1.5rem;padding-top:4px}
+  .rc-intro{margin-top:8px;font-size:.9375rem}
+  .rc-cats{margin-top:16px}
+  .rc-cat{column-gap:12px;padding:12px 0 14px}
+  .rc-desc{font-size:.8125rem}
+}
+@media (max-width:359px){.rc-row .rc-btn{flex-basis:100%}}
+</style>
+<script>
+if (document.documentElement.getAttribute('data-rc-view')==='new') {
+document.getElementById('rc-css-consent').media = 'all';
+/* the footer link "Cookie preferences", after "Cookie Policy" in the Legal column. The handoff adds it to the footer Symbol;
+   here it is added in the new view only, so the shared component stays as it is. data-rc="open" opens the preferences dialog. */
+(function () {
+  [].slice.call(document.querySelectorAll('a.footer-links[href="/cookie-policy"]')).forEach(function (a) {
+    if (a.nextElementSibling && a.nextElementSibling.getAttribute('data-rc') === 'open') return;
+    var l = document.createElement('a');
+    l.className = 'footer-links cookie-preferences'; l.href = '#cookie-preferences'; l.setAttribute('data-rc', 'open'); l.textContent = 'Cookie preferences';
+    a.parentNode.insertBefore(l, a.nextSibling);
+  });
+  /* the announcement line goes straight under <body>, as in the handoff, so the dialog never makes it inert */
+  var live = document.getElementById('rc-live'); if (live) document.body.appendChild(live);
+})();
+/* Roscap cookie consent v1. No dependencies. Needs the Consent Mode default from site-head.html.
+   Exposes window.RoscapConsent {open, get, reset, version} and fires CustomEvent "roscap-consent". */
+(function (w, d) {
+  var VERSION = 1; /* bump here and in site-head.html to ask everyone again */
+  var NAME = 'roscap_consent', MAX_AGE = 15552000; /* 180 days */
+  var SEEN = 'roscap_consent_seen'; /* the banner shows on the first page of a visit only (owner's choice) */
+  var $ = function (id) { return d.getElementById(id); };
+  var banner = $('rc-banner'), modal = $('rc-modal'), dialog = $('rc-dialog'), live = $('rc-live');
+  var swA = $('rc-sw-analytics'), swM = $('rc-sw-marketing'), status = $('rc-status');
+  if (!banner || !modal) return;
+  var opener = null, inerted = [];
+
+  function parse(raw) {
+    try { var o = JSON.parse(raw); if (o && o.version === VERSION && typeof o.analytics === 'boolean' && typeof o.marketing === 'boolean') return o; } catch (e) {}
+    return null;
+  }
+  function raw() {
+    var m = d.cookie.match(new RegExp('(?:^|; )' + NAME + '=([^;]*)'));
+    if (m) return decodeURIComponent(m[1]);
+    try { return localStorage.getItem(NAME); } catch (e) { return null; }
+  }
+  function seen() { try { return sessionStorage.getItem(SEEN) === String(VERSION); } catch (e) { return false; } }
+  function markSeen(on) { try { if (on) sessionStorage.setItem(SEEN, String(VERSION)); else sessionStorage.removeItem(SEEN); } catch (e) {} }
+  function read() {
+    var m = d.cookie.match(new RegExp('(?:^|; )' + NAME + '=([^;]*)')), c = m && parse(decodeURIComponent(m[1]));
+    if (!c) try { c = parse(localStorage.getItem(NAME)); } catch (e) {}
+    return c || null;
+  }
+  function cookie(name, value, maxAge, domain) {
+    d.cookie = name + '=' + value + '; Max-Age=' + maxAge + '; Path=/; SameSite=Lax' + (domain ? '; Domain=' + domain : '') + (location.protocol === 'https:' ? '; Secure' : '');
+  }
+  function write(analytics, marketing) {
+    var c = { version: VERSION, analytics: !!analytics, marketing: !!marketing, timestamp: new Date().toISOString() }, s = JSON.stringify(c);
+    cookie(NAME, encodeURIComponent(s), MAX_AGE);
+    try { localStorage.setItem(NAME, s); } catch (e) {}
+    return c;
+  }
+  /* remove Google cookies for categories that are now off */
+  function purge(c) {
+    var host = location.hostname.replace(/^www\./, '');
+    (c.analytics ? [] : ['_ga', '_ga_H8HS2R6NLS']).concat(c.marketing ? [] : ['_gcl_au', '_gcl_ls']).forEach(function (n) {
+      cookie(n, '', 0); cookie(n, '', 0, host); cookie(n, '', 0, '.' + host);
+    });
+  }
+  function signal(c) {
+    var g = typeof w.gtag === 'function' ? w.gtag : function () { (w.dataLayer = w.dataLayer || []).push(arguments); };
+    g('consent', 'update', { analytics_storage: c.analytics ? 'granted' : 'denied', ad_storage: c.marketing ? 'granted' : 'denied', ad_user_data: c.marketing ? 'granted' : 'denied', ad_personalization: 'denied' });
+    if (typeof w.rcTags === 'function') w.rcTags(c); /* basic mode: the Google tag loads only after a "yes" (site-head.html) */
+  }
+
+  function showBanner() {
+    banner.hidden = false;
+    d.documentElement.classList.add('rc-banner-open');
+    w.setTimeout(function () { banner.classList.add('rc-in'); }, 30);
+  }
+  function hideBanner() {
+    banner.hidden = true;
+    banner.classList.remove('rc-in');
+    d.documentElement.classList.remove('rc-banner-open');
+  }
+  function words(c) { return 'analytics ' + (c.analytics ? 'on' : 'off') + ', marketing ' + (c.marketing ? 'on' : 'off'); }
+  function render(c) {
+    swA.setAttribute('aria-checked', c && c.analytics ? 'true' : 'false');
+    swM.setAttribute('aria-checked', c && c.marketing ? 'true' : 'false');
+    status.innerHTML = '<b>Your choice:</b> ' + (c ? words(c) + '. Saved ' + new Date(c.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.'
+      : 'none saved yet. Optional cookies stay off until you choose.');
+  }
+  function openDialog(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    if (!modal.hidden) return;
+    opener = d.activeElement;
+    render(read());
+    if (!banner.hidden) hideBanner();
+    modal.hidden = false;
+    d.documentElement.classList.add('rc-dialog-open');
+    d.documentElement.style.overflow = 'hidden';
+    /* rest of the page: out of the tab order and the accessibility tree */
+    inerted = Array.prototype.filter.call(d.body.children, function (el) { return el !== modal && el !== live && !el.hasAttribute('inert'); });
+    inerted.forEach(function (el) { el.setAttribute('inert', ''); });
+    dialog.focus();
+  }
+  function closeDialog() {
+    if (modal.hidden) return;
+    modal.hidden = true;
+    d.documentElement.classList.remove('rc-dialog-open');
+    d.documentElement.style.overflow = '';
+    inerted.forEach(function (el) { el.removeAttribute('inert'); });
+    inerted = [];
+    if (!read()) showBanner();
+    if (opener && opener.focus) opener.focus();
+    opener = null;
+  }
+  function apply(c) {
+    signal(c); purge(c); render(c.version ? c : null); closeDialog();
+    d.dispatchEvent(new CustomEvent('roscap-consent', { detail: c.version ? c : null }));
+  }
+  function choose(analytics, marketing) {
+    var c = write(analytics, marketing);
+    hideBanner(); apply(c);
+    if (live) { live.textContent = ''; w.setTimeout(function () { live.textContent = 'Preferences saved: ' + words(c) + '.'; }, 50); }
+  }
+  function reset() {
+    markSeen(false);
+    cookie(NAME, '', 0);
+    try { localStorage.removeItem(NAME); } catch (e) {}
+    apply({ analytics: false, marketing: false });
+    showBanner();
+  }
+
+  d.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('[data-rc]');
+    if (!t) return;
+    var act = t.getAttribute('data-rc');
+    if (act === 'accept') choose(true, true);
+    else if (act === 'reject') choose(false, false);
+    else if (act === 'save') choose(swA.getAttribute('aria-checked') === 'true', swM.getAttribute('aria-checked') === 'true');
+    else if (act === 'open') openDialog(e);
+    else if (act === 'close') closeDialog();
+    else if (act === 'switch') t.setAttribute('aria-checked', t.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+  });
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeDialog(); });
+  modal.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); closeDialog(); return; }
+    if (e.key !== 'Tab') return;
+    var f = dialog.querySelectorAll('a[href],button:not([disabled])'), first = f[0], last = f[f.length - 1], a = d.activeElement;
+    if (e.shiftKey && (a === first || a === dialog)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
+  });
+
+  /* banner and dialog go first in <body>, after a skip link if there is one */
+  var first = d.body.firstElementChild;
+  var anchor = first && first.tagName === 'A' && /^#/.test(first.getAttribute('href') || '') ? first.nextSibling : d.body.firstChild;
+  if (banner !== anchor) d.body.insertBefore(banner, anchor);
+  if (modal !== banner.nextElementSibling) d.body.insertBefore(modal, banner.nextSibling);
+
+  w.RoscapConsent = { open: openDialog, get: read, reset: reset, version: VERSION };
+  /* first page of a visit: the banner. Later pages of the same visit: no banner if it was ignored (nothing optional runs without a yes;
+     the footer link opens the choices at any time). A choice saved under an older version always asks again. */
+  var stored = read(), stale = !stored && !!raw();
+  render(stored);
+  if (stored) hideBanner();
+  else if (seen() && !stale) hideBanner();
+  else { showBanner(); markSeen(true); }
+})(window, document);
+}
+</script>

@@ -1,0 +1,100 @@
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const navMenu = document.querySelector(".nav_menu_2");
+    const navbar = document.querySelector(".navbar");
+
+    if (!navMenu || !navbar) return;
+
+    navMenu.style.transition = "opacity 0.3s ease-in-out";
+
+    let lastScrollY = window.scrollY;
+    const SCROLL_THRESHOLD = window.innerHeight * 0.8;
+    const MOBILE_BREAKPOINT = 767;
+
+    /* ---------------------------------
+       Pages that allow scroll-based bg
+    ---------------------------------- */
+    const MOBILE_BG_SLUGS = [
+      "/",
+      "/about-us",
+      "/our-services",
+      "/track-record",
+      "/partner-program",
+      "/insights",
+      "/contact-us",
+      "/contact-us-success",
+      "compliance-governance"
+    ];
+
+    const normalizePath = (path) =>
+      path.replace(/\/$/, "") || "/";
+
+    const currentPath = normalizePath(window.location.pathname);
+    const allowScrollBg = MOBILE_BG_SLUGS.includes(currentPath);
+
+    // 🔒 Pages NOT in list are locked green everywhere
+    const isLockedGreenPage = !allowScrollBg;
+
+    /* ---------------------------------
+       INITIAL STATE
+    ---------------------------------- */
+    if (isLockedGreenPage) {
+      navbar.classList.add("is-scrolled");
+    }
+
+    window.addEventListener("scroll", function () {
+      const currentScrollY = window.scrollY;
+      const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+
+      /* -------------------------
+         Hide / Show on scroll
+         (DESKTOP ONLY)
+      -------------------------- */
+      if (!isMobile) {
+        if (currentScrollY > lastScrollY) {
+          navMenu.style.opacity = "0";
+          navMenu.style.pointerEvents = "none";
+        } else {
+          navMenu.style.opacity = "1";
+          navMenu.style.pointerEvents = "auto";
+        }
+      }
+
+      /* -------------------------
+         Background logic
+      -------------------------- */
+
+      // 🔒 Locked pages → always green
+      if (isLockedGreenPage) {
+        navbar.classList.add("is-scrolled");
+      }
+
+      // 🎯 Scroll-based pages → toggle on scroll
+      else {
+        if (currentScrollY >= SCROLL_THRESHOLD) {
+          navbar.classList.add("is-scrolled");
+        } else {
+          navbar.classList.remove("is-scrolled");
+        }
+      }
+
+      lastScrollY = currentScrollY;
+    });
+
+    /* -------------------------
+       Handle resize
+    -------------------------- */
+    window.addEventListener("resize", () => {
+      const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+
+      if (isMobile) {
+        navMenu.style.opacity = "1";
+        navMenu.style.pointerEvents = "auto";
+      }
+
+      if (isLockedGreenPage) {
+        navbar.classList.add("is-scrolled");
+      }
+    });
+  });
+</script>

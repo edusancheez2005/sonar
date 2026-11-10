@@ -1,0 +1,29 @@
+<!-- Roscap redesign, Privacy Policy and Cookie Policy (10 Nov 2026). Off unless the site switch shows the new design. Source: prototypes/legal-pages/legal.css -->
+<style id="rc-css-legal" media="not all">
+/* the prototype's colour and font tokens (prototypes/shared/base.css), on the policy text only; --black2 is the live value */
+.legal-text{--black2:#282828;--ink:#12161D;--teal:#043435;--gold:#E1C979;--gold-ink:#7A6318;--f-display:"Boska","Iowan Old Style",Georgia,serif;--f-body:"Switzer","Helvetica Neue",Arial,sans-serif}
+/* the prototype's base reset, scoped to the policy text (Webflow's defaults would add heading and list margins) */
+.legal-text h1,.legal-text h2,.legal-text p,.legal-text ul{margin:0}
+/* prototypes/legal-pages/legal.css: the policy text and the cookie table (the prototype's page frame and review highlights are left out) */
+.legal-text{max-width:46rem;margin-inline:auto;color:var(--black2);font-size:1rem;line-height:1.65}
+.legal-text h1{font-family:var(--f-display);font-weight:500;font-size:3rem;line-height:1.2;color:var(--black2)}
+.legal-date{margin-top:.75rem;font-size:.875rem;color:#5c6466}
+.legal-text h2{margin-top:2.25rem;margin-bottom:.5rem;font-family:var(--f-body);font-weight:600;font-size:1.0625rem;line-height:1.4;color:var(--ink)}
+.legal-text p{margin-top:0;margin-bottom:1rem}
+.legal-text ul{margin:0 0 1.25rem;padding-left:1.25rem;list-style:disc}
+.legal-text li{margin-bottom:.4rem;padding-left:.15rem}
+.legal-text li::marker{color:var(--gold-ink)}
+.legal-text a{color:var(--teal);text-decoration:underline;text-decoration-color:rgba(4,52,53,.35);text-underline-offset:2px;transition:text-decoration-color .2s}
+.legal-text a:hover{text-decoration-color:var(--teal)}
+.legal-text strong{font-weight:500;color:var(--ink)}
+.legal-table{margin:0 0 1.5rem;overflow-x:auto;border:1px solid rgba(40,40,40,.14);border-radius:8px;background:#fff}
+.legal-table:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.legal-table table{width:100%;min-width:40rem;border-collapse:collapse;font-size:.875rem;line-height:1.45}
+.legal-table th,.legal-table td{padding:.7rem .85rem;text-align:left;vertical-align:top;border-bottom:1px solid rgba(40,40,40,.1)}
+.legal-table th{font-weight:500;color:var(--ink);background:#f7f2e6}
+.legal-table tr:last-child td{border-bottom:0}
+.legal-table td:first-child{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.8125rem;white-space:nowrap;color:var(--ink)}
+@media (max-width:767px){.legal-text h1{font-size:2.5rem}}
+@media (max-width:479px){.legal-text{font-size:.9375rem}}
+</style>
+<script>if(document.documentElement.getAttribute('data-rc-view')==='new')document.getElementById('rc-css-legal').media='all';</script>

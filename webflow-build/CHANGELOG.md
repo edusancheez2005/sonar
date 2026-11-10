@@ -132,6 +132,44 @@ Checked on staging (Playwright, 1440 and 390 wide). New view: rates 4.00, 3.75 t
 
 Still to do on this page before go-live (owner): one test enquiry from a computer through the contact form (its desktop Submit becomes a real button, as on Partner Program). Open since the handoff (section 6): the licence for showing the EURIBOR figure, which the live cards already show.
 
+### 8. Site-wide: cookie banner (10 Nov 2026)
+Source: `prototypes/cookie-consent/HANDOFF.md` section 3 (approved banner, preferences dialog and Google Consent Mode v2 in basic mode).
+
+| What | Element | Change | Undo |
+| --- | --- | --- | --- |
+| Site head code | | Was `site/site-head.before.html` (the switch, then today's Google tag). Now `site/site-head.html`: the switch unchanged; today's Google tag, same ID and settings, now run in the old view only (loaded from a script so the new view can skip it); then the handoff's consent default and tag loader, new view only | Set it back to `site-head.before.html` |
+| Site footer code | | Was `site/site-footer.before.html` (the menu bar script). Now `site/site-footer.html`: the same, then the banner and dialog in a `data-rc="new"` block, `<style id="rc-css-consent" media="not all">` and the consent script (new view only). The script also adds the "Cookie preferences" link after "Cookie Policy" in the footer's Legal column, so the shared footer component is not edited | Set it back to `site-footer.before.html` |
+
+How this differs from the handoff, and why: the handoff deletes today's Google tag and adds the footer link in the footer Symbol. Here today's tag stays for the old view, so a rollback is exact, and the link is added by the script in the new view. No Google Analytics ID is set under Integrations (every page carries only the one tag from the site head). The conversion event on /contact-us-success (handoff step 4) is not added: that page has no Google Ads code today and the conversion label is not known.
+
+Checked on staging (Playwright, fresh browser for each run, every Google request recorded and then cancelled so nothing reached Google). New view: on a first visit the banner shows bottom right on a computer (384 px wide, 24 px from the edges) and as a bottom sheet on a phone, first in the page; no cookie and no Google request before a choice, on any of 16 pages; it shows on the first page of a visit only. Accept all: roscap_consent (version 1, both true), the consent default, the update, then the Google Analytics and Google Ads configuration; after a reload no banner. Reject: both false, no Google request on that page or the next. Analytics only: Google Analytics configured, Google Ads not. The footer link, reached by keyboard, opens the dialog with "Your choice: analytics off, marketing off. Saved 10 November 2026."; Escape closes it and returns focus to the link; the page address does not change. The Cookie Policy's own "Cookie preferences" link opens it too. No console errors, no sideways scrolling, on all 16 pages at 1440 and 390. Old view and live: today's Google tag loads at once and is configured as before; no banner, no footer link.
+
+Still to do before go-live (owner): confirm the Google Ads ID AW-238397354910 and send the conversion label, so the consent-aware conversion event can go on /contact-us-success; in Google Analytics, data retention 14 months and Google Signals off (both stated in the policies); after go-live, check with Tag Assistant (handoff section 4, test 2) and one test enquiry with consent granted.
+
+### 9. Privacy Policy (`696052dc56c8f2832361bd16`) and Cookie Policy (`696055ce5a6158c485b5141b`) (10 Nov 2026)
+Source: `prototypes/legal-pages/` (HANDOFF.md section 4). The text is the prototype's, word for word, with the review highlights removed.
+
+| What | Element | Change | Undo |
+| --- | --- | --- | --- |
+| Old text, Rich Text `div.text-rich-text` | `5e962168-6720-f6f2-e1fd-a2ae1fdf388a` on each page | Attribute `data-rc="old"` | Remove the attribute |
+| Privacy Policy, new text block after it | `89d65a2b-1f24-896f-3265-966c72f45ba3` (`data-rc="new"`), Code Embed `bc7be928-74b9-c34b-77e6-8c021a5161d1` | `legal/privacy-policy-embed.html` | Delete the block |
+| Cookie Policy, new text block after it | `dfa21229-e04e-483d-be21-70c4dd914f03` (`data-rc="new"`), Code Embed `bc1ee37b-e617-07c3-26a8-18152e0092ca` | `legal/cookie-policy-embed.html`, with the cookie table and the two "Cookie preferences" links | Delete the block |
+| Page head code, both pages | | Was empty. Now `legal/page-head.html`: `<style id="rc-css-legal" media="not all">` (the policy text and table styles from `legal.css`) | Clear the page head code |
+
+The "Last updated" date on both pages is 10 November 2026. If go-live is on a later day, change both dates to that day. The links between the two policies are relative, so they work the same on staging and live. Checked on staging at 1440 and 390: one H1, 18 sections on the Privacy Policy and 8 on the Cookie Policy, no "#" links in the text, the cookie table scrolls inside its own box on phones, a 46rem reading column, no sideways scrolling; old view: the old text as live.
+
+### 10. Email links on four legal pages (10 Nov 2026)
+"info@roscap.co.uk" linked to "#". It now links to mailto:info@roscap.co.uk. An approved error fix (plan step 1), so it is not behind the switch.
+
+| Page | Link element | Undo |
+| --- | --- | --- |
+| Website Terms of Use (`696056001a08cf7c6f25b239`) | `afec7167-7954-cc8d-614e-761a32b24fcb` | Set the link back to the URL `#` |
+| Disclaimer (`69605649e2c655da9eccb3f3`) | `e8674f29-5a34-34f0-f3e8-f72b47ea1a7f` | Set the link back to the URL `#` |
+| Accessibility Statement (`69605691f9530751aff13d75`) | `c3371590-c5f1-6ff4-9b64-16c7b0a3cf23` | Set the link back to the URL `#` |
+| Privacy Policy, old text (`696052dc56c8f2832361bd16`) | `dc5b0b22-735f-6591-7c9b-f7c829bd68c7` | Set the link back to the URL `#` |
+
+Not done: the Accessibility Statement still claims WCAG 2.1 AA. The plan restates it as partially conformant (audit IL-03), but that needs new text, a list of known issues and a target date, which only the owner can give. It is left as it is.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -143,6 +181,7 @@ Still to do on this page before go-live (owner): one test enquiry from a compute
 | 10 Nov 2026 | Staging only | Track Record, then three fixes found in checking (WebP photos, cards moved instead of copied, the divider on phones) |
 | 10 Nov 2026 | Staging only | Partner Program |
 | 10 Nov 2026 | Staging only | Home, then two fixes found in checking (the Who We Are photo as WebP, the reset for the two new blocks) |
+| 10 Nov 2026 | Staging only | Cookie banner, both policies, the email links, then the old Privacy Policy text's email link |
 
 The live domains were last published on 17 Oct 2026, before this work started.
 
@@ -153,5 +192,7 @@ The live domains were last published on 17 Oct 2026, before this work started.
 - Track Record: build the deals Collection List as the handoff describes, put the WebP photos into the CMS items, then delete the two sliders, Swiper, the old map embed and image, and the old map styles.
 - Partner Program: make the handoff's Designer changes (move the closing line and pop-up, the marquee classes and copy, alt texts, form ids, labels, the submit button in the shared contact component, the Why card class values), then delete the carousel section, the hidden timeline section, Swiper and the timeline styles, and drop the script lines.
 - Home: put the deal list into the CMS as the handoff describes (or keep the static rows), make the Designer edits (wrap the What We Do photo, remove its fade-in and the heading's, type the counters, the form fixes in the shared contact component, the Who We Are photo as WebP), then delete the rate cards, the three Track Record cards, the old rates and slider code and Swiper, and drop the script lines.
+- Site-wide: delete today's Google tag block (old view only) from the site head, drop the switch checks around the consent code, add the "Cookie preferences" link in the footer Symbol and drop the script lines that add it.
+- Policies: paste the text into the Rich Text as the legal handoff describes (or keep the embeds), then delete the old text.
 - Remove the replaced interactions in the Interactions panel.
 - Remove the switch from the site head.

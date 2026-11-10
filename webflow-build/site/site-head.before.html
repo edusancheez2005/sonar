@@ -1,0 +1,5 @@
+<!-- Roscap redesign switch (10 Nov 2026). Staging (webflow.io) and the Designer preview show the new design; www.roscap.co.uk shows today's design until LIVE is true.
+     Add ?rc=old or ?rc=new to an address to switch the view for that browser tab. Go-live: LIVE=true. Roll back: LIVE=false, publish. -->
+<script>(function(){var LIVE=false,d=document.documentElement,v=(LIVE||/\.webflow\.(io|com)$/.test(location.hostname))?'new':'old',q=/[?&]rc=(new|old)(&|$)/.exec(location.search);try{if(q)sessionStorage.setItem('rc-view',q[1]);v=sessionStorage.getItem('rc-view')||v}catch(e){if(q)v=q[1]}d.setAttribute('data-rc-view',v)})();</script>
+<style>html:not([data-rc-view="new"]) [data-rc="new"],html[data-rc-view="new"] [data-rc="old"]{display:none!important}</style>
+<!-- Google tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-H8HS2R6NLS"></script> <script>   window.dataLayer = window.dataLayer || [];   function gtag(){dataLayer.push(arguments);}   gtag('js', new Date());   gtag('config', 'G-H8HS2R6NLS'); </script>
