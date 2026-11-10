@@ -5,8 +5,8 @@ fs-mirrorclick
 ></script>
 <!-- Roscap redesign, Speak to Us (10 Nov 2026). The CSS is off unless the site switch shows the new design. Source: prototypes/speak-to-us/HANDOFF.md section 5 -->
 <style id="rc-css-speak" media="not all">
-/* Contact details: the live .c-social-wrap look (gold line icons, white Switzer 500) with email, phone and Instagram
-   (WhatsApp to follow once the number is confirmed), a little larger than live (16 px text, 24 px icons), two by two. */
+/* Contact details: the live .c-social-wrap look (gold line icons, white Switzer 500) with email, phone, WhatsApp
+   (number confirmed by the owner, 10 Nov 2026) and Instagram, a little larger than live (16 px text, 24 px icons), two by two. */
 .c-social-wrap.is-four{display:grid;grid-template-columns:repeat(2,max-content);gap:12px 40px;margin:0;padding:0;list-style:none}
 .c-social-wrap.is-four li{margin:0;padding:0}
 .c-social-card{display:inline-flex;align-items:center;gap:10px;min-height:32px;color:#fff;text-decoration:none;font:500 16px/24px Switzer,Arial,sans-serif}
@@ -27,7 +27,7 @@ fs-mirrorclick
 .acc summary:focus-visible{outline:2px solid #043435;outline-offset:-2px;border-radius:4px}
 .acc summary svg{flex:none;width:22px;height:22px;fill:none;stroke:#043435;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s cubic-bezier(.22,.61,.36,1)}
 .acc details[open] summary svg{transform:rotate(180deg)}
-.acc .ans{max-width:68ch;padding:0 4px 26px}
+.acc .ans{max-width:none;padding:0 50px 26px 4px} /* answers end where the question text ends, short of the arrow */
 .acc .ans p{margin:0;font-size:17px;font-weight:300;line-height:1.65;color:#61656E}
 @media (prefers-reduced-motion:no-preference){.acc details[open] .ans{animation:accIn .4s cubic-bezier(.22,.61,.36,1)}}
 @keyframes accIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}

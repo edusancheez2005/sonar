@@ -284,11 +284,13 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
     swapImage(row);
     if (animate && !reduce) { pane.classList.remove('is-swap'); void pane.offsetWidth; pane.classList.add('is-swap'); }
   }
-  /* wide screens only: show a row in the pane without changing the selection */
+  /* wide screens only: hovering a row shows it in the pane, and it stays there when the pointer leaves the list
+     (owner's request, 10 Nov 2026: the row last hovered stays selected). Hovering is still not announced to screen readers. */
   function preview(i) {
     if (!tabsMode() || i === shown) return;
-    shown = i;
+    shown = i; cur = i;
     render(i, true, false);
+    pane.setAttribute('aria-labelledby', rows[i].id);
     syncRows();
   }
   function select(i, opts) {
@@ -338,8 +340,7 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
   });
   list.addEventListener('pointerleave', function (e) {
     if (e.pointerType !== 'mouse') return;
-    clearTimeout(hoverTimer);
-    leaveTimer = setTimeout(function () { preview(cur); }, 160);
+    clearTimeout(hoverTimer); /* the pane keeps the row last hovered */
   });
   var onMq = function () { applyRoles(); };
   if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);

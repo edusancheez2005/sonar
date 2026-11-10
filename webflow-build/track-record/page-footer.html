@@ -28,6 +28,15 @@ Array.prototype.forEach.call(document.querySelectorAll('[data-rc-class]'), funct
       if (f.children[0]) f.children[0].classList.add('st-k');
       if (f.children[1]) f.children[1].classList.add('st-v');
     });
+    /* Manchester, confirmed by the owner on 10 Nov 2026: £2.66m land bridge. The CMS item still reads £2.7m Commercial Mortgage;
+       only that old wording is replaced, so this does nothing once the CMS item is corrected. */
+    var lc = c.querySelector('.st-loc');
+    if (lc && /^Manchester\b/.test(lc.textContent.trim())) {
+      var am = c.querySelector('.st-amt'); if (am && am.textContent.trim() === '£2.7m') am.textContent = '£2.66m';
+      Array.prototype.forEach.call(c.querySelectorAll('.st-features-card'), function (f) {
+        if (f.children[0] && f.children[0].textContent.trim() === 'Product' && f.children[1] && f.children[1].textContent.trim() === 'Commercial Mortgage') f.children[1].textContent = 'Land Bridge';
+      });
+    }
     var img = c.querySelector('.st-thumbnail-wrap img');
     if (img) {
       var ph = PHOTOS[(c.querySelector('.st-loc') || { textContent: '' }).textContent.split(',')[0].trim().toLowerCase()];

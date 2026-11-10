@@ -1,0 +1,44 @@
+<script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const modals = document.querySelectorAll(".fs_modal-1_popup");
+
+  modals.forEach(modal => {
+    // Store original parent
+    modal.__originalParent = modal.parentElement;
+  });
+
+  // Open modal
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest(".team-popup-trigger");
+    if (!trigger) return;
+
+    const modal = trigger.parentElement.querySelector(".fs_modal-1_popup");
+    if (!modal) return;
+
+    document.body.appendChild(modal);
+    document.body.classList.add("fs-modal-open");
+
+    modal.style.display = "flex";
+    modal.style.opacity = "1";
+  });
+
+  // Close modal
+  document.addEventListener("click", (e) => {
+    if (
+      e.target.closest(".fs_modal-1_cover") ||
+      e.target.closest(".team-popup-close-trigger")
+    ) {
+      const modal = e.target.closest(".fs_modal-1_popup");
+      if (!modal) return;
+
+      modal.style.display = "none";
+      modal.style.opacity = "0";
+
+      modal.__originalParent.appendChild(modal);
+      document.body.classList.remove("fs-modal-open");
+    }
+  });
+});
+</script>

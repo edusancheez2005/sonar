@@ -41,11 +41,18 @@
               </div>
             </li>
           </ul>
-          <p class="rates-src">Sources: Bank of England · Federal Reserve via FRED · euribor-rates.eu.</p>
         </div>
       </div>
 <script>
 if (document.documentElement.getAttribute('data-rc-view')==='new') {
+/* the sources line (owner's request, 10 Nov 2026): out of the panel, into the small print at the foot of the page */
+document.addEventListener('DOMContentLoaded', function () {
+  var t = document.querySelector('.footer-tnc-wrap');
+  if (!t || t.querySelector('.rc-rates-src')) return;
+  var p = document.createElement('p'); p.className = 'text-size-small text-color-grey2 rc-rates-src';
+  p.textContent = 'Market rates: Bank of England · Federal Reserve via FRED · euribor-rates.eu.';
+  t.appendChild(p);
+});
 (function () {
   /* the live cards above keep the ids baserate-* and changerate-* for the old view; in the new view they hand them to this panel */
   ['baserate-boe', 'baserate-fed', 'baserate-euribor', 'changerate-boe', 'changerate-fed', 'changerate-euribor', 'rates-updated'].forEach(function (id) {

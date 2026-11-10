@@ -1,0 +1,24 @@
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const shareBtn = document.querySelector(".bi-social-card.is-share");
+    const copiedMsg = document.querySelector(".bi-copied");
+
+    if (!shareBtn || !copiedMsg) return;
+
+    shareBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+
+        // Show copied message
+        copiedMsg.style.display = "block";
+
+        // Hide after 2 seconds
+        setTimeout(() => {
+          copiedMsg.style.display = "none";
+        }, 2000);
+      } catch (err) {
+        console.error("Failed to copy URL:", err);
+      }
+    });
+  });
+</script>

@@ -1,0 +1,52 @@
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const shareBtn = document.querySelector(".bi-social-card.is-share");
+    const copiedMsg = document.querySelector(".bi-copied");
+
+    if (!shareBtn || !copiedMsg) return;
+
+    shareBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+
+        // Show copied message
+        copiedMsg.style.display = "block";
+
+        // Hide after 2 seconds
+        setTimeout(() => {
+          copiedMsg.style.display = "none";
+        }, 2000);
+      } catch (err) {
+        console.error("Failed to copy URL:", err);
+      }
+    });
+  });
+</script>
+
+<!-- Roscap redesign, blog posts (10 Nov 2026). Runs only when the site switch shows the new design. The contact block's desktop Submit is a
+     link that relies on a script blog posts never load, so on a computer it does nothing (audit; the same fault as Partner Program). Here it
+     becomes a real submit button tied to the form, and the fields get hidden labels and autocomplete, as on Home and Partner Program. -->
+<script>
+if (document.documentElement.getAttribute('data-rc-view')==='new') {
+(function () {
+  var cf = document.getElementById('wf-form-Contact-Form');
+  if (!cf) return;
+  var SR = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap';
+  [['name', 'Name', 'name'], ['email', 'Email', 'email'], ['Phone', 'Phone', 'tel'], ['Subject', 'Subject', ''], ['Message', 'Message', '']].forEach(function (f) {
+    var el = cf.querySelector('#' + f[0]);
+    if (!el) return;
+    if (!cf.querySelector('label[for="' + f[0] + '"]')) {
+      var l = document.createElement('label'); l.style.cssText = SR; l.htmlFor = f[0]; l.textContent = f[1];
+      el.parentNode.insertBefore(l, el);
+    }
+    if (f[2]) el.setAttribute('autocomplete', f[2]);
+  });
+  var trig = document.querySelector('.contact-button-wrap a[fs-mirrorclick-element="trigger"]');
+  if (trig) {
+    var b = document.createElement('button');
+    b.type = 'submit'; b.setAttribute('form', 'wf-form-Contact-Form'); b.className = trig.className; b.textContent = 'Submit';
+    trig.parentNode.replaceChild(b, trig);
+  }
+})();
+}
+</script>

@@ -62,7 +62,7 @@ Source: `prototypes/speak-to-us/` (HANDOFF.md sections 2 to 5).
 | What | Element | Change | Undo |
 |---|---|---|---|
 | Contact line `div.c-social-wrap` | `9fc0899f-113e-b6e9-897e-1ae465850469` | Attribute `data-rc="old"` | Remove the attribute |
-| New contact block after it | `2a8b0d69-7877-af04-7b98-8d93d1053575` (`data-rc="new"`), Code Embed `b29a7d7b-f1cb-806a-eaf2-baf28326fea4` | `speak-to-us/contacts-embed.html`: email, phone (now shown) and Instagram, two by two. WhatsApp is left out until Clemente confirms the number; `speak-to-us/contacts-whatsapp-item.html` is the line to add | Delete the block |
+| New contact block after it | `2a8b0d69-7877-af04-7b98-8d93d1053575` (`data-rc="new"`), Code Embed `b29a7d7b-f1cb-806a-eaf2-baf28326fea4` | `speak-to-us/contacts-embed.html`: email, phone (now shown), WhatsApp (added in 11, once the owner confirmed the number) and Instagram, two by two | Delete the block |
 | FAQ dropdowns `div.faqs-content-wrap` | `e8b98bfe-13ab-a7ed-83e6-cf568ba0d48e` | Attribute `data-rc="old"` | Remove the attribute |
 | New FAQ block after it | `ddff09f2-493a-0441-98b6-8dcc3e075af6` (`data-rc="new"`), Code Embed `02ca1044-811e-a432-0c77-0c9677b34347` | `speak-to-us/faq-embed.html`: the compact accordion, live copy word for word | Delete the block |
 | Page head code | | Was the Finsweet Attributes tag only (`speak-to-us/page-head.before.html`). Now `speak-to-us/page-head.html`: the same tag, then `<style id="rc-css-speak" media="not all">` (new view only) and the FAQPage JSON-LD | Set it back to `page-head.before.html` |
@@ -74,7 +74,7 @@ How this differs from the handoff: the handoff edits the live form in the Design
 
 Checked on staging (Playwright, 1440 and 390 wide). New view: the first contact row sits where the live line is (y 598 at 1440, y 290 at 390); the hero is 900 px at 1440 as live, 925 px at 390 (live 873: the second contact row); 5 FAQ questions, identical to the live dropdowns, one open at a time; the JSON-LD matches the visible FAQ; 5 hidden labels, Subject is `type="text"`, autocomplete name, email and tel; the honeypot is off screen and its guard cancels a submit when it is filled (tested with a synthetic event while every outgoing request was blocked: nothing was sent). Old view: the live line, the dropdowns and the form as live. Live site: unchanged.
 
-Still to do on this page before go-live (owner): send one test enquiry on staging and check it reaches /contact-us-success, appears in Webflow Forms and sends the notification email; confirm WhatsApp; confirm the FAQ timescales still hold.
+Still to do on this page before go-live (owner): send one test enquiry on staging and check it reaches /contact-us-success, appears in Webflow Forms and sends the notification email (the owner believes enquiries work; one test confirms it); confirm the FAQ timescales still hold. WhatsApp: confirmed by the owner on 10 Nov 2026 and added (see 11).
 
 ### 5. Track Record (`6947c1c57991169cd74afd2c`) (10 Nov 2026)
 Source: `prototypes/track-record/` (the footprint map and the Selected Transactions grid).
@@ -144,7 +144,9 @@ How this differs from the handoff, and why: the handoff deletes today's Google t
 
 Checked on staging (Playwright, fresh browser for each run, every Google request recorded and then cancelled so nothing reached Google). New view: on a first visit the banner shows bottom right on a computer (384 px wide, 24 px from the edges) and as a bottom sheet on a phone, first in the page; no cookie and no Google request before a choice, on any of 16 pages; it shows on the first page of a visit only. Accept all: roscap_consent (version 1, both true), the consent default, the update, then the Google Analytics and Google Ads configuration; after a reload no banner. Reject: both false, no Google request on that page or the next. Analytics only: Google Analytics configured, Google Ads not. The footer link, reached by keyboard, opens the dialog with "Your choice: analytics off, marketing off. Saved 10 November 2026."; Escape closes it and returns focus to the link; the page address does not change. The Cookie Policy's own "Cookie preferences" link opens it too. No console errors, no sideways scrolling, on all 16 pages at 1440 and 390. Old view and live: today's Google tag loads at once and is configured as before; no banner, no footer link.
 
-Still to do before go-live (owner): confirm the Google Ads ID AW-238397354910 and send the conversion label, so the consent-aware conversion event can go on /contact-us-success; in Google Analytics, data retention 14 months and Google Signals off (both stated in the policies); after go-live, check with Tag Assistant (handoff section 4, test 2) and one test enquiry with consent granted.
+Still to do before go-live (owner): after go-live, check with Tag Assistant (handoff section 4, test 2) and one test enquiry with consent granted.
+
+Answered by the owner on 10 Nov 2026: the Google Analytics settings (data retention 14 months, Google Signals off) are done. Google Ads: both conversions, "Roscap (web) generate_lead" and "Contact Us", are imported from Google Analytics, so no conversion label and no extra code on /contact-us-success are needed; they count only for visitors who accept analytics. The site never sends a `generate_lead` event itself, so that event must be created inside Google Analytics (for example from the /contact-us-success page view); worth a look under Admin > Events in Google Analytics. The Ads account showed an overdue balance, so no ads were running.
 
 ### 9. Privacy Policy (`696052dc56c8f2832361bd16`) and Cookie Policy (`696055ce5a6158c485b5141b`) (10 Nov 2026)
 Source: `prototypes/legal-pages/` (HANDOFF.md section 4). The text is the prototype's, word for word, with the review highlights removed.
@@ -168,7 +170,30 @@ The "Last updated" date on both pages is 10 November 2026. If go-live is on a la
 | Accessibility Statement (`69605691f9530751aff13d75`) | `c3371590-c5f1-6ff4-9b64-16c7b0a3cf23` | Set the link back to the URL `#` |
 | Privacy Policy, old text (`696052dc56c8f2832361bd16`) | `dc5b0b22-735f-6591-7c9b-f7c829bd68c7` | Set the link back to the URL `#` |
 
-Not done: the Accessibility Statement still claims WCAG 2.1 AA. The plan restates it as partially conformant (audit IL-03), but that needs new text, a list of known issues and a target date, which only the owner can give. It is left as it is.
+Not done: the Accessibility Statement still claims WCAG 2.1 AA. The plan restates it as partially conformant (audit IL-03), but that needs new text, a list of known issues and a target date, which only the owner can give. It is left as it is (the owner's decision, 10 Nov 2026).
+
+### 11. The owner's review, round 2 (10 Nov 2026)
+The owner checked staging, answered the two open questions (Mowgli: "Southern Europe"; Manchester: "£2.66m is correct", a land bridge) and confirmed WhatsApp. These are the changes that followed. Where a file had already changed in an earlier step, the version before this step is in git: `git show 33cc48a:webflow-build/<file>`.
+
+| What | Where | Change | Undo |
+| --- | --- | --- | --- |
+| Mowgli's bio | About Us (`6945320290c61958e6e7ae91`), paragraph `3f8bbcb1-5ace-be89-3199-b1df50408ff6` | "Head of Western Europe" now reads "Head of Southern Europe", as his card says. An approved error fix, so not behind the switch | Set the text back to the old text below |
+| Leftover test script | About Us and Insights (`69456f172ca40e1b1a9f748c`), page footer code | `<script src="https://jj59l3.csb.app/script.js">` removed (it changes nothing on either page). Was `about-us/page-footer.before.html` and `insights/page-footer.before.html`, now the `page-footer.html` beside each. An approved error fix, so not behind the switch | Set each page footer back to its `page-footer.before.html` |
+| Blog posts: desktop Submit | Blogs Template (`694571d3016b9c2b2ec786f4`), page footer code | On a computer the contact block's Submit is a link that relies on a script blog posts never load, so it did nothing on all 12 posts (the Partner Program fault). After the live share script, a new-view script turns it into a real submit button tied to the form and adds hidden labels and autocomplete, as on Home and Partner Program. Was `blog-posts/page-footer.before.html`, now `blog-posts/page-footer.html` | Set the page footer back to `page-footer.before.html` |
+| Brochure pop-up layout | Partner Program page head | Full Name across both columns again, as live. The new view renames the pop-up's field ids (so no id is repeated on the page) and the live grid rules are tied to the old ids, so the three rules are copied for the new ids at the end of `rc-css-partner` | Delete the three `#brochure-` rules at the end of `rc-css-partner` |
+| FAQ answer width | Speak to Us page head | Answers run as far as the question text, 50 px short of the right edge, so the gap before the arrow is small (it was a 68-character column). Phones unchanged | Set `.acc .ans` back to `{max-width:68ch;padding:0 4px 26px}` |
+| WhatsApp | Speak to Us, Code Embed `b29a7d7b-f1cb-806a-eaf2-baf28326fea4` | Added after the phone line: `https://wa.me/447850522789` with a short opening message, so the four contacts sit two by two | Delete the WhatsApp line (`speak-to-us/contacts-whatsapp-item.html` holds it) |
+| Manchester card | Track Record page footer | New view: £2.66m and Product "Land Bridge", in place of the CMS item's £2.7m and "Commercial Mortgage". Only that old wording is replaced, so these lines do nothing once the CMS item is corrected. The CMS item is not changed here, because publishing a CMS item sends it straight to the live site | Delete the Manchester lines from the script |
+| Rates sources line | Home, Code Embed `41aa8413-a1fd-291f-aeee-45c36970e12f` | Out of the rates panel and into the small print at the foot of Home, in the style of the text around it: "Market rates: Bank of England · Federal Reserve via FRED · euribor-rates.eu." | Paste back the earlier embed (`git show 33cc48a:webflow-build/home/rates-embed.html`) |
+| Deal list hover | Home, Code Embed `9d43b833-966e-bff4-198a-e0cad3bd7daf` | On a computer the row last hovered stays in the pane and becomes the selected row, instead of springing back when the pointer leaves the list. Hovering is still not read out by screen readers; clicks, arrow keys and phones work as before | Paste back the earlier embed (`git show 33cc48a:webflow-build/home/deals-embed.html`) |
+
+Old bio text: "Mowgli was born in the snowy French alps. He graduated from Skema business school in Lille in 1995. He has since lived and worked in very diverse industries in London, Paris, Los Angeles and Lisbon. He founded one of the first real estate crowdfunding platforms in France, raising more than €50m before he sold it in 2023. He is now the Head of Western Europe for Roscap, sourcing Real Estate opportunities seeking development or bridge finance."
+
+Checked on staging after one publish to the staging address only. Every file above is in the published pages byte for byte. Playwright at 1440 and 390, every non-GET and Google request cancelled: the pop-up fields match live to the pixel (Full Name and Company Name 638 px at 1440, Email and Phone 311 px side by side; 318 px each on a phone); the first FAQ answer now ends 54 px before the arrow at 1440; the four contacts sit two by two, WhatsApp under the email; Manchester shows £2.66m and Land Bridge in the new view (the old view keeps the CMS wording, as live); the sources line is gone from the panel and sits in the small print (14 px, the same grey); Birmingham, then All transactions, then Rome each stay in the pane after the pointer leaves the list, and the arrow keys and a click still select; on a phone a tap opens the row; the blog Submit is a button of the live size (84 x 41 px) tied to the form, and an empty Submit is stopped by the browser at Name with nothing sent; About Us and Insights make no request to csb.app, the team pop-up opens and closes, and "Western Europe" appears nowhere; the Equity sentence on Our Services appears once. All 16 pages: no console errors, no sideways scrolling, no Google request before a choice. Insights' own desktop Submit already works (that page loads the script blog posts lack), so it is unchanged. Live site: unchanged.
+
+EURIBOR stays on the rates panel, at the owner's choice. EMMI, which runs EURIBOR, allows free use of its delayed rates for non-commercial purposes only and licenses commercial use (https://emmi-benchmarks.eu/faq/euribor, fee schedule https://www.emmi-benchmarks.eu/globalassets/documents/pdf/subscriptions/d0167a-2026---2027-fee-schedule.pdf). The risk is a request to license or remove it, possibly with back fees, not a regulator's fine. Options: ask EMMI (info@emmi-benchmarks.eu) for a licence or a written confirmation, show the ECB deposit facility rate instead, or remove the third rate.
+
+Still to do before go-live (owner): a Webflow backup, and an agreement that no one else publishes until go-live; the "Last updated" date on both policies set to the go-live day; one test enquiry on staging; a decision on EURIBOR.
 
 ## Publishes
 
@@ -182,6 +207,7 @@ Not done: the Accessibility Statement still claims WCAG 2.1 AA. The plan restate
 | 10 Nov 2026 | Staging only | Partner Program |
 | 10 Nov 2026 | Staging only | Home, then two fixes found in checking (the Who We Are photo as WebP, the reset for the two new blocks) |
 | 10 Nov 2026 | Staging only | Cookie banner, both policies, the email links, then the old Privacy Policy text's email link |
+| 10 Nov 2026 | Staging only | The owner's review, round 2 (section 11) |
 
 The live domains were last published on 17 Oct 2026, before this work started.
 
@@ -194,5 +220,7 @@ The live domains were last published on 17 Oct 2026, before this work started.
 - Home: put the deal list into the CMS as the handoff describes (or keep the static rows), make the Designer edits (wrap the What We Do photo, remove its fade-in and the heading's, type the counters, the form fixes in the shared contact component, the Who We Are photo as WebP), then delete the rate cards, the three Track Record cards, the old rates and slider code and Swiper, and drop the script lines.
 - Site-wide: delete today's Google tag block (old view only) from the site head, drop the switch checks around the consent code, add the "Cookie preferences" link in the footer Symbol and drop the script lines that add it.
 - Policies: paste the text into the Rich Text as the legal handoff describes (or keep the embeds), then delete the old text.
+- Track Record: correct the Manchester CMS item (£2.66m, Land Bridge), then delete the Manchester lines from the page footer script.
+- Blog posts: make the Submit fix in the shared contact component (with Home and Partner Program), then drop the blog page footer script.
 - Remove the replaced interactions in the Interactions panel.
 - Remove the switch from the site head.

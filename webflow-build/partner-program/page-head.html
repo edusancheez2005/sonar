@@ -204,5 +204,10 @@ html{scroll-padding-top:calc(85px + 1rem)} /* anchors (#step-n, #brochure) land 
 .marquee:has(.marquee-viewport:focus-visible){outline:2px solid #043435;outline-offset:4px}
 @media (max-width:991px){.marquee{--tile:240px;--loop:34s}}
 @media (max-width:767px){.marquee{--tile:200px;--loop:30s;--fade:64px}}
+/* brochure pop-up: its fields are renamed in the new view so no id is repeated on the page; these copy the live layout rules
+   that are tied to the old ids (Full Name across both columns, as live) */
+#brochure-name.w-node-f059f806-9b19-9127-825b-c2e3916b1055-6aca1cd0{grid-area:span 1/span 2/span 1/span 2}
+#brochure-email.w-node-f059f806-9b19-9127-825b-c2e3916b1056-6aca1cd0{grid-area:span 1/span 1/span 1/span 1}
+@media screen and (max-width:767px){#brochure-name.w-node-f059f806-9b19-9127-825b-c2e3916b1055-6aca1cd0{grid-area:span 1/span 1/span 1/span 1}}
 </style>
 <script>if(document.documentElement.getAttribute('data-rc-view')==='new'){document.getElementById('rc-css-partner').media='all';document.documentElement.classList.add('js');}</script>
