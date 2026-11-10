@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css" />
+<style>
+/* Roscap redesign: this rule now applies in the old view only; in the new view it gave every drawing a hand cursor */
+:where(html:not([data-rc-view="new"])) svg path {
+  pointer-events: all;
+  cursor: pointer;
+}
+
+#svg-map-container,
+#svg-map-container svg,
+#svg-map-container svg * {
+  pointer-events: all !important;
+}
+
+
+
+svg [id^="pin-"],
+svg [id^="popup-"] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+svg .is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+
+
+</style>
+<!-- Roscap redesign, Track Record (10 Nov 2026). Off unless the site switch shows the new design. Source: prototypes/track-record/webflow/track-record-head.html -->
+<style id="rc-css-track" media="not all">
+.deals .section.deals-section{padding-bottom:6.25rem}.deals{display:flex;flex-direction:column;align-items:center;gap:2.75rem}.deals .deal-filter{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}.deals .deal-f{min-height:44px;padding:8px 22px;border:1px solid var(--_colors---golden,#e1c979);border-radius:999px;background:transparent;color:var(--_colors---black,#12161d);font:400 .9375rem/1.2 Switzer,Arial,sans-serif;cursor:pointer;transition:background-color .25s ease,border-color .25s ease,color .25s ease}.deals .deal-f:hover{border-color:var(--_colors---green,#043435)}.deals .deal-f[aria-pressed="true"]{background-color:var(--_colors---green,#043435);border-color:var(--_colors---green,#043435);color:#fff}.deals .deal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3.5rem 2rem;width:100%}.deals .deal[hidden]{display:none}.deals .deal{min-width:0}.deals .st-card-wrap{height:100%}.deals .st-thumbnail-wrap{position:relative;overflow:hidden;height:auto;border-radius:.5rem;aspect-ratio:1.6/1;background:#ece8dc}.deals .st-thumbnail-wrap .image{display:block;width:100%;height:100%;object-fit:cover;transition:transform 1.4s cubic-bezier(.22,1,.36,1) var(--d,0ms),scale .9s cubic-bezier(.22,1,.36,1)}.deals .st-card-detail-wrap{padding-top:1.5rem}.deals .st-price-wrap{display:flex;align-items:stretch;flex-wrap:wrap;column-gap:12px;row-gap:2px;color:var(--_colors---green,#043435)}.deals .st-loc,.deals .st-amt{font-family:Boska,Arial,sans-serif;font-size:1.75rem;font-weight:500;line-height:1.25;color:var(--_colors---green,#043435)}.deals .green-divider{width:1px;height:auto;align-self:stretch;background-color:rgba(4,52,53,.4)}.deals .st-features-wrap{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:.7rem;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid rgba(40,40,40,.2)}.deals .st-features-wrap::before{content:"";position:absolute;left:0;top:-1px;width:100%;height:1px;background:var(--_colors---golden,#e1c979);transform:scaleX(0);transform-origin:0 50%;transition:transform .7s cubic-bezier(.22,1,.36,1)}.deals .st-features-card{display:grid;grid-template-columns:6.5rem minmax(0,1fr);gap:12px;font-size:.875rem;line-height:1.45}.deals .st-k{font-weight:500;color:var(--_colors---black,#12161d)}.deals .st-v{font-weight:300;color:#282828}@media (hover:hover) and (pointer:fine){.deals .st-card-wrap:hover .st-features-wrap::before{transform:none}}@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){.deals .st-card-wrap:hover .image{scale:1.045}}@media (prefers-reduced-motion:reduce){.deals .st-features-wrap::before,.deals .st-thumbnail-wrap .image{transition:none}}html.w-mod-js .deals:not(.js-ready) .deal:nth-child(n+7){display:none}.deals .deal-status{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}.deals .deal-more-wrap{display:flex;justify-content:center}.deals .deal-more{min-width:220px;min-height:44px}.deals .deal-more[hidden]{display:none}@media (prefers-reduced-motion:no-preference){.deals-armed .deal:not(.is-in) .st-card-wrap{opacity:0;translate:0 32px}.deals-armed .deal:not(.is-in) .image{transform:scale(1.08)}.deals-armed .deal.is-in .st-card-wrap{opacity:1;translate:none;transition:opacity .8s cubic-bezier(.22,1,.36,1) var(--d,0ms),translate .9s cubic-bezier(.22,1,.36,1) var(--d,0ms)}}@media (max-width:991px){.deals .deal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:3rem 1.5rem}}@media (max-width:767px){.deals{gap:2rem}.deals .deal-grid{grid-template-columns:minmax(0,1fr);gap:2.75rem}html.w-mod-js .deals:not(.js-ready) .deal:nth-child(n+5){display:none}.deals .st-loc,.deals .st-amt{font-size:1.5rem}}@media (max-width:479px){.deals .deal-f{padding:8px 16px}.deals .st-features-card{grid-template-columns:6rem minmax(0,1fr)}}
+/* the map and deals sections: bottom spacing as the prototype, and held still so their own entrances read clearly */
+.section.fp-section,.section.deals-section{padding-bottom:6.25rem;opacity:1!important;transform:none!important}
+@media (max-width:991px){.section.fp-section,.section.deals-section{padding-bottom:4rem}}
+@media (max-width:767px){.section.fp-section,.section.deals-section{padding-bottom:3.25rem}}
+</style>
+<script>if(document.documentElement.getAttribute('data-rc-view')==='new')document.getElementById('rc-css-track').media='all';</script>

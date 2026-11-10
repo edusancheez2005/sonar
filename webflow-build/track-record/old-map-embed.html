@@ -1,0 +1,120 @@
+<div id="svg-map-container"></div>
+
+<style>
+#svg-map-container,
+#svg-map-container svg,
+#svg-map-container svg * {
+  pointer-events: all !important;
+}
+
+/* Hide pins & popups by default */
+svg [id^="pin-"],
+svg [id^="popup-"] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Show active pin / popup */
+svg .is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+</style>
+
+<script>
+(async function () {
+if (window.innerWidth < 1200 || document.documentElement.getAttribute('data-rc-view') === 'new') return; /* Roscap redesign: no 6.66 MB map in the new view */
+  const ACTIVE_COLOR = "#034C4F";
+
+  const ACTIVE_COUNTRIES = [
+    "usa",
+    "uk",
+    "france",
+    "spain",
+    "italy",
+    "albania",
+    "ireland"
+  ];
+
+  const container = document.getElementById("svg-map-container");
+  if (!container) return;
+
+  const res = await fetch("https://roscap.s3.us-east-1.amazonaws.com/mapwithireee.svg");
+  container.innerHTML = await res.text();
+
+  const svg = container.querySelector("svg");
+  if (!svg) return;
+
+  /* Set default country colors */
+  ACTIVE_COUNTRIES.forEach(id => {
+    const el = svg.getElementById(id);
+    if (!el) return;
+
+    if (el.tagName === "g") {
+      el.querySelectorAll("path").forEach(p => p.style.fill = ACTIVE_COLOR);
+    } else {
+      el.style.fill = ACTIVE_COLOR;
+    }
+  });
+
+  /* Build geometry map */
+  const countryGeometries = ACTIVE_COUNTRIES.map(id => {
+    const el = svg.getElementById(id);
+    if (!el) return null;
+
+    const paths =
+      el.tagName === "g"
+        ? Array.from(el.querySelectorAll("path"))
+        : [el];
+
+    return { id, paths };
+  }).filter(Boolean);
+
+  const svgPoint = svg.createSVGPoint();
+  let activeId = null;
+
+  const hideAllPins = () => {
+    svg.querySelectorAll(".is-visible")
+      .forEach(el => el.classList.remove("is-visible"));
+    activeId = null;
+  };
+
+  svg.addEventListener("pointermove", e => {
+    svgPoint.x = e.clientX;
+    svgPoint.y = e.clientY;
+
+    const cursorPoint = svgPoint.matrixTransform(
+      svg.getScreenCTM().inverse()
+    );
+
+    let hoveredId = null;
+
+    for (const country of countryGeometries) {
+      for (const path of country.paths) {
+        if (path.isPointInFill(cursorPoint)) {
+          hoveredId = country.id;
+          break;
+        }
+      }
+      if (hoveredId) break;
+    }
+
+    if (hoveredId === activeId) return;
+
+    hideAllPins();
+
+    if (hoveredId) {
+      const pin = svg.getElementById(`pin-${hoveredId}`);
+      const popup = svg.getElementById(`popup-${hoveredId}`);
+
+      if (pin) pin.classList.add("is-visible");
+      if (popup) popup.classList.add("is-visible");
+
+      activeId = hoveredId;
+    }
+  });
+
+  svg.addEventListener("pointerleave", hideAllPins);
+})();
+</script>

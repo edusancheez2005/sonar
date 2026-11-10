@@ -1,0 +1,51 @@
+<script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+
+<script>
+const slider1 = new Swiper(".swiper-1", {
+  speed: 600,
+  loop: true,
+  spaceBetween: 0,
+  breakpoints: {
+    0:   { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 16 },
+    768: { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 20 },
+    992: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 40 },
+  },
+  navigation: {
+    nextEl: ".swiper-next-1",
+    prevEl: ".swiper-prev-1",
+  },
+  pagination: {
+    el: ".swiper-pagination-wrap-1",
+    clickable: true,
+    bulletClass: "swiper-dot",
+    bulletActiveClass: "swiper-dot-active",
+    renderBullet: (index, className) => `<span class="${className}"></span>`,
+  },
+});
+
+const slider2 = new Swiper(".swiper-2", {
+  speed: 600,
+  loop: true,
+  spaceBetween: 0,
+  breakpoints: {
+    0:   { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 16 },
+    768: { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 20 },
+    992: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 40 },
+  },
+  navigation: {
+    nextEl: ".swiper-next-2",
+    prevEl: ".swiper-prev-2",
+  },
+  pagination: {
+    el: ".swiper-pagination-wrap-2",
+    clickable: true,
+    bulletClass: "swiper-dot",
+    bulletActiveClass: "swiper-dot-active",
+    renderBullet: (index, className) => `<span class="${className}"></span>`,
+  },
+});
+
+/* 🔥 PERFECT SYNC */
+slider1.controller.control = slider2;
+slider2.controller.control = slider1;
+</script>

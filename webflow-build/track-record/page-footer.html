@@ -1,0 +1,199 @@
+<!-- Roscap redesign, Track Record (10 Nov 2026). Runs only when the site switch shows the new design, and before the Swiper code. Source: prototypes/track-record/webflow/track-record-footer.html -->
+<script>
+if (document.documentElement.getAttribute('data-rc-view')==='new') {
+/* Classes the new design expects on existing elements, set as data-rc-class in the Designer so the live classes stay untouched */
+Array.prototype.forEach.call(document.querySelectorAll('[data-rc-class]'), function (e) { e.className += ' ' + e.getAttribute('data-rc-class'); });
+
+/* Deals: move the 22 CMS cards out of the two slider lists into the one grid, in CMS order (this runs in the new view only;
+   the old view keeps its sliders). It runs before the Swiper code below, whose loop mode reorders the slides and, on hidden
+   sliders, would load every photo. Card changes as the handoff: the location becomes an H3 (st-loc), the amount a div (st-amt),
+   each feature label st-k and value st-v. */
+(function () {
+  var grid = document.getElementById('deal-grid');
+  if (!grid) return;
+  /* light WebP copies of the CMS photos (35 to 95 KB instead of 0.5 to 1 MB), uploaded as site assets so the CMS is untouched;
+     a deal without one here keeps its CMS photo. Key: the town before the comma in the card's location. */
+  var CDN = 'https://cdn.prod.website-files.com/693e84a885fe6122f0427916/';
+  var PHOTOS = {"bath":["6af347b1d12565728fd2728c_bath-lg.webp",660,412],"birmingham":["6af347b11831c8cbe4bc4941_birmingham-lg.webp",660,412],"bradford":["6af347b1239224009776368a_bradford-lg.webp",660,412],"bristol":["6af347b1375a0504cb438118_bristol-lg.webp",660,412],"buckinghamshire":["6af347b1fca0dba5dc5e710e_buckinghamshire-lg.webp",660,412],"cannes":["6af347b14951b4a8ae401280_cannes-lg.webp",660,412],"dublin":["6af347b12392240097763708_dublin-lg.webp",660,412],"edinburgh":["6af347b2be8f7c1db4580e50_edinburgh-lg.webp",660,412],"florida":["6af347b2239224009776371e_florida-lg.webp",660,412],"huddersfield":["6af347b282c0de4f6f954e10_huddersfield-lg.webp",660,412],"kensington":["6af347b2d509ff130b95c6b8_kensington-lg.webp",765,478],"leeds":["6af348ddc7eb74c30fdb74fd_leeds-lg.webp",660,412],"liverpool":["6af348ddabdce7dc66fa55f0_liverpool-lg.webp",660,412],"london":["6af348ddd1bf2173b7e41e44_london-lg.webp",800,500],"manchester":["6af348dd3076b48979e76d80_manchester-lg.webp",660,412],"marbella":["6af348dde847a9712d7b84ef_marbella-lg.webp",660,412],"nottingham":["6af348dde847a9712d7b850c_nottingham-lg.webp",660,412],"rome":["6af348de82c0de4f6f95d718_rome-lg.webp",765,478],"sheffield":["6af348de2890fc66307b4d19_sheffield-lg.webp",660,412],"surrey":["6af348de7de1e8f2540937ff_surrey-lg.webp",660,412],"tirana":["6af348de3e6cc6cfa6ff82a5_tirana-lg.webp",660,412],"wakefield":["6af348de86c071cb5b21be5b_wakefield-lg.webp",660,412]};
+  var items = Array.prototype.slice.call(document.querySelectorAll('.swiper-1 .w-dyn-item, .swiper-2 .w-dyn-item'))
+    .filter(function (it) { return !it.classList.contains('swiper-slide-duplicate'); });
+  items.forEach(function (it) {
+    var card = it.querySelector('.st-card-wrap');
+    if (!card) return;
+    var c = card;
+    var hs = c.querySelectorAll('.st-price-wrap h2');
+    if (hs[0]) { var loc = document.createElement('h3'); loc.className = 'st-loc'; loc.textContent = hs[0].textContent; hs[0].parentNode.replaceChild(loc, hs[0]); }
+    if (hs[1]) { var amt = document.createElement('div'); amt.className = 'st-amt'; amt.textContent = hs[1].textContent; hs[1].parentNode.replaceChild(amt, hs[1]); }
+    Array.prototype.forEach.call(c.querySelectorAll('.st-features-card'), function (f) {
+      if (f.children[0]) f.children[0].classList.add('st-k');
+      if (f.children[1]) f.children[1].classList.add('st-v');
+    });
+    var img = c.querySelector('.st-thumbnail-wrap img');
+    if (img) {
+      var ph = PHOTOS[(c.querySelector('.st-loc') || { textContent: '' }).textContent.split(',')[0].trim().toLowerCase()];
+      if (ph) { img.removeAttribute('srcset'); img.src = CDN + ph[0]; img.width = ph[1]; img.height = ph[2]; }
+      else img.setAttribute('sizes', '(max-width: 767px) 92vw, (max-width: 991px) 46vw, 30vw');
+      img.decoding = 'async';
+    }
+    var d = document.createElement('div'); d.className = 'deal'; d.setAttribute('role', 'listitem');
+    d.appendChild(c); grid.appendChild(d);
+  });
+})();
+
+/* Selected Transactions grid behaviour (handoff code, unchanged) */
+(function(){var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var hasIO='IntersectionObserver' in window;var $=function(s,r){return(r||document).querySelector(s)};var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+  var deals = document.getElementById('deals');
+  if (deals) (function () {
+    var grid = $('.deal-grid', deals), cards = $$('.deal', grid), btns = $$('.deal-f', deals);
+    var more = $('.deal-more', deals), status = $('.deal-status', deals);
+    var phone = window.matchMedia('(max-width: 767px)');
+    var region = 'all', expanded = false, timer = null;
+    var motion = !reduce && hasIO && typeof Element.prototype.animate === 'function';
+    var limit = function () { return phone.matches ? 4 : 6; };
+    /* region from the CMS field if the item carries one (data-region), otherwise from the location line:
+       "..., UK" or "London" is UK, "..., USA" is North America, everything else is Europe */
+    cards.forEach(function (c) {
+      if (c.getAttribute('data-region')) return;
+      var loc = (($('.st-loc', c) || c).textContent || '').trim();
+      c.setAttribute('data-region', /(,\s*UK|London)$/.test(loc) ? 'uk' : /,\s*USA$/.test(loc) ? 'na' : 'europe');
+    });
+    var matches = function (c) { return region === 'all' || c.getAttribute('data-region') === region; };
+
+    function wanted() {
+      var n = 0, L = limit();
+      return cards.map(function (c) { var m = matches(c); if (m) n++; return m && (expanded || n <= L); });
+    }
+    function render() {
+      var w = wanted(), total = cards.filter(matches).length;
+      cards.forEach(function (c, i) { c.hidden = !w[i]; });
+      more.hidden = total <= limit();
+      more.textContent = expanded ? 'Show fewer' : 'View all transactions';
+      more.setAttribute('aria-expanded', String(expanded));
+    }
+    function announce() {
+      var shown = cards.filter(function (c) { return !c.hidden; }).length, total = cards.filter(matches).length;
+      status.textContent = shown + ' of ' + total + ' transactions shown';
+    }
+
+    /* cards that come into view together fade up one after another, 90 ms apart */
+    if (motion) {
+      deals.classList.add('deals-armed');
+      var rio = new IntersectionObserver(function (entries) {
+        entries.filter(function (e) { return e.isIntersecting; })
+          .map(function (e) { return e.target; })
+          .sort(function (a, b) { return cards.indexOf(a) - cards.indexOf(b); })
+          .forEach(function (c, i) { c.style.setProperty('--d', (i * 90) + 'ms'); c.classList.add('is-in'); rio.unobserve(c); });
+      }, { rootMargin: '0px 0px -6% 0px', threshold: 0.12 });
+      cards.forEach(function (c) { rio.observe(c); });
+    } else cards.forEach(function (c) { c.classList.add('is-in'); });
+
+    /* filter: the cards that stay glide to their new places, the new ones fade in (FLIP with the Web Animations API) */
+    function change(mutate) {
+      var before = new Map();
+      cards.forEach(function (c) { if (!c.hidden) before.set(c, c.getBoundingClientRect()); });
+      mutate();
+      var next = wanted();
+      var leaving = cards.filter(function (c, i) { return !c.hidden && !next[i]; });
+      var entering = cards.filter(function (c, i) { return c.hidden && next[i]; });
+      if (!motion) { render(); announce(); return; }
+      clearTimeout(timer);
+      cards.forEach(function (c) { c.getAnimations().forEach(function (a) { a.cancel(); }); });
+      var outs = leaving.map(function (c) {
+        return c.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.97)' }], { duration: 180, easing: 'ease-in', fill: 'forwards' });
+      });
+      timer = setTimeout(function () {
+        render();
+        outs.forEach(function (a) { a.cancel(); });
+        cards.forEach(function (c) {
+          if (c.hidden || !before.has(c)) return;
+          var a = before.get(c), b = c.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
+          if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+          c.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: 560, easing: 'cubic-bezier(.22,1,.36,1)' });
+        });
+        /* new cards already seen once fade up here; cards never seen yet are revealed by the scroll reveal above */
+        entering.filter(function (c) { return c.classList.contains('is-in'); }).forEach(function (c, i) {
+          c.animate([{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 560, delay: 90 + i * 60, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' });
+        });
+        announce();
+      }, leaving.length ? 180 : 0);
+    }
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var r = b.getAttribute('data-f');
+        if (r === region) return;
+        btns.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        change(function () { region = r; expanded = false; });
+      });
+    });
+
+    /* View all / Show fewer. Collapsing keeps the button where it was on screen, so the visitor is not left in the footer. */
+    more.addEventListener('click', function () {
+      if (!expanded) { expanded = true; render(); announce(); return; }
+      var y0 = more.getBoundingClientRect().top, root = document.documentElement;
+      root.style.overflowAnchor = 'none';
+      expanded = false; render(); announce();
+      window.scrollBy(0, more.getBoundingClientRect().top - y0);
+      root.style.overflowAnchor = '';
+    });
+    var onBp = function () { render(); };
+    if (phone.addEventListener) phone.addEventListener('change', onBp); else if (phone.addListener) phone.addListener(onBp);
+
+    render();
+    deals.classList.add('js-ready');
+  })();
+})();
+}
+</script>
+<!-- Live code below, unchanged: the two sliders the old view shows -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+
+<script>
+const slider1 = new Swiper(".swiper-1", {
+  speed: 600,
+  loop: true,
+  spaceBetween: 0,
+  breakpoints: {
+    0:   { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 16 },
+    768: { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 20 },
+    992: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 40 },
+  },
+  navigation: {
+    nextEl: ".swiper-next-1",
+    prevEl: ".swiper-prev-1",
+  },
+  pagination: {
+    el: ".swiper-pagination-wrap-1",
+    clickable: true,
+    bulletClass: "swiper-dot",
+    bulletActiveClass: "swiper-dot-active",
+    renderBullet: (index, className) => `<span class="${className}"></span>`,
+  },
+});
+
+const slider2 = new Swiper(".swiper-2", {
+  speed: 600,
+  loop: true,
+  spaceBetween: 0,
+  breakpoints: {
+    0:   { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 16 },
+    768: { slidesPerView: 1, slidesPerGroup: 1, spaceBetween: 20 },
+    992: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 40 },
+  },
+  navigation: {
+    nextEl: ".swiper-next-2",
+    prevEl: ".swiper-prev-2",
+  },
+  pagination: {
+    el: ".swiper-pagination-wrap-2",
+    clickable: true,
+    bulletClass: "swiper-dot",
+    bulletActiveClass: "swiper-dot-active",
+    renderBullet: (index, className) => `<span class="${className}"></span>`,
+  },
+});
+
+/* 🔥 PERFECT SYNC */
+slider1.controller.control = slider2;
+slider2.controller.control = slider1;
+</script>

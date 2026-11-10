@@ -76,6 +76,27 @@ Checked on staging (Playwright, 1440 and 390 wide). New view: the first contact 
 
 Still to do on this page before go-live (owner): send one test enquiry on staging and check it reaches /contact-us-success, appears in Webflow Forms and sends the notification email; confirm WhatsApp; confirm the FAQ timescales still hold.
 
+### 5. Track Record (`6947c1c57991169cd74afd2c`) (10 Nov 2026)
+Source: `prototypes/track-record/` (the footprint map and the Selected Transactions grid).
+
+| What | Element | Change | Undo |
+|---|---|---|---|
+| Old map `div.map-container` | `26260c28-9616-6014-9a65-98b3a177faea` | Attribute `data-rc="old"` | Remove the attribute |
+| Old map embed `svg-mapp` | `34c52d5a-7822-77e3-bbbd-b95dca5b77cf` | One condition added to the first line of its script, so it stops at once in the new view and the 6.66 MB map is not fetched there (`track-record/old-map-embed.html`). In the old view it runs as before | Paste `track-record/old-map-embed.before.html` back |
+| New map block | `506d112c-b072-f2bd-2b31-0c4119e91ed2` (class `container`, `data-rc="new"`), Code Embed `3d535fa3-3afa-b484-ecf8-b8d8f0f3ba0f` | `track-record/map-embed.html`; its script runs in the new view only. The map file is the asset `6af3427ce4b4f0db826ddc30_footprint-map.svg` (166 KB) | Delete the block |
+| Map section | `d6cdb4bb-ee3b-295e-b3e6-ee2ce276a29e` | `data-rc-class="fp-section"` | Remove the attribute |
+| Slider 1, with its arrows and dots | `bbdc237e-c1a8-48e8-2410-20d11be599a7` | Attribute `data-rc="old"` | Remove the attribute |
+| Slider 2, with its arrows and dots | `b21d550b-3ff6-57a0-536c-8e3e85dfcaf3` | Attribute `data-rc="old"` | Remove the attribute |
+| New deals block | `23234589-ba14-a97e-389e-070be768ca2e` (class `container`, `data-rc="new"`), Code Embed `36697734-1299-394b-05be-6c4a8a484ae0` | `track-record/deals-embed.html`: the filter, an empty grid, the screen-reader status and the button | Delete the block |
+| Deals section | `ccc15f3f-e44e-43bc-8036-b9c97a6a68dd` | `data-rc-class="deals-section"` | Remove the attribute |
+| Page head code | | Was `track-record/page-head.before.html` (the Swiper stylesheet and the old map styles). Now `track-record/page-head.html`: the same, with the `svg path` rule limited to the old view by `:where()`, which keeps its specificity, then `<style id="rc-css-track" media="not all">` | Set it back to `page-head.before.html` |
+| Page footer code | | Was `track-record/page-footer.before.html` (Swiper and the two sliders). Now `track-record/page-footer.html`: the new-view script first (it moves the 22 rendered cards into the grid, gives them the WebP photos and runs the filter and the button), then the live code unchanged | Set it back to `page-footer.before.html` |
+| 22 deal photos as WebP | the assets listed in `track-record/deal-photos.json` | Uploaded to Assets and used by the new-view script only. The CMS items and their photos are unchanged | Delete the 22 assets, but only once nothing uses them |
+
+How this differs from the handoff, and why: the handoff rebuilds the deals as one new Collection List with new classes, replaces the CMS photos with the WebPs and deletes the old map styles and Swiper. Here the CMS, both Collection Lists and their classes stay as they are, so the old view and a rollback are exact: in the new view the script moves the 22 cards the CMS has already rendered into the grid, in CMS order, before Swiper starts (on hidden sliders Swiper would otherwise load every photo), and points their photos at WebP copies. A deal added later without a WebP keeps its CMS photo. After go-live the handoff's Designer version can replace the script, and Swiper can go.
+
+Checked on staging (Playwright, 1440 and 390 wide). New view: the map is fetched when near, lights up once, shows no pins at rest; the UK on hover (computer) or tap (phone) shows its pin and "Deals 52"; grey countries have the normal cursor; the old map file is not fetched. The 22 cards in CMS order, 6 at first (4 on phones); Europe 5, North America 1, UK 16 (6 shown until "View all"); "View all transactions" shows 22 and "Show fewer" keeps the button where it was. Card text, card size and the divider match the prototype at both widths. Whole page with every card opened: 1.3 MB at 1440 (old view 12.9 MB) and 1.0 MB at 390 (old view 1.3 MB). No console errors, no sideways scrolling. Old view: the map, both sliders and their arrows as live, page CSS off. Live site: unchanged.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -84,6 +105,7 @@ Still to do on this page before go-live (owner): send one test enquiry on stagin
 | 10 Nov 2026 | Staging only | Our Services pilot |
 | 10 Nov 2026 | Staging only | Page not found |
 | 10 Nov 2026 | Staging only | Page not found spacing fix, Speak to Us |
+| 10 Nov 2026 | Staging only | Track Record, then three fixes found in checking (WebP photos, cards moved instead of copied, the divider on phones) |
 
 The live domains were last published on 17 Oct 2026, before this work started.
 
@@ -91,5 +113,6 @@ The live domains were last published on 17 Oct 2026, before this work started.
 - Delete the elements marked `data-rc="old"`, and remove the `data-rc` attributes from the new ones.
 - Replace each `data-rc-class` with a real class, then drop the switch checks from the page code.
 - Speak to Us: make the form fixes in the Designer (labels, Subject type, autocomplete, honeypot), then drop those lines from the page footer script.
+- Track Record: build the deals Collection List as the handoff describes, put the WebP photos into the CMS items, then delete the two sliders, Swiper, the old map embed and image, and the old map styles.
 - Remove the replaced interactions in the Interactions panel.
 - Remove the switch from the site head.

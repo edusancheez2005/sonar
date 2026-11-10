@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css" />
+<style>
+svg path {
+  pointer-events: all;
+  cursor: pointer;
+}
+
+#svg-map-container,
+#svg-map-container svg,
+#svg-map-container svg * {
+  pointer-events: all !important;
+}
+
+
+
+svg [id^="pin-"],
+svg [id^="popup-"] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+svg .is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+
+
+</style>
