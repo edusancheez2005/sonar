@@ -6,7 +6,7 @@ Site: Roscap (`693e84a885fe6122f0427916`). Staging: https://roscap-site.webflow.
 
 1. **The switch (whole redesign).** The site head starts with a small script (`rc-switch.html`). On the staging address it shows the new design, and on www.roscap.co.uk it shows today's design until `LIVE` is set to `true`. Every new element carries `data-rc="new"`, every element it replaces carries `data-rc="old"`, and each page's new CSS and script only switch on in the new view.
    - Compare on staging: add `?rc=old` to any address for today's design, or `?rc=new` for the new one (it lasts for that browser tab).
-   - Go-live: set `LIVE=true` in the site head and publish.
+   - Go-live: set `LIVE=true` in the site head and publish. Done on 10 Nov 2026 at 23:44 UTC (section 14).
    - Roll back after go-live: set `LIVE=false` and publish. The old design returns at once, because nothing old has been deleted.
 2. **Each change below** lists its exact undo. The text, attributes and code as they were are saved in the repository.
 3. **Snapshots.** `webflow-snapshots/2026-11-10-before-build/` holds every published page from the live site and staging as it was before any change: the HTML, the stylesheet, the site head and footer code word for word, and a manifest with checksums. Take a new snapshot with `python3 -I webflow-snapshots/snapshot.py <folder>` (it needs `urls.txt` in that folder).
@@ -229,6 +229,21 @@ Checked on staging after two publishes to the staging address only (the second m
 
 Spacing follow-up, checked on staging after one more publish to the staging address only, files byte for byte: the rings sit 50 px apart in both columns at 1440, 1366, 1280 and 768 px (at 1280 only "Developments & conversions" runs to two lines, the last in its column, so nothing moves), and in one column of six at 1100, 600 and 390 px; they still light up in order, pointing and tapping still work, reduced motion shows them lit, the old view is unchanged, no page errors.
 
+### 14. Go-live (10 Nov 2026)
+The owner approved after reviewing round 4 and started a Webflow backup ("backup in progress. publish it!").
+
+| What | Where | Change | Undo (roll back) |
+| --- | --- | --- | --- |
+| The switch | Site head, first script | `var LIVE=false` became `var LIVE=true`, so www.roscap.co.uk and roscap.co.uk show the new design. Nothing else in the site head changed (it was read back first and matched the repository word for word) | Set `LIVE=false` in the site head and publish to the live domains. The old design returns at once: nothing old has been deleted, and `?rc=old` on the live site still shows it intact (checked after go-live) |
+
+Steps. Webflow showed an edit at 23:38 UTC, after the last staging publish (23:31), most likely the owner's backup, so the build was checked again before the live publish: the switch was set, the site published to the staging address only, and every build file (47 file checks over 11 pages, site head and footer included) was found in the published pages byte for byte, with `LIVE=true`; the 16-page sweep at 1440 and 390 px showed the new design on every page, no page errors, no sideways scrolling and no Google request before a choice. Then the site was published to www.roscap.co.uk, roscap.co.uk and the staging address at 23:44 UTC (Webflow: lastPublished 2026-11-10T23:44:00Z on both domains).
+
+Checked on the live site straight after, read-only (GET only, every Google and non-GET request cancelled, no form touched): the same 47 file checks, byte for byte, with `LIVE=true`; roscap.co.uk redirects (301) to https://www.roscap.co.uk/; the 16-page sweep at 1440 and 390 px: new design on every page, the cookie banner on the first page of a visit only, no page errors, no sideways scrolling, no Google request before a choice; Home: the lifecycle in two columns, lit, the rates panel and the deal list in place; Partner Program: a click on 01 lights it within 150 ms and centres the step, no brochure text link; `?rc=old`: the old design intact with the new blocks hidden.
+
+The policies' "Last updated 10 November 2026" stands: go-live was on 10 November (UK time).
+
+Still to do after go-live (owner): the Tag Assistant check and one enquiry with cookies accepted (section 8); check that enquiry notifications arrive; confirm the Speak to Us FAQ timescales; the EURIBOR licence question stays open (section 7). Then, with a fresh backup, the clean-up below.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -247,8 +262,10 @@ Spacing follow-up, checked on staging after one more publish to the staging addr
 | 10 Nov 2026 | Staging only | The owner's phone review, round 3 (section 12) |
 | 10 Nov 2026 | Staging only | The owner's review, round 4 (section 13), then the step links' focus for keyboard use only |
 | 10 Nov 2026 | Staging only | Round 4 follow-up: the lifecycle stages evenly spaced (section 13) |
+| 10 Nov 2026, 23:40 UTC | Staging only | The switch set to `LIVE=true`, checked before going live (section 14) |
+| 10 Nov 2026, 23:44 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | Go-live, on the owner's approval (section 14) |
 
-The live domains were last published on 17 Oct 2026, before this work started.
+Before go-live, the live domains had last been published on 17 Oct 2026, before this work started.
 
 ## After go-live: clean-up (later, with a fresh backup)
 - Delete the elements marked `data-rc="old"`, and remove the `data-rc` attributes from the new ones.

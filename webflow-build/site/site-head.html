@@ -1,6 +1,6 @@
 <!-- Roscap redesign switch (10 Nov 2026). Staging (webflow.io) and the Designer preview show the new design; www.roscap.co.uk shows today's design until LIVE is true.
      Add ?rc=old or ?rc=new to an address to switch the view for that browser tab. Go-live: LIVE=true. Roll back: LIVE=false, publish. -->
-<script>(function(){var LIVE=false,d=document.documentElement,v=(LIVE||/\.webflow\.(io|com)$/.test(location.hostname))?'new':'old',q=/[?&]rc=(new|old)(&|$)/.exec(location.search);try{if(q)sessionStorage.setItem('rc-view',q[1]);v=sessionStorage.getItem('rc-view')||v}catch(e){if(q)v=q[1]}d.setAttribute('data-rc-view',v)})();</script>
+<script>(function(){var LIVE=true,d=document.documentElement,v=(LIVE||/\.webflow\.(io|com)$/.test(location.hostname))?'new':'old',q=/[?&]rc=(new|old)(&|$)/.exec(location.search);try{if(q)sessionStorage.setItem('rc-view',q[1]);v=sessionStorage.getItem('rc-view')||v}catch(e){if(q)v=q[1]}d.setAttribute('data-rc-view',v)})();</script>
 <style>html:not([data-rc-view="new"]) [data-rc="new"],html[data-rc-view="new"] [data-rc="old"]{display:none!important}</style>
 <!-- Roscap redesign, the phone and tablet menu (owner's review, 10 Nov 2026), new view only: every link at one calm size with a fine
      line between them, the page you are on in gold at the same size with a small gold dot (it was larger than the rest), a slimmer button -->
