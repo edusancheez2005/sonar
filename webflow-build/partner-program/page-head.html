@@ -1,0 +1,208 @@
+<style>
+
+.pr-timeline-para-wrap {
+  color: #ffffff;
+}
+
+.pr-arrow-wrap img {
+  opacity: 0.4;
+}
+
+</style>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css"
+/>
+<!-- Roscap redesign, Partner Program (10 Nov 2026). Off unless the site switch shows the new design. Source: prototypes/partner-program/HANDOFF.md sections 2 to 5 -->
+<style id="rc-css-partner" media="not all">
+/* Why Partner With Us cards: the empty space between the icon and the text removed (HANDOFF.md section 2), as page CSS so the live classes stay as they are */
+.pr-cards-grid{aspect-ratio:auto;min-height:0}
+.pr-cards{justify-content:flex-start;row-gap:32px}
+.pr-para-wrap{min-height:0}
+@media (max-width:479px){.pr-cards{row-gap:28px}}
+/* visually hidden labels for the contact form fields */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+/* tokens used by the new How it works section (scoped; the site has no such variables) */
+.how{--teal:#043435;--gold:#E1C979;--cream:#FFFCF5;--gold-ink:#7A6318;--grey:#61656E;--ink:#12161D;--line:rgba(4,52,53,.14);--line-dark:rgba(225,201,121,.3);--ease:cubic-bezier(.22,.61,.36,1);--f-display:Boska,Arial,sans-serif;--nav-h:85px;--gutter:2.5rem}
+html{scroll-padding-top:calc(85px + 1rem)} /* anchors (#step-n, #brochure) land below the fixed nav (85px on live) */
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+/* prototype base styles the section relies on (scoped to .how) */
+.how{padding-left:var(--gutter);padding-right:var(--gutter)}
+.how-grid{width:100%;max-width:80rem;margin-left:auto;margin-right:auto}
+/* element resets with element-level specificity (0,0,1): they beat the site's h2/p/ul/li rules by source order, but not the section's class rules */
+:where(.how) h2,:where(.how) h3,:where(.how) p,:where(.how) li{margin:0}
+:where(.how) ol,:where(.how) ul{list-style:none;margin:0;padding:0}
+.how .tag{display:inline-flex;align-items:center;width:max-content;padding:8px 20px;border:1px solid var(--gold);border-radius:30px;font-size:15px;line-height:1.3}
+.how .h2{font:italic 500 2.5rem/1.3 var(--f-display);text-wrap:balance}
+.how :focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+/* ---------- how it works (from prototype v1, unchanged) ---------- */
+.tag.on-dark{color:#fff}
+.h2.on-dark{color:#fff}
+.p-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;color:#fff;font-size:15px;font-weight:500;border-bottom:1px solid rgba(225,201,121,.65);transition:border-color .2s,color .2s}
+.p-link:hover{border-color:var(--gold)}
+.p-link svg{width:16px;height:16px;fill:none;stroke:var(--gold);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s var(--ease)}
+.p-link:hover svg{transform:translateY(3px)}
+.p-link.dark{color:var(--teal);border-color:rgba(4,52,53,.35)}
+.p-link.dark:hover{border-color:var(--teal)}
+/* ---------- how it works ---------- */
+.how{position:relative;padding-block:6.25rem;background:var(--teal) url("https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af34e604c652d3c92d5c74f_texture-waves.webp") /* texture-waves.webp, 6 KB */ center/cover no-repeat;color:#fff;isolation:isolate}
+.how::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(4,52,53,.55),rgba(4,52,53,.85) 40%,rgba(4,52,53,.92))}
+.how-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(3rem,7vw,7.5rem);align-items:start}
+.how-aside{position:sticky;top:calc(var(--nav-h) + 2rem);align-self:start}
+.how-aside-in{display:flex;flex-direction:column;align-items:flex-start;gap:22px}
+.how-nav{width:100%;max-width:24rem;margin-top:14px;border-top:1px solid var(--line-dark)}
+.how-nav li{border-bottom:1px solid var(--line-dark)}
+.how-nav a{display:flex;align-items:center;gap:16px;min-height:46px;padding:4px 2px;font-size:15px;color:rgba(255,255,255,.58);transition:color .3s}
+.how-nav a span{font:400 .9375rem/1 var(--f-display);color:var(--gold);opacity:.75;width:1.9em;flex:none;letter-spacing:.04em;transition:opacity .3s} /* .75 keeps the dimmed numbers at 5.3:1 on teal (.65 measured 4.35:1) */
+.how-nav a:hover{color:#fff}
+.how-nav li.is-active a{color:#fff}
+.how-nav li.is-active a span{opacity:1}
+.how-nav li.is-active a::after{content:"";flex:none;margin-left:auto;width:22px;height:1px;background:var(--gold)}
+.how-brochure{font-size:15px;color:rgba(255,255,255,.72);margin-top:8px}
+.how-brochure .p-link{min-height:44px}
+
+.steps{position:relative;display:grid;padding-top:8px}
+.step{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,19rem);gap:2.5rem;align-items:start;padding:2.5rem 0 2.5rem 3.25rem} /* top-aligned: the step number sits level with its dot */
+.step:first-child{padding-top:.5rem}
+.step:last-child{padding-bottom:.5rem}
+.step-seg{position:absolute;left:11px;top:0;bottom:0;width:1px;background:linear-gradient(180deg,rgba(225,201,121,.55),rgba(225,201,121,.55));transform-origin:top}
+.step:first-child .step-seg{top:calc(.5rem + 12px)}
+.step:last-child .step-seg{bottom:auto;height:calc(.5rem + 12px)}
+.step-dot{position:absolute;left:0;top:calc(2.5rem + 2px);width:23px;height:23px;border-radius:50%;border:1px solid var(--gold);background:var(--teal);display:grid;place-items:center}
+.step:first-child .step-dot{top:calc(.5rem + 2px)}
+.step-dot::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--gold);transform:scale(0);transition:transform .5s var(--ease)}
+.step-copy{display:flex;flex-direction:column;gap:12px;min-width:0}
+.step-num{font:400 .9375rem/1 var(--f-display);color:var(--gold);letter-spacing:.06em}
+.step h3{font:500 1.75rem/1.25 var(--f-display);color:#fff;text-wrap:balance} /* upright, at the owner's request (the section heading stays italic, as live) */
+.step-copy p:not(.step-num){font-weight:300;font-size:1.0625rem;line-height:1.6;color:rgba(255,255,255,.82);max-width:34rem}
+
+/* step visuals: small brand cards built from CSS, no figures */
+.vis{min-width:0}
+.vis-card{background:var(--cream);color:var(--teal);border-radius:10px;padding:20px 22px 22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 30px 50px -36px rgba(0,0,0,.6)}
+.vis-k{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink);line-height:1.3}
+.vis-lines{display:grid;gap:7px;margin-top:2px}
+.vis-lines i{display:block;height:6px;width:var(--w,80%);border-radius:3px;background:rgba(4,52,53,.12)}
+.vis-chip{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 11px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--teal)}
+.vis-chip.ok{border-color:transparent;background:var(--gold);color:var(--ink)}
+.vis-chip svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.vis-path{display:flex;align-items:center;gap:10px;margin-top:2px}
+.vis-node{flex:1;text-align:center;padding:10px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-weight:500}
+.vis-node.is-teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.vis-join{display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;background:var(--gold)}
+.vis-join svg{width:12px;height:12px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.vis-msg{display:flex;align-items:center;gap:10px}
+.vis-msg b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;font:italic 500 13px/26px var(--f-display);text-align:center}
+.vis-msg .vis-lines{flex:1;margin-top:0;gap:6px}
+.vis-track{position:relative;display:flex;justify-content:space-between;margin-top:6px;padding:0 2px}
+.vis-track::before{content:"";position:absolute;left:8px;right:8px;top:50%;height:1px;background:rgba(4,52,53,.2)}
+.vis-track i{position:relative;width:14px;height:14px;border-radius:50%;border:1px solid rgba(4,52,53,.32);background:var(--cream)}
+.vis-track i.done{background:var(--teal);border-color:var(--teal)}
+.vis-track i.now{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px rgba(225,201,121,.3)}
+.vis-arrow{width:34px;height:12px;fill:none;stroke:var(--gold-ink);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.vis-stack{display:grid;gap:6px;margin-top:2px}
+.vis-stack span{display:flex;align-items:center;padding:0 12px;border-radius:4px;font-size:12.5px;font-weight:500;letter-spacing:.02em}
+.vis-stack .l1{height:46px;background:var(--teal);color:#fff}
+.vis-stack .l2{height:30px;background:rgba(4,52,53,.14);color:var(--teal)}
+.vis-stack .l3{height:24px;background:var(--gold);color:var(--ink)}
+.vis-flow{display:grid;margin-top:2px}
+.vis-flow li{position:relative;display:flex;align-items:flex-start;gap:12px;padding:0 0 14px 0;font-size:13.5px;color:var(--teal)}
+.vis-flow li:last-child{padding-bottom:0}
+.vis-flow li b{flex:none;width:10px;height:10px;border-radius:50%;background:rgba(4,52,53,.42);margin-top:5px}
+.vis-flow li::before{content:"";position:absolute;left:4.5px;top:15px;bottom:-1px;width:1px;background:var(--line)}
+.vis-flow li:last-child::before{display:none}
+.vis-flow li.gold{font-weight:500}
+.vis-flow li.gold b{background:var(--gold);box-shadow:0 0 0 3px rgba(225,201,121,.3)}
+.vis-seq{display:grid;gap:8px;margin-top:2px}
+.vis-seq li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+.vis-seq li.more{opacity:.4;border-style:dashed}
+.vis-seq em{font-style:normal;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:var(--gold);padding:3px 8px;border-radius:999px}
+
+/* scroll-driven reveal: native where supported */
+@supports (animation-timeline: view()){
+  @media (prefers-reduced-motion:no-preference){
+    .step-copy,.step .vis{animation:step-in linear both;animation-timeline:view();animation-range:entry 12% entry 55%}
+    .step .vis{animation-range:entry 20% entry 65%}
+    .step-seg{animation:seg-grow linear both;animation-timeline:view();animation-range:entry 0% entry 80%}
+    .step-dot::after{transition:none;animation:dot-in linear both;animation-timeline:view();animation-range:entry 30% entry 50%}
+  }
+}
+/* fallback: IntersectionObserver toggles .is-in (JS only; without JS everything is visible) */
+@supports not (animation-timeline: view()){
+  @media (prefers-reduced-motion:no-preference){
+    html.js .step .step-copy,html.js .step .vis{opacity:0;transform:translateY(26px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+    html.js .step .vis{transition-delay:.12s}
+    html.js .step.is-in .step-copy,html.js .step.is-in .vis{opacity:1;transform:none}
+    html.js .step .step-seg{transform:scaleY(0);transition:transform 1s var(--ease)}
+    html.js .step.is-in .step-seg{transform:none}
+  }
+}
+.step.is-in .step-dot::after{transform:scale(1)}
+@keyframes step-in{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes seg-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes dot-in{from{transform:scale(0)}to{transform:scale(1)}}
+/* live closing line moved into the band: the existing .white-divider.horiz and .partner-div.botoom elements, spaced as live
+   (rule, 50px, line, 16px, Download, 56px to the end of the band). Bottom spacing is the section's padding, not a child margin. */
+.how-more{margin-top:4.5rem}
+.how-more .white-divider{width:auto;margin-left:calc(-1 * var(--gutter));margin-right:calc(-1 * var(--gutter))}
+.how .partner-div.botoom{margin-top:50px;margin-bottom:0}
+/* short laptops (1280x720, 1366x768, 1024x768): shorter sticky column so the brochure link is never clipped (from v1) */
+@media (min-width:992px) and (max-height:820px){
+  .how-aside{top:calc(var(--nav-h) + .75rem)}
+  .how-aside-in{gap:16px}
+  .how-nav{margin-top:8px}
+  .how-nav a{min-height:42px}
+}
+@media (max-width:1180px){
+  .step{grid-template-columns:minmax(0,1fr) minmax(0,16rem);gap:1.75rem}
+}
+@media (max-width:991px){
+  .how{--gutter:2rem}
+  .how{padding-block:4.5rem}
+  .how-grid{grid-template-columns:minmax(0,1fr);gap:3rem}
+  .how-aside{position:static}
+  .how-nav{display:none}
+  .steps{padding-top:0}
+  .step{grid-template-columns:minmax(0,1fr);gap:1.5rem;align-items:start;padding:2rem 0 2rem 2.75rem}
+  .step .vis{max-width:26rem}
+}
+@media (max-width:767px){
+  .how{--gutter:1.25rem}
+  .how .h2{font-size:2rem}
+  .how-more{margin-top:3rem}
+  .how{padding-block:3.5rem}
+  .how-grid{gap:2.25rem}
+  .step{padding:1.5rem 0 1.5rem 2.25rem}
+  .step h3{font-size:1.5rem}
+  .step .vis{max-width:none}
+  .step-dot{top:calc(1.5rem + 2px);width:19px;height:19px}
+  .step-seg{left:9px}
+  .step:first-child .step-dot{top:calc(.5rem + 2px)}
+  .step:first-child .step-seg{top:calc(.5rem + 10px)}
+  .step:last-child .step-seg{height:calc(.5rem + 10px)}
+}
+.how{padding-bottom:3.5rem} /* 56px under the Download button, as live; placed after the v1 padding-block rules on purpose */
+
+/* ---------- our partners: CHANGED vs live. MARQUEE BLOCK START (paste-ready, see HANDOFF.md) ----------
+   Combo classes on the live elements: .assets-card-content-wrap.marquee, .container.marquee-viewport, .assets-card-grid.marquee-group,
+   plus a new .marquee-track between them and a second, aria-hidden copy of the grid. Everything that moves sits inside
+   prefers-reduced-motion:no-preference, so with reduced motion the untouched live 4 x 2 grid shows (second copy and button hidden).
+   Slow loop (45s at 1440 = 8 tiles x 327px), edge fade. No pause button (owner's choice): the strip pauses on hover, and it is focusable,
+   so it pauses while it has keyboard focus or after a tap (WCAG 2.2.2); reduced motion shows the static grid. */
+.marquee{--tile:327px;--loop:45s;--fade:clamp(32px,8%,128px)}
+@keyframes marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@media (prefers-reduced-motion:no-preference){
+  .assets-card-content-wrap.marquee{padding-left:0;padding-right:0}
+  .marquee .marquee-viewport{max-width:calc(var(--tile) * 8);padding-left:0;padding-right:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--fade),#000 calc(100% - var(--fade)),transparent);mask-image:linear-gradient(90deg,transparent,#000 var(--fade),#000 calc(100% - var(--fade)),transparent)}
+  .marquee .marquee-track{display:flex;width:max-content;animation:marquee var(--loop) linear infinite;will-change:transform}
+  .marquee .marquee-group{display:flex;flex:none;overflow:visible}
+  .marquee .marquee-group .assets-card-new{flex:none;width:var(--tile);height:var(--tile);aspect-ratio:auto;padding-top:0;padding-bottom:0;border-style:solid;border-color:rgba(40,40,40,.2);border-width:0 0 0 1px}
+  .marquee .assets-mid-divider{display:none}
+  .marquee:hover .marquee-track,.marquee:focus-within .marquee-track{animation-play-state:paused}
+}
+@media (prefers-reduced-motion:reduce){.marquee .marquee-group[aria-hidden="true"]{display:none}}
+.marquee .marquee-viewport:focus{outline:none} /* the mask would clip an outline here, so the ring goes on the wrapper */
+.marquee:has(.marquee-viewport:focus-visible){outline:2px solid #043435;outline-offset:4px}
+@media (max-width:991px){.marquee{--tile:240px;--loop:34s}}
+@media (max-width:767px){.marquee{--tile:200px;--loop:30s;--fade:64px}}
+</style>
+<script>if(document.documentElement.getAttribute('data-rc-view')==='new'){document.getElementById('rc-css-partner').media='all';document.documentElement.classList.add('js');}</script>

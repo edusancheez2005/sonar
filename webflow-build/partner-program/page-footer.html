@@ -1,0 +1,168 @@
+<!-- Roscap redesign, Partner Program (10 Nov 2026). Runs only when the site switch shows the new design. Source: prototypes/partner-program/HANDOFF.md sections 3 to 5 -->
+<script>
+if (document.documentElement.getAttribute('data-rc-view')==='new') {
+/* 1. How it works: move the live closing line and its Download button into the new band (#brochure), and the brochure
+   pop-up to the end of the page, before Webflow's interactions start (they bind at DOMContentLoaded), so Download keeps
+   opening the pop-up. The old carousel section, now empty of them, stays hidden by the switch. */
+(function () {
+  var more = document.getElementById('brochure'), old = document.querySelector('.section-copy-me-join');
+  if (!more || !old) return;
+  ['.white-divider.horiz', '.partner-div.botoom'].forEach(function (s) { var el = old.querySelector(s); if (el) more.appendChild(el); });
+  var pop = old.querySelector('.leadgen-popup-overlay');
+  if (pop) document.body.appendChild(pop);
+})();
+
+/* 2. Forms (HANDOFF.md 5.2 to 5.4): both forms on this page render id "wf-form-Contact-Form" and the pop-up reuses the ids
+   name, email and Phone, so the pop-up's ids are renamed (its form name for submissions stays "Contact Form"). Then the contact
+   form gets hidden labels and autocomplete, and its desktop Submit, a link that relied on a script this page never loads,
+   becomes a real submit button tied to the form. */
+(function () {
+  var bro = document.querySelector('.leadgen-popup-overlay form');
+  if (bro) {
+    bro.id = 'wf-form-Brochure-Form'; bro.setAttribute('name', 'wf-form-Brochure-Form');
+    [['name', 'brochure-name'], ['email', 'brochure-email'], ['Phone', 'brochure-phone']].forEach(function (p) { var f = bro.querySelector('#' + p[0]); if (f) f.id = p[1]; });
+  }
+  var cf = document.getElementById('wf-form-Contact-Form');
+  if (!cf) return;
+  [['name', 'Name', 'name'], ['email', 'Email', 'email'], ['Phone', 'Phone', 'tel'], ['Subject', 'Subject', ''], ['Message', 'Message', '']].forEach(function (f) {
+    var el = cf.querySelector('#' + f[0]);
+    if (!el) return;
+    if (!cf.querySelector('label[for="' + f[0] + '"]')) {
+      var l = document.createElement('label'); l.className = 'sr-only'; l.htmlFor = f[0]; l.textContent = f[1];
+      el.parentNode.insertBefore(l, el);
+    }
+    if (f[2]) el.setAttribute('autocomplete', f[2]);
+  });
+  var trig = document.querySelector('.contact-button-wrap a[fs-mirrorclick-element="trigger"]');
+  if (trig) {
+    var b = document.createElement('button');
+    b.type = 'submit'; b.setAttribute('form', 'wf-form-Contact-Form'); b.className = trig.className; b.textContent = 'Submit';
+    trig.parentNode.replaceChild(b, trig);
+  }
+})();
+
+/* 3. Our Partners (HANDOFF.md 4.1): the live grid becomes the moving strip: classes and attributes on the live elements,
+   a track around the grid, and an aria-hidden copy of it. Firm names as alt text on the first copy. */
+(function () {
+  var wrap = document.querySelector('.assets-card-content-wrap'), view = wrap && wrap.querySelector('.container'), grid = wrap && wrap.querySelector('.assets-card-grid');
+  if (!grid || !view) return;
+  var h = [].slice.call(document.querySelectorAll('h2')).filter(function (x) { return x.textContent.trim() === 'Our Partners'; })[0];
+  if (h) h.id = 'partners-h';
+  wrap.classList.add('marquee'); wrap.setAttribute('data-marquee', 'true');
+  view.classList.add('marquee-viewport'); view.setAttribute('tabindex', '0'); view.setAttribute('role', 'region'); view.setAttribute('aria-label', 'Partner logos');
+  var track = document.createElement('div'); track.className = 'marquee-track';
+  grid.parentNode.insertBefore(track, grid); track.appendChild(grid);
+  grid.classList.add('marquee-group'); grid.setAttribute('role', 'list'); if (h) grid.setAttribute('aria-labelledby', 'partners-h');
+  var names = ['Revere', 'ANYO', 'Cambridge Finance', 'Capio Consult', 'Alliance Capital', 'Crown Investments', 'RYRE', 'Design Space 2'];
+  [].slice.call(grid.querySelectorAll('.assets-card-new')).forEach(function (t, i) { t.setAttribute('role', 'listitem'); var im = t.querySelector('img'); if (im && names[i]) im.alt = names[i]; });
+  var copy = grid.cloneNode(true);
+  copy.setAttribute('aria-hidden', 'true'); copy.removeAttribute('role'); copy.removeAttribute('aria-labelledby');
+  [].slice.call(copy.querySelectorAll('[role]')).forEach(function (e) { e.removeAttribute('role'); });
+  [].slice.call(copy.querySelectorAll('img')).forEach(function (im) { im.alt = ''; });
+  track.appendChild(copy);
+})();
+
+/* 4. How it works and the marquee: handoff code, unchanged */
+/* Roscap Partner Program: How it works section and Our Partners marquee. No libraries.
+   Everything here is progressive enhancement: without JS the page is fully readable and the marquee still runs
+   (CSS only, pauses on hover and focus). */
+(function () {
+  var root = document.documentElement;
+  root.classList.add('js');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasIO = 'IntersectionObserver' in window;
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var revealOnce = function (els, opts) {
+    if (reduce || !hasIO) { els.forEach(function (el) { el.classList.add('is-in'); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      });
+    }, opts);
+    els.forEach(function (el) { io.observe(el); });
+  };
+
+  /* 1. How it works (from prototype v1): reveal fallback for browsers without scroll-driven animations,
+     and the sticky step indicator that highlights the step nearest the middle of the viewport. */
+  var steps = $$('.step');
+  revealOnce(steps, { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
+  var navItems = $$('.how-nav li');
+  var setActive = function (id) {
+    navItems.forEach(function (li) {
+      var a = $('a', li);
+      var on = a && a.getAttribute('href') === '#' + id;
+      li.classList.toggle('is-active', on);
+      if (a) { if (on) a.setAttribute('aria-current', 'step'); else a.removeAttribute('aria-current'); }
+    });
+  };
+  if (steps.length && navItems.length) {
+    if (hasIO) {
+      var current = null;
+      var io2 = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) current = e.target.id; });
+        if (current) setActive(current);
+      }, { rootMargin: '-40% 0px -45% 0px', threshold: 0 });
+      steps.forEach(function (s) { io2.observe(s); });
+    }
+    setActive(steps[0].id);
+  }
+
+  /* 2. Our Partners marquee: CSS does the motion and pauses it on hover and while the strip has focus (keyboard or tap).
+     No pause button (owner's choice). */
+  var strip = $('[data-marquee]');
+  /* logos stay lazy, but load all of them once the strip is within 800px of the viewport: native lazy loading never
+     starts a logo that is still outside the strip's horizontal clip, so it would pop in while sliding into view */
+  if (strip) {
+    var logos = $$('img[loading="lazy"]', strip);
+    var eager = function () { logos.forEach(function (im) { im.loading = 'eager'; }); };
+    if (hasIO) {
+      var io3 = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) { eager(); io3.disconnect(); }
+      }, { rootMargin: '800px 0px' });
+      io3.observe(strip);
+    } else eager();
+  }
+
+})();
+}
+</script>
+<!-- Live code below, unchanged: the carousel the old view shows -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  new Swiper(".join-swiper", {
+    slidesPerView: 3,
+    spaceBetween: 32,
+    loop: false,
+    speed: 600,
+
+    navigation: {
+      nextEl: ".swiper-button-next",
+      prevEl: ".swiper-button-prev"
+    },
+
+    pagination: {
+      el: ".swiper-pagination",
+      clickable: true
+    },
+
+    breakpoints: {
+      0: {
+        slidesPerView: 1
+      },
+      768: {
+        slidesPerView: 2
+      },
+      992: {
+        slidesPerView: 3
+      }
+    }
+  });
+});
+</script>

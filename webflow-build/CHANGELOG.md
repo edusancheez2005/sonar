@@ -97,6 +97,22 @@ How this differs from the handoff, and why: the handoff rebuilds the deals as on
 
 Checked on staging (Playwright, 1440 and 390 wide). New view: the map is fetched when near, lights up once, shows no pins at rest; the UK on hover (computer) or tap (phone) shows its pin and "Deals 52"; grey countries have the normal cursor; the old map file is not fetched. The 22 cards in CMS order, 6 at first (4 on phones); Europe 5, North America 1, UK 16 (6 shown until "View all"); "View all transactions" shows 22 and "Show fewer" keeps the button where it was. Card text, card size and the divider match the prototype at both widths. Whole page with every card opened: 1.3 MB at 1440 (old view 12.9 MB) and 1.0 MB at 390 (old view 1.3 MB). No console errors, no sideways scrolling. Old view: the map, both sliders and their arrows as live, page CSS off. Live site: unchanged.
 
+### 6. Partner Program (`6948341649f1d7eb6aca1cd0`) (10 Nov 2026)
+Source: `prototypes/partner-program/` (HANDOFF.md sections 2 to 5: Why cards spacing, the new How it works, the moving Our Partners logos, the contact form fixes).
+
+| What | Element | Change | Undo |
+|---|---|---|---|
+| The How it works carousel section `section [COPY ME] join` | `31a88887-dd02-51a2-8815-5d8e1c65b2e2` | Attribute `data-rc="old"` | Remove the attribute |
+| New How it works block after it | `a489f654-8f21-210d-cdaf-a3f05527be20` (`data-rc="new"`), Code Embed `12def11f-7e27-e4c0-a466-43ef1270c0c6` | `partner-program/how-embed.html`: the sticky column, the six steps (live titles word for word, the approved short lines) and an empty `#brochure` for the live closing line | Delete the block |
+| Page head code | | Was `partner-program/page-head.before.html`. Now `partner-program/page-head.html`: the same, then `<style id="rc-css-partner" media="not all">` (new view only). Its texture is the asset `6af34e604c652d3c92d5c74f_texture-waves.webp` (6 KB) | Set it back to `page-head.before.html` |
+| Page footer code | | Was `partner-program/page-footer.before.html` (Swiper and the carousel). Now `partner-program/page-footer.html`: the new-view script first, then the live code unchanged | Set it back to `page-footer.before.html` |
+
+The new-view script does, in the browser, what the handoff does in the Designer: it moves the live closing line and its Download button into the new band and the brochure pop-up to the end of the page (before Webflow's interactions start, so Download still opens it); renames the pop-up form's ids so no id is repeated (its form name for submissions stays "Contact Form", so notifications and filters see no change); gives the contact form hidden labels and autocomplete and turns its desktop Submit, a link that relied on a script this page never loads, into a real submit button; and builds the moving logo strip from the live grid (classes, a track, an aria-hidden copy, the firm names as alt text). The Why cards' spacing is page CSS instead of class edits. So the live elements, their classes and the shared "Contact Form Section" component are untouched, and the switch turns all of it off. Swiper still loads because the old view uses it; it goes after go-live.
+
+Checked on staging (Playwright, 1440 and 390 wide). New view: the six step titles match the live carousel word for word, each with its line; one visible H1 (the old carousel's H1 is hidden with it); the closing line and Download sit at the foot of the band, and Download opens the brochure pop-up and its close works (the menu stays above the overlay, as on live); the forms are Contact, Footer Subscription and Brochure with no repeated id on the page; the desktop Submit is a button of the live size (84 x 41 px) tied to the contact form, and an empty Submit is stopped by the browser with the focus on Name (nothing was sent: every outgoing request was blocked); five hidden labels and autocomplete; Why cards 287 px high at 1440 with 32 px between icon and text (28 px on phones); the logos move as one strip of two copies, pause on hover, and carry the eight firm names; no console errors, no sideways scrolling. Old view: the carousel, the pop-up in its place, the link Submit and the static logo grid, all as live. Live site: unchanged.
+
+Still to do on this page before go-live (owner): one test enquiry from a computer through the contact form (its Submit works for the first time on desktop), and one brochure request to check the redirect to the PDF.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -106,6 +122,7 @@ Checked on staging (Playwright, 1440 and 390 wide). New view: the map is fetched
 | 10 Nov 2026 | Staging only | Page not found |
 | 10 Nov 2026 | Staging only | Page not found spacing fix, Speak to Us |
 | 10 Nov 2026 | Staging only | Track Record, then three fixes found in checking (WebP photos, cards moved instead of copied, the divider on phones) |
+| 10 Nov 2026 | Staging only | Partner Program |
 
 The live domains were last published on 17 Oct 2026, before this work started.
 
@@ -114,5 +131,6 @@ The live domains were last published on 17 Oct 2026, before this work started.
 - Replace each `data-rc-class` with a real class, then drop the switch checks from the page code.
 - Speak to Us: make the form fixes in the Designer (labels, Subject type, autocomplete, honeypot), then drop those lines from the page footer script.
 - Track Record: build the deals Collection List as the handoff describes, put the WebP photos into the CMS items, then delete the two sliders, Swiper, the old map embed and image, and the old map styles.
+- Partner Program: make the handoff's Designer changes (move the closing line and pop-up, the marquee classes and copy, alt texts, form ids, labels, the submit button in the shared contact component, the Why card class values), then delete the carousel section, the hidden timeline section, Swiper and the timeline styles, and drop the script lines.
 - Remove the replaced interactions in the Interactions panel.
 - Remove the switch from the site head.
