@@ -165,6 +165,21 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
     });
   })();
 })();
+
+/* 5. What We Do lifecycle (owner's review, 10 Nov 2026): the six stages take the lifecycle style in the page head (.lc). A tap or
+   click on a stage picks it out (pointing does it with a mouse, in CSS); a tap on another stage moves it, a second tap clears it. */
+(function () {
+  var list = document.querySelector('.section.bg-white .two-col-grid .cards-points-wrapper');
+  if (!list) return;
+  list.classList.add('lc');
+  list.addEventListener('click', function (e) {
+    var it = e.target.closest('.cards-num-item');
+    if (!it || it.parentNode !== list) return;
+    var was = it.classList.contains('is-on');
+    [].forEach.call(list.children, function (x) { x.classList.remove('is-on'); });
+    if (!was) it.classList.add('is-on');
+  });
+})();
 }
 </script>
 

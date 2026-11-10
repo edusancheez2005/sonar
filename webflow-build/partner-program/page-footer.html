@@ -64,7 +64,7 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
   track.appendChild(copy);
 })();
 
-/* 4. How it works and the marquee: handoff code, unchanged */
+/* 4. How it works and the marquee: handoff code, with the step links' move added on 10 Nov 2026 (see below) */
 /* Roscap Partner Program: How it works section and Our Partners marquee. No libraries.
    Everything here is progressive enhancement: without JS the page is fully readable and the marquee still runs
    (CSS only, pauses on hover and focus). */
@@ -99,15 +99,51 @@ if (document.documentElement.getAttribute('data-rc-view')==='new') {
     });
   };
   if (steps.length && navItems.length) {
+    var current = null, held = false;
     if (hasIO) {
-      var current = null;
       var io2 = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) { if (e.isIntersecting) current = e.target.id; });
-        if (current) setActive(current);
+        if (current && !held) setActive(current);
       }, { rootMargin: '-40% 0px -45% 0px', threshold: 0 });
       steps.forEach(function (s) { io2.observe(s); });
     }
     setActive(steps[0].id);
+
+    /* Step links (owner, 10 Nov 2026): a click lights its step at once and brings the step to the middle of the window,
+       where the indicator reads it, in about a third of a second (at once with reduced motion), up or down. Webflow's own
+       link scroll waited about 0.7 s and then lined the step's top up with the top of the window, where the indicator
+       read the next step: 01 from 02 even moved the page down. The clicked step stays lit until the reader scrolls on;
+       a wheel, touch or key during the move hands control straight back. */
+    var nav = $('.how-nav'), html = document.documentElement, raf = 0, endAt = 0, sb = '';
+    var endMove = function () { if (raf) cancelAnimationFrame(raf); raf = 0; html.style.scrollBehavior = sb; endAt = Date.now(); };
+    var letGo = function () { if (!held) return; held = false; if (raf) { endMove(); if (current) setActive(current); } };
+    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (t) { window.addEventListener(t, letGo, { passive: true }); });
+    /* a scroll well after the move (the scroll bar, say) also hands back */
+    window.addEventListener('scroll', function () { if (held && !raf && Date.now() - endAt > 150) held = false; }, { passive: true });
+    if (nav) nav.addEventListener('click', function (e) {
+      var a = e.target.closest('a[href^="#step-"]'), step = a && document.getElementById(a.getAttribute('href').slice(1));
+      if (!step || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault(); e.stopPropagation(); /* Webflow's link scroll listens on the document */
+      if (raf) endMove();
+      setActive(step.id); held = true;
+      var r = step.getBoundingClientRect(), from = window.pageYOffset;
+      var to = Math.max(0, Math.min(html.scrollHeight - window.innerHeight, Math.round(from + r.top + r.height / 2 - window.innerHeight * 0.475)));
+      if (e.detail === 0) { /* from the keyboard: reading carries on from the step (a mouse click leaves focus, and no outline, where it is) */
+        step.setAttribute('tabindex', '-1');
+        try { step.focus({ preventScroll: true }); } catch (err) {}
+      }
+      sb = html.style.scrollBehavior;
+      html.style.scrollBehavior = 'auto'; /* the page's smooth scrolling would otherwise ease every frame of the move */
+      if (reduce || Math.abs(to - from) < 2) { window.scrollTo(0, to); endMove(); return; }
+      var t0 = 0, dur = 340;
+      var tick = function (now) {
+        if (!t0) t0 = now;
+        var t = Math.min(1, (now - t0) / dur);
+        window.scrollTo(0, from + (to - from) * (1 - Math.pow(1 - t, 3)));
+        if (t < 1) raf = requestAnimationFrame(tick); else { raf = 0; endMove(); }
+      };
+      raf = requestAnimationFrame(tick);
+    });
   }
 
   /* 2. Our Partners marquee: CSS does the motion and pauses it on hover and while the strip has focus (keyboard or tap).

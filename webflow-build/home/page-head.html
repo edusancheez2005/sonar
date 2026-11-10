@@ -290,6 +290,49 @@ fs-mirrorclick
   .slider-wrap .slider-inn-item{flex-direction:column;align-items:flex-start;gap:14px}
   .slider-wrap .slide-grey-line{display:none}
 }
+/* Who We Are figures (owner's review, 10 Nov 2026): from 480 to 991 px, where the figures sit two by two, the two columns fit the
+   page (each figure was a fixed 320 px, so below 728 px the second ran off the edge), each figure fills its column, the large
+   numbers scale down below 728 px so that £120m+ fits, and the third figure is centred under the first two, as on Our Services */
+@media (min-width:480px) and (max-width:991px){
+  .stats-cards-wrap{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats-cards-wrap>.stats-card{width:auto;min-width:0}
+  .stats-cards-wrap>.stats-card:last-child:nth-child(odd){grid-column:1/-1;justify-self:center;width:calc((100% - 24px) / 2)}
+  .stats-cards-wrap .stats-num{font-size:clamp(3.25rem,11vw,5rem)}
+}
+/* What We Do lifecycle (owner's review, 10 Nov 2026). "Roscap sources capital for projects at all stages of their lifecycle" and the
+   six stages now read like the paragraphs around them (Switzer light, the same grey and size), and the stages become a lifecycle:
+   light numbered rings joined by a fine line, in reading order (1 to 3, then 4 to 6; one column on phones). The first time the list
+   comes into view the line runs through the rings and lights them one after another; pointing at a stage (or tapping it on a
+   phone) fills its ring with gold. With reduced motion the rings are simply shown lit. The page script adds .lc to the list. */
+.section.bg-white .grid-content-wrap p .text-weight-normal{font-weight:inherit}
+.cards-points-wrapper.lc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,auto);grid-auto-flow:column;column-gap:2rem;row-gap:0}
+.lc .cards-num-item{position:relative;display:flex;align-items:flex-start;gap:1rem;min-width:0;margin:0;padding:.375rem 0 1rem;cursor:default;-webkit-tap-highlight-color:transparent}
+.lc .cards-num-item:nth-child(2){--lc-i:1}.lc .cards-num-item:nth-child(3){--lc-i:2}.lc .cards-num-item:nth-child(4){--lc-i:3}
+.lc .cards-num-item:nth-child(5){--lc-i:4}.lc .cards-num-item:nth-child(6){--lc-i:5}
+.lc .cards-num-item::before,.lc .cards-num-item::after{content:"";position:absolute;left:14.5px;top:calc(.375rem + 32px);bottom:calc(2px - .375rem);width:1px;background:rgba(4,52,53,.14);transform-origin:top}
+.lc .cards-num-item::after{background:#E1C979}
+.lc .cards-num-item:nth-child(3)::before,.lc .cards-num-item:nth-child(3)::after,.lc .cards-num-item:last-child::before,.lc .cards-num-item:last-child::after{display:none}
+.lc .number-tag{position:relative;isolation:isolate;flex:none;display:grid;place-items:center;width:30px;height:30px;min-width:0;min-height:0;margin:0;padding:0;border-radius:50%;background:#FBF4DF;box-shadow:inset 0 0 0 1px #E1C979;color:#043435;font-size:13px;font-weight:500;line-height:1}
+.lc .number-tag::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:50%;background:#E1C979;scale:0;transition:scale .35s cubic-bezier(.22,.61,.36,1)}
+.lc .cards-num-item .text-size-smedium{min-width:0;padding-top:1px;font-size:1.125rem;line-height:1.5556;font-weight:300;color:#282828;transition:color .3s,translate .35s cubic-bezier(.22,.61,.36,1)}
+.lc .cards-num-item.is-on .number-tag::after{scale:1}
+.lc .cards-num-item.is-on .text-size-smedium{color:#043435}
+@media (hover:hover){
+  .lc .cards-num-item:hover .number-tag::after{scale:1}
+  .lc .cards-num-item:hover .text-size-smedium{color:#043435;translate:3px 0}
+}
+@media (max-width:479px){
+  .cards-points-wrapper.lc{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-auto-flow:row}
+  .lc .cards-num-item:nth-child(3)::before,.lc .cards-num-item:nth-child(3)::after{display:block}
+}
+@media (prefers-reduced-motion:no-preference){
+  .wwd-anim .lc .number-tag{background:#fff;box-shadow:inset 0 0 0 1px rgba(4,52,53,.22)}
+  .wwd-anim .lc .cards-num-item::after{scale:1 0}
+  .wwd-anim.is-in .lc .number-tag{animation:lc-light .45s ease both;animation-delay:calc(1s + var(--lc-i,0) * .22s)}
+  .wwd-anim.is-in .lc .cards-num-item::after{animation:lc-run .22s linear both;animation-delay:calc(1s + var(--lc-i,0) * .22s)}
+  @keyframes lc-light{from{background:#fff;box-shadow:inset 0 0 0 1px rgba(4,52,53,.22)}to{background:#FBF4DF;box-shadow:inset 0 0 0 1px #E1C979}}
+  @keyframes lc-run{from{scale:1 0}to{scale:1 1}}
+}
 </style>
 <script>if(document.documentElement.getAttribute('data-rc-view')==='new'){document.getElementById('rc-css-home').media='all';document.documentElement.classList.add('js');
 /* Who We Are photo (audit HA-10): the same picture as a 93 KB WebP instead of the 891 KB PNG, swapped as the page is parsed, before it can load */
