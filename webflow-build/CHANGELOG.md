@@ -113,6 +113,25 @@ Checked on staging (Playwright, 1440 and 390 wide). New view: the six step title
 
 Still to do on this page before go-live (owner): one test enquiry from a computer through the contact form (its Submit works for the first time on desktop), and one brochure request to check the redirect to the PDF.
 
+### 7. Home (`693e84aa85fe6122f0427972`) (10 Nov 2026)
+Source: `prototypes/homepage-track-record-and-rates/HANDOFF.md`: the rates panel, the deal list with row 06 and its mosaic, the What We Do motion and switch, the counters, and the contact form fixes. The hero, Who We Are, the wording, the menu bar and the footer are unchanged. Where the prototype reworded live text (the Track Record paragraph, the dashes in What We Do), the live text stays.
+
+| What | Element | Change | Undo |
+| --- | --- | --- | --- |
+| Rate cards `div.baserate-cards-wrap` | `5dda6b2b-82e0-046e-0902-fed57f136b46` | Attribute `data-rc="old"` | Remove the attribute |
+| New rates block after them | `442a59bd-f3ec-70b2-cbd8-8cf5e35f8f68` (`data-rc="new"`), Code Embed `41aa8413-a1fd-291f-aeee-45c36970e12f` | `home/rates-embed.html`: the odometer panel and its script (new view only). Its ids start with `rc-`; in the new view the script hands it the live ids `baserate-*`, `changerate-*` and `rates-updated`, so the old view's cards keep theirs. The fallback text (shown only if the feed fails) is the feed as read on 10 Nov 2026 | Delete the block |
+| Track Record cards `div.track-record-cards-wrapper` | `7aac6a27-0e64-d181-9475-ad8ef4ba8923` | Attribute `data-rc="old"` | Remove the attribute |
+| New deal list block after them | `e8b26100-a185-0662-92da-4fb497dbc4af` (`data-rc="new"`), Code Embed `9d43b833-966e-bff4-198a-e0cad3bd7daf` | `home/deals-embed.html`: the five rows, row 06 "All transactions" with the 22-photo mosaic, the pane, "View 22 selected transactions" (to /track-record) and the deal list script (new view only) | Delete the block |
+| Page head code | | Was `home/page-head.before.html` (the Swiper stylesheet and Finsweet). Now `home/page-head.html`: the same, then `<style id="rc-css-home" media="not all">` and its switch, which in the new view also points the Who We Are photo at its WebP copy before it loads | Set it back to `page-head.before.html` |
+| Page footer code | | Was `home/page-footer.before.html`. Now `home/page-footer.html`: the new-view script first (the What We Do photo in its frame without its fade-in, the heading without its fade-in, the counters carrying 60, 120 and 25, the contact form fixes, the reveal fallback, the What We Do switch and counters), then the live code, its two scripts now wrapped in an old-view check | Set it back to `page-footer.before.html` |
+| 28 photos as WebP | the assets in `home/photos.json` | Uploaded to Assets: 5 deal photos, 22 mosaic tiles, and the Who We Are photo (93 KB instead of the 891 KB PNG, audit HA-10) | Delete the assets, but only once nothing uses them |
+
+How this differs from the handoff, and why: the handoff binds the deal list to the CMS (new fields Featured, Sort order, Terms line, Mosaic tile) and makes Designer edits (wrap the photo, remove two interactions, type the counters). Here the CMS is not touched: the five rows and the mosaic are static HTML in the embed with the prototype's data, and the Designer edits are made by the new-view script before Webflow's interactions start. So the old view and a rollback are exact. Two small additions fit the prototype code to the live page: the deal list script measures the live menu bar (`.nav_fixed-2`) when it brings a tapped row into view on phones, and the prototype's base reset, scoped to the two new blocks, stops Webflow's default list bullets and indents. Swiper still loads because the old view uses it; it goes after go-live.
+
+Checked on staging (Playwright, 1440 and 390 wide). New view: rates 4.00, 3.75 to 4.00 and 2.773 from the feed, chips "Raised 25 bps / on 5 Nov 2026", "Held / since the 17 Sep 2026 rise" and "Down 2.1 bps / fixing of 9 Nov 2026", "Checked 10 Nov 2026"; with the feed blocked the fallback text stays, the Checked line hides and nothing errors; with reduced motion the numbers show at once, nothing slides in and the counters read 60, 120, 25. Deal list: six rows aligned with the button, no bullets; Rome selected by click and by the arrow keys, hover previews London and the pane returns on leaving; row 06 shows all 22 tiles inside the frame with "UK, Europe and North America" and "22 transactions in 7 countries"; no tile loads with the page; on a phone a tap opens the row below the menu bar (row top 126 px, bar bottom 98 px) and a second tap closes it. What We Do: the arrows and headings switch Asset Classes and Sources of Capital, Swiper does not start, the photo frame is in place. Contact: the desktop Submit is a real button tied to the form, five hidden labels, autocomplete, and an empty form is stopped by the browser (every outgoing request was blocked, nothing was sent). No repeated ids, no console errors, no sideways scrolling. Old view and live: the rate cards, the three Track Record cards, Swiper, the counters and the link Submit as today. Weight, same steps for both views (load, then scroll to the end): phone 3,061 KB against 3,572 KB, computer 3,061 KB against 3,574 KB; at first load 2,376 KB against 3,145 KB. Live site: unchanged.
+
+Still to do on this page before go-live (owner): one test enquiry from a computer through the contact form (its desktop Submit becomes a real button, as on Partner Program). Open since the handoff (section 6): the licence for showing the EURIBOR figure, which the live cards already show.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -123,6 +142,7 @@ Still to do on this page before go-live (owner): one test enquiry from a compute
 | 10 Nov 2026 | Staging only | Page not found spacing fix, Speak to Us |
 | 10 Nov 2026 | Staging only | Track Record, then three fixes found in checking (WebP photos, cards moved instead of copied, the divider on phones) |
 | 10 Nov 2026 | Staging only | Partner Program |
+| 10 Nov 2026 | Staging only | Home, then two fixes found in checking (the Who We Are photo as WebP, the reset for the two new blocks) |
 
 The live domains were last published on 17 Oct 2026, before this work started.
 
@@ -132,5 +152,6 @@ The live domains were last published on 17 Oct 2026, before this work started.
 - Speak to Us: make the form fixes in the Designer (labels, Subject type, autocomplete, honeypot), then drop those lines from the page footer script.
 - Track Record: build the deals Collection List as the handoff describes, put the WebP photos into the CMS items, then delete the two sliders, Swiper, the old map embed and image, and the old map styles.
 - Partner Program: make the handoff's Designer changes (move the closing line and pop-up, the marquee classes and copy, alt texts, form ids, labels, the submit button in the shared contact component, the Why card class values), then delete the carousel section, the hidden timeline section, Swiper and the timeline styles, and drop the script lines.
+- Home: put the deal list into the CMS as the handoff describes (or keep the static rows), make the Designer edits (wrap the What We Do photo, remove its fade-in and the heading's, type the counters, the form fixes in the shared contact component, the Who We Are photo as WebP), then delete the rate cards, the three Track Record cards, the old rates and slider code and Swiper, and drop the script lines.
 - Remove the replaced interactions in the Interactions panel.
 - Remove the switch from the site head.

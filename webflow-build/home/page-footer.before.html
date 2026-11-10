@@ -1,0 +1,189 @@
+<script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// COUNTERS (unchanged)
+gsap.utils.toArray(".stats-cards-wrap").forEach((card) => {
+  const counters = card.querySelectorAll(".stats-num-span");
+
+  ScrollTrigger.create({
+    trigger: card,
+    start: "top 80%",
+    once: true,
+    onEnter: () => {
+      counters.forEach((counter) => {
+        const endValue = +counter.dataset.count;
+        const obj = { val: 0 };
+
+        gsap.to(obj, {
+          val: endValue,
+          duration: 2,
+          ease: "circ.in",
+          onUpdate: () => {
+            counter.textContent = formatNumber(obj.val, 0);
+          },
+        });
+      });
+    },
+  });
+});
+
+function formatNumber(value, decimals) {
+  return Math.floor(value).toLocaleString("en-US");
+}
+
+// =========================
+// SWIPER (LOOP ENABLED)
+// =========================
+let swiper = new Swiper(".slider-wrap .swiper", {
+  spaceBetween: 16,
+  loop: true, // ✅ looping enabled
+  navigation: {
+    nextEl: ".swiper-next",
+    prevEl: ".swiper-prev",
+  },
+});
+
+// =========================
+// HEADING SETUP
+// =========================
+const headingContainer = document.querySelector(".slider-heading-container");
+const headings = headingContainer.querySelectorAll(".slider-heading");
+// headings[0] = Asset Classes
+// headings[1] = Sources of Capital
+
+gsap.set(headings, { xPercent: 0, opacity: 1 });
+
+// =========================
+// HEADING TRANSITION
+// =========================
+function animateHeadingTransition(realIndex) {
+  const assetHeading = headings[0];
+  const sourcesHeading = headings[1];
+
+  const makeSourcesActive = realIndex === 1;
+
+  const activeHeading   = makeSourcesActive ? sourcesHeading : assetHeading;
+  const inactiveHeading = makeSourcesActive ? assetHeading : sourcesHeading;
+
+  const tl = gsap.timeline();
+
+  tl.to([activeHeading, inactiveHeading], {
+    xPercent: (i, el) => (el === activeHeading ? 10 : -10),
+    opacity: 0,
+    duration: 0.2,
+    ease: "power2.in",
+  })
+  .add(() => {
+    // swap DOM order so active is first
+    headingContainer.insertBefore(activeHeading, inactiveHeading);
+
+    // reset classes
+    assetHeading.classList.remove("is-active", "is-inactive");
+    sourcesHeading.classList.remove("is-active", "is-inactive");
+
+    // apply new states
+    activeHeading.classList.add("is-active");
+    inactiveHeading.classList.add("is-inactive");
+  })
+  .fromTo(
+    [activeHeading, inactiveHeading],
+    {
+      xPercent: (i, el) => (el === activeHeading ? -10 : 10),
+      opacity: (i, el) => (el === activeHeading ? 1 : 0.4),
+    },
+    {
+      xPercent: 0,
+      opacity: (i, el) => (el === activeHeading ? 1 : 0.4),
+      duration: 0.25,
+      ease: "power2.out",
+    }
+  );
+}
+
+// =========================
+// CLICK HEADING → LOOPED SLIDE
+// =========================
+headings.forEach((heading, index) => {
+  heading.addEventListener("click", () => {
+    swiper.slideToLoop(index); // ✅ loop-safe navigation
+  });
+});
+
+// =========================
+// SYNC ON SLIDE CHANGE
+// =========================
+let lastIndex = swiper.realIndex;
+
+swiper.on("slideChange", function () {
+  if (this.realIndex === lastIndex) return; // guard against loop duplicates
+  lastIndex = this.realIndex;
+  animateHeadingTransition(this.realIndex);
+});
+
+// =========================
+// INITIAL STATE
+// =========================
+headings[0].classList.add("is-active");
+headings[1].classList.add("is-inactive");
+
+gsap.set(headings[0], { opacity: 1 });
+gsap.set(headings[1], { opacity: 0.4 });
+
+</script>
+
+
+<!-- Rates widget: reads the twice-daily feed published from github.com/edusancheez2005/roscap-rates
+     (sources: Federal Reserve via FRED, Bank of England, Euribor 3-month daily fixing).
+     Writes into the cards with ids baserate-* / changerate-*, explains each change figure in a hover
+     tooltip, and adds a small right-aligned "Updated <date>" line under the cards. -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const FEED = "https://edusancheez2005.github.io/roscap-rates/rates.json";
+  const longDate = (iso) => {
+    const d = new Date(iso + "T00:00:00Z");
+    return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  };
+  fetch(FEED, { cache: "no-store" })
+    .then(res => res.json())
+    .then(data => {
+      const render = (key) => {
+        const baseEl   = document.getElementById(`baserate-${key}`);
+        const changeEl = document.getElementById(`changerate-${key}`);
+        const rate     = data.rates && data.rates[key];
+        if (!baseEl || !changeEl || !rate) return;
+
+        baseEl.textContent   = rate.display;          // "3.75% - 4.00%", "3.75%", "2.642%"
+        changeEl.textContent = rate.change_display;   // "+0.25%", "-0.25%", "+0.006%"
+
+        changeEl.classList.remove("up", "down", "flat");
+        changeEl.classList.add(rate.change > 0 ? "up" : rate.change < 0 ? "down" : "flat");
+
+        const when = rate.changed_on ? longDate(rate.changed_on) : "";
+        changeEl.title = key === "euribor"
+          ? "Change since the previous daily fixing" + (when ? " (" + when + ")" : "")
+          : "Change at the last " + (key === "fed" ? "Federal Reserve" : "Bank of England") + " decision" + (when ? " (" + when + ")" : "");
+        baseEl.title = rate.source || "";
+      };
+      ["boe", "fed", "euribor"].forEach(render);
+
+      if (!data.updated_display) return;
+      let note = document.getElementById("rates-updated");
+      if (!note) {
+        const wrap = document.querySelector(".baserate-cards-wrap");
+        if (!wrap) return;
+        note = document.createElement("p");
+        note.id = "rates-updated";
+        note.className = "text-size-tiny text-color-secondary text-align-right";
+        note.style.margin = "10px auto 0";
+        const fit = () => { note.style.width = Math.round(wrap.getBoundingClientRect().width) + "px"; };
+        fit();
+        window.addEventListener("resize", fit);
+        wrap.insertAdjacentElement("afterend", note);
+      }
+      note.textContent = "Updated " + data.updated_display;
+    })
+    .catch(err => console.error("Rates feed failed:", err));
+});
+</script>

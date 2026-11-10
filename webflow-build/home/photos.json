@@ -1,0 +1,33 @@
+{
+ "note": "Home redesign photos on the Webflow CDN (10 Nov 2026). Deal photos and mosaic tiles are the prototype files in prototypes/shared/img and prototypes/homepage-track-record-and-rates/media/deals; who-we-are-columns.webp is prototypes/shared/img/who-we-are-columns.webp. Each was checked byte for byte against the CDN copy.",
+ "photos": {
+  "deal-birmingham.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35093d31a0384c20d4dee_deal-birmingham.webp",
+  "deal-kensington.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094472b9f8a1d1f92a7_deal-kensington.webp",
+  "deal-london.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094a154188b37e9f3ff_deal-london.webp",
+  "deal-rome.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af350942f94ea9690fb24e0_deal-rome.webp",
+  "deal-sheffield.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af350944b18dbb8f1e62fa7_deal-sheffield.webp",
+  "tile-bath.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094323becc7c0e231a3_tile-bath.webp",
+  "tile-birmingham.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094a1f22c7e1a3cf346_tile-birmingham.webp",
+  "tile-bradford.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094a1f22c7e1a3cf363_tile-bradford.webp",
+  "tile-bristol.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094a1f22c7e1a3cf375_tile-bristol.webp",
+  "tile-buckinghamshire.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35095e84b3f37831117b8_tile-buckinghamshire.webp",
+  "tile-cannes.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af350958a33e0d8d0926836_tile-cannes.webp",
+  "tile-dublin.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35095544d5ae9f516c669_tile-dublin.webp",
+  "tile-edinburgh.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35095d31a0384c20d4e58_tile-edinburgh.webp",
+  "tile-florida.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35095d31a0384c20d4e7a_tile-florida.webp",
+  "tile-huddersfield.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35151323becc7c0e268eb_tile-huddersfield.webp",
+  "tile-kensington.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35151b74f4f85287c0cb5_tile-kensington.webp",
+  "tile-leeds.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35151a154188b37ea3ca7_tile-leeds.webp",
+  "tile-liverpool.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35152d31a0384c20d9fa6_tile-liverpool.webp",
+  "tile-london.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35153792ecd4e47cd90b6_tile-london.webp",
+  "tile-manchester.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af3515341e7f498b2e2097d_tile-manchester.webp",
+  "tile-marbella.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af351537a185483c120fec7_tile-marbella.webp",
+  "tile-nottingham.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35153464281d108b2bf35_tile-nottingham.webp",
+  "tile-rome.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af351538a33e0d8d0929e8b_tile-rome.webp",
+  "tile-sheffield.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af351546bd431d7edfa5d8e_tile-sheffield.webp",
+  "tile-surrey.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35154323becc7c0e26a12_tile-surrey.webp",
+  "tile-tirana.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35154d5a0e59492adcf0d_tile-tirana.webp",
+  "tile-wakefield.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af351543b72cd2244de2af9_tile-wakefield.webp",
+  "who-we-are-columns.webp": "https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35747d5a0e59492af2197_who-we-are-columns.webp"
+ }
+}

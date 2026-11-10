@@ -1,0 +1,367 @@
+<!-- Roscap redesign, Home: Track Record deal list with preview (10 Nov 2026). Shown only in the new view. Source: prototypes/homepage-track-record-and-rates (index.html, deal-list.js); photos are the prototype WebPs on the Webflow CDN -->
+<div class="dl" id="dl">
+        <ul class="dl-list" role="tablist" aria-label="Selected transactions" aria-orientation="vertical">
+          <li class="dl-item" role="presentation">
+            <button class="dl-row is-active" type="button" role="tab" id="dl-tab-1" aria-selected="true" aria-controls="dl-pane" tabindex="0"
+              data-name="Kensington, London" data-amount="£27.5m" data-product="Development Finance"
+              data-asset="Residential – 14 Townhouses" data-capital="Institutional Private Credit Fund" data-terms="70% LTC · 58% LTV · 8.5% p.a."
+              data-img="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094472b9f8a1d1f92a7_deal-kensington.webp" data-w="720" data-h="551"
+              data-alt="Terrace of white stucco and brick townhouses with black iron railings on a tree-lined Kensington street">
+              <span class="dl-n" aria-hidden="true">01</span><span class="dl-amt">£27.5m</span><span class="dl-meta"><b>Kensington, London</b><span>Development Finance</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-2" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Sheffield, UK" data-amount="£19.8m" data-product="Development Finance + Preferred Equity"
+              data-asset="Residential – 101-Unit BTR Scheme" data-capital="Institutional Private Credit Fund + Private Equity" data-terms="90% LTC · 75% LTV"
+              data-img="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af350944b18dbb8f1e62fa7_deal-sheffield.webp" data-w="628" data-h="450"
+              data-alt="Facade of a new multi-storey apartment block in pale grey brick with tall windows">
+              <span class="dl-n" aria-hidden="true">02</span><span class="dl-amt">£19.8m</span><span class="dl-meta"><b>Sheffield, UK</b><span>Development Finance + Preferred Equity</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-3" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Rome, Italy" data-amount="€4.6m" data-product="Bridge Loan"
+              data-asset="Hotel Resort" data-capital="European Private Lender" data-terms="68% LTV · 12% IRR"
+              data-img="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af350942f94ea9690fb24e0_deal-rome.webp" data-w="720" data-h="551"
+              data-alt="Resort hotel with a dark glass tower and terracotta wings behind palm trees and a swimming pool lined with yellow sun loungers">
+              <span class="dl-n" aria-hidden="true">03</span><span class="dl-amt">€4.6m</span><span class="dl-meta"><b>Rome, Italy</b><span>Bridge Loan</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-4" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="London, UK" data-amount="£11.0m" data-product="Stretch Senior"
+              data-asset="Office-to-Residential Conversion" data-capital="Private Credit Fund + Mezz Fund" data-terms="88% LTC · 75% LTV · 11% blended p.a."
+              data-img="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094a154188b37e9f3ff_deal-london.webp" data-w="720" data-h="515"
+              data-alt="Three-storey red brick office building with angled bay windows on a street corner">
+              <span class="dl-n" aria-hidden="true">04</span><span class="dl-amt">£11.0m</span><span class="dl-meta"><b>London, UK</b><span>Stretch Senior</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-5" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="Birmingham, UK" data-amount="£8.3m" data-product="Development Finance"
+              data-asset="Residential – 61 Apartments" data-capital="Challenger Bank" data-terms="72% LTC · 64% LTV · 8.95% p.a."
+              data-img="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35093d31a0384c20d4dee_deal-birmingham.webp" data-w="628" data-h="450"
+              data-alt="Red brick apartment blocks beside a canal with an orange steel footbridge">
+              <span class="dl-n" aria-hidden="true">05</span><span class="dl-amt">£8.3m</span><span class="dl-meta"><b>Birmingham, UK</b><span>Development Finance</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+          <li class="dl-item" role="presentation">
+            <button class="dl-row" type="button" role="tab" id="dl-tab-6" aria-selected="false" aria-controls="dl-pane" tabindex="-1"
+              data-name="All transactions" data-amount="22" data-product="UK, Europe &amp; North America"
+              data-label="All transactions, 22 transactions in 7 countries" data-mosaic="all">
+              <span class="dl-n" aria-hidden="true">06</span><span class="dl-amt">22</span><span class="dl-meta"><b>All transactions</b><span>UK, Europe &amp; North America</span></span><span class="dl-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </button>
+          </li>
+        </ul>
+        <div class="dl-pane" id="dl-pane" role="tabpanel" aria-labelledby="dl-tab-1" tabindex="0">
+          <h3 class="sr dl-pane-h" aria-live="polite">Kensington, London, £27.5m, Development Finance</h3>
+          <figure class="dl-photo">
+            <div class="dl-mosaic" aria-hidden="true">
+              <div class="dl-mosaic-grid">
+                <div class="dl-tile is-wide"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35151b74f4f85287c0cb5_tile-kensington.webp" width="480" height="266" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile is-wide"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af351546bd431d7edfa5d8e_tile-sheffield.webp" width="480" height="266" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af351538a33e0d8d0929e8b_tile-rome.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35153792ecd4e47cd90b6_tile-london.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094a1f22c7e1a3cf346_tile-birmingham.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35095544d5ae9f516c669_tile-dublin.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094323becc7c0e231a3_tile-bath.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094a1f22c7e1a3cf363_tile-bradford.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af351537a185483c120fec7_tile-marbella.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af351543b72cd2244de2af9_tile-wakefield.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35151323becc7c0e268eb_tile-huddersfield.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094a1f22c7e1a3cf375_tile-bristol.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35154323becc7c0e26a12_tile-surrey.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af350958a33e0d8d0926836_tile-cannes.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af3515341e7f498b2e2097d_tile-manchester.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35095e84b3f37831117b8_tile-buckinghamshire.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35095d31a0384c20d4e7a_tile-florida.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35095d31a0384c20d4e58_tile-edinburgh.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35152d31a0384c20d9fa6_tile-liverpool.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35151a154188b37ea3ca7_tile-leeds.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35153464281d108b2bf35_tile-nottingham.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+                <div class="dl-tile"><img class="dl-tile-img" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35154d5a0e59492adcf0d_tile-tirana.webp" width="240" height="270" alt="" loading="lazy" decoding="async"></div>
+              </div>
+            </div>
+            <img class="dl-img is-on" src="https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6af35094472b9f8a1d1f92a7_deal-kensington.webp" alt="Terrace of white stucco and brick townhouses with black iron railings on a tree-lined Kensington street" width="720" height="551" loading="lazy" decoding="async">
+          </figure>
+          <dl class="dl-facts">
+            <div><dt>Asset</dt><dd id="dl-asset">Residential – 14 Townhouses</dd></div>
+            <div><dt>Capital</dt><dd id="dl-cap">Institutional Private Credit Fund</dd></div>
+            <div><dt>Terms</dt><dd id="dl-terms">70% LTC · 58% LTV · 8.5% p.a.</dd></div>
+          </dl>
+          <dl class="dl-facts is-all">
+            <div><dt>Markets</dt><dd>UK, Europe and North America</dd></div>
+            <div><dt>Record</dt><dd>22 transactions in 7 countries</dd></div>
+          </dl>
+        </div>
+        <a class="btn dl-cta" href="/track-record">View 22 selected transactions<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+<script>
+if (document.documentElement.getAttribute('data-rc-view')==='new') {
+/* Roscap Track Record: deal list with preview (approved option F).
+   From 860px up the rows are tabs (role="tablist"/"tab", aria-selected, roving tabindex, arrow keys) and the
+   pane is the tabpanel; hovering a row only previews it, clicking selects it. Up to 859px the list is an
+   accordion: the pane sits under the open row (CSS order, no DOM move), rows are aria-expanded buttons
+   (Div rows get role="button") controlling a region, and tapping the open row closes it.
+   Rows carry the pane fields as data attributes (data-name, data-amount, data-product, data-asset, data-capital,
+   data-terms, data-img, data-alt, data-w, data-h) so a Webflow Collection List can output them; rows may be
+   <button> or <div role="tab" tabindex> (Enter and Space are handled here for non-buttons).
+   Row 06 "All transactions" (static, after the five CMS rows) carries data-mosaic: while it is in the pane, the photo
+   area shows .dl-mosaic (a second Collection List of all transactions) instead of a single photo, the pane gets
+   .is-all (which swaps in the second facts card, .dl-facts.is-all) and the pane heading announces its data-label.
+   The mosaic tiles are lazy images inside a display:none frame, so the browser does not fetch them with the page;
+   they are switched to eager once the list is within 300px of the viewport, or on the first hover or focus of
+   row 06, whichever comes first. */
+(function () {
+  'use strict';
+  var dl = document.getElementById('dl');
+  if (!dl) return;
+  var list = dl.querySelector('.dl-list');
+  var rows = Array.prototype.slice.call(dl.querySelectorAll('.dl-row'));
+  var pane = document.getElementById('dl-pane');
+  var cta = dl.querySelector('.dl-cta');
+  if (!list || !rows.length || !pane) return;
+  var photo = pane.querySelector('.dl-photo');
+  var heading = pane.querySelector('.dl-pane-h');
+  var mosaic = photo ? photo.querySelector('.dl-mosaic') : null;
+  var tiles = mosaic ? Array.prototype.slice.call(mosaic.querySelectorAll('img')) : [];
+  var out = { asset: document.getElementById('dl-asset'), capital: document.getElementById('dl-cap'), terms: document.getElementById('dl-terms') };
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var mq = window.matchMedia('(max-width: 859px)');
+  var cur = Math.max(0, rows.map(function (r) { return r.getAttribute('aria-selected'); }).indexOf('true'));
+  var shown = cur;   /* what the pane displays (a hover preview can differ from the selection on wide screens) */
+  var open = true;   /* accordion state on small screens */
+  var hoverTimer = 0, leaveTimer = 0, token = 0, woken = false;
+
+  rows.forEach(function (r, k) {
+    r.parentNode.style.order = String(2 * k + 1);
+    /* a CMS list cannot number its items: fill ids and the "01" counters when they are missing */
+    if (!r.id) r.id = 'dl-tab-' + (k + 1);
+    var n = r.querySelector('.dl-n');
+    if (n && !n.textContent.trim()) n.textContent = (k + 1 < 10 ? '0' : '') + (k + 1);
+    /* Webflow wraps the CMS rows in .w-dyn-list > .w-dyn-items (role="list") while row 06 is a static sibling:
+       neutral roles on those wrappers keep every row in the one tablist (or list on phones) */
+    for (var el = r.parentNode.parentNode; el && el !== list && el !== dl; el = el.parentNode) el.setAttribute('role', 'none');
+  });
+  if (cta) cta.style.order = '99';
+  if (mosaic) {
+    mosaic.setAttribute('aria-hidden', 'true');
+    /* a Collection List cannot give single items a class: the first two tiles get the double-width class here */
+    var cells = mosaic.querySelectorAll('.dl-tile');
+    if (cells.length > 1 && !mosaic.querySelector('.dl-tile.is-wide')) { cells[0].classList.add('is-wide'); cells[1].classList.add('is-wide'); }
+  }
+
+  function tabsMode() { return !mq.matches; }
+  function isAll(row) { return row.hasAttribute('data-mosaic'); }
+  function navH() { var n = document.getElementById('nav') || document.querySelector('.nav_fixed-2'); return (n ? Math.round(n.getBoundingClientRect().bottom) : 72) + 16; } /* Webflow: the live menu bar is .nav_fixed-2, inset from the top */
+  function attr(row, k) {
+    var v = row.getAttribute('data-' + k) || '';
+    if (v || (k !== 'img' && k !== 'alt')) return v;
+    /* fallback for Webflow: a hidden <img data-pane-img> inside the row bound to the CMS photo */
+    var im = row.querySelector('img[data-pane-img]');
+    return im ? (k === 'img' ? (im.currentSrc || im.getAttribute('src') || '') : (im.getAttribute('alt') || '')) : '';
+  }
+  /* instant scroll even when the page uses scroll-behavior: smooth */
+  function jump(y) {
+    var root = document.documentElement, prev = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo(0, y);
+    root.style.scrollBehavior = prev;
+  }
+
+  /* mosaic tiles: lazy images in a display:none frame are left alone by the browser; switching them to eager
+     starts the downloads (once) even before the frame is shown. Each tile fades in when it has loaded. */
+  function wakeTiles() {
+    if (woken || !mosaic) return;
+    woken = true;
+    tiles.forEach(function (im) {
+      var done = function () { im.classList.add('is-loaded'); };
+      if (im.complete && im.naturalWidth) done();
+      else { im.addEventListener('load', done); im.addEventListener('error', done); }
+      if (im.getAttribute('loading') === 'lazy') im.setAttribute('loading', 'eager');
+    });
+  }
+
+  /* ---------- state to DOM ---------- */
+  function syncRows() {
+    var tabs = tabsMode();
+    rows.forEach(function (r, k) {
+      var li = r.parentNode;
+      r.classList.toggle('is-active', tabs ? k === shown : (k === cur && open));
+      li.classList.toggle('has-pane', !tabs && open && k === cur);
+      if (tabs) {
+        r.setAttribute('role', 'tab');
+        r.setAttribute('aria-selected', k === cur ? 'true' : 'false');
+        r.removeAttribute('aria-expanded');
+        r.tabIndex = k === cur ? 0 : -1;
+      } else {
+        /* a <button> keeps its native role; a Webflow Div needs role="button" so aria-expanded is valid */
+        if (r.tagName === 'BUTTON') r.removeAttribute('role'); else r.setAttribute('role', 'button');
+        r.removeAttribute('aria-selected');
+        r.setAttribute('aria-expanded', k === cur && open ? 'true' : 'false');
+        r.tabIndex = 0;
+      }
+    });
+    pane.hidden = !tabs && !open;
+    pane.classList.toggle('is-last', !tabs && open && cur === rows.length - 1);
+    pane.style.order = String(2 * cur + 2);
+  }
+  function applyRoles() {
+    var tabs = tabsMode();
+    list.setAttribute('role', tabs ? 'tablist' : 'list');
+    if (tabs) list.setAttribute('aria-orientation', 'vertical'); else list.removeAttribute('aria-orientation');
+    rows.forEach(function (r) { r.parentNode.setAttribute('role', tabs ? 'presentation' : 'listitem'); });
+    pane.setAttribute('role', tabs ? 'tabpanel' : 'region');
+    if (tabs) { open = true; if (shown !== cur) { shown = cur; render(cur, false, true); } }
+    syncRows();
+  }
+
+  /* puts a layer (a new photo, or the mosaic) on top and fades it in; the layers under it fade out and are then
+     removed (photos) or put back to display:none (the mosaic). Inactive photos are aria-hidden with an empty alt. */
+  function reveal(layer) {
+    var olds = Array.prototype.filter.call(photo.children, function (el) { return el !== layer && (el === mosaic || el.classList.contains('dl-img')); });
+    if (photo.lastElementChild !== layer) { layer.classList.remove('is-on'); photo.appendChild(layer); }
+    if (layer === mosaic) mosaic.classList.add('is-live');
+    olds.forEach(function (el) { el.classList.remove('is-on'); if (el !== mosaic) { el.setAttribute('aria-hidden', 'true'); el.alt = ''; } });
+    var on = function () { if (photo.lastElementChild === layer) layer.classList.add('is-on'); }; /* unless a newer layer came on top */
+    if (reduce) on(); else requestAnimationFrame(function () { requestAnimationFrame(on); });
+    setTimeout(function () {
+      olds.forEach(function (el) {
+        if (el.classList.contains('is-on') || el === photo.lastElementChild) return; /* brought back meanwhile */
+        if (el === mosaic) mosaic.classList.remove('is-live');
+        else if (el.parentNode) el.parentNode.removeChild(el);
+      });
+    }, reduce ? 0 : 700);
+  }
+
+  /* shows the row's photo (decoded first, then crossfaded over the old one) or, for row 06, the mosaic */
+  function swapImage(row) {
+    var t = ++token;
+    if (isAll(row)) {
+      if (!mosaic) return;
+      wakeTiles();
+      if (photo.lastElementChild !== mosaic || !mosaic.classList.contains('is-on')) reveal(mosaic);
+      return;
+    }
+    /* phones: the frame changes ratio with the row, so the mosaic goes at once instead of fading under the photo */
+    if (mosaic && !tabsMode()) mosaic.classList.remove('is-on', 'is-live');
+    var src = attr(row, 'img'), alt = attr(row, 'alt');
+    if (!src) return;
+    var top = photo.lastElementChild;
+    if (top && top.classList.contains('dl-img') && top.classList.contains('is-on') && top.getAttribute('src') === src) { top.alt = alt; return; }
+    var next = document.createElement('img');
+    next.className = 'dl-img';
+    next.decoding = 'async';
+    if (attr(row, 'w')) next.width = +attr(row, 'w');
+    if (attr(row, 'h')) next.height = +attr(row, 'h');
+    next.alt = '';
+    next.setAttribute('aria-hidden', 'true');
+    next.src = src;
+    var show = function () {
+      if (t !== token) return;
+      next.alt = alt;
+      next.removeAttribute('aria-hidden');
+      reveal(next);
+    };
+    if (next.decode) next.decode().then(show, show); else if (next.complete) show(); else { next.onload = show; next.onerror = show; }
+  }
+
+  /* fills the pane from row i; the pane label and the polite live heading change only on a selection
+     (announce = true), never on a hover preview, so screen readers are not read every row the mouse passes */
+  function render(i, animate, announce) {
+    var row = rows[i], all = isAll(row);
+    pane.classList.toggle('is-all', all);
+    if (!all) {
+      if (out.asset) out.asset.textContent = attr(row, 'asset');
+      if (out.capital) out.capital.textContent = attr(row, 'capital');
+      if (out.terms) out.terms.textContent = attr(row, 'terms');
+    }
+    if (announce) {
+      pane.setAttribute('aria-labelledby', row.id);
+      if (heading) heading.textContent = attr(row, 'label') || [attr(row, 'name'), attr(row, 'amount'), attr(row, 'product')].filter(Boolean).join(', ');
+    }
+    swapImage(row);
+    if (animate && !reduce) { pane.classList.remove('is-swap'); void pane.offsetWidth; pane.classList.add('is-swap'); }
+  }
+  /* wide screens only: show a row in the pane without changing the selection */
+  function preview(i) {
+    if (!tabsMode() || i === shown) return;
+    shown = i;
+    render(i, true, false);
+    syncRows();
+  }
+  function select(i, opts) {
+    opts = opts || {};
+    var tabs = tabsMode();
+    var row = rows[i];
+    if (!tabs && opts.toggle && i === cur && open) { open = false; syncRows(); return; }
+    var changed = i !== shown || !open;
+    var before = row.getBoundingClientRect().top;
+    cur = i; shown = i; open = true;
+    render(i, changed, true);
+    syncRows();
+    if (!tabs) {
+      /* the pane may have closed above this row: keep the row where the finger is, then bring it up with its photo */
+      var delta = row.getBoundingClientRect().top - before;
+      if (Math.abs(delta) > 1) jump(window.scrollY + delta);
+      if (opts.scroll) {
+        var top = row.getBoundingClientRect().top;
+        if (top > window.innerHeight * 0.4 || top < navH()) window.scrollTo({ top: window.scrollY + top - navH() - 12, behavior: reduce ? 'auto' : 'smooth' });
+      }
+    }
+  }
+
+  /* ---------- events ---------- */
+  rows.forEach(function (r, i) {
+    r.addEventListener('click', function () { select(i, { scroll: true, toggle: true }); });
+    r.addEventListener('pointerenter', function (e) {
+      if (isAll(r)) wakeTiles();
+      if (e.pointerType !== 'mouse' || !tabsMode()) return;
+      clearTimeout(leaveTimer); clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(function () { preview(i); }, 110);
+    });
+    if (isAll(r)) r.addEventListener('focus', wakeTiles);
+    r.addEventListener('keydown', function (e) {
+      var j;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') j = (i + 1) % rows.length;
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') j = (i - 1 + rows.length) % rows.length;
+      else if (e.key === 'Home') j = 0;
+      else if (e.key === 'End') j = rows.length - 1;
+      else if ((e.key === 'Enter' || e.key === ' ') && r.tagName !== 'BUTTON') { e.preventDefault(); select(i, { scroll: true, toggle: true }); return; }
+      else return;
+      if (!tabsMode()) return; /* accordion: arrows are left to the browser */
+      e.preventDefault();
+      rows[j].focus();
+      select(j);
+    });
+  });
+  list.addEventListener('pointerleave', function (e) {
+    if (e.pointerType !== 'mouse') return;
+    clearTimeout(hoverTimer);
+    leaveTimer = setTimeout(function () { preview(cur); }, 160);
+  });
+  var onMq = function () { applyRoles(); };
+  if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
+  applyRoles();
+
+  /* warm the other photos once the module is on screen, so previews do not wait on the network */
+  function warm() {
+    rows.forEach(function (r) { var s = attr(r, 'img'); if (!s) return; var im = new Image(); if ('fetchPriority' in im) im.fetchPriority = 'low'; im.src = s; });
+  }
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) { io.disconnect(); (window.requestIdleCallback || function (f) { setTimeout(f, 400); })(warm); }
+    }, { rootMargin: '200px 0px' });
+    io.observe(dl);
+    /* the mosaic tiles: once the list is within 300px of the viewport (row 06 hover or focus also wakes them) */
+    if (mosaic) {
+      var tio = new IntersectionObserver(function (es) {
+        if (es[0].isIntersecting) { tio.disconnect(); wakeTiles(); }
+      }, { rootMargin: '300px 0px' });
+      tio.observe(dl);
+    }
+  } else wakeTiles();
+})();
+}
+</script>
