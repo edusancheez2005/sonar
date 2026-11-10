@@ -74,7 +74,7 @@ How this differs from the handoff: the handoff edits the live form in the Design
 
 Checked on staging (Playwright, 1440 and 390 wide). New view: the first contact row sits where the live line is (y 598 at 1440, y 290 at 390); the hero is 900 px at 1440 as live, 925 px at 390 (live 873: the second contact row); 5 FAQ questions, identical to the live dropdowns, one open at a time; the JSON-LD matches the visible FAQ; 5 hidden labels, Subject is `type="text"`, autocomplete name, email and tel; the honeypot is off screen and its guard cancels a submit when it is filled (tested with a synthetic event while every outgoing request was blocked: nothing was sent). Old view: the live line, the dropdowns and the form as live. Live site: unchanged.
 
-Still to do on this page before go-live (owner): send one test enquiry on staging and check it reaches /contact-us-success, appears in Webflow Forms and sends the notification email (the owner believes enquiries work; one test confirms it); confirm the FAQ timescales still hold. WhatsApp: confirmed by the owner on 10 Nov 2026 and added (see 11).
+Still to do on this page before go-live (owner): confirm the FAQ timescales still hold. The test enquiry was sent on 10 Nov 2026: it reached /contact-us-success and is in Webflow's form submissions; the notification email is the owner's to check. WhatsApp: confirmed by the owner on 10 Nov 2026 and added (see 11).
 
 ### 5. Track Record (`6947c1c57991169cd74afd2c`) (10 Nov 2026)
 Source: `prototypes/track-record/` (the footprint map and the Selected Transactions grid).
@@ -184,7 +184,7 @@ The owner checked staging, answered the two open questions (Mowgli: "Southern Eu
 | FAQ answer width | Speak to Us page head | Answers run as far as the question text, 50 px short of the right edge, so the gap before the arrow is small (it was a 68-character column). Phones unchanged | Set `.acc .ans` back to `{max-width:68ch;padding:0 4px 26px}` |
 | WhatsApp | Speak to Us, Code Embed `b29a7d7b-f1cb-806a-eaf2-baf28326fea4` | Added after the phone line: `https://wa.me/447850522789` with a short opening message, so the four contacts sit two by two | Delete the WhatsApp line (`speak-to-us/contacts-whatsapp-item.html` holds it) |
 | Manchester card | Track Record page footer | New view: £2.66m and Product "Land Bridge", in place of the CMS item's £2.7m and "Commercial Mortgage". Only that old wording is replaced, so these lines do nothing once the CMS item is corrected. The CMS item is not changed here, because publishing a CMS item sends it straight to the live site | Delete the Manchester lines from the script |
-| Rates sources line | Home, Code Embed `41aa8413-a1fd-291f-aeee-45c36970e12f` | Out of the rates panel and into the small print at the foot of Home, in the style of the text around it: "Market rates: Bank of England · Federal Reserve via FRED · euribor-rates.eu." | Paste back the earlier embed (`git show 33cc48a:webflow-build/home/rates-embed.html`) |
+| Rates sources line | Home, Code Embed `41aa8413-a1fd-291f-aeee-45c36970e12f` | Removed. First it moved out of the panel into the small print at the foot of Home; then, at the owner's second request ("don't want the source"), the small-print line went too, so no sources line shows anywhere | Paste back the earlier embed (`git show 33cc48a:webflow-build/home/rates-embed.html`) for the line in the panel |
 | Deal list hover | Home, Code Embed `9d43b833-966e-bff4-198a-e0cad3bd7daf` | On a computer the row last hovered stays in the pane and becomes the selected row, instead of springing back when the pointer leaves the list. Hovering is still not read out by screen readers; clicks, arrow keys and phones work as before | Paste back the earlier embed (`git show 33cc48a:webflow-build/home/deals-embed.html`) |
 
 Old bio text: "Mowgli was born in the snowy French alps. He graduated from Skema business school in Lille in 1995. He has since lived and worked in very diverse industries in London, Paris, Los Angeles and Lisbon. He founded one of the first real estate crowdfunding platforms in France, raising more than €50m before he sold it in 2023. He is now the Head of Western Europe for Roscap, sourcing Real Estate opportunities seeking development or bridge finance."
@@ -193,7 +193,9 @@ Checked on staging after one publish to the staging address only. Every file abo
 
 EURIBOR stays on the rates panel, at the owner's choice. EMMI, which runs EURIBOR, allows free use of its delayed rates for non-commercial purposes only and licenses commercial use (https://emmi-benchmarks.eu/faq/euribor, fee schedule https://www.emmi-benchmarks.eu/globalassets/documents/pdf/subscriptions/d0167a-2026---2027-fee-schedule.pdf). The risk is a request to license or remove it, possibly with back fees, not a regulator's fine. Options: ask EMMI (info@emmi-benchmarks.eu) for a licence or a written confirmation, show the ECB deposit facility rate instead, or remove the third rate.
 
-Still to do before go-live (owner): a Webflow backup, and an agreement that no one else publishes until go-live; the "Last updated" date on both policies set to the go-live day; one test enquiry on staging; a decision on EURIBOR.
+Follow-up the same evening. The owner asked for no sources line at all, so the small-print line was removed as well (Home rates embed, published to the staging address only; checked byte for byte; the panel still fills from the feed at 1440 and 390, no text names a source, no console errors; old view unchanged). The owner made a Webflow backup ("November 10th"), sent one test enquiry on staging (it reached the thank-you page and is in Webflow's form submissions at 19:13 UTC, as is the brochure pop-up test from Partner Program at 18:57), confirmed that the Google Analytics event `generate_lead` exists, and decided to keep EURIBOR. Go-live: as soon as possible, on the owner's word.
+
+Still to do before go-live (owner): an agreement that no one else publishes until go-live; check that the notification email for the test enquiry arrived; the "Last updated" date on both policies is 10 November 2026, so it needs changing only if go-live is on a later day.
 
 ## Publishes
 
@@ -208,6 +210,7 @@ Still to do before go-live (owner): a Webflow backup, and an agreement that no o
 | 10 Nov 2026 | Staging only | Home, then two fixes found in checking (the Who We Are photo as WebP, the reset for the two new blocks) |
 | 10 Nov 2026 | Staging only | Cookie banner, both policies, the email links, then the old Privacy Policy text's email link |
 | 10 Nov 2026 | Staging only | The owner's review, round 2 (section 11) |
+| 10 Nov 2026 | Staging only | Round 2 follow-up: no rates sources line anywhere (section 11) |
 
 The live domains were last published on 17 Oct 2026, before this work started.
 
@@ -222,5 +225,6 @@ The live domains were last published on 17 Oct 2026, before this work started.
 - Policies: paste the text into the Rich Text as the legal handoff describes (or keep the embeds), then delete the old text.
 - Track Record: correct the Manchester CMS item (£2.66m, Land Bridge), then delete the Manchester lines from the page footer script.
 - Blog posts: make the Submit fix in the shared contact component (with Home and Partner Program), then drop the blog page footer script.
+- Home: drop the unused `.rates-src` style from the page head.
 - Remove the replaced interactions in the Interactions panel.
 - Remove the switch from the site head.
