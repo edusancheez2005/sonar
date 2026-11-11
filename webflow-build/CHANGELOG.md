@@ -244,6 +244,15 @@ The policies' "Last updated 10 November 2026" stands: go-live was on 10 November
 
 Still to do after go-live (owner): the Tag Assistant check and one enquiry with cookies accepted (section 8); check that enquiry notifications arrive; confirm the Speak to Us FAQ timescales; the EURIBOR licence question stays open (section 7). Then, with a fresh backup, the clean-up below.
 
+### 15. After go-live: the Federal Reserve status on phones (11 Nov 2026)
+Suleman (Samsung) and the owner (iPhone 14) saw the Federal Reserve rate's status (the "Held" chip and its date) drop under the figure on phones, while the Bank of England and EURIBOR statuses sit beside theirs. The range "3.75–4.00%" is wider than the other figures: at 360 to 400 px it missed fitting by up to 31 px.
+
+| What | Where | Change | Undo |
+| --- | --- | --- | --- |
+| Rates panel on phones | Home page head | Up to 479 px: the range figure scales down just enough (26 px at 360, 32 px at 390, unchanged from about 430 px up), the gap between each figure and its status is 12 px on all three (was 18), and under 360 px the date line wraps beside the figure instead of the status dropping. The Bank of England and EURIBOR figures, tablets and computers are unchanged | Delete the "Phones (the team's request, 11 Nov 2026)" block, straight after the rates panel's 860 px block in the head CSS |
+
+Checked on staging (published to the staging address only): every build file in the published pages byte for byte; at 320, 360, 375, 384, 390, 412, 430 and 479 px all three statuses sit beside their figures, 10 px or more to spare from 360 px up (at 320 the Federal Reserve date runs to two lines), no sideways scrolling, no page errors; 480, 600 and 1440 px as before.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -264,6 +273,7 @@ Still to do after go-live (owner): the Tag Assistant check and one enquiry with 
 | 10 Nov 2026 | Staging only | Round 4 follow-up: the lifecycle stages evenly spaced (section 13) |
 | 10 Nov 2026, 23:40 UTC | Staging only | The switch set to `LIVE=true`, checked before going live (section 14) |
 | 10 Nov 2026, 23:44 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | Go-live, on the owner's approval (section 14) |
+| 11 Nov 2026 | Staging only | The Federal Reserve status on phones (section 15) |
 
 Before go-live, the live domains had last been published on 17 Oct 2026, before this work started.
 
