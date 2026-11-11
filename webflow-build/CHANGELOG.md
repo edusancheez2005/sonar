@@ -253,6 +253,8 @@ Suleman (Samsung) and the owner (iPhone 14) saw the Federal Reserve rate's statu
 
 Checked on staging (published to the staging address only): every build file in the published pages byte for byte; at 320, 360, 375, 384, 390, 412, 430 and 479 px all three statuses sit beside their figures, 10 px or more to spare from 360 px up (at 320 the Federal Reserve date runs to two lines), no sideways scrolling, no page errors; 480, 600 and 1440 px as before.
 
+Published live on the owner's approval at 08:54 UTC (Webflow: lastPublished 2026-11-11T08:54:09Z on both domains), with no edits in Webflow since the checked staging publish. Checked on the live site, read-only: the 47 file checks byte for byte; all three statuses beside their figures at 360 to 430 px, 600 and 1440 px as before; the 16-page sweep at 1440 and 390 px: new design on every page, no page errors, no sideways scrolling, no Google request before a choice.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -274,6 +276,7 @@ Checked on staging (published to the staging address only): every build file in 
 | 10 Nov 2026, 23:40 UTC | Staging only | The switch set to `LIVE=true`, checked before going live (section 14) |
 | 10 Nov 2026, 23:44 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | Go-live, on the owner's approval (section 14) |
 | 11 Nov 2026 | Staging only | The Federal Reserve status on phones (section 15) |
+| 11 Nov 2026, 08:54 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | The Federal Reserve status on phones, on the owner's approval (section 15) |
 
 Before go-live, the live domains had last been published on 17 Oct 2026, before this work started.
 
