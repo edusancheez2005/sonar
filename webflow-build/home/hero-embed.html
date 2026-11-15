@@ -1,0 +1,59 @@
+<video width="100%" height="100%" style="object-fit: cover; display: block;" autoplay muted loop playsinline>
+  <source src="https://roscap.s3.us-east-1.amazonaws.com/Roscap+Video++(1).mp4#t=1" type="video/mp4">
+</video>
+<!-- Roscap, 15 Nov 2026. A phone can decide not to start a video by itself (an iPhone saving power, for one) and an iPhone
+     then shows a large play button over it. The script lays a still of the video's opening frame over the video until the
+     video is really playing, so that button can never show, and the first tap on the page starts the video where the phone
+     allows it. The video tag above is unchanged; if the script does not run, the hero behaves exactly as before. -->
+<script>
+(function () {
+  var box = document.currentScript && document.currentScript.parentNode, v = box && box.querySelector('video');
+  if (!v || (!v.paused && v.currentTime > 0)) return;
+  var cover = document.createElement('div'), img = document.createElement('img'), shown = false, fails = 0, ticks = 0, last = -1;
+  var TAPS = ['touchend', 'click', 'keydown'];
+  function ask(q) { try { return matchMedia(q).matches; } catch (e) { return false; } }
+  cover.setAttribute('aria-hidden', 'true');
+  cover.style.cssText = 'position:absolute;top:0;right:0;bottom:0;left:0;overflow:hidden;background:#0b0e0c;transition:opacity .45s ease';
+  img.alt = ''; img.decoding = 'async'; img.setAttribute('fetchpriority', 'high');
+  img.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover';
+  img.onerror = function () { img.style.visibility = 'hidden'; };
+  img.src = 'https://cdn.prod.website-files.com/693e84a885fe6122f0427916/6afa00b2f610cfffbef9ecdb_hero-opening-frame.webp';
+  cover.appendChild(img); box.appendChild(cover);
+
+  function remove() { if (cover.parentNode) cover.parentNode.removeChild(cover); }
+  function deaf() { TAPS.forEach(function (t) { document.removeEventListener(t, nudge, true); }); }
+  function show() {   /* the video is running: fade the still away and stop listening */
+    if (shown) return; shown = true;
+    v.removeEventListener('playing', check); v.removeEventListener('timeupdate', check); deaf();
+    if (ask('(prefers-reduced-motion: reduce)')) return remove();
+    cover.style.opacity = '0'; setTimeout(remove, 500);
+  }
+  /* Really playing: the browser says it has the pictures, or its clock has kept moving over several reports. */
+  function check() {
+    if (v.paused || v.ended) { ticks = 0; return; }
+    if (v.readyState > 2) return show();
+    ticks = v.currentTime > last ? ticks + 1 : 0; last = v.currentTime;
+    if (ticks > 3) show();
+  }
+  v.addEventListener('playing', check); v.addEventListener('timeupdate', check);
+
+  /* A phone that held the video back lets it start from a tap, a click or a key press. Two cases are left alone:
+     a visitor who asks for reduced motion (Webflow's own script pauses the video for them, and it stays paused), and
+     a browser where a video may only play full screen (WebKit says so in some in-app browsers; browsers that do not
+     know the question answer no), because the hero must never turn into a full-screen player. */
+  var barred = ask('not all and (-webkit-video-playable-inline)');
+  function nudge(e) {
+    if (shown || barred || !e.isTrusted || !v.paused) return;
+    var r = box.getBoundingClientRect();
+    if (r.bottom <= 0 || r.top >= (window.innerHeight || document.documentElement.clientHeight)) return;   /* only while the hero is on screen */
+    var sure = e.type !== 'touchend';   /* the end of a swipe is a touchend too, and a phone need not count that as a tap */
+    try { var p = v.play(); if (p && p.catch) p.catch(function () { if (sure && ++fails > 2) deaf(); }); } catch (err) {}
+  }
+  if (!barred && !ask('(prefers-reduced-motion: reduce)')) TAPS.forEach(function (t) { document.addEventListener(t, nudge, true); });
+  v.addEventListener('webkitbeginfullscreen', function () {
+    barred = true;
+    try { v.webkitExitFullscreen(); } catch (e) {}
+    try { v.pause(); } catch (e) {}
+  });
+})();
+</script>

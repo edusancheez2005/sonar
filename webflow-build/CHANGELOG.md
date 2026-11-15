@@ -255,6 +255,30 @@ Checked on staging (published to the staging address only): every build file in 
 
 Published live on the owner's approval at 08:54 UTC (Webflow: lastPublished 2026-11-11T08:54:09Z on both domains), with no edits in Webflow since the checked staging publish. Checked on the live site, read-only: the 47 file checks byte for byte; all three statuses beside their figures at 360 to 430 px, 600 and 1440 px as before; the 16-page sweep at 1440 and 390 px: new design on every page, no page errors, no sideways scrolling, no Google request before a choice.
 
+### 16. After go-live: the play button on the hero video, and the EURIBOR feed (15 Nov 2026)
+
+**The play button.** The owner's iPhone 14 showed a large play button over the Home hero video (Safari, 15 Nov, 17:56). What was found:
+
+- The hero had not changed. Its embed was byte for byte the one in the snapshot taken on 10 Nov before the build (`webflow-snapshots/2026-11-10-before-build/production/home.html`): `<video autoplay muted loop playsinline>` and nothing else.
+- The button is the phone's own. A phone may decide not to start a video by itself (an iPhone does to save power, for one) and an iPhone then draws a play button on the video. The battery icon in the owner's screenshot is not yellow, so it was not Low Power Mode on that occasion; which rule of the phone it was could not be established from here.
+- The site's own style gives the hero background `pointer-events:none`, so that button could not be pressed either.
+- Separately: Webflow's own script pauses every video on the page for visitors who ask for reduced motion (`prefers-reduced-motion`). That was already so before the build and is left as it is.
+
+| What | Where | Change | Undo |
+| --- | --- | --- | --- |
+| Hero video | Home, Code Embed `0feb42ed-1083-0db0-3e9c-abf0549d5b06` (file `home/hero-embed.html`; the original is kept as `home/hero-embed.before.html`) | The video tag is unchanged. A script after it lays a still of the video's opening frame over the video until the video is really playing, then fades the still away in under half a second (at once for reduced motion). The phone's play button can therefore never show. Where the phone held the video back, the first tap, click or key press on the page while the hero is on screen starts the video. Two cases are left alone: visitors who ask for reduced motion (the still stays, as Webflow keeps the video paused for them), and browsers where a video may only play full screen. If the script does not run, the hero behaves exactly as before | Paste `home/hero-embed.before.html` into the embed and publish |
+| The still | Assets panel: `hero-opening-frame.webp` (asset `6afa00b2f610cfffbef9ecdb`), the video's frame at 1 second (where the video starts), 1440 × 1078, 30 KB | New | Delete the asset once the embed is back to the original; left unused it does no harm |
+
+What cannot be changed: no web page can start a video on a phone that holds it back. On such a phone the hero now shows the opening frame, without a button, until the first tap.
+
+Checked in Chromium, first on a preview, then on staging, then on the live site (46 checks each time, all passed): on a normal phone and computer the video starts by itself, the still goes within 0.7 s of the video starting and the page never calls `play()`; with the video held back the still covers the whole video (it is painted above the video at every one of 49 points tried), one tap starts the video, six swipes followed by a tap still start it, the first key press starts it, and a phone that refuses for good is tried on three taps and then left alone; nothing is tried where a video may only play full screen, when the hero is off screen, or for a click made by a script; with reduced motion the video stays paused and no tap starts it; on a slow connection or with the video unreachable the still shows; the old view (`?rc=old`) behaves the same. The still against the video's own frame: 0.06 % of pixels differ by more than 24 in 255.
+
+Not checked: a real iPhone in the state that holds the video back (none can be driven from here); the owner checks on their phone.
+
+Published to staging only at about 19:26 UTC and checked there: every build file byte for byte (48 file checks, the hero embed now among them), the 46 hero checks, the 16-page sweep at 1440 and 390 px with no page errors. Staging against live, page by page: the hero embed was the only difference in the site's own pages. The publish also carries Webflow's own newer runtime script, as any publish does (Webflow removed code for its old Editor from the menu, dropdown and scroll modules); the phone menu and the computer menu behave the same before and after. Published live as the owner asked ("2 fixes needed and publish and checked") at 19:36 UTC, and checked on the live site, read-only: the 48 file checks, the 46 hero checks, the 16-page sweep (new design on every page, no page errors, no sideways scrolling), and the rates panel in its normal state.
+
+**The EURIBOR feed** (not a Webflow change; repository `edusancheez2005/roscap-rates`). The rate had stopped at the fixing of 12 Nov and the panel said "awaiting update". The feed's one EURIBOR source, euribor-rates.eu, moved servers on 13 to 14 Nov and began presenting a certificate from a private authority; the feed refused it, correctly, and five scheduled runs failed. EURIBOR now has three sources, asked in order: euribor-rates.eu, the Deutsche Bundesbank's daily series, the Banco de España's table. The first that is up to date is used, certificates are always verified, the published fixing never steps back to an older one, and a run fails only when no source answers (commit `5a478ed` on `main`, with tests; the warning issue the failed runs had opened is closed). The feed is healthy again and the panel is back to normal. It shows the fixing of 12 Nov until the Bundesbank publishes that of 13 Nov on its next working day (Monday 16 Nov), or until euribor-rates.eu has a valid certificate again; the three-hourly run picks either up by itself. Undo: revert that commit in the feed's repository.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -277,6 +301,8 @@ Published live on the owner's approval at 08:54 UTC (Webflow: lastPublished 2026
 | 10 Nov 2026, 23:44 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | Go-live, on the owner's approval (section 14) |
 | 11 Nov 2026 | Staging only | The Federal Reserve status on phones (section 15) |
 | 11 Nov 2026, 08:54 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | The Federal Reserve status on phones, on the owner's approval (section 15) |
+| 15 Nov 2026, about 19:26 UTC | Staging only | The still over the hero video (section 16) |
+| 15 Nov 2026, 19:36 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | The still over the hero video, as the owner asked (section 16) |
 
 Before go-live, the live domains had last been published on 17 Oct 2026, before this work started.
 
