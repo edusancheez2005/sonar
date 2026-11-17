@@ -289,6 +289,8 @@ The feed was not blocked or singled out (the owner asked, 15 Nov). The fault is 
 
 All four publishers carry the same notice: commercial use of the figure needs a licence agreement with the European Money Markets Institute (the Bundesbank in its series header, the Bank of Finland on its Euribor page). That is the open licence question of section 7, which the choice of source does not change.
 
+Weekday check, Tuesday 17 Nov 2026, 15:30 UTC (set on the 15th). The four scheduled runs since Sunday were all green and no warning was open, but the feed still showed Friday's fixing: the sources had Monday's (16 Nov, 2.779%) by about midday, and GitHub had started no run since 04:11 UTC. GitHub starts only some scheduled runs: over 13 to 17 Nov it started 10 of the 26 the three-hourly timer asked for, on average 8 hours apart and once 12.6 hours apart. A run started by hand at 15:33 UTC published 2.779% (+0.004%), and the live site showed "fixing of 16 Nov 2026", read-only check at 390 and 1440 px, no page errors. So that this does not recur, the feed's timer now also asks for a run on weekdays at 7 and 27 minutes past each hour from 10:00 to 16:59 UTC, the hours in which the sources publish, and runs queue instead of overlapping (commit `220e936` on `main` of the feed's repository; the script and its 31 tests are unchanged; undo: revert that commit). The original website is readable again: it has carried a publicly trusted certificate since Monday 16 Nov, 11:32 UTC, its figures agree with the central banks', and the feed is using it again by itself.
+
 ## Publishes
 
 | When (UTC) | Where | What |
