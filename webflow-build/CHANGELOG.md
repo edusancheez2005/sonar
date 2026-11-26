@@ -293,6 +293,21 @@ Weekday check, Tuesday 17 Nov 2026, 15:30 UTC (set on the 15th). The four schedu
 
 Second check, Wednesday 18 Nov 2026, 17:16 UTC. Tuesday's fixing (17 Nov, 2.784%, +0.005%) arrived by itself: a scheduled run published it at 12:16 UTC, from the original website, about three quarters of an hour after the Bundesbank released it (its file is stamped 12:30, read as German time), and the live site showed "fixing of 17 Nov 2026", read-only check at 390 and 1440 px, no page errors. All four sources give the same figures; every run was green and no warning was open. GitHub is still starting few runs: 4 in the 25.7 hours since the timer change, out of 25 asked for, and 1 of the 16 asked for on Wednesday between 10:00 and 17:00 UTC. That is about the same number a day as before the change (3.7 against 3.2), so asking more often does not seem to produce more runs, and the timer was left as it is. A figure can therefore still appear some hours late on a bad day; a reliable hourly update would need something outside GitHub's own timer to press "Run workflow", which is the owner's decision. Noted for the next change to the feed: the Bundesbank's data address now answers with a permanent redirect (from `/rest/download/...` to `/rest/data/...`); the script follows it, and the address in the script should be updated.
 
+### 17. After go-live: LinkedIn in place of Instagram in the Speak to Us contact block (26 Nov 2026)
+The owner asked for a check that the site works, then for Roscap's LinkedIn to be added to the contact block on Speak to Us (phone and email, with Instagram below them), using the link they sent, and published. After the first publish they corrected it: Instagram should go, with LinkedIn in its place.
+
+Check first, on the live site, read-only: every build file in its page byte for byte (48 file checks); all 16 pages at 1440 and 390 px in the new design with no page errors, no sideways scrolling and no Google request before a choice; the 46 hero video checks; the rates feed fresh and the panel showing the Euribor fixing of 25 Nov; the certificate valid to 3 Feb 2027 and roscap.co.uk forwarding to www. No edits had been made in Webflow since the publish of 15 Nov.
+
+| What | Where | Change | Undo |
+| --- | --- | --- | --- |
+| Contact details | Speak to Us, Code Embed `b29a7d7b-f1cb-806a-eaf2-baf28326fea4`, and the page head | Instagram replaced by LinkedIn, linking to https://www.linkedin.com/company/79542980/ (the link the owner sent) and opening in a new tab as Instagram did, with a gold line icon drawn to match the others and the label "LinkedIn". The layout is the one approved in section 12: phone and email side by side, LinkedIn centred below them, the three stacked on the narrowest phones. In the head only the comment changed | Paste back the earlier embed and head (`git show 85a7181:webflow-build/speak-to-us/contacts-embed.html` and `page-head.html`) and publish |
+
+First version, live from 16:07 to 16:15 UTC: LinkedIn added after Instagram as a fourth item, with phone and email above Instagram and LinkedIn in two columns (commit `7c56729`). Replaced by the version above on the owner's correction.
+
+Not changed, for the owner: the footer on every page still shows Instagram and LinkedIn icons. Its LinkedIn icon, like the site's structured data, links to https://www.linkedin.com/company/roscap/, not the link the owner sent; LinkedIn refuses automated requests (403 for both addresses), so whether the two are the same page could not be checked here. The thank-you page after an enquiry (`/contact-us-success`) keeps Webflow's original block (email and Instagram), which the redesign never touched. The old view's contact block (hidden, used only for a rollback) keeps its Instagram link.
+
+How each version was checked, on a preview of the live page, then on staging after a publish to the staging address only, then on the live site, read-only: every build file in its page byte for byte (48 file checks); the block measured at 1440, 1024, 768, 390, 360 and 320 px (no sideways scrolling; link and new-tab settings as intended); the 16-page sweep at 1440 and 390 px. First publish: staging against live, page by page, showed the Speak to Us head and block plus Webflow's own updates, which any publish carries: one line in Webflow's built-in lightbox styles (`.w-lightbox-inactive` gains `pointer-events: none`) and its form script (it can now reset Cloudflare's spam check after a form is sent, on forms that ask for it); the menu on phones and computers was the same as before; on live, also the rates panel and the 46 hero video checks. Second publish: staging against live differed on the Speak to Us page only, in the block and the head's contact rules; in the new view a visitor sees phone, email and LinkedIn in the block. Published live at 16:15 UTC and checked as above.
+
 ## Publishes
 
 | When (UTC) | Where | What |
@@ -317,6 +332,10 @@ Second check, Wednesday 18 Nov 2026, 17:16 UTC. Tuesday's fixing (17 Nov, 2.784%
 | 11 Nov 2026, 08:54 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | The Federal Reserve status on phones, on the owner's approval (section 15) |
 | 15 Nov 2026, about 19:26 UTC | Staging only | The still over the hero video (section 16) |
 | 15 Nov 2026, 19:36 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | The still over the hero video, as the owner asked (section 16) |
+| 26 Nov 2026, about 16:02 UTC | Staging only | LinkedIn in the Speak to Us contact block, as a fourth item (section 17) |
+| 26 Nov 2026, 16:07 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | LinkedIn in the Speak to Us contact block, as a fourth item, as the owner asked (section 17) |
+| 26 Nov 2026, about 16:13 UTC | Staging only | LinkedIn in place of Instagram (section 17) |
+| 26 Nov 2026, 16:15 UTC | **Live**: www.roscap.co.uk, roscap.co.uk, and staging | LinkedIn in place of Instagram, on the owner's correction (section 17) |
 
 Before go-live, the live domains had last been published on 17 Oct 2026, before this work started.
 
